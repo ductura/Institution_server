@@ -1,6 +1,9 @@
 // The signing port. Ported from Ductus src/application/ports/signing-key-provider.ts
 // at d52a92c3 (S-0.19, DAN-732); `interface` became `type` (docs/CODE_STYLE.md, rule 4).
-import type { PublicVerificationKey, SignatureEnvelope } from "../../domain/index.ts";
+// `sign` and `publicVerificationKey` return a Result (docs/CODE_STYLE.md §8):
+// an expected fault of the key or the KMS is a value with a stable code from
+// signing-errors.ts; only programming errors throw.
+import type { PublicVerificationKey, Result, SignatureEnvelope } from "../../domain/index.ts";
 
 /**
  * Provider-neutral evidence/artifact signing boundary.
@@ -9,9 +12,9 @@ import type { PublicVerificationKey, SignatureEnvelope } from "../../domain/inde
  * KMS/HSM. The application receives signatures, never exportable private keys.
  */
 export type SigningKeyProvider = {
-  sign(message: Uint8Array): Promise<SignatureEnvelope>;
+  sign(message: Uint8Array): Promise<Result<SignatureEnvelope>>;
   verify(message: Uint8Array, signature: SignatureEnvelope): Promise<boolean>;
-  publicVerificationKey(): Promise<PublicVerificationKey>;
+  publicVerificationKey(): Promise<Result<PublicVerificationKey>>;
 };
 
 export type {

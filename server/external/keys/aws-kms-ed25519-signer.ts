@@ -1,3 +1,10 @@
+import type { AppError, Result } from "../../domain/index.ts";
+import { KmsTransportError } from "./kms-transport-error.ts";
+import {
+  kmsTransportError,
+  SIGNING_KEY_INCOMPATIBLE,
+  SIGNING_KEY_NOT_TRUSTED,
+} from "./signing-errors.ts";
 import type {
   PublicVerificationKey,
   SignatureEnvelope,
@@ -56,15 +63,29 @@ function fromBase64Url(value: string): Uint8Array | null {
   }
 }
 
-function assertKmsKeyMetadata(result: AwsKmsEd25519PublicKeyResult): void {
-  if (
-    !result.keyId.trim() ||
-    result.keySpec !== AWS_KMS_ED25519_KEY_SPEC ||
-    result.keyUsage !== AWS_KMS_SIGN_VERIFY_USAGE ||
-    !result.signingAlgorithms.includes(AWS_KMS_ED25519_ALGORITHM) ||
-    result.publicKeySpkiDer.byteLength < 1
-  ) {
-    throw new Error("aws-kms: incompatible signing key");
+function isCompatibleKmsKey(result: AwsKmsEd25519PublicKeyResult): boolean {
+  return (
+    result.keyId.trim() !== "" &&
+    result.keySpec === AWS_KMS_ED25519_KEY_SPEC &&
+    result.keyUsage === AWS_KMS_SIGN_VERIFY_USAGE &&
+    result.signingAlgorithms.includes(AWS_KMS_ED25519_ALGORITHM) &&
+    result.publicKeySpkiDer.byteLength >= 1
+  );
+}
+
+const failure = (error: AppError): { ok: false; error: AppError } => ({ ok: false, error });
+
+/**
+ * Runs a transport call at the port boundary: a classified KmsTransportError
+ * becomes its result; anything else (a programming error, an unclassified
+ * throw of an injected transport) is not swallowed and rethrows.
+ */
+async function call<T>(run: () => Promise<T>): Promise<Result<T>> {
+  try {
+    return { ok: true, value: await run() };
+  } catch (error) {
+    if (error instanceof KmsTransportError) return failure(kmsTransportError(error.kind));
+    throw error;
   }
 }
 
@@ -101,35 +122,44 @@ export class AwsKmsEd25519SigningKeyProvider implements SigningKeyProvider {
 
   private readonly trustedKeyVersions: ReadonlySet<string>;
 
-  async sign(message: Uint8Array): Promise<SignatureEnvelope> {
+  async sign(message: Uint8Array): Promise<Result<SignatureEnvelope>> {
+    // A precondition of the caller (receipt bytes are always within KMS's
+    // RAW limit), so a programming error that throws (§8).
     if (message.byteLength < 1 || message.byteLength > MAX_KMS_RAW_MESSAGE_BYTES) {
       throw new Error("aws-kms: raw message size unsupported");
     }
 
-    const result = await this.transport.sign({
-      keyId: this.configuredKeyId,
-      message,
-      messageType: AWS_KMS_RAW_MESSAGE_TYPE,
-      signingAlgorithm: AWS_KMS_ED25519_ALGORITHM,
-    });
+    const signed = await call(() =>
+      this.transport.sign({
+        keyId: this.configuredKeyId,
+        message,
+        messageType: AWS_KMS_RAW_MESSAGE_TYPE,
+        signingAlgorithm: AWS_KMS_ED25519_ALGORITHM,
+      }),
+    );
+    if (!signed.ok) return signed;
+    const result = signed.value;
 
     if (
       !result.keyId.trim() ||
       result.signingAlgorithm !== AWS_KMS_ED25519_ALGORITHM ||
       result.signature.byteLength < 1
     ) {
-      throw new Error("aws-kms: invalid Sign response");
+      return failure(kmsTransportError("invalid_response"));
     }
     if (!this.trustedKeyVersions.has(result.keyId)) {
-      throw new Error("aws-kms: signing key version not trusted");
+      return failure(SIGNING_KEY_NOT_TRUSTED);
     }
 
     return {
-      algorithm: "Ed25519",
-      keyId: this.configuredKeyId,
-      keyVersion: result.keyId,
-      signatureEncoding: "raw",
-      signatureBase64Url: toBase64Url(result.signature),
+      ok: true,
+      value: {
+        algorithm: "Ed25519",
+        keyId: this.configuredKeyId,
+        keyVersion: result.keyId,
+        signatureEncoding: "raw",
+        signatureBase64Url: toBase64Url(result.signature),
+      },
     };
   }
 
@@ -161,21 +191,28 @@ export class AwsKmsEd25519SigningKeyProvider implements SigningKeyProvider {
     }
   }
 
-  async publicVerificationKey(): Promise<PublicVerificationKey> {
-    const result = await this.transport.getPublicKey({
-      keyId: this.configuredKeyId,
-    });
-    assertKmsKeyMetadata(result);
+  async publicVerificationKey(): Promise<Result<PublicVerificationKey>> {
+    const fetched = await call(() =>
+      this.transport.getPublicKey({
+        keyId: this.configuredKeyId,
+      }),
+    );
+    if (!fetched.ok) return fetched;
+    const result = fetched.value;
+    if (!isCompatibleKmsKey(result)) return failure(SIGNING_KEY_INCOMPATIBLE);
     if (!this.trustedKeyVersions.has(result.keyId)) {
-      throw new Error("aws-kms: signing key version not trusted");
+      return failure(SIGNING_KEY_NOT_TRUSTED);
     }
 
     return {
-      algorithm: "Ed25519",
-      keyId: this.configuredKeyId,
-      keyVersion: result.keyId,
-      encoding: "spki-der",
-      keyBase64Url: toBase64Url(result.publicKeySpkiDer),
+      ok: true,
+      value: {
+        algorithm: "Ed25519",
+        keyId: this.configuredKeyId,
+        keyVersion: result.keyId,
+        encoding: "spki-der",
+        keyBase64Url: toBase64Url(result.publicKeySpkiDer),
+      },
     };
   }
 }

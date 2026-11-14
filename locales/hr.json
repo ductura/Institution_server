@@ -4,5 +4,22 @@
     "risk_invalid": "Risk: mora biti low, standard ili critical.",
     "task_missing": "U opisu PR-a nedostaje redak Task:.",
     "risk_below_floor": "Prijavljeni Risk: niži je od najnižeg koji traže promijenjene putanje."
+  },
+  "signing": {
+    "access_denied": "Poslužitelj nema dopuštenje za potpisivanje zapisa. Pokušaj ponovno kasnije.",
+    "key_not_found": "Ključ za potpisivanje zapisa nije pronađen. Pokušaj ponovno kasnije.",
+    "timeout": "Potpisivanje zapisa trajalo je predugo. Pokušaj ponovno.",
+    "invalid_response": "Usluga potpisivanja vratila je neispravan odgovor. Pokušaj ponovno kasnije.",
+    "unavailable": "Usluga potpisivanja trenutačno nije dostupna. Pokušaj ponovno kasnije.",
+    "service_error": "Usluga potpisivanja javila je grešku. Pokušaj ponovno kasnije.",
+    "key_incompatible": "Ključ za potpisivanje zapisa nije odgovarajuće vrste.",
+    "key_not_trusted": "Ključ za potpisivanje zapisa nije na popisu odobrenih ključeva.",
+    "key_not_configured": "Razvojni ključ za potpisivanje nije postavljen.",
+    "key_path_not_absolute": "Putanja razvojnog ključa za potpisivanje mora biti apsolutna.",
+    "key_in_repository": "Razvojni ključ za potpisivanje ne smije biti u repozitoriju.",
+    "key_missing": "Datoteka razvojnog ključa za potpisivanje ne postoji.",
+    "key_not_regular_file": "Razvojni ključ za potpisivanje mora biti obična datoteka.",
+    "key_permissions": "Datoteku razvojnog ključa za potpisivanje smije čitati samo njezin vlasnik.",
+    "key_malformed": "Datoteka razvojnog ključa za potpisivanje nije ispravna."
   }
 }

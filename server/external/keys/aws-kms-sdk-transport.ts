@@ -8,29 +8,15 @@ import {
   type AwsKmsEd25519SignResult,
   type AwsKmsEd25519Transport,
 } from "./aws-kms-ed25519-signer.ts";
+import {
+  KmsTransportError,
+  type KmsTransportErrorKind,
+  type KmsTransportOperation,
+} from "./kms-transport-error.ts";
+
+export { KmsTransportError, type KmsTransportErrorKind, type KmsTransportOperation };
 
 const ED25519_SIGNATURE_BYTES = 64;
-
-export type KmsTransportErrorKind =
-  "access_denied" | "key_not_found" | "timeout" | "invalid_response" | "network" | "service_error";
-
-export type KmsTransportOperation = "sign" | "verify" | "getPublicKey";
-
-/**
- * Closed failure classes of the KMS transport (DAN-295 contract, #1091).
- * The message carries no key id or ARN; awsErrorName is the SDK error name
- * when there is one, for logs.
- */
-export class KmsTransportError extends Error {
-  constructor(
-    readonly kind: KmsTransportErrorKind,
-    readonly operation: KmsTransportOperation,
-    readonly awsErrorName?: string,
-  ) {
-    super(`aws-kms: ${operation} ${kind}`);
-    this.name = "KmsTransportError";
-  }
-}
 
 type KmsCommand = SignCommand | VerifyCommand | GetPublicKeyCommand;
 

@@ -10,14 +10,17 @@ import { constants } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import type { Result } from "../../domain/index.ts";
+import { developmentKeyError } from "./signing-errors.ts";
 import type {
   PublicVerificationKey,
   SignatureEnvelope,
   SigningKeyProvider,
 } from "./signing-key-provider.ts";
 
-// Runtime imports stay `node:*` only: db/local/evidence-signing-key.mjs loads
-// this file directly through Node's type stripping, without a build step.
+// Runtime imports stay `node:*` and signing-errors.ts (constants and type
+// imports only), so the file still loads through Node's type stripping,
+// without a build step, as Ductus db/local/evidence-signing-key.mjs loads it.
 
 /** Absolute path of the 32-byte development seed, outside the repository. */
 export const DEV_SIGNING_KEY_FILE = "DUCTUS_DEV_SIGNING_KEY_FILE";
@@ -173,27 +176,51 @@ export class PersistentDevelopmentEd25519SigningKeyProvider implements SigningKe
     return { privateKey, publicKey, spki, ...developmentKeyIdentity(spki) };
   }
 
-  async sign(message: Uint8Array): Promise<SignatureEnvelope> {
-    const key = await this.key();
+  /**
+   * The key at the port boundary (docs/CODE_STYLE.md §8): a closed seed fault
+   * becomes its result; any other throw is not swallowed. The production
+   * guard never reaches here, since it refuses construction.
+   */
+  private async keyResult(): Promise<Result<LoadedKey>> {
+    try {
+      return { ok: true, value: await this.key() };
+    } catch (error) {
+      if (error instanceof DevelopmentSigningKeyError && error.code !== "signing_key_production") {
+        return { ok: false, error: developmentKeyError(error.code) };
+      }
+      throw error;
+    }
+  }
+
+  async sign(message: Uint8Array): Promise<Result<SignatureEnvelope>> {
+    const key = await this.keyResult();
+    if (!key.ok) return key;
     return {
-      algorithm: "Ed25519",
-      keyId: key.keyId,
-      keyVersion: key.keyVersion,
-      signatureEncoding: "raw",
-      signatureBase64Url: nodeSign(null, Buffer.from(message), key.privateKey).toString(
-        "base64url",
-      ),
+      ok: true,
+      value: {
+        algorithm: "Ed25519",
+        keyId: key.value.keyId,
+        keyVersion: key.value.keyVersion,
+        signatureEncoding: "raw",
+        signatureBase64Url: nodeSign(null, Buffer.from(message), key.value.privateKey).toString(
+          "base64url",
+        ),
+      },
     };
   }
 
-  async publicVerificationKey(): Promise<PublicVerificationKey> {
-    const key = await this.key();
+  async publicVerificationKey(): Promise<Result<PublicVerificationKey>> {
+    const key = await this.keyResult();
+    if (!key.ok) return key;
     return {
-      algorithm: "Ed25519",
-      keyId: key.keyId,
-      keyVersion: key.keyVersion,
-      encoding: "spki-der",
-      keyBase64Url: key.spki.toString("base64url"),
+      ok: true,
+      value: {
+        algorithm: "Ed25519",
+        keyId: key.value.keyId,
+        keyVersion: key.value.keyVersion,
+        encoding: "spki-der",
+        keyBase64Url: key.value.spki.toString("base64url"),
+      },
     };
   }
 

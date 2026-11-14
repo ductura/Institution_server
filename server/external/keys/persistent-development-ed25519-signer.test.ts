@@ -5,12 +5,14 @@ import { join, sep } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import type { AppError, Result } from "../../domain/index.ts";
 import {
   DEV_SIGNING_KEY_FILE,
   DevelopmentSigningKeyError,
   PersistentDevelopmentEd25519SigningKeyProvider,
   developmentKeyIdentity,
 } from "./persistent-development-ed25519-signer.ts";
+import { DEVELOPMENT_KEY_RESULT_FAULTS, developmentKeyError } from "./signing-errors.ts";
 
 // Invented seed bytes; no key here belongs to anyone.
 const SEED = Buffer.alloc(32, 7);
@@ -36,6 +38,31 @@ const signer = (path: string | undefined, nodeEnv = "test") =>
     repo,
   );
 
+/** The value of a result the port must return as ok. */
+async function ok<T>(promise: Promise<Result<T>>): Promise<T> {
+  const result = await promise;
+  if (!result.ok) throw new Error(`expected ok, got ${result.error.code}`);
+  return result.value;
+}
+
+/** The error of a result the port must return as a failure (§8), never a throw. */
+async function failed(promise: Promise<Result<unknown>>): Promise<AppError> {
+  const result = await promise;
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("expected a failure");
+  return result.error;
+}
+
+/** The code of a seed fault as a result: the closed fault, upper-cased. */
+async function resultFault(promise: Promise<Result<unknown>>) {
+  const error = await failed(promise);
+  const fault = DEVELOPMENT_KEY_RESULT_FAULTS.find((f) => f.toUpperCase() === error.code);
+  expect(fault, error.code).toBeDefined();
+  if (fault !== undefined) expect(developmentKeyError(fault)).toEqual(error);
+  return error.code;
+}
+
+// verify keeps its boolean contract, so a seed fault there is still thrown.
 async function fault(promise: Promise<unknown>) {
   const error = await promise.then(
     () => null,
@@ -48,9 +75,9 @@ async function fault(promise: Promise<unknown>) {
 describe("persistent development signer", () => {
   it("gives the same key, identity and signature from the same seed in two instances", async () => {
     const [a, b] = [signer(file("seed")), signer(file("seed"))];
-    const keyA = await a.publicVerificationKey();
-    expect(await b.publicVerificationKey()).toEqual(keyA);
-    expect(await b.sign(MESSAGE)).toEqual(await a.sign(MESSAGE));
+    const keyA = await ok(a.publicVerificationKey());
+    expect(await ok(b.publicVerificationKey())).toEqual(keyA);
+    expect(await ok(b.sign(MESSAGE))).toEqual(await ok(a.sign(MESSAGE)));
 
     const spki = Buffer.from(keyA.keyBase64Url, "base64url");
     const fingerprint = createHash("sha256").update(spki).digest("hex");
@@ -70,9 +97,9 @@ describe("persistent development signer", () => {
 
   it("signs what node:crypto verifies with the exported public key, and verifies its own signature only", async () => {
     const s = signer(file("seed"));
-    const signature = await s.sign(MESSAGE);
+    const signature = await ok(s.sign(MESSAGE));
     const publicKey = createPublicKey({
-      key: Buffer.from((await s.publicVerificationKey()).keyBase64Url, "base64url"),
+      key: Buffer.from((await ok(s.publicVerificationKey())).keyBase64Url, "base64url"),
       format: "der",
       type: "spki",
     });
@@ -130,9 +157,9 @@ describe("persistent development signer", () => {
     await writeFile(file("repo/seed"), SEED, { mode: 0o600 });
     const path = name === undefined || name === "" || name === "seed" ? name : file(name);
     const s = signer(path);
-    expect(await fault(s.sign(MESSAGE))).toBe(code);
-    expect(await fault(s.publicVerificationKey())).toBe(code);
-    expect(await fault(s.verify(MESSAGE, await signer(file("seed")).sign(MESSAGE)))).toBe(code);
+    expect(await resultFault(s.sign(MESSAGE))).toBe(code.toUpperCase());
+    expect(await resultFault(s.publicVerificationKey())).toBe(code.toUpperCase());
+    expect(await fault(s.verify(MESSAGE, await ok(signer(file("seed")).sign(MESSAGE))))).toBe(code);
   });
 
   it("judges a seed under a link to the repository by where it leads, also before its directory exists", async () => {
@@ -147,17 +174,24 @@ describe("persistent development signer", () => {
       file("repo-link/seed"),
       behindDotDot,
     ]) {
-      expect(await fault(signer(path).sign(MESSAGE))).toBe("signing_key_in_repository");
+      expect(await resultFault(signer(path).sign(MESSAGE))).toBe("SIGNING_KEY_IN_REPOSITORY");
     }
     // A missing directory outside the repository is only missing.
-    expect(await fault(signer(file("not-yet/seed")).sign(MESSAGE))).toBe("signing_key_missing");
+    expect(await resultFault(signer(file("not-yet/seed")).sign(MESSAGE))).toBe(
+      "SIGNING_KEY_MISSING",
+    );
   });
 
   it("names no path or key byte in a fault", async () => {
     const canary = file("canary-path-7f3a");
+    const result = await signer(canary).sign(MESSAGE);
+    expect(result).toEqual({ ok: false, error: developmentKeyError("signing_key_missing") });
+    expect(JSON.stringify(result)).not.toContain("canary");
+    // verify still throws the fault; its message holds no path either.
     const error = await signer(canary)
-      .sign(MESSAGE)
+      .verify(MESSAGE, await ok(signer(file("seed")).sign(MESSAGE)))
       .catch((e: unknown) => e as Error);
+    expect(error).toBeInstanceOf(DevelopmentSigningKeyError);
     expect(String(error)).not.toContain("canary");
     expect(
       JSON.stringify({ ...(error as object), message: (error as Error).message }),
@@ -166,10 +200,10 @@ describe("persistent development signer", () => {
 
   it("reads the file again after a fault, so a key made later is used", async () => {
     const s = signer(file("late"));
-    expect(await fault(s.sign(MESSAGE))).toBe("signing_key_missing");
+    expect(await resultFault(s.sign(MESSAGE))).toBe("SIGNING_KEY_MISSING");
     await writeFile(file("late"), SEED, { mode: 0o600 });
-    expect((await s.publicVerificationKey()).keyId).toBe(
-      (await signer(file("seed")).publicVerificationKey()).keyId,
+    expect((await ok(s.publicVerificationKey())).keyId).toBe(
+      (await ok(signer(file("seed")).publicVerificationKey())).keyId,
     );
   });
 
@@ -180,11 +214,11 @@ describe("persistent development signer", () => {
     await chmod(file("open"), 0o644);
     const loaded = signer(file("open")).publicVerificationKey();
     if (process.platform === "win32") {
-      expect((await loaded).keyBase64Url).toBe(
-        (await signer(file("seed")).publicVerificationKey()).keyBase64Url,
+      expect((await ok(loaded)).keyBase64Url).toBe(
+        (await ok(signer(file("seed")).publicVerificationKey())).keyBase64Url,
       );
     } else {
-      expect(await fault(loaded)).toBe("signing_key_permissions");
+      expect(await resultFault(loaded)).toBe("SIGNING_KEY_PERMISSIONS");
     }
   });
 
@@ -197,6 +231,6 @@ describe("persistent development signer", () => {
         return file("junction");
       },
     );
-    expect(await fault(signer(made).sign(MESSAGE))).toBe("signing_key_not_regular_file");
+    expect(await resultFault(signer(made).sign(MESSAGE))).toBe("SIGNING_KEY_NOT_REGULAR_FILE");
   });
 });

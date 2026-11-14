@@ -6,7 +6,9 @@ describe("DevelopmentEd25519SigningKeyProvider", () => {
   it("signs and verifies exact bytes with stable public-key metadata", async () => {
     const signer = new DevelopmentEd25519SigningKeyProvider("dev-key", "v7");
     const bytes = new TextEncoder().encode("Pisač evidence receipt");
-    const signature = await signer.sign(bytes);
+    const signed = await signer.sign(bytes);
+    if (!signed.ok) throw new Error(`expected ok, got ${signed.error.code}`);
+    const signature = signed.value;
 
     expect(signature).toMatchObject({
       algorithm: "Ed25519",
@@ -20,10 +22,8 @@ describe("DevelopmentEd25519SigningKeyProvider", () => {
     expect(await signer.verify(tampered, signature)).toBe(false);
 
     expect(await signer.publicVerificationKey()).toMatchObject({
-      algorithm: "Ed25519",
-      keyId: "dev-key",
-      keyVersion: "v7",
-      encoding: "spki-der",
+      ok: true,
+      value: { algorithm: "Ed25519", keyId: "dev-key", keyVersion: "v7", encoding: "spki-der" },
     });
   });
 

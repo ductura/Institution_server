@@ -26,6 +26,16 @@ export {
   type KmsTransportErrorKind,
   type KmsTransportOperation,
 } from "./aws-kms-sdk-transport.ts";
+export {
+  DEVELOPMENT_KEY_RESULT_FAULTS,
+  developmentKeyError,
+  KMS_TRANSPORT_ERROR_KINDS,
+  kmsTransportError,
+  SIGNING_ERRORS,
+  SIGNING_KEY_INCOMPATIBLE,
+  SIGNING_KEY_NOT_TRUSTED,
+  type DevelopmentSigningKeyResultFault,
+} from "./signing-errors.ts";
 export { DevelopmentEd25519SigningKeyProvider } from "./development-ed25519-signer.ts";
 export {
   DEV_SIGNING_KEY_FILE,

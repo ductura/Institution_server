@@ -10,6 +10,8 @@ Područje domene (karta: [docs/server-map.md](../../docs/server-map.md)): čista
 | [collaboration](collaboration/README.md) | `src/domain/collaboration/anchor` | Sidro u tekstu koje osnova dokaza koristi                                               |
 | [json](json/README.md)                   | `src/domain/json.ts`              | Zajednički JSON tipovi i provjere                                                       |
 
-`index.ts` izvozi sve mape. `SourceId` je iz `document`; istoimeni tip osnove dokaza izvozi se kao `EvidenceSourceId`.
+`result.ts` drži zajedničke tipove `Result<T>` i `AppError` (`{ code, messageKey }`, [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) §8); samo tipove, bez I/O-a.
+
+`index.ts` izvozi sve mape i `result.ts`. `SourceId` je iz `document`; istoimeni tip osnove dokaza izvozi se kao `EvidenceSourceId`.
 
 Mapa ne uvozi ništa izvan sebe (karta §2: `domain` → —); uvozi su samo `node:crypto` i, u testovima, `node:fs`, `node:path`, `vitest` i `fast-check`.

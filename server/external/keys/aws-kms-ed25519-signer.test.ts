@@ -9,6 +9,7 @@ import {
   type AwsKmsEd25519PublicKeyResult,
   type AwsKmsEd25519Transport,
 } from "./aws-kms-ed25519-signer.ts";
+import { KmsTransportError, type KmsTransportErrorKind } from "./kms-transport-error.ts";
 
 class FakeTransport implements AwsKmsEd25519Transport {
   readonly calls: Array<Record<string, unknown>> = [];
@@ -51,14 +52,14 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
     const signer = new AwsKmsEd25519SigningKeyProvider(transport, "alias/ductus-evidence", TRUSTED);
     const message = new TextEncoder().encode("receipt");
 
-    const signature = await signer.sign(message);
-    expect(signature).toEqual({
-      algorithm: "Ed25519",
+    const signature = {
+      algorithm: "Ed25519" as const,
       keyId: "alias/ductus-evidence",
       keyVersion: "arn:aws:kms:eu-central-1:123:key/concrete-v1",
-      signatureEncoding: "raw",
+      signatureEncoding: "raw" as const,
       signatureBase64Url: "AQIDBA",
-    });
+    };
+    expect(await signer.sign(message)).toEqual({ ok: true, value: signature });
 
     expect(transport.calls[0]).toMatchObject({
       kind: "sign",
@@ -81,11 +82,14 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
     const signer = new AwsKmsEd25519SigningKeyProvider(transport, "alias/ductus-evidence", TRUSTED);
 
     await expect(signer.publicVerificationKey()).resolves.toEqual({
-      algorithm: "Ed25519",
-      keyId: "alias/ductus-evidence",
-      keyVersion: "arn:aws:kms:eu-central-1:123:key/concrete-v1",
-      encoding: "spki-der",
-      keyBase64Url: "MCoBAgM",
+      ok: true,
+      value: {
+        algorithm: "Ed25519",
+        keyId: "alias/ductus-evidence",
+        keyVersion: "arn:aws:kms:eu-central-1:123:key/concrete-v1",
+        encoding: "spki-der",
+        keyBase64Url: "MCoBAgM",
+      },
     });
   });
 
@@ -100,7 +104,10 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
     });
     const signer = new AwsKmsEd25519SigningKeyProvider(transport, "alias/ductus-evidence", TRUSTED);
 
-    await expect(signer.publicVerificationKey()).rejects.toThrow("incompatible signing key");
+    await expect(signer.publicVerificationKey()).resolves.toEqual({
+      ok: false,
+      error: { code: "SIGNING_KEY_INCOMPATIBLE", messageKey: "signing.key_incompatible" },
+    });
 
     const validTransport = new FakeTransport();
     validTransport.valid = false;
@@ -167,9 +174,68 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
       "alias/ductus-evidence",
       [rotated],
     );
-    await expect(onlyRotated.sign(message)).rejects.toThrow("signing key version not trusted");
+    await expect(onlyRotated.sign(message)).resolves.toEqual({
+      ok: false,
+      error: { code: "SIGNING_KEY_NOT_TRUSTED", messageKey: "signing.key_not_trusted" },
+    });
     expect(
       () => new AwsKmsEd25519SigningKeyProvider(new FakeTransport(), "alias/ductus-evidence", []),
     ).toThrow("trusted key versions required");
+  });
+  it("returns each classified transport fault as its result at the port, one code per kind", async () => {
+    const codes: Array<[KmsTransportErrorKind, string]> = [
+      ["access_denied", "SIGNING_ACCESS_DENIED"],
+      ["key_not_found", "SIGNING_KEY_NOT_FOUND"],
+      ["timeout", "SIGNING_TIMEOUT"],
+      ["invalid_response", "SIGNING_INVALID_RESPONSE"],
+      ["network", "SIGNING_UNAVAILABLE"],
+      ["service_error", "SIGNING_SERVICE_ERROR"],
+    ];
+    for (const [kind, code] of codes) {
+      const transport = new FakeTransport();
+      transport.sign = async () => {
+        throw new KmsTransportError(kind, "sign");
+      };
+      transport.getPublicKey = async () => {
+        throw new KmsTransportError(kind, "getPublicKey");
+      };
+      const signer = new AwsKmsEd25519SigningKeyProvider(
+        transport,
+        "alias/ductus-evidence",
+        TRUSTED,
+      );
+      const signed = await signer.sign(new Uint8Array([1]));
+      const key = await signer.publicVerificationKey();
+      expect(signed.ok ? null : signed.error.code, kind).toBe(code);
+      expect(key.ok ? null : key.error.code, kind).toBe(code);
+    }
+  });
+
+  it("returns an invalid Sign answer as SIGNING_INVALID_RESPONSE", async () => {
+    const transport = new FakeTransport();
+    transport.sign = async () => ({
+      keyId: CONCRETE,
+      // A Sign answer of the wrong algorithm, as an injected transport may give.
+      signingAlgorithm: "ECDSA_SHA_256" as typeof AWS_KMS_ED25519_ALGORITHM,
+      signature: new Uint8Array([1]),
+    });
+    const signer = new AwsKmsEd25519SigningKeyProvider(transport, "alias/ductus-evidence", TRUSTED);
+    await expect(signer.sign(new Uint8Array([1]))).resolves.toEqual({
+      ok: false,
+      error: { code: "SIGNING_INVALID_RESPONSE", messageKey: "signing.invalid_response" },
+    });
+  });
+
+  it("does not swallow an unclassified throw of the transport", async () => {
+    const transport = new FakeTransport();
+    transport.sign = async () => {
+      throw new TypeError("programming error");
+    };
+    transport.getPublicKey = async () => {
+      throw new TypeError("programming error");
+    };
+    const signer = new AwsKmsEd25519SigningKeyProvider(transport, "alias/ductus-evidence", TRUSTED);
+    await expect(signer.sign(new Uint8Array([1]))).rejects.toThrow(TypeError);
+    await expect(signer.publicVerificationKey()).rejects.toThrow(TypeError);
   });
 });

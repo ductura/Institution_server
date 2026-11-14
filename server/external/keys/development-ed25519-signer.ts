@@ -5,6 +5,7 @@ import {
   type KeyObject,
 } from "node:crypto";
 
+import type { Result } from "../../domain/index.ts";
 import type {
   PublicVerificationKey,
   SignatureEnvelope,
@@ -36,28 +37,35 @@ export class DevelopmentEd25519SigningKeyProvider implements SigningKeyProvider 
     this.publicKey = pair.publicKey;
   }
 
-  async sign(message: Uint8Array): Promise<SignatureEnvelope> {
+  // The key is in process memory, so these have no expected fault.
+  async sign(message: Uint8Array): Promise<Result<SignatureEnvelope>> {
     const signature = nodeSign(null, Buffer.from(message), this.privateKey);
     return {
-      algorithm: "Ed25519",
-      keyId: this.keyId,
-      keyVersion: this.keyVersion,
-      signatureEncoding: "raw",
-      signatureBase64Url: signature.toString("base64url"),
+      ok: true,
+      value: {
+        algorithm: "Ed25519",
+        keyId: this.keyId,
+        keyVersion: this.keyVersion,
+        signatureEncoding: "raw",
+        signatureBase64Url: signature.toString("base64url"),
+      },
     };
   }
 
-  async publicVerificationKey(): Promise<PublicVerificationKey> {
+  async publicVerificationKey(): Promise<Result<PublicVerificationKey>> {
     const der = this.publicKey.export({
       type: "spki",
       format: "der",
     });
     return {
-      algorithm: "Ed25519",
-      keyId: this.keyId,
-      keyVersion: this.keyVersion,
-      encoding: "spki-der",
-      keyBase64Url: Buffer.from(der).toString("base64url"),
+      ok: true,
+      value: {
+        algorithm: "Ed25519",
+        keyId: this.keyId,
+        keyVersion: this.keyVersion,
+        encoding: "spki-der",
+        keyBase64Url: Buffer.from(der).toString("base64url"),
+      },
     };
   }
 

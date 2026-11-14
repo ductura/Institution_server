@@ -446,12 +446,16 @@ describe("FakeKmsClient behind the SDK transport", () => {
   it("signs end to end through the provider and the signature verifies with the public key", async () => {
     const { first, transport } = setup();
     const provider = new AwsKmsEd25519SigningKeyProvider(transport, ALIAS, [first]);
-    const envelope = await provider.sign(MESSAGE);
+    const signed = await provider.sign(MESSAGE);
+    if (!signed.ok) throw new Error(`expected ok, got ${signed.error.code}`);
+    const envelope = signed.value;
     expect(envelope.keyVersion).toBe(first);
     expect(await provider.verify(MESSAGE, envelope)).toBe(true);
     expect(await provider.verify(new TextEncoder().encode("drugo"), envelope)).toBe(false);
 
-    const key = await provider.publicVerificationKey();
+    const fetched = await provider.publicVerificationKey();
+    if (!fetched.ok) throw new Error(`expected ok, got ${fetched.error.code}`);
+    const key = fetched.value;
     const publicKey = createPublicKey({
       key: Buffer.from(key.keyBase64Url, "base64url"),
       format: "der",
@@ -491,21 +495,53 @@ describe("FakeKmsClient behind the SDK transport", () => {
     );
   });
 
+  it("returns the fake KMS faults as results through the provider, never as a rejection (§8)", async () => {
+    const { fake, first, transport } = setup();
+    const provider = new AwsKmsEd25519SigningKeyProvider(transport, ALIAS, [first]);
+    const error = (code: string, messageKey: string) => ({
+      ok: false,
+      error: { code, messageKey },
+    });
+    fake.deny(first);
+    await expect(provider.sign(MESSAGE)).resolves.toEqual(
+      error("SIGNING_ACCESS_DENIED", "signing.access_denied"),
+    );
+    fake.allow(first);
+    fake.fault = "network";
+    await expect(provider.publicVerificationKey()).resolves.toEqual(
+      error("SIGNING_UNAVAILABLE", "signing.unavailable"),
+    );
+    fake.fault = "hang";
+    await expect(provider.sign(MESSAGE)).resolves.toEqual(
+      error("SIGNING_TIMEOUT", "signing.timeout"),
+    );
+    fake.fault = null;
+    const missing = new AwsKmsEd25519SigningKeyProvider(transport, "alias/nepostojeci", [first]);
+    await expect(missing.sign(MESSAGE)).resolves.toEqual(
+      error("SIGNING_KEY_NOT_FOUND", "signing.key_not_found"),
+    );
+  });
+
   it("an alias rotated between two calls is refused unless the new version is trusted", async () => {
     const { fake, first, transport } = setup();
     const provider = new AwsKmsEd25519SigningKeyProvider(transport, ALIAS, [first]);
-    const before = await provider.sign(MESSAGE);
+    const signedBefore = await provider.sign(MESSAGE);
+    if (!signedBefore.ok) throw new Error(`expected ok, got ${signedBefore.error.code}`);
+    const before = signedBefore.value;
     const second = fake.createKey(ALIAS);
-    await expect(provider.sign(MESSAGE)).rejects.toThrow(
-      "aws-kms: signing key version not trusted",
-    );
-    await expect(provider.publicVerificationKey()).rejects.toThrow(
-      "aws-kms: signing key version not trusted",
-    );
+    const notTrusted = {
+      ok: false,
+      error: { code: "SIGNING_KEY_NOT_TRUSTED", messageKey: "signing.key_not_trusted" },
+    };
+    await expect(provider.sign(MESSAGE)).resolves.toEqual(notTrusted);
+    await expect(provider.publicVerificationKey()).resolves.toEqual(notTrusted);
     // The pinned historical version still verifies after rotation.
     expect(await provider.verify(MESSAGE, before)).toBe(true);
     const rotated = new AwsKmsEd25519SigningKeyProvider(transport, ALIAS, [first, second]);
-    expect((await rotated.sign(MESSAGE)).keyVersion).toBe(second);
+    await expect(rotated.sign(MESSAGE)).resolves.toMatchObject({
+      ok: true,
+      value: { keyVersion: second },
+    });
   });
 
   it("refuses construction outside development and test", () => {
