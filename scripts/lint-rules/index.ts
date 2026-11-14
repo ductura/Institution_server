@@ -12,3 +12,4 @@ export const localPlugin: ESLint.Plugin = {
     "import-boundary": importBoundary,
   },
 };
+export { databaseBoundaryPlugin, PG_SPECIFIER } from "./database-boundary.ts";
