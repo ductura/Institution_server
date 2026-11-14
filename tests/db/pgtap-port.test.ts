@@ -128,6 +128,13 @@ const fixtureFiles = (): string[] =>
   readdirSync(join(DIRECTORY, "fixtures")).filter((name) => name.endsWith(".inc"));
 const read = (name: string): string => readFileSync(join(DIRECTORY, name), "utf8");
 
+// Line endings must not matter: with core.autocrlf=true a checkout has CRLF.
+const normalizeEol = (text: string): string => text.replace(/\r\n/g, "\n");
+const jobBlock = (workflow: string, job: string, nextJob: string): string => {
+  const text = normalizeEol(workflow);
+  return text.slice(text.indexOf(`\n  ${job}:\n`), text.indexOf(`\n  ${nextJob}:\n`));
+};
+
 describe("db/main/tests (pgTAP port of Ductus db/tests)", () => {
   it("keeps every ported test file and fixture", () => {
     expect(new Set(PORTED).size).toBe(100);
@@ -183,6 +190,14 @@ describe("db/main/tests (pgTAP port of Ductus db/tests)", () => {
     expect(withCr).toStrictEqual([]);
   });
 
+  it("extracts a workflow job from CRLF input the same as from LF", () => {
+    const lf = "jobs:\n  database:\n    run: x\n  ci-ok:\n    run: y\n";
+    const crlf = lf.replace(/\n/g, "\r\n");
+    expect(jobBlock(lf, "database", "ci-ok")).toContain("run: x");
+    expect(jobBlock(crlf, "database", "ci-ok")).toBe(jobBlock(lf, "database", "ci-ok"));
+    expect(jobBlock(crlf, "database", "ci-ok")).not.toContain("run: y");
+  });
+
   it("runs from pnpm test:db, pnpm test:db:native and the CI database job", () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
       scripts: Record<string, string>;
@@ -199,7 +214,7 @@ describe("db/main/tests (pgTAP port of Ductus db/tests)", () => {
       `export const TESTS_DIR = "${TESTS}";`,
     );
     const ci = readFileSync(join(ROOT, ".github", "workflows", "ci.yml"), "utf8");
-    const database = ci.slice(ci.indexOf("\n  database:\n"), ci.indexOf("\n  ci-ok:\n"));
+    const database = jobBlock(ci, "database", "ci-ok");
     // In the existing database job, after the native main database is up.
     const up = database.lastIndexOf('PATH="$PGBIN:$PATH" pnpm db:up:native');
     const matrix = database.indexOf('run: PATH="$PGBIN:$PATH" pnpm test:db:native');
