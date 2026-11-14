@@ -1,4 +1,5 @@
 import { defineConfig } from "eslint/config";
+import prettierOff from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 import { localPlugin } from "./scripts/lint-rules/index.ts";
 
@@ -103,4 +104,7 @@ export default defineConfig(
       ],
     },
   },
+  // Last on purpose: switches off every rule that could fight Prettier, also in
+  // blocks above. tests/format/format.test.ts checks the resolved config.
+  prettierOff,
 );

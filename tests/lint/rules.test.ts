@@ -151,7 +151,13 @@ describe("lint rules", () => {
   it("every rule in the config has a failing fixture", async () => {
     const config = (await eslint.calculateConfigForFile(path.join(ROOT, AT))) as { rules: Record<string, unknown> };
     const covered = new Set(failing.map((c) => c.rule));
-    expect(Object.keys(config.rules).filter((rule) => !covered.has(rule))).toEqual([]);
+    // Rules switched off (eslint-config-prettier) check nothing, so they need no fixture.
+    const on = Object.entries(config.rules).filter(([, entry]) => {
+      const severity = Array.isArray(entry) ? entry[0] : entry;
+      return severity !== 0 && severity !== "off";
+    });
+    expect(on.length).toBeGreaterThan(0);
+    expect(on.map(([rule]) => rule).filter((rule) => !covered.has(rule))).toEqual([]);
   });
 
   it("an inline directive is itself reported, so --max-warnings 0 fails", async () => {

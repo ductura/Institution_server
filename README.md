@@ -34,7 +34,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `test-support/` | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`) |
 | `docs/` | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 | `scripts/` | Alati repoa (lokalna lint pravila) |
-| `tests/` | Testovi alata repoa (lint) |
+| `tests/` | Testovi alata repoa (lint, formatiranje) |
 
 ## Lint
 
@@ -48,13 +48,23 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 
 Lokalna pravila su u `scripts/lint-rules/`, a testovi nad fixtureima u `tests/lint/rules.test.ts`.
 
+## Formatiranje
+
+Prettier (`.prettierrc.json`) formatira cijeli repo osim izlaza alata i generiranog koda (`.prettierignore`).
+
+- `pnpm format` formatira, `pnpm format:check` samo provjerava; CI pokreće `pnpm format:check` i pada na neformatiranu datoteku.
+- `pnpm install` postavlja lefthook (`lefthook.yml`): prije commita formatira staged datoteke i ponovno ih stavlja u commit. Datoteke koje nisu staged ne dira.
+- ESLint ne provjerava oblik koda: `eslint-config-prettier` je zadnji blok u `eslint.config.ts` i gasi svako pravilo koje bi se sukobilo s Prettierom.
+
+Testovi su u `tests/format/format.test.ts`.
+
 ## Testovi
 
 Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/` i `test-support/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
 | Projekt | Datoteke | Što provjerava |
 |---|---|---|
-| `unit` | `{server,test-support,tests}/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu, dimni test i lint pravila |
+| `unit` | `{server,test-support,tests}/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje |
 | `property` | `{server,test-support,tests}/**/*.property.test.ts` | Svojstva pravila pristupa (fast-check) |
 | `integration` | `{server,test-support,tests}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora |
 
