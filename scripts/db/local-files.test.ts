@@ -2,8 +2,7 @@
 // checkout (core.autocrlf=true on Windows) would hand psql "\r" at the end of
 // every \if and \gexec line and the image a shell script that sh cannot run.
 // The first test fails when .gitattributes loses or narrows the rule, the
-// second when a checkout or an edit brought a CR in anyway. migrator.sql comes
-// with S-0.13 (ductura/server#17), which this change is merged after.
+// second when a checkout or an edit brought a CR in anyway.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";

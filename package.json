@@ -18,6 +18,7 @@
     "test:unit": "vitest run --project unit",
     "test:property": "vitest run --project property",
     "test:integration": "vitest run --project integration",
+    "test:database": "vitest run --project database",
     "contracts:generate": "tsx scripts/generate-contracts.ts",
     "contracts:breaking": "tsx scripts/check-breaking.ts",
     "db:up": "docker compose up -d --build --wait postgres-main && pnpm db:migrate",
@@ -30,11 +31,14 @@
     "db:migrate": "pnpm db:provision && node scripts/db/migrate-locked.ts --url \"postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus?sslmode=disable&role=ductus_migrator\" && pnpm db:provision:app && pnpm db:provision:worker && pnpm db:provision:auth",
     "test:db": "docker compose exec -T postgres-main pg_prove -U ductus -d ductus --recurse --ext .sql /db/tests",
     "test:db:native": "node scripts/db/native-db.ts test",
+    "db:sum": "node scripts/db/migrations-ledger.ts --write",
     "prepare": "lefthook install"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
     "@types/oidc-provider": "9.12.1",
+    "@types/pg": "8.23.1",
+    "dbmate": "2.36.0",
     "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
     "fast-check": "^4.10.2",
@@ -47,6 +51,7 @@
     "vitest": "^5.1.0"
   },
   "dependencies": {
-    "@sinclair/typebox": "0.34.52"
+    "@sinclair/typebox": "0.34.52",
+    "pg": "8.23.1"
   }
 }

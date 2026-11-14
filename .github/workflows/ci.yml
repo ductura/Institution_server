@@ -58,6 +58,25 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Provjera tipova
         run: pnpm typecheck
+      # D-91 (1), S-0.13: db/main/migrations.sum matches the files, and no
+      # migration of the base (PR base, or main before this push) changed or
+      # disappeared. On a PR the checkout is the merge commit, so main's newer
+      # migrations count. Ported from the Ductus step "Migration ledger (D-91)".
+      - name: Knjiga migracija (D-91)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          base=""
+          if [ "$EVENT_NAME" = pull_request ]; then base="$PR_BASE"; elif [ "$EVENT_NAME" = push ]; then base="$PUSH_BEFORE"; fi
+          if [ -n "$base" ]; then
+            [[ "$base" =~ ^[a-f0-9]{40}$ ]]
+            git fetch --no-tags --depth=1 origin "$base"
+            node scripts/db/migrations-ledger.ts --base "$base"
+          else
+            node scripts/db/migrations-ledger.ts
+          fi
       - name: Lint
         run: pnpm lint
       - name: Formatiranje
@@ -116,17 +135,47 @@ jobs:
           files=(db/**/tests/*.sql)
           if [ "${#files[@]}" -eq 0 ]; then echo 'No pgTAP test files found.' >&2; exit 1; fi
           pg_prove --psql-bin "$PGBIN/psql" --failures "${files[@]}"
-      # S-0.14 (DAN-727): `pnpm db:up:native` brings the main database up
-      # natively, as on a developer machine, on its own cluster of the
-      # runner user (socket as superuser, loopback TCP with SCRAM), twice: the
-      # second run must change nothing. Then the roles it made are compared
-      # with the Ductus list (tests/db/local-roles.integration.test.ts).
+      # S-0.13 (DAN-726): the migration tests in tests/db, ported from Ductus
+      # tests/integration, need the database of the Ductus local stack and CI:
+      # 127.0.0.1:54329, database and superuser ductus with the public
+      # local-only password of Ductus compose.yaml (no secret). A second
+      # cluster of the same PostgreSQL 17, so the pgTAP smoke test above keeps
+      # its own. The roles come from db/main/local/migrator.sql, then every
+      # migration runs through the locked runner as ductus_migrator, as Ductus
+      # `pnpm db:migrate` does.
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Baza za migracije
+        env:
+          MAIN_PASSWORD: ductus-local-only
+        run: |
+          printf '%s\n' "$MAIN_PASSWORD" > "$RUNNER_TEMP/main-password"
+          "$PGBIN/initdb" -D "$RUNNER_TEMP/main-data" -U ductus --pwfile="$RUNNER_TEMP/main-password" \
+            --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8
+          "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/main-data" -l "$RUNNER_TEMP/main.log" -w start \
+            -o "-p 54329 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"
+          "$PGBIN/psql" "postgres://ductus:$MAIN_PASSWORD@127.0.0.1:54329/postgres" -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE ductus'
+      - name: Uloge i migracije (migrate-locked)
+        env:
+          DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
+        run: |
+          "$PGBIN/psql" "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f db/main/local/migrator.sql
+          node scripts/db/migrate-locked.ts --url "$DATABASE_URL?sslmode=disable&role=ductus_migrator"
+          applied="$("$PGBIN/psql" "$DATABASE_URL" -tAc 'SELECT count(*) FROM public.schema_migrations')"
+          files="$(find db/main/migrations -maxdepth 1 -name '*.sql' | wc -l)"
+          echo "Primijenjeno $applied od $files migracija."
+          [ "$applied" -eq "$files" ]
+      # S-0.14 (DAN-727): `pnpm db:up:native` brings the main database up
+      # natively, as on a developer machine, on its own cluster of the
+      # runner user (socket as superuser, loopback TCP with SCRAM), twice: the
+      # second run must change nothing. Then the roles it made are compared
+      # with the Ductus list (tests/db/local-roles.integration.test.ts, in
+      # pnpm test:database).
       - name: Lokalni stog, nativno (pnpm db:up:native)
         run: |
           echo "DUCTUS_NATIVE_PGSOCKET=$RUNNER_TEMP" >> "$GITHUB_ENV"
@@ -137,8 +186,10 @@ jobs:
             -o "-p $DUCTUS_NATIVE_PGPORT -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"
           PATH="$PGBIN:$PATH" pnpm db:up:native
           PATH="$PGBIN:$PATH" pnpm db:up:native
-      - name: Uloge lokalnog stoga
-        run: PATH="$PGBIN:$PATH" pnpm exec vitest run tests/db/local-roles.integration.test.ts
+      - name: Testovi migracija
+        env:
+          DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
+        run: pnpm test:database
 
   ci-ok:
     name: ci-ok
