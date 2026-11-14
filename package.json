@@ -20,6 +20,7 @@
     "test:integration": "vitest run --project integration",
     "contracts:generate": "tsx scripts/generate-contracts.ts",
     "contracts:breaking": "tsx scripts/check-breaking.ts",
+    "test:db:main": "pg_prove --recurse --ext .sql db/main/tests",
     "prepare": "lefthook install"
   },
   "devDependencies": {

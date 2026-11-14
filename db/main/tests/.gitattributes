@@ -1,0 +1,6 @@
+# S-0.15 (DAN-728): the pgTAP matrix of the main database and its fixtures are
+# checked out with LF on every platform, as Ductus ("* text=auto eol=lf").
+# psql reads them as they are; tests/db/pgtap-port.test.ts checks the attributes.
+*.sql text eol=lf
+*.inc text eol=lf
+.gitattributes text eol=lf

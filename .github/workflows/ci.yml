@@ -111,10 +111,20 @@ jobs:
           "$PGBIN/psql" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION pgtap'
       - name: pgTAP testovi
         run: |
-          shopt -s nullglob globstar
-          files=(db/**/tests/*.sql)
+          shopt -s nullglob
+          files=(db/tests/*.sql)
           if [ "${#files[@]}" -eq 0 ]; then echo 'No pgTAP test files found.' >&2; exit 1; fi
           pg_prove --psql-bin "$PGBIN/psql" --failures "${files[@]}"
+      # S-0.15 (DAN-728): the pgTAP matrix ported from Ductus db/tests, as
+      # `pnpm test:db:main`. It needs the migrated and provisioned main database
+      # (S-0.13, S-0.14), so it runs after their steps; Ductus runs the same
+      # files with `pg_prove --recurse --ext .sql` after `pnpm db:migrate`.
+      - name: pgTAP glavne baze
+        run: |
+          shopt -s nullglob
+          files=(db/main/tests/*.sql)
+          if [ "${#files[@]}" -eq 0 ]; then echo 'No pgTAP test files found.' >&2; exit 1; fi
+          pg_prove --psql-bin "$PGBIN/psql" --failures --recurse --ext .sql db/main/tests
 
   ci-ok:
     name: ci-ok
