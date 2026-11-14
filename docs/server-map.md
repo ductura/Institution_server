@@ -84,7 +84,7 @@ Redoslijed koraka za svaki zahtjev. Svaki korak može odbiti zahtjev; tada se sl
 | 4 | Ograničenje | `traffic` | Broj zahtjeva po IP-u i po hashu sirovog kolačića sesije u vremenskom prozoru; sesija se ne razrješava (to je korak 8) | 429 |
 | 5 | Zapis prometa | `traffic` → `log` | Pripremi zapis prometa; piše se kad odgovor završi, i za zahtjeve odbijene u koracima 3 i 4 | — |
 | 6 | Sigurnosna zaglavlja | `http` | CSP, HSTS, `nosniff`, `Referrer-Policy`, `Cache-Control: no-store` za API | — |
-| 7 | Zaštita porijekla | `http` | Mijenjajuće metode traže dopušteni `Origin` i `Sec-Fetch-Site` (ARCHITECTURE §4 t. 4) | 403 |
+| 7 | Zaštita porijekla | `http` | Mijenjajuće metode traže dopušteni `Origin` i `Sec-Fetch-Site` (ARCHITECTURE §4 t. 4). Iznimka su rute `identity_provider` (back-channel odjava): poziv poslužitelj–poslužitelj bez tih zaglavlja, koji umjesto njih provjerava potpisani logout token | 403 |
 | 8 | Router | `http` | Pronađe rutu iz ugovora; za rutu koja nije `anyone` ni `identity_provider` `session` iz kolačića čita token | 404, 405; 401 bez sesije |
 | 9 | Shema | `contracts` | Provjeri parametre, upit, vrstu i najveću veličinu tijela prema ugovoru rute | 400, 413, 415 |
 | 10 | `service` | feature područje | Logika rute nad tipovima iz ugovora i pravilima iz `domain`; vraća rezultat, ne baca iznimku | prema ugovoru rute |
