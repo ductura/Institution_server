@@ -6,7 +6,7 @@ export type DocLink = { file: string; target: string };
 
 const LINK_PATTERN = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 
-/** Relative links only: web URLs, mail links and bare anchors are skipped. */
+/** Relative inline links only: web URLs and mail links are skipped; bare anchors (#x) are kept. */
 export function extractRelativeLinks(markdown: string): string[] {
   const withoutCode = markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
   const links: string[] = [];
@@ -53,6 +53,14 @@ export function listMarkdownFiles(root: string, dirs: string[]): string[] {
   return out;
 }
 
+function safeDecode(path: string): string {
+  try {
+    return decodeURI(path);
+  } catch {
+    return path;
+  }
+}
+
 /** Returns a description of every link in the files that does not resolve. */
 export function findBrokenLinks(files: string[]): string[] {
   const broken: string[] = [];
@@ -60,7 +68,7 @@ export function findBrokenLinks(files: string[]): string[] {
     const markdown = readFileSync(file, "utf8");
     for (const link of extractRelativeLinks(markdown)) {
       const [pathPart = "", anchor] = link.split("#");
-      const targetFile = pathPart === "" ? file : resolve(dirname(file), decodeURI(pathPart));
+      const targetFile = pathPart === "" ? file : resolve(dirname(file), safeDecode(pathPart));
       if (!existsSync(targetFile)) {
         broken.push(`${file}: ${link} (missing file)`);
         continue;

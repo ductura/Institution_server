@@ -1,7 +1,7 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   extractRelativeLinks,
   findBrokenLinks,
@@ -38,8 +38,10 @@ describe("slugify", () => {
 });
 
 describe("findBrokenLinks", () => {
+  let dir = "";
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
   it("reports missing files and anchors, accepts valid ones", () => {
-    const dir = mkdtempSync(join(tmpdir(), "docs-links-"));
+    dir = mkdtempSync(join(tmpdir(), "docs-links-"));
     mkdirSync(join(dir, "docs"));
     writeFileSync(join(dir, "docs", "B.md"), "# Dio jedan\n");
     const a = join(dir, "A.md");

@@ -4,7 +4,7 @@ Pravila pisanja koda u `ductura/server`. Vrijede i za ostale Ductura repozitorij
 
 Svako pravilo navodi **provedbu**, tj. što ga provjerava:
 
-- **lint**: ESLint pravilo (zaseban zadatak S-0.7, do tada je to cilj, a pravilo čuva review);
+- **planirano S-0.7**: ESLint pravilo još ne postoji (zaseban zadatak S-0.7); do uvođenja pravilo čuva review;
 - **formater**: automatsko formatiranje;
 - **tipovi**: `tsc` sa strogim postavkama iz `tsconfig.json` (već vrijedi u CI-ju);
 - **test**: automatski test u repou;
@@ -16,25 +16,25 @@ Svi primjeri koriste izmišljene podatke (domena `.invalid`), nikad stvarne osob
 
 | # | Pravilo | Provedba |
 |---|---|---|
-| 1 | Datoteke u kebab-caseu | lint (S-0.7), inače review |
-| 2 | `camelCase`, `PascalCase`, `UPPER_SNAKE` | lint (S-0.7) |
-| 3 | Bez `any` | lint (S-0.7), djelomično tipovi |
-| 4 | `type` umjesto `interface` | lint (S-0.7) |
-| 5 | Bez `enum` | lint (S-0.7) |
-| 6 | Uvoz samo kroz `index.ts` | lint (S-0.7), inače review |
-| 7 | Testovi uz kod, tri sufiksa | test (vitest projekti) |
-| 8 | Jedan oblik rezultata i greške | tipovi i review |
+| 1 | Datoteke u kebab-caseu | planirano S-0.7, do tada review |
+| 2 | `camelCase`, `PascalCase`, `UPPER_SNAKE` | planirano S-0.7, do tada review |
+| 3 | Bez `any` | planirano S-0.7, do tada review (implicitni `any` hvata `tsc`) |
+| 4 | `type` umjesto `interface` | planirano S-0.7, do tada review |
+| 5 | Bez `enum` | planirano S-0.7, do tada review |
+| 6 | Uvoz samo kroz `index.ts` | planirano S-0.7, do tada review |
+| 7 | Testovi uz kod, tri sufiksa | review (vitest pokreće samo ta tri sufiksa) |
+| 8 | Jedan oblik rezultata i greške | review (tipovi kad se uvedu zajednički `Result`/`AppError`) |
 | 9 | `snake_case` u `camelCase` samo u `server/database` | review |
 | 10 | Svaka mapa ima `index.ts`, kod, testove i README | review |
-| 11 | CSS moduli nose ime komponente | lint (web repozitoriji), inače review |
+| 11 | CSS moduli nose ime komponente | review (lint kad ga web repozitoriji uvedu) |
 | 12 | Nove skripte u TypeScriptu | review |
 | 13 | Poveznice u dokumentima moraju vrijediti | test |
 
 ## 1. Datoteke u kebab-caseu
 
-Imena datoteka i mapa su malim slovima, riječi odvojene crticom. Iznimke samo za datoteke koje alat traži pod fiksnim imenom (`README.md`, `CODE_STYLE.md`, `.nvmrc`).
+Imena datoteka i mapa su malim slovima, riječi odvojene crticom. Iznimke: dokumenti u korijenu i `docs/` u `UPPER_SNAKE.md` (`README.md`, `CODE_STYLE.md`) i datoteke koje alat traži pod fiksnim imenom (`.nvmrc`).
 
-Provedba: lint (S-0.7), do tada review.
+Provedba: planirano S-0.7, do tada review.
 
 Ispravno:
 
@@ -56,7 +56,7 @@ server/Session_Store.ts
 - tipovi i generički parametri: `PascalCase`;
 - prave konstante na razini modula (nepromjenjiva vrijednost poznata pri učitavanju): `UPPER_SNAKE`.
 
-Provedba: lint (S-0.7, `@typescript-eslint/naming-convention`).
+Provedba: planirano S-0.7 (`@typescript-eslint/naming-convention`), do tada review.
 
 Ispravno:
 
@@ -80,7 +80,7 @@ function IsExpired() {}
 
 Nepoznat oblik je `unknown`, pa se sužava provjerom. `any` gasi provjeru tipova i ne smije se pojaviti ni u testovima.
 
-Provedba: lint (S-0.7, `no-explicit-any`). Uz to `strict` u `tsconfig.json` hvata implicitni `any`.
+Provedba: planirano S-0.7 (`no-explicit-any`), do tada review. Implicitni `any` već hvata `strict` u `tsconfig.json`.
 
 Ispravno:
 
@@ -103,7 +103,7 @@ function parseBearer(header: any) {
 
 Oblici podataka se pišu kao `type`. Jedan način pisanja, bez spajanja deklaracija i nenamjernog proširivanja.
 
-Provedba: lint (S-0.7, `consistent-type-definitions: type`).
+Provedba: planirano S-0.7 (`consistent-type-definitions: type`), do tada review.
 
 Ispravno:
 
@@ -125,7 +125,7 @@ Prelazno: kostur (`server/access.ts`, `server/store.ts`) još ima `interface`. P
 
 Skup dopuštenih vrijednosti je unija stringovnih literala, po potrebi izvedena iz `as const` polja. `enum` stvara izvršni kod i nejasne brojčane vrijednosti.
 
-Provedba: lint (S-0.7, `no-restricted-syntax` za `TSEnumDeclaration`).
+Provedba: planirano S-0.7 (`no-restricted-syntax` za `TSEnumDeclaration`), do tada review.
 
 Ispravno:
 
@@ -172,7 +172,9 @@ Test je u istoj mapi kao kod koji provjerava i ima isto ime plus sufiks. Sufiks 
 | `.property.test.ts` | `property` | svojstveni testovi (fast-check) |
 | `.integration.test.ts` | `integration` | više dijelova skupa, HTTP, kasnije baza |
 
-Provedba: test. Datoteka s drugim sufiksom ili izvan `server/` ne pripada nijednom projektu i ne pokreće se, što se vidi u CI-ju kao izostanak testa. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
+Provedba: review. Datoteka s drugim sufiksom ili izvan `server/` ne pripada nijednom projektu i tiho se ne pokreće, CI ostaje zelen; zato reviewer provjerava sufikse. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
+
+Prelazno: `server/smoke.test.ts` nema pripadni `smoke.ts` (dimni test cijelog kostura).
 
 Ispravno:
 
@@ -198,7 +200,9 @@ type AppError = { code: string; messageKey: string };
 type Result<T> = { ok: true; value: T } | { ok: false; error: AppError };
 ```
 
-Provedba: tipovi (zajednički `Result` i `AppError`) i review.
+Provedba: review. Zajednički tipovi `Result` i `AppError` još ne postoje u repou; kad se uvedu, provjerava ih `tsc`.
+
+Prelazno: `server/app.ts` još vraća `{ error: "..." }` s hrvatskim tekstom u kodu; prepisuje se uz zadatak koji ga mijenja.
 
 Ispravno:
 
@@ -251,7 +255,9 @@ Svaka mapa s kodom ima:
 - kod i testove uz njega (pravilo 7);
 - `README.md` na hrvatskom: čemu mapa služi, što izvozi i što ne smije uvoziti.
 
-Provedba: review. Mape bez koda (`db/`, `locales/`, `test-support/`, `docs/`) trenutačno su prazne i README dobivaju kad dobiju sadržaj.
+Provedba: review.
+
+Prelazno: `server/` nema `README.md` (README u korijenu opisuje strukturu), a `server/index.ts` je ulazna točka, ne izvoz sučelja. Mape bez koda (`db/`, `locales/`, `test-support/`, `docs/`) trenutačno su prazne i README dobivaju kad dobiju sadržaj.
 
 Ispravno:
 
@@ -274,7 +280,7 @@ server/auth/
 
 Samo web repozitoriji (u `ductura/server` nema CSS-a). Stilska datoteka ima isto ime kao komponenta uz koju stoji i nastavak `.module.css`. Klase unutar modula su `camelCase`.
 
-Provedba: lint (u web repozitorijima, kad ga uvedu), do tada review.
+Provedba: review; lint kad ga web repozitoriji uvedu.
 
 Ispravno:
 
@@ -311,9 +317,9 @@ scripts/check-links.js
 
 ## 13. Poveznice u dokumentima moraju vrijediti
 
-Relativna poveznica u `README.md` i `docs/**/*.md` mora pokazivati na postojeću datoteku (a sidro `#...` na postojeći naslov u toj datoteci).
+Relativna inline poveznica `[tekst](put)` u `README.md` i `docs/**/*.md` mora pokazivati na postojeću datoteku (a sidro `#...` na postojeći naslov u toj datoteci).
 
-Provedba: test (`server/docs-links.test.ts`).
+Provedba: test (`server/docs-links.test.ts`). Ne pokriva reference poveznice (`[x]: put`) ni duplicirane naslove (sufiks `-1`).
 
 Ispravno:
 
