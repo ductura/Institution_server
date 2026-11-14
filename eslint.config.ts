@@ -32,6 +32,27 @@ const WIRE_NAMES = [
   "post_logout_redirect_uris", // OpenID Connect RP-Initiated Logout 1.0, section 3.1
   "backchannel_logout_uri", // OpenID Connect Back-Channel Logout 1.0, section 2.2
   "backchannel_logout_session_required", // OpenID Connect Back-Channel Logout 1.0, section 2.2
+  // S-0.18 (DAN-731), the login core ported from Ductus src/server/auth and its test provider.
+  "token_type", // RFC 6749, section 5.1
+  "expires_in", // RFC 6749, section 5.1
+  "key_ops", // RFC 7517 (JWK), section 4.3
+  "id_token_signed_response_alg", // OpenID Connect Dynamic Client Registration 1.0, section 2
+  "post_logout_redirect_uri", // OpenID Connect RP-Initiated Logout 1.0, section 2
+  "end_session_endpoint", // OpenID Connect RP-Initiated Logout 1.0, section 2.1
+  // OpenID Connect Discovery 1.0, section 3 (provider metadata).
+  "authorization_endpoint",
+  "token_endpoint",
+  "userinfo_endpoint",
+  "jwks_uri",
+  "response_types_supported",
+  "subject_types_supported",
+  "id_token_signing_alg_values_supported",
+  "code_challenge_methods_supported", // RFC 8414, section 2
+  // JWS algorithm names as keys of the pinned-algorithm table (RFC 7518 section 3.1; EdDSA RFC 8037).
+  "RS256",
+  "PS256",
+  "ES256",
+  "EdDSA",
 ];
 // Names fixed outside this repository that are not wire names: process
 // environment variables, the oidc-provider configuration keys (Configuration
@@ -60,13 +81,24 @@ const ENV_NAMES = [
   "DBMATE_URL",
   "DATABASE_URL",
   "PATH",
+  // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.
+  "DUCTUS_AUTH_PROVIDER",
+  "OIDC_ISSUER",
+  "OIDC_CLIENT_ID",
+  "OIDC_CLIENT_SECRET",
+  "OIDC_REDIRECT_URI",
+  "OIDC_CLOCK_TOLERANCE_SECONDS",
+  "OIDC_ID_TOKEN_ALG",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
 // verbatim, D-91) and one alias of a test query (app_can_select). The tests are
 // ported from Ductus with the same assertions (S-0.13, DAN-726), so the rows
-// keep their snake_case keys. A closed list of exact names, for properties and
-// for a destructured binding of such a property, never other names.
+// keep their snake_case keys. Also the row of app.current_actor() that
+// server/session/principal.ts reads, with its alias institution_slug (user_id,
+// institution_id; S-0.18, DAN-731, ported with the same statements). A closed
+// list of exact names, for properties and for a destructured binding of such a
+// property, never other names.
 const COLUMN_NAMES = [
   "accepts_evidence",
   "ai_policy",
@@ -81,6 +113,7 @@ const COLUMN_NAMES = [
   "expires_at",
   "import_allowed",
   "institution_id",
+  "institution_slug",
   "last_seen_at",
   "published_at",
   "published_by",
@@ -88,6 +121,7 @@ const COLUMN_NAMES = [
   "student_id",
   "target_id",
   "updated_at",
+  "user_id",
   "version_no",
   "work_type",
 ];
