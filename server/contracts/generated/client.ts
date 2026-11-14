@@ -7,7 +7,7 @@ export const ROUTE_TABLE = {
   "auth.callback.get": { method: "GET", path: "/api/v1/auth/callback", body: null, errors: {"400":["login_failed"],"403":["login_refused"],"503":["unavailable"]} },
   "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, errors: {"503":["unavailable"]} },
   "auth.logout-all.post": { method: "POST", path: "/api/v1/auth/logout-all", body: null, errors: {"403":["forbidden"],"503":["unavailable"]} },
-  "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, errors: {"403":["forbidden"]} },
+  "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, errors: {"403":["forbidden"],"503":["unavailable"]} },
   "platform.health.get": { method: "GET", path: "/api/v1/health", body: null, errors: {} },
   "platform.ready.get": { method: "GET", path: "/api/v1/ready", body: null, errors: {"503":["unavailable","draining"]} },
   "platform.status.get": { method: "GET", path: "/api/v1/status", body: null, errors: {"503":["unavailable"]} },
@@ -25,20 +25,25 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     const route = ROUTE_TABLE[id];
     const params = (input.params ?? {}) as Record<string, string>;
     let path: string = route.path.replace(/\{(\w+)\}/g, (_, name: string) => encodeURIComponent(params[name] ?? ""));
-    const query = new URLSearchParams(Object.entries((input.query ?? {}) as Record<string, string>));
+    const query = new URLSearchParams(
+      Object.entries((input.query ?? {}) as Record<string, string | undefined>).filter((e): e is [string, string] => e[1] !== undefined),
+    );
     if (query.size > 0) path += `?${query.toString()}`;
     const init: RequestInit = { method: route.method, redirect: "manual" };
     if (route.body === "application/json") init.body = JSON.stringify(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
     if (route.body !== null) init.headers = { "content-type": route.body };
     const res = await fetchImpl(new URL(path, baseUrl), init);
+    // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
+    if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined } as Result<Id>;
     const body: unknown = res.headers.get("content-type")?.startsWith("application/json") ? await res.json() : undefined;
     if (res.status < 400) return { ok: true, status: res.status, body } as Result<Id>;
     const known = (route.errors as Record<number, readonly string[] | undefined>)[res.status] ?? [];
     // The code is in "error"; readiness carries it in "status" ({status: "draining"}).
     const fields = body && typeof body === "object" ? (body as { error?: unknown; status?: unknown }) : {};
     const sent = fields.error ?? fields.status;
-    const code = typeof sent === "string" && known.includes(sent) ? sent : known.length === 1 ? known[0] : "unexpected";
+    // A body without a code takes the only code of its status; an unknown code is never renamed.
+    const code = typeof sent === "string" ? (known.includes(sent) ? sent : "unexpected") : known.length === 1 ? known[0] : "unexpected";
     return { ok: false, status: res.status, code } as Result<Id>;
   };
 }

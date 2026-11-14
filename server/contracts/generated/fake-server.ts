@@ -8,7 +8,7 @@ export const ROUTE_TABLE = {
   "auth.callback.get": { method: "GET", path: "/api/v1/auth/callback", body: null, errors: {"400":["login_failed"],"403":["login_refused"],"503":["unavailable"]} },
   "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, errors: {"503":["unavailable"]} },
   "auth.logout-all.post": { method: "POST", path: "/api/v1/auth/logout-all", body: null, errors: {"403":["forbidden"],"503":["unavailable"]} },
-  "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, errors: {"403":["forbidden"]} },
+  "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, errors: {"403":["forbidden"],"503":["unavailable"]} },
   "platform.health.get": { method: "GET", path: "/api/v1/health", body: null, errors: {} },
   "platform.ready.get": { method: "GET", path: "/api/v1/ready", body: null, errors: {"503":["unavailable","draining"]} },
   "platform.status.get": { method: "GET", path: "/api/v1/status", body: null, errors: {"503":["unavailable"]} },

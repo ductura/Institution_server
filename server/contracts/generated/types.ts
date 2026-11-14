@@ -4,7 +4,7 @@ export interface Operations {
   "auth.backchannel-logout.post": {
     params: undefined;
     query: undefined;
-    body: { "logout_token": string };
+    body: { "logout_token": string; [key: string]: unknown };
     success: { status: 200; body: undefined };
     errorCode: "invalid_logout_token" | "unavailable";
   };
@@ -17,7 +17,7 @@ export interface Operations {
   };
   "auth.login.get": {
     params: undefined;
-    query: { "returnTo"?: string };
+    query: { "returnTo"?: string; [key: string]: unknown };
     body: undefined;
     success: { status: 303; body: undefined };
     errorCode: "unavailable";
@@ -34,7 +34,7 @@ export interface Operations {
     query: undefined;
     body: undefined;
     success: { status: 303; body: undefined };
-    errorCode: "forbidden";
+    errorCode: "forbidden" | "unavailable";
   };
   "platform.health.get": {
     params: undefined;

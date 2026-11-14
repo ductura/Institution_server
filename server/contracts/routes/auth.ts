@@ -12,7 +12,8 @@ export const login = defineRoute({
   inventory: "app/api/auth/login/route.ts",
   access: "anyone",
   summary: "Starts AAI@EduHr login (PKCE); returnTo is narrowed to a safe local path.",
-  request: { query: closed({ returnTo: Type.Optional(Type.String({ maxLength: 2048 })) }) },
+  // Open on purpose: extra parameters are ignored and an unsafe or long returnTo becomes "/", never a refusal.
+  request: { query: Type.Object({ returnTo: Type.Optional(Type.String()) }) },
   responses: [redirect],
   errors: [error(503, "unavailable", "html")],
 });
@@ -44,7 +45,7 @@ export const logout = defineRoute({
   summary: "Closes the current session. Same Origin only; an empty body.",
   request: {},
   responses: [redirect],
-  errors: [error(403, "forbidden", "html")],
+  errors: [error(403, "forbidden", "html"), error(503, "unavailable", "html")],
 });
 
 export const logoutAll = defineRoute({
@@ -69,7 +70,8 @@ export const backchannelLogout = defineRoute({
   request: {
     contentType: "application/x-www-form-urlencoded",
     maxBodyBytes: 16 * 1024,
-    body: closed({ logout_token: Type.String({ minLength: 1 }) }),
+    // Open on purpose: the provider may send other form fields, which are ignored.
+    body: Type.Object({ logout_token: Type.String({ minLength: 1 }) }),
   },
   responses: [{ status: 200, description: "sessions closed" }],
   errors: [error(400, "invalid_logout_token", "none"), error(503, "unavailable", "none")],

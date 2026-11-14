@@ -6,8 +6,7 @@ export const VALIDATORS: Readonly<Record<string, (value: unknown) => boolean>> =
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['logout_token'] === 'string') &&
-      value['logout_token'].length >= 1 &&
-      Object.getOwnPropertyNames(value).length === 1
+      value['logout_token'].length >= 1
     )
   }),
   "auth.callback.get:query": (function check(value: any): boolean {
@@ -20,8 +19,7 @@ export const VALIDATORS: Readonly<Record<string, (value: unknown) => boolean>> =
   "auth.login.get:query": (function check(value: any): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
-      (value['returnTo'] !== undefined ? ((typeof value['returnTo'] === 'string') && value['returnTo'].length <= 2048) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['returnTo'].includes(key))
+      (value['returnTo'] !== undefined ? ((typeof value['returnTo'] === 'string')) : true)
     )
   }),
   "profile.interface-locale.post:body": (function check(value: any): boolean {
@@ -35,5 +33,8 @@ export const VALIDATORS: Readonly<Record<string, (value: unknown) => boolean>> =
 
 export function validateInput(id: string, part: "params" | "query" | "body", value: unknown): boolean {
   const check = VALIDATORS[`${id}:${part}`];
-  return check === undefined ? value === undefined : check(value);
+  if (check !== undefined) return check(value);
+  // No schema: no body, and for params or query nothing or an empty object.
+  if (value === undefined) return true;
+  return part !== "body" && typeof value === "object" && value !== null && !Array.isArray(value) && Object.keys(value).length === 0;
 }

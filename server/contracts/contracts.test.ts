@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
@@ -11,7 +12,9 @@ import { validateInput } from "./generated/validate.ts";
 import { FALLBACK, ROUTES, defineRoute, error } from "./index.ts";
 import { INVENTORY, PENDING } from "./inventory.ts";
 
-const CONTRACTS_DIR = new URL(".", import.meta.url).pathname;
+const CONTRACTS_DIR = dirname(fileURLToPath(import.meta.url));
+// Fixed here, not read from the contract, so the fallback cannot be moved to hide a route.
+const FALLBACK_FILE = "app/api/[...path]/route.ts";
 
 describe("generated = committed", () => {
   it("every generated file matches a fresh run, byte for byte, with no extra files", () => {
@@ -30,7 +33,11 @@ describe("generated = committed", () => {
 describe("route inventory", () => {
   it("covers all 38 inventory files: contract, fallback or pending, never two of them", () => {
     expect(Object.keys(INVENTORY)).toHaveLength(38);
-    expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK.inventory)).toEqual([]);
+    expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([]);
+  });
+
+  it("the fallback is the catch-all file", () => {
+    expect(FALLBACK.inventory).toBe(FALLBACK_FILE);
   });
 
   it("pending only shrinks: 28 files are left for part 2", () => {
@@ -50,18 +57,18 @@ describe("route inventory", () => {
   });
 
   it("a route outside the inventory fails", () => {
-    expect(checkInventory([...ROUTES, extra], INVENTORY, PENDING, FALLBACK.inventory)).toEqual([
+    expect(checkInventory([...ROUTES, extra], INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
       "made-up.route.get: app/api/made-up/route/route.ts is not in the inventory",
     ]);
   });
 
   it("a missing method, a contracted pending file and an unknown pending file fail", () => {
     const withoutHealth = ROUTES.filter((r) => r.id !== "platform.health.get");
-    expect(checkInventory(withoutHealth, INVENTORY, PENDING, FALLBACK.inventory)).toEqual([
+    expect(checkInventory(withoutHealth, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
       "app/api/health/route.ts: methods none, inventory GET",
     ]);
     const pending = [...PENDING, "app/api/health/route.ts", "app/api/nope/route.ts"];
-    expect(checkInventory(ROUTES, INVENTORY, pending, FALLBACK.inventory)).toEqual([
+    expect(checkInventory(ROUTES, INVENTORY, pending, FALLBACK_FILE)).toEqual([
       "platform.health.get: app/api/health/route.ts is also pending",
       "app/api/nope/route.ts: pending but not in the inventory",
     ]);
@@ -108,7 +115,9 @@ describe("server/contracts imports only the schema library", () => {
     const text = readFileSync(join(CONTRACTS_DIR, file), "utf8");
     const specifiers = [...text.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)].map((m) => m[1] ?? "");
     for (const spec of specifiers) {
-      const allowed = spec.startsWith("./") || spec.startsWith("../") || spec === "@sinclair/typebox";
+      const target = resolve(dirname(join(CONTRACTS_DIR, file)), spec);
+      const inside = spec.startsWith(".") && !relative(CONTRACTS_DIR, target).startsWith("..");
+      const allowed = inside || spec === "@sinclair/typebox";
       // The generated fake server is the one file that may use node:http.
       expect(allowed || (file === join("generated", "fake-server.ts") && spec === "node:http"), `${file}: ${spec}`).toBe(true);
     }
@@ -130,9 +139,17 @@ describe("generated validators", () => {
     expect(validateInput(id, "body", value)).toBe(ok);
   });
 
-  it("a route without a body schema accepts only no body", () => {
+  it("a route without a schema accepts no body and an empty query", () => {
     expect(validateInput("platform.health.get", "body", undefined)).toBe(true);
     expect(validateInput("platform.health.get", "body", {})).toBe(false);
+    expect(validateInput("platform.health.get", "query", {})).toBe(true);
+    expect(validateInput("platform.health.get", "query", { a: "1" })).toBe(false);
+  });
+
+  it("login and back-channel logout ignore extra keys, like the Ductus routes", () => {
+    expect(validateInput("auth.login.get", "query", { returnTo: "/x".repeat(2000), utm: "1" })).toBe(true);
+    expect(validateInput("auth.backchannel-logout.post", "body", { logout_token: "t", extra: "1" })).toBe(true);
+    expect(validateInput("auth.backchannel-logout.post", "body", { extra: "1" })).toBe(false);
   });
 });
 
@@ -163,6 +180,7 @@ describe("generated client", () => {
     expect(await c(403, { error: "cross_site" })).toEqual({ ok: false, status: 403, code: "cross_site" });
     expect(await c(422)).toEqual({ ok: false, status: 422, code: "invalid_input" });
     expect(await c(403, { error: "made_up" })).toEqual({ ok: false, status: 403, code: "unexpected" });
+    expect(await c(422, { error: "made_up" })).toEqual({ ok: false, status: 422, code: "unexpected" });
     expect(await c(500)).toEqual({ ok: false, status: 500, code: "unexpected" });
     const ready = createClient("https://a.invalid", fakeFetch(503, { status: "draining" }).impl);
     expect(await ready("platform.ready.get", { params: undefined, query: undefined, body: undefined })).toEqual({
@@ -170,6 +188,12 @@ describe("generated client", () => {
       status: 503,
       code: "draining",
     });
+  });
+
+  it("leaves out an undefined query value", async () => {
+    const f = fakeFetch(303);
+    await createClient("https://a.invalid", f.impl)("auth.login.get", { params: undefined, query: { returnTo: undefined } as unknown as { returnTo?: string }, body: undefined });
+    expect(f.calls[0]?.url).toBe("https://a.invalid/api/v1/auth/login");
   });
 
   it("sends the back-channel logout token as a form", async () => {
