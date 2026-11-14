@@ -24,6 +24,10 @@ describe("ci.yml", () => {
     expect(jobs).toEqual([...ALL_JOBS, "ci-ok"]);
   });
 
+  it("uses no runner context in expressions (not available in job env)", () => {
+    expect(CI).not.toMatch(/\$\{\{\s*runner\./);
+  });
+
   it("pins every action to a full commit SHA", () => {
     const uses = [...CI.matchAll(/^\s*-?\s*uses:\s*(\S+)/gm)].map((match) => match[1]);
     expect(uses.length).toBeGreaterThan(0);

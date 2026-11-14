@@ -76,7 +76,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PGBIN: /usr/lib/postgresql/17/bin
-      PGHOST: ${{ runner.temp }}
       PGPORT: "5499"
       PGUSER: postgres
       PGDATABASE: ductura_ci
@@ -98,6 +97,8 @@ jobs:
           sudo apt-get install -y -q --no-install-recommends postgresql-17 postgresql-17-pgtap libtap-parser-sourcehandler-pgtap-perl
       - name: Pokretanje baze
         run: |
+          echo "PGHOST=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export PGHOST="$RUNNER_TEMP"
           "$PGBIN/initdb" -D "$RUNNER_TEMP/pgdata" -U postgres --auth=trust --encoding=UTF8 --locale=C.UTF-8
           "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/pgdata" -l "$RUNNER_TEMP/pg.log" -w start \
             -o "-p $PGPORT -k $RUNNER_TEMP -c listen_addresses=''"
