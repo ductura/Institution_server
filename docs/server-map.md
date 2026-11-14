@@ -8,28 +8,28 @@ Izvori: Ductus `docs/ARCHITECTURE.md` (§2, §2a, §4, §5, §7, §9, §10) i `d
 
 ## 1. Područja
 
-Svaka mapa je pod `server/`. „Tko ga zove” navodi samo područja i procese; vanjski klijenti (web, preloader, desktop) dolaze uvijek kroz `http`.
+Svaka mapa je pod `server/`. „Tko ga zove” navodi procese i područja; područja u backtickovima su točno ona koja ga smiju uvoziti po §2 (provjerava test). Vanjski klijenti (web, preloader, desktop) dolaze uvijek kroz `http`.
 
 | Područje | Mapa | Svrha | Tko ga zove | Podaci | Stanje |
 |---|---|---|---|---|---|
 | http | `server/http` | Jedini sastavljač: HTTP poslužitelj, IP klijenta, sigurnosna zaglavlja, zaštita porijekla, router | `server.ts`, `test-server` | Zaglavlja i tijelo zahtjeva (samo u memoriji, ništa ne sprema) | planirano |
 | traffic | `server/traffic` | IP prava, ograničenje broja zahtjeva i zapis prometa | `http` | Brojači ograničenja (memorija), zapis prometa preko `log` | planirano |
 | session | `server/session` | Prijava AAI@EduHr i sesija: kolačić `__Host-`, token sesije, odjava (ARCHITECTURE §4) | `http` | Tablice sesija u glavnoj bazi (samo hash tokena) | planirano |
-| external/srce-auth | `server/external/srce-auth` | OIDC klijent prema AAI@EduHr (Srce); lokalno i u CI-ju lažni pružatelj (D-09) | `session` | Ništa trajno; tokeni i atributi samo tijekom prijave | planirano |
-| external/storage | `server/external/storage` | Pohrana objekata (S3), objekti adresirani hashom, bez prepisivanja | `backup`, `deletion`, `downloads` | Objekti u bucketu | planirano |
-| external/keys | `server/external/keys` | Port potpisa i ključeva šifriranja (KMS); lokalno razvojni potpisnik | `backup` | Ništa trajno; materijal ključa ne napušta KMS (D-71) | planirano |
-| external/email | `server/external/email` | Slanje e-pošte (lokalno Mailpit, produkcija usluga u EU-u) | `legal`, `deletion` | Ništa trajno; adresa i predložak samo tijekom slanja | planirano |
-| database | `server/database` | `withActor(token, fn)`, pozivi RPC-a, jedino mjesto pretvorbe `snake_case` u `camelCase` | `session`, `roles`, `legal`, `backup`, `deletion`, `downloads` | Glavna baza (PostgreSQL s RLS-om), samo kroz RPC | planirano |
-| log | `server/log` | Strukturirani zapisi bez sadržaja radova i osobnih podataka u tekstu | sva područja osim `domain` i `contracts` | Baza zapisa | planirano |
-| metrics | `server/metrics` | Brojači i trajanja za nadzor | sva područja osim `domain` i `contracts` | Metrika (memorija, izvoz za nadzor) | planirano |
+| external/srce-auth | `server/external/srce-auth` | OIDC klijent prema AAI@EduHr (Srce); lokalno i u CI-ju lažni pružatelj (D-09) | `session`, `http` | Ništa trajno; tokeni i atributi samo tijekom prijave | planirano |
+| external/storage | `server/external/storage` | Pohrana objekata (S3), objekti adresirani hashom, bez prepisivanja | `backup`, `deletion`, `downloads`, `http` | Objekti u bucketu | planirano |
+| external/keys | `server/external/keys` | Port potpisa i ključeva šifriranja (KMS); lokalno razvojni potpisnik | `backup`, `http` | Ništa trajno; materijal ključa ne napušta KMS (D-71) | planirano |
+| external/email | `server/external/email` | Slanje e-pošte (lokalno Mailpit, produkcija usluga u EU-u) | `legal`, `deletion`, `http` | Ništa trajno; adresa i predložak samo tijekom slanja | planirano |
+| database | `server/database` | `withActor(token, fn)`, pozivi RPC-a, jedino mjesto pretvorbe `snake_case` u `camelCase` | `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `http` | Glavna baza (PostgreSQL s RLS-om), samo kroz RPC | planirano |
+| log | `server/log` | Strukturirani zapisi bez sadržaja radova i osobnih podataka u tekstu | `database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `http` | Baza zapisa | planirano |
+| metrics | `server/metrics` | Brojači i trajanja za nadzor | `database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `http` | Metrika (memorija, izvoz za nadzor) | planirano |
 | roles | `server/roles` | Uloge u ustanovi; studenta i nastavnika dodjeljuje samo administrator ustanove (c.6869502575) | `http` | Članstva i uloge u glavnoj bazi | planirano |
-| settings | `server/settings` | Postavke iz okoline, provjera pri pokretanju; odbija lažni OIDC i razvojni potpisnik izvan lokalnog rada i CI-ja | sva područja osim `domain` i `contracts` | Varijable okoline (bez tajni u repou) | planirano |
+| settings | `server/settings` | Postavke iz okoline, provjera pri pokretanju; odbija lažni OIDC i razvojni potpisnik izvan lokalnog rada i CI-ja | `log`, `metrics`, `database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `http`, `test-server` | Varijable okoline (bez tajni u repou) | planirano |
 | legal | `server/legal` | Pravni tekstovi (uvjeti, obavijest o privatnosti), verzije i prihvaćanja | `http` | Baza pravnih tekstova, prihvaćanja u glavnoj bazi | planirano |
 | backup | `server/backup` | Kopije baze i pohrane, mjesečna proba povrata (ARCHITECTURE §9) | `http` (status za administratora), planirani posao | Kopije glavne baze, replika bucketa | planirano |
 | deletion | `server/deletion` | Brisanje po klasi podataka i roku čuvanja, uključujući verzije objekata | `http`, planirani posao | Glavna baza (kroz RPC), objekti u pohrani | planirano |
 | downloads | `server/downloads` | Preuzimanja: izvozi i instalacijski paketi aplikacija | `http` | Objekti u pohrani, zapis preuzimanja u glavnoj bazi | planirano |
-| contracts | `server/contracts` | Ugovor API-ja `/api/v1` (TypeBox): validacija ulaza, OpenAPI, tipovi, klijent, lažni server | `http`, feature područja (tipovi), klijenti | Ništa; samo sheme | postoji |
-| domain | `server/domain` | Čista pravila i modeli bez I/O-a, SQL-a i vendor SDK-ova | `session`, `database` i feature područja | Ništa | planirano |
+| contracts | `server/contracts` | Ugovor API-ja `/api/v1` (TypeBox): validacija ulaza, OpenAPI, tipovi, klijent, lažni server | `roles`, `legal`, `backup`, `deletion`, `downloads`, `http`, klijenti | Ništa; samo sheme | postoji |
+| domain | `server/domain` | Čista pravila i modeli bez I/O-a, SQL-a i vendor SDK-ova | `database`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads` | Ništa | planirano |
 | test-server | `server/test-server` | Server sastavljen s lažnim zamjenama (lažni AAI OIDC iz `test-support/`, PGlite, lažna baza zapisa) za testove servera i klijenata | samo testovi | Samo izmišljeni podaci | planirano |
 
 Feature područja su `roles`, `legal`, `backup`, `deletion` i `downloads`. U njima je `service`: logika jedne rute ili posla. Ostala područja su infrastruktura i ne sadrže pravila proizvoda.
@@ -56,16 +56,17 @@ Pravilo za S-1A-b (provjera granica u CI-ju). Usklađeno s `docs/CODE_STYLE.md`:
 | session | `settings`, `log`, `metrics`, `domain`, `database`, `external/srce-auth` |
 | roles | `settings`, `log`, `metrics`, `domain`, `contracts`, `database` |
 | legal | `settings`, `log`, `metrics`, `domain`, `contracts`, `database`, `external/email` |
-| backup | `settings`, `log`, `metrics`, `database`, `external/storage`, `external/keys` |
+| backup | `settings`, `log`, `metrics`, `domain`, `contracts`, `database`, `external/storage`, `external/keys` |
 | deletion | `settings`, `log`, `metrics`, `domain`, `contracts`, `database`, `external/storage`, `external/email` |
 | downloads | `settings`, `log`, `metrics`, `domain`, `contracts`, `database`, `external/storage` |
-| http | `settings`, `log`, `metrics`, `contracts`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads` |
+| http | `settings`, `log`, `metrics`, `contracts`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email` |
 | test-server | `http`, `settings` |
 
 Uz tablicu vrijedi:
 
 - Smjer je prema unutra. `domain` i `contracts` ne uvoze ništa iz servera; `contracts` uvozi samo `@sinclair/typebox`.
 - `http` je jedini sastavljač. Nitko osim ulazne točke (`server.ts`) i `test-server` ne uvozi `http`.
+- Sastavljač stvara adaptere (`database`, `external/*`) i predaje ih područjima kao parametre (portovi, ARCHITECTURE §2a). Područje uvozi adapter samo radi tipa porta i ne stvara ga samo. Tako `test-server` kroz `http` predaje lažne zamjene (lažni AAI OIDC, PGlite), a proizvodni adapter nikad ne sadrži lažnog pružatelja.
 - Nitko ne uvozi `test-server`; proizvodni kod ne uvozi `test-support/`.
 - Feature područja ne uvoze jedno drugo; dijele podatke samo kroz bazu i RPC.
 - Adapteri u `external/` ne uvoze jedan drugoga ni feature područja.
@@ -80,7 +81,7 @@ Redoslijed koraka za svaki zahtjev. Svaki korak može odbiti zahtjev; tada se sl
 | 1 | `server.ts` | ulazna točka | Učita `settings` (nevaljane postavke zaustave pokretanje), sastavi `http` i pokrene poslužitelj | Server se ne pokreće |
 | 2 | IP | `http` | Odredi IP klijenta; `X-Forwarded-For` vrijedi samo od pouzdanog proxyja iz `settings` | — |
 | 3 | IP prava | `traffic` | Provjeri popis zabranjenih i ograničenih mreža za rutu | 403 |
-| 4 | Ograničenje | `traffic` | Broj zahtjeva po IP-u i po sesiji u vremenskom prozoru | 429 |
+| 4 | Ograničenje | `traffic` | Broj zahtjeva po IP-u i po hashu sirovog kolačića sesije u vremenskom prozoru; sesija se ne razrješava (to je korak 8) | 429 |
 | 5 | Zapis prometa | `traffic` → `log` | Pripremi zapis prometa; piše se kad odgovor završi, i za zahtjeve odbijene u koracima 3 i 4 | — |
 | 6 | Sigurnosna zaglavlja | `http` | CSP, HSTS, `nosniff`, `Referrer-Policy`, `Cache-Control: no-store` za API | — |
 | 7 | Zaštita porijekla | `http` | Mijenjajuće metode traže dopušteni `Origin` i `Sec-Fetch-Site` (ARCHITECTURE §4 t. 4) | 403 |

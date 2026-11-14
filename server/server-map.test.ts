@@ -2,7 +2,14 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { checkFolders, listAreaFolders, readAreas, readImports, readTable } from "./server-map.ts";
+import {
+  checkFolders,
+  listAreaFolders,
+  readAreas,
+  readCallers,
+  readImports,
+  readTable,
+} from "./server-map.ts";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const MAP = readFileSync(join(ROOT, "docs", "server-map.md"), "utf8");
@@ -47,12 +54,16 @@ describe("readTable and readAreas", () => {
     "|---|---|",
     "| domain | — |",
     "| log | `settings`, `metrics` |",
+    "| log | `settings` |",
+    "| metrics | settings |",
   ].join("\n");
 
   it("reads only the first table after the heading, without header", () => {
     expect(readTable(sample, "## 2. Dopušteni uvozi")).toEqual([
       ["domain", "—"],
       ["log", "`settings`, `metrics`"],
+      ["log", "`settings`"],
+      ["metrics", "settings"],
     ]);
     expect(readTable(sample, "## 9. Nema")).toEqual([]);
   });
@@ -67,11 +78,13 @@ describe("readTable and readAreas", () => {
     ]);
   });
 
-  it("reads import targets, an em dash means none", () => {
-    expect([...readImports(sample)]).toEqual([
+  it("reads import targets, reports a duplicate and a cell without backticks", () => {
+    const { imports, problems } = readImports(sample);
+    expect([...imports]).toEqual([
       ["domain", []],
       ["log", ["settings", "metrics"]],
     ]);
+    expect(problems).toEqual(["log: listed twice", "metrics: write targets in backticks or —"]);
   });
 });
 
@@ -103,7 +116,9 @@ describe("checkFolders", () => {
 describe("docs/server-map.md", () => {
   const { areas, problems } = readAreas(MAP);
   const keys = areas.map((a) => a.key);
-  const imports = readImports(MAP);
+  const { imports, problems: importProblems } = readImports(MAP);
+  const importers = (target: string): string[] =>
+    [...imports].filter(([, targets]) => targets.includes(target)).map(([area]) => area);
 
   it("lists exactly the required areas, each row well formed", () => {
     expect(problems).toEqual([]);
@@ -118,6 +133,7 @@ describe("docs/server-map.md", () => {
   });
 
   it("has an import row for every area, naming only known areas", () => {
+    expect(importProblems).toEqual([]);
     expect([...imports.keys()].sort()).toEqual([...keys].sort());
     for (const [area, targets] of imports) {
       for (const target of targets) {
@@ -130,12 +146,17 @@ describe("docs/server-map.md", () => {
   it("keeps the inward direction of imports", () => {
     expect(imports.get("domain")).toEqual([]);
     expect(imports.get("contracts")).toEqual([]);
-    const importers = (target: string): string[] =>
-      [...imports].filter(([, targets]) => targets.includes(target)).map(([area]) => area);
     expect(importers("http")).toEqual(["test-server"]);
     expect(importers("test-server")).toEqual([]);
     for (const area of keys.filter((k) => k.startsWith("external/"))) {
       expect(imports.get(area)?.filter((t) => !["settings", "log", "metrics"].includes(t))).toEqual([]);
+    }
+  });
+
+  it("names as callers exactly the areas that may import each area", () => {
+    for (const [area, callers] of readCallers(MAP)) {
+      const named = callers.filter((c) => keys.includes(c)).sort();
+      expect(named, `callers of ${area}`).toEqual(importers(area).sort());
     }
   });
 });

@@ -52,13 +52,29 @@ export function readAreas(markdown: string): { areas: MapArea[]; problems: strin
 }
 
 /** Allowed imports from section 2: area key to the area keys it may import. */
-export function readImports(markdown: string): Map<string, string[]> {
+export function readImports(markdown: string): { imports: Map<string, string[]>; problems: string[] } {
   const imports = new Map<string, string[]>();
+  const problems: string[] = [];
   for (const cells of readTable(markdown, "## 2. Dopušteni uvozi")) {
-    const targets = [...(cells[1] ?? "").matchAll(/`([^`]+)`/g)].map((m) => m[1] ?? "");
-    imports.set(cells[0] ?? "", targets);
+    const area = cells[0] ?? "";
+    const cell = cells[1] ?? "";
+    const targets = backticked(cell);
+    if (imports.has(area)) problems.push(`${area}: listed twice`);
+    else if (targets.length === 0 && cell !== "—") problems.push(`${area}: write targets in backticks or —`);
+    else imports.set(area, targets);
   }
-  return imports;
+  return { imports, problems };
+}
+
+/** Area keys named in backticks in the "Tko ga zove" column of section 1. */
+export function readCallers(markdown: string): Map<string, string[]> {
+  const callers = new Map<string, string[]>();
+  for (const cells of readTable(markdown, "## 1. Područja")) callers.set(cells[0] ?? "", backticked(cells[3] ?? ""));
+  return callers;
+}
+
+function backticked(cell: string): string[] {
+  return [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1] ?? "");
 }
 
 /** Folders directly in server/ and server/external/, as area keys (`external/x`). */
