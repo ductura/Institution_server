@@ -148,7 +148,7 @@ enum Role {
 
 Iz druge mape uvozi se samo javno sučelje mape, tj. njezin `index.ts`. Unutarnje datoteke mape nisu dostupne izvana. Unutar iste mape datoteke se uvoze međusobno izravno. Uvozi imaju sufiks `.ts` (vrijedi `allowImportingTsExtensions`).
 
-Provedba: lint (S-0.7, `no-restricted-imports`), do tada review.
+Provedba: planirano S-0.7 (`no-restricted-imports`), do tada review.
 
 Ispravno:
 
