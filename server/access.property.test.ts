@@ -8,12 +8,19 @@ const doc = fc.record(
   { ownerId: user, sharedWith: fc.array(user, { maxLength: 5 }) },
   { requiredKeys: ["ownerId"] },
 );
+// The user is drawn from the document itself as well, so owners, collaborators
+// and strangers all actually come up; random strings alone almost never match.
+const docAndUser = doc.chain((d) =>
+  fc.tuple(fc.constant(d), fc.oneof(fc.constantFrom(d.ownerId, ...(d.sharedWith ?? [])), user)),
+);
 
 describe("access rules", () => {
   it("whoever may write may also read", () => {
     fc.assert(
-      fc.property(user, doc, (u, d) => {
+      fc.property(docAndUser, ([d, u]) => {
         if (canWrite(u, d)) expect(canRead(u, d)).toBe(true);
+        expect(canWrite(u, d)).toBe(u === d.ownerId);
+        expect(canRead(u, d)).toBe(u === d.ownerId || (d.sharedWith ?? []).includes(u));
       }),
     );
   });

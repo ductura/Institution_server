@@ -13,7 +13,7 @@ Zajednički API za sva Ductura sučelja: prijava AAI@EduHr, ovlasti, baza i poza
 pnpm install
 pnpm start              # samo lokalno: http://localhost:4000 (PORT mijenja priključak)
 pnpm typecheck          # TypeScript strict, bez izlaznih datoteka
-pnpm test               # svi vitest projekti
+pnpm test               # sva tri vitest projekta, jedan za drugim
 pnpm test:unit
 pnpm test:property
 pnpm test:integration
@@ -33,7 +33,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 
 ## Testovi
 
-Vitest ima tri projekta. Projekt određuje sufiks datoteke:
+Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/` sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
 | Projekt | Datoteke | Što provjerava |
 |---|---|---|
