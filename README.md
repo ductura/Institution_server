@@ -2,26 +2,54 @@
 
 Zajednički API za sva Ductura sučelja: prijava AAI@EduHr, ovlasti, baza i pozadinski poslovi.
 
-## Funkcionalna provjera
+## Preduvjeti
 
-Korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
-Pokriva je `test/functional.test.js`.
+- Node.js 24 (`.nvmrc`; `engines` u `package.json` traži barem 24).
+- pnpm 10 (`packageManager` u `package.json`; najlakše preko `corepack enable`).
 
 ## Pokretanje
 
 ```bash
-npm start          # http://localhost:4000
-npm test           # svi testovi
-npm run test:helpers
-npm run test:functional
+pnpm install
+pnpm start              # http://localhost:4000 (PORT mijenja priključak)
+pnpm typecheck          # TypeScript strict, bez izlaznih datoteka
+pnpm test               # svi vitest projekti
+pnpm test:unit
+pnpm test:property
+pnpm test:integration
 ```
 
-Zahtijeva Node.js 22 ili noviji. Nema vanjskih ovisnosti.
+Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
+
+## Struktura
+
+| Mapa | Sadržaj |
+|---|---|
+| `server/` | Kod poslužitelja i testovi uz njega |
+| `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
+| `db/` | Migracije i pgTAP testovi (prazno) |
+| `test-support/` | Zajednička pomagala za testove (prazno) |
+| `docs/` | Dokumentacija na hrvatskom (prazno) |
+
+## Testovi
+
+Vitest ima tri projekta. Projekt određuje sufiks datoteke:
+
+| Projekt | Datoteke | Što provjerava |
+|---|---|---|
+| `unit` | `server/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu i dimni test |
+| `property` | `server/**/*.property.test.ts` | Svojstva pravila pristupa (fast-check) |
+| `integration` | `server/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora |
+
+Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
+Pokriva je `server/app.integration.test.ts`.
+
+Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 ## Stanje kostura
 
-- Prijava: u razvoju je token samo ID korisnika (`Authorization: Bearer ana@fpzg.hr`). Zamjenjuje ga AAI@EduHr (SAML) sesija.
-- Baza: memorijska (`src/store.js`). Zamjenjuje je prava baza.
+- Prijava: u razvoju je token samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`). Zamjenjuje ga sesija nakon prijave AAI@EduHr (SAML).
+- Baza: memorijska (`server/store.ts`). Zamjenjuje je prava baza.
 - Pozadinski poslovi: još nisu dodani.
 
 ## API
