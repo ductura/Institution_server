@@ -2,7 +2,7 @@ import type { AddressInfo } from "node:net";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { createFakeServer } from "./generated/fake-server.ts";
+import { createFakeServer } from "./generated/fake-server/index.ts";
 
 const server = createFakeServer();
 let base = "";

@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error } from "../schema.ts";
+import { closed, defineRoute, error } from "../schema/index.ts";
 
 const CapabilityStatus = Type.Union([Type.Literal("ok"), Type.Literal("nedostupno"), Type.Literal("nije_konfigurirano")]);
 // Only checked capabilities are reported; a missing one was not checked.

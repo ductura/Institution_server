@@ -28,31 +28,31 @@ export const API_PREFIX = "/api/v1";
  * a client shows; neither is ever a sentence. `body` defaults to `{error: code}`;
  * "none" means no body, "html" a page for a browser navigation.
  */
-export interface ErrorSpec {
+export type ErrorSpec = {
   readonly status: number;
   readonly code: string;
   readonly key: string;
   readonly body?: TSchema | "none" | "html";
-}
+};
 
-export interface SuccessSpec {
+export type SuccessSpec = {
   readonly status: number;
   readonly description: string;
   /** JSON body; omitted means no body. */
   readonly body?: TSchema;
   /** Response headers the caller relies on. */
   readonly headers?: readonly string[];
-}
+};
 
-export interface RequestSpec {
+export type RequestSpec = {
   readonly params?: TObject;
   readonly query?: TObject;
   readonly body?: TObject;
   readonly contentType?: "application/json" | "application/x-www-form-urlencoded";
   readonly maxBodyBytes?: number;
-}
+};
 
-export interface RouteContract {
+export type RouteContract = {
   /** Stable operation id, `<area>.<name>.<method>`. */
   readonly id: string;
   readonly method: Method;
@@ -65,7 +65,7 @@ export interface RouteContract {
   readonly request: RequestSpec;
   readonly responses: readonly SuccessSpec[];
   readonly errors: readonly ErrorSpec[];
-}
+};
 
 export function defineRoute<const R extends RouteContract>(route: R): R {
   return route;

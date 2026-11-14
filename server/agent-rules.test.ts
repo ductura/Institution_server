@@ -108,7 +108,7 @@ describe("agent instruction adapters", () => {
 
   it.each(ADAPTERS.map((file) => [file.slice(ROOT.length + 1), file]))(
     "%s names a Ductus source and every link resolves",
-    (_name, file) => {
+    (name, file) => {
       const markdown = readFileSync(file, "utf8");
       expect(extractUrls(markdown).some((url) => ductusPath(url) !== null)).toBe(true);
       expect(findBrokenLinks([file])).toEqual([]);
@@ -118,7 +118,7 @@ describe("agent instruction adapters", () => {
 
   it.each(listRuleFiles(ROOT).map((file) => [file.slice(ROOT.length + 1), file]))(
     "%s is a reminder with a valid scope",
-    (_name, file) => {
+    (name, file) => {
       const markdown = readFileSync(file, "utf8");
       expect(rulePathProblems(ROOT, file, rulePaths(markdown))).toEqual([]);
       expect(markdown).toContain("Podsjetnik, ne pravilo.");
