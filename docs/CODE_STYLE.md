@@ -174,7 +174,7 @@ Test je u istoj mapi kao kod koji provjerava i ima isto ime plus sufiks. Sufiks 
 | `.property.test.ts`    | `property`    | svojstveni testovi (fast-check)         |
 | `.integration.test.ts` | `integration` | više dijelova skupa, HTTP, kasnije baza |
 
-Provedba: review. Datoteka s drugim sufiksom ili izvan `server/` ne pripada nijednom projektu i tiho se ne pokreće, CI ostaje zelen; zato reviewer provjerava sufikse. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
+Provedba: review. Datoteka s drugim sufiksom ili izvan mapa iz `vitest.config.ts` (`server/`, `test-support/`, `scripts/`, `tests/`) ne pripada nijednom projektu i tiho se ne pokreće, CI ostaje zelen; zato reviewer provjerava sufikse. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
 
 Prelazno: `server/smoke.test.ts` nema pripadni `smoke.ts` (dimni test cijelog kostura).
 

@@ -30,10 +30,10 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `server/`           | Kod poslužitelja i testovi uz njega                                                                                                                   |
 | `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera                                                    |
 | `locales/`          | Hrvatski tekstovi sučelja i poruka (zasad samo poruke gatea, `locales/hr.json`)                                                                       |
-| `db/`               | Migracije i pgTAP testovi (prazno)                                                                                                                    |
+| `db/`               | Migracije i pgTAP testovi (zasad samo dimni test okruženja CI-ja, `db/tests/00-environment.sql`)                                                      |
 | `test-support/`     | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`)                                                                                   |
 | `docs/`             | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
-| `scripts/`          | Alati repoa (lokalna lint pravila)                                                                                                                    |
+| `scripts/`          | Alati repoa (lokalna lint pravila, gate, CI u `scripts/ci/`)                                                                                          |
 | `tests/`            | Testovi alata repoa (lint, formatiranje)                                                                                                              |
 
 ## Lint
@@ -60,18 +60,22 @@ Testovi su u `tests/format/format.test.ts`.
 
 ## Testovi
 
-Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/` i `test-support/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
+Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/`, `test-support/` i `scripts/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
-| Projekt       | Datoteke                                               | Što provjerava                                                             |
-| ------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `unit`        | `{server,test-support,tests}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje |
-| `property`    | `{server,test-support,tests}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                     |
-| `integration` | `{server,test-support,tests}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                   |
+| Projekt       | Datoteke                                                       | Što provjerava                                                             |
+| ------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `unit`        | `{server,test-support,tests,scripts}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje |
+| `property`    | `{server,test-support,tests,scripts}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                     |
+| `integration` | `{server,test-support,tests,scripts}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                   |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
 Pokriva je `server/app.integration.test.ts`.
 
 Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
+
+## CI
+
+`.github/workflows/ci.yml` ima četiri posla: `scope` razvrstava promjene, `checks` pokreće typecheck, lint, formatiranje i tri vitest projekta, `database` podiže PostgreSQL 17 (ista glavna verzija kao produkcija, nativno iz PGDG repoa, bez Dockera) i pokreće pgTAP (`db/**/tests/*.sql`), a `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Akcije su prikvačene na puni SHA. Pravila razvrstavanja i zbirnog statusa su u [scripts/ci/README.md](scripts/ci/README.md).
 
 ## Stanje kostura
 

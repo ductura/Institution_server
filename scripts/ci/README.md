@@ -1,0 +1,14 @@
+# scripts/ci
+
+Alati CI-ja (`.github/workflows/ci.yml`, DAN-721, S-0.9).
+
+- `scope.ts`: razvrstava promjene PR-a u profil i poslove (`classifyDiff`, `ciProfile`, `jobsFor`, `isOrdinaryDoc`). Posao `checks` (typecheck, lint, formatiranje, unit, svojstveni i integracijski testovi) radi uvijek. Posao `database` (PostgreSQL i pgTAP) preskače se samo u profilu `docs`: PR u `main` u kojem je svaka promjena običan dokument (`docs/**/*.md` ili `README.md` na bilo kojoj dubini, obična datoteka dodana, izmijenjena ili obrisana). Sve ostalo je profil `full`: push, PR na drugu granu, prazan diff, promjena moda, symlink, submodul, preimenovanje, velika slova, `\`, `.`/`..`, razmaci i kontrolni znakovi u putanji. Neispravan zapis gita baca grešku, pa nikad ne daje `docs`.
+- `ci-ok.ts`: zbirni status `ci-ok` iz `toJSON(needs)` (`evaluateCiOk`). Svaki posao mora biti poznat i uspješan (`success`); samo `database` smije biti `skipped`, i to samo u profilu `docs`. Nepoznat, nedostajući ili neuspio posao i neispravan ulaz ruše `ci-ok`. Svaki kod greške ima tekst u `CI_OK_MESSAGES`.
+- `postgres.ts`: `POSTGRES_MAJOR`, glavna verzija PostgreSQL-a kao u produkciji i Ductusu (17). Test provjerava da workflow i `db/tests/00-environment.sql` koriste isti broj.
+- `index.ts`: javno sučelje mape.
+
+`scope.ts` i `ci-ok.ts` pokreću se s **base** commita PR-a (zaštićeni `main`), nikad s heada PR-a, pa PR ne može sam sebi preskočiti posao baze ni oslabiti `ci-ok`. Promjena ovih datoteka djeluje tek nakon spajanja. Ako base još nema datoteke (prvi PR), vrijedi profil `full` i stroga zamjena „svi poslovi `success`”. U CI-ju se pokreću izravno s `node` (Node 24 sam uklanja tipove), bez `pnpm install` na base commitu; zato ne uvoze ništa osim `node:` modula i datoteka iz ove mape.
+
+Testovi: `scope.test.ts` (putanja → poslovi, klase ulaza, pravi git commitovi), `ci-ok.test.ts` (pad potrebnog posla, nepoznati i naslijeđeni ključevi), `workflow.test.ts` (pinovi na SHA, `ci-ok` uvijek nakon svih poslova, verzija PostgreSQL-a).
+
+Mapa ne uvozi ništa iz `server/` ni iz `test-support/`.
