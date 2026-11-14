@@ -1,0 +1,60 @@
+name: Engineering review gate
+
+# S-0.10-b (DAN-723): the commit status "Engineering review gate" on the PR
+# head, from independent review and QA on that exact head, by risk (Ductus
+# docs/ENGINEERING_SYSTEM.md §5, §6). The check itself is shared and lives in
+# ductura/.github (decision B2); this repository gives only its path floor.
+# Privileged but metadata-only: pull_request_target and issue_comment run this
+# file and scripts/engineering from the default branch, PR code is never
+# fetched or executed, no secret is used, and only statuses can be written.
+# The status is not required until the owner changes branch protection (V-2).
+on: # zizmor: ignore[dangerous-triggers] default-branch metadata gate; PR code is never fetched or executed
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions: {}
+
+concurrency:
+  group: engineering-gate-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  # Queue instead of cancel, so a cancelled run never leaves a red evaluator.
+  cancel-in-progress: false
+
+jobs:
+  floor:
+    name: Risk floor
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      risk: ${{ steps.floor.outputs.risk }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Risk floor of the changed paths
+        id: floor
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/engineering/floor.ts >> "$GITHUB_OUTPUT"
+
+  gate:
+    needs: floor
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: write
+    uses: ductura/.github/.github/workflows/engineering-gate.yml@4ba978739d990f690e1c7ac4494c890abf2f048d # gate-v1
+    with:
+      gate-sha: 4ba978739d990f690e1c7ac4494c890abf2f048d
+      owner-login: danielrisavi77-create
+      minimum-risk: ${{ needs.floor.outputs.risk }}
