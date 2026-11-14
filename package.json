@@ -14,7 +14,8 @@
     "test": "pnpm test:unit && pnpm test:property && pnpm test:integration",
     "test:unit": "vitest run --project unit",
     "test:property": "vitest run --project property",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --project integration",
+    "contracts:generate": "tsx scripts/generate-contracts.ts"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
@@ -24,5 +25,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.34.52"
   }
 }
