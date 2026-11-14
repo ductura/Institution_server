@@ -44,7 +44,9 @@ async function start(mode: FakeOidcMode): Promise<string> {
   const { port } = server.address() as AddressInfo;
   const issuer = `http://127.0.0.1:${port}`;
   const provider = createFakeOidc(options(mode, issuer));
-  server.on("request", (req: IncomingMessage, res: ServerResponse) => provider.emit("request", req, res));
+  server.on("request", (req: IncomingMessage, res: ServerResponse) =>
+    provider.emit("request", req, res),
+  );
   return issuer;
 }
 
@@ -94,7 +96,10 @@ async function signIn(issuer: string, account: string, verifier: string): Promis
   const page = await get(interaction);
   expect(page.status).toBe(200);
   expect(await page.text()).toContain("Ovo nije AAI@EduHr.");
-  const resume = location(await get(`${interaction}/login`, { method: "POST", form: { account } }), issuer);
+  const resume = location(
+    await get(`${interaction}/login`, { method: "POST", form: { account } }),
+    issuer,
+  );
   return new URL(location(await get(resume), issuer));
 }
 
@@ -102,7 +107,12 @@ async function token(issuer: string, code: string, verifier: string) {
   const response = await fetch(new URL("/token", issuer), {
     method: "POST",
     headers: { authorization: BASIC, "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: REDIRECT, code_verifier: verifier }).toString(),
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: REDIRECT,
+      code_verifier: verifier,
+    }).toString(),
   });
   expect(response.status).toBe(200);
   return (await response.json()) as { id_token: string; access_token: string };
@@ -128,7 +138,12 @@ describe("modes", () => {
 
     const tokens = await token(issuer, code ?? "", verifier);
     const id = payload(tokens.id_token);
-    expect(id).toMatchObject({ iss: issuer, aud: "ductus-local", sub: "demo-student", nonce: "nonce-1" });
+    expect(id).toMatchObject({
+      iss: issuer,
+      aud: "ductus-local",
+      sub: "demo-student",
+      nonce: "nonce-1",
+    });
     // As in the source (default conformIdTokenClaims) and as the app reads
     // them (Ductus src/server/auth/claims.ts): the hrEdu claims come through
     // userinfo, and the ID token carries the session id but not them.
@@ -198,7 +213,10 @@ describe("modes", () => {
     const get = browser();
     const authorize = `${issuer}/auth?client_id=ductus-local&redirect_uri=${encodeURIComponent(REDIRECT)}&response_type=code&scope=openid&code_challenge=${"a".repeat(43)}&code_challenge_method=S256`;
     const interaction = location(await get(authorize), issuer);
-    const response = await get(`${interaction}/login`, { method: "POST", form: { account: "constructor" } });
+    const response = await get(`${interaction}/login`, {
+      method: "POST",
+      form: { account: "constructor" },
+    });
     expect(response.status).toBe(400);
   });
 });
@@ -206,21 +224,31 @@ describe("modes", () => {
 // D-09: the fake provider never starts with a production configuration.
 describe("production refuses the fake provider", () => {
   test("createFakeOidc throws when the env it is given says production", () => {
-    expect(() => createFakeOidc(options("success", "http://localhost:8080"), { NODE_ENV: "production" })).toThrow(/fake OIDC/);
+    expect(() =>
+      createFakeOidc(options("success", "http://localhost:8080"), { NODE_ENV: "production" }),
+    ).toThrow(/fake OIDC/);
   });
 
   test("createFakeOidc throws when this process runs with NODE_ENV=production, whatever env it is given", () => {
     vi.stubEnv("NODE_ENV", "production");
     expect(() => createFakeOidc(options("success", "http://localhost:8080"))).toThrow(/fake OIDC/);
-    expect(() => createFakeOidc(options("success", "http://localhost:8080"), { NODE_ENV: "test" })).toThrow(/fake OIDC/);
+    expect(() =>
+      createFakeOidc(options("success", "http://localhost:8080"), { NODE_ENV: "test" }),
+    ).toThrow(/fake OIDC/);
   });
 
   test("createFakeOidc refuses an issuer or a redirect address off this machine (F-019)", () => {
     const local = options("success", "http://localhost:8080");
     expect(() => createFakeOidc(local)).not.toThrow();
-    expect(() => createFakeOidc({ ...local, issuer: "https://idp.example.test" })).toThrow(/ISSUER/);
-    expect(() => createFakeOidc({ ...local, redirectUris: [REDIRECT, "https://app.example.test/cb"] })).toThrow(/redirect/);
-    expect(() => createFakeOidc({ ...local, postLogoutRedirectUris: ["http://127.0.0.2:3000/"] })).toThrow(/redirect/);
+    expect(() => createFakeOidc({ ...local, issuer: "https://idp.example.test" })).toThrow(
+      /ISSUER/,
+    );
+    expect(() =>
+      createFakeOidc({ ...local, redirectUris: [REDIRECT, "https://app.example.test/cb"] }),
+    ).toThrow(/redirect/);
+    expect(() =>
+      createFakeOidc({ ...local, postLogoutRedirectUris: ["http://127.0.0.2:3000/"] }),
+    ).toThrow(/redirect/);
   });
 
   const SERVER = fileURLToPath(new URL("./server.ts", import.meta.url));
@@ -228,10 +256,20 @@ describe("production refuses the fake provider", () => {
   function run(env: Record<string, string>) {
     // The developer's own provider settings do not leak into the child.
     const clean = { ...process.env };
-    for (const name of ["FAKE_OIDC_MODE", "ISSUER", "REDIRECT_URI", "POST_LOGOUT_REDIRECT_URI", "BACKCHANNEL_LOGOUT_URI"]) delete clean[name];
+    for (const name of [
+      "FAKE_OIDC_MODE",
+      "ISSUER",
+      "REDIRECT_URI",
+      "POST_LOGOUT_REDIRECT_URI",
+      "BACKCHANNEL_LOGOUT_URI",
+    ])
+      delete clean[name];
     // Node itself with the tsx loader: node_modules/.bin/tsx is a shell script
     // that spawn cannot start on Windows (tsx.cmd there).
-    const child = spawn(process.execPath, ["--import", "tsx", SERVER], { env: { ...clean, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(process.execPath, ["--import", "tsx", SERVER], {
+      env: { ...clean, ...env },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let output = "";
     child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
     child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));

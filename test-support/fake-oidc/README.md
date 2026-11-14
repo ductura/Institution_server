@@ -8,14 +8,14 @@ Testno pomagalo: OIDC pružatelj s izmišljenim računima u obliku koji izdaje A
 pnpm exec tsx test-support/fake-oidc/server.ts   # http://localhost:8080
 ```
 
-| Varijabla | Značenje |
-|---|---|
-| `NODE_ENV` | Mora biti nepostavljen, prazan, `development` ili `test`. Sve ostalo, uključujući `production`, zaustavlja pokretanje. |
-| `PORT` | Cijeli broj od 0 do 65535, zadano 8080. |
-| `ISSUER` | Samo `localhost`, `127.0.0.1` ili `[::1]` (F-019). |
-| `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI` | Popis odvojen zarezima, samo adrese na ovom računalu. |
-| `BACKCHANNEL_LOGOUT_URI` | Kamo pružatelj šalje token odjave. |
-| `FAKE_OIDC_MODE` | `success` (zadano), `refuse` (povratak s `access_denied`), `expired` (tokeni vrijede 1 s), `unavailable` (svaki zahtjev 503). |
+| Varijabla                                  | Značenje                                                                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                                 | Mora biti nepostavljen, prazan, `development` ili `test`. Sve ostalo, uključujući `production`, zaustavlja pokretanje.        |
+| `PORT`                                     | Cijeli broj od 0 do 65535, zadano 8080.                                                                                       |
+| `ISSUER`                                   | Samo `localhost`, `127.0.0.1` ili `[::1]` (F-019).                                                                            |
+| `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI` | Popis odvojen zarezima, samo adrese na ovom računalu.                                                                         |
+| `BACKCHANNEL_LOGOUT_URI`                   | Kamo pružatelj šalje token odjave.                                                                                            |
+| `FAKE_OIDC_MODE`                           | `success` (zadano), `refuse` (povratak s `access_denied`), `expired` (tokeni vrijede 1 s), `unavailable` (svaki zahtjev 503). |
 
 ## Što izvozi (`index.ts`)
 

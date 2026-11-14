@@ -35,7 +35,8 @@ type Env = Readonly<Record<string, string | undefined>>;
 export function listenPort(value: string | undefined): number {
   if (value === undefined) return 8080;
   const port = /^\d{1,5}$/.test(value) ? Number(value) : Number.NaN;
-  if (!(port >= 0 && port <= 65535)) throw new Error(`PORT must be a whole number from 0 to 65535: ${value}`);
+  if (!(port >= 0 && port <= 65535))
+    throw new Error(`PORT must be a whole number from 0 to 65535: ${value}`);
   return port;
 }
 
@@ -54,11 +55,16 @@ export function fakeOidcConfigFromEnv(env: Env): { port: number; options: FakeOi
       redirectUris: redirectUriList(env.REDIRECT_URI, DEFAULT_REDIRECT_URIS),
       // The one address the provider sends the browser back to after its
       // logout (DAN-212), as AAI@EduHr accepts only the registered one.
-      postLogoutRedirectUris: redirectUriList(env.POST_LOGOUT_REDIRECT_URI, DEFAULT_POST_LOGOUT_REDIRECT_URIS),
+      postLogoutRedirectUris: redirectUriList(
+        env.POST_LOGOUT_REDIRECT_URI,
+        DEFAULT_POST_LOGOUT_REDIRECT_URIS,
+      ),
       // Where the provider posts a logout token when its session ends (DAN-474,
       // OpenID Connect Back-Channel Logout). The app on the host by default; a
       // provider in a container needs an address that reaches the app.
-      backchannelLogoutUri: new URL(env.BACKCHANNEL_LOGOUT_URI ?? "http://localhost:3000/api/auth/backchannel-logout").href,
+      backchannelLogoutUri: new URL(
+        env.BACKCHANNEL_LOGOUT_URI ?? "http://localhost:3000/api/auth/backchannel-logout",
+      ).href,
       mode: fakeOidcMode(env.FAKE_OIDC_MODE),
     },
   };
@@ -84,7 +90,9 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
     // Mode `expired`: the tokens are issued valid for one second. With the
     // default clock tolerance (15 s) the in-memory store still finds the access
     // token for that long and userinfo keeps answering; 0 drops it on expiry.
-    ...(options.mode === "expired" ? { ttl: { IdToken: 1, AccessToken: 1 }, clockTolerance: 0 } : {}),
+    ...(options.mode === "expired"
+      ? { ttl: { IdToken: 1, AccessToken: 1 }, clockTolerance: 0 }
+      : {}),
     features: {
       devInteractions: { enabled: false },
       backchannelLogout: { enabled: true },
@@ -102,7 +110,9 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
     fetch(url, init) {
       const href = url instanceof Request ? url.url : new URL(url).href;
       if (href === backchannelLogoutUri) {
-        const { dispatcher: droppedDispatcher, ...rest } = (init ?? {}) as RequestInit & { dispatcher?: unknown };
+        const { dispatcher: droppedDispatcher, ...rest } = (init ?? {}) as RequestInit & {
+          dispatcher?: unknown;
+        };
         return globalThis.fetch(url, rest);
       }
       return globalThis.fetch(url, init);
@@ -110,7 +120,14 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
     interactions: { url: (ctx, interaction) => `/interaction/${interaction.uid}` },
     claims: {
       openid: ["sub"],
-      profile: ["name", "given_name", "family_name", "hrEduPersonUniqueID", "hrEduPersonHomeOrg", "hrEduPersonAffiliation"],
+      profile: [
+        "name",
+        "given_name",
+        "family_name",
+        "hrEduPersonUniqueID",
+        "hrEduPersonHomeOrg",
+        "hrEduPersonAffiliation",
+      ],
     },
     // First-party demo client: grant the requested scopes without a consent step.
     async loadExistingGrant(ctx) {
@@ -138,7 +155,8 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
   };
 }
 
-const escapeHtml = (text: string): string => text.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+const escapeHtml = (text: string): string =>
+  text.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
 // The app's "D" mark on --ground and --accent (DAN-345 follow-up): without
 // it the browser's request for /favicon.ico ended in the provider's 404.
@@ -170,7 +188,10 @@ button:focus-visible { outline: 3px solid #faf9f5; outline-offset: 4px; }
 
 function loginPage(uid: string): string {
   const buttons = Object.entries(ACCOUNTS)
-    .map(([id, account]) => `<button type="submit" name="account" value="${escapeHtml(id)}">${escapeHtml(account.name)}</button>`)
+    .map(
+      ([id, account]) =>
+        `<button type="submit" name="account" value="${escapeHtml(id)}">${escapeHtml(account.name)}</button>`,
+    )
     .join("\n");
   return `<!doctype html>
 <html lang="hr">
@@ -221,7 +242,8 @@ async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
 function assertLoopbackOptions(options: FakeOidcOptions): void {
   loopbackIssuer(options.issuer, options.issuer);
   for (const uri of [...options.redirectUris, ...options.postLogoutRedirectUris]) {
-    if (!isLoopbackHttpUrl(new URL(uri))) throw new Error(`redirect URI must be on localhost, 127.0.0.1 or [::1]: ${uri}`);
+    if (!isLoopbackHttpUrl(new URL(uri)))
+      throw new Error(`redirect URI must be on localhost, 127.0.0.1 or [::1]: ${uri}`);
   }
 }
 
@@ -254,10 +276,20 @@ export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
     }
     // Mode `refuse`: the provider answers as one that declined the sign-in.
     if (options.mode === "refuse") {
-      await provider.interactionFinished(req, res, { error: "access_denied", error_description: "demo refusal" }, { mergeWithLastSubmission: false });
+      await provider.interactionFinished(
+        req,
+        res,
+        { error: "access_denied", error_description: "demo refusal" },
+        { mergeWithLastSubmission: false },
+      );
       return;
     }
-    await provider.interactionFinished(req, res, { login: { accountId } }, { mergeWithLastSubmission: false });
+    await provider.interactionFinished(
+      req,
+      res,
+      { login: { accountId } },
+      { mergeWithLastSubmission: false },
+    );
   }
 
   const providerCallback = provider.callback();

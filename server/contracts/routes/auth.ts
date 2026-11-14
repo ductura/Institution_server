@@ -3,7 +3,11 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 // Login and logout are browser navigations: success is a 303, failure a page.
-const redirect = { status: 303, description: "redirect", headers: ["location", "set-cookie"] } as const;
+const redirect = {
+  status: 303,
+  description: "redirect",
+  headers: ["location", "set-cookie"],
+} as const;
 
 export const login = defineRoute({
   id: "auth.login.get",
@@ -33,7 +37,11 @@ export const callback = defineRoute({
     }),
   },
   responses: [redirect],
-  errors: [error(400, "login_failed", "html"), error(403, "login_refused", "html"), error(503, "unavailable", "html")],
+  errors: [
+    error(400, "login_failed", "html"),
+    error(403, "login_refused", "html"),
+    error(503, "unavailable", "html"),
+  ],
 });
 
 export const logout = defineRoute({

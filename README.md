@@ -25,16 +25,16 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 
 ## Struktura
 
-| Mapa | Sadržaj |
-|---|---|
-| `server/` | Kod poslužitelja i testovi uz njega |
-| `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera |
-| `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
-| `db/` | Migracije i pgTAP testovi (prazno) |
-| `test-support/` | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`) |
-| `docs/` | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
-| `scripts/` | Alati repoa (lokalna lint pravila) |
-| `tests/` | Testovi alata repoa (lint, formatiranje) |
+| Mapa                | Sadržaj                                                                                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server/`           | Kod poslužitelja i testovi uz njega                                                                                                                   |
+| `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera                                                    |
+| `locales/`          | Hrvatski tekstovi sučelja i poruka (prazno)                                                                                                           |
+| `db/`               | Migracije i pgTAP testovi (prazno)                                                                                                                    |
+| `test-support/`     | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`)                                                                                   |
+| `docs/`             | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
+| `scripts/`          | Alati repoa (lokalna lint pravila)                                                                                                                    |
+| `tests/`            | Testovi alata repoa (lint, formatiranje)                                                                                                              |
 
 ## Lint
 
@@ -62,11 +62,11 @@ Testovi su u `tests/format/format.test.ts`.
 
 Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/` i `test-support/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
-| Projekt | Datoteke | Što provjerava |
-|---|---|---|
-| `unit` | `{server,test-support,tests}/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje |
-| `property` | `{server,test-support,tests}/**/*.property.test.ts` | Svojstva pravila pristupa (fast-check) |
-| `integration` | `{server,test-support,tests}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora |
+| Projekt       | Datoteke                                               | Što provjerava                                                             |
+| ------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `unit`        | `{server,test-support,tests}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje |
+| `property`    | `{server,test-support,tests}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                     |
+| `integration` | `{server,test-support,tests}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                   |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
 Pokriva je `server/app.integration.test.ts`.
@@ -82,12 +82,12 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 ## API
 
-| Metoda | Putanja | Opis |
-|---|---|---|
-| GET | `/health` | Provjera rada |
-| GET | `/api/documents` | Dokumenti prijavljenog korisnika |
-| GET | `/api/documents/:id` | Jedan dokument (vlasnik ili suradnik) |
-| PUT | `/api/documents/:id` | Izmjena (samo vlasnik) |
+| Metoda | Putanja              | Opis                                  |
+| ------ | -------------------- | ------------------------------------- |
+| GET    | `/health`            | Provjera rada                         |
+| GET    | `/api/documents`     | Dokumenti prijavljenog korisnika      |
+| GET    | `/api/documents/:id` | Jedan dokument (vlasnik ili suradnik) |
+| PUT    | `/api/documents/:id` | Izmjena (samo vlasnik)                |
 
 ## Ugovor API-ja (`server/contracts/`)
 

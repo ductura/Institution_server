@@ -8,6 +8,8 @@ const ALLOWED_NODE_ENV = new Set(["", "development", "test"]);
 export function assertFakeOidcAllowed(env: { readonly NODE_ENV?: string | undefined }): void {
   const value = env.NODE_ENV ?? "";
   if (!ALLOWED_NODE_ENV.has(value)) {
-    throw new Error(`fake OIDC runs only locally and in CI (NODE_ENV unset, development or test), not with NODE_ENV=${JSON.stringify(value)}`);
+    throw new Error(
+      `fake OIDC runs only locally and in CI (NODE_ENV unset, development or test), not with NODE_ENV=${JSON.stringify(value)}`,
+    );
   }
 }
