@@ -1,7 +1,6 @@
 import { authRoutes, FALLBACK, platformRoutes, profileRoutes } from "./routes/index.ts";
 import type { RouteContract } from "./schema/index.ts";
 
-export { breakingChanges } from "./breaking.ts";
 export { API_VERSION } from "./version.ts";
 
 export { FALLBACK };

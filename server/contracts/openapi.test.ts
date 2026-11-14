@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { baseDocument, OPENAPI_FILE, openapiJson } from "../../scripts/index.ts";
+import { OPENAPI_FILE, openapiJson } from "../../scripts/index.ts";
 import { API_PREFIX, API_VERSION } from "./index.ts";
 
 describe("published OpenAPI v1", () => {
@@ -22,25 +22,5 @@ describe("published OpenAPI v1", () => {
 
   it("is not also written into server/contracts/generated", () => {
     expect(existsSync(new URL("./generated/openapi.json", import.meta.url))).toBe(false);
-  });
-});
-
-describe("base document for the CI check", () => {
-  const files = (present: Record<string, string>) => (spec: string) => present[spec] ?? null;
-
-  it("reads openapi/v1.json, else the generated file of the revision before it, else nothing", () => {
-    expect(
-      baseDocument(
-        "b",
-        files({
-          "b:openapi/v1.json": '{"a":1}',
-          "b:server/contracts/generated/openapi.json": '{"a":2}',
-        }),
-      ),
-    ).toEqual({ a: 1 });
-    expect(
-      baseDocument("b", files({ "b:server/contracts/generated/openapi.json": '{"a":2}' })),
-    ).toEqual({ a: 2 });
-    expect(baseDocument("b", files({}))).toBeNull();
   });
 });

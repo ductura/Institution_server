@@ -1,4 +1,3 @@
-export { baseDocument } from "./check-breaking.ts";
 export {
   generate,
   OPENAPI_FILE,

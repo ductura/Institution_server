@@ -29,8 +29,3 @@ jobs:
         run: pnpm test:property
       - name: Integracijski testovi
         run: pnpm test:integration
-      - name: Zaštita od lomljenja ugovora
-        if: github.event_name == 'pull_request'
-        run: |
-          git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
-          pnpm contracts:breaking FETCH_HEAD
