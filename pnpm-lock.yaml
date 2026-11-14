@@ -24,6 +24,9 @@ importers:
       '@fast-check/vitest':
         specifier: 0.5.0
         version: 0.5.0(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)))
+      '@smithy/signature-v4':
+        specifier: 5.7.4
+        version: 5.7.4
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
@@ -547,6 +550,10 @@ packages:
 
   '@smithy/node-http-handler@4.14.2':
     resolution: {integrity: sha512-i1uORV1v3qBqP43ayRKzIdm1q5x14tf8N4Dd06/QUX1Szm6VxHMrTsu20X5E63UFsaNZCRjI4SXG0jDmqYa+3w==}
+    engines: {node: '>=18.0.0'}
+
+  '@smithy/signature-v4@5.7.4':
+    resolution: {integrity: sha512-tHy0K0VtqNd5Y7Y41h0a0Lhh0L1GzC08dTWg0F7vRJWFtTENg7IZikf3wQkanYIRdb7ngoIPMTmqgUi401fEeQ==}
     engines: {node: '>=18.0.0'}
 
   '@smithy/signature-v4@5.7.5':
@@ -1944,6 +1951,12 @@ snapshots:
       tslib: 2.9.1
 
   '@smithy/node-http-handler@4.14.2':
+    dependencies:
+      '@smithy/core': 3.40.0
+      '@smithy/types': 4.20.0
+      tslib: 2.9.1
+
+  '@smithy/signature-v4@5.7.4':
     dependencies:
       '@smithy/core': 3.40.0
       '@smithy/types': 4.20.0
