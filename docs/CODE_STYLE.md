@@ -317,9 +317,9 @@ scripts/check-links.js
 
 ## 13. Poveznice u dokumentima moraju vrijediti
 
-Relativna inline poveznica `[tekst](put)` u `README.md` i `docs/**/*.md` mora pokazivati na postojeću datoteku (a sidro `#...` na postojeći naslov u toj datoteci).
+Relativna poveznica (`[tekst](put)` ili definicija `[x]: put`) u `README.md` i `docs/**/*.md` mora pokazivati na postojeću datoteku (a sidro `#...` na postojeći naslov u toj datoteci).
 
-Provedba: test (`server/docs-links.test.ts`). Ne pokriva reference poveznice (`[x]: put`) ni duplicirane naslove (sufiks `-1`).
+Provedba: test (`server/docs-links.test.ts`).  Pokriva inline poveznice i definicije referenci (`[x]: put`), a duplicirane naslove sufiksira kao GitHub (`-1`).
 
 Ispravno:
 

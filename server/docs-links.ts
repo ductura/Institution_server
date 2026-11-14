@@ -6,12 +6,17 @@ export type DocLink = { file: string; target: string };
 
 const LINK_PATTERN = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 
+const REFERENCE_DEFINITION = /^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)>?/gm;
+
 /** Relative inline links only: web URLs and mail links are skipped; bare anchors (#x) are kept. */
 export function extractRelativeLinks(markdown: string): string[] {
   const withoutCode = markdown.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
   const links: string[] = [];
-  for (const match of withoutCode.matchAll(LINK_PATTERN)) {
-    const target = match[1];
+  const targets = [
+    ...[...withoutCode.matchAll(LINK_PATTERN)].map((m) => m[1]),
+    ...[...withoutCode.matchAll(REFERENCE_DEFINITION)].map((m) => m[1]),
+  ];
+  for (const target of targets) {
     if (target && !/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(target)) links.push(target);
   }
   return links;
@@ -29,8 +34,13 @@ export function slugify(heading: string): string {
 export function headingSlugs(markdown: string): Set<string> {
   const withoutCode = markdown.replace(/```[\s\S]*?```/g, "");
   const slugs = new Set<string>();
+  const counts = new Map<string, number>();
   for (const match of withoutCode.matchAll(/^#{1,6}\s+(.+?)\s*#*\s*$/gm)) {
-    if (match[1]) slugs.add(slugify(match[1]));
+    if (!match[1]) continue;
+    const base = slugify(match[1]);
+    const seen = counts.get(base) ?? 0;
+    counts.set(base, seen + 1);
+    slugs.add(seen === 0 ? base : `${base}-${seen}`);
   }
   return slugs;
 }

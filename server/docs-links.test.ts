@@ -19,8 +19,10 @@ describe("extractRelativeLinks", () => {
       "[e](nope2.md)",
       "```",
       "[f](#naslov)",
+      "[ref]: docs/R.md",
+      "[web]: https://example.invalid/y",
     ].join("\n");
-    expect(extractRelativeLinks(md)).toEqual(["docs/A.md", "#naslov"]);
+    expect(extractRelativeLinks(md)).toEqual(["docs/A.md", "#naslov", "docs/R.md"]);
   });
 });
 
@@ -28,6 +30,13 @@ describe("slugify", () => {
   it("lowercases, drops punctuation and dashes spaces", () => {
     expect(slugify("9. `snake_case` u camelCase")).toBe("9-snake_case-u-camelcase");
     expect(slugify("Jedan oblik")).toBe("jedan-oblik");
+  });
+  it("suffixes repeated headings like GitHub", () => {
+    expect([...headingSlugs("# Primjer\n## Primjer\n## Primjer")]).toEqual([
+      "primjer",
+      "primjer-1",
+      "primjer-2",
+    ]);
   });
   it("collects heading slugs outside code blocks", () => {
     expect([...headingSlugs("# Naslov\n```\n# nije\n```\n## Drugi dio")]).toEqual([
