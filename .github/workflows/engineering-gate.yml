@@ -53,8 +53,8 @@ jobs:
       issues: read
       pull-requests: read
       statuses: write
-    uses: ductura/.github/.github/workflows/engineering-gate.yml@4ba978739d990f690e1c7ac4494c890abf2f048d # gate-v1
+    uses: ductura/.github/.github/workflows/engineering-gate.yml@c039e7ce0dea969415789d9efcf9111d4ac5df1d # gate-v1
     with:
-      gate-sha: 4ba978739d990f690e1c7ac4494c890abf2f048d
+      gate-sha: c039e7ce0dea969415789d9efcf9111d4ac5df1d
       owner-login: danielrisavi77-create
       minimum-risk: ${{ needs.floor.outputs.risk }}
