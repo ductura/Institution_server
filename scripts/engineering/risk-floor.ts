@@ -28,6 +28,8 @@ export const CRITICAL_PATHS: readonly string[] = [
   "server/session/**",
   "server/external/srce-auth/**",
   "server/contracts/authz-matrix*",
+  // The actor boundary (Ductus src/server/db/; .claude/rules/baza.md).
+  "server/database/**",
   "db/**/migrations/**",
   "db/**/tests/**",
   ".github/**",
@@ -121,6 +123,17 @@ export function changedPaths(
   return [...out].sort();
 }
 
+/** Columns of leading whitespace; a tab advances to the next multiple of four (CommonMark). */
+function indentColumns(line: string): number {
+  let columns = 0;
+  for (const char of line) {
+    if (char === " ") columns += 1;
+    else if (char === "\t") columns += 4 - (columns % 4);
+    else break;
+  }
+  return columns;
+}
+
 /** Body lines outside fenced and indented code blocks (CommonMark). */
 function metadataLines(body: string): string[] {
   const active: string[] = [];
@@ -138,7 +151,7 @@ function metadataLines(body: string): string[] {
       fence = open;
       continue;
     }
-    if (/^(?: {4}|\t)/.test(line)) continue;
+    if (indentColumns(line) >= 4) continue;
     active.push(line.trim());
   }
   return active;

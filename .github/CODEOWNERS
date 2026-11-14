@@ -20,6 +20,7 @@
 /server/session/ @danielrisavi77-create
 /server/external/srce-auth/ @danielrisavi77-create
 /server/contracts/authz-matrix* @danielrisavi77-create
+/server/database/ @danielrisavi77-create
 /db/**/migrations/ @danielrisavi77-create
 /db/**/tests/ @danielrisavi77-create
 

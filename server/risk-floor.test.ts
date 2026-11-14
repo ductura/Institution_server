@@ -26,6 +26,8 @@ const CRITICAL_SAMPLES = [
   "server/external/srce-auth/oidc-client.ts",
   "server/contracts/authz-matrix.ts",
   "server/contracts/authz-matrix.test.ts",
+  "server/database/actor.ts",
+  "server/database/index.ts",
   "db/migrations/20270101000000_baseline.sql",
   "db/main/migrations/20270101000000_x.sql",
   "db/tests/access-matrix.sql",
@@ -91,6 +93,8 @@ describe("risk floor", () => {
       "server/contracts/routes/auth.ts",
       "server/contracts/authz.ts",
       "server/server-map.ts",
+      "server/databasex/a.ts",
+      "server/database.ts",
       "server/store.ts",
       "server/access.test.ts",
       "server/agent-rules.ts",
@@ -173,6 +177,12 @@ describe("PR metadata", () => {
     const onlyInCode = ["Agent: claude:w1:platforma", "Task: DAN-1", "    Risk: critical"].join("\n");
     const result = evaluateMetadata(onlyInCode, ["docs/a.md"]);
     expect(result.ok ? "OK" : result.error.code).toBe("RISK_INVALID");
+    for (const indent of ["\t", " \t", "  \t", "   \t", "    "]) {
+      const mixed = ["Agent: claude:w1:platforma", "Task: DAN-1", "", `${indent}Risk: critical`, "Risk: low"].join("\n");
+      expect(evaluateMetadata(mixed, [".github/x.yml"]).ok, JSON.stringify(indent)).toBe(false);
+    }
+    const threeSpaces = ["Agent: claude:w1:platforma", "Task: DAN-1", "   Risk: critical"].join("\n");
+    expect(evaluateMetadata(threeSpaces, [".github/x.yml"]).ok).toBe(true);
   });
 
   it("reads metadata after an inline-code line that only looks like a fence", () => {
