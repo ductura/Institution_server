@@ -17,7 +17,8 @@ pnpm test               # sva tri vitest projekta, jedan za drugim
 pnpm test:unit
 pnpm test:property
 pnpm test:integration
-pnpm contracts:generate # ponovno generira server/contracts/generated iz ugovora
+pnpm contracts:generate # ponovno generira server/contracts/generated i openapi/v1.json iz ugovora
+pnpm contracts:breaking [ref] # ruši se kad ugovor lomi klijente openapi/v1.json na ref (zadano origin/main)
 ```
 
 Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
@@ -27,6 +28,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | Mapa | Sadržaj |
 |---|---|
 | `server/` | Kod poslužitelja i testovi uz njega |
+| `openapi/` | Objavljeni OpenAPI dokument `v1.json`, generiran iz ugovora |
 | `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera |
 | `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
 | `db/` | Migracije i pgTAP testovi (prazno) |
@@ -68,6 +70,12 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 Ugovor je izvor koda (DAN-736, Ductura U4). Svaka ruta ima shemu u `server/contracts/routes/`: ulaz (parametri putanje, upit, tijelo, vrsta i najveća veličina tijela), uspješne odgovore, greške (status, zatvoreni kod i ključ za locales `errors.<kod>`) i „tko smije” (`access`, zatvoren skup). „Tko smije” je deklaracija; ovlast i dalje odlučuje baza. `server/contracts` uvozi samo `@sinclair/typebox`.
 
-`pnpm contracts:generate` iz ugovora piše u `server/contracts/generated/`: `validate.ts` (validatori ulaza), `openapi.json` (OpenAPI 3.1), `types.ts`, `client.ts` (fetch klijent, radi i izvan preglednika) i `fake-server.ts` (ruta iz ugovora 501 dok ne dobije vektore, kriva metoda 405, ostalo 404 `not_found`). Generirane datoteke se commitaju; test pada kad se razlikuju od novog generiranja.
+`pnpm contracts:generate` iz ugovora piše u `server/contracts/generated/`: `validate.ts` (validatori ulaza), `types.ts`, `client.ts` (fetch klijent, radi i izvan preglednika) i `fake-server.ts` (ruta iz ugovora 501 dok ne dobije vektore, kriva metoda 405, ostalo 404 `not_found`). Uz njih piše objavljeni OpenAPI 3.1 dokument `openapi/v1.json`. Generirane datoteke se commitaju; test pada kad se razlikuju od novog generiranja.
+
+### Verzija i zaštita od lomljenja (DAN-737, Ductura U5)
+
+`info.version` u `openapi/v1.json` je `glavna.manja.zakrpa` iz `server/contracts/version.ts`. Glavna verzija je ona iz `API_PREFIX` (`/api/v1`) i imena datoteke. Svaka promjena dokumenta traži višu verziju: nova ruta ili polje podiže manju, promjena teksta zakrpu.
+
+Promjena koja lomi postojeće klijente nije dopuštena unutar iste glavne verzije. CI na svakom PR-u pokreće `pnpm contracts:breaking` prema ciljnoj grani i pada kad nađe nešto od ovoga: uklonjena ruta ili metoda, promijenjen `operationId` ili `x-access`; uklonjen parametar, nov ili postao obavezan parametar; dodano ili uklonjeno tijelo zahtjeva, uklonjena vrsta sadržaja, niža granica veličine, novo obavezno polje, polje koje zatvoreni objekt više ne prima, suženje vrijednosti ili ograničenja; u uspješnom odgovoru uklonjen status, tijelo, polje ili zaglavlje, obavezno polje postalo neobavezno, promijenjen tip ili vrijednost, nova vrijednost. Greške se ne uspoređuju: klijent nepoznat kod pretvara u `unexpected`. Zahtjev se smije samo proširiti, odgovor samo suziti. Lomljiva promjena je nova glavna verzija, novi dokument i nova putanja.
 
 Popis ruta je preslika inventara iz Ductusa (`server/contracts/inventory.ts`). Ruta izvan inventara ruši test. Ovaj korak pokriva 10 od 38 datoteka (platforma, prijava, jezik sučelja); ostalih 28 je u popisu `PENDING` i dobiva sheme u sljedećem PR-u. Popis se smije samo smanjivati.
