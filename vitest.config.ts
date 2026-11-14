@@ -45,6 +45,14 @@ export default defineConfig({
           // F-019: refuses a database URL that is not this machine's.
           setupFiles: ["tests/db/setup.ts"],
           testTimeout: 30_000,
+          // As Ductus vitest.config.ts (d52a92c3): withActor of server/database
+          // over the local login of db/main/local/app-login.sql (S-0.17).
+          // The URL is the public local-only value of that file, no secret.
+          env: {
+            APP_DATABASE_URL:
+              process.env.APP_DATABASE_URL ??
+              "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54329/ductus",
+          },
         },
       },
     ],

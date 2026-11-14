@@ -47,6 +47,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 - Imena su `camelCase`, `PascalCase` ili `UPPER_SNAKE`.
 - Zabranjeni su `any`, `interface` (umjesto njega `type`) i `enum`.
 - U drugu mapu uvozi se samo kroz njezin `index.ts`.
+- Upravljački program baze (`pg`, `pg-*`, `postgres`) uvozi samo `server/database` i testovi baze u `tests/db/` (`no-restricted-imports` i `database-boundary/no-restricted-dynamic-imports`, iz Ductusa; testovi u `tests/lint/pg-import-boundary*.test.ts`). `snake_case` imena stupaca i postavki baze dopuštena su samo u tim dvjema mapama.
 - Direktive u retku (`eslint-disable`) ne gase nijedno pravilo. Sama direktiva ruši `pnpm lint`.
 
 Lokalna pravila su u `scripts/lint-rules/`, a testovi nad fixtureima u `tests/lint/rules.test.ts`.
@@ -65,12 +66,12 @@ Testovi su u `tests/format/format.test.ts`.
 
 Vitest ima četiri projekta. Projekt određuje sufiks datoteke, a `database` mapa `tests/db`. Testovi su samo u `server/`, `test-support/` i `scripts/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
-| Projekt       | Datoteke                                                       | Što provjerava                                                             |
-| ------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `unit`        | `{server,test-support,tests,scripts}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje |
-| `property`    | `{server,test-support,tests,scripts}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                     |
-| `integration` | `{server,test-support,tests,scripts}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                   |
-| `database`    | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`) | Migracije glavne baze i zaključavanje migracija na pravom PostgreSQL-u     |
+| Projekt       | Datoteke                                                       | Što provjerava                                                                                                 |
+| ------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `unit`        | `{server,test-support,tests,scripts}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje                                     |
+| `property`    | `{server,test-support,tests,scripts}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                                                         |
+| `integration` | `{server,test-support,tests,scripts}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                                                       |
+| `database`    | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`) | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
 Pokriva je `server/app.integration.test.ts`.
