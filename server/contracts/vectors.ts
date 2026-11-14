@@ -131,7 +131,7 @@ function checkVector(route: RouteContract, vector: Vector, check: SchemaCheck): 
     if (!spec) return [...problems, `status ${response.status} is not a contract success`];
     problems.push(...checkBody(spec.body ?? "none", response, check));
     for (const header of spec.headers ?? []) {
-      if (response.headers?.[header] === undefined) problems.push(`missing header ${header}`);
+      if (!present(response.headers?.[header])) problems.push(`missing header ${header}`);
     }
     return problems;
   }
@@ -172,4 +172,10 @@ function validRequestPart(
   const given = part === "body" ? value : (value ?? {});
   if (schema !== undefined) return check(schema, given);
   return part === "body" ? given === undefined : Object.keys(given as object).length === 0;
+}
+
+/** A declared header has a value: a non-empty string, or a list of them with at least one. */
+function present(value: string | readonly string[] | undefined): boolean {
+  const values = typeof value === "string" ? [value] : (value ?? []);
+  return values.length > 0 && values.every((v) => v.length > 0);
 }

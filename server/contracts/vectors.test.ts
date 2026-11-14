@@ -163,4 +163,34 @@ describe("checkVectors refuses", () => {
       "made-up.thing.post: both: request body does not match the contract",
     ]);
   });
+
+  it("a success without a declared header, or with an empty one", () => {
+    const redirect = defineRoute({
+      ...route,
+      id: "made-up.thing.get",
+      method: "GET",
+      request: {},
+      responses: [{ status: 303, description: "redirect", headers: ["location", "set-cookie"] }],
+      errors: [],
+    });
+    const answer = (headers: Record<string, string | readonly string[]>) => ({
+      route: redirect.id,
+      vectors: [
+        { name: "redirect", kind: "success", request: {}, response: { status: 303, headers } },
+      ],
+    });
+    const runRedirect = (headers: Record<string, string | readonly string[]>) =>
+      checkVectors([redirect], { [redirect.id]: answer(headers) }, check);
+    expect(runRedirect({ location: "/", "set-cookie": ["a=b"] })).toEqual([]);
+    expect(runRedirect({ location: "/" })).toEqual([
+      "made-up.thing.get: redirect: missing header set-cookie",
+    ]);
+    expect(runRedirect({ location: "", "set-cookie": [] })).toEqual([
+      "made-up.thing.get: redirect: missing header location",
+      "made-up.thing.get: redirect: missing header set-cookie",
+    ]);
+    expect(runRedirect({ location: "/", "set-cookie": [""] })).toEqual([
+      "made-up.thing.get: redirect: missing header set-cookie",
+    ]);
+  });
 });
