@@ -1,0 +1,75 @@
+{
+  "route": "auth.callback.get",
+  "vectors": [
+    {
+      "name": "session-opened",
+      "kind": "success",
+      "request": {
+        "query": {
+          "code": "izmisljeni-kod-0001",
+          "state": "izmisljeno-stanje-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_login=izmisljeno-stanje-0001"
+        }
+      },
+      "response": {
+        "status": 303,
+        "headers": {
+          "location": "/",
+          "set-cookie": [
+            "__Host-ductus_session=izmisljeni-token-0002; Path=/; Secure; HttpOnly; SameSite=Lax"
+          ]
+        }
+      }
+    },
+    {
+      "name": "login-failed",
+      "kind": "error",
+      "code": "login_failed",
+      "request": {
+        "query": {
+          "code": "izmisljeni-kod-0001",
+          "state": "krivo-stanje"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "text/html",
+        "body": "<!doctype html><html lang=\"hr\"><title>Ductura</title></html>"
+      }
+    },
+    {
+      "name": "login-refused",
+      "kind": "error",
+      "code": "login_refused",
+      "request": {
+        "query": {
+          "code": "izmisljeni-kod-0002",
+          "state": "izmisljeno-stanje-0002"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "text/html",
+        "body": "<!doctype html><html lang=\"hr\"><title>Ductura</title></html>"
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "query": {
+          "code": "izmisljeni-kod-0003",
+          "state": "izmisljeno-stanje-0003"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "text/html",
+        "body": "<!doctype html><html lang=\"hr\"><title>Ductura</title></html>"
+      }
+    }
+  ]
+}

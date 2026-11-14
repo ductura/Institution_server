@@ -1,0 +1,31 @@
+{
+  "route": "platform.status.get",
+  "vectors": [
+    {
+      "name": "status",
+      "kind": "success",
+      "request": {},
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "checkedAt": "2026-01-15T09:30:00.000Z",
+          "components": {
+            "writing": "radi",
+            "submission": "radi",
+            "mentorView": "nije_ukljuceno"
+          }
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {},
+      "response": {
+        "status": 503
+      }
+    }
+  ]
+}

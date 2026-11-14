@@ -1,0 +1,17 @@
+{
+  "route": "platform.health.get",
+  "vectors": [
+    {
+      "name": "alive",
+      "kind": "success",
+      "request": {},
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "status": "ok"
+        }
+      }
+    }
+  ]
+}

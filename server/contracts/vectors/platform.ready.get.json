@@ -1,0 +1,53 @@
+{
+  "route": "platform.ready.get",
+  "vectors": [
+    {
+      "name": "ready",
+      "kind": "success",
+      "request": {},
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "status": "ready",
+          "capabilities": {
+            "database": "ok",
+            "storage": "ok",
+            "signing": "ok"
+          }
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {},
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "status": "unavailable",
+          "capabilities": {
+            "database": "nedostupno",
+            "storage": "ok",
+            "signing": "nije_konfigurirano"
+          }
+        }
+      }
+    },
+    {
+      "name": "draining",
+      "kind": "error",
+      "code": "draining",
+      "request": {},
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "status": "draining"
+        }
+      }
+    }
+  ]
+}
