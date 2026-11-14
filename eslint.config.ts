@@ -14,7 +14,9 @@ export default defineConfig(
     languageOptions: { parser: tseslint.parser, sourceType: "module", ecmaVersion: "latest" },
   },
   {
-    files: ["**/*.{js,mjs,cjs,jsx,tsx,mts,cts}"],
+    // Any script extension other than lowercase .ts, in any letter case (x.TS, x.Js).
+    files: ["**/*.{[cCmM],}[jJtT][sS]{[xX],}"],
+    ignores: ["**/*.ts"],
     rules: { "local/only-ts": "error" },
   },
   {

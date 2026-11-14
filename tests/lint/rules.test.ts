@@ -52,7 +52,7 @@ const failing: Case[] = [
   ...["x.spec.ts", "x.e2e.test.ts", "x.unit.test.ts", "x.tests.ts", "x.integration.ts", "x.property.ts", "x-test.ts"]
     .map((name) => ({ file: `server/${name}`, code: SRC, rule: "local/test-file-suffix" })),
   // only .ts
-  ...["js", "mjs", "cjs", "jsx", "tsx", "mts", "cts"].map((ext) => ({
+  ...["js", "mjs", "cjs", "jsx", "tsx", "mts", "cts", "TS", "Ts", "Js"].map((ext) => ({
     file: `scripts/x.${ext}`, code: SRC, rule: "local/only-ts",
   })),
   // naming-convention
