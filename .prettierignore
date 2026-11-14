@@ -9,3 +9,6 @@ server/contracts/generated/
 # Written by `pnpm contracts:generate`; server/contracts/openapi.test.ts keeps it
 # byte for byte equal to a fresh run.
 openapi/v1.json
+# Golden vectors (S-0.19), byte for byte as in Ductus src/domain/forensics/golden-vectors
+# at d52a92c3: tests hash and parse the raw bytes, so a reformat changes the vectors.
+server/domain/forensics/golden-vectors/*.json

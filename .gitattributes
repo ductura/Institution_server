@@ -14,3 +14,7 @@ db/main/local/** text eol=lf
 infra/postgres/assert-pg-version.sh text eol=lf
 infra/postgres/Dockerfile text eol=lf
 compose.yaml text eol=lf
+# Golden vectors of the evidence domain (S-0.19), verbatim from Ductus: the
+# tests hash and parse their raw bytes, so a CRLF checkout would change them.
+# server/domain/index.test.ts checks the attributes and bytes.
+server/domain/forensics/golden-vectors/** text eol=lf
