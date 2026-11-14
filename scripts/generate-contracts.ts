@@ -11,9 +11,8 @@ import type { TSchema } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 import { checkInventory } from "../server/contracts/check.ts";
-import { FALLBACK, ROUTES, type RouteContract } from "../server/contracts/index.ts";
+import { API_VERSION, FALLBACK, ROUTES, type RouteContract } from "../server/contracts/index.ts";
 import { INVENTORY, INVENTORY_SOURCE, PENDING } from "../server/contracts/inventory.ts";
-import { API_VERSION } from "../server/contracts/version.ts";
 
 export const OUT_DIR = fileURLToPath(new URL("../server/contracts/generated/", import.meta.url));
 /** The published API document; scripts/check-breaking.ts compares it with the base branch. */

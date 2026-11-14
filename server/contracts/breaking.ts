@@ -37,10 +37,10 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
   const fixed = dir === "request" ? b.const : a.const;
   if (fixed !== undefined && canonical(a.const) !== canonical(b.const)) return void out.push(`${at}: value changed`);
   if (dir === "request") {
-    for (const k of ["maxLength", "maximum", "maxItems"]) {
+    for (const k of ["maxLength", "maximum", "maxItems", "maxProperties"]) {
       if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] <= b[k])) out.push(`${at}: ${k} lowered`);
     }
-    for (const k of ["minLength", "minimum", "minItems"]) {
+    for (const k of ["minLength", "minimum", "minItems", "minProperties"]) {
       if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] >= b[k])) out.push(`${at}: ${k} raised`);
     }
     for (const k of ["format", "pattern"]) if (b[k] !== undefined && b[k] !== a[k]) out.push(`${at}: ${k} changed`);
@@ -63,6 +63,15 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
   }
   if (dir === "request") {
     for (const name of rb) if (!ra.has(name)) out.push(`${at}.${name}: field became required`);
+    // An open object accepted any value under a new name; a declared schema may now refuse some.
+    if (a.additionalProperties !== false) {
+      const extra = a.additionalProperties;
+      for (const [name, s] of Object.entries(pb)) {
+        if (name in pa) continue;
+        if (typeof extra === "object" && extra !== null) schema(`${at}.${name}`, obj(extra), obj(s), dir, out);
+        else if (canonical(s) !== "{}") out.push(`${at}.${name}: field now constrained`);
+      }
+    }
     if (a.additionalProperties !== false && b.additionalProperties === false) out.push(`${at}: extra fields no longer accepted`);
   }
 }

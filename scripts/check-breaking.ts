@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { breakingChanges } from "../server/contracts/breaking.ts";
+import { breakingChanges } from "../server/contracts/index.ts";
 import { openapiDocument } from "./generate-contracts.ts";
 
 // openapi/v1.json; before DAN-737 the same document lived in the generated folder.

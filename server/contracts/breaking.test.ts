@@ -111,6 +111,10 @@ const CASES: [string, (d: Obj) => void, string[]][] = [
   ["request maxLength added", (d) => (token(d).maxLength = 10), [`POST ${BACKCHANNEL} body.logout_token: maxLength lowered`]],
   ["request format added", (d) => (token(d).format = "uuid"), [`POST ${BACKCHANNEL} body.logout_token: format changed`]],
   ["request minLength lowered", (d) => (token(d).minLength = 0), []],
+  ["new constrained field in an open request", (d) => (node(formBody(d), "properties").extra = { type: "string", maxLength: 1 }), [`POST ${BACKCHANNEL} body.extra: field now constrained`]],
+  ["new unconstrained field in an open request", (d) => (node(formBody(d), "properties").extra = {}), []],
+  ["request minProperties added", (d) => (formBody(d).minProperties = 2), [`POST ${BACKCHANNEL} body: minProperties raised`]],
+  ["request maxProperties added", (d) => (formBody(d).maxProperties = 1), [`POST ${BACKCHANNEL} body: maxProperties lowered`]],
   ["request accepts a new value", (d) => list(localeBody(d), "properties", "locale", "anyOf").push(de), []],
   ["request no longer accepts a value", (d) => list(localeBody(d), "properties", "locale", "anyOf").pop(), [`POST ${LOCALE} body.locale: no longer accepted {"const":"en","type":"string"}`]],
   // Success responses
