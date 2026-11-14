@@ -9,7 +9,7 @@ import {
   evaluateMetadata,
   globToRegExp,
   minimumRisk,
-} from "../scripts/engineering/risk-floor.ts";
+} from "../scripts/engineering/index.ts";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const body = (risk: string, agent = "claude:w1:platforma", task = "DAN-1") =>
@@ -173,6 +173,13 @@ describe("PR metadata", () => {
     const onlyInCode = ["Agent: claude:w1:platforma", "Task: DAN-1", "    Risk: critical"].join("\n");
     const result = evaluateMetadata(onlyInCode, ["docs/a.md"]);
     expect(result.ok ? "OK" : result.error.code).toBe("RISK_INVALID");
+  });
+
+  it("reads metadata after an inline-code line that only looks like a fence", () => {
+    const text = ["```pnpm test```", "Agent: claude:w1:platforma", "Risk: critical", "Task: DAN-1"].join("\n");
+    expect(evaluateMetadata(text, [".github/x.yml"]).ok).toBe(true);
+    const tilde = ["~~~ `info` ~~~", "Risk: critical", "~~~", "Agent: claude:w1:platforma", "Risk: low", "Task: DAN-1"].join("\n");
+    expect(evaluateMetadata(tilde, [".github/x.yml"]).ok).toBe(false);
   });
 
   it("puts no file name into the status text", () => {

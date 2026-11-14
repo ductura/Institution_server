@@ -131,8 +131,10 @@ function metadataLines(body: string): string[] {
       if (close && close[0] === fence[0] && close.length >= fence.length) fence = null;
       continue;
     }
-    const open = line.match(/^ {0,3}(`{3,}|~{3,})/)?.[1];
-    if (open) {
+    const opening = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+    const open = opening?.[1];
+    // A backtick fence's info string has no backtick; "```x```" is inline code.
+    if (open && !(open[0] === "`" && (opening[2] ?? "").includes("`"))) {
       fence = open;
       continue;
     }
