@@ -24,7 +24,7 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   return async function call<Id extends OperationId>(id: Id, input: Input<Id>): Promise<Result<Id>> {
     const route = ROUTE_TABLE[id];
     const params = (input.params ?? {}) as Record<string, string>;
-    let path: string = route.path.replace(/\{(\w+)\}/g, (_, name: string) => encodeURIComponent(params[name] ?? ""));
+    let path: string = route.path.replace(/\{(\w+)\}/g, (match, name: string) => encodeURIComponent(params[name] ?? ""));
     const query = new URLSearchParams(
       Object.entries((input.query ?? {}) as Record<string, string | undefined>).filter((e): e is [string, string] => e[1] !== undefined),
     );

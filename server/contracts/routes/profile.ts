@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error } from "../schema.ts";
+import { closed, defineRoute, error } from "../schema/index.ts";
 
 const Locale = Type.Union([Type.Literal("hr"), Type.Literal("en")]);
 
