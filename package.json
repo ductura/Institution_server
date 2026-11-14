@@ -20,8 +20,10 @@
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
+    "@types/oidc-provider": "9.12.1",
     "eslint": "10.15.0",
     "fast-check": "^4.10.2",
+    "oidc-provider": "9.12.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.72.2",

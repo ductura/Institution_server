@@ -31,7 +31,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera |
 | `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
 | `db/` | Migracije i pgTAP testovi (prazno) |
-| `test-support/` | Zajednička pomagala za testove (prazno) |
+| `test-support/` | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`) |
 | `docs/` | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 | `scripts/` | Alati repoa (lokalna lint pravila) |
 | `tests/` | Testovi alata repoa (lint) |
@@ -50,13 +50,13 @@ Lokalna pravila su u `scripts/lint-rules/`, a testovi nad fixtureima u `tests/li
 
 ## Testovi
 
-Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su u `server/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
+Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/` i `test-support/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
 | Projekt | Datoteke | Što provjerava |
 |---|---|---|
-| `unit` | `server/**/*.test.ts`, `tests/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu, dimni test i lint pravila |
-| `property` | `server/**/*.property.test.ts` | Svojstva pravila pristupa (fast-check) |
-| `integration` | `server/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora |
+| `unit` | `{server,test-support,tests}/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu, dimni test i lint pravila |
+| `property` | `{server,test-support,tests}/**/*.property.test.ts` | Svojstva pravila pristupa (fast-check) |
+| `integration` | `{server,test-support,tests}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
 Pokriva je `server/app.integration.test.ts`.
@@ -66,6 +66,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 ## Stanje kostura
 
 - Prijava: **privremena testna zamjena, ne način prijave.** Token je samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`), pa se svatko može predstaviti kao bilo tko. Smije se pokretati samo u testovima i lokalnom radu, nikad u nekom postavljenom okruženju. To nije AAI@EduHr: studenti se prijavljuju isključivo preko AAI@EduHr (D-09). Zamjenjuju je zadaci prijave (S-1E) sesijom nakon prijave AAI@EduHr.
+- Lažni OIDC pružatelj (`test-support/fake-oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokretanje: `pnpm exec tsx test-support/fake-oidc/server.ts` (zadano `http://localhost:8080`). `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
 - Baza: memorijska (`server/store.ts`). Zamjenjuje je prava baza.
 - Pozadinski poslovi: još nisu dodani.
 

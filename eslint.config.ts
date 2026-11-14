@@ -11,6 +11,35 @@ import { localPlugin } from "./scripts/lint-rules/index.ts";
 // properties, never variables, functions or types.
 const WIRE_NAMES = [
   "logout_token", // OpenID Connect Back-Channel Logout 1.0, section 2.5
+  // OAuth 2.0 (RFC 6749): authorization request, token request and response, errors.
+  "client_id",
+  "client_secret",
+  "redirect_uri",
+  "response_type",
+  "grant_type",
+  "access_token",
+  "error_description",
+  "code_challenge", // RFC 7636 (PKCE), section 4.3
+  "code_challenge_method", // RFC 7636 (PKCE), section 4.3
+  "code_verifier", // RFC 7636 (PKCE), section 4.5
+  "id_token", // OpenID Connect Core 1.0, section 3.1.3.3
+  "given_name", // OpenID Connect Core 1.0, section 5.1 (standard claims)
+  "family_name", // OpenID Connect Core 1.0, section 5.1 (standard claims)
+  // OpenID Connect Dynamic Client Registration 1.0, section 2 (client metadata).
+  "redirect_uris",
+  "token_endpoint_auth_method",
+  "post_logout_redirect_uris", // OpenID Connect RP-Initiated Logout 1.0, section 3.1
+  "backchannel_logout_uri", // OpenID Connect Back-Channel Logout 1.0, section 2.2
+  "backchannel_logout_session_required", // OpenID Connect Back-Channel Logout 1.0, section 2.2
+];
+// Names fixed outside this repository that are not wire names: process
+// environment variables and the oidc-provider configuration keys (Configuration
+// "ttl"). A closed list of exact names, only for properties.
+const FIXED_NAMES = [
+  "NODE_ENV",
+  "PORT",
+  "IdToken",
+  "AccessToken",
 ];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
@@ -63,7 +92,7 @@ export default defineConfig(
         },
         {
           selector: "property",
-          filter: { regex: `^(?:${WIRE_NAMES.join("|")})$`, match: true },
+          filter: { regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES].join("|")})$`, match: true },
           format: null,
         },
         {

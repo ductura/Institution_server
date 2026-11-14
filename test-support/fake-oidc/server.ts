@@ -1,0 +1,295 @@
+// Fake OIDC provider for local development and CI only. Students sign in with
+// AAI@EduHr alone (D-09); this server exists so the app can be built and
+// tested without it, and its page says so ("demo prijava"). The accounts are
+// invented and carry the attribute names AAI@EduHr releases.
+// Ported from Ductus infra/fake-oidc/server.mjs (DAN-729). New here: the guard
+// (guard.ts) and the modes (modes.ts); `success` is the ported behaviour.
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { Provider, type Configuration } from "oidc-provider";
+
+import { ACCOUNTS, demoAccountClaims, isDemoAccountId } from "./accounts.ts";
+import { assertFakeOidcAllowed } from "./guard.ts";
+import { fakeOidcMode, type FakeOidcMode } from "./modes.ts";
+import {
+  DEFAULT_POST_LOGOUT_REDIRECT_URIS,
+  DEFAULT_REDIRECT_URIS,
+  isLoopbackHttpUrl,
+  loopbackIssuer,
+  redirectUriList,
+} from "./redirect-uris.ts";
+
+export type FakeOidcOptions = {
+  readonly issuer: string;
+  readonly redirectUris: readonly string[];
+  readonly postLogoutRedirectUris: readonly string[];
+  readonly backchannelLogoutUri: string;
+  readonly mode: FakeOidcMode;
+};
+
+type Env = Readonly<Record<string, string | undefined>>;
+
+/** PORT from the environment: unset is 8080, else a whole number 0 to 65535. */
+export function listenPort(value: string | undefined): number {
+  if (value === undefined) return 8080;
+  const port = /^\d{1,5}$/.test(value) ? Number(value) : Number.NaN;
+  if (!(port >= 0 && port <= 65535)) throw new Error(`PORT must be a whole number from 0 to 65535: ${value}`);
+  return port;
+}
+
+/** The port and options from the environment; refuses before anything listens. */
+export function fakeOidcConfigFromEnv(env: Env): { port: number; options: FakeOidcOptions } {
+  assertFakeOidcAllowed(env);
+  const port = listenPort(env.PORT);
+  return {
+    port,
+    options: {
+      // F-019: the issuer and every redirect address are on this machine; any
+      // other value stops the provider here, before it listens.
+      issuer: loopbackIssuer(env.ISSUER, `http://localhost:${port}`),
+      // Comma separated; http and https for the app on port 3000 by default
+      // (the login E2E runs the app over https).
+      redirectUris: redirectUriList(env.REDIRECT_URI, DEFAULT_REDIRECT_URIS),
+      // The one address the provider sends the browser back to after its
+      // logout (DAN-212), as AAI@EduHr accepts only the registered one.
+      postLogoutRedirectUris: redirectUriList(env.POST_LOGOUT_REDIRECT_URI, DEFAULT_POST_LOGOUT_REDIRECT_URIS),
+      // Where the provider posts a logout token when its session ends (DAN-474,
+      // OpenID Connect Back-Channel Logout). The app on the host by default; a
+      // provider in a container needs an address that reaches the app.
+      backchannelLogoutUri: new URL(env.BACKCHANNEL_LOGOUT_URI ?? "http://localhost:3000/api/auth/backchannel-logout").href,
+      mode: fakeOidcMode(env.FAKE_OIDC_MODE),
+    },
+  };
+}
+
+function providerConfiguration(options: FakeOidcOptions): Configuration {
+  const { backchannelLogoutUri } = options;
+  return {
+    clients: [
+      {
+        client_id: "ductus-local",
+        client_secret: "ductus-local-only",
+        redirect_uris: [...options.redirectUris],
+        post_logout_redirect_uris: [...options.postLogoutRedirectUris],
+        backchannel_logout_uri: backchannelLogoutUri,
+        // The ID token and the logout token carry `sid` only with this set.
+        backchannel_logout_session_required: true,
+        token_endpoint_auth_method: "client_secret_basic",
+      },
+    ],
+    pkce: { required: () => true },
+    cookies: { keys: ["ductus-fake-oidc-local-only"] },
+    // Mode `expired`: the tokens are issued valid for one second. With the
+    // default clock tolerance (15 s) the in-memory store still finds the access
+    // token for that long and userinfo keeps answering; 0 drops it on expiry.
+    ...(options.mode === "expired" ? { ttl: { IdToken: 1, AccessToken: 1 }, clockTolerance: 0 } : {}),
+    features: {
+      devInteractions: { enabled: false },
+      backchannelLogout: { enabled: true },
+      // RP-initiated logout (DAN-212): "Demo odjava" ends this provider's session.
+      rpInitiatedLogout: {
+        enabled: true,
+        logoutSource(ctx, form) {
+          ctx.body = logoutPage(form);
+        },
+      },
+    },
+    // oidc-provider refuses outgoing requests to loopback and private addresses
+    // (SSRF protection); the app runs on one here. Only the one configured
+    // back-channel address goes without that check.
+    fetch(url, init) {
+      const href = url instanceof Request ? url.url : new URL(url).href;
+      if (href === backchannelLogoutUri) {
+        const { dispatcher: droppedDispatcher, ...rest } = (init ?? {}) as RequestInit & { dispatcher?: unknown };
+        return globalThis.fetch(url, rest);
+      }
+      return globalThis.fetch(url, init);
+    },
+    interactions: { url: (ctx, interaction) => `/interaction/${interaction.uid}` },
+    claims: {
+      openid: ["sub"],
+      profile: ["name", "given_name", "family_name", "hrEduPersonUniqueID", "hrEduPersonHomeOrg", "hrEduPersonAffiliation"],
+    },
+    // First-party demo client: grant the requested scopes without a consent step.
+    async loadExistingGrant(ctx) {
+      // The source read both without a check and threw without them; so does this.
+      const { client, session } = ctx.oidc;
+      if (!client || !session) throw new TypeError("grant without a client or a session");
+      const grant = new ctx.oidc.provider.Grant({
+        clientId: client.clientId,
+        accountId: session.accountId,
+      });
+      grant.addOIDCScope("openid profile");
+      await grant.save();
+      return grant;
+    },
+    findAccount(ctx, id) {
+      const claims = demoAccountClaims(id);
+      if (!claims) return undefined;
+      return {
+        accountId: id,
+        claims() {
+          return claims;
+        },
+      };
+    },
+  };
+}
+
+const escapeHtml = (text: string): string => text.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+
+// The app's "D" mark on --ground and --accent (DAN-345 follow-up): without
+// it the browser's request for /favicon.ico ended in the provider's 404.
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">\
+<rect width="64" height="64" rx="10" fill="#242422"/>\
+<text x="32" y="50" text-anchor="middle" fill="#c8aa6e" font-family="Georgia,serif" font-size="52">D</text></svg>`;
+
+// The tokens of app/globals.css as values (#732 item 2, palette D-188): this server is a
+// separate process and cannot load the app's stylesheet, so the page repeats
+// the few it needs to look like the sign-in screen it is reached from.
+const PAGE_STYLE = `
+:root { color-scheme: dark; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
+  box-sizing: border-box; background: #242422; color: #faf9f5;
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { width: min(430px, 100%); box-sizing: border-box; padding: 30px 30px 24px;
+  background: #2e2e2b; border: 1px solid #8c887f; border-radius: 6px;
+  box-shadow: 0 1px 1px #0007, 0 12px 34px -10px #000a; text-align: center; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 4px; background: #3a3a36;
+  color: #c8aa6e; font-size: 12px; font-weight: 600; }
+h1 { margin: 12px 0 8px; font-size: 24px; font-weight: 400; }
+p { margin: 0 0 20px; font-size: 13px; color: #dedbd3; }
+form { display: grid; gap: 10px; }
+button { min-height: 48px; padding: 12px 18px; border: 0; border-radius: 4px;
+  background: #c8aa6e; color: #242422; font: inherit; font-weight: 600; cursor: pointer; }
+button:hover { background: #dcc28a; }
+button:focus-visible { outline: 3px solid #faf9f5; outline-offset: 4px; }
+`;
+
+function loginPage(uid: string): string {
+  const buttons = Object.entries(ACCOUNTS)
+    .map(([id, account]) => `<button type="submit" name="account" value="${escapeHtml(id)}">${escapeHtml(account.name)}</button>`)
+    .join("\n");
+  return `<!doctype html>
+<html lang="hr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo prijava</title><link rel="icon" href="/favicon.ico" type="image/svg+xml"><style>${PAGE_STYLE}</style></head>
+<body>
+<main>
+<span class="tag">Samo lokalno i CI</span>
+<h1>Demo prijava</h1>
+<p>Ovo nije AAI@EduHr. Lažni pružatelj prijave za lokalni rad i CI; računi su izmišljeni.</p>
+<form method="post" action="/interaction/${escapeHtml(uid)}/login">
+${buttons}
+</form>
+</main>
+</body>
+</html>`;
+}
+
+// `form` is the provider's own hidden form (id "op.logoutForm", with its
+// xsrf value). The one button ends the session here; the script presses it,
+// so a sign-out in Ductus returns to Ductus without a stop, and without JS
+// the button stays.
+function logoutPage(form: string): string {
+  return `<!doctype html>
+<html lang="hr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo odjava</title><link rel="icon" href="/favicon.ico" type="image/svg+xml"><style>${PAGE_STYLE}</style></head>
+<body>
+<main>
+<span class="tag">Samo lokalno i CI</span>
+<h1>Demo odjava</h1>
+<p>Ovo nije AAI@EduHr. Odjava kod lažnog pružatelja prijave za lokalni rad i CI.</p>
+${form}
+<button autofocus type="submit" form="op.logoutForm" name="logout" value="yes">Odjavi se</button>
+</main>
+<script>document.querySelector('button[name="logout"]').click();</script>
+</body>
+</html>`;
+}
+
+async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
+  let body = "";
+  for await (const chunk of req) body += String(chunk);
+  return new URLSearchParams(body);
+}
+
+// F-019 for options that did not come through fakeOidcConfigFromEnv.
+function assertLoopbackOptions(options: FakeOidcOptions): void {
+  loopbackIssuer(options.issuer, options.issuer);
+  for (const uri of [...options.redirectUris, ...options.postLogoutRedirectUris]) {
+    if (!isLoopbackHttpUrl(new URL(uri))) throw new Error(`redirect URI must be on localhost, 127.0.0.1 or [::1]: ${uri}`);
+  }
+}
+
+/**
+ * The fake provider as an HTTP server that does not listen yet. Refuses (D-09)
+ * unless this process's NODE_ENV says local development or test; `env` can
+ * only add a second check, never replace that one. Refuses an issuer or a
+ * redirect address off this machine (F-019).
+ */
+export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
+  assertFakeOidcAllowed(process.env);
+  if (env !== undefined) assertFakeOidcAllowed(env);
+  assertLoopbackOptions(options);
+  // A caller without the types (plain JS) gets no silent `success` for a typo.
+  fakeOidcMode(options.mode);
+  const provider = new Provider(options.issuer, providerConfiguration(options));
+
+  async function handleInteraction(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const details = await provider.interactionDetails(req, res);
+    if (req.method === "GET") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(loginPage(details.uid));
+      return;
+    }
+    const accountId = (await readForm(req)).get("account");
+    if (req.method !== "POST" || !isDemoAccountId(accountId)) {
+      res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+      res.end("Nepoznat demo račun.");
+      return;
+    }
+    // Mode `refuse`: the provider answers as one that declined the sign-in.
+    if (options.mode === "refuse") {
+      await provider.interactionFinished(req, res, { error: "access_denied", error_description: "demo refusal" }, { mergeWithLastSubmission: false });
+      return;
+    }
+    await provider.interactionFinished(req, res, { login: { accountId } }, { mergeWithLastSubmission: false });
+  }
+
+  const providerCallback = provider.callback();
+
+  return createServer((req, res) => {
+    // Mode `unavailable`: as a provider that is down behind its proxy.
+    if (options.mode === "unavailable") {
+      res.writeHead(503, { "content-type": "text/plain; charset=utf-8", "retry-after": "60" });
+      res.end("Demo pružatelj nije dostupan.");
+      return;
+    }
+    if (req.method === "GET" && req.url === "/favicon.ico") {
+      res.writeHead(200, { "content-type": "image/svg+xml", "cache-control": "max-age=3600" });
+      res.end(FAVICON_SVG);
+      return;
+    }
+    if (req.url?.startsWith("/interaction/")) {
+      handleInteraction(req, res).catch((error: unknown) => {
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+        res.end(error instanceof Error ? error.message : String(error));
+      });
+      return;
+    }
+    void providerCallback(req, res);
+  });
+}
+
+// Run directly (`tsx test-support/fake-oidc/server.ts`): the guard and the
+// address checks run before the server listens.
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const { port, options } = fakeOidcConfigFromEnv(process.env);
+  createFakeOidc(options).listen(port, () => {
+    console.log(`fake OIDC (demo prijava, ${options.mode}) on ${options.issuer}`);
+  });
+}
