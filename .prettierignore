@@ -11,3 +11,6 @@ server/contracts/generated/
 openapi/v1.json
 # Ported verbatim from Ductus db/tests (S-0.15); psql reads them as they are.
 db/main/tests/
+# Golden vectors (S-0.19), byte for byte as in Ductus src/domain/forensics/golden-vectors
+# at d52a92c3: tests hash and parse the raw bytes, so a reformat changes the vectors.
+server/domain/forensics/golden-vectors/*.json

@@ -1,0 +1,15 @@
+# server/domain
+
+Područje domene (karta: [docs/server-map.md](../../docs/server-map.md)): čista pravila i modeli bez I/O-a, SQL-a i vendor SDK-ova. Prenesen iz Ductusa na `d52a92c3` (S-0.19, DAN-732) bez promjene logike; izmjene su samo uvozi (`.ts`, preko `index.ts`), tipovi pod strožim `tsconfig.json` (`!` gdje Ductus ne traži provjeru indeksa) i imena koja traži lint.
+
+| Mapa                                     | Iz Ductusa                        | Što je                                                                                  |
+| ---------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
+| [forensics](forensics/README.md)         | `src/domain/forensics`            | JCS, segmenti dokaza v2 do v4, lanac, kontrolne točke, potvrde, potpisi, testni vektori |
+| [evidence](evidence/README.md)           | `src/domain/evidence`             | Osnova dokaza (tvrdnja, izvor, izvadak) i omotnica `commit` zahtjeva                    |
+| [document](document/README.md)           | dio `src/domain/document`         | Kanonski model dokumenta i koraci uređivanja koje forensics provjerava                  |
+| [collaboration](collaboration/README.md) | `src/domain/collaboration/anchor` | Sidro u tekstu koje osnova dokaza koristi                                               |
+| [json](json/README.md)                   | `src/domain/json.ts`              | Zajednički JSON tipovi i provjere                                                       |
+
+`index.ts` izvozi sve mape. `SourceId` je iz `document`; istoimeni tip osnove dokaza izvozi se kao `EvidenceSourceId`.
+
+Mapa ne uvozi ništa izvan sebe (karta §2: `domain` → —); uvozi su samo `node:crypto` i, u testovima, `node:fs`, `node:path`, `vitest` i `fast-check`.
