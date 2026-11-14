@@ -129,6 +129,13 @@ describe("modes", () => {
     const tokens = await token(issuer, code ?? "", verifier);
     const id = payload(tokens.id_token);
     expect(id).toMatchObject({ iss: issuer, aud: "ductus-local", sub: "demo-student", nonce: "nonce-1" });
+    // As in the source (default conformIdTokenClaims) and as the app reads
+    // them (Ductus src/server/auth/claims.ts): the hrEdu claims come through
+    // userinfo, and the ID token carries the session id but not them.
+    expect(typeof id.sid).toBe("string");
+    for (const claim of ["hrEduPersonUniqueID", "hrEduPersonHomeOrg", "hrEduPersonAffiliation"]) {
+      expect(id, claim).not.toHaveProperty(claim);
+    }
     const info = await userinfo(issuer, tokens.access_token);
     expect(info.status).toBe(200);
     expect(await info.json()).toMatchObject({
