@@ -20,11 +20,14 @@
     "test:integration": "vitest run --project integration",
     "contracts:generate": "tsx scripts/generate-contracts.ts",
     "contracts:breaking": "tsx scripts/check-breaking.ts",
+    "db:sum": "node scripts/db/migrations-ledger.ts --write",
     "prepare": "lefthook install"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
     "@types/oidc-provider": "9.12.1",
+    "@types/pg": "8.23.1",
+    "dbmate": "2.36.0",
     "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
     "fast-check": "^4.10.2",
@@ -37,6 +40,7 @@
     "vitest": "^5.1.0"
   },
   "dependencies": {
-    "@sinclair/typebox": "0.34.52"
+    "@sinclair/typebox": "0.34.52",
+    "pg": "8.23.1"
   }
 }

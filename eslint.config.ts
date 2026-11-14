@@ -34,9 +34,12 @@ const WIRE_NAMES = [
   "backchannel_logout_session_required", // OpenID Connect Back-Channel Logout 1.0, section 2.2
 ];
 // Names fixed outside this repository that are not wire names: process
-// environment variables and the oidc-provider configuration keys (Configuration
-// "ttl"). A closed list of exact names, only for properties.
-const FIXED_NAMES = ["NODE_ENV", "PORT", "IdToken", "AccessToken"];
+// environment variables, the oidc-provider configuration keys (Configuration
+// "ttl") and one PostgreSQL connection parameter. A closed list of exact names,
+// only for properties.
+// "application_name" is the node-postgres client option named after the
+// PostgreSQL connection parameter (libpq, "Parameter Key Words").
+const FIXED_NAMES = ["NODE_ENV", "PORT", "IdToken", "AccessToken", "application_name"];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.

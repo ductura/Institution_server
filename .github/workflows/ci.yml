@@ -58,6 +58,25 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Provjera tipova
         run: pnpm typecheck
+      # D-91 (1), S-0.13: db/main/migrations.sum matches the files, and no
+      # migration of the base (PR base, or main before this push) changed or
+      # disappeared. On a PR the checkout is the merge commit, so main's newer
+      # migrations count. Ported from the Ductus step "Migration ledger (D-91)".
+      - name: Knjiga migracija (D-91)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          base=""
+          if [ "$EVENT_NAME" = pull_request ]; then base="$PR_BASE"; elif [ "$EVENT_NAME" = push ]; then base="$PUSH_BEFORE"; fi
+          if [ -n "$base" ]; then
+            [[ "$base" =~ ^[a-f0-9]{40}$ ]]
+            git fetch --no-tags --depth=1 origin "$base"
+            node scripts/db/migrations-ledger.ts --base "$base"
+          else
+            node scripts/db/migrations-ledger.ts
+          fi
       - name: Lint
         run: pnpm lint
       - name: Formatiranje
