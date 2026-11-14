@@ -9,6 +9,54 @@ const obj = (v: unknown): Obj =>
   typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Obj) : {};
 const strings = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+// Only the document's own keys count: "toString" or "__proto__" exist on every object.
+const has = (o: Obj, k: string): boolean => Object.hasOwn(o, k);
+const own = (o: Obj, k: string): unknown => (has(o, k) ? o[k] : undefined);
+
+// Keywords that describe a value but never change which values are valid.
+const ANNOTATIONS = new Set([
+  "$comment",
+  "$id",
+  "$schema",
+  "default",
+  "deprecated",
+  "description",
+  "example",
+  "examples",
+  "readOnly",
+  "title",
+  "writeOnly",
+]);
+// Keywords schema() compares one by one; a change in any other keyword is reported as is.
+const COMPARED = new Set([
+  "additionalProperties",
+  "anyOf",
+  "const",
+  "enum",
+  "format",
+  "items",
+  "maxItems",
+  "maxLength",
+  "maxProperties",
+  "maximum",
+  "minItems",
+  "minLength",
+  "minProperties",
+  "minimum",
+  "oneOf",
+  "pattern",
+  "properties",
+  "required",
+  "type",
+]);
+
+/** Keys outside `skip`, annotations and x- extensions whose value differs, sorted. */
+function changedKeys(a: Obj, b: Obj, skip: ReadonlySet<string>): string[] {
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])]
+    .filter((k) => !skip.has(k) && !ANNOTATIONS.has(k) && !k.startsWith("x-"))
+    .filter((k) => canonical(own(a, k)) !== canonical(own(b, k)))
+    .sort();
+}
 
 /** JSON with sorted keys, so two equal schemas give the same text. */
 function canonical(v: unknown): string {
@@ -39,9 +87,12 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
         : [vb ?? [b], va ?? [a], "new in response"];
     const known = new Set(have.map(canonical));
     for (const v of must) if (!known.has(canonical(v))) out.push(`${at}: ${word} ${canonical(v)}`);
+    if (va && vb)
+      for (const k of changedKeys(a, b, new Set(["anyOf", "oneOf"])))
+        out.push(`${at}: ${k} changed beside alternatives`);
     return;
   }
-  if (a.type !== b.type)
+  if (canonical(a.type) !== canonical(b.type))
     return void out.push(`${at}: type changed from ${String(a.type)} to ${String(b.type)}`);
   const fixed = dir === "request" ? b.const : a.const;
   if (fixed !== undefined && canonical(a.const) !== canonical(b.const))
@@ -58,6 +109,8 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
     for (const k of ["format", "pattern"])
       if (b[k] !== undefined && b[k] !== a[k]) out.push(`${at}: ${k} changed`);
   }
+  enumValues(at, a, b, dir, out);
+  for (const k of changedKeys(a, b, COMPARED)) out.push(`${at}: ${k} changed`);
   if (a.type === "array") schema(`${at}[]`, obj(a.items), obj(b.items), dir, out);
   if (a.type !== "object") return;
   const pa = obj(a.properties);
@@ -66,14 +119,17 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
   const rb = new Set(strings(b.required));
   for (const [name, s] of Object.entries(pa)) {
     const where = `${at}.${name}`;
-    if (!(name in pb)) {
+    if (!has(pb, name)) {
       if (dir === "response") out.push(`${where}: field removed`);
       else if (b.additionalProperties === false) out.push(`${where}: field no longer accepted`);
+      // The old field's values now have to pass the schema for extra fields.
+      else if (isSchema(b.additionalProperties))
+        schema(where, obj(s), obj(b.additionalProperties), dir, out);
       continue;
     }
     if (dir === "response" && ra.has(name) && !rb.has(name))
       out.push(`${where}: field became optional`);
-    schema(where, obj(s), obj(pb[name]), dir, out);
+    schema(where, obj(s), obj(own(pb, name)), dir, out);
   }
   if (dir === "request") {
     for (const name of rb) if (!ra.has(name)) out.push(`${at}.${name}: field became required`);
@@ -81,7 +137,7 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
     if (a.additionalProperties !== false) {
       const extra = a.additionalProperties;
       for (const [name, s] of Object.entries(pb)) {
-        if (name in pa) continue;
+        if (has(pa, name)) continue;
         if (typeof extra === "object" && extra !== null)
           schema(`${at}.${name}`, obj(extra), obj(s), dir, out);
         else if (canonical(s) !== "{}") out.push(`${at}.${name}: field now constrained`);
@@ -91,15 +147,32 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
   }
 }
 
+/** An `enum` may widen in a request and narrow in a response. */
+function enumValues(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void {
+  const [from, to] = dir === "request" ? [a.enum, b.enum] : [b.enum, a.enum];
+  if (!Array.isArray(to)) return;
+  if (!Array.isArray(from))
+    return void out.push(`${at}: ${dir === "request" ? "enum added" : "enum removed"}`);
+  const known = new Set(to.map(canonical));
+  const word = dir === "request" ? "no longer accepted" : "new in response";
+  for (const v of from) if (!known.has(canonical(v))) out.push(`${at}: ${word} ${canonical(v)}`);
+}
+
+/** A schema that refuses some values; `true`, a missing one and `{}` accept anything. */
+function isSchema(v: unknown): boolean {
+  return typeof v === "object" && v !== null && canonical(v) !== "{}";
+}
+
 /** A request object's allowance for undeclared fields may widen, never narrow. */
 function extraFields(at: string, a: unknown, b: unknown, out: string[]): void {
   if (a === false) return;
   if (b === false) return void out.push(`${at}: extra fields no longer accepted`);
-  const isSchema = (v: unknown) => typeof v === "object" && v !== null && canonical(v) !== "{}";
   if (!isSchema(b)) return;
   if (!isSchema(a)) return void out.push(`${at}: extra fields now constrained`);
   schema(`${at}.*`, obj(a), obj(b), "request", out);
 }
+
+const PARAMETER_COMPARED = new Set(["in", "name", "required", "schema"]);
 
 function parameters(at: string, a: Obj, b: Obj, out: string[]): void {
   const byKey = (op: Obj) =>
@@ -116,6 +189,8 @@ function parameters(at: string, a: Obj, b: Obj, out: string[]): void {
     else {
       if (p.required !== true && q.required === true)
         out.push(`${at}: parameter ${key} became required`);
+      for (const k of changedKeys(p, q, PARAMETER_COMPARED))
+        out.push(`${at}: parameter ${key} ${k} changed`);
       schema(`${at} parameter ${key}`, obj(p.schema), obj(q.schema), "request", out);
     }
   }
@@ -129,9 +204,17 @@ function requestBody(at: string, a: Obj, b: Obj, out: string[]): void {
   if (!ca && cb) return void out.push(`${at}: request body added`);
   if (ca && !cb) return void out.push(`${at}: request body removed`);
   if (!ca || !cb) return;
+  if (obj(a.requestBody).required !== true && obj(b.requestBody).required === true)
+    out.push(`${at}: request body became required`);
   for (const [type, media] of Object.entries(ca)) {
-    if (!(type in cb)) out.push(`${at}: content type ${type} removed`);
-    else schema(`${at} body`, obj(obj(media).schema), obj(obj(cb[type]).schema), "request", out);
+    if (!has(cb, type)) {
+      out.push(`${at}: content type ${type} removed`);
+      continue;
+    }
+    const next = obj(own(cb, type));
+    for (const k of changedKeys(obj(media), next, new Set(["schema"])))
+      out.push(`${at}: content type ${type} ${k} changed`);
+    schema(`${at} body`, obj(obj(media).schema), obj(next.schema), "request", out);
   }
   const la = a["x-max-body-bytes"];
   const lb = b["x-max-body-bytes"];
@@ -143,19 +226,19 @@ function successResponses(at: string, a: Obj, b: Obj, out: string[]): void {
   const rb = obj(b.responses);
   for (const [status, r] of Object.entries(obj(a.responses))) {
     if (Number(status) >= 400) continue;
-    if (!(status in rb)) {
+    if (!has(rb, status)) {
       out.push(`${at}: response ${status} removed`);
       continue;
     }
-    const next = obj(rb[status]);
-    const ja = obj(obj(r).content)["application/json"];
-    const jb = obj(next.content)["application/json"];
+    const next = obj(own(rb, status));
+    const ja = own(obj(obj(r).content), "application/json");
+    const jb = own(obj(next.content), "application/json");
     if (ja !== undefined && jb === undefined) out.push(`${at}: response ${status} body removed`);
     else if (ja !== undefined)
       schema(`${at} response ${status}`, obj(obj(ja).schema), obj(obj(jb).schema), "response", out);
     const hb = obj(next.headers);
     for (const h of Object.keys(obj(obj(r).headers)))
-      if (!(h in hb)) out.push(`${at}: response ${status} header ${h} removed`);
+      if (!has(hb, h)) out.push(`${at}: response ${status} header ${h} removed`);
   }
 }
 
@@ -197,7 +280,7 @@ export function breakingChanges(before: unknown, after: unknown): string[] {
   for (const [path, ops] of Object.entries(obj(obj(before).paths))) {
     for (const [method, op] of Object.entries(obj(ops))) {
       const at = `${method.toUpperCase()} ${path}`;
-      const b = obj(next[path])[method];
+      const b = own(obj(own(next, path)), method);
       if (b === undefined) {
         out.push(`${at}: route removed`);
         continue;

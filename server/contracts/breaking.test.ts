@@ -307,6 +307,182 @@ describe("schema for extra request fields", () => {
   });
 });
 
+// Every keyword the guard does not compare one by one must still be caught when it
+// changes, or a request could be narrowed through it unnoticed.
+describe("other schema keywords", () => {
+  it.each<[string, (d: Obj) => void]>([
+    ["enum added", (d) => (token(d).enum = ["a"])],
+    [
+      "exclusiveMinimum added",
+      (d) => (returnTo(d).schema = { type: "string", exclusiveMinimum: 1 }),
+    ],
+    ["multipleOf added", (d) => (token(d).multipleOf = 2)],
+    ["pattern properties added", (d) => (formBody(d).patternProperties = { "^x": str })],
+    ["property names added", (d) => (formBody(d).propertyNames = { maxLength: 3 })],
+    ["dependentRequired added", (d) => (formBody(d).dependentRequired = { a: ["b"] })],
+    ["allOf added", (d) => (token(d).allOf = [{ maxLength: 3 }])],
+    ["not added", (d) => (token(d).not = { const: "x" })],
+    ["uniqueItems added", (d) => (token(d).uniqueItems = true)],
+    ["contentEncoding added", (d) => (token(d).contentEncoding = "base64")],
+  ])("request %s breaks", (name, edit) => {
+    expect(breakingChanges(openapiDocument(), changed(edit))).not.toEqual([]);
+  });
+
+  it("names the keyword that changed", () => {
+    expect(
+      breakingChanges(
+        openapiDocument(),
+        changed((d) => (token(d).multipleOf = 2)),
+      ),
+    ).toEqual([`POST ${BACKCHANNEL} body.logout_token: multipleOf changed`]);
+  });
+
+  it("an enum may widen in a request and narrow in a response, not the other way", () => {
+    const at = `POST ${BACKCHANNEL} body.logout_token`;
+    const before = changed((d) => (token(d).enum = ["a", "b"]));
+    const after = (values: unknown) =>
+      breakingChanges(
+        before,
+        changed((d) => (token(d).enum = values), "1.2.0"),
+      );
+    expect(after(["a", "b", "c"])).toEqual([]);
+    expect(after(["a"])).toEqual([`${at}: no longer accepted "b"`]);
+    const status = `GET ${HEALTH} response 200.status`;
+    const resp = changed((d) => (node(okProps(d, HEALTH), "status").enum = ["ok", "slow"]));
+    const respAfter = (values: unknown) =>
+      breakingChanges(
+        resp,
+        changed((d) => (node(okProps(d, HEALTH), "status").enum = values), "1.2.0"),
+      );
+    expect(respAfter(["ok"])).toEqual([]);
+    expect(respAfter(["ok", "slow", "down"])).toEqual([`${status}: new in response "down"`]);
+  });
+
+  it("a constraint beside alternatives counts", () => {
+    expect(
+      breakingChanges(
+        openapiDocument(),
+        changed((d) => (node(localeBody(d), "properties", "locale").maxLength = 1)),
+      ),
+    ).toEqual([`POST ${LOCALE} body.locale: maxLength changed beside alternatives`]);
+  });
+
+  it("annotations and vendor keys break nothing", () => {
+    const after = changed((d) => {
+      token(d).description = "opaque";
+      token(d).title = "token";
+      token(d).examples = ["a"];
+      token(d)["x-note"] = 1;
+    });
+    expect(breakingChanges(openapiDocument(), after)).toEqual([]);
+  });
+});
+
+describe("request narrowing outside the field schemas", () => {
+  it("a field removed from an open request is judged by the new extra-field schema", () => {
+    const before = changed(
+      (d) => (formBody(d).additionalProperties = { type: "string", maxLength: 5 }),
+    );
+    const after = changed((d) => {
+      formBody(d).additionalProperties = { type: "string", maxLength: 5 };
+      delete node(formBody(d), "properties").logout_token;
+      formBody(d).required = [];
+    }, "1.2.0");
+    expect(breakingChanges(before, after)).toEqual([
+      `POST ${BACKCHANNEL} body.logout_token: maxLength lowered`,
+    ]);
+  });
+
+  it("a request body that became required breaks", () => {
+    const optional = (version: string) =>
+      changed((d) => (node(op(d, LOCALE, "post"), "requestBody").required = false), version);
+    expect(
+      breakingChanges(
+        optional("1.1.0"),
+        changed(() => undefined, "1.2.0"),
+      ),
+    ).toEqual([`POST ${LOCALE}: request body became required`]);
+    expect(
+      breakingChanges(
+        changed(() => undefined),
+        optional("1.2.0"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("a parameter serialization change breaks", () => {
+    expect(
+      breakingChanges(
+        openapiDocument(),
+        changed((d) => (returnTo(d).style = "form")),
+      ),
+    ).toEqual([`GET ${LOGIN}: parameter query:returnTo style changed`]);
+  });
+
+  it("a media type encoding change breaks", () => {
+    const after = changed(
+      (d) =>
+        (node(
+          op(d, BACKCHANNEL, "post"),
+          "requestBody",
+          "content",
+          "application/x-www-form-urlencoded",
+        ).encoding = { logout_token: { contentType: "text/plain" } }),
+    );
+    expect(breakingChanges(openapiDocument(), after)).toEqual([
+      `POST ${BACKCHANNEL}: content type application/x-www-form-urlencoded encoding changed`,
+    ]);
+  });
+});
+
+// Names such as "toString" or "__proto__" exist on every object through its prototype;
+// only own keys of the document may count.
+describe("inherited key names", () => {
+  const ownKey = (o: Obj, key: string, value: unknown) =>
+    Object.defineProperty(o, key, { value, enumerable: true, writable: true, configurable: true });
+
+  it.each(["toString", "constructor", "__proto__", "hasOwnProperty"])(
+    "a response field named %s that is removed is reported",
+    (key) => {
+      const before = changed((d) => ownKey(okProps(d, HEALTH), key, {}));
+      expect(
+        breakingChanges(
+          before,
+          changed(() => undefined, "1.2.0"),
+        ),
+      ).toEqual([`GET ${HEALTH} response 200.${key}: field removed`]);
+    },
+  );
+
+  it.each(["toString", "constructor", "__proto__", "valueOf"])(
+    "a new constrained request field named %s in an open request is reported",
+    (key) => {
+      const after = changed((d) => ownKey(node(formBody(d), "properties"), key, { maxLength: 1 }));
+      expect(breakingChanges(openapiDocument(), after)).toEqual([
+        `POST ${BACKCHANNEL} body.${key}: field now constrained`,
+      ]);
+    },
+  );
+
+  it("a success status, header or content type named like a prototype key is compared", () => {
+    const before = changed((d) => {
+      ownKey(responses(d, HEALTH), "constructor", { description: "x" });
+      ownKey(node(responses(d, LOGIN), "303", "headers"), "toString", { schema: str });
+      ownKey(node(op(d, LOCALE, "post"), "requestBody", "content"), "valueOf", { schema: str });
+    });
+    expect(
+      breakingChanges(
+        before,
+        changed(() => undefined, "1.2.0"),
+      ),
+    ).toEqual([
+      `GET ${LOGIN}: response 303 header toString removed`,
+      `GET ${HEALTH}: response constructor removed`,
+      `POST ${LOCALE}: content type valueOf removed`,
+    ]);
+  });
+});
+
 describe("version field", () => {
   it.each([
     [
