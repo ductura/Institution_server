@@ -2,8 +2,8 @@
 // input validators, OpenAPI, TypeScript types, a fetch client and a fake server.
 // Generated files are committed; server/contracts/contracts.test.ts fails when
 // they differ from a fresh run. Usage: pnpm contracts:generate
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { TSchema } from "@sinclair/typebox";
@@ -158,7 +158,8 @@ export function generate(): Record<string, string> {
   const routes = sorted();
   return {
     "client.ts": `${HEADER}${CLIENT_PREAMBLE}\n${routeTable(routes)}${CLIENT_BODY}`,
-    "fake-server.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes)}${FAKE_BODY(FALLBACK.error.code)}`,
+    // Its own entry: it needs node:http, and generated/index.ts must load in a browser.
+    "fake-server/index.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes)}${FAKE_BODY(FALLBACK.error.code)}`,
     "openapi.json": json(openapi(routes)),
     "types.ts": types(routes),
     "validate.ts": validators(routes),
@@ -167,7 +168,6 @@ export function generate(): Record<string, string> {
 }
 
 const INDEX = `${HEADER}export { createClient, type Result } from "./client.ts";
-export { createFakeServer } from "./fake-server.ts";
 export type { OperationId, Operations } from "./types.ts";
 export { VALIDATORS, validateInput } from "./validate.ts";
 `;
@@ -248,8 +248,10 @@ export function createFakeServer(): Server {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const files = generate();
-  mkdirSync(OUT_DIR, { recursive: true });
-  for (const name of readdirSync(OUT_DIR)) if (!(name in files)) rmSync(join(OUT_DIR, name));
-  for (const [name, content] of Object.entries(files)) writeFileSync(join(OUT_DIR, name), content);
+  rmSync(OUT_DIR, { recursive: true, force: true });
+  for (const [name, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(OUT_DIR, name)), { recursive: true });
+    writeFileSync(join(OUT_DIR, name), content);
+  }
   console.log(`contracts: ${Object.keys(files).length} files in ${OUT_DIR}`);
 }

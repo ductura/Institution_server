@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { Type } from "@sinclair/typebox";
@@ -18,7 +18,10 @@ const FALLBACK_FILE = "app/api/[...path]/route.ts";
 describe("generated = committed", () => {
   it("every generated file matches a fresh run, byte for byte, with no extra files", () => {
     const files = generate();
-    expect(readdirSync(OUT_DIR).sort()).toEqual(Object.keys(files).sort());
+    const onDisk = readdirSync(OUT_DIR, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => relative(OUT_DIR, join(entry.parentPath, entry.name)).split(sep).join("/"));
+    expect(onDisk.sort()).toEqual(Object.keys(files).sort());
     for (const [name, content] of Object.entries(files)) {
       expect(readFileSync(join(OUT_DIR, name), "utf8"), name).toBe(content);
     }
@@ -118,8 +121,25 @@ describe("server/contracts imports only the schema library", () => {
       const inside = spec.startsWith(".") && !relative(CONTRACTS_DIR, target).startsWith("..");
       const allowed = inside || spec === "@sinclair/typebox";
       // The generated fake server is the one file that may use node:http.
-      expect(allowed || (file === join("generated", "fake-server.ts") && spec === "node:http"), `${file}: ${spec}`).toBe(true);
+      expect(allowed || (file === join("generated", "fake-server", "index.ts") && spec === "node:http"), `${file}: ${spec}`).toBe(true);
     }
+  });
+});
+
+describe("generated/index.ts loads without Node built-ins", () => {
+  it("no module reachable from it imports node:", () => {
+    const seen = new Set<string>();
+    const visit = (file: string): void => {
+      if (seen.has(file)) return;
+      seen.add(file);
+      const text = readFileSync(file, "utf8");
+      for (const [, spec = ""] of text.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)) {
+        expect(spec.startsWith("node:"), `${relative(CONTRACTS_DIR, file)}: ${spec}`).toBe(false);
+        if (spec.startsWith(".")) visit(resolve(dirname(file), spec));
+      }
+    };
+    visit(join(OUT_DIR, "index.ts"));
+    expect(seen.size).toBeGreaterThan(1);
   });
 });
 

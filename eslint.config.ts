@@ -12,6 +12,19 @@ import { localPlugin } from "./scripts/lint-rules/index.ts";
 const WIRE_NAMES = [
   "logout_token", // OpenID Connect Back-Channel Logout 1.0, section 2.5
 ];
+// ESTree node types: ESLint fixes them as the method names of a rule visitor
+// (scripts/lint-rules). A closed list of exact names, only for object-literal
+// methods, never variables, functions or types.
+const ESTREE_NODE_NAMES = [
+  "Program",
+  "ImportDeclaration",
+  "ExportNamedDeclaration",
+  "ExportAllDeclaration",
+  "ImportExpression",
+  "CallExpression",
+  "TSImportType",
+  "TSExternalModuleReference",
+];
 
 export default defineConfig(
   { ignores: ["**/node_modules/", "**/dist/", "**/coverage/"] },
@@ -42,10 +55,7 @@ export default defineConfig(
         "error",
         { selector: "default", format: ["camelCase"] },
         { selector: "variable", format: ["camelCase", "PascalCase", "UPPER_CASE"] },
-        { selector: "function", format: ["camelCase", "PascalCase"] },
-        { selector: "import", format: ["camelCase", "PascalCase"] },
         { selector: "typeLike", format: ["PascalCase"] },
-        { selector: ["property", "method", "accessor"], format: ["camelCase", "PascalCase", "UPPER_CASE"] },
         {
           selector: ["property", "method", "accessor"],
           modifiers: ["requiresQuotes"],
@@ -54,6 +64,11 @@ export default defineConfig(
         {
           selector: "property",
           filter: { regex: `^(?:${WIRE_NAMES.join("|")})$`, match: true },
+          format: null,
+        },
+        {
+          selector: "objectLiteralMethod",
+          filter: { regex: `^(?:${ESTREE_NODE_NAMES.join("|")})$`, match: true },
           format: null,
         },
       ],

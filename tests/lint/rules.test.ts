@@ -41,7 +41,11 @@ const failing: Case[] = [
   ...[
     "./sub\\\\c.ts", ".\\\\sub\\\\c.ts", "./sub/c.ts#/index.ts", "./sub/c.ts?/index.ts", "./sub/%69ndex.ts",
     "/abs/sub/c.ts", "file:///abs/sub/c.ts",
+    // absolute on Windows, flagged whatever OS runs lint
+    "D:/x/server/store.ts", "d:/x/a.ts", "D:\\\\x\\\\a.ts", "d:\\\\x\\\\a.ts", "\\\\\\\\host\\\\share\\\\a.ts", "//host/share/a.ts",
   ].map((spec) => ({ file: AT, code: imp(spec), rule: BOUNDARY, messageId: "form" })),
+  { file: AT, code: 'const m = require("D:/x/server/store.ts");\n', rule: BOUNDARY, messageId: "form" },
+  { file: AT, code: 'const m = await import("D:/x/server/store.ts");\n', rule: BOUNDARY, messageId: "form" },
   { file: AT, code: 'export { x } from "./sub/c.ts";\n', rule: BOUNDARY },
   { file: AT, code: 'export * from "../sib/c.ts";\n', rule: BOUNDARY },
   { file: AT, code: 'import type { T } from "../c.ts";\n', rule: BOUNDARY },
@@ -76,6 +80,19 @@ const failing: Case[] = [
   { file: AT, code: "export type myType = string;\n", rule: NAMING },
   { file: AT, code: "export const o = { some_key: 1 };\n", rule: NAMING },
   { file: AT, code: "export const f = (Bad_arg: string): string => Bad_arg;\n", rule: NAMING },
+  // functions, properties, methods and imports are camelCase only
+  { file: AT, code: "export function BadName(): void {}\n", rule: NAMING },
+  { file: AT, code: "export function BAD_NAME(): void {}\n", rule: NAMING },
+  { file: AT, code: "export const o = { BAD_KEY: 1 };\n", rule: NAMING },
+  { file: AT, code: "export const o = { BadKey: 1 };\n", rule: NAMING },
+  { file: AT, code: "export type T = { BadKey: string };\n", rule: NAMING },
+  { file: AT, code: "export const o = { BadMethod(): void {} };\n", rule: NAMING },
+  { file: AT, code: "export class C { BadMethod(): void {} }\n", rule: NAMING },
+  { file: AT, code: 'import Bad_import from "fast-check";\n', rule: NAMING },
+  { file: AT, code: 'import BadImport from "fast-check";\n', rule: NAMING },
+  // the ESTree-name list is exact and covers only object-literal methods
+  { file: AT, code: "export function Program(): void {}\n", rule: NAMING },
+  { file: AT, code: "export const o = { ProgramX(): void {} };\n", rule: NAMING },
   // the wire-name list is exact and covers only properties
   { file: AT, code: "export const o = { logout_token_x: 1 };\n", rule: NAMING },
   { file: AT, code: "export const o = { x_logout_token: 1 };\n", rule: NAMING },
@@ -107,7 +124,8 @@ const passing: Fixture[] = [
     code: [
       "export const myVar = 1;",
       "export const MAX_SIZE = 2;",
-      "export const Schema = { camelKey: 1, UPPER_KEY: 2, 'content-type': 'x' };",
+      "export const Schema = { camelKey: 1, 'content-type': 'x' };",
+      "export const visitor = { Program(): void {}, CallExpression: (): void => {} };",
       "export type MyType = { a: string };",
       "export function doThing(value: unknown): unknown { return value; }",
       "export const body = { logout_token: 'x' };",
