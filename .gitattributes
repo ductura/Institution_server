@@ -8,3 +8,9 @@ db/main/migrations.sum text eol=lf
 # The role file of the local and CI database (S-0.13), verbatim from Ductus
 # db/local/migrator.sql, gets LF like the migrations.
 db/main/local/** text eol=lf
+# Local stack files (S-0.14): psql reads the provisioning SQL with \if and
+# \gexec, and the shell script runs inside the Linux image, where a CRLF line
+# ends in "\r". scripts/db/local-files.test.ts checks the attributes and bytes.
+infra/postgres/assert-pg-version.sh text eol=lf
+infra/postgres/Dockerfile text eol=lf
+compose.yaml text eol=lf

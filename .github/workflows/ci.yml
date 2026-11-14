@@ -103,6 +103,7 @@ jobs:
       PGPORT: "5499"
       PGUSER: postgres
       PGDATABASE: ductura_ci
+      DUCTUS_NATIVE_PGPORT: "5498"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -169,6 +170,22 @@ jobs:
           files="$(find db/main/migrations -maxdepth 1 -name '*.sql' | wc -l)"
           echo "Primijenjeno $applied od $files migracija."
           [ "$applied" -eq "$files" ]
+      # S-0.14 (DAN-727): `pnpm db:up:native` brings the main database up
+      # natively, as on a developer machine, on its own cluster of the
+      # runner user (socket as superuser, loopback TCP with SCRAM), twice: the
+      # second run must change nothing. Then the roles it made are compared
+      # with the Ductus list (tests/db/local-roles.integration.test.ts, in
+      # pnpm test:database).
+      - name: Lokalni stog, nativno (pnpm db:up:native)
+        run: |
+          echo "DUCTUS_NATIVE_PGSOCKET=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export DUCTUS_NATIVE_PGSOCKET="$RUNNER_TEMP"
+          "$PGBIN/initdb" -D "$RUNNER_TEMP/native-data" -U "$(id -un)" \
+            --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8
+          "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/native-data" -l "$RUNNER_TEMP/native.log" -w start \
+            -o "-p $DUCTUS_NATIVE_PGPORT -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"
+          PATH="$PGBIN:$PATH" pnpm db:up:native
+          PATH="$PGBIN:$PATH" pnpm db:up:native
       - name: Testovi migracija
         env:
           DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus

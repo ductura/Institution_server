@@ -40,6 +40,27 @@ const WIRE_NAMES = [
 // "application_name" is the node-postgres client option named after the
 // PostgreSQL connection parameter (libpq, "Parameter Key Words").
 const FIXED_NAMES = ["NODE_ENV", "PORT", "IdToken", "AccessToken", "application_name"];
+// Process environment variables of the local database scripts (S-0.14,
+// scripts/db/native-db.ts and its tests): the DUCTUS_* names come from Ductus,
+// the others are the libpq, psql and dbmate variables those scripts strip or
+// set. A closed list of exact names, only for properties.
+const ENV_NAMES = [
+  "DUCTUS_NATIVE_PGHOST",
+  "DUCTUS_NATIVE_PGPORT",
+  "DUCTUS_NATIVE_PGSOCKET",
+  "DUCTUS_NATIVE_PGUSER",
+  "DUCTUS_NATIVE_PGDATABASE",
+  "DUCTUS_NATIVE_PGPASSWORD",
+  "DUCTUS_AUTH_LOCAL_PASSWORD",
+  "DUCTUS_WORKER_LOCAL_PASSWORD",
+  "PGHOST",
+  "PGPASSWORD",
+  "PGPASSFILE",
+  "PSQLRC",
+  "DBMATE_URL",
+  "DATABASE_URL",
+  "PATH",
+];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
 // verbatim, D-91) and one alias of a test query (app_can_select). The tests are
@@ -122,7 +143,7 @@ export default defineConfig(
         {
           selector: "property",
           filter: {
-            regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES, ...COLUMN_NAMES].join("|")})$`,
+            regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES, ...ENV_NAMES, ...COLUMN_NAMES].join("|")})$`,
             match: true,
           },
           format: null,
