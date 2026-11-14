@@ -8,8 +8,12 @@ export interface AccessDoc {
 
 /**
  * Reads the user identity from the Authorization header.
- * In development the token is the user ID itself ("Bearer student-a@primjer.invalid").
- * It is later replaced by a session check after AAI@EduHr (SAML) login.
+ *
+ * TEMPORARY TEST STAND-IN, NOT A LOGIN METHOD: the token is the user ID itself
+ * ("Bearer student-a@primjer.invalid"), so anyone can claim any identity. It may
+ * run only in tests and local development, never in any deployed environment.
+ * It is not AAI@EduHr; students sign in only through AAI@EduHr (D-09). The login
+ * tasks (S-1E) replace it with a session from AAI@EduHr login.
  */
 export function parseBearer(header: unknown): string | null {
   if (typeof header !== "string") return null;

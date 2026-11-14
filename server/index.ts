@@ -1,3 +1,6 @@
+// Local development entry point only. Login here is the temporary test
+// stand-in from access.ts (parseBearer), which must never run outside tests and
+// local work; the login tasks (S-1E) replace it.
 import { createApp } from "./app.ts";
 import { createStore } from "./store.ts";
 

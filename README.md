@@ -11,7 +11,7 @@ Zajednički API za sva Ductura sučelja: prijava AAI@EduHr, ovlasti, baza i poza
 
 ```bash
 pnpm install
-pnpm start              # http://localhost:4000 (PORT mijenja priključak)
+pnpm start              # samo lokalno: http://localhost:4000 (PORT mijenja priključak)
 pnpm typecheck          # TypeScript strict, bez izlaznih datoteka
 pnpm test               # svi vitest projekti
 pnpm test:unit
@@ -48,7 +48,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 ## Stanje kostura
 
-- Prijava: u razvoju je token samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`). Zamjenjuje ga sesija nakon prijave AAI@EduHr (SAML).
+- Prijava: **privremena testna zamjena, ne način prijave.** Token je samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`), pa se svatko može predstaviti kao bilo tko. Smije se pokretati samo u testovima i lokalnom radu, nikad u nekom postavljenom okruženju. To nije AAI@EduHr: studenti se prijavljuju isključivo preko AAI@EduHr (D-09). Zamjenjuju je zadaci prijave (S-1E) sesijom nakon prijave AAI@EduHr.
 - Baza: memorijska (`server/store.ts`). Zamjenjuje je prava baza.
 - Pozadinski poslovi: još nisu dodani.
 
