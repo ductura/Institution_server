@@ -6,6 +6,6 @@ Alati za migracije glavne baze (D-91). Prijenos iz Ductusa na `d52a92c3a108f3f0e
 - `migrate-locked.ts`: pokreće `dbmate up --strict` nad `db/main/migrations` dok na vlastitoj vezi drži `pg_advisory_lock`; gubitak veze, otkucaj koji ne uspije ili zapne i signal prije pokretanja zaustavljaju ga s izlazom 1. Veza je u [server/database](../../server/database/README.md). Ductus: `scripts/db/migrate-locked.mjs`.
 - `index.ts`: javno sučelje mape.
 
-Testovi: `migrations-ledger.test.ts` (uključuje provjeru da svježe izračunata knjiga bajt-za-bajt odgovara `db/main/migrations.sum`), `migrate-locked.test.ts` (lažni klijent i lažni dbmate, pravi dbmate samo za provjeru signala) i `tests/db/migration-versions.test.ts` (nijedna verzija dvaput).
+Testovi: `migrations-ledger.test.ts` (uključuje provjeru da svježe izračunata knjiga bajt-za-bajt odgovara `db/main/migrations.sum`), `migrate-locked.test.ts` (lažni klijent i lažni dbmate, pravi dbmate samo za provjeru signala) i `tests/db/migration-versions.test.ts` (nijedna verzija dvaput). Na pravom PostgreSQL-u (vitest projekt `database`, posao `database` u CI-ju): `tests/db/migrate-lock.integration.test.ts` (zaključavanje) i 11 `tests/db/*-migration.integration.test.ts`, preneseni iz Ductusa `tests/integration` na `d52a92c3` s istim tvrdnjama. Uloge za njih daje `db/main/local/migrator.sql` (doslovno Ductus `db/local/migrator.sql`).
 
-Dolazi kasnije: `pnpm db:migrate` s provizioniranjem i test zaključavanja protiv pravog PostgreSQL-a (S-0.14), pgTAP (S-0.15).
+Dolazi kasnije: `pnpm db:migrate` s ostalim provizioniranjem (S-0.14), pgTAP (S-0.15).

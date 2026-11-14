@@ -64,6 +64,35 @@ describe("ci.yml", () => {
     expect(job("scope")).toContain('node scripts/ci/scope.ts >> "$GITHUB_OUTPUT"');
   });
 
+  // S-0.13 (DAN-726), review cxcrs17 and QA cxcqs17 finding 2: the database
+  // job builds the migrated database and runs the migration tests against it;
+  // checks run the integration project without a database, so it leaves them out.
+  it("the database job applies every migration through the locked runner and runs the migration tests", () => {
+    const database = job("database");
+    const migrator = database.indexOf("-f db/main/local/migrator.sql");
+    const migrate = database.indexOf(
+      'node scripts/db/migrate-locked.ts --url "$DATABASE_URL?sslmode=disable&role=ductus_migrator"',
+    );
+    const count = database.indexOf('[ "$applied" -eq "$files" ]');
+    const tests = database.search(/\n {8}run: pnpm test:database\n/);
+    expect(migrator).toBeGreaterThan(database.indexOf("pg_prove"));
+    expect(migrate).toBeGreaterThan(migrator);
+    expect(count).toBeGreaterThan(migrate);
+    expect(tests).toBeGreaterThan(count);
+    expect(database).toContain('-o "-p 54329 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"');
+    expect(database).toContain(
+      "DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus",
+    );
+    expect(database).toContain("run: pnpm install --frozen-lockfile");
+    expect(job("checks")).not.toContain("test:database");
+    const config = readFileSync(resolve(ROOT, "vitest.config.ts"), "utf8");
+    expect(config).toContain('const DATABASE = "tests/db/**/*.integration.test.ts";');
+    expect(config).toMatch(
+      /name: "integration",\n\s+include: \[INTEGRATION\],\n\s+exclude: \[DATABASE\],/,
+    );
+    expect(config).toMatch(/name: "database",\n\s+include: \[DATABASE\],/);
+  });
+
   it("checks run every repository check and test project", () => {
     const checks = job("checks");
     for (const script of [

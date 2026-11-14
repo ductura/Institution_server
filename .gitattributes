@@ -5,3 +5,6 @@
 # checks that every migration and the ledger get text and eol=lf.
 db/main/migrations/** text eol=lf
 db/main/migrations.sum text eol=lf
+# The role file of the local and CI database (S-0.13), verbatim from Ductus
+# db/local/migrator.sql, gets LF like the migrations.
+db/main/local/** text eol=lf

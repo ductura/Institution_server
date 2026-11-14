@@ -1,10 +1,10 @@
 // D-91 (3), DAN-71: the migration runner holds an advisory lock on its own
 // connection for the whole dbmate run and stops dbmate when the lock is lost.
 // Fakes stand in for the pg client and the dbmate child; the real lock against
-// PostgreSQL (Ductus tests/integration/migrate-lock.integration.test.ts) comes
-// with the local database stack in S-0.14. Ported from Ductus
-// scripts/engineering/migrate-locked.test.mjs at d52a92c3 (S-0.13, DAN-726):
-// same assertions, node:test replaced by vitest, paths adapted. The test of the
+// PostgreSQL is tests/db/migrate-lock.integration.test.ts (CI job database).
+// Ported from Ductus scripts/engineering/migrate-locked.test.mjs at d52a92c3
+// (S-0.13, DAN-726): same assertions, node:test replaced by vitest, paths
+// adapted. The test of the
 // `pnpm db:migrate` script moves with that script to S-0.14.
 import assert from "node:assert/strict";
 import type { ChildProcess } from "node:child_process";
