@@ -19,6 +19,7 @@
     "test:property": "vitest run --project property",
     "test:integration": "vitest run --project integration",
     "contracts:generate": "tsx scripts/generate-contracts.ts",
+    "contracts:breaking": "tsx scripts/check-breaking.ts",
     "prepare": "lefthook install"
   },
   "devDependencies": {

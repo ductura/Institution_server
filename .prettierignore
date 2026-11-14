@@ -6,3 +6,6 @@ pnpm-lock.yaml
 # Written by `pnpm contracts:generate`; server/contracts/contracts.test.ts keeps it
 # byte for byte equal to a fresh run.
 server/contracts/generated/
+# Written by `pnpm contracts:generate`; server/contracts/openapi.test.ts keeps it
+# byte for byte equal to a fresh run.
+openapi/v1.json
