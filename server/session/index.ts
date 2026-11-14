@@ -10,10 +10,13 @@ export {
 } from "./backchannel.ts";
 export { ENDED_MARK_COOKIE, liveSessionToken, type CookieReader } from "./ended-mark.ts";
 export type {
+  ActorReader,
   ActorTransaction,
   BackchannelLogout,
   BackchannelLogoutInput,
   BackchannelLogoutResult,
+  CurrentActor,
+  CurrentActorWithInstitution,
   WithActor,
 } from "../database/index.ts";
 export {

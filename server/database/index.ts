@@ -1,6 +1,7 @@
 import pg from "pg";
 
 import { createBackchannelLogout, type BackchannelLogout } from "./backchannel-logout.ts";
+import { createActorReader, type ActorReader } from "./current-actor.ts";
 import { assertNoParameterLogging, withLogCheck } from "./log-settings.ts";
 import { createOpenSession, type OpenSession } from "./open-session.ts";
 import { createWithActor, type WithActor } from "./with-actor.ts";
@@ -10,6 +11,7 @@ export type {
   BackchannelLogoutInput,
   BackchannelLogoutResult,
 } from "./backchannel-logout.ts";
+export type { ActorReader, CurrentActor, CurrentActorWithInstitution } from "./current-actor.ts";
 export type { OpenSessionInput, OpenSessionResult } from "./open-session.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
@@ -18,6 +20,7 @@ export { connectLockClient } from "./migration-lock.ts";
 // modules of src/server/db. Another folder reaches this folder only through
 // this file (docs/CODE_STYLE.md 6).
 export { createBackchannelLogout } from "./backchannel-logout.ts";
+export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
@@ -134,6 +137,13 @@ export const withActor: WithActor = async (token, fn) => {
   appWithActor ??= connect();
   return appWithActor(token, fn);
 };
+
+/**
+ * Reads the actor of a session token over the application withActor, in
+ * camelCase; server/session receives it as a port (docs/server-map.md 2).
+ * Nothing connects until the first call, as with withActor.
+ */
+export const actorReader: ActorReader = createActorReader(withActor);
 
 // AUTH_DATABASE_URL is the login of the login callback and of the
 // back-channel logout route: a member of ductus_auth and nothing else

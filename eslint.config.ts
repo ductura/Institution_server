@@ -144,6 +144,9 @@ const DATABASE_NAMES = [
   "server_version",
   "token_set",
   "user_id",
+  // The alias of the institution slug in the current-actor statement
+  // (current-actor.ts, S-0.18, DAN-731).
+  "institution_slug",
   // PostgreSQL setting names (pg_settings.name) that the log-settings check
   // reads; its tests state them as the keys of a settings row.
   "log_statement",
@@ -163,10 +166,6 @@ const DATABASE_NAMES = [
   "DISCARD",
   "ROLLBACK",
 ];
-// The row of app.current_actor() that server/session/principal.ts reads and
-// its test fakes, with the alias institution_slug (S-0.18, DAN-731, ported
-// from Ductus src/server/auth with the same statements). Only in those two files.
-const PRINCIPAL_ROW_NAMES = ["user_id", "institution_slug"];
 // Keys the redact tests feed in as sensitive input, in the letter case and
 // spelling a caller could send them: the test is that redact drops their
 // values whatever the spelling. Only in server/log.
@@ -272,15 +271,6 @@ export default defineConfig(
   {
     files: ["server/log/**/*.ts"],
     rules: { "@typescript-eslint/naming-convention": namingConvention(REDACTION_INPUT_KEYS, []) },
-  },
-  {
-    files: ["server/session/principal.ts", "server/session/principal.test.ts"],
-    rules: {
-      "@typescript-eslint/naming-convention": namingConvention(
-        PRINCIPAL_ROW_NAMES,
-        PRINCIPAL_ROW_NAMES,
-      ),
-    },
   },
   // The database driver stays behind server/database (PLAN §3, rule 4; Ductus
   // eslint.config.mjs at d52a92c3, S-0.17). This development guard covers

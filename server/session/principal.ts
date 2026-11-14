@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
 
-import type { WithActor } from "../database/index.ts";
+import type { ActorReader } from "../database/index.ts";
 
 /**
  * Who the session cookie belongs to, as far as the browser's local journal is
  * concerned (F-5, plan #376 critical contract 1). The identity comes from the
- * database, through `app.current_actor()`, never from the request: the cookie
- * is only presented, as withActor requires.
+ * database, through `app.current_actor()` read by the ActorReader port of
+ * server/database, never from the request: the cookie is only presented.
  *
  * - `signed-in`: an open, unexpired session. `scope` names the IndexedDB
  *   journal of that person and institution and nothing else.
@@ -51,20 +51,10 @@ export function sessionTag(token: string | undefined): string | null {
   return createHash("sha256").update(`${SESSION_TAG_LABEL}\n${token}`, "utf8").digest("hex");
 }
 
-type ActorRow = {
-  user_id: string | null;
-  institution_id: string | null;
-  institution_slug?: string | null;
-};
-
-/** One statement, one transaction; null on an error the caller turns into `unverified`. */
-async function readActor(
-  token: string,
-  withActor: WithActor,
-  statement: string,
-): Promise<ActorRow | undefined | null> {
+/** One port call; null on an error the caller turns into `unverified`. */
+async function readActor<T>(read: () => Promise<T>): Promise<T | null> {
   try {
-    return await withActor(token, async (tx) => (await tx.query<ActorRow>(statement)).rows[0]);
+    return await read();
   } catch (error) {
     // Only the error's name: never the token, a statement or a message.
     console.error("session check failed", error instanceof Error ? error.name : "unknown");
@@ -74,17 +64,13 @@ async function readActor(
 
 export async function sessionPrincipal(
   token: string | undefined,
-  withActor: WithActor,
+  actors: ActorReader,
 ): Promise<SessionPrincipal> {
   if (token === undefined || !TOKEN_FORMAT.test(token)) return { kind: "signed-out" };
-  const actor = await readActor(
-    token,
-    withActor,
-    "SELECT user_id, institution_id FROM app.current_actor()",
-  );
+  const actor = await readActor(() => actors.currentActor(token));
   if (actor === null) return { kind: "unverified" };
-  if (!actor?.user_id || !actor.institution_id) return { kind: "signed-out" };
-  return { kind: "signed-in", scope: principalScope(actor.user_id, actor.institution_id) };
+  if (!actor.userId || !actor.institutionId) return { kind: "signed-out" };
+  return { kind: "signed-in", scope: principalScope(actor.userId, actor.institutionId) };
 }
 
 /** As `SessionPrincipal`, and a signed-in one also names the slug of its institution. */
@@ -96,25 +82,21 @@ export type SessionPrincipalWithInstitution =
 /**
  * `sessionPrincipal` plus the slug of the session's institution, whose record
  * gives the citation style (M2.12-P02, plan #1689 C1 to C7). Person and slug
- * come from the same statement and transaction, so a session closed in
- * between yields neither, and an institution never comes from the request.
+ * come from the same statement and transaction (server/database
+ * current-actor.ts), so a session closed in between yields neither, and an
+ * institution never comes from the request.
  */
 export async function sessionPrincipalWithInstitution(
   token: string | undefined,
-  withActor: WithActor,
+  actors: ActorReader,
 ): Promise<SessionPrincipalWithInstitution> {
   if (token === undefined || !TOKEN_FORMAT.test(token)) return { kind: "signed-out" };
-  const actor = await readActor(
-    token,
-    withActor,
-    "SELECT user_id, institution_id, app.current_institution_slug() AS institution_slug FROM app.current_actor()",
-  );
+  const actor = await readActor(() => actors.currentActorWithInstitution(token));
   if (actor === null) return { kind: "unverified" };
-  if (!actor?.user_id || !actor.institution_id) return { kind: "signed-out" };
-  const slug = actor.institution_slug;
+  if (!actor.userId || !actor.institutionId) return { kind: "signed-out" };
   return {
     kind: "signed-in",
-    scope: principalScope(actor.user_id, actor.institution_id),
-    institution: typeof slug === "string" ? slug : null,
+    scope: principalScope(actor.userId, actor.institutionId),
+    institution: actor.institutionSlug,
   };
 }
