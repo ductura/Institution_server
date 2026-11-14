@@ -86,6 +86,31 @@ test("a ledger computed afresh from db/main/migrations equals the committed file
   assert.ok(fresh.equals(committed), "pnpm db:sum would change db/main/migrations.sum");
 });
 
+// QA FAIL c.6881958114 (cxcqs17), finding 1: the ledger hashes raw bytes, so a
+// Windows checkout with core.autocrlf=true must still get LF. .gitattributes
+// fixes LF for the migrations and the ledger (as Ductus .gitattributes does).
+test("git checks out every migration and the ledger with LF on every platform", () => {
+  const paths = [...readMigrations(DIR).keys()].map((name) => `${DIR}/${name}`);
+  const output = execFileSync("git", ["check-attr", "text", "eol", "--", ...paths, LEDGER], {
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  const wrong = output
+    .trimEnd()
+    .split("\n")
+    .filter((line) => !/: text: set$/.test(line) && !/: eol: lf$/.test(line));
+  assert.deepEqual(wrong, []);
+  assert.equal(output.trimEnd().split("\n").length, (paths.length + 1) * 2);
+});
+
+test("no migration and not the ledger contains a carriage return in this checkout", () => {
+  const withCr = [...readMigrations(DIR)]
+    .filter(([, bytes]) => bytes.includes(0x0d))
+    .map(([name]) => `${DIR}/${name}`);
+  if (readFileSync(LEDGER).includes(0x0d)) withCr.push(LEDGER);
+  assert.deepEqual(withCr, [], "CRLF checkout: the ledger would not match the files");
+});
+
 type Repo = {
   dir: string;
   put: (name: string, text: string) => void;
