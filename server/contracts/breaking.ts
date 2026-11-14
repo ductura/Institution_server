@@ -87,9 +87,18 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
         else if (canonical(s) !== "{}") out.push(`${at}.${name}: field now constrained`);
       }
     }
-    if (a.additionalProperties !== false && b.additionalProperties === false)
-      out.push(`${at}: extra fields no longer accepted`);
+    extraFields(at, a.additionalProperties, b.additionalProperties, out);
   }
+}
+
+/** A request object's allowance for undeclared fields may widen, never narrow. */
+function extraFields(at: string, a: unknown, b: unknown, out: string[]): void {
+  if (a === false) return;
+  if (b === false) return void out.push(`${at}: extra fields no longer accepted`);
+  const isSchema = (v: unknown) => typeof v === "object" && v !== null && canonical(v) !== "{}";
+  if (!isSchema(b)) return;
+  if (!isSchema(a)) return void out.push(`${at}: extra fields now constrained`);
+  schema(`${at}.*`, obj(a), obj(b), "request", out);
 }
 
 function parameters(at: string, a: Obj, b: Obj, out: string[]): void {

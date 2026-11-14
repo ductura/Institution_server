@@ -170,6 +170,12 @@ const CASES: [string, (d: Obj) => void, string[]][] = [
     [`POST ${BACKCHANNEL} body: extra fields no longer accepted`],
   ],
   [
+    "request extra fields narrowed to a schema",
+    (d) => (formBody(d).additionalProperties = str),
+    [`POST ${BACKCHANNEL} body: extra fields now constrained`],
+  ],
+  ["request extra fields allowed as anything", (d) => (formBody(d).additionalProperties = {}), []],
+  [
     "request minLength raised",
     (d) => (token(d).minLength = 2),
     [`POST ${BACKCHANNEL} body.logout_token: minLength raised`],
@@ -281,6 +287,23 @@ describe("breaking changes", () => {
 
   it.each(CASES)("%s", (name, edit, expected) => {
     expect(breakingChanges(openapiDocument(), changed(edit))).toEqual(expected);
+  });
+});
+
+describe("schema for extra request fields", () => {
+  const withExtra = (extra: unknown, version: string) =>
+    changed((d) => (formBody(d).additionalProperties = extra), version);
+
+  it("a narrower schema for extra fields breaks, a wider one does not", () => {
+    const before = withExtra(str, "1.1.0");
+    expect(breakingChanges(before, withExtra({ type: "string", maxLength: 3 }, "1.2.0"))).toEqual([
+      `POST ${BACKCHANNEL} body.*: maxLength lowered`,
+    ]);
+    expect(breakingChanges(before, withExtra({ type: "number" }, "1.2.0"))).toEqual([
+      `POST ${BACKCHANNEL} body.*: type changed from string to number`,
+    ]);
+    expect(breakingChanges(before, withExtra({}, "1.2.0"))).toEqual([]);
+    expect(breakingChanges(before, withExtra(true, "1.2.0"))).toEqual([]);
   });
 });
 
