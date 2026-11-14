@@ -1,0 +1,10 @@
+# The migrations of the main database and their ledger are checked out with LF
+# on every platform: db/main/migrations.sum holds the SHA-256 of the raw bytes,
+# so a CRLF checkout (core.autocrlf=true on Windows) would not match it (D-91;
+# as Ductus .gitattributes, "* text=auto eol=lf"). scripts/db/migrations-ledger.test.ts
+# checks that every migration and the ledger get text and eol=lf.
+db/main/migrations/** text eol=lf
+db/main/migrations.sum text eol=lf
+# The role file of the local and CI database (S-0.13), verbatim from Ductus
+# db/local/migrator.sql, gets LF like the migrations.
+db/main/local/** text eol=lf
