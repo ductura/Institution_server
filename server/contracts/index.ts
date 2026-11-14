@@ -8,6 +8,7 @@ export { FALLBACK };
 export { checkInventory } from "./check.ts";
 export { INVENTORY, INVENTORY_SOURCE, PENDING } from "./inventory.ts";
 export * from "./schema/index.ts";
+export { isWorkId, WORK_ID_MAX, workIdFromPath } from "./work-id.ts";
 
 /** Every route of /api/v1 with a contract. */
 export const ROUTES: readonly RouteContract[] = [
