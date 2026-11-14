@@ -33,7 +33,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `openapi/`          | Objavljeni OpenAPI dokument `v1.json`, generiran iz ugovora                                                                                           |
 | `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera                                                    |
 | `locales/`          | Hrvatski tekstovi sučelja i poruka (zasad samo poruke gatea, `locales/hr.json`)                                                                       |
-| `db/`               | Migracije i pgTAP testovi (zasad samo dimni test okruženja CI-ja, `db/tests/00-environment.sql`)                                                      |
+| `db/`               | Migracije i pgTAP testovi (dimni test okruženja CI-ja `db/tests/`, matrica glavne baze `db/main/tests/`)                                              |
 | `test-support/`     | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`)                                                                                   |
 | `docs/`             | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 | `scripts/`          | Alati repoa (lokalna lint pravila, gate, CI u `scripts/ci/`)                                                                                          |
@@ -79,7 +79,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 ## CI
 
-`.github/workflows/ci.yml` ima četiri posla: `scope` razvrstava promjene, `checks` pokreće typecheck, lint, formatiranje i tri vitest projekta, `database` podiže PostgreSQL 17 (ista glavna verzija kao produkcija, nativno iz PGDG repoa, bez Dockera) i pokreće pgTAP (`db/**/tests/*.sql`), zatim u drugom klasteru na `127.0.0.1:54329` stvara uloge iz `db/main/local/migrator.sql`, primjenjuje sve migracije kroz `scripts/db/migrate-locked.ts` i pokreće `pnpm test:database`, a `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Akcije su prikvačene na puni SHA. Pravila razvrstavanja i zbirnog statusa su u [scripts/ci/README.md](scripts/ci/README.md).
+`.github/workflows/ci.yml` ima četiri posla: `scope` razvrstava promjene, `checks` pokreće typecheck, lint, formatiranje i tri vitest projekta, `database` podiže PostgreSQL 17 (ista glavna verzija kao produkcija, nativno iz PGDG repoa, bez Dockera) i pokreće pgTAP okruženja (`db/tests/*.sql`), zatim u drugom klasteru na `127.0.0.1:54329` stvara uloge iz `db/main/local/migrator.sql`, primjenjuje sve migracije kroz `scripts/db/migrate-locked.ts` i pokreće `pnpm test:database`, a nakon nativnog stoga (`pnpm db:up:native`) i pgTAP matricu glavne baze (`pnpm test:db:native`, `db/main/tests`). `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Akcije su prikvačene na puni SHA. Pravila razvrstavanja i zbirnog statusa su u [scripts/ci/README.md](scripts/ci/README.md).
 
 ## Stanje kostura
 
