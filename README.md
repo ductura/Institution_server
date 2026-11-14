@@ -28,12 +28,12 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `server/` | Kod poslužitelja i testovi uz njega |
 | `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
 | `db/` | Migracije i pgTAP testovi (prazno) |
-| `test-support/` | Zajednička pomagala za testove (prazno) |
+| `test-support/` | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`) |
 | `docs/` | Dokumentacija na hrvatskom (prazno) |
 
 ## Testovi
 
-Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/` sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
+Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `server/` i `test-support/` sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
 | Projekt | Datoteke | Što provjerava |
 |---|---|---|
@@ -49,6 +49,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 ## Stanje kostura
 
 - Prijava: **privremena testna zamjena, ne način prijave.** Token je samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`), pa se svatko može predstaviti kao bilo tko. Smije se pokretati samo u testovima i lokalnom radu, nikad u nekom postavljenom okruženju. To nije AAI@EduHr: studenti se prijavljuju isključivo preko AAI@EduHr (D-09). Zamjenjuju je zadaci prijave (S-1E) sesijom nakon prijave AAI@EduHr.
+- Lažni OIDC pružatelj (`test-support/fake-oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokretanje: `pnpm exec tsx test-support/fake-oidc/server.ts` (zadano `http://localhost:8080`). `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
 - Baza: memorijska (`server/store.ts`). Zamjenjuje je prava baza.
 - Pozadinski poslovi: još nisu dodani.
 

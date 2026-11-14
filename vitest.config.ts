@@ -1,11 +1,11 @@
 import { defineConfig } from "vitest/config";
 
-// Three projects, told apart by file suffix. Tests live only in server/ with a
-// .test.ts suffix; other files belong to no project and do not run. There is no
-// passWithNoTests, but vitest fails on an empty project only when that project
+// Three projects, told apart by file suffix. Tests live only in server/ and
+// test-support/ with a .test.ts suffix; other files belong to no project and
+// do not run. There is no passWithNoTests, but vitest fails on an empty project only when that project
 // runs alone, so `pnpm test` and CI run the three projects one by one.
-const PROPERTY = "server/**/*.property.test.ts";
-const INTEGRATION = "server/**/*.integration.test.ts";
+const PROPERTY = "{server,test-support}/**/*.property.test.ts";
+const INTEGRATION = "{server,test-support}/**/*.integration.test.ts";
 
 export default defineConfig({
   test: {
@@ -13,7 +13,7 @@ export default defineConfig({
       {
         test: {
           name: "unit",
-          include: ["server/**/*.test.ts"],
+          include: ["{server,test-support}/**/*.test.ts"],
           exclude: [PROPERTY, INTEGRATION],
           environment: "node",
         },
