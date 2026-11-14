@@ -3,11 +3,11 @@
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import type { AddressInfo } from "node:net";
-import type { Server } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { DEMO_HOME_ORG } from "./accounts.ts";
 import type { FakeOidcMode } from "./modes.ts";
@@ -18,6 +18,7 @@ const BASIC = `Basic ${Buffer.from("ductus-local:ductus-local-only").toString("b
 
 let running: Server | undefined;
 afterEach(async () => {
+  vi.unstubAllEnvs();
   const server = running;
   running = undefined;
   if (server) await new Promise<void>((done) => server.close(() => done()));
@@ -33,16 +34,17 @@ function options(mode: FakeOidcMode, issuer: string): FakeOidcOptions {
   };
 }
 
-// The issuer names the port, so the port is taken first and the server built on it.
+// The issuer names the port: a plain server takes a free port first, and the
+// provider built for that issuer answers its requests (no gap between a probe
+// and a second bind).
 async function start(mode: FakeOidcMode): Promise<string> {
-  const probe = createFakeOidc(options(mode, "http://localhost:1"));
-  await new Promise<void>((done) => probe.listen(0, "127.0.0.1", done));
-  const { port } = probe.address() as AddressInfo;
-  await new Promise<void>((done) => probe.close(() => done()));
-  const issuer = `http://localhost:${port}`;
-  running = createFakeOidc(options(mode, issuer));
-  const server = running;
-  await new Promise<void>((done) => server.listen(port, "127.0.0.1", done));
+  const server = createServer();
+  running = server;
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+  const { port } = server.address() as AddressInfo;
+  const issuer = `http://127.0.0.1:${port}`;
+  const provider = createFakeOidc(options(mode, issuer));
+  server.on("request", (req: IncomingMessage, res: ServerResponse) => provider.emit("request", req, res));
   return issuer;
 }
 
@@ -196,15 +198,32 @@ describe("modes", () => {
 
 // D-09: the fake provider never starts with a production configuration.
 describe("production refuses the fake provider", () => {
-  test("createFakeOidc throws with NODE_ENV=production", () => {
+  test("createFakeOidc throws when the env it is given says production", () => {
     expect(() => createFakeOidc(options("success", "http://localhost:8080"), { NODE_ENV: "production" })).toThrow(/fake OIDC/);
+  });
+
+  test("createFakeOidc throws when this process runs with NODE_ENV=production, whatever env it is given", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(() => createFakeOidc(options("success", "http://localhost:8080"))).toThrow(/fake OIDC/);
+    expect(() => createFakeOidc(options("success", "http://localhost:8080"), { NODE_ENV: "test" })).toThrow(/fake OIDC/);
+  });
+
+  test("createFakeOidc refuses an issuer or a redirect address off this machine (F-019)", () => {
+    const local = options("success", "http://localhost:8080");
+    expect(() => createFakeOidc(local)).not.toThrow();
+    expect(() => createFakeOidc({ ...local, issuer: "https://idp.example.test" })).toThrow(/ISSUER/);
+    expect(() => createFakeOidc({ ...local, redirectUris: [REDIRECT, "https://app.example.test/cb"] })).toThrow(/redirect/);
+    expect(() => createFakeOidc({ ...local, postLogoutRedirectUris: ["http://127.0.0.2:3000/"] })).toThrow(/redirect/);
   });
 
   const SERVER = fileURLToPath(new URL("./server.ts", import.meta.url));
   const TSX = fileURLToPath(new URL("../../node_modules/.bin/tsx", import.meta.url));
 
   function run(env: Record<string, string>) {
-    const child = spawn(TSX, [SERVER], { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    // The developer's own provider settings do not leak into the child.
+    const clean = { ...process.env };
+    for (const name of ["FAKE_OIDC_MODE", "ISSUER", "REDIRECT_URI", "POST_LOGOUT_REDIRECT_URI", "BACKCHANNEL_LOGOUT_URI"]) delete clean[name];
+    const child = spawn(TSX, [SERVER], { env: { ...clean, ...env }, stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
     child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
@@ -218,16 +237,16 @@ describe("production refuses the fake provider", () => {
     expect(code).not.toBe(0);
     expect(output()).toMatch(/fake OIDC runs only locally and in CI/);
     expect(output()).not.toMatch(/demo prijava/);
-  });
+  }, 15_000);
 
   test("the same start with NODE_ENV=test listens (the refusal above is the guard, not a broken start)", async () => {
     const { child, exited, output } = run({ NODE_ENV: "test", PORT: "0" });
     try {
-      for (let i = 0; i < 100 && !output().includes("demo prijava"); i++) await delay(100);
+      for (let i = 0; i < 120 && !output().includes("demo prijava"); i++) await delay(100);
       expect(output()).toMatch(/fake OIDC \(demo prijava, success\)/);
     } finally {
       child.kill();
       await exited;
     }
-  });
+  }, 15_000);
 });

@@ -13,7 +13,13 @@ import Provider, { type Configuration } from "oidc-provider";
 import { ACCOUNTS, demoAccountClaims, isDemoAccountId } from "./accounts.ts";
 import { assertFakeOidcAllowed } from "./guard.ts";
 import { fakeOidcMode, type FakeOidcMode } from "./modes.ts";
-import { DEFAULT_POST_LOGOUT_REDIRECT_URIS, DEFAULT_REDIRECT_URIS, loopbackIssuer, redirectUriList } from "./redirect-uris.ts";
+import {
+  DEFAULT_POST_LOGOUT_REDIRECT_URIS,
+  DEFAULT_REDIRECT_URIS,
+  isLoopbackHttpUrl,
+  loopbackIssuer,
+  redirectUriList,
+} from "./redirect-uris.ts";
 
 export type FakeOidcOptions = {
   readonly issuer: string;
@@ -67,8 +73,9 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
     ],
     pkce: { required: () => true },
     cookies: { keys: ["ductus-fake-oidc-local-only"] },
-    // Mode `expired`: the tokens are issued valid for one second, and the
-    // provider allows no clock skew (default 15 s), so they expire at once.
+    // Mode `expired`: the tokens are issued valid for one second. With the
+    // default clock tolerance (15 s) the in-memory store still finds the access
+    // token for that long and userinfo keeps answering; 0 drops it on expiry.
     ...(options.mode === "expired" ? { ttl: { IdToken: 1, AccessToken: 1 }, clockTolerance: 0 } : {}),
     features: {
       devInteractions: { enabled: false },
@@ -99,9 +106,12 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
     },
     // First-party demo client: grant the requested scopes without a consent step.
     async loadExistingGrant(ctx) {
+      // The source read both without a check and threw without them; so does this.
+      const { client, session } = ctx.oidc;
+      if (!client || !session) throw new TypeError("grant without a client or a session");
       const grant = new ctx.oidc.provider.Grant({
-        clientId: ctx.oidc.client?.clientId,
-        accountId: ctx.oidc.session?.accountId,
+        clientId: client.clientId,
+        accountId: session.accountId,
       });
       grant.addOIDCScope("openid profile");
       await grant.save();
@@ -199,12 +209,24 @@ async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
   return new URLSearchParams(body);
 }
 
+// F-019 for options that did not come through fakeOidcConfigFromEnv.
+function assertLoopbackOptions(options: FakeOidcOptions): void {
+  loopbackIssuer(options.issuer, options.issuer);
+  for (const uri of [...options.redirectUris, ...options.postLogoutRedirectUris]) {
+    if (!isLoopbackHttpUrl(new URL(uri))) throw new Error(`redirect URI must be on localhost, 127.0.0.1 or [::1]: ${uri}`);
+  }
+}
+
 /**
  * The fake provider as an HTTP server that does not listen yet. Refuses (D-09)
- * unless `env` says local development or test.
+ * unless this process's NODE_ENV says local development or test; `env` can
+ * only add a second check, never replace that one. Refuses an issuer or a
+ * redirect address off this machine (F-019).
  */
-export function createFakeOidc(options: FakeOidcOptions, env: Env = process.env): Server {
-  assertFakeOidcAllowed(env);
+export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
+  assertFakeOidcAllowed(process.env);
+  if (env !== undefined) assertFakeOidcAllowed(env);
+  assertLoopbackOptions(options);
   const provider = new Provider(options.issuer, providerConfiguration(options));
 
   async function handleInteraction(req: IncomingMessage, res: ServerResponse): Promise<void> {
