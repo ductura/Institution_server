@@ -4,8 +4,8 @@ import { defineConfig } from "vitest/config";
 // rule tests in tests/) with a .test.ts suffix; other files do not run. There is no
 // passWithNoTests, but vitest fails on an empty project only when that project
 // runs alone, so `pnpm test` and CI run the three projects one by one.
-const PROPERTY = "server/**/*.property.test.ts";
-const INTEGRATION = "server/**/*.integration.test.ts";
+const PROPERTY = "{server,tests}/**/*.property.test.ts";
+const INTEGRATION = "{server,tests}/**/*.integration.test.ts";
 
 export default defineConfig({
   test: {

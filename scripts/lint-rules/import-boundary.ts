@@ -28,6 +28,7 @@ export const importBoundary: Rule.RuleModule = {
       boundary: "Import '{{spec}}' reaches into another folder; import its index.ts instead.",
       extension: "Relative import '{{spec}}' must name a .ts file.",
       dynamic: "Dynamic import with a computed source cannot be checked; use a static string.",
+      form: "Import '{{spec}}' uses a form the boundary check cannot verify (absolute, file:, or containing \\, ?, # or %).",
     },
     schema: [],
   },
@@ -35,7 +36,13 @@ export const importBoundary: Rule.RuleModule = {
     const from = path.dirname(context.filename);
 
     function check(node: Node, spec: string): void {
-      if (!/^\.\.?(?:\/|$)/.test(spec)) return;
+      // Node and TypeScript read "\\" as "/" and strip "?" and "#"; path.resolve does not.
+      const relative = /^\.\.?(?:[/\\]|$)/.test(spec);
+      if (/^(?:\/|file:)/i.test(spec) || (relative && /[\\?#%]/.test(spec))) {
+        context.report({ node, messageId: "form", data: { spec } });
+        return;
+      }
+      if (!relative) return;
       if (!spec.endsWith(".ts")) {
         context.report({ node, messageId: "extension", data: { spec } });
         return;

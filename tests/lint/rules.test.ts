@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
@@ -7,10 +8,16 @@ import { describe, expect, it } from "vitest";
 // virtual path, so the file-name rules see the name without the file existing
 // and the failing fixtures never sit in the tree that `pnpm lint` checks.
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const eslint = new ESLint({ cwd: ROOT, flags: ["unstable_native_nodejs_ts_config"] });
+// overrideConfigFile pins the root config, as `-c` does in `pnpm lint`: a nested
+// eslint.config.ts cannot replace it for one folder.
+const eslint = new ESLint({
+  cwd: ROOT,
+  overrideConfigFile: path.join(ROOT, "eslint.config.ts"),
+  flags: ["unstable_native_nodejs_ts_config"],
+});
 
 type Fixture = { file: string; code: string };
-type Case = Fixture & { rule: string };
+type Case = Fixture & { rule: string; messageId?: string };
 
 async function lint({ file, code }: Fixture): Promise<ESLint.LintResult["messages"]> {
   const [result] = await eslint.lintText(code, { filePath: file });
@@ -27,8 +34,14 @@ const NAMING = "@typescript-eslint/naming-convention";
 const failing: Case[] = [
   // import-boundary: leaving the folder other than through <folder>/index.ts
   ...["./sub/c.ts", "../c.ts", "../sib/c.ts", "./x/../../y/z.ts", "./sub/INDEX.ts"].map((spec) => ({
-    file: AT, code: imp(spec), rule: BOUNDARY,
+    file: AT, code: imp(spec), rule: BOUNDARY, messageId: "boundary",
   })),
+  { file: AT, code: 'import m = require("../c.ts");\n', rule: BOUNDARY, messageId: "boundary" },
+  // forms the resolver reads differently from Node and TypeScript
+  ...[
+    "./sub\\\\c.ts", ".\\\\sub\\\\c.ts", "./sub/c.ts#/index.ts", "./sub/c.ts?/index.ts", "./sub/%69ndex.ts",
+    "/abs/sub/c.ts", "file:///abs/sub/c.ts",
+  ].map((spec) => ({ file: AT, code: imp(spec), rule: BOUNDARY, messageId: "form" })),
   { file: AT, code: 'export { x } from "./sub/c.ts";\n', rule: BOUNDARY },
   { file: AT, code: 'export * from "../sib/c.ts";\n', rule: BOUNDARY },
   { file: AT, code: 'import type { T } from "../c.ts";\n', rule: BOUNDARY },
@@ -37,8 +50,10 @@ const failing: Case[] = [
   { file: AT, code: 'const m = await import("../c.ts");\n', rule: BOUNDARY },
   { file: AT, code: "const m = await import(`../c.ts`);\n", rule: BOUNDARY },
   { file: AT, code: 'const m = require("../c.ts");\n', rule: BOUNDARY },
-  ...["./sub", "./sub/index.js", ".", ".."].map((spec) => ({ file: AT, code: imp(spec), rule: BOUNDARY })),
-  { file: AT, code: 'const p = "./c.ts";\nconst m = await import(p);\n', rule: BOUNDARY },
+  ...["./sub", "./sub/index.js", ".", ".."].map((spec) => ({
+    file: AT, code: imp(spec), rule: BOUNDARY, messageId: "extension",
+  })),
+  { file: AT, code: 'const p = "./c.ts";\nconst m = await import(p);\n', rule: BOUNDARY, messageId: "dynamic" },
   { file: AT, code: 'const d = "sub";\nconst m = await import(`./${d}/c.ts`);\n', rule: BOUNDARY },
   // inline directives cannot switch the boundary rule off
   { file: AT, code: `// eslint-disable-next-line ${BOUNDARY}\n${imp("../c.ts")}`, rule: BOUNDARY },
@@ -49,7 +64,7 @@ const failing: Case[] = [
     file: `server/${name}`, code: SRC, rule: "local/kebab-case-filename",
   })),
   // test suffixes
-  ...["x.spec.ts", "x.e2e.test.ts", "x.unit.test.ts", "x.tests.ts", "x.integration.ts", "x.property.ts", "x-test.ts"]
+  ...["x.spec.ts", "x.e2e.test.ts", "x.unit.test.ts", "x.tests.ts", "x.integration.ts", "x.property.ts"]
     .map((name) => ({ file: `server/${name}`, code: SRC, rule: "local/test-file-suffix" })),
   // only .ts
   ...["js", "mjs", "cjs", "jsx", "tsx", "mts", "cts", "TS", "Ts", "Js"].map((ext) => ({
@@ -75,9 +90,10 @@ const passing: Fixture[] = [
   ].map((spec) => ({ file: AT, code: imp(spec) })),
   { file: AT, code: 'export { x } from "./c.ts";\nexport * from "./sub/index.ts";\n' },
   { file: AT, code: 'import type { T } from "./sub/index.ts";\ntype M = typeof import("../index.ts");\n' },
+  { file: AT, code: 'import m = require("./sub/index.ts");\n' },
   { file: AT, code: 'const m = await import("./sub/index.ts");\nconst n = await import(`./c.ts`);\n' },
   ...[
-    "foo-bar.ts", "a1.ts", "index.ts", "x.test.ts", "x.property.test.ts", "x.integration.test.ts",
+    "foo-bar.ts", "a1.ts", "index.ts", "self-test.ts", "x.test.ts", "x.property.test.ts", "x.integration.test.ts",
   ].map((name) => ({ file: `server/${name}`, code: SRC })),
   { file: "vitest.config.ts", code: SRC },
   { file: "test-support/make-user.ts", code: SRC },
@@ -98,6 +114,9 @@ describe("lint rules", () => {
   it.each(failing)("$rule fails: $file · $code", async (fixture) => {
     const messages = await lint(fixture);
     expect(messages.map((m) => m.ruleId)).toContain(fixture.rule);
+    if (fixture.messageId) {
+      expect(messages.filter((m) => m.ruleId === fixture.rule).map((m) => m.messageId)).toContain(fixture.messageId);
+    }
   });
 
   it.each(passing)("passes: $file · $code", async (fixture) => {
@@ -114,6 +133,13 @@ describe("lint rules", () => {
     const messages = await lint({ file: AT, code: `// eslint-disable-next-line ${BOUNDARY}\n${imp("./c.ts")}` });
     expect(messages).toHaveLength(1);
     expect(messages[0]?.ruleId).toBeNull();
+  });
+
+  it("has no nested eslint config that could replace the root one", () => {
+    const nested = readdirSync(ROOT, { recursive: true, encoding: "utf8" }).filter(
+      (file) => !file.split(path.sep).includes("node_modules") && /(?:^|[\\/])eslint\.config\.[^/\\]+$/.test(file),
+    );
+    expect(nested).toEqual(["eslint.config.ts"]);
   });
 
   it("covers every source folder; only tool output is ignored", async () => {

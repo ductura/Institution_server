@@ -4,7 +4,6 @@ import type { Rule } from "eslint";
 const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ALLOWED_TEST = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.property|\.integration)?\.test\.ts$/;
 const TEST_SEGMENTS = new Set(["test", "tests", "spec", "specs", "e2e", "unit", "property", "integration"]);
-const TEST_WORD = /(?:^|-)(?:test|spec)s?$/;
 
 /** Name parts of a file: "a-b.property.test.ts" -> ["a-b", "property", "test"]. */
 function nameParts(filename: string): string[] {
@@ -45,8 +44,7 @@ export const testFileSuffix: Rule.RuleModule = {
     return {
       Program(node) {
         const name = path.basename(context.filename);
-        const [first = "", ...rest] = nameParts(context.filename);
-        const looksLikeTest = TEST_WORD.test(first) || rest.some((part) => TEST_SEGMENTS.has(part));
+        const looksLikeTest = nameParts(context.filename).slice(1).some((part) => TEST_SEGMENTS.has(part));
         if (looksLikeTest && !ALLOWED_TEST.test(name)) {
           context.report({ node, messageId: "suffix", data: { name } });
         }
