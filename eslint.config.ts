@@ -181,6 +181,24 @@ const REDACTION_INPUT_KEYS = [
   "Prezime",
   "Naslov",
 ];
+// S-0.19 (DAN-732): names in server/external/storage, ported from Ductus
+// src/adapters/evidence at d52a92c3 with the same assertions. Only in that
+// folder; a closed list of exact names, only for properties.
+const STORAGE_NAMES = [
+  // Amazon S3 API Reference, "Error responses" (error codes the adapter maps
+  // to fixed reasons).
+  "RequestTimeTooSkewed",
+  "SignatureDoesNotMatch",
+  "AuthorizationHeaderMalformed",
+  "InvalidAccessKeyId",
+  // The header name as the AWS SigV4 test suite writes it (s3-signature.test.ts).
+  "Host",
+  // Invented credential variables of the storage configuration tests.
+  "EVIDENCE_S3_FAK_A_KEY_ID",
+  "EVIDENCE_S3_FAK_A_SECRET",
+  "EVIDENCE_S3_FAK_B_KEY_ID",
+  "EVIDENCE_S3_FAK_B_SECRET",
+];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.
@@ -267,6 +285,10 @@ export default defineConfig(
     rules: {
       "@typescript-eslint/naming-convention": namingConvention(DATABASE_NAMES, DATABASE_NAMES),
     },
+  },
+  {
+    files: ["server/external/storage/**/*.ts"],
+    rules: { "@typescript-eslint/naming-convention": namingConvention(STORAGE_NAMES, []) },
   },
   {
     files: ["server/log/**/*.ts"],
