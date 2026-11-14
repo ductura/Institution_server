@@ -64,7 +64,7 @@ describe("breaking changes on the real contract", () => {
           body.required = [];
         });
         expect(breakingChanges(doc, after)).toContain(
-          `${method.toUpperCase()} ${path} response ${status}.${name}: field removed`,
+          `${method.toUpperCase()} ${path} responses/${status}/content/application~1json/schema/properties/${name}: field removed`,
         );
       }),
     );

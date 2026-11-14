@@ -1,244 +1,222 @@
-// Finds the changes between two OpenAPI documents of the same major that break
-// a client written against the first one. Requests may only widen (accept more),
-// success responses may only narrow (promise more). Error answers are not
-// compared: a client maps an unknown error code to "unexpected".
+// Finds the changes between two OpenAPI documents of the same major that may break
+// a client written against the first one. The guard is closed by default (owner's
+// decision for round 3, Ductus#87 c.6880838648): schemas are normalized (sorted keys,
+// no annotations) and every remaining difference in an existing route, parameter,
+// field, status or header is breaking, except this explicit list of safe changes:
+//   - a new route (new path or new method on a path);
+//   - a new optional field in a response object;
+//   - a new optional field in a request object that was and stays closed
+//     (`additionalProperties: false`), so no old request could have carried it;
+//   - a change of `description`, `example`, `examples` or `title`.
+// Nothing is inferred about anyOf, format or bounds: any change there is reported.
 type Obj = Record<string, unknown>;
 type Direction = "request" | "response";
 
-const obj = (v: unknown): Obj =>
-  typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Obj) : {};
+const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
+const obj = (v: unknown): Obj => (isObj(v) ? v : {});
 const strings = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 // Only the document's own keys count: "toString" or "__proto__" exist on every object.
 const has = (o: Obj, k: string): boolean => Object.hasOwn(o, k);
 const own = (o: Obj, k: string): unknown => (has(o, k) ? o[k] : undefined);
+const keysOf = (a: Obj, b: Obj): string[] =>
+  [...new Set([...Object.keys(a), ...Object.keys(b)])].sort();
 
-// Keywords that describe a value but never change which values are valid.
-const ANNOTATIONS = new Set([
-  "$comment",
-  "$id",
-  "$schema",
-  "default",
-  "deprecated",
-  "description",
-  "example",
-  "examples",
-  "readOnly",
-  "title",
-  "writeOnly",
-]);
-// Keywords schema() compares one by one; a change in any other keyword is reported as is.
-const COMPARED = new Set([
+// Keywords that only describe; the only keys dropped by normalization.
+const ANNOTATIONS = new Set(["description", "example", "examples", "title"]);
+const METHODS = new Set(["get", "put", "post", "delete", "options", "head", "patch", "trace"]);
+// Schema keywords whose value is one subschema, a map of named subschemas or a list of them.
+const SUB_ONE = new Set([
+  "additionalItems",
   "additionalProperties",
-  "anyOf",
-  "const",
-  "enum",
-  "format",
+  "contains",
+  "contentSchema",
+  "else",
+  "if",
   "items",
-  "maxItems",
-  "maxLength",
-  "maxProperties",
-  "maximum",
-  "minItems",
-  "minLength",
-  "minProperties",
-  "minimum",
-  "oneOf",
-  "pattern",
-  "properties",
-  "required",
-  "type",
+  "not",
+  "propertyNames",
+  "then",
+  "unevaluatedItems",
+  "unevaluatedProperties",
 ]);
+const SUB_MAP = new Set([
+  "$defs",
+  "definitions",
+  "dependentSchemas",
+  "patternProperties",
+  "properties",
+]);
+const SUB_LIST = new Set(["allOf", "anyOf", "oneOf", "prefixItems"]);
+// OpenAPI objects whose keys are names (status codes, media types, headers), not keywords.
+const NAMED = new Set(["callbacks", "content", "encoding", "headers", "links", "responses"]);
 
-/** Keys outside `skip`, annotations and x- extensions whose value differs, sorted. */
-function changedKeys(a: Obj, b: Obj, skip: ReadonlySet<string>): string[] {
-  return [...new Set([...Object.keys(a), ...Object.keys(b)])]
-    .filter((k) => !skip.has(k) && !ANNOTATIONS.has(k) && !k.startsWith("x-"))
-    .filter((k) => canonical(own(a, k)) !== canonical(own(b, k)))
-    .sort();
-}
-
-/** JSON with sorted keys, so two equal schemas give the same text. */
+/** JSON with sorted keys, so two equal values give the same text. */
 function canonical(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(canonical).join(",")}]`;
-  if (typeof v === "object" && v !== null) {
+  if (isObj(v))
     return `{${Object.keys(v)
       .sort()
-      .map((k) => `${JSON.stringify(k)}:${canonical((v as Obj)[k])}`)
+      .map((k) => `${JSON.stringify(k)}:${canonical(v[k])}`)
       .join(",")}}`;
-  }
   return JSON.stringify(v);
 }
 
-/** The alternatives of a schema, nested anyOf/oneOf flattened; null when it has none. */
-function variants(s: Obj): Obj[] | null {
-  const alts = Array.isArray(s.anyOf) ? s.anyOf : Array.isArray(s.oneOf) ? s.oneOf : null;
-  return alts && alts.map(obj).flatMap((a) => variants(a) ?? [a]);
+/** A schema with sorted keys and without annotations; field names are never dropped. */
+function normalizeSchema(s: unknown): unknown {
+  if (!isObj(s)) return s;
+  // fromEntries defines own keys, so a field named "__proto__" stays a field.
+  return Object.fromEntries(
+    Object.keys(s)
+      .filter((k) => !ANNOTATIONS.has(k))
+      .sort()
+      .map((k) => {
+        const v = s[k];
+        if (SUB_MAP.has(k) && isObj(v))
+          return [
+            k,
+            Object.fromEntries(
+              Object.keys(v)
+                .sort()
+                .map((n) => [n, normalizeSchema(v[n])]),
+            ),
+          ];
+        if (SUB_LIST.has(k) && Array.isArray(v)) return [k, v.map(normalizeSchema)];
+        if (SUB_ONE.has(k)) return [k, normalizeSchema(v)];
+        return [k, v];
+      }),
+  );
 }
 
-function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void {
-  const va = variants(a);
-  const vb = variants(b);
-  if (va || vb) {
-    // A request must still accept every old value; a response may not send a new one.
-    const [must, have, word] =
-      dir === "request"
-        ? [va ?? [a], vb ?? [b], "no longer accepted"]
-        : [vb ?? [b], va ?? [a], "new in response"];
-    const known = new Set(have.map(canonical));
-    for (const v of must) if (!known.has(canonical(v))) out.push(`${at}: ${word} ${canonical(v)}`);
-    if (va && vb)
-      for (const k of changedKeys(a, b, new Set(["anyOf", "oneOf"])))
-        out.push(`${at}: ${k} changed beside alternatives`);
-    return;
+/** Control characters and look-alike spaces as \\uXXXX, so a key cannot forge a CI log line. */
+const visible = (s: string): string =>
+  s.replace(
+    /[\u0000-\u001f\u007f-\u00a0\u2028\u2029]/gu,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
+
+/** Collects findings as "<where> <JSON pointer>: <what>". */
+class Report {
+  readonly out: string[] = [];
+  add(where: string, ptr: readonly string[], what: string): void {
+    const pointer = ptr.map((s) => s.replaceAll("~", "~0").replaceAll("/", "~1")).join("/");
+    this.out.push(visible(`${where}${pointer ? ` ${pointer}` : ""}: ${what}`));
   }
-  if (canonical(a.type) !== canonical(b.type))
-    return void out.push(`${at}: type changed from ${String(a.type)} to ${String(b.type)}`);
-  const fixed = dir === "request" ? b.const : a.const;
-  if (fixed !== undefined && canonical(a.const) !== canonical(b.const))
-    return void out.push(`${at}: value changed`);
-  if (dir === "request") {
-    for (const k of ["maxLength", "maximum", "maxItems", "maxProperties"]) {
-      if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] <= b[k]))
-        out.push(`${at}: ${k} lowered`);
-    }
-    for (const k of ["minLength", "minimum", "minItems", "minProperties"]) {
-      if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] >= b[k]))
-        out.push(`${at}: ${k} raised`);
-    }
-    for (const k of ["format", "pattern"])
-      if (b[k] !== undefined && b[k] !== a[k]) out.push(`${at}: ${k} changed`);
+  same(where: string, ptr: readonly string[], a: unknown, b: unknown): void {
+    if (canonical(a) !== canonical(b)) this.add(where, ptr, "changed");
   }
-  enumValues(at, a, b, dir, out);
-  for (const k of changedKeys(a, b, COMPARED)) out.push(`${at}: ${k} changed`);
-  if (a.type === "array") schema(`${at}[]`, obj(a.items), obj(b.items), dir, out);
-  if (a.type !== "object") return;
-  const pa = obj(a.properties);
-  const pb = obj(b.properties);
-  const ra = new Set(strings(a.required));
-  const rb = new Set(strings(b.required));
-  for (const [name, s] of Object.entries(pa)) {
-    const where = `${at}.${name}`;
-    if (!has(pb, name)) {
-      if (dir === "response") out.push(`${where}: field removed`);
-      else if (b.additionalProperties === false) out.push(`${where}: field no longer accepted`);
-      // The old field's values now have to pass the schema for extra fields.
-      else if (isSchema(b.additionalProperties))
-        schema(where, obj(s), obj(b.additionalProperties), dir, out);
-      continue;
-    }
-    if (dir === "response" && ra.has(name) && !rb.has(name))
-      out.push(`${where}: field became optional`);
-    schema(where, obj(s), obj(own(pb, name)), dir, out);
-  }
-  if (dir === "request") {
-    for (const name of rb) if (!ra.has(name)) out.push(`${at}.${name}: field became required`);
-    // An open object accepted any value under a new name; a declared schema may now refuse some.
-    if (a.additionalProperties !== false) {
-      const extra = a.additionalProperties;
-      for (const [name, s] of Object.entries(pb)) {
-        if (has(pa, name)) continue;
-        if (typeof extra === "object" && extra !== null)
-          schema(`${at}.${name}`, obj(extra), obj(s), dir, out);
-        else if (canonical(s) !== "{}") out.push(`${at}.${name}: field now constrained`);
+}
+
+/** Two normalized schemas; every difference is reported except a safe new field. */
+function schema(
+  r: Report,
+  where: string,
+  ptr: string[],
+  a: unknown,
+  b: unknown,
+  dir: Direction,
+): void {
+  if (!isObj(a) || !isObj(b)) return r.same(where, ptr, a, b);
+  for (const k of keysOf(a, b)) {
+    const p = [...ptr, k];
+    const va = own(a, k);
+    const vb = own(b, k);
+    if (k === "properties" && (va === undefined || isObj(va)) && (vb === undefined || isObj(vb))) {
+      properties(r, where, p, a, b, dir);
+    } else if (va === undefined) r.add(where, p, "added");
+    else if (vb === undefined) r.add(where, p, "removed");
+    else if (SUB_MAP.has(k) && isObj(va) && isObj(vb)) {
+      for (const n of keysOf(va, vb)) {
+        if (!has(va, n)) r.add(where, [...p, n], "added");
+        else if (!has(vb, n)) r.add(where, [...p, n], "removed");
+        else schema(r, where, [...p, n], va[n], vb[n], dir);
       }
-    }
-    extraFields(at, a.additionalProperties, b.additionalProperties, out);
+    } else if (
+      SUB_LIST.has(k) &&
+      Array.isArray(va) &&
+      Array.isArray(vb) &&
+      va.length === vb.length
+    ) {
+      va.forEach((x, i) => schema(r, where, [...p, String(i)], x, vb[i], dir));
+    } else if (SUB_ONE.has(k)) schema(r, where, p, va, vb, dir);
+    else r.same(where, p, va, vb);
   }
 }
 
-/** An `enum` may widen in a request and narrow in a response. */
-function enumValues(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void {
-  const [from, to] = dir === "request" ? [a.enum, b.enum] : [b.enum, a.enum];
-  if (!Array.isArray(to)) return;
-  if (!Array.isArray(from))
-    return void out.push(`${at}: ${dir === "request" ? "enum added" : "enum removed"}`);
-  const known = new Set(to.map(canonical));
-  const word = dir === "request" ? "no longer accepted" : "new in response";
-  for (const v of from) if (!known.has(canonical(v))) out.push(`${at}: ${word} ${canonical(v)}`);
-}
-
-/** A schema that refuses some values; `true`, a missing one and `{}` accept anything. */
-function isSchema(v: unknown): boolean {
-  return typeof v === "object" && v !== null && canonical(v) !== "{}";
-}
-
-/** A request object's allowance for undeclared fields may widen, never narrow. */
-function extraFields(at: string, a: unknown, b: unknown, out: string[]): void {
-  if (a === false) return;
-  if (b === false) return void out.push(`${at}: extra fields no longer accepted`);
-  if (!isSchema(b)) return;
-  if (!isSchema(a)) return void out.push(`${at}: extra fields now constrained`);
-  schema(`${at}.*`, obj(a), obj(b), "request", out);
-}
-
-const PARAMETER_COMPARED = new Set(["in", "name", "required", "schema"]);
-
-function parameters(at: string, a: Obj, b: Obj, out: string[]): void {
-  const byKey = (op: Obj) =>
-    new Map(
-      Array.isArray(op.parameters)
-        ? op.parameters.map(obj).map((p) => [`${String(p.in)}:${String(p.name)}`, p])
-        : [],
-    );
-  const pa = byKey(a);
-  const pb = byKey(b);
-  for (const [key, p] of pa) {
-    const q = pb.get(key);
-    if (!q) out.push(`${at}: parameter ${key} removed`);
-    else {
-      if (p.required !== true && q.required === true)
-        out.push(`${at}: parameter ${key} became required`);
-      for (const k of changedKeys(p, q, PARAMETER_COMPARED))
-        out.push(`${at}: parameter ${key} ${k} changed`);
-      schema(`${at} parameter ${key}`, obj(p.schema), obj(q.schema), "request", out);
-    }
+function properties(r: Report, where: string, ptr: string[], a: Obj, b: Obj, dir: Direction): void {
+  const pa = obj(own(a, "properties"));
+  const pb = obj(own(b, "properties"));
+  const required = strings(own(b, "required"));
+  const closed =
+    own(a, "additionalProperties") === false && own(b, "additionalProperties") === false;
+  for (const n of keysOf(pa, pb)) {
+    if (!has(pa, n)) {
+      const safe = !required.includes(n) && (dir === "response" || closed);
+      if (!safe) r.add(where, [...ptr, n], "field added");
+    } else if (!has(pb, n)) r.add(where, [...ptr, n], "field removed");
+    else schema(r, where, [...ptr, n], pa[n], pb[n], dir);
   }
-  for (const [key, q] of pb)
-    if (!pa.has(key) && q.required === true) out.push(`${at}: new required parameter ${key}`);
 }
 
-function requestBody(at: string, a: Obj, b: Obj, out: string[]): void {
-  const ca = a.requestBody === undefined ? null : obj(obj(a.requestBody).content);
-  const cb = b.requestBody === undefined ? null : obj(obj(b.requestBody).content);
-  if (!ca && cb) return void out.push(`${at}: request body added`);
-  if (ca && !cb) return void out.push(`${at}: request body removed`);
-  if (!ca || !cb) return;
-  if (obj(a.requestBody).required !== true && obj(b.requestBody).required === true)
-    out.push(`${at}: request body became required`);
-  for (const [type, media] of Object.entries(ca)) {
-    if (!has(cb, type)) {
-      out.push(`${at}: content type ${type} removed`);
-      continue;
-    }
-    const next = obj(own(cb, type));
-    for (const k of changedKeys(obj(media), next, new Set(["schema"])))
-      out.push(`${at}: content type ${type} ${k} changed`);
-    schema(`${at} body`, obj(obj(media).schema), obj(next.schema), "request", out);
+/** Parameters by "in:name", so their order does not matter. */
+function byKey(v: unknown): Map<string, unknown> {
+  return new Map(
+    (Array.isArray(v) ? v : []).map((p) => [
+      isObj(p) && typeof p.in === "string" && typeof p.name === "string"
+        ? `${p.in}:${p.name}`
+        : canonical(p),
+      p,
+    ]),
+  );
+}
+
+/** Two OpenAPI objects (operation, response, media type ...); annotations are skipped. */
+function node(
+  r: Report,
+  where: string,
+  ptr: string[],
+  a: unknown,
+  b: unknown,
+  dir: Direction,
+  named = false,
+): void {
+  if (!isObj(a) || !isObj(b)) return r.same(where, ptr, a, b);
+  for (const k of keysOf(a, b)) {
+    if (!named && ANNOTATIONS.has(k)) continue;
+    const p = [...ptr, k];
+    const va = own(a, k);
+    const vb = own(b, k);
+    if (va === undefined) r.add(where, p, "added");
+    else if (vb === undefined) r.add(where, p, "removed");
+    else if (named) node(r, where, p, va, vb, dir);
+    else if (k.startsWith("x-")) r.same(where, p, va, vb);
+    else if (k === "schema") schema(r, where, p, normalizeSchema(va), normalizeSchema(vb), dir);
+    else if (k === "parameters" && Array.isArray(va) && Array.isArray(vb)) {
+      const qa = byKey(va);
+      const qb = byKey(vb);
+      for (const key of [...new Set([...qa.keys(), ...qb.keys()])].sort()) {
+        if (!qa.has(key)) r.add(where, [...p, key], "parameter added");
+        else if (!qb.has(key)) r.add(where, [...p, key], "parameter removed");
+        else node(r, where, [...p, key], qa.get(key), qb.get(key), "request");
+      }
+    } else if (NAMED.has(k)) node(r, where, p, va, vb, k === "responses" ? "response" : dir, true);
+    else node(r, where, p, va, vb, dir);
   }
-  const la = a["x-max-body-bytes"];
-  const lb = b["x-max-body-bytes"];
-  if (typeof lb === "number" && !(typeof la === "number" && la <= lb))
-    out.push(`${at}: body limit lowered`);
 }
 
-function successResponses(at: string, a: Obj, b: Obj, out: string[]): void {
-  const rb = obj(b.responses);
-  for (const [status, r] of Object.entries(obj(a.responses))) {
-    if (Number(status) >= 400) continue;
-    if (!has(rb, status)) {
-      out.push(`${at}: response ${status} removed`);
-      continue;
+function paths(r: Report, a: Obj, b: Obj): void {
+  for (const path of Object.keys(a).sort()) {
+    const ia = obj(a[path]);
+    const ib = obj(own(b, path));
+    for (const method of Object.keys(ia).sort()) {
+      if (!METHODS.has(method)) continue;
+      const at = `${method.toUpperCase()} ${path}`;
+      if (!has(ib, method)) r.add(at, [], "route removed");
+      else node(r, at, [], ia[method], ib[method], "request");
     }
-    const next = obj(own(rb, status));
-    const ja = own(obj(obj(r).content), "application/json");
-    const jb = own(obj(next.content), "application/json");
-    if (ja !== undefined && jb === undefined) out.push(`${at}: response ${status} body removed`);
-    else if (ja !== undefined)
-      schema(`${at} response ${status}`, obj(obj(ja).schema), obj(obj(jb).schema), "response", out);
-    const hb = obj(next.headers);
-    for (const h of Object.keys(obj(obj(r).headers)))
-      if (!has(hb, h)) out.push(`${at}: response ${status} header ${h} removed`);
+    // Path-level keys (shared parameters, servers); a new method is a new route and safe.
+    const rest = (i: Obj) => Object.fromEntries(Object.entries(i).filter(([k]) => !METHODS.has(k)));
+    if (has(b, path)) node(r, path, [], rest(ia), rest(ib), "request");
   }
 }
 
@@ -272,27 +250,23 @@ function version(before: Obj, after: Obj, out: string[]): void {
     );
 }
 
-/** Every change from `before` to `after` that breaks a client of `before`; empty when none. */
+/** Every change from `before` to `after` that may break a client of `before`; empty when none. */
 export function breakingChanges(before: unknown, after: unknown): string[] {
   const out: string[] = [];
-  version(obj(before), obj(after), out);
-  const next = obj(obj(after).paths);
-  for (const [path, ops] of Object.entries(obj(obj(before).paths))) {
-    for (const [method, op] of Object.entries(obj(ops))) {
-      const at = `${method.toUpperCase()} ${path}`;
-      const b = own(obj(own(next, path)), method);
-      if (b === undefined) {
-        out.push(`${at}: route removed`);
-        continue;
-      }
-      const a = obj(op);
-      const nb = obj(b);
-      if (a.operationId !== nb.operationId) out.push(`${at}: operationId changed`);
-      if (a["x-access"] !== nb["x-access"]) out.push(`${at}: access changed`);
-      parameters(at, a, nb, out);
-      requestBody(at, a, nb, out);
-      successResponses(at, a, nb, out);
-    }
+  const a = obj(before);
+  const b = obj(after);
+  version(a, b, out);
+  const r = new Report();
+  for (const k of keysOf(a, b)) {
+    if (k === "paths") paths(r, obj(own(a, k)), obj(own(b, k)));
+    else if (k === "info") {
+      // The version is judged above; the rest of info is compared like any object.
+      const rest = (i: unknown) =>
+        Object.fromEntries(Object.entries(obj(i)).filter(([n]) => n !== "version"));
+      node(r, "info", [], rest(own(a, k)), rest(own(b, k)), "response");
+    } else if (!has(a, k)) r.add(k, [], "added");
+    else if (!has(b, k)) r.add(k, [], "removed");
+    else r.same(k, [], a[k], b[k]);
   }
-  return out;
+  return [...out, ...r.out];
 }
