@@ -1,0 +1,1110 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Ductura API",
+    "version": "1",
+    "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md"
+  },
+  "x-fallback": {
+    "status": 404,
+    "code": "not_found",
+    "key": "errors.not_found",
+    "inventory": "app/api/[...path]/route.ts"
+  },
+  "paths": {
+    "/api/v1/auth/backchannel-logout": {
+      "post": {
+        "operationId": "auth.backchannel-logout.post",
+        "summary": "OIDC back-channel logout: the provider posts a signed logout token, no cookie.",
+        "x-access": "identity_provider",
+        "x-inventory": "app/api/auth/backchannel-logout/route.ts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "logout_token"
+                ],
+                "properties": {
+                  "logout_token": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 16384,
+        "responses": {
+          "200": {
+            "description": "sessions closed"
+          },
+          "400": {
+            "description": "invalid_logout_token"
+          },
+          "503": {
+            "description": "unavailable"
+          }
+        },
+        "x-errors": [
+          {
+            "status": 400,
+            "code": "invalid_logout_token",
+            "key": "errors.invalid_logout_token"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/callback": {
+      "get": {
+        "operationId": "auth.callback.get",
+        "summary": "Return from the identity provider; checks state and PKCE, opens the session.",
+        "x-access": "anyone",
+        "x-inventory": "app/api/auth/callback/route.ts",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maxLength": 4096,
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maxLength": 512,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "redirect",
+            "headers": {
+              "location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "set-cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "login_failed",
+            "x-html-page": true
+          },
+          "403": {
+            "description": "login_refused",
+            "x-html-page": true
+          },
+          "503": {
+            "description": "unavailable",
+            "x-html-page": true
+          }
+        },
+        "x-errors": [
+          {
+            "status": 400,
+            "code": "login_failed",
+            "key": "errors.login_failed"
+          },
+          {
+            "status": 403,
+            "code": "login_refused",
+            "key": "errors.login_refused"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "get": {
+        "operationId": "auth.login.get",
+        "summary": "Starts AAI@EduHr login (PKCE); returnTo is narrowed to a safe local path.",
+        "x-access": "anyone",
+        "x-inventory": "app/api/auth/login/route.ts",
+        "parameters": [
+          {
+            "name": "returnTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "redirect",
+            "headers": {
+              "location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "set-cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "x-html-page": true
+          }
+        },
+        "x-errors": [
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "operationId": "auth.logout-all.post",
+        "summary": "Closes every session of the caller; on failure keeps the cookie.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/auth/logout-all/route.ts",
+        "responses": {
+          "303": {
+            "description": "redirect",
+            "headers": {
+              "location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "set-cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "x-html-page": true
+          },
+          "503": {
+            "description": "unavailable",
+            "x-html-page": true
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "auth.logout.post",
+        "summary": "Closes the current session. Same Origin only; an empty body.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/auth/logout/route.ts",
+        "responses": {
+          "303": {
+            "description": "redirect",
+            "headers": {
+              "location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "set-cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "x-html-page": true
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          }
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "operationId": "platform.health.get",
+        "summary": "Liveness: the process answers. Reads no database, session or environment.",
+        "x-access": "anyone",
+        "x-inventory": "app/api/health/route.ts",
+        "responses": {
+          "200": {
+            "description": "alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": []
+      }
+    },
+    "/api/v1/ready": {
+      "get": {
+        "operationId": "platform.ready.get",
+        "summary": "Readiness per capability, closed words only.",
+        "x-access": "anyone",
+        "x-inventory": "app/api/ready/route.ts",
+        "responses": {
+          "200": {
+            "description": "ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "capabilities"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ready",
+                      "type": "string"
+                    },
+                    "capabilities": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "anyOf": [
+                            {
+                              "const": "ok",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nedostupno",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nije_konfigurirano",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "storage": {
+                          "anyOf": [
+                            {
+                              "const": "ok",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nedostupno",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nije_konfigurirano",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "signing": {
+                          "anyOf": [
+                            {
+                              "const": "ok",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nedostupno",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nije_konfigurirano",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "queue": {
+                          "anyOf": [
+                            {
+                              "const": "ok",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nedostupno",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nije_konfigurirano",
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable, draining",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "capabilities"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "unavailable",
+                          "type": "string"
+                        },
+                        "capabilities": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "database": {
+                              "anyOf": [
+                                {
+                                  "const": "ok",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nedostupno",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nije_konfigurirano",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "storage": {
+                              "anyOf": [
+                                {
+                                  "const": "ok",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nedostupno",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nije_konfigurirano",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "signing": {
+                              "anyOf": [
+                                {
+                                  "const": "ok",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nedostupno",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nije_konfigurirano",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "queue": {
+                              "anyOf": [
+                                {
+                                  "const": "ok",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nedostupno",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "nije_konfigurirano",
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "draining",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          },
+          {
+            "status": 503,
+            "code": "draining",
+            "key": "errors.draining"
+          }
+        ]
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "operationId": "platform.status.get",
+        "summary": "Public status in three parts, closed words, nothing about a person.",
+        "x-access": "anyone",
+        "x-inventory": "app/api/status/route.ts",
+        "responses": {
+          "200": {
+            "description": "status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "checkedAt",
+                    "components"
+                  ],
+                  "properties": {
+                    "checkedAt": {
+                      "format": "date-time",
+                      "maxLength": 24,
+                      "type": "string"
+                    },
+                    "components": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "writing",
+                        "submission",
+                        "mentorView"
+                      ],
+                      "properties": {
+                        "writing": {
+                          "anyOf": [
+                            {
+                              "const": "radi",
+                              "type": "string"
+                            },
+                            {
+                              "const": "ne_radi",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nije_ukljuceno",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "submission": {
+                          "anyOf": [
+                            {
+                              "const": "radi",
+                              "type": "string"
+                            },
+                            {
+                              "const": "ne_radi",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nije_ukljuceno",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "mentorView": {
+                          "anyOf": [
+                            {
+                              "const": "radi",
+                              "type": "string"
+                            },
+                            {
+                              "const": "ne_radi",
+                              "type": "string"
+                            },
+                            {
+                              "const": "nije_ukljuceno",
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable"
+          }
+        },
+        "x-errors": [
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/profile/interface-locale": {
+      "get": {
+        "operationId": "profile.interface-locale.get",
+        "summary": "The caller's saved interface language, or null.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/profile/interface-locale/route.ts",
+        "responses": {
+          "200": {
+            "description": "saved value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "locale"
+                  ],
+                  "properties": {
+                    "locale": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "const": "hr",
+                              "type": "string"
+                            },
+                            {
+                              "const": "en",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "profile.interface-locale.post",
+        "summary": "Saves the caller's interface language. Canonical JSON, nothing but the locale.",
+        "x-access": "signed_in",
+        "x-inventory": "app/api/profile/interface-locale/route.ts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "locale"
+                ],
+                "properties": {
+                  "locale": {
+                    "anyOf": [
+                      {
+                        "const": "hr",
+                        "type": "string"
+                      },
+                      {
+                        "const": "en",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 256,
+        "responses": {
+          "200": {
+            "description": "saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "locale"
+                  ],
+                  "properties": {
+                    "locale": {
+                      "anyOf": [
+                        {
+                          "const": "hr",
+                          "type": "string"
+                        },
+                        {
+                          "const": "en",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "content_length_invalid, content_length_mismatch, body_stream_error, invalid_json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "origin_missing, origin_mismatch, cross_site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "cross_site",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "body_timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body_too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "origin_missing",
+            "key": "errors.origin_missing"
+          },
+          {
+            "status": 403,
+            "code": "origin_mismatch",
+            "key": "errors.origin_mismatch"
+          },
+          {
+            "status": 403,
+            "code": "cross_site",
+            "key": "errors.cross_site"
+          },
+          {
+            "status": 415,
+            "code": "unsupported_media_type",
+            "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 413,
+            "code": "body_too_large",
+            "key": "errors.body_too_large"
+          },
+          {
+            "status": 408,
+            "code": "body_timeout",
+            "key": "errors.body_timeout"
+          },
+          {
+            "status": 400,
+            "code": "content_length_invalid",
+            "key": "errors.content_length_invalid"
+          },
+          {
+            "status": 400,
+            "code": "content_length_mismatch",
+            "key": "errors.content_length_mismatch"
+          },
+          {
+            "status": 400,
+            "code": "body_stream_error",
+            "key": "errors.body_stream_error"
+          },
+          {
+            "status": 400,
+            "code": "invalid_json",
+            "key": "errors.invalid_json"
+          },
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    }
+  }
+}
