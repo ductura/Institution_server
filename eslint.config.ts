@@ -181,6 +181,22 @@ const REDACTION_INPUT_KEYS = [
   "Prezime",
   "Naslov",
 ];
+// AWS KMS API field names (AWS KMS API Reference: Sign, Verify, GetPublicKey),
+// which the AWS SDK (@aws-sdk/client-kms) takes and returns as they are. The
+// keys adapter is ported from Ductus src/adapters/crypto (S-0.19, DAN-732). A
+// closed list of exact names, only for properties, only in server/external/keys.
+const AWS_KMS_NAMES = [
+  "KeyId",
+  "KeySpec",
+  "KeyUsage",
+  "Message",
+  "MessageType",
+  "PublicKey",
+  "Signature",
+  "SignatureValid",
+  "SigningAlgorithm",
+  "SigningAlgorithms",
+];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.
@@ -271,6 +287,10 @@ export default defineConfig(
   {
     files: ["server/log/**/*.ts"],
     rules: { "@typescript-eslint/naming-convention": namingConvention(REDACTION_INPUT_KEYS, []) },
+  },
+  {
+    files: ["server/external/keys/**/*.ts"],
+    rules: { "@typescript-eslint/naming-convention": namingConvention(AWS_KMS_NAMES, []) },
   },
   // The database driver stays behind server/database (PLAN §3, rule 4; Ductus
   // eslint.config.mjs at d52a92c3, S-0.17). This development guard covers
