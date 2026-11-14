@@ -198,7 +198,7 @@ describe("db/main/tests (pgTAP port of Ductus db/tests)", () => {
     expect(jobBlock(crlf, "database", "ci-ok")).not.toContain("run: y");
   });
 
-  it("runs from pnpm test:db, pnpm test:db:native and the CI database job", () => {
+  it("runs from pnpm test:db, pnpm test:db:main, pnpm test:db:native and the CI database job", () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
       scripts: Record<string, string>;
     };
@@ -209,6 +209,9 @@ describe("db/main/tests (pgTAP port of Ductus db/tests)", () => {
     expect(readFileSync(join(ROOT, "compose.yaml"), "utf8")).toContain(
       "- ./db/main/tests:/db/tests:ro",
     );
+    // Direct pg_prove over the ported directory (PR contract); it must exist.
+    expect(pkg.scripts["test:db:main"]).toBe("pg_prove --recurse --ext .sql db/main/tests");
+    expect(existsSync(join(ROOT, "db", "main", "tests"))).toBe(true);
     expect(pkg.scripts["test:db:native"]).toBe("node scripts/db/native-db.ts test");
     expect(readFileSync(join(ROOT, "scripts", "db", "native-db.ts"), "utf8")).toContain(
       `export const TESTS_DIR = "${TESTS}";`,
