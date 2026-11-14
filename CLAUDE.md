@@ -42,13 +42,14 @@ Izvor: Ductus [CLAUDE.md](https://github.com/danielrisavi77-create/Ductus/blob/m
 | `infra/fake-oidc/` | `test-support/fake-oidc/` |
 | `src/server/`, `app/api/` | `server/` |
 | `src/lib/i18n/` i tekstovi sučelja | `locales/` |
-| `tests/`, `**/*.test.ts` | `server/**/*.test.ts` i `test-support/` ([README.md](README.md), „Testovi”) |
+| `tests/` | ne postoji; testovi su uz kod ([docs/CODE_STYLE.md](docs/CODE_STYLE.md) §7) |
+| `**/*.test.ts` | `server/**/*.test.ts` i `test-support/` ([README.md](README.md), „Testovi”) |
 | issue #1091 za izvještaje sesija u oblaku | Ductus issue #1836 |
-| issue ovog repoa, labele `ready-for-claude` i `claude:in-progress`, `Closes #N` | issuei i labele su u Ductusu; zadatke servera dodjeljuje orkestrator (D-111), pa PR nosi `DAN-xxx` i `Task:` s izvorom zadatka |
+| issue ovog repoa, labele `ready-for-claude` i `claude:in-progress`, `Closes #N` | issuei i labele su u Ductusu; pisac u oblaku veže `DAN-xxx` i ispravan `Risk:` (Ductus [pisac-oblak.md](https://github.com/danielrisavi77-create/Ductus/blob/main/.claude/uloge/pisac-oblak.md), korak 3) |
 | `pnpm orch:overlap`, `pnpm orch:preflight` | još ne postoje (S-0.21); u izvještaju napiši da su preskočeni |
 | `scripts/forbidden-terms/scan.ts` | još ne postoji; do tada rječnik provjerava review |
 
-Pravila po putanjama su u [.claude/rules/](.claude/rules/) i podsjetnik su, ne nova pravila. Test `server/agent-rules.test.ts` provjerava da svaka datoteka pravila upućuje na izvor u Ductusu i da svaka poveznica vodi na postojeći dokument; da je svaka stavka preslika izvora, provjerava review.
+Pravila po putanjama su u [.claude/rules/](.claude/rules/) i podsjetnik su, ne nova pravila. Test `server/agent-rules.test.ts` provjerava da svaka datoteka pravila upućuje na izvor u Ductusu, da relativna poveznica vodi na postojeću datoteku u repou, a poveznica na Ductus na dokument s ručno provjerenog popisa u `server/agent-rules.ts`. Da je svaka stavka preslika izvora, provjerava review.
 
 ## Jezik
 
