@@ -1,0 +1,110 @@
+# Karta servera
+
+Karta područja `ductura/server`, pravila uvoza među njima i tok jednog zahtjeva od ulazne točke do baze. Server je modularni monolit: svako područje je mapa s javnim sučeljem (`index.ts`), a granice uvoza provjerava CI (odluka vlasnika c.6870353871, mjera 3).
+
+Dokument opisuje **ciljnu** strukturu. Stupac „Stanje” kaže postoji li mapa danas; `server/server-map.test.ts` provjerava da svaka mapa označena `postoji` postoji, da mapa označena `planirano` još ne postoji i da je svaka mapa u `server/` i `server/external/` u karti. Kad zadatak (S-1A-a i dalje) napravi mapu, u istom PR-u mijenja oznaku u `postoji`.
+
+Izvori: Ductus `docs/ARCHITECTURE.md` (§2, §2a, §4, §5, §7, §9, §10) i `docs/BACKEND.md`, plan po repozitorijima (Ductus#87 c.6870582055) i odluke vlasnika c.6869502575 i c.6870353871. U sukobu vrijede ti izvori, a nesklad se popravlja ovdje.
+
+## 1. Područja
+
+Svaka mapa je pod `server/`. „Tko ga zove” navodi samo područja i procese; vanjski klijenti (web, preloader, desktop) dolaze uvijek kroz `http`.
+
+| Područje | Mapa | Svrha | Tko ga zove | Podaci | Stanje |
+|---|---|---|---|---|---|
+| http | `server/http` | Jedini sastavljač: HTTP poslužitelj, IP klijenta, sigurnosna zaglavlja, zaštita porijekla, router | `server.ts`, `test-server` | Zaglavlja i tijelo zahtjeva (samo u memoriji, ništa ne sprema) | planirano |
+| traffic | `server/traffic` | IP prava, ograničenje broja zahtjeva i zapis prometa | `http` | Brojači ograničenja (memorija), zapis prometa preko `log` | planirano |
+| session | `server/session` | Prijava AAI@EduHr i sesija: kolačić `__Host-`, token sesije, odjava (ARCHITECTURE §4) | `http` | Tablice sesija u glavnoj bazi (samo hash tokena) | planirano |
+| external/srce-auth | `server/external/srce-auth` | OIDC klijent prema AAI@EduHr (Srce); lokalno i u CI-ju lažni pružatelj (D-09) | `session` | Ništa trajno; tokeni i atributi samo tijekom prijave | planirano |
+| external/storage | `server/external/storage` | Pohrana objekata (S3), objekti adresirani hashom, bez prepisivanja | `backup`, `deletion`, `downloads` | Objekti u bucketu | planirano |
+| external/keys | `server/external/keys` | Port potpisa i ključeva šifriranja (KMS); lokalno razvojni potpisnik | `backup` | Ništa trajno; materijal ključa ne napušta KMS (D-71) | planirano |
+| external/email | `server/external/email` | Slanje e-pošte (lokalno Mailpit, produkcija usluga u EU-u) | `legal`, `deletion` | Ništa trajno; adresa i predložak samo tijekom slanja | planirano |
+| database | `server/database` | `withActor(token, fn)`, pozivi RPC-a, jedino mjesto pretvorbe `snake_case` u `camelCase` | `session`, `roles`, `legal`, `backup`, `deletion`, `downloads` | Glavna baza (PostgreSQL s RLS-om), samo kroz RPC | planirano |
+| log | `server/log` | Strukturirani zapisi bez sadržaja radova i osobnih podataka u tekstu | sva područja osim `domain` i `contracts` | Baza zapisa | planirano |
+| metrics | `server/metrics` | Brojači i trajanja za nadzor | sva područja osim `domain` i `contracts` | Metrika (memorija, izvoz za nadzor) | planirano |
+| roles | `server/roles` | Uloge u ustanovi; studenta i nastavnika dodjeljuje samo administrator ustanove (c.6869502575) | `http` | Članstva i uloge u glavnoj bazi | planirano |
+| settings | `server/settings` | Postavke iz okoline, provjera pri pokretanju; odbija lažni OIDC i razvojni potpisnik izvan lokalnog rada i CI-ja | sva područja osim `domain` i `contracts` | Varijable okoline (bez tajni u repou) | planirano |
+| legal | `server/legal` | Pravni tekstovi (uvjeti, obavijest o privatnosti), verzije i prihvaćanja | `http` | Baza pravnih tekstova, prihvaćanja u glavnoj bazi | planirano |
+| backup | `server/backup` | Kopije baze i pohrane, mjesečna proba povrata (ARCHITECTURE §9) | `http` (status za administratora), planirani posao | Kopije glavne baze, replika bucketa | planirano |
+| deletion | `server/deletion` | Brisanje po klasi podataka i roku čuvanja, uključujući verzije objekata | `http`, planirani posao | Glavna baza (kroz RPC), objekti u pohrani | planirano |
+| downloads | `server/downloads` | Preuzimanja: izvozi i instalacijski paketi aplikacija | `http` | Objekti u pohrani, zapis preuzimanja u glavnoj bazi | planirano |
+| contracts | `server/contracts` | Ugovor API-ja `/api/v1` (TypeBox): validacija ulaza, OpenAPI, tipovi, klijent, lažni server | `http`, feature područja (tipovi), klijenti | Ništa; samo sheme | postoji |
+| domain | `server/domain` | Čista pravila i modeli bez I/O-a, SQL-a i vendor SDK-ova | `session`, `database` i feature područja | Ništa | planirano |
+| test-server | `server/test-server` | Server sastavljen s lažnim zamjenama (lažni AAI OIDC iz `test-support/`, PGlite, lažna baza zapisa) za testove servera i klijenata | samo testovi | Samo izmišljeni podaci | planirano |
+
+Feature područja su `roles`, `legal`, `backup`, `deletion` i `downloads`. U njima je `service`: logika jedne rute ili posla. Ostala područja su infrastruktura i ne sadrže pravila proizvoda.
+
+Planirani posao znači pozadinski proces s vlastitim sastavljačem (ARCHITECTURE §2: web i worker dijele module, a svaki ima svoj composition root). Dok ga nema, takva područja zove samo `http`.
+
+## 2. Dopušteni uvozi
+
+Pravilo za S-1A-b (provjera granica u CI-ju). Usklađeno s `docs/CODE_STYLE.md`: uvoz iz drugog područja samo kroz njegov `index.ts` (pravilo 6), `snake_case` samo u `server/database` (pravilo 9), svako područje ima `index.ts`, testove i README (pravilo 10).
+
+| Područje | Smije uvoziti |
+|---|---|
+| domain | — |
+| contracts | — |
+| settings | — |
+| log | `settings` |
+| metrics | `settings` |
+| database | `settings`, `log`, `metrics`, `domain` |
+| external/srce-auth | `settings`, `log`, `metrics` |
+| external/storage | `settings`, `log`, `metrics` |
+| external/keys | `settings`, `log`, `metrics` |
+| external/email | `settings`, `log`, `metrics` |
+| traffic | `settings`, `log`, `metrics` |
+| session | `settings`, `log`, `metrics`, `domain`, `database`, `external/srce-auth` |
+| roles | `settings`, `log`, `metrics`, `domain`, `contracts`, `database` |
+| legal | `settings`, `log`, `metrics`, `domain`, `contracts`, `database`, `external/email` |
+| backup | `settings`, `log`, `metrics`, `database`, `external/storage`, `external/keys` |
+| deletion | `settings`, `log`, `metrics`, `domain`, `contracts`, `database`, `external/storage`, `external/email` |
+| downloads | `settings`, `log`, `metrics`, `domain`, `contracts`, `database`, `external/storage` |
+| http | `settings`, `log`, `metrics`, `contracts`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads` |
+| test-server | `http`, `settings` |
+
+Uz tablicu vrijedi:
+
+- Smjer je prema unutra. `domain` i `contracts` ne uvoze ništa iz servera; `contracts` uvozi samo `@sinclair/typebox`.
+- `http` je jedini sastavljač. Nitko osim ulazne točke (`server.ts`) i `test-server` ne uvozi `http`.
+- Nitko ne uvozi `test-server`; proizvodni kod ne uvozi `test-support/`.
+- Feature područja ne uvoze jedno drugo; dijele podatke samo kroz bazu i RPC.
+- Adapteri u `external/` ne uvoze jedan drugoga ni feature područja.
+- Promjena tablice je zaseban PR koji mijenja i ovaj dokument i provjeru iz S-1A-b.
+
+## 3. Tok jednog zahtjeva
+
+Redoslijed koraka za svaki zahtjev. Svaki korak može odbiti zahtjev; tada se sljedeći koraci ne izvode, a greška ima oblik iz `docs/CODE_STYLE.md` pravila 8 (`code` i `messageKey`, bez teksta u kodu).
+
+| # | Korak | Područje | Što radi | Kod odbijanja |
+|---|---|---|---|---|
+| 1 | `server.ts` | ulazna točka | Učita `settings` (nevaljane postavke zaustave pokretanje), sastavi `http` i pokrene poslužitelj | Server se ne pokreće |
+| 2 | IP | `http` | Odredi IP klijenta; `X-Forwarded-For` vrijedi samo od pouzdanog proxyja iz `settings` | — |
+| 3 | IP prava | `traffic` | Provjeri popis zabranjenih i ograničenih mreža za rutu | 403 |
+| 4 | Ograničenje | `traffic` | Broj zahtjeva po IP-u i po sesiji u vremenskom prozoru | 429 |
+| 5 | Zapis prometa | `traffic` → `log` | Pripremi zapis prometa; piše se kad odgovor završi, i za zahtjeve odbijene u koracima 3 i 4 | — |
+| 6 | Sigurnosna zaglavlja | `http` | CSP, HSTS, `nosniff`, `Referrer-Policy`, `Cache-Control: no-store` za API | — |
+| 7 | Zaštita porijekla | `http` | Mijenjajuće metode traže dopušteni `Origin` i `Sec-Fetch-Site` (ARCHITECTURE §4 t. 4) | 403 |
+| 8 | Router | `http` | Pronađe rutu iz ugovora; za rutu koja nije `anyone` ni `identity_provider` `session` iz kolačića čita token | 404, 405; 401 bez sesije |
+| 9 | Shema | `contracts` | Provjeri parametre, upit, vrstu i najveću veličinu tijela prema ugovoru rute | 400, 413, 415 |
+| 10 | `service` | feature područje | Logika rute nad tipovima iz ugovora i pravilima iz `domain`; vraća rezultat, ne baca iznimku | prema ugovoru rute |
+| 11 | `server/database` | `database` | `withActor(token, fn)`: transakcija s `app.session_token`, nikad sirovi ID korisnika; mapiranje redaka | prema ugovoru rute |
+| 12 | RPC | baza | Funkcija u bazi odlučuje o ovlasti (`current_actor()`, `can()`, RLS) i mijenja podatke; klijent nikad ne piše izravno u tablice | greška RPC-a postaje kod iz ugovora |
+
+„Tko smije” u ugovoru (`access`) je deklaracija za klijente i dokumentaciju. Ovlast odlučuje baza u koraku 12 (ARCHITECTURE §7).
+
+### Gdje se piše koji zapis
+
+| Zapis | Piše | Kamo | Kada |
+|---|---|---|---|
+| Zapis prometa | `traffic` preko `log` | Baza zapisa | Kad odgovor završi, za svaki zahtjev: vrijeme, metoda, predložak rute (bez upita), status, trajanje, ishod koraka 3 i 4 |
+| Sigurnosni događaj | `traffic` i `http` preko `log` | Baza zapisa | Pri odbijanju u koracima 3, 4 i 7 |
+| Metrika | područje koje mjeri, preko `metrics` | Metrika | Uz svaki korak koji broji (zahtjevi, odbijanja, trajanje RPC-a) |
+| Zapis greške | područje u kojem je greška, preko `log` | Baza zapisa | Neočekivana programska pogreška; bez tijela zahtjeva i kolačića |
+| Revizijski trag | RPC u koraku 12 | Glavna baza | U istoj transakciji kao promjena; ako se transakcija poništi, nema ni traga |
+
+Zapisi ne sadrže tijelo zahtjeva, kolačiće, tokene, sadržaj radova ni upit iz URL-a (ARCHITECTURE §10, BACKEND §4.9). Mrežni inženjer vidi zapise i metriku svih ustanova (c.6869502575).
+
+## Prelazno stanje
+
+- Ulazna točka je danas `server/index.ts`, a HTTP poslužitelj `server/app.ts` s privremenom testnom zamjenom prijave (README, „Stanje kostura”). Oboje zamjenjuju `server.ts` i `server/http`.
+- Od područja postoji samo `server/contracts`.

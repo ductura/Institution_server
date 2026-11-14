@@ -31,7 +31,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
 | `db/` | Migracije i pgTAP testovi (prazno) |
 | `test-support/` | Zajednička pomagala za testove (prazno) |
-| `docs/` | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) |
+| `docs/` | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 
 ## Testovi
 

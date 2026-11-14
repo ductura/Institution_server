@@ -150,6 +150,8 @@ Iz druge mape uvozi se samo javno sučelje mape, tj. njezin `index.ts`. Unutarnj
 
 Provedba: planirano S-0.7 (`no-restricted-imports`), do tada review.
 
+Koja područja smiju uvoziti koja, propisuje tablica dopuštenih uvoza u [Karti servera](server-map.md#2-dopušteni-uvozi) (provodi S-1A-b).
+
 Ispravno:
 
 ```ts
