@@ -11,24 +11,14 @@
  * Every answer is `cache-control: no-store`. Logs carry a stage and a code,
  * never the token, `sub`, `sid` or `jti`.
  */
-import {
-  accountIssuer,
-  isProviderUnavailable,
-  LogoutTokenError,
-  verifyLogoutToken,
-  type AuthConfig,
-  type LogoutKeySource,
-} from "../external/srce-auth/index.ts";
+import type { LogoutVerifier } from "../external/srce-auth/index.ts";
 
 import type { BackchannelLogout } from "../database/index.ts";
 
+/** Ports the composer hands in (docs/server-map.md §2); see createLogoutVerifier. */
 export type BackchannelDeps = {
-  config: AuthConfig;
-  /** The issuer string discovery returned, which `iss` must equal exactly. */
-  discoveredIssuer: () => Promise<string>;
-  keys: LogoutKeySource;
+  verifier: LogoutVerifier;
   backchannelLogout: BackchannelLogout;
-  nowSeconds?: () => number;
 };
 
 /** A form body larger than this is refused unread. */
@@ -88,29 +78,20 @@ export async function backchannelLogout(
   }
   let verified;
   try {
-    verified = await verifyLogoutToken(
-      token,
-      {
-        issuer: await deps.discoveredIssuer(),
-        clientId: deps.config.clientId,
-        alg: deps.config.idTokenAlg,
-        clockToleranceSeconds: deps.config.clockToleranceSeconds,
-        now: deps.nowSeconds?.() ?? Math.floor(Date.now() / 1000),
-      },
-      deps.keys,
-    );
-  } catch (error) {
-    if (error instanceof LogoutTokenError) {
-      logFailure("verify", error.code);
-      return answer(400);
-    }
-    logFailure("verify", isProviderUnavailable(error) ? "provider_unavailable" : "keys");
+    verified = await deps.verifier.verify(token);
+  } catch {
+    // The port answers with a result; a throw is treated as unavailable keys.
+    logFailure("verify", "keys");
     return answer(503);
+  }
+  if (!verified.ok) {
+    logFailure("verify", verified.code);
+    return answer(verified.reason === "invalid" ? 400 : 503);
   }
   try {
     const result = await deps.backchannelLogout({
       // The account key's spelling of the issuer (F-042), as at login.
-      issuer: accountIssuer(deps.config.issuer),
+      issuer: deps.verifier.accountIssuer,
       subject: verified.sub,
       sid: verified.sid,
       jti: verified.jti,

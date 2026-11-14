@@ -8,6 +8,7 @@ Preneseno iz Ductusa `src/server/auth` (`d52a92c3`, S-0.18, DAN-731) bez promjen
 - `oidc.ts`: `createOidcClient` (openid-client 6.8.8), provjere prijave (`state`, `nonce`, PKCE), ograničen `fetch`, `accountIssuer`, `isProviderUnavailable`.
 - `claims.ts`: `identityFromClaims`, atributi `hrEdu*` u identitet prijave.
 - `logout-token.ts`, `logout-keys.ts`: provjera tokena odjave (Back-Channel Logout 1.0) i spremište ključeva pružatelja.
+- `logout-verifier.ts`: `createLogoutVerifier`, port provjere tokena odjave koji sastavljač predaje ruti u `session` (`docs/server-map.md` §2); vraća rezultat (`invalid` ili `unavailable`) umjesto bacanja.
 - `index.ts`: javno sučelje mape.
 
 Testovi su uz kod; ispitni pružatelj u memoriji je u [test-support/test-idp](../../../test-support/test-idp/index.ts). Mapa uvozi samo `openid-client` i `node:`; prema karti smije još `settings`, `log` i `metrics`. Tok prijave (`flow.ts`), sastavljač (`deps.ts`) i rute dolaze u S-1E-a i S-1D-d.

@@ -1,60 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  BACKCHANNEL_LOGOUT_EVENT,
-  createCachedKeySource,
-  createOidcClient,
-  loadAuthConfig,
-} from "../external/srce-auth/index.ts";
-
-import {
   backchannelLogout,
   MAX_BACKCHANNEL_BODY_BYTES,
   type BackchannelDeps,
 } from "./backchannel.ts";
 import type { BackchannelLogout } from "../database/index.ts";
+import type { LogoutVerification, LogoutVerifier } from "../external/srce-auth/index.ts";
 
-import {
-  CLIENT_ID,
-  CLIENT_SECRET,
-  createTestIdp,
-  ISSUER,
-} from "../../test-support/test-idp/index.ts";
-
-// DAN-474: the back-channel logout route (attack plan #1620: A1, A2, A5, B1, E4, G2 to G5).
-// Real openid-client discovery and JWKS against the in-process provider;
-// every identifier is invented.
+// DAN-474: the back-channel logout route (attack plan #1620: A1, A2, A5, B1, E4, G2, G3, G5).
+// The verifier is a fake port here (docs/server-map.md §2); the real one,
+// against the in-process provider, is covered by
+// server/external/srce-auth/logout-verifier.test.ts (A1, A5, G3, G4).
+// Every identifier is invented.
 const APP = "https://ductus.test";
-const config = loadAuthConfig({
-  NODE_ENV: "test",
-  DUCTUS_AUTH_PROVIDER: "fake-oidc",
-  OIDC_ISSUER: ISSUER,
-  OIDC_CLIENT_ID: CLIENT_ID,
-  OIDC_CLIENT_SECRET: CLIENT_SECRET,
-  OIDC_REDIRECT_URI: `${APP}/api/auth/callback`,
-});
+const ISSUER = "http://127.0.0.1:9400";
 const LOGOUT_URL = `${APP}/api/auth/backchannel-logout`;
 const SUB = "sub-demo-bc";
 const SID = "sid-demo-bc-1";
 const JTI = "jti-demo-bc-1";
 
-let idp: ReturnType<typeof createTestIdp>;
+const TOKEN = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJkZW1vIn0.c2lnbmF0dXJlLWRlbW8";
+const VALID: LogoutVerification = { ok: true, sub: SUB, sid: SID, jti: JTI };
+
+let verify: ReturnType<typeof vi.fn<LogoutVerifier["verify"]>>;
 let port: ReturnType<typeof vi.fn<BackchannelLogout>>;
 let deps: BackchannelDeps;
 let errors: ReturnType<typeof vi.spyOn>;
-
-function claims(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    iss: ISSUER,
-    aud: CLIENT_ID,
-    iat: Math.floor(Date.now() / 1000),
-    jti: JTI,
-    sub: SUB,
-    sid: SID,
-    events: { [BACKCHANNEL_LOGOUT_EVENT]: {} },
-    ...overrides,
-  };
-}
 
 function post(body: string, headers: Record<string, string> = {}): Request {
   return new Request(LOGOUT_URL, {
@@ -67,15 +39,9 @@ function post(body: string, headers: Record<string, string> = {}): Request {
 const form = (token: string) => new URLSearchParams({ logout_token: token }).toString();
 
 beforeEach(() => {
-  idp = createTestIdp();
-  const oidc = createOidcClient(config, idp.fetch);
+  verify = vi.fn<LogoutVerifier["verify"]>(async () => VALID);
   port = vi.fn<BackchannelLogout>(async () => ({ ok: true, closed: 1 }));
-  deps = {
-    config,
-    discoveredIssuer: () => oidc.discoveredIssuer(),
-    keys: createCachedKeySource({ load: () => oidc.jwks() }),
-    backchannelLogout: port,
-  };
+  deps = { verifier: { accountIssuer: ISSUER, verify }, backchannelLogout: port };
   errors = vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -89,20 +55,21 @@ function logged(): string {
 
 describe("backchannel logout route", () => {
   it("A1: closes what a valid token names and answers 200 with no-store and no body", async () => {
-    const response = await backchannelLogout(post(form(idp.logoutToken(claims()))), deps);
+    const response = await backchannelLogout(post(form(TOKEN)), deps);
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.text()).toBe("");
+    expect(verify).toHaveBeenCalledWith(TOKEN);
     expect(port).toHaveBeenCalledWith({ issuer: ISSUER, subject: SUB, sid: SID, jti: JTI });
   });
 
   it("C5, C6: answers 200 when nothing matched (§2.8)", async () => {
     port.mockResolvedValueOnce({ ok: true, closed: 0 });
-    expect((await backchannelLogout(post(form(idp.logoutToken(claims()))), deps)).status).toBe(200);
+    expect((await backchannelLogout(post(form(TOKEN)), deps)).status).toBe(200);
   });
 
   it("G2: trusts no cookie, origin or session named by the caller", async () => {
-    const request = post(form(idp.logoutToken(claims())), {
+    const request = post(form(TOKEN), {
       cookie: "__Host-ductus_session=" + "x".repeat(43),
       origin: "https://elsewhere.test",
       "sec-fetch-site": "cross-site",
@@ -123,10 +90,7 @@ describe("backchannel logout route", () => {
     ],
     ["no token", () => post("other=1")],
     ["an empty token", () => post("logout_token=")],
-    [
-      "two tokens",
-      () => post(`${form(idp.logoutToken(claims()))}&${form(idp.logoutToken(claims()))}`),
-    ],
+    ["two tokens", () => post(`${form(TOKEN)}&${form(TOKEN)}`)],
     [
       "a declared body over the limit",
       () => post("logout_token=a", { "content-length": String(MAX_BACKCHANNEL_BODY_BYTES + 1) }),
@@ -148,27 +112,41 @@ describe("backchannel logout route", () => {
     const response = await backchannelLogout(request(), deps);
     expect(response.status).toBe(400);
     expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(verify).not.toHaveBeenCalled();
     expect(port).not.toHaveBeenCalled();
   });
 
-  it("A5: refuses a token the provider did not sign with 400", async () => {
-    idp.state.next = { signing: "foreign-key" };
-    const response = await backchannelLogout(post(form(idp.logoutToken(claims()))), deps);
+  it("A5: refuses a token the verifier rejects with 400", async () => {
+    verify.mockResolvedValueOnce({ ok: false, reason: "invalid", code: "signature" });
+    const response = await backchannelLogout(post(form(TOKEN)), deps);
     expect(response.status).toBe(400);
+    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(port).not.toHaveBeenCalled();
+    expect(logged()).toContain("signature");
   });
 
   it("B1: refuses a replayed jti with 400", async () => {
     port.mockResolvedValueOnce({ ok: false, reason: "replayed" });
-    expect((await backchannelLogout(post(form(idp.logoutToken(claims()))), deps)).status).toBe(400);
+    expect((await backchannelLogout(post(form(TOKEN)), deps)).status).toBe(400);
     expect(logged()).toContain("replayed");
   });
 
-  it("G3: answers 503 when the provider keys are unavailable", async () => {
-    idp.state.next = { down: true };
-    const response = await backchannelLogout(post(form("e30.e30.c2ln")), deps);
+  it.each([["provider_unavailable" as const], ["keys" as const]])(
+    "G3: answers 503 when the verifier reports %s",
+    async (code) => {
+      verify.mockResolvedValueOnce({ ok: false, reason: "unavailable", code });
+      const response = await backchannelLogout(post(form(TOKEN)), deps);
+      expect(response.status).toBe(503);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(port).not.toHaveBeenCalled();
+      expect(logged()).toContain(code);
+    },
+  );
+
+  it("G3: answers 503 when the verifier port throws", async () => {
+    verify.mockRejectedValueOnce(new Error("unexpected"));
+    const response = await backchannelLogout(post(form(TOKEN)), deps);
     expect(response.status).toBe(503);
-    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(port).not.toHaveBeenCalled();
   });
 
@@ -176,24 +154,15 @@ describe("backchannel logout route", () => {
     port.mockRejectedValueOnce(
       Object.assign(new Error("connection terminated"), { code: "57P01" }),
     );
-    expect((await backchannelLogout(post(form(idp.logoutToken(claims()))), deps)).status).toBe(503);
-  });
-
-  it("G4: tokens with unknown kids do not make it fetch the JWKS each time", async () => {
-    idp.state.next = { signing: "unknown-kid" };
-    for (let i = 0; i < 5; i++) {
-      expect((await backchannelLogout(post(form(idp.logoutToken(claims()))), deps)).status).toBe(
-        400,
-      );
-    }
-    expect(idp.requests.filter((path) => path === "/jwks").length).toBeLessThanOrEqual(1);
+    expect((await backchannelLogout(post(form(TOKEN)), deps)).status).toBe(503);
   });
 
   it("E4: logs a stage and a code, never the token, sub, sid or jti", async () => {
-    const token = idp.logoutToken(claims({ aud: "someone-else" }));
+    const token = TOKEN;
+    verify.mockResolvedValueOnce({ ok: false, reason: "invalid", code: "audience" });
     await backchannelLogout(post(form(token)), deps);
     port.mockResolvedValueOnce({ ok: false, reason: "replayed" });
-    await backchannelLogout(post(form(idp.logoutToken(claims()))), deps);
+    await backchannelLogout(post(form(TOKEN)), deps);
     const text = logged();
     expect(errors).toHaveBeenCalled();
     for (const secret of [token, token.split(".")[2]!, SUB, SID, JTI])

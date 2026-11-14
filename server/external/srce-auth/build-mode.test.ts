@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { loadAuthConfig } from "../external/srce-auth/index.ts";
+import { loadAuthConfig } from "./index.ts";
 
 // Ported from Ductus tests/unit/auth/build-mode.test.ts at d52a92c3 (S-0.18).
 // D-09 rests there on `next build` fixing NODE_ENV to "production" and on

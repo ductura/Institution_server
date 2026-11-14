@@ -35,6 +35,12 @@ export {
   type VerifiedLogoutToken,
 } from "./logout-token.ts";
 export {
+  createLogoutVerifier,
+  type LogoutVerification,
+  type LogoutVerifier,
+  type LogoutVerifierOptions,
+} from "./logout-verifier.ts";
+export {
   accountIssuer,
   createOidcClient,
   isProviderUnavailable,
