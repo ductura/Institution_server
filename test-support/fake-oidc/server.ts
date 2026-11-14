@@ -31,10 +31,18 @@ export type FakeOidcOptions = {
 
 type Env = Readonly<Record<string, string | undefined>>;
 
+/** PORT from the environment: unset is 8080, else a whole number 0 to 65535. */
+export function listenPort(value: string | undefined): number {
+  if (value === undefined) return 8080;
+  const port = /^\d{1,5}$/.test(value) ? Number(value) : Number.NaN;
+  if (!(port >= 0 && port <= 65535)) throw new Error(`PORT must be a whole number from 0 to 65535: ${value}`);
+  return port;
+}
+
 /** The port and options from the environment; refuses before anything listens. */
 export function fakeOidcConfigFromEnv(env: Env): { port: number; options: FakeOidcOptions } {
   assertFakeOidcAllowed(env);
-  const port = Number(env.PORT ?? 8080);
+  const port = listenPort(env.PORT);
   return {
     port,
     options: {
@@ -227,6 +235,8 @@ export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
   assertFakeOidcAllowed(process.env);
   if (env !== undefined) assertFakeOidcAllowed(env);
   assertLoopbackOptions(options);
+  // A caller without the types (plain JS) gets no silent `success` for a typo.
+  fakeOidcMode(options.mode);
   const provider = new Provider(options.issuer, providerConfiguration(options));
 
   async function handleInteraction(req: IncomingMessage, res: ServerResponse): Promise<void> {
