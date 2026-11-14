@@ -217,17 +217,22 @@ describe("production refuses the fake provider", () => {
   });
 
   const SERVER = fileURLToPath(new URL("./server.ts", import.meta.url));
-  const TSX = fileURLToPath(new URL("../../node_modules/.bin/tsx", import.meta.url));
 
   function run(env: Record<string, string>) {
     // The developer's own provider settings do not leak into the child.
     const clean = { ...process.env };
     for (const name of ["FAKE_OIDC_MODE", "ISSUER", "REDIRECT_URI", "POST_LOGOUT_REDIRECT_URI", "BACKCHANNEL_LOGOUT_URI"]) delete clean[name];
-    const child = spawn(TSX, [SERVER], { env: { ...clean, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    // Node itself with the tsx loader: node_modules/.bin/tsx is a shell script
+    // that spawn cannot start on Windows (tsx.cmd there).
+    const child = spawn(process.execPath, ["--import", "tsx", SERVER], { env: { ...clean, ...env }, stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
     child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
-    const exited = new Promise<number | null>((done) => child.once("exit", (code) => done(code)));
+    // A start that fails (spawn error) rejects at once instead of waiting for an exit that never comes.
+    const exited = new Promise<number | null>((done, fail) => {
+      child.once("exit", (code) => done(code));
+      child.once("error", fail);
+    });
     return { child, exited, output: () => output };
   }
 

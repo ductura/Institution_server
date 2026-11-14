@@ -37,9 +37,9 @@ Vitest ima tri projekta. Projekt određuje sufiks datoteke. Testovi su samo u `s
 
 | Projekt | Datoteke | Što provjerava |
 |---|---|---|
-| `unit` | `server/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu i dimni test |
-| `property` | `server/**/*.property.test.ts` | Svojstva pravila pristupa (fast-check) |
-| `integration` | `server/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora |
+| `unit` | `{server,test-support}/**/*.test.ts` | Pomoćne funkcije, memorijsku bazu i dimni test |
+| `property` | `{server,test-support}/**/*.property.test.ts` | Svojstva pravila pristupa (fast-check) |
+| `integration` | `{server,test-support}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
 Pokriva je `server/app.integration.test.ts`.
