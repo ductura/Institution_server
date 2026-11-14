@@ -230,10 +230,10 @@ function sources(directory: string): string[] {
 // with its reason. The key is the file and the text the check reports.
 const FUNCTION_SET = "a function's own SET clause, in force only while the function runs";
 // Paths of ductura/server (db/main/...). The Ductus list (d52a92c3) also held
-// the pg_dump preamble of db/schema.sql and a pgTAP description in
-// db/tests/010-roles-and-privileges.sql: neither file is in this repository
-// (pgTAP comes with S-0.15), and the check below requires every listed
-// exception to exist, so those keys come back with their files.
+// the pg_dump preamble of db/schema.sql, which is not in this repository; the
+// check below requires every listed exception to exist, so that key comes back
+// with its file. The pgTAP description in db/main/tests/010-roles-and-privileges.sql
+// (S-0.15) is back, now that the file exists.
 const SQL_EXCEPTIONS: Record<string, string> = {
   // The check reads a SET after a quote as a statement; here it is the second
   // SET clause of a function header (DAN-184), which PostgreSQL undoes when
@@ -241,6 +241,8 @@ const SQL_EXCEPTIONS: Record<string, string> = {
   "db/main/migrations/20261114100000_ops_alarm.sql: SET lock_timeout = '2000ms'": FUNCTION_SET,
   "db/main/local/migrator.sql: SET ROLE ductus_migrator;":
     "local provisioning over its own psql session, ended with RESET ROLE; never the pool",
+  "db/main/tests/010-roles-and-privileges.sql: SET on ductus_app for the local login is noticed'":
+    "a pgTAP test description, not a statement; pgTAP runs over its own psql session",
 };
 
 /** A relative path with "/" between its parts, where on Windows relative() gives db\schema.sql. */
