@@ -1,7 +1,8 @@
+import type { Linter } from "eslint";
 import { defineConfig } from "eslint/config";
 import prettierOff from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
-import { localPlugin } from "./scripts/lint-rules/index.ts";
+import { databaseBoundaryPlugin, localPlugin, PG_SPECIFIER } from "./scripts/lint-rules/index.ts";
 
 // Lint covers the whole repository. Only tool output is ignored; there is no
 // per-folder exception list. Inline directives are off: an `eslint-disable`
@@ -32,6 +33,27 @@ const WIRE_NAMES = [
   "post_logout_redirect_uris", // OpenID Connect RP-Initiated Logout 1.0, section 3.1
   "backchannel_logout_uri", // OpenID Connect Back-Channel Logout 1.0, section 2.2
   "backchannel_logout_session_required", // OpenID Connect Back-Channel Logout 1.0, section 2.2
+  // S-0.18 (DAN-731), the login core ported from Ductus src/server/auth and its test provider.
+  "token_type", // RFC 6749, section 5.1
+  "expires_in", // RFC 6749, section 5.1
+  "key_ops", // RFC 7517 (JWK), section 4.3
+  "id_token_signed_response_alg", // OpenID Connect Dynamic Client Registration 1.0, section 2
+  "post_logout_redirect_uri", // OpenID Connect RP-Initiated Logout 1.0, section 2
+  "end_session_endpoint", // OpenID Connect RP-Initiated Logout 1.0, section 2.1
+  // OpenID Connect Discovery 1.0, section 3 (provider metadata).
+  "authorization_endpoint",
+  "token_endpoint",
+  "userinfo_endpoint",
+  "jwks_uri",
+  "response_types_supported",
+  "subject_types_supported",
+  "id_token_signing_alg_values_supported",
+  "code_challenge_methods_supported", // RFC 8414, section 2
+  // JWS algorithm names as keys of the pinned-algorithm table (RFC 7518 section 3.1; EdDSA RFC 8037).
+  "RS256",
+  "PS256",
+  "ES256",
+  "EdDSA",
 ];
 // Names fixed outside this repository that are not wire names: process
 // environment variables, the oidc-provider configuration keys (Configuration
@@ -60,6 +82,17 @@ const ENV_NAMES = [
   "DBMATE_URL",
   "DATABASE_URL",
   "PATH",
+  // The login of the web process and the startup check (S-0.17,
+  // server/config, server/database), and a variable that check must not ask for.
+  "APP_DATABASE_URL",
+  "DUCTUS_AUTH_PROVIDER",
+  // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.
+  "OIDC_ISSUER",
+  "OIDC_CLIENT_ID",
+  "OIDC_CLIENT_SECRET",
+  "OIDC_REDIRECT_URI",
+  "OIDC_CLOCK_TOLERANCE_SECONDS",
+  "OIDC_ID_TOKEN_ALG",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
@@ -91,6 +124,63 @@ const COLUMN_NAMES = [
   "version_no",
   "work_type",
 ];
+// S-0.17 (DAN-730): names that only server/database and its database tests
+// (tests/db) may use, the one place where snake_case meets the code
+// (docs/CODE_STYLE.md, rule 9). The code and tests are ported from Ductus
+// src/server/db and tests/integration with the same assertions. A closed list
+// of exact names, for properties and destructured bindings, in those two
+// folders only.
+const DATABASE_NAMES = [
+  // node-postgres pool options (appPoolConfig); the last two are also
+  // PostgreSQL connection parameters and settings read back in a test.
+  "query_timeout",
+  "statement_timeout",
+  "idle_in_transaction_session_timeout",
+  // Result columns and aliases of the statements and of their tests.
+  "advisory_locks",
+  "app_role",
+  "has_password",
+  "same_tx",
+  "server_version",
+  "token_set",
+  "user_id",
+  // The alias of the institution slug in the current-actor statement
+  // (current-actor.ts, S-0.18, DAN-731).
+  "institution_slug",
+  // PostgreSQL setting names (pg_settings.name) that the log-settings check
+  // reads; its tests state them as the keys of a settings row.
+  "log_statement",
+  "log_min_duration_statement",
+  "log_min_duration_sample",
+  "log_statement_sample_rate",
+  "log_transaction_sample_rate",
+  "log_parameter_max_length",
+  "log_parameter_max_length_on_error",
+  "log_min_error_statement",
+  "debug_print_parse",
+  "debug_print_rewritten",
+  "debug_print_plan",
+  // SQL keywords that the withActor tests (with-actor.test.ts) use as the
+  // prefix of a statement whose answer a fake pool replaces.
+  "COMMIT",
+  "DISCARD",
+  "ROLLBACK",
+];
+// Keys the redact tests feed in as sensitive input, in the letter case and
+// spelling a caller could send them: the test is that redact drops their
+// values whatever the spelling. Only in server/log.
+const REDACTION_INPUT_KEYS = [
+  "Authorization",
+  "AUTHORIZATION",
+  "set_cookie",
+  "Snapshot",
+  "first_name",
+  "Surname",
+  "OIB",
+  "Tekst",
+  "Prezime",
+  "Naslov",
+];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.
@@ -104,6 +194,44 @@ const ESTREE_NODE_NAMES = [
   "TSImportType",
   "TSExternalModuleReference",
 ];
+
+// The naming rule, with extra exact property names (`properties`) and extra
+// exact destructured names (`destructured`) for the folders of one block.
+function namingConvention(properties: string[], destructured: string[]): Linter.RuleEntry {
+  return [
+    "error",
+    { selector: "default", format: ["camelCase"] },
+    { selector: "variable", format: ["camelCase", "PascalCase", "UPPER_CASE"] },
+    { selector: "typeLike", format: ["PascalCase"] },
+    // A leading underscore marks a parameter the function does not read
+    // (`_`, `_name`), as in the code ported from Ductus (S-0.17).
+    { selector: "parameter", format: ["camelCase"], leadingUnderscore: "allow" },
+    {
+      selector: ["property", "method", "accessor"],
+      modifiers: ["requiresQuotes"],
+      format: null,
+    },
+    {
+      selector: "property",
+      filter: {
+        regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES, ...ENV_NAMES, ...COLUMN_NAMES, ...properties].join("|")})$`,
+        match: true,
+      },
+      format: null,
+    },
+    {
+      selector: ["variable", "parameter"],
+      modifiers: ["destructured"],
+      filter: { regex: `^(?:${[...COLUMN_NAMES, ...destructured].join("|")})$`, match: true },
+      format: null,
+    },
+    {
+      selector: "objectLiteralMethod",
+      filter: { regex: `^(?:${ESTREE_NODE_NAMES.join("|")})$`, match: true },
+      format: null,
+    },
+  ];
+}
 
 export default defineConfig(
   { ignores: ["**/node_modules/", "**/dist/", "**/coverage/"] },
@@ -130,36 +258,46 @@ export default defineConfig(
         "error",
         { selector: "TSEnumDeclaration", message: "enum is not allowed; use a union of literals." },
       ],
-      "@typescript-eslint/naming-convention": [
+      "@typescript-eslint/naming-convention": namingConvention([], []),
+    },
+  },
+  {
+    // snake_case meets the code only here (docs/CODE_STYLE.md, rule 9).
+    files: ["server/database/**/*.ts", "tests/db/**/*.ts"],
+    rules: {
+      "@typescript-eslint/naming-convention": namingConvention(DATABASE_NAMES, DATABASE_NAMES),
+    },
+  },
+  {
+    files: ["server/log/**/*.ts"],
+    rules: { "@typescript-eslint/naming-convention": namingConvention(REDACTION_INPUT_KEYS, []) },
+  },
+  // The database driver stays behind server/database (PLAN §3, rule 4; Ductus
+  // eslint.config.mjs at d52a92c3, S-0.17). This development guard covers
+  // literal specifiers in static imports, import() and calls such as require;
+  // it does not resolve computed ones. Inline directives are off (above).
+  {
+    files: ["**/*.ts"],
+    plugins: { "database-boundary": databaseBoundaryPlugin },
+    rules: {
+      "database-boundary/no-restricted-dynamic-imports": "error",
+      "no-restricted-imports": [
         "error",
-        { selector: "default", format: ["camelCase"] },
-        { selector: "variable", format: ["camelCase", "PascalCase", "UPPER_CASE"] },
-        { selector: "typeLike", format: ["PascalCase"] },
         {
-          selector: ["property", "method", "accessor"],
-          modifiers: ["requiresQuotes"],
-          format: null,
-        },
-        {
-          selector: "property",
-          filter: {
-            regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES, ...ENV_NAMES, ...COLUMN_NAMES].join("|")})$`,
-            match: true,
-          },
-          format: null,
-        },
-        {
-          selector: ["variable", "parameter"],
-          modifiers: ["destructured"],
-          filter: { regex: `^(?:${COLUMN_NAMES.join("|")})$`, match: true },
-          format: null,
-        },
-        {
-          selector: "objectLiteralMethod",
-          filter: { regex: `^(?:${ESTREE_NODE_NAMES.join("|")})$`, match: true },
-          format: null,
+          patterns: [
+            { regex: PG_SPECIFIER, message: "Database access goes through server/database only." },
+          ],
         },
       ],
+    },
+  },
+  {
+    // The database tests check the database directly. The session-GUC guard
+    // (server/database/session-guc-scope.test.ts) is inside server/database.
+    files: ["server/database/**", "tests/db/**"],
+    rules: {
+      "no-restricted-imports": "off",
+      "database-boundary/no-restricted-dynamic-imports": "off",
     },
   },
   // Last on purpose: switches off every rule that could fight Prettier, also in

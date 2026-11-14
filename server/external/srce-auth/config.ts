@@ -1,0 +1,244 @@
+/**
+ * Login configuration (B-6; D-09, docs/BACKEND.md 4.3). Students sign in with
+ * AAI@EduHr alone. The fake OIDC provider ("demo prijava") exists only
+ * locally and in CI: only NODE_ENV=development or test may select it, every
+ * other value (unset or misspelt included) counts as production, and loading
+ * such a configuration throws at startup. The routes pass the NODE_ENV the
+ * build fixed, not the one the server starts with (deps.ts).
+ *
+ * Errors name the variable, never its value, so a secret cannot reach a log.
+ */
+export type AuthProvider = "aai-eduhr" | "fake-oidc";
+
+export type AuthConfig = {
+  provider: AuthProvider;
+  issuer: URL;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: URL;
+  /**
+   * Where the provider sends the browser after its own logout (DAN-212): the
+   * configured value only, never one taken from a request. Same origin as
+   * `redirectUri`.
+   */
+  postLogoutRedirectUri: URL;
+  /** True only for the fake provider over http on a loopback host. */
+  allowInsecureRequests: boolean;
+  /** Pinned ID token algorithm; anything else, `none` included, is refused. */
+  idTokenAlg: IdTokenAlg;
+  /** Allowed clock skew for `iat`, `exp` and `nbf`. */
+  clockToleranceSeconds: number;
+};
+
+const ID_TOKEN_ALGS = ["RS256", "PS256", "ES256", "EdDSA"] as const;
+export type IdTokenAlg = (typeof ID_TOKEN_ALGS)[number];
+
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+// Names that never resolve to a production identity provider.
+const RESERVED_SUFFIXES = [
+  ".localhost",
+  ".test",
+  ".example",
+  ".invalid",
+  ".local",
+  ".internal",
+  ".arpa",
+  ".lan",
+  ".corp",
+  ".intranet",
+  ".onion",
+];
+// The only environments where the fake provider and plain http may run.
+const NON_PRODUCTION = new Set(["development", "test"]);
+
+/**
+ * The deployment gate of everything that exists only locally and in CI: the
+ * fake provider here, the development receipt signer of evidence ingest.
+ * An allowlist, so an unset, empty or misspelt NODE_ENV is production.
+ */
+export function isNonProductionBuild(nodeEnv: string | undefined): boolean {
+  return NON_PRODUCTION.has(nodeEnv ?? "");
+}
+
+export class AuthConfigError extends Error {
+  override name = "AuthConfigError";
+}
+
+type Env = Readonly<Record<string, string | undefined>>;
+
+function required(env: Env, name: string): string {
+  const value = env[name];
+  if (value === undefined || value.trim() === "") throw new AuthConfigError(`${name} is not set`);
+  return value;
+}
+
+function url(env: Env, name: string): URL {
+  try {
+    return new URL(required(env, name));
+  } catch (error) {
+    if (error instanceof AuthConfigError) throw error;
+    throw new AuthConfigError(`${name} is not a URL`);
+  }
+}
+
+// The URL parser already turns every IPv4 spelling (decimal, hex, short
+// forms) into dotted decimal and keeps IPv6 in brackets.
+const IPV4_LITERAL = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+const DNS_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+/**
+ * A production issuer or redirect URI names a public DNS host: the AAI@EduHr
+ * issuer and Ductus itself always do. So every IP literal is refused, not
+ * only loopback (127/8, 0.0.0.0, ::1, ::ffff:…) but private ranges too, and
+ * so are single-label names and reserved suffixes. A trailing dot is the
+ * same host and is ignored.
+ */
+function isPublicHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.+$/, "");
+  if (host === "" || host.startsWith("[") || IPV4_LITERAL.test(host) || !host.includes("."))
+    return false;
+  if (!host.split(".").every((label) => DNS_LABEL.test(label))) return false;
+  return !RESERVED_SUFFIXES.some((s) => host.endsWith(s));
+}
+
+/**
+ * https on the default port, a public host, and nothing beside the path. The
+ * raw value is checked too: the parser drops an empty "?" or "#" from
+ * `search` and `hash` but keeps it in `href` (QA of #191).
+ */
+function isPlainHttpsUrl(value: URL, raw: string): boolean {
+  return (
+    !/[?#]/.test(raw) &&
+    value.protocol === "https:" &&
+    isPublicHost(value.hostname) &&
+    value.username === "" &&
+    value.password === "" &&
+    value.port === "" &&
+    value.search === "" &&
+    value.hash === ""
+  );
+}
+
+/**
+ * OIDC_REDIRECT_URI as login takes it: an http(s) URL, and in production an
+ * https URL of a public host with nothing beside the path.
+ */
+function redirectUriOf(env: Env, production: boolean): URL {
+  const redirectUri = url(env, "OIDC_REDIRECT_URI");
+  if (production) {
+    if (!isPlainHttpsUrl(redirectUri, required(env, "OIDC_REDIRECT_URI"))) {
+      throw new AuthConfigError(
+        "OIDC_REDIRECT_URI must be an https URL of a public host in production",
+      );
+    }
+  } else if (redirectUri.protocol !== "http:" && redirectUri.protocol !== "https:") {
+    throw new AuthConfigError("OIDC_REDIRECT_URI must be an http(s) URL");
+  }
+  return redirectUri;
+}
+
+/**
+ * OIDC_POST_LOGOUT_REDIRECT_URI (DAN-212): "/" on the origin of
+ * OIDC_REDIRECT_URI when unset. It must share that origin and pass the same
+ * rule as OIDC_REDIRECT_URI, so it is the address registered with the provider
+ * and nothing in a request can move it.
+ */
+function postLogoutRedirectUriOf(env: Env, production: boolean, redirectUri: URL): URL {
+  const name = "OIDC_POST_LOGOUT_REDIRECT_URI";
+  const raw = env[name];
+  if (raw === undefined || raw.trim() === "") return new URL("/", redirectUri.origin);
+  const value = url(env, name);
+  if (production) {
+    if (!isPlainHttpsUrl(value, raw)) {
+      throw new AuthConfigError(`${name} must be an https URL of a public host in production`);
+    }
+  } else if (
+    (value.protocol !== "http:" && value.protocol !== "https:") ||
+    value.username !== "" ||
+    value.password !== "" ||
+    /[?#]/.test(raw)
+  ) {
+    throw new AuthConfigError(`${name} must be an http(s) URL with nothing beside the path`);
+  }
+  if (value.origin !== redirectUri.origin) {
+    throw new AuthConfigError(`${name} must have the origin of OIDC_REDIRECT_URI`);
+  }
+  return value;
+}
+
+/**
+ * The one origin that login and every state-changing route expect (DAN-302
+ * L3): that of OIDC_REDIRECT_URI, checked as loadAuthConfig checks it, never
+ * one taken from Request.url or a Host header. Null when the value is missing
+ * or would not pass login; the route then answers 503. The default passes the
+ * NODE_ENV the build fixed, as the login routes do (deps.ts).
+ */
+export function expectedOrigin(
+  env: Env = { ...process.env, NODE_ENV: process.env.NODE_ENV },
+): string | null {
+  try {
+    return redirectUriOf(env, !isNonProductionBuild(env.NODE_ENV)).origin;
+  } catch {
+    return null;
+  }
+}
+
+export function loadAuthConfig(env: Env = process.env): AuthConfig {
+  // An allowlist, not a match on "production": an unset, empty or misspelt
+  // NODE_ENV fails closed (QA of #191).
+  const production = !isNonProductionBuild(env.NODE_ENV);
+  const provider = required(env, "DUCTUS_AUTH_PROVIDER");
+  if (provider !== "aai-eduhr" && provider !== "fake-oidc") {
+    throw new AuthConfigError("DUCTUS_AUTH_PROVIDER must be aai-eduhr or fake-oidc");
+  }
+  if (provider === "fake-oidc" && production) {
+    throw new AuthConfigError("the fake OIDC provider is prohibited in production (D-09)");
+  }
+
+  const issuer = url(env, "OIDC_ISSUER");
+  // F-123: the issuer itself, never its discovery document. openid-client
+  // fetches a "/.well-known/" URL as given and then skips the check that the
+  // discovered issuer equals it, so the account key would follow this value.
+  if (issuer.href.toLowerCase().includes("/.well-known/")) {
+    throw new AuthConfigError("OIDC_ISSUER must name the issuer, not its discovery document");
+  }
+  const insecure = issuer.protocol === "http:";
+  if (production) {
+    // A production build talks to a real provider over TLS, whatever the
+    // provider variable says.
+    if (!isPlainHttpsUrl(issuer, required(env, "OIDC_ISSUER"))) {
+      throw new AuthConfigError("OIDC_ISSUER must be an https URL of a public host in production");
+    }
+  } else if (provider === "fake-oidc" && !LOOPBACK_HOSTS.has(issuer.hostname)) {
+    throw new AuthConfigError("OIDC_ISSUER of the fake provider must be a loopback host");
+  } else if (insecure && provider !== "fake-oidc") {
+    throw new AuthConfigError(
+      "OIDC_ISSUER may use http only for the fake provider on a loopback host",
+    );
+  } else if (issuer.protocol !== "http:" && issuer.protocol !== "https:") {
+    throw new AuthConfigError("OIDC_ISSUER must be an http(s) URL");
+  }
+  const redirectUri = redirectUriOf(env, production);
+
+  const alg = env.OIDC_ID_TOKEN_ALG ?? "RS256";
+  if (!(ID_TOKEN_ALGS as readonly string[]).includes(alg)) {
+    throw new AuthConfigError("OIDC_ID_TOKEN_ALG is not an allowed asymmetric algorithm");
+  }
+  const toleranceText = env.OIDC_CLOCK_TOLERANCE_SECONDS ?? "30";
+  const tolerance = /^\d{1,3}$/.test(toleranceText) ? Number(toleranceText) : NaN;
+  if (!Number.isInteger(tolerance) || tolerance < 0 || tolerance > 120) {
+    throw new AuthConfigError("OIDC_CLOCK_TOLERANCE_SECONDS must be an integer from 0 to 120");
+  }
+
+  return {
+    provider,
+    issuer,
+    clientId: required(env, "OIDC_CLIENT_ID").trim(),
+    clientSecret: required(env, "OIDC_CLIENT_SECRET"),
+    redirectUri,
+    postLogoutRedirectUri: postLogoutRedirectUriOf(env, production, redirectUri),
+    allowInsecureRequests: !production && insecure,
+    idTokenAlg: alg as IdTokenAlg,
+    clockToleranceSeconds: tolerance,
+  };
+}

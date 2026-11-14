@@ -131,8 +131,8 @@ jobs:
           "$PGBIN/psql" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION pgtap'
       - name: pgTAP testovi
         run: |
-          shopt -s nullglob globstar
-          files=(db/**/tests/*.sql)
+          shopt -s nullglob
+          files=(db/tests/*.sql)
           if [ "${#files[@]}" -eq 0 ]; then echo 'No pgTAP test files found.' >&2; exit 1; fi
           pg_prove --psql-bin "$PGBIN/psql" --failures "${files[@]}"
       # S-0.13 (DAN-726): the migration tests in tests/db, ported from Ductus
@@ -166,6 +166,11 @@ jobs:
         run: |
           "$PGBIN/psql" "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f db/main/local/migrator.sql
           node scripts/db/migrate-locked.ts --url "$DATABASE_URL?sslmode=disable&role=ductus_migrator"
+          # S-0.17 (DAN-730): the local login of the web process, ductus_app_local
+          # (APP_DATABASE_URL of the database project in vitest.config.ts), as
+          # Ductus `pnpm db:migrate` provisions it. The file refuses TCP, so it
+          # runs over this cluster's socket.
+          "$PGBIN/psql" -h "$RUNNER_TEMP" -p 54329 -U ductus -d ductus -v ON_ERROR_STOP=1 -q -f db/main/local/app-login.sql
           applied="$("$PGBIN/psql" "$DATABASE_URL" -tAc 'SELECT count(*) FROM public.schema_migrations')"
           files="$(find db/main/migrations -maxdepth 1 -name '*.sql' | wc -l)"
           echo "Primijenjeno $applied od $files migracija."
@@ -190,6 +195,13 @@ jobs:
         env:
           DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
         run: pnpm test:database
+      # S-0.15 (DAN-728): the pgTAP matrix ported from Ductus db/tests
+      # (db/main/tests) against the migrated and provisioned native main
+      # database from `pnpm db:up:native` above, as Ductus runs
+      # `pg_prove --recurse --ext .sql` after `pnpm db:migrate`. The smoke step
+      # above globs only db/tests, so the matrix never runs on its empty database.
+      - name: pgTAP glavne baze (pnpm test:db:native)
+        run: PATH="$PGBIN:$PATH" pnpm test:db:native
 
   ci-ok:
     name: ci-ok

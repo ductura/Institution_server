@@ -1,0 +1,305 @@
+import { createHash, randomBytes } from "node:crypto";
+
+import * as client from "openid-client";
+
+import type { AuthConfig } from "./config.ts";
+
+/**
+ * The OIDC relying party (B-6; D-09). This is the only file that imports
+ * openid-client: the flow sees the small interface below, and state, nonce
+ * and PKCE values are made here with node:crypto, so replacing the library
+ * touches this file alone.
+ */
+export type LoginChecks = {
+  state: string;
+  nonce: string;
+  codeVerifier: string;
+};
+
+export type VerifiedLogin = {
+  /**
+   * The issuer of the account key (F-042): the configured one in
+   * `accountIssuer` form, never the provider's spelling of it. The library
+   * has already required the token `iss` to equal the discovered issuer, and
+   * discovery is refused unless that one names OIDC_ISSUER in the same form
+   * (F-123), so both name the same issuer.
+   */
+  issuer: string;
+  idToken: Readonly<Record<string, unknown>>;
+  userinfo: Readonly<Record<string, unknown>>;
+};
+
+export type OidcClient = {
+  authorizationUrl(checks: LoginChecks): Promise<URL>;
+  /** `callbackUrl` carries the query of the callback request, nothing else. */
+  verify(callbackUrl: URL, checks: LoginChecks): Promise<VerifiedLogin>;
+  /**
+   * The provider's logout address (RP-initiated logout, DAN-212): its
+   * `end_session_endpoint` with `client_id` and the configured
+   * `post_logout_redirect_uri`, no hint and nothing from a request. Null when
+   * discovery names no endpoint, or one without TLS where TLS is required.
+   */
+  endSessionUrl(): Promise<URL | null>;
+};
+
+/**
+ * What the back-channel logout route needs from discovery (DAN-474): the
+ * issuer string the provider published, which a logout token's `iss` must
+ * equal exactly, and the `keys` of its JWKS. Separate from OidcClient so the
+ * login flow and its test doubles do not change.
+ */
+export type LogoutProvider = {
+  discoveredIssuer(): Promise<string>;
+  /** The JWKS `keys` array; throws when the provider does not answer. */
+  jwks(): Promise<readonly unknown[]>;
+};
+
+/** The provider did not answer, answered 5xx, or timed out. */
+export class ProviderUnavailableError extends Error {
+  override name = "ProviderUnavailableError";
+}
+
+/** Largest response body read from the provider: discovery, JWKS, token, userinfo. */
+export const MAX_PROVIDER_RESPONSE_BYTES = 256 * 1024;
+/** Seconds for each request to the provider. */
+export const PROVIDER_TIMEOUT_SECONDS = 10;
+
+/**
+ * The scopes of the authorization request, per provider (DAN-196). AAI@EduHr
+ * releases each hrEdu attribute only for its own scope, never for `profile`,
+ * so the hrEdu scopes of docs/PRODUCT.md §4 are added. `profile` stays: it
+ * carries given_name and family_name, which the name parser reads. No e-mail
+ * and no OIB. Which set is the smallest is an open owner decision (plan #1104).
+ * The local fake provider keeps `openid profile`.
+ */
+export const SCOPES: Readonly<Record<AuthConfig["provider"], string>> = {
+  "aai-eduhr": "openid profile hrEduPersonUniqueID hrEduPersonAffiliation hrEduPersonHomeOrg",
+  "fake-oidc": "openid profile",
+};
+
+export function newLoginChecks(): LoginChecks {
+  const token = () => randomBytes(32).toString("base64url");
+  return { state: token(), nonce: token(), codeVerifier: token() };
+}
+
+function codeChallenge(verifier: string): string {
+  return createHash("sha256").update(verifier, "ascii").digest("base64url");
+}
+
+const NULL_BODY_STATUS = new Set([101, 204, 205, 304]);
+
+/**
+ * fetch with a size limit. A provider (or anything between) that streams a
+ * 5 MB userinfo is cut off at the limit instead of being buffered, and a
+ * network failure or 5xx becomes ProviderUnavailableError.
+ */
+export function limitedFetch(limit: number, fetchImpl: typeof fetch = fetch): client.CustomFetch {
+  return async (url, options) => {
+    let response: Response;
+    try {
+      response = await fetchImpl(url, options as RequestInit);
+    } catch (error) {
+      throw new ProviderUnavailableError("provider request failed", { cause: error });
+    }
+    if (response.status >= 500) {
+      await response.body?.cancel();
+      throw new ProviderUnavailableError("provider answered with a server error");
+    }
+    if (Number(response.headers.get("content-length") ?? 0) > limit) {
+      await response.body?.cancel();
+      throw new Error("provider response is too large");
+    }
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    if (response.body) {
+      const reader = response.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > limit) {
+          await reader.cancel();
+          throw new Error("provider response is too large");
+        }
+        chunks.push(value);
+      }
+    }
+    const body = NULL_BODY_STATUS.has(response.status) ? null : Buffer.concat(chunks);
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  };
+}
+
+/**
+ * One spelling of an issuer for the account key: the normalised URL, with
+ * the single slash of an empty path dropped. Host case, a default port or a
+ * trailing slash after the host give the same string; a path keeps its own
+ * spelling, which discovery already holds to the configured one.
+ */
+export function accountIssuer(issuer: URL): string {
+  const href = issuer.href;
+  return issuer.pathname === "/" && !issuer.search && !issuer.hash && href.endsWith("/")
+    ? href.slice(0, -1)
+    : href;
+}
+
+/**
+ * The upper bound of `iat` (#1327, docs/backend/prijava-i-ovlasti.md): the
+ * library only checks that it is a number, so a token issued later than this
+ * clock plus the allowed skew is refused here, as `nbf` is by the library.
+ * How old an `iat` may be is an open owner decision; `exp` bounds the token.
+ */
+export function issuedWithinSkew(
+  iat: unknown,
+  toleranceSeconds: number,
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): boolean {
+  return typeof iat === "number" && Number.isFinite(iat) && iat <= nowSeconds + toleranceSeconds;
+}
+
+export function isProviderUnavailable(error: unknown): boolean {
+  for (let e = error, depth = 0; e instanceof Error && depth < 5; e = e.cause, depth++) {
+    if (
+      e instanceof ProviderUnavailableError ||
+      e.name === "TimeoutError" ||
+      e.name === "AbortError"
+    )
+      return true;
+  }
+  return false;
+}
+
+export function createOidcClient(
+  config: AuthConfig,
+  fetchImpl: typeof fetch = fetch,
+): OidcClient & LogoutProvider {
+  let discovered: Promise<client.Configuration> | undefined;
+  const providerFetch = limitedFetch(MAX_PROVIDER_RESPONSE_BYTES, fetchImpl);
+
+  function configuration(): Promise<client.Configuration> {
+    discovered ??= client
+      .discovery(
+        config.issuer,
+        config.clientId,
+        {
+          id_token_signed_response_alg: config.idTokenAlg,
+          [client.clockTolerance]: config.clockToleranceSeconds,
+        },
+        client.ClientSecretBasic(config.clientSecret),
+        {
+          [client.customFetch]: providerFetch,
+          timeout: PROVIDER_TIMEOUT_SECONDS,
+          // The ID token signature is checked against the provider JWKS even
+          // though it came over TLS from the token endpoint (attacks 6, 7).
+          execute: [
+            client.enableNonRepudiationChecks,
+            ...(config.allowInsecureRequests ? [client.allowInsecureRequests] : []),
+          ],
+        },
+      )
+      .then((discoveredConfiguration) => {
+        // F-123: the library skips its own issuer check for some URLs, so the
+        // account key's issuer is held to the discovered one here, fail closed.
+        if (
+          accountIssuer(new URL(discoveredConfiguration.serverMetadata().issuer)) !==
+          accountIssuer(config.issuer)
+        ) {
+          throw new Error("discovered issuer does not match OIDC_ISSUER");
+        }
+        return discoveredConfiguration;
+      })
+      .catch((error: unknown) => {
+        // A failed discovery is retried on the next login, not cached.
+        discovered = undefined;
+        throw error;
+      });
+    return discovered;
+  }
+
+  return {
+    async authorizationUrl(checks) {
+      return client.buildAuthorizationUrl(await configuration(), {
+        redirect_uri: config.redirectUri.href,
+        scope: SCOPES[config.provider],
+        state: checks.state,
+        nonce: checks.nonce,
+        code_challenge: codeChallenge(checks.codeVerifier),
+        code_challenge_method: "S256",
+      });
+    },
+
+    async verify(callbackUrl, checks) {
+      const oidc = await configuration();
+      // The redirect URI sent to the token endpoint is the configured one,
+      // never one rebuilt from the Host header of the request.
+      const current = new URL(config.redirectUri.href);
+      current.search = callbackUrl.search;
+      const tokens = await client.authorizationCodeGrant(oidc, current, {
+        expectedState: checks.state,
+        expectedNonce: checks.nonce,
+        pkceCodeVerifier: checks.codeVerifier,
+        idTokenExpected: true,
+      });
+      const idToken = tokens.claims();
+      if (!idToken) throw new Error("token response has no ID token");
+      if (!issuedWithinSkew(idToken.iat, config.clockToleranceSeconds)) {
+        throw new Error("ID token iat is ahead of this clock beyond the allowed skew");
+      }
+      const userinfo = await client.fetchUserInfo(oidc, tokens.access_token, idToken.sub);
+      return { issuer: accountIssuer(config.issuer), idToken, userinfo };
+    },
+
+    async endSessionUrl() {
+      const oidc = await configuration();
+      const endpoint = oidc.serverMetadata().end_session_endpoint;
+      if (typeof endpoint !== "string") return null;
+      let target: URL;
+      try {
+        target = new URL(endpoint);
+      } catch {
+        return null;
+      }
+      if (
+        target.protocol !== "https:" &&
+        !(config.allowInsecureRequests && target.protocol === "http:")
+      )
+        return null;
+      return client.buildEndSessionUrl(oidc, {
+        post_logout_redirect_uri: config.postLogoutRedirectUri.href,
+      });
+    },
+
+    async discoveredIssuer() {
+      return (await configuration()).serverMetadata().issuer;
+    },
+
+    async jwks() {
+      const uri = (await configuration()).serverMetadata().jwks_uri;
+      if (typeof uri !== "string") throw new Error("discovery names no jwks_uri");
+      const target = new URL(uri);
+      // Same rule as the other provider endpoints: TLS unless the local
+      // configuration allows plain HTTP.
+      if (
+        target.protocol !== "https:" &&
+        !(config.allowInsecureRequests && target.protocol === "http:")
+      ) {
+        throw new Error("jwks_uri is not https");
+      }
+      const response = await providerFetch(target.href, {
+        method: "GET",
+        headers: { accept: "application/json, application/jwk-set+json" },
+        redirect: "error",
+        signal: AbortSignal.timeout(PROVIDER_TIMEOUT_SECONDS * 1000),
+      } as never);
+      if (response.status !== 200) throw new Error("JWKS request failed");
+      const body: unknown = await response.json();
+      const keys = (body as { keys?: unknown } | null)?.keys;
+      if (typeof body !== "object" || body === null || !Array.isArray(keys))
+        throw new Error("JWKS has no keys array");
+      return keys;
+    },
+  };
+}
