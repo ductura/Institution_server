@@ -1,11 +1,11 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { Type } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
 
-import { generate, OUT_DIR } from "../../scripts/index.ts";
+import { generate, OUT_DIR, toPosix } from "../../scripts/index.ts";
 import { checkInventory, checkRoute, pathOf } from "./check.ts";
 import { createClient, validateInput } from "./generated/index.ts";
 import { FALLBACK, ROUTES, defineRoute, error } from "./index.ts";
@@ -20,7 +20,7 @@ describe("generated = committed", () => {
     const files = generate();
     const onDisk = readdirSync(OUT_DIR, { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
-      .map((entry) => relative(OUT_DIR, join(entry.parentPath, entry.name)).split(sep).join("/"));
+      .map((entry) => toPosix(relative(OUT_DIR, join(entry.parentPath, entry.name))));
     expect(onDisk.sort()).toEqual(Object.keys(files).sort());
     for (const [name, content] of Object.entries(files)) {
       expect(readFileSync(join(OUT_DIR, name), "utf8"), name).toBe(content);
