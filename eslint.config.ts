@@ -37,6 +37,27 @@ const WIRE_NAMES = [
 // environment variables and the oidc-provider configuration keys (Configuration
 // "ttl"). A closed list of exact names, only for properties.
 const FIXED_NAMES = ["NODE_ENV", "PORT", "IdToken", "AccessToken"];
+// Process environment variables of the local database scripts (S-0.14,
+// scripts/db/native-db.ts and its tests): the DUCTUS_* names come from Ductus,
+// the others are the libpq, psql and dbmate variables those scripts strip or
+// set. A closed list of exact names, only for properties.
+const ENV_NAMES = [
+  "DUCTUS_NATIVE_PGHOST",
+  "DUCTUS_NATIVE_PGPORT",
+  "DUCTUS_NATIVE_PGSOCKET",
+  "DUCTUS_NATIVE_PGUSER",
+  "DUCTUS_NATIVE_PGDATABASE",
+  "DUCTUS_NATIVE_PGPASSWORD",
+  "DUCTUS_AUTH_LOCAL_PASSWORD",
+  "DUCTUS_WORKER_LOCAL_PASSWORD",
+  "PGHOST",
+  "PGPASSWORD",
+  "PGPASSFILE",
+  "PSQLRC",
+  "DBMATE_URL",
+  "DATABASE_URL",
+  "PATH",
+];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.
@@ -88,7 +109,10 @@ export default defineConfig(
         },
         {
           selector: "property",
-          filter: { regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES].join("|")})$`, match: true },
+          filter: {
+            regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES, ...ENV_NAMES].join("|")})$`,
+            match: true,
+          },
           format: null,
         },
         {

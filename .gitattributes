@@ -1,0 +1,9 @@
+# The local stack files are checked out with LF on every platform (as Ductus
+# .gitattributes, "* text=auto eol=lf"): psql reads the provisioning SQL with
+# \if and \gexec, scripts/db/provision-worker.test.ts matches its lines, and the
+# shell script runs inside the Linux image, where a CRLF line ends in "\r".
+# scripts/db/local-files.test.ts checks the attributes and the bytes.
+db/main/local/** text eol=lf
+infra/postgres/assert-pg-version.sh text eol=lf
+infra/postgres/Dockerfile text eol=lf
+compose.yaml text eol=lf

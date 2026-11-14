@@ -22,6 +22,8 @@
     "scripts/**/*.ts",
     "test-support/**/*.ts",
     "tests/**/*.ts",
+    "infra/**/*.ts",
+    "db/**/*.ts",
     "vitest.config.ts",
     "eslint.config.ts"
   ],

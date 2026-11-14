@@ -1,0 +1,27 @@
+# Local and CI environment only; never deployed. Every port binds to 127.0.0.1
+# and every credential below is a local-only value. Ported from Ductus
+# compose.yaml at d52a92c3 (S-0.14, DAN-727): only the main database service,
+# renamed postgres-main; the logs and legal databases get their own services.
+# The image default is the digest-pinned image Ductus CI uses (F-017).
+name: ductura-server
+
+services:
+  # PostgreSQL 17.11 with pgTAP and pg_prove (infra/postgres) for `pnpm test:db`.
+  postgres-main:
+    build:
+      context: infra/postgres
+      args:
+        POSTGRES_BASE_IMAGE: ${DUCTUS_POSTGRES_IMAGE:-mirror.gcr.io/library/postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3}
+    environment:
+      POSTGRES_USER: ductus
+      POSTGRES_PASSWORD: ductus-local-only
+      POSTGRES_DB: ductus
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - ./db/main/tests:/db/tests:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ductus -d ductus"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
