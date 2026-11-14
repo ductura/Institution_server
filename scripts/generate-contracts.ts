@@ -108,7 +108,10 @@ function errorSchema(code: string): TSchema {
 function types(routes: RouteContract[]): string {
   const ops = routes.map((r) => {
     const part = (s: TSchema | undefined) => (s ? ts(s as Schema) : "undefined");
-    const ok = r.responses.map((s) => `{ status: ${s.status}; body: ${part(s.body)} }`).join(" | ");
+    // Declared headers are optional: a browser hides them on an opaque redirect.
+    const head = (names: readonly string[] = []) =>
+      `{ ${names.map((h) => `${JSON.stringify(h)}?: ${h === "set-cookie" ? "string[]" : "string"}`).join("; ")} }`;
+    const ok = r.responses.map((s) => `{ status: ${s.status}; body: ${part(s.body)}; headers: ${head(s.headers)} }`).join(" | ");
     const codes = r.errors.map((e) => JSON.stringify(e.code)).join(" | ") || "never";
     return `  ${JSON.stringify(r.id)}: {\n    params: ${part(r.request.params)};\n    query: ${part(r.request.query)};\n    body: ${part(r.request.body)};\n    success: ${ok};\n    errorCode: ${codes};\n  };`;
   });
@@ -118,7 +121,7 @@ function types(routes: RouteContract[]): string {
 function routeTable(routes: RouteContract[]): string {
   const rows = routes.map((r) => {
     const codes = Object.fromEntries([...new Set(r.errors.map((e) => e.status))].map((s) => [s, r.errors.filter((e) => e.status === s).map((e) => e.code)]));
-    return `  ${JSON.stringify(r.id)}: { method: ${JSON.stringify(r.method)}, path: ${JSON.stringify(r.path)}, body: ${JSON.stringify(r.request.contentType ?? null)}, errors: ${JSON.stringify(codes)} },`;
+    return `  ${JSON.stringify(r.id)}: { method: ${JSON.stringify(r.method)}, path: ${JSON.stringify(r.path)}, body: ${JSON.stringify(r.request.contentType ?? null)}, headers: ${JSON.stringify([...new Set(r.responses.flatMap((s) => s.headers ?? []))])}, errors: ${JSON.stringify(codes)} },`;
   });
   return `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;\n`;
 }
@@ -176,9 +179,17 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     if (route.body !== null) init.headers = { "content-type": route.body };
     const res = await fetchImpl(new URL(path, baseUrl), init);
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
-    if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined } as Result<Id>;
+    if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
     const body: unknown = res.headers.get("content-type")?.startsWith("application/json") ? await res.json() : undefined;
-    if (res.status < 400) return { ok: true, status: res.status, body } as Result<Id>;
+    if (res.status < 400) {
+      // The headers the contract says callers rely on (location, set-cookie), nothing else.
+      const headers: Record<string, string | string[]> = {};
+      for (const name of route.headers as readonly string[]) {
+        const value = name === "set-cookie" ? res.headers.getSetCookie() : res.headers.get(name);
+        if (value !== null && value.length > 0) headers[name] = value;
+      }
+      return { ok: true, status: res.status, body, headers } as Result<Id>;
+    }
     const known = (route.errors as Record<number, readonly string[] | undefined>)[res.status] ?? [];
     // The code is in "error"; readiness carries it in "status" ({status: "draining"}).
     const fields = body && typeof body === "object" ? (body as { error?: unknown; status?: unknown }) : {};

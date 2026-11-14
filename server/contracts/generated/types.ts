@@ -5,70 +5,70 @@ export interface Operations {
     params: undefined;
     query: undefined;
     body: { "logout_token": string; [key: string]: unknown };
-    success: { status: 200; body: undefined };
+    success: { status: 200; body: undefined; headers: {  } };
     errorCode: "invalid_logout_token" | "unavailable";
   };
   "auth.callback.get": {
     params: undefined;
     query: { "code"?: string; "state"?: string; [key: string]: unknown };
     body: undefined;
-    success: { status: 303; body: undefined };
+    success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "login_failed" | "login_refused" | "unavailable";
   };
   "auth.login.get": {
     params: undefined;
     query: { "returnTo"?: string; [key: string]: unknown };
     body: undefined;
-    success: { status: 303; body: undefined };
+    success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "unavailable";
   };
   "auth.logout-all.post": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 303; body: undefined };
+    success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "forbidden" | "unavailable";
   };
   "auth.logout.post": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 303; body: undefined };
+    success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "forbidden" | "unavailable";
   };
   "platform.health.get": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "status": "ok" } };
+    success: { status: 200; body: { "status": "ok" }; headers: {  } };
     errorCode: never;
   };
   "platform.ready.get": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "status": "ready"; "capabilities": { "database"?: "ok" | "nedostupno" | "nije_konfigurirano"; "storage"?: "ok" | "nedostupno" | "nije_konfigurirano"; "signing"?: "ok" | "nedostupno" | "nije_konfigurirano"; "queue"?: "ok" | "nedostupno" | "nije_konfigurirano" } } };
+    success: { status: 200; body: { "status": "ready"; "capabilities": { "database"?: "ok" | "nedostupno" | "nije_konfigurirano"; "storage"?: "ok" | "nedostupno" | "nije_konfigurirano"; "signing"?: "ok" | "nedostupno" | "nije_konfigurirano"; "queue"?: "ok" | "nedostupno" | "nije_konfigurirano" } }; headers: {  } };
     errorCode: "unavailable" | "draining";
   };
   "platform.status.get": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "checkedAt": string; "components": { "writing": "radi" | "ne_radi" | "nije_ukljuceno"; "submission": "radi" | "ne_radi" | "nije_ukljuceno"; "mentorView": "radi" | "ne_radi" | "nije_ukljuceno" } } };
+    success: { status: 200; body: { "checkedAt": string; "components": { "writing": "radi" | "ne_radi" | "nije_ukljuceno"; "submission": "radi" | "ne_radi" | "nije_ukljuceno"; "mentorView": "radi" | "ne_radi" | "nije_ukljuceno" } }; headers: {  } };
     errorCode: "unavailable";
   };
   "profile.interface-locale.get": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "locale": "hr" | "en" | null } };
+    success: { status: 200; body: { "locale": "hr" | "en" | null }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "profile.interface-locale.post": {
     params: undefined;
     query: undefined;
     body: { "locale": "hr" | "en" };
-    success: { status: 200; body: { "locale": "hr" | "en" } };
+    success: { status: 200; body: { "locale": "hr" | "en" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "invalid_input" | "unavailable";
   };
 }

@@ -168,7 +168,7 @@ describe("generated client", () => {
     const f = fakeFetch(200, { locale: "en" });
     const call = createClient("https://api.primjer.invalid", f.impl);
     const res = await call("profile.interface-locale.post", { params: undefined, query: undefined, body: { locale: "en" } });
-    expect(res).toEqual({ ok: true, status: 200, body: { locale: "en" } });
+    expect(res).toEqual({ ok: true, status: 200, body: { locale: "en" }, headers: {} });
     expect(f.calls[0]?.url).toBe("https://api.primjer.invalid/api/v1/profile/interface-locale");
     expect(f.calls[0]?.init).toMatchObject({ method: "POST", body: '{"locale":"en"}', redirect: "manual" });
   });
@@ -190,6 +190,20 @@ describe("generated client", () => {
     });
   });
 
+  it("returns the contracted redirect headers: location and every set-cookie", async () => {
+    const headers = new Headers({ location: "https://idp.primjer.invalid/authorize", "x-other": "1" });
+    headers.append("set-cookie", "a=1; HttpOnly");
+    headers.append("set-cookie", "b=2; HttpOnly");
+    const impl = (async () => new Response(null, { status: 303, headers })) as unknown as typeof fetch;
+    const res = await createClient("https://a.invalid", impl)("auth.login.get", { params: undefined, query: {}, body: undefined });
+    expect(res).toEqual({
+      ok: true,
+      status: 303,
+      body: undefined,
+      headers: { location: "https://idp.primjer.invalid/authorize", "set-cookie": ["a=1; HttpOnly", "b=2; HttpOnly"] },
+    });
+  });
+
   it("leaves out an undefined query value", async () => {
     const f = fakeFetch(303);
     await createClient("https://a.invalid", f.impl)("auth.login.get", { params: undefined, query: { returnTo: undefined } as unknown as { returnTo?: string }, body: undefined });
@@ -203,7 +217,7 @@ describe("generated client", () => {
       query: undefined,
       body: { logout_token: "izmisljeni.token" },
     });
-    expect(res).toEqual({ ok: true, status: 200, body: undefined });
+    expect(res).toEqual({ ok: true, status: 200, body: undefined, headers: {} });
     expect(f.calls[0]?.init.body).toBe("logout_token=izmisljeni.token");
     expect(f.calls[0]?.init.headers).toEqual({ "content-type": "application/x-www-form-urlencoded" });
   });

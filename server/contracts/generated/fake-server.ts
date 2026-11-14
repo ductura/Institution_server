@@ -4,16 +4,16 @@
 import { createServer, type Server } from "node:http";
 
 export const ROUTE_TABLE = {
-  "auth.backchannel-logout.post": { method: "POST", path: "/api/v1/auth/backchannel-logout", body: "application/x-www-form-urlencoded", errors: {"400":["invalid_logout_token"],"503":["unavailable"]} },
-  "auth.callback.get": { method: "GET", path: "/api/v1/auth/callback", body: null, errors: {"400":["login_failed"],"403":["login_refused"],"503":["unavailable"]} },
-  "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, errors: {"503":["unavailable"]} },
-  "auth.logout-all.post": { method: "POST", path: "/api/v1/auth/logout-all", body: null, errors: {"403":["forbidden"],"503":["unavailable"]} },
-  "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, errors: {"403":["forbidden"],"503":["unavailable"]} },
-  "platform.health.get": { method: "GET", path: "/api/v1/health", body: null, errors: {} },
-  "platform.ready.get": { method: "GET", path: "/api/v1/ready", body: null, errors: {"503":["unavailable","draining"]} },
-  "platform.status.get": { method: "GET", path: "/api/v1/status", body: null, errors: {"503":["unavailable"]} },
-  "profile.interface-locale.get": { method: "GET", path: "/api/v1/profile/interface-locale", body: null, errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
-  "profile.interface-locale.post": { method: "POST", path: "/api/v1/profile/interface-locale", body: "application/json", errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
+  "auth.backchannel-logout.post": { method: "POST", path: "/api/v1/auth/backchannel-logout", body: "application/x-www-form-urlencoded", headers: [], errors: {"400":["invalid_logout_token"],"503":["unavailable"]} },
+  "auth.callback.get": { method: "GET", path: "/api/v1/auth/callback", body: null, headers: ["location","set-cookie"], errors: {"400":["login_failed"],"403":["login_refused"],"503":["unavailable"]} },
+  "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, headers: ["location","set-cookie"], errors: {"503":["unavailable"]} },
+  "auth.logout-all.post": { method: "POST", path: "/api/v1/auth/logout-all", body: null, headers: ["location","set-cookie"], errors: {"403":["forbidden"],"503":["unavailable"]} },
+  "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, headers: ["location","set-cookie"], errors: {"403":["forbidden"],"503":["unavailable"]} },
+  "platform.health.get": { method: "GET", path: "/api/v1/health", body: null, headers: [], errors: {} },
+  "platform.ready.get": { method: "GET", path: "/api/v1/ready", body: null, headers: [], errors: {"503":["unavailable","draining"]} },
+  "platform.status.get": { method: "GET", path: "/api/v1/status", body: null, headers: [], errors: {"503":["unavailable"]} },
+  "profile.interface-locale.get": { method: "GET", path: "/api/v1/profile/interface-locale", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
+  "profile.interface-locale.post": { method: "POST", path: "/api/v1/profile/interface-locale", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
 } as const;
 
 const MATCHERS = Object.values(ROUTE_TABLE).map((r) => ({
