@@ -2,10 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { baseDocument } from "../../scripts/check-breaking.ts";
-import { OPENAPI_FILE, openapiJson } from "../../scripts/generate-contracts.ts";
-import { API_PREFIX } from "./schema.ts";
-import { API_VERSION } from "./version.ts";
+import { baseDocument, OPENAPI_FILE, openapiJson } from "../../scripts/index.ts";
+import { API_PREFIX, API_VERSION } from "./index.ts";
 
 describe("published OpenAPI v1", () => {
   it("openapi/v1.json matches a fresh run, byte for byte", () => {

@@ -8,7 +8,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import Provider, { type Configuration } from "oidc-provider";
+import { Provider, type Configuration } from "oidc-provider";
 
 import { ACCOUNTS, demoAccountClaims, isDemoAccountId } from "./accounts.ts";
 import { assertFakeOidcAllowed } from "./guard.ts";
@@ -102,12 +102,12 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
     fetch(url, init) {
       const href = url instanceof Request ? url.url : new URL(url).href;
       if (href === backchannelLogoutUri) {
-        const { dispatcher: _dispatcher, ...rest } = (init ?? {}) as RequestInit & { dispatcher?: unknown };
+        const { dispatcher: droppedDispatcher, ...rest } = (init ?? {}) as RequestInit & { dispatcher?: unknown };
         return globalThis.fetch(url, rest);
       }
       return globalThis.fetch(url, init);
     },
-    interactions: { url: (_ctx, interaction) => `/interaction/${interaction.uid}` },
+    interactions: { url: (ctx, interaction) => `/interaction/${interaction.uid}` },
     claims: {
       openid: ["sub"],
       profile: ["name", "given_name", "family_name", "hrEduPersonUniqueID", "hrEduPersonHomeOrg", "hrEduPersonAffiliation"],
@@ -125,7 +125,7 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
       await grant.save();
       return grant;
     },
-    findAccount(_ctx, id) {
+    findAccount(ctx, id) {
       const claims = demoAccountClaims(id);
       if (!claims) return undefined;
       return {

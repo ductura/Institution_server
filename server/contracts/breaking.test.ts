@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { openapiDocument } from "../../scripts/generate-contracts.ts";
+import { openapiDocument } from "../../scripts/index.ts";
 import { breakingChanges } from "./breaking.ts";
 
 type Obj = Record<string, unknown>;
@@ -146,7 +146,7 @@ describe("breaking changes", () => {
     expect(breakingChanges(openapiDocument(), openapiDocument())).toEqual([]);
   });
 
-  it.each(CASES)("%s", (_, edit, expected) => {
+  it.each(CASES)("%s", (name, edit, expected) => {
     expect(breakingChanges(openapiDocument(), changed(edit))).toEqual(expected);
   });
 });
@@ -159,7 +159,7 @@ describe("version field", () => {
     ["version lowered", "0.9.0", ["info.version: major changed from 1 to 0; a new major is a new document", "info.version: lowered from 1.0.0 to 0.9.0"]],
     ["new major in the v1 document", "2.0.0", ["info.version: major changed from 1 to 2; a new major is a new document"]],
     ["not major.minor.patch", "1.1", ["info.version: 1.1 is not major.minor.patch"]],
-  ])("%s", (_, version, expected) => {
+  ])("%s", (name, version, expected) => {
     expect(breakingChanges(openapiDocument(), changed(addRoute, version))).toEqual(expected);
   });
 

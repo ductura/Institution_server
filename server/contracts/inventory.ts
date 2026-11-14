@@ -2,7 +2,7 @@
 // docs/backend/server-route-inventory.md at main d52a92c (DAN-714, 38 route.ts).
 // A contract route outside this list, or a file here with neither a contract nor
 // a place in PENDING, fails server/contracts/contracts.test.ts.
-import type { Method } from "./schema.ts";
+import type { Method } from "./schema/index.ts";
 
 export const INVENTORY_SOURCE = "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md";
 

@@ -19,6 +19,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Provjera tipova
         run: pnpm typecheck
+      - name: Lint
+        run: pnpm lint
       - name: Unit testovi
         run: pnpm test:unit
       - name: Svojstveni testovi

@@ -1,6 +1,6 @@
 // Checks a set of contracts against the format and the route inventory. The
 // generator refuses to write while any problem is reported.
-import { ACCESS, API_PREFIX, type Method, type RouteContract } from "./schema.ts";
+import { ACCESS, API_PREFIX, type Method, type RouteContract } from "./schema/index.ts";
 
 /** app/api/a/[b]/route.ts -> /api/v1/a/{b} */
 export function pathOf(inventoryFile: string): string {
