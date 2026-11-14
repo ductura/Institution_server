@@ -76,7 +76,11 @@ describe("risk floor", () => {
   });
 
   it("keeps the floor of the strongest path in a mixed PR", () => {
-    const result = declared("standard", ["docs/server-map.md", "server/store.ts", "server/http/x.ts"]);
+    const result = declared("standard", [
+      "docs/server-map.md",
+      "server/store.ts",
+      "server/http/x.ts",
+    ]);
     expect(result.ok).toBe(false);
   });
 
@@ -108,7 +112,16 @@ describe("risk floor", () => {
       expect(minimumRisk([file]).risk, file).toBe("standard");
       expect(declared("standard", [file]).ok, file).toBe(true);
     }
-    for (const file of ["README.md", "docs/server-map.md", "docs/CODE_STYLE.md", "docs/claude.txt", "docs/mcp.md", "locales/hr.json", "github/workflows/ci.yml", "src/server/http/x.ts"]) {
+    for (const file of [
+      "README.md",
+      "docs/server-map.md",
+      "docs/CODE_STYLE.md",
+      "docs/claude.txt",
+      "docs/mcp.md",
+      "locales/hr.json",
+      "github/workflows/ci.yml",
+      "src/server/http/x.ts",
+    ]) {
       expect(minimumRisk([file]).risk, file).toBe("low");
       expect(declared("low", [file]).ok, file).toBe(true);
     }
@@ -136,9 +149,13 @@ describe("risk floor", () => {
   });
 
   it("keeps the floor for a rename out of a critical path and for a deletion", () => {
-    const renamed = changedPaths([{ filename: "docs/moved.md", previousFilename: "server/session/a.ts" }]);
+    const renamed = changedPaths([
+      { filename: "docs/moved.md", previousFilename: "server/session/a.ts" },
+    ]);
     expect(minimumRisk(renamed).risk).toBe("critical");
-    expect(minimumRisk(changedPaths([{ filename: ".github/workflows/ci.yml" }])).risk).toBe("critical");
+    expect(minimumRisk(changedPaths([{ filename: ".github/workflows/ci.yml" }])).risk).toBe(
+      "critical",
+    );
   });
 
   it("treats an empty change as low", () => {
@@ -172,23 +189,52 @@ describe("PR metadata", () => {
   });
 
   it("does not read metadata inside fenced or indented code", () => {
-    const fenced = ["Agent: claude:w1:platforma", "Task: DAN-1", "```", "Risk: critical", "```", "Risk: low"].join("\n");
+    const fenced = [
+      "Agent: claude:w1:platforma",
+      "Task: DAN-1",
+      "```",
+      "Risk: critical",
+      "```",
+      "Risk: low",
+    ].join("\n");
     expect(evaluateMetadata(fenced, [".github/x.yml"]).ok).toBe(false);
-    const onlyInCode = ["Agent: claude:w1:platforma", "Task: DAN-1", "    Risk: critical"].join("\n");
+    const onlyInCode = ["Agent: claude:w1:platforma", "Task: DAN-1", "    Risk: critical"].join(
+      "\n",
+    );
     const result = evaluateMetadata(onlyInCode, ["docs/a.md"]);
     expect(result.ok ? "OK" : result.error.code).toBe("RISK_INVALID");
     for (const indent of ["\t", " \t", "  \t", "   \t", "    "]) {
-      const mixed = ["Agent: claude:w1:platforma", "Task: DAN-1", "", `${indent}Risk: critical`, "Risk: low"].join("\n");
+      const mixed = [
+        "Agent: claude:w1:platforma",
+        "Task: DAN-1",
+        "",
+        `${indent}Risk: critical`,
+        "Risk: low",
+      ].join("\n");
       expect(evaluateMetadata(mixed, [".github/x.yml"]).ok, JSON.stringify(indent)).toBe(false);
     }
-    const threeSpaces = ["Agent: claude:w1:platforma", "Task: DAN-1", "   Risk: critical"].join("\n");
+    const threeSpaces = ["Agent: claude:w1:platforma", "Task: DAN-1", "   Risk: critical"].join(
+      "\n",
+    );
     expect(evaluateMetadata(threeSpaces, [".github/x.yml"]).ok).toBe(true);
   });
 
   it("reads metadata after an inline-code line that only looks like a fence", () => {
-    const text = ["```pnpm test```", "Agent: claude:w1:platforma", "Risk: critical", "Task: DAN-1"].join("\n");
+    const text = [
+      "```pnpm test```",
+      "Agent: claude:w1:platforma",
+      "Risk: critical",
+      "Task: DAN-1",
+    ].join("\n");
     expect(evaluateMetadata(text, [".github/x.yml"]).ok).toBe(true);
-    const tilde = ["~~~ `info` ~~~", "Risk: critical", "~~~", "Agent: claude:w1:platforma", "Risk: low", "Task: DAN-1"].join("\n");
+    const tilde = [
+      "~~~ `info` ~~~",
+      "Risk: critical",
+      "~~~",
+      "Agent: claude:w1:platforma",
+      "Risk: low",
+      "Task: DAN-1",
+    ].join("\n");
     expect(evaluateMetadata(tilde, [".github/x.yml"]).ok).toBe(false);
   });
 
@@ -206,7 +252,13 @@ describe("PR metadata", () => {
   it("has a Croatian text in locales/hr.json for every error key", () => {
     const catalogue: unknown = JSON.parse(readFileSync(resolve(ROOT, "locales/hr.json"), "utf8"));
     const lookup = (key: string): unknown =>
-      key.split(".").reduce<unknown>((node, part) => (node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined), catalogue);
+      key
+        .split(".")
+        .reduce<unknown>(
+          (node, part) =>
+            node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined,
+          catalogue,
+        );
     const bodies = [
       "Risk: low\nTask: DAN-1\n",
       "Agent: claude:w1:qa\nTask: DAN-1\n",
@@ -222,13 +274,21 @@ describe("PR metadata", () => {
       const value = lookup(result.error.messageKey);
       expect(typeof value === "string" && value.length > 0, result.error.messageKey).toBe(true);
     }
-    expect([...codes].sort()).toEqual(["AGENT_INVALID", "RISK_BELOW_FLOOR", "RISK_INVALID", "TASK_MISSING"]);
+    expect([...codes].sort()).toEqual([
+      "AGENT_INVALID",
+      "RISK_BELOW_FLOOR",
+      "RISK_INVALID",
+      "TASK_MISSING",
+    ]);
   });
 
   it("ships a PR template whose placeholders fail closed", () => {
     const template = readFileSync(resolve(ROOT, ".github/pull_request_template.md"), "utf8");
     for (const line of ["Agent:", "Risk:", "Task:"]) {
-      expect(template.split("\n").some((l) => l.startsWith(line)), line).toBe(true);
+      expect(
+        template.split("\n").some((l) => l.startsWith(line)),
+        line,
+      ).toBe(true);
     }
     expect(evaluateMetadata(template, ["docs/a.md"]).ok).toBe(false);
   });
@@ -246,7 +306,10 @@ function codeownersRules(text: string): { re: RegExp; owners: string[] }[] {
       const bare = pattern.replace(/^\//, "").replace(/\/$/, "");
       const anchored = pattern.startsWith("/") || bare.includes("/");
       const core = globToRegExp(bare).source.slice(1, -1);
-      return { re: new RegExp(`^${anchored ? "" : "(?:.*/)?"}${core}${dir ? "/.*" : "(?:/.*)?"}$`, "s"), owners };
+      return {
+        re: new RegExp(`^${anchored ? "" : "(?:.*/)?"}${core}${dir ? "/.*" : "(?:/.*)?"}$`, "s"),
+        owners,
+      };
     });
 }
 
@@ -268,7 +331,10 @@ describe("CODEOWNERS", () => {
   it("has a sample for every entry of the critical list", () => {
     for (const glob of CRITICAL_PATHS) {
       const re = globToRegExp(glob);
-      expect(CRITICAL_SAMPLES.some((file) => re.test(file)), glob).toBe(true);
+      expect(
+        CRITICAL_SAMPLES.some((file) => re.test(file)),
+        glob,
+      ).toBe(true);
     }
   });
 });

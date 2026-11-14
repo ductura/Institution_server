@@ -8,12 +8,15 @@ export type Risk = "low" | "standard" | "critical";
 export type GateError = { code: string; messageKey: string };
 export type Metadata = { agent: string; risk: Risk; task: string; minimumRisk: Risk };
 export type MetadataResult =
-  | { ok: true; value: Metadata }
-  | { ok: false; error: GateError; statusText: string };
+  { ok: true; value: Metadata } | { ok: false; error: GateError; statusText: string };
 
 // No prototype: `"constructor" in RISK_RANK` must be false (Ductus F-041 b).
 const RISK_RANK: Readonly<Record<string, number>> = Object.freeze(
-  Object.assign(Object.create(null) as Record<string, number>, { low: 0, standard: 1, critical: 2 }),
+  Object.assign(Object.create(null) as Record<string, number>, {
+    low: 0,
+    standard: 1,
+    critical: 2,
+  }),
 );
 const RISKS: readonly Risk[] = ["low", "standard", "critical"];
 const AGENT_RE =
@@ -55,7 +58,10 @@ const AGENT_CONTROL_SEGMENTS = new Set([".claude", ".agents", ".codex"]);
 
 /** Separators, repeated slashes and a leading "./" or "/" do not matter. */
 export function normalizePath(path: string): string {
-  return path.replaceAll("\\", "/").replace(/\/{2,}/g, "/").replace(/^(?:\.?\/)+/, "");
+  return path
+    .replaceAll("\\", "/")
+    .replace(/\/{2,}/g, "/")
+    .replace(/^(?:\.?\/)+/, "");
 }
 
 export function globToRegExp(glob: string): RegExp {
@@ -121,7 +127,8 @@ export function changedPaths(
 ): string[] {
   const out = new Set<string>();
   for (const file of files) {
-    for (const path of [file.filename, file.previousFilename]) if (path) out.add(normalizePath(path));
+    for (const path of [file.filename, file.previousFilename])
+      if (path) out.add(normalizePath(path));
   }
   return [...out].sort();
 }
