@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "./ports.ts";
+import type { ActorTransaction, WithActor } from "../database/index.ts";
 
 import {
   PRINCIPAL_SCOPE_LABEL,

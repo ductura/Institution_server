@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "./ports.ts";
+import type { ActorTransaction, WithActor } from "../database/index.ts";
 
 import { counted, pageActivity, recordActivity, type Schedule } from "./activity.ts";
 import { SESSION_COOKIE_NAME } from "./session-token.ts";
@@ -94,6 +94,33 @@ describe("pageActivity", () => {
     const { tasks, schedule } = collect();
     pageActivity(TOKEN, schedule, fakeRun(true).run);
     expect(tasks).toHaveLength(1);
+  });
+
+  // S-0.18: in Ductus `schedule` defaulted to Next's after() and `run` to
+  // withActor from src/server/db; here both are required and the touch goes
+  // only through what the caller passed.
+  it("defers the touch to the given schedule and runs it through the given withActor", async () => {
+    const { tasks, schedule } = collect();
+    const { run, calls } = fakeRun(true);
+    pageActivity(TOKEN, schedule, run);
+    expect(calls).toEqual([]);
+    expect(tasks).toHaveLength(1);
+    await expect(tasks[0]!()).resolves.toBe(true);
+    expect(calls).toEqual([
+      { token: TOKEN, sql: ["SELECT identity.touch_current_session() AS touched"] },
+    ]);
+  });
+
+  it("has no default for run or schedule", () => {
+    const { schedule } = collect();
+    const { run } = fakeRun(true);
+    // @ts-expect-error `run` is required (no withActor default without src/server/db).
+    expect(() => pageActivity(undefined, schedule)).not.toThrow();
+    // @ts-expect-error `schedule` and `run` are required (no after() default without Next.js).
+    expect(() => pageActivity(undefined)).not.toThrow();
+    // @ts-expect-error recordActivity takes `run` from the caller.
+    void recordActivity(undefined);
+    expect(() => pageActivity(undefined, schedule, run)).not.toThrow();
   });
 
   it.each([undefined, "", "not-a-token"])(

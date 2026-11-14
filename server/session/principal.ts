@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { WithActor } from "./ports.ts";
+import type { WithActor } from "../database/index.ts";
 
 /**
  * Who the session cookie belongs to, as far as the browser's local journal is

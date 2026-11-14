@@ -15,7 +15,7 @@ export type {
   BackchannelLogoutInput,
   BackchannelLogoutResult,
   WithActor,
-} from "./ports.ts";
+} from "../database/index.ts";
 export {
   PRINCIPAL_SCOPE_LABEL,
   principalScope,

@@ -20,7 +20,7 @@ import {
   type LogoutKeySource,
 } from "../external/srce-auth/index.ts";
 
-import type { BackchannelLogout } from "./ports.ts";
+import type { BackchannelLogout } from "../database/index.ts";
 
 export type BackchannelDeps = {
   config: AuthConfig;

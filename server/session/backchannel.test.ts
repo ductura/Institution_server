@@ -12,7 +12,7 @@ import {
   MAX_BACKCHANNEL_BODY_BYTES,
   type BackchannelDeps,
 } from "./backchannel.ts";
-import type { BackchannelLogout } from "./ports.ts";
+import type { BackchannelLogout } from "../database/index.ts";
 
 import {
   CLIENT_ID,

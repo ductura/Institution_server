@@ -1,4 +1,4 @@
-import type { WithActor } from "./ports.ts";
+import type { WithActor } from "../database/index.ts";
 import { SESSION_COOKIE_NAME } from "./session-token.ts";
 
 /**
