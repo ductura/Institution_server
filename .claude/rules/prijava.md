@@ -1,6 +1,11 @@
 ---
 paths:
-  - "server/auth/**"
+  - "server/session/**"
+  - "server/external/srce-auth/**"
+  - "server/http/**"
+  - "server/roles/**"
+  - "server/settings/**"
+  - "server/access.ts"
   - "test-support/fake-oidc/**"
 ---
 

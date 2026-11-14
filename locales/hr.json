@@ -1,0 +1,8 @@
+{
+  "gate": {
+    "agent_invalid": "U opisu PR-a nedostaje redak Agent: ili nije ispravan.",
+    "risk_invalid": "Risk: mora biti low, standard ili critical.",
+    "task_missing": "U opisu PR-a nedostaje redak Task:.",
+    "risk_below_floor": "Prijavljeni Risk: niži je od najnižeg koji traže promijenjene putanje."
+  }
+}
