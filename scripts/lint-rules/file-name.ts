@@ -3,7 +3,16 @@ import type { Rule } from "eslint";
 
 const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ALLOWED_TEST = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.property|\.integration)?\.test\.ts$/;
-const TEST_SEGMENTS = new Set(["test", "tests", "spec", "specs", "e2e", "unit", "property", "integration"]);
+const TEST_SEGMENTS = new Set([
+  "test",
+  "tests",
+  "spec",
+  "specs",
+  "e2e",
+  "unit",
+  "property",
+  "integration",
+]);
 
 /** Name parts of a file: "a-b.property.test.ts" -> ["a-b", "property", "test"]. */
 function nameParts(filename: string): string[] {
@@ -23,7 +32,11 @@ export const kebabCaseFilename: Rule.RuleModule = {
     return {
       Program(node) {
         if (!nameParts(context.filename).every((part) => KEBAB.test(part))) {
-          context.report({ node, messageId: "kebab", data: { name: path.basename(context.filename) } });
+          context.report({
+            node,
+            messageId: "kebab",
+            data: { name: path.basename(context.filename) },
+          });
         }
       },
     };
@@ -36,7 +49,8 @@ export const testFileSuffix: Rule.RuleModule = {
     type: "problem",
     docs: { description: "Tests use only the allowed suffixes" },
     messages: {
-      suffix: "Test file '{{name}}' must end in .test.ts, .property.test.ts or .integration.test.ts.",
+      suffix:
+        "Test file '{{name}}' must end in .test.ts, .property.test.ts or .integration.test.ts.",
     },
     schema: [],
   },
@@ -44,7 +58,9 @@ export const testFileSuffix: Rule.RuleModule = {
     return {
       Program(node) {
         const name = path.basename(context.filename);
-        const looksLikeTest = nameParts(context.filename).slice(1).some((part) => TEST_SEGMENTS.has(part));
+        const looksLikeTest = nameParts(context.filename)
+          .slice(1)
+          .some((part) => TEST_SEGMENTS.has(part));
         if (looksLikeTest && !ALLOWED_TEST.test(name)) {
           context.report({ node, messageId: "suffix", data: { name } });
         }
@@ -65,7 +81,11 @@ export const onlyTs: Rule.RuleModule = {
     return {
       Program(node) {
         if (path.extname(context.filename) !== ".ts") {
-          context.report({ node, messageId: "onlyTs", data: { name: path.basename(context.filename) } });
+          context.report({
+            node,
+            messageId: "onlyTs",
+            data: { name: path.basename(context.filename) },
+          });
         }
       },
     };

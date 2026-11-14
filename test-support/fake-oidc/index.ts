@@ -14,4 +14,9 @@ export {
 export { assertFakeOidcAllowed } from "./guard.ts";
 export { FAKE_OIDC_MODES, fakeOidcMode, type FakeOidcMode } from "./modes.ts";
 export { DEFAULT_POST_LOGOUT_REDIRECT_URIS, DEFAULT_REDIRECT_URIS } from "./redirect-uris.ts";
-export { createFakeOidc, fakeOidcConfigFromEnv, listenPort, type FakeOidcOptions } from "./server.ts";
+export {
+  createFakeOidc,
+  fakeOidcConfigFromEnv,
+  listenPort,
+  type FakeOidcOptions,
+} from "./server.ts";

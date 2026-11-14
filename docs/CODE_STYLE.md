@@ -14,21 +14,21 @@ Svi primjeri koriste izmišljene podatke (domena `.invalid`), nikad stvarne osob
 
 ## Pregled
 
-| # | Pravilo | Provedba |
-|---|---|---|
-| 1 | Datoteke u kebab-caseu | planirano S-0.7, do tada review |
-| 2 | `camelCase`, `PascalCase`, `UPPER_SNAKE` | planirano S-0.7, do tada review |
-| 3 | Bez `any` | planirano S-0.7, do tada review (implicitni `any` hvata `tsc`) |
-| 4 | `type` umjesto `interface` | planirano S-0.7, do tada review |
-| 5 | Bez `enum` | planirano S-0.7, do tada review |
-| 6 | Uvoz samo kroz `index.ts` | planirano S-0.7, do tada review |
-| 7 | Testovi uz kod, tri sufiksa | review (vitest pokreće samo ta tri sufiksa) |
-| 8 | Jedan oblik rezultata i greške | review (tipovi kad se uvedu zajednički `Result`/`AppError`) |
-| 9 | `snake_case` u `camelCase` samo u `server/database` | review |
-| 10 | Svaka mapa ima `index.ts`, kod, testove i README | review |
-| 11 | CSS moduli nose ime komponente | review (lint kad ga web repozitoriji uvedu) |
-| 12 | Nove skripte u TypeScriptu | review |
-| 13 | Poveznice u dokumentima moraju vrijediti | test |
+| #   | Pravilo                                             | Provedba                                                       |
+| --- | --------------------------------------------------- | -------------------------------------------------------------- |
+| 1   | Datoteke u kebab-caseu                              | planirano S-0.7, do tada review                                |
+| 2   | `camelCase`, `PascalCase`, `UPPER_SNAKE`            | planirano S-0.7, do tada review                                |
+| 3   | Bez `any`                                           | planirano S-0.7, do tada review (implicitni `any` hvata `tsc`) |
+| 4   | `type` umjesto `interface`                          | planirano S-0.7, do tada review                                |
+| 5   | Bez `enum`                                          | planirano S-0.7, do tada review                                |
+| 6   | Uvoz samo kroz `index.ts`                           | planirano S-0.7, do tada review                                |
+| 7   | Testovi uz kod, tri sufiksa                         | review (vitest pokreće samo ta tri sufiksa)                    |
+| 8   | Jedan oblik rezultata i greške                      | review (tipovi kad se uvedu zajednički `Result`/`AppError`)    |
+| 9   | `snake_case` u `camelCase` samo u `server/database` | review                                                         |
+| 10  | Svaka mapa ima `index.ts`, kod, testove i README    | review                                                         |
+| 11  | CSS moduli nose ime komponente                      | review (lint kad ga web repozitoriji uvedu)                    |
+| 12  | Nove skripte u TypeScriptu                          | review                                                         |
+| 13  | Poveznice u dokumentima moraju vrijediti            | test                                                           |
 
 ## 1. Datoteke u kebab-caseu
 
@@ -168,10 +168,10 @@ import { openSession } from "../auth/session-internal.ts";
 
 Test je u istoj mapi kao kod koji provjerava i ima isto ime plus sufiks. Sufiks određuje vitest projekt (`vitest.config.ts`):
 
-| Sufiks | Projekt | Što je |
-|---|---|---|
-| `.test.ts` | `unit` | čista logika, bez mreže i baze |
-| `.property.test.ts` | `property` | svojstveni testovi (fast-check) |
+| Sufiks                 | Projekt       | Što je                                  |
+| ---------------------- | ------------- | --------------------------------------- |
+| `.test.ts`             | `unit`        | čista logika, bez mreže i baze          |
+| `.property.test.ts`    | `property`    | svojstveni testovi (fast-check)         |
 | `.integration.test.ts` | `integration` | više dijelova skupa, HTTP, kasnije baza |
 
 Provedba: review. Datoteka s drugim sufiksom ili izvan `server/` ne pripada nijednom projektu i tiho se ne pokreće, CI ostaje zelen; zato reviewer provjerava sufikse. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
@@ -321,7 +321,7 @@ scripts/check-links.js
 
 Relativna poveznica (`[tekst](put)` ili definicija `[x]: put`) u `README.md` i `docs/**/*.md` mora pokazivati na postojeću datoteku (a sidro `#...` na postojeći naslov u toj datoteci).
 
-Provedba: test (`server/docs-links.test.ts`).  Pokriva inline poveznice i definicije referenci (`[x]: put`), a duplicirane naslove sufiksira kao GitHub (`-1`).
+Provedba: test (`server/docs-links.test.ts`). Pokriva inline poveznice i definicije referenci (`[x]: put`), a duplicirane naslove sufiksira kao GitHub (`-1`).
 
 Ispravno:
 

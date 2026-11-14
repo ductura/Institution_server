@@ -4,15 +4,15 @@ Ovaj dokument je tanki adapter. Ne uvodi nova pravila: pravila rada su ista kao 
 
 ## Izvori pravila
 
-| Što | Izvor |
-| --- | --- |
-| Tvrda pravila, izvori istine, vanjski botovi, preuzimanje posla, jezik | Ductus [CLAUDE.md](https://github.com/danielrisavi77-create/Ductus/blob/main/CLAUDE.md) |
-| Gate: uloge, risk razine, review, QA, invalidacija, critical PR | Ductus [docs/ENGINEERING_SYSTEM.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/ENGINEERING_SYSTEM.md); prvo [sažetak](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/ENGINEERING_SYSTEM-SAZETAK.md), puni dokument samo u sekcijama koje zadatak traži |
-| Načini rada (worker, review, qa ...) i oblik nalaza | Ductus [AGENTS.md](https://github.com/danielrisavi77-create/Ductus/blob/main/AGENTS.md) |
-| Kartice uloga (pisac, reviewer, QA) | Ductus [.claude/uloge/README.md](https://github.com/danielrisavi77-create/Ductus/blob/main/.claude/uloge/README.md); pisac u oblaku i [pisac-oblak.md](https://github.com/danielrisavi77-create/Ductus/blob/main/.claude/uloge/pisac-oblak.md) |
-| Rječnik zabranjenih izraza i pravila koja proizvod nikad ne krši | Ductus [docs/PRODUCT.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/PRODUCT.md) §5; vrijedi i ovdje |
-| Predaja posla i rotacija sesije | Ductus [docs/MULTI-ACCOUNT.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/MULTI-ACCOUNT.md) |
-| Pisanje koda u ovom repou | [docs/CODE_STYLE.md](docs/CODE_STYLE.md) |
+| Što                                                                    | Izvor                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tvrda pravila, izvori istine, vanjski botovi, preuzimanje posla, jezik | Ductus [CLAUDE.md](https://github.com/danielrisavi77-create/Ductus/blob/main/CLAUDE.md)                                                                                                                                                                                                    |
+| Gate: uloge, risk razine, review, QA, invalidacija, critical PR        | Ductus [docs/ENGINEERING_SYSTEM.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/ENGINEERING_SYSTEM.md); prvo [sažetak](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/ENGINEERING_SYSTEM-SAZETAK.md), puni dokument samo u sekcijama koje zadatak traži |
+| Načini rada (worker, review, qa ...) i oblik nalaza                    | Ductus [AGENTS.md](https://github.com/danielrisavi77-create/Ductus/blob/main/AGENTS.md)                                                                                                                                                                                                    |
+| Kartice uloga (pisac, reviewer, QA)                                    | Ductus [.claude/uloge/README.md](https://github.com/danielrisavi77-create/Ductus/blob/main/.claude/uloge/README.md); pisac u oblaku i [pisac-oblak.md](https://github.com/danielrisavi77-create/Ductus/blob/main/.claude/uloge/pisac-oblak.md)                                             |
+| Rječnik zabranjenih izraza i pravila koja proizvod nikad ne krši       | Ductus [docs/PRODUCT.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/PRODUCT.md) §5; vrijedi i ovdje                                                                                                                                                                    |
+| Predaja posla i rotacija sesije                                        | Ductus [docs/MULTI-ACCOUNT.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/MULTI-ACCOUNT.md)                                                                                                                                                                            |
+| Pisanje koda u ovom repou                                              | [docs/CODE_STYLE.md](docs/CODE_STYLE.md)                                                                                                                                                                                                                                                   |
 
 Zadatak (identitet, prioritet, nositelj, status) je u Linearu (`DAN-xxx`); posao dodjeljuje orkestrator (`claude:b:orchestrator`).
 
@@ -34,20 +34,20 @@ Izvor: Ductus [CLAUDE.md](https://github.com/danielrisavi77-create/Ductus/blob/m
 
 ## Putanje: Ductus → ovdje
 
-| U Ductusu | U ductura/server |
-| --- | --- |
-| `db/migrations/` | `db/migrations/` (još ne postoji) |
-| `db/tests/` | `db/tests/` (pgTAP; još ne postoji) |
-| `src/server/db/` | `server/database/` ([docs/CODE_STYLE.md](docs/CODE_STYLE.md) §9; još ne postoji) |
-| `infra/fake-oidc/` | `test-support/fake-oidc/` |
-| `src/server/`, `app/api/` | `server/` |
-| `src/lib/i18n/` i tekstovi sučelja | `locales/` |
-| `tests/` | ne postoji; testovi su uz kod ([docs/CODE_STYLE.md](docs/CODE_STYLE.md) §7) |
-| `**/*.test.ts` | `server/**/*.test.ts` i `test-support/` ([README.md](README.md), „Testovi”) |
-| issue #1091 za izvještaje sesija u oblaku | Ductus issue #1836 |
+| U Ductusu                                                                       | U ductura/server                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db/migrations/`                                                                | `db/migrations/` (još ne postoji)                                                                                                                                                                         |
+| `db/tests/`                                                                     | `db/tests/` (pgTAP; još ne postoji)                                                                                                                                                                       |
+| `src/server/db/`                                                                | `server/database/` ([docs/CODE_STYLE.md](docs/CODE_STYLE.md) §9; još ne postoji)                                                                                                                          |
+| `infra/fake-oidc/`                                                              | `test-support/fake-oidc/`                                                                                                                                                                                 |
+| `src/server/`, `app/api/`                                                       | `server/`                                                                                                                                                                                                 |
+| `src/lib/i18n/` i tekstovi sučelja                                              | `locales/`                                                                                                                                                                                                |
+| `tests/`                                                                        | ne postoji; testovi su uz kod ([docs/CODE_STYLE.md](docs/CODE_STYLE.md) §7)                                                                                                                               |
+| `**/*.test.ts`                                                                  | `server/**/*.test.ts` i `test-support/` ([README.md](README.md), „Testovi”)                                                                                                                               |
+| issue #1091 za izvještaje sesija u oblaku                                       | Ductus issue #1836                                                                                                                                                                                        |
 | issue ovog repoa, labele `ready-for-claude` i `claude:in-progress`, `Closes #N` | issuei i labele su u Ductusu; pisac u oblaku veže `DAN-xxx` i ispravan `Risk:` (Ductus [pisac-oblak.md](https://github.com/danielrisavi77-create/Ductus/blob/main/.claude/uloge/pisac-oblak.md), korak 3) |
-| `pnpm orch:overlap`, `pnpm orch:preflight` | još ne postoje (S-0.21); u izvještaju napiši da su preskočeni |
-| `scripts/forbidden-terms/scan.ts` | još ne postoji; do tada rječnik provjerava review |
+| `pnpm orch:overlap`, `pnpm orch:preflight`                                      | još ne postoje (S-0.21); u izvještaju napiši da su preskočeni                                                                                                                                             |
+| `scripts/forbidden-terms/scan.ts`                                               | još ne postoji; do tada rječnik provjerava review                                                                                                                                                         |
 
 Pravila po putanjama su u [.claude/rules/](.claude/rules/) i podsjetnik su, ne nova pravila. Test `server/agent-rules.test.ts` provjerava da svaka datoteka pravila upućuje na izvor u Ductusu, da relativna poveznica vodi na postojeću datoteku u repou, a poveznica na Ductus na dokument s ručno provjerenog popisa u `server/agent-rules.ts`. Da je svaka stavka preslika izvora, provjerava review.
 

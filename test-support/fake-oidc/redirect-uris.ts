@@ -22,7 +22,9 @@ const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /** True for an http(s) address whose host is this machine. */
 export function isLoopbackHttpUrl(url: URL): boolean {
-  return (url.protocol === "http:" || url.protocol === "https:") && LOOPBACK_HOSTS.has(url.hostname);
+  return (
+    (url.protocol === "http:" || url.protocol === "https:") && LOOPBACK_HOSTS.has(url.hostname)
+  );
 }
 
 /** The issuer from the environment, or the local default; refuses any other host. */
@@ -34,7 +36,8 @@ export function loopbackIssuer(value: string | undefined, fallback: string): str
   } catch {
     throw new Error(`ISSUER is not an address: ${issuer}`);
   }
-  if (!isLoopbackHttpUrl(url)) throw new Error(`ISSUER must be http(s) on localhost, 127.0.0.1 or [::1]: ${issuer}`);
+  if (!isLoopbackHttpUrl(url))
+    throw new Error(`ISSUER must be http(s) on localhost, 127.0.0.1 or [::1]: ${issuer}`);
   return issuer;
 }
 
@@ -57,8 +60,10 @@ export function redirectUriList(value: string | undefined, fallback: readonly st
     } catch {
       throw new Error(`redirect URI is not an address: ${entry}`);
     }
-    if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error(`redirect URI must be http or https: ${entry}`);
-    if (!isLoopbackHttpUrl(url)) throw new Error(`redirect URI must be on localhost, 127.0.0.1 or [::1]: ${entry}`);
+    if (url.protocol !== "http:" && url.protocol !== "https:")
+      throw new Error(`redirect URI must be http or https: ${entry}`);
+    if (!isLoopbackHttpUrl(url))
+      throw new Error(`redirect URI must be on localhost, 127.0.0.1 or [::1]: ${entry}`);
   }
   return [...new Set(entries)];
 }

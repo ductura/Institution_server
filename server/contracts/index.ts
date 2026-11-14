@@ -7,4 +7,8 @@ export { INVENTORY, INVENTORY_SOURCE, PENDING } from "./inventory.ts";
 export * from "./schema/index.ts";
 
 /** Every route of /api/v1 with a contract. */
-export const ROUTES: readonly RouteContract[] = [...platformRoutes, ...authRoutes, ...profileRoutes];
+export const ROUTES: readonly RouteContract[] = [
+  ...platformRoutes,
+  ...authRoutes,
+  ...profileRoutes,
+];
