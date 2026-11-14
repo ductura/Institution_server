@@ -34,9 +34,63 @@ const WIRE_NAMES = [
   "backchannel_logout_session_required", // OpenID Connect Back-Channel Logout 1.0, section 2.2
 ];
 // Names fixed outside this repository that are not wire names: process
-// environment variables and the oidc-provider configuration keys (Configuration
-// "ttl"). A closed list of exact names, only for properties.
-const FIXED_NAMES = ["NODE_ENV", "PORT", "IdToken", "AccessToken"];
+// environment variables, the oidc-provider configuration keys (Configuration
+// "ttl") and one PostgreSQL connection parameter. A closed list of exact names,
+// only for properties.
+// "application_name" is the node-postgres client option named after the
+// PostgreSQL connection parameter (libpq, "Parameter Key Words").
+const FIXED_NAMES = ["NODE_ENV", "PORT", "IdToken", "AccessToken", "application_name"];
+// Process environment variables of the local database scripts (S-0.14,
+// scripts/db/native-db.ts and its tests): the DUCTUS_* names come from Ductus,
+// the others are the libpq, psql and dbmate variables those scripts strip or
+// set. A closed list of exact names, only for properties.
+const ENV_NAMES = [
+  "DUCTUS_NATIVE_PGHOST",
+  "DUCTUS_NATIVE_PGPORT",
+  "DUCTUS_NATIVE_PGSOCKET",
+  "DUCTUS_NATIVE_PGUSER",
+  "DUCTUS_NATIVE_PGDATABASE",
+  "DUCTUS_NATIVE_PGPASSWORD",
+  "DUCTUS_AUTH_LOCAL_PASSWORD",
+  "DUCTUS_WORKER_LOCAL_PASSWORD",
+  "PGHOST",
+  "PGPASSWORD",
+  "PGPASSFILE",
+  "PSQLRC",
+  "DBMATE_URL",
+  "DATABASE_URL",
+  "PATH",
+];
+// Result columns of PostgreSQL rows that the migration tests in tests/db read
+// and compare as they come from pg: column names of db/main/migrations (ported
+// verbatim, D-91) and one alias of a test query (app_can_select). The tests are
+// ported from Ductus with the same assertions (S-0.13, DAN-726), so the rows
+// keep their snake_case keys. A closed list of exact names, for properties and
+// for a destructured binding of such a property, never other names.
+const COLUMN_NAMES = [
+  "accepts_evidence",
+  "ai_policy",
+  "ai_purposes",
+  "app_can_select",
+  "content_hash",
+  "created_at",
+  "current_version",
+  "document_id",
+  "event_key",
+  "evidence_profile",
+  "expires_at",
+  "import_allowed",
+  "institution_id",
+  "last_seen_at",
+  "published_at",
+  "published_by",
+  "recipient_id",
+  "student_id",
+  "target_id",
+  "updated_at",
+  "version_no",
+  "work_type",
+];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.
@@ -88,7 +142,16 @@ export default defineConfig(
         },
         {
           selector: "property",
-          filter: { regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES].join("|")})$`, match: true },
+          filter: {
+            regex: `^(?:${[...WIRE_NAMES, ...FIXED_NAMES, ...ENV_NAMES, ...COLUMN_NAMES].join("|")})$`,
+            match: true,
+          },
+          format: null,
+        },
+        {
+          selector: ["variable", "parameter"],
+          modifiers: ["destructured"],
+          filter: { regex: `^(?:${COLUMN_NAMES.join("|")})$`, match: true },
           format: null,
         },
         {

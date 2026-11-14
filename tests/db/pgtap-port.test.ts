@@ -183,18 +183,31 @@ describe("db/main/tests (pgTAP port of Ductus db/tests)", () => {
     expect(withCr).toStrictEqual([]);
   });
 
-  it("runs from pnpm test:db:main and from the CI database job", () => {
+  it("runs from pnpm test:db, pnpm test:db:native and the CI database job", () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
       scripts: Record<string, string>;
     };
-    expect(pkg.scripts["test:db:main"]).toBe("pg_prove --recurse --ext .sql db/main/tests");
+    // compose mounts db/main/tests at /db/tests; native-db.ts runs TESTS_DIR.
+    expect(pkg.scripts["test:db"]).toContain(
+      "pg_prove -U ductus -d ductus --recurse --ext .sql /db/tests",
+    );
+    expect(readFileSync(join(ROOT, "compose.yaml"), "utf8")).toContain(
+      "- ./db/main/tests:/db/tests:ro",
+    );
+    expect(pkg.scripts["test:db:native"]).toBe("node scripts/db/native-db.ts test");
+    expect(readFileSync(join(ROOT, "scripts", "db", "native-db.ts"), "utf8")).toContain(
+      `export const TESTS_DIR = "${TESTS}";`,
+    );
     const ci = readFileSync(join(ROOT, ".github", "workflows", "ci.yml"), "utf8");
     const database = ci.slice(ci.indexOf("\n  database:\n"), ci.indexOf("\n  ci-ok:\n"));
-    expect(database).toContain(
-      'pg_prove --psql-bin "$PGBIN/psql" --failures --recurse --ext .sql db/main/tests',
-    );
+    // In the existing database job, after the native main database is up.
+    const up = database.lastIndexOf('PATH="$PGBIN:$PATH" pnpm db:up:native');
+    const matrix = database.indexOf('run: PATH="$PGBIN:$PATH" pnpm test:db:native');
+    expect(up).toBeGreaterThan(0);
+    expect(matrix).toBeGreaterThan(up);
     // The environment smoke test runs before the migrations, so the old
     // db/**/tests glob would pull the matrix in on an empty database.
     expect(database).not.toContain("db/**/tests");
+    expect(database).toContain("files=(db/tests/*.sql)");
   });
 });
