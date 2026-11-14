@@ -582,6 +582,46 @@ describe("breaking changes, closed by default", () => {
       ),
     ).toEqual([`POST ${BACKCHANNEL} ${FORM_BODY}/additionalProperties/maxLength: removed`]);
   });
+
+  // Review FAIL c.6881215681: {"x": 42} passed through patternProperties despite
+  // additionalProperties: false; a new optional x: string rejects it.
+  it("a new request field matched by a base patternProperties is breaking", () => {
+    const before = changed((d) => (localeBody(d).patternProperties = { "^x": {} }));
+    const after = changed((d) => {
+      localeBody(d).patternProperties = { "^x": {} };
+      node(localeBody(d), "properties").x = str;
+    }, "1.2.0");
+    expect(breakingChanges(before, after)).toEqual([
+      `POST ${LOCALE} ${JSON_BODY}/properties/x: field added`,
+    ]);
+  });
+
+  // QA FAIL c.6881211641: a looser schema under `not` rejects {"extra": "x"}.
+  it.each([
+    ["request", (d: Obj) => localeBody(d), `POST ${LOCALE} ${JSON_BODY}`],
+    ["response", (d: Obj) => ok(d, HEALTH), `GET ${HEALTH} ${OK}`],
+  ])("a new optional field under not in a %s is breaking", (name, at, where) => {
+    const closed = () => ({ type: "object", additionalProperties: false, properties: {} });
+    const before = changed((d) => (at(d).not = closed()));
+    const after = changed((d) => {
+      at(d).not = closed();
+      node(at(d), "not", "properties").extra = str;
+    }, "1.2.0");
+    expect(breakingChanges(before, after)).toEqual([`${where}/not/properties/extra: field added`]);
+  });
+
+  it("a new optional response field in an open object is still safe", () => {
+    const open = (d: Obj) => {
+      delete ok(d, HEALTH).additionalProperties;
+      ok(d, HEALTH).patternProperties = { "^x-": str };
+    };
+    const before = changed(open);
+    const after = changed((d) => {
+      open(d);
+      okProps(d, HEALTH).uptime = { type: "number" };
+    }, "1.2.0");
+    expect(breakingChanges(before, after)).toEqual([]);
+  });
 });
 
 // Names such as "toString" or "__proto__" exist on every object through its prototype;

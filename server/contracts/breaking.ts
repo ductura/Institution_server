@@ -7,6 +7,10 @@
 //   - a new optional field in a response object;
 //   - a new optional field in a request object that was and stays closed
 //     (`additionalProperties: false`), so no old request could have carried it;
+//   both only where the base schema put no constraint of its own on that name
+//   (no matching `patternProperties`, no schema in `additionalProperties` or
+//   `unevaluatedProperties`), and only in a positive context: under `not`, `if`,
+//   `oneOf` and the like a looser subschema can reject what was accepted;
 //   - a change of `description`, `example`, `examples` or `title`.
 // Nothing is inferred about anyOf, format or bounds: any change there is reported.
 type Obj = Record<string, unknown>;
@@ -48,6 +52,24 @@ const SUB_MAP = new Set([
   "properties",
 ]);
 const SUB_LIST = new Set(["allOf", "anyOf", "oneOf", "prefixItems"]);
+// Subschemas where accepting more makes the whole schema accept more. Under any other
+// keyword (`not`, `if`, `oneOf`, `contains` with maxContains, `$defs` reached by $ref
+// from anywhere) a new field is never assumed safe.
+const POSITIVE = new Set([
+  "additionalItems",
+  "additionalProperties",
+  "allOf",
+  "anyOf",
+  "dependentSchemas",
+  "else",
+  "items",
+  "patternProperties",
+  "prefixItems",
+  "properties",
+  "then",
+  "unevaluatedItems",
+  "unevaluatedProperties",
+]);
 // OpenAPI objects whose keys are names (status codes, media types, headers), not keywords.
 const NAMED = new Set(["callbacks", "content", "encoding", "headers", "links", "responses"]);
 
@@ -107,7 +129,10 @@ class Report {
   }
 }
 
-/** Two normalized schemas; every difference is reported except a safe new field. */
+/**
+ * Two normalized schemas; every difference is reported except a safe new field.
+ * `positive` is false once the comparison went under a keyword outside POSITIVE.
+ */
 function schema(
   r: Report,
   where: string,
@@ -115,21 +140,23 @@ function schema(
   a: unknown,
   b: unknown,
   dir: Direction,
+  positive = true,
 ): void {
   if (!isObj(a) || !isObj(b)) return r.same(where, ptr, a, b);
   for (const k of keysOf(a, b)) {
     const p = [...ptr, k];
     const va = own(a, k);
     const vb = own(b, k);
+    const pos = positive && POSITIVE.has(k);
     if (k === "properties" && (va === undefined || isObj(va)) && (vb === undefined || isObj(vb))) {
-      properties(r, where, p, a, b, dir);
+      properties(r, where, p, a, b, dir, pos);
     } else if (va === undefined) r.add(where, p, "added");
     else if (vb === undefined) r.add(where, p, "removed");
     else if (SUB_MAP.has(k) && isObj(va) && isObj(vb)) {
       for (const n of keysOf(va, vb)) {
         if (!has(va, n)) r.add(where, [...p, n], "added");
         else if (!has(vb, n)) r.add(where, [...p, n], "removed");
-        else schema(r, where, [...p, n], va[n], vb[n], dir);
+        else schema(r, where, [...p, n], va[n], vb[n], dir, pos);
       }
     } else if (
       SUB_LIST.has(k) &&
@@ -137,13 +164,43 @@ function schema(
       Array.isArray(vb) &&
       va.length === vb.length
     ) {
-      va.forEach((x, i) => schema(r, where, [...p, String(i)], x, vb[i], dir));
-    } else if (SUB_ONE.has(k)) schema(r, where, p, va, vb, dir);
+      va.forEach((x, i) => schema(r, where, [...p, String(i)], x, vb[i], dir, pos));
+    } else if (SUB_ONE.has(k)) schema(r, where, p, va, vb, dir, pos);
     else r.same(where, p, va, vb);
   }
 }
 
-function properties(r: Report, where: string, ptr: string[], a: Obj, b: Obj, dir: Direction): void {
+/** True when a pattern in `patternProperties` matches the name; an unreadable one counts. */
+function patternHits(s: Obj, name: string): boolean {
+  return Object.keys(obj(own(s, "patternProperties"))).some((pattern) => {
+    try {
+      return new RegExp(pattern, "u").test(name);
+    } catch {
+      return true;
+    }
+  });
+}
+
+/** True when the schema already constrained `name` before a field of that name existed. */
+function constrains(s: Obj, name: string): boolean {
+  const extra = own(s, "additionalProperties");
+  const rest = own(s, "unevaluatedProperties");
+  return (
+    patternHits(s, name) ||
+    (extra !== undefined && typeof extra !== "boolean") ||
+    (extra === undefined && rest !== undefined && rest !== true)
+  );
+}
+
+function properties(
+  r: Report,
+  where: string,
+  ptr: string[],
+  a: Obj,
+  b: Obj,
+  dir: Direction,
+  positive: boolean,
+): void {
   const pa = obj(own(a, "properties"));
   const pb = obj(own(b, "properties"));
   const required = strings(own(b, "required"));
@@ -151,10 +208,11 @@ function properties(r: Report, where: string, ptr: string[], a: Obj, b: Obj, dir
     own(a, "additionalProperties") === false && own(b, "additionalProperties") === false;
   for (const n of keysOf(pa, pb)) {
     if (!has(pa, n)) {
-      const safe = !required.includes(n) && (dir === "response" || closed);
+      const safe =
+        positive && !required.includes(n) && !constrains(a, n) && (dir === "response" || closed);
       if (!safe) r.add(where, [...ptr, n], "field added");
     } else if (!has(pb, n)) r.add(where, [...ptr, n], "field removed");
-    else schema(r, where, [...ptr, n], pa[n], pb[n], dir);
+    else schema(r, where, [...ptr, n], pa[n], pb[n], dir, positive);
   }
 }
 
