@@ -35,4 +35,3 @@ export {
   PersistentDevelopmentEd25519SigningKeyProvider,
   type DevelopmentSigningKeyFault,
 } from "./persistent-development-ed25519-signer.ts";
-export { FakeKmsClient } from "./fake-kms-client.ts";

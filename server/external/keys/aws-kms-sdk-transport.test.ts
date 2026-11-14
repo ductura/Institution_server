@@ -30,7 +30,7 @@ import {
   type KmsCommandSender,
   type KmsTransportErrorKind,
 } from "./aws-kms-sdk-transport.ts";
-import { FakeKmsClient } from "./fake-kms-client.ts";
+import { FakeKmsClient } from "../../../test-support/fake-kms/index.ts";
 
 const ARN = "arn:aws:kms:eu-central-1:000000000000:key/sinteticki-1";
 const OTHER_ARN = "arn:aws:kms:eu-central-1:000000000000:key/sinteticki-2";

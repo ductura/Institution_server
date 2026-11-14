@@ -21,8 +21,8 @@ import {
   AWS_KMS_ED25519_KEY_SPEC,
   AWS_KMS_RAW_MESSAGE_TYPE,
   AWS_KMS_SIGN_VERIFY_USAGE,
-} from "./aws-kms-ed25519-signer.ts";
-import type { KmsCommandSender } from "./aws-kms-sdk-transport.ts";
+  type KmsCommandSender,
+} from "../../server/external/keys/index.ts";
 
 const META = { $metadata: {} };
 const MAX_RAW_MESSAGE_BYTES = 4096;
