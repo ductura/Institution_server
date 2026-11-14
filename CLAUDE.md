@@ -36,16 +36,19 @@ Izvor: Ductus [CLAUDE.md](https://github.com/danielrisavi77-create/Ductus/blob/m
 
 | U Ductusu | U ductura/server |
 | --- | --- |
-| `db/migrations/`, `db/tests/` | `db/` (migracije i pgTAP testovi; zasad prazno) |
+| `db/migrations/` | `db/migrations/` (još ne postoji) |
+| `db/tests/` | `db/tests/` (pgTAP; još ne postoji) |
+| `src/server/db/` | `server/database/` ([docs/CODE_STYLE.md](docs/CODE_STYLE.md) §9; još ne postoji) |
 | `infra/fake-oidc/` | `test-support/fake-oidc/` |
 | `src/server/`, `app/api/` | `server/` |
 | `src/lib/i18n/` i tekstovi sučelja | `locales/` |
 | `tests/`, `**/*.test.ts` | `server/**/*.test.ts` i `test-support/` ([README.md](README.md), „Testovi”) |
 | issue #1091 za izvještaje sesija u oblaku | Ductus issue #1836 |
+| issue ovog repoa, labele `ready-for-claude` i `claude:in-progress`, `Closes #N` | issuei i labele su u Ductusu; zadatke servera dodjeljuje orkestrator (D-111), pa PR nosi `DAN-xxx` i `Task:` s izvorom zadatka |
 | `pnpm orch:overlap`, `pnpm orch:preflight` | još ne postoje (S-0.21); u izvještaju napiši da su preskočeni |
 | `scripts/forbidden-terms/scan.ts` | još ne postoji; do tada rječnik provjerava review |
 
-Pravila po putanjama su u [.claude/rules/](.claude/rules/) i podsjetnik su, ne nova pravila. Provodi ih test `server/agent-rules.test.ts`: svako pravilo mora upućivati na postojeći izvor.
+Pravila po putanjama su u [.claude/rules/](.claude/rules/) i podsjetnik su, ne nova pravila. Test `server/agent-rules.test.ts` provjerava da svaka datoteka pravila upućuje na izvor u Ductusu i da svaka poveznica vodi na postojeći dokument; da je svaka stavka preslika izvora, provjerava review.
 
 ## Jezik
 

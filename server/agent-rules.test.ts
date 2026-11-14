@@ -8,6 +8,7 @@ import {
   ductusPath,
   externalLinkProblems,
   extractLinks,
+  extractUrls,
   listRuleFiles,
   rulePathProblems,
   rulePaths,
@@ -24,10 +25,25 @@ describe("helpers", () => {
     dir = "";
   });
 
-  it("extracts inline links outside code", () => {
-    expect(extractLinks("[a](x.md) `[b](y.md)`\n```\n[c](z.md)\n```\n[d](https://e.invalid)")).toEqual([
-      "x.md",
-      "https://e.invalid",
+  it("extracts inline and reference links outside code", () => {
+    const md = '[a](x.md) `[b](y.md)`\n```\n[c](z.md)\n```\n[d](https://e.invalid "t")\n[r]: docs/R.md\n';
+    expect(extractLinks(md)).toEqual(["x.md", "https://e.invalid", "docs/R.md"]);
+  });
+
+  it("finds URLs in every form: titled, reference, autolink and bare", () => {
+    const md = [
+      '[a](https://a.invalid/1.md "naslov")',
+      "[b][1]",
+      "[1]: https://b.invalid/2.md",
+      "<https://c.invalid/3.md>",
+      "vidi https://d.invalid/4.md danas",
+      "`https://e.invalid/kod.md`",
+    ].join("\n");
+    expect(extractUrls(md)).toEqual([
+      "https://a.invalid/1.md",
+      "https://b.invalid/2.md",
+      "https://c.invalid/3.md",
+      "https://d.invalid/4.md",
     ]);
   });
 
@@ -42,25 +58,46 @@ describe("helpers", () => {
       `[nepoznat](${DUCTUS_BLOB_PREFIX}docs/NEMA.md)`,
       "[strani](https://example.invalid/pravila.md)",
       "[lokalni](docs/CODE_STYLE.md)",
+      "<https://example.invalid/auto.md> i gola https://example.invalid/gola.md",
+      "[zp](//example.invalid/proto.md)",
     ].join(" ");
     expect(externalLinkProblems("F.md", md)).toEqual([
       `F.md: ${DUCTUS_BLOB_PREFIX}docs/NEMA.md (unknown Ductus source)`,
       "F.md: https://example.invalid/pravila.md (not a Ductus main link)",
+      "F.md: https://example.invalid/auto.md (not a Ductus main link)",
+      "F.md: https://example.invalid/gola.md (not a Ductus main link)",
+      "F.md: //example.invalid/proto.md (not a Ductus main link)",
     ]);
   });
 
   it("reads paths from front matter and reports missing or bad scopes", () => {
     dir = mkdtempSync(join(tmpdir(), "agent-rules-"));
     mkdirSync(join(dir, "db"));
-    const md = '---\npaths:\n  - "db/**"\n  - \'nema/**\'\n  - "**/*.ts"\n---\n\n# Naslov\n';
-    const paths = rulePaths(md);
-    expect(paths).toEqual(["db/**", "nema/**", "**/*.ts"]);
-    expect(rulePathProblems(dir, "R.md", paths)).toEqual([
+    const md = [
+      "---",
+      "paths:",
+      '  - "db/**"',
+      "  - 'nema/**'",
+      '  - "**/*.ts"',
+      "  - db/tests/**",
+      '  - "db/**" # komentar',
+      "---",
+      "",
+      "# Naslov",
+    ].join("\n");
+    const scope = rulePaths(md);
+    expect(scope).toEqual({
+      paths: ["db/**", "nema/**", "**/*.ts", "db/tests/**"],
+      unreadable: ['- "db/**" # komentar'],
+    });
+    expect(rulePathProblems(dir, "R.md", scope)).toEqual([
+      'R.md: - "db/**" # komentar (unreadable path item)',
       "R.md: nema/** (first segment missing)",
       "R.md: **/*.ts (first segment missing)",
     ]);
-    expect(rulePaths("# Bez zaglavlja\n")).toEqual([]);
-    expect(rulePathProblems(dir, "R.md", [])).toEqual(["R.md: no paths in front matter"]);
+    const empty = rulePaths("# Bez zaglavlja\n");
+    expect(empty).toEqual({ paths: [], unreadable: [] });
+    expect(rulePathProblems(dir, "R.md", empty)).toEqual(["R.md: no paths in front matter"]);
   });
 });
 
@@ -70,10 +107,10 @@ describe("agent instruction adapters", () => {
   });
 
   it.each(ADAPTERS.map((file) => [file.slice(ROOT.length + 1), file]))(
-    "%s names its sources and every link resolves",
+    "%s names a Ductus source and every link resolves",
     (_name, file) => {
       const markdown = readFileSync(file, "utf8");
-      expect(extractLinks(markdown).length).toBeGreaterThan(0);
+      expect(extractUrls(markdown).some((url) => ductusPath(url) !== null)).toBe(true);
       expect(findBrokenLinks([file])).toEqual([]);
       expect(externalLinkProblems(file, markdown)).toEqual([]);
     },
@@ -97,7 +134,7 @@ describe("agent instruction adapters", () => {
 
   it("every known Ductus source is used, so the list does not go stale", () => {
     const used = new Set(
-      ADAPTERS.flatMap((file) => extractLinks(readFileSync(file, "utf8")).map(ductusPath)),
+      ADAPTERS.flatMap((file) => extractUrls(readFileSync(file, "utf8")).map(ductusPath)),
     );
     expect([...DUCTUS_SOURCES].filter((path) => !used.has(path))).toEqual([]);
   });

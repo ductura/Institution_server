@@ -11,5 +11,5 @@ Podsjetnik, ne pravilo. Pravila su u Ductus [CLAUDE.md](https://github.com/danie
 - Svaka nova tablica ima RLS i retke u pgTAP matrici pristupa.
 - Pisanje klijenta u tablice evidencije, predaje i revizijskog traga ide samo kroz RPC; provjeri to u pgTAP matrici, ne samo u kodu.
 - Pristup nastaje samo iz odnosa, ne iz uloge (Ustav C-23; Ductus [docs/PRODUCT.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/PRODUCT.md) §3).
-- RLS, pgTAP matrica i sve migracije (`db/migrations/`) su najmanje `Risk: critical` (Ductus [docs/ENGINEERING_SYSTEM.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/ENGINEERING_SYSTEM.md) §5).
+- RLS, pgTAP matrica, sve migracije (`db/migrations/`) i `server/database/` (u Ductusu `src/server/db/`) su najmanje `Risk: critical` (Ductus [docs/ENGINEERING_SYSTEM.md](https://github.com/danielrisavi77-create/Ductus/blob/main/docs/ENGINEERING_SYSTEM.md) §5).
 - Migracije se nikad ne primjenjuju na produkciju iz agenta.
