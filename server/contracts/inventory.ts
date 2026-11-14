@@ -4,7 +4,8 @@
 // a place in PENDING, fails server/contracts/contracts.test.ts.
 import type { Method } from "./schema/index.ts";
 
-export const INVENTORY_SOURCE = "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md";
+export const INVENTORY_SOURCE =
+  "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md";
 
 export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
   "app/api/[...path]/route.ts": ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -19,15 +20,21 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
   "app/api/evidence/replay/route.ts": ["POST"],
   "app/api/health/route.ts": ["GET"],
   "app/api/institution/assignments/[assignmentId]/acknowledgment/route.ts": ["POST"],
-  "app/api/institution/assignments/[assignmentId]/students/[studentId]/work-language/route.ts": ["POST"],
+  "app/api/institution/assignments/[assignmentId]/students/[studentId]/work-language/route.ts": [
+    "POST",
+  ],
   "app/api/institution/assignments/[assignmentId]/versions/route.ts": ["POST"],
   "app/api/institution/assignments/[assignmentId]/work-language/route.ts": ["POST"],
-  "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts": ["POST"],
+  "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts": [
+    "POST",
+  ],
   "app/api/institution/courses/[courseId]/assignments/route.ts": ["POST"],
   "app/api/institution/courses/[courseId]/enrollment-code/revocation/route.ts": ["POST"],
   "app/api/institution/courses/[courseId]/enrollment-code/route.ts": ["POST"],
   "app/api/institution/courses/[courseId]/students/[studentId]/removal/route.ts": ["POST"],
-  "app/api/institution/courses/[courseId]/students/[studentId]/return-permission/route.ts": ["POST"],
+  "app/api/institution/courses/[courseId]/students/[studentId]/return-permission/route.ts": [
+    "POST",
+  ],
   "app/api/institution/courses/route.ts": ["POST"],
   "app/api/institution/enrollments/route.ts": ["POST"],
   "app/api/institution/teachers/[teacherId]/role-confirmation/route.ts": ["POST"],

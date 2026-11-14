@@ -14,8 +14,22 @@ const ACCEPTED: [string | undefined, number][] = [
 for (const [value, port] of ACCEPTED) {
   test(`PORT ${JSON.stringify(value)} is ${port}`, () => expect(listenPort(value)).toBe(port));
 }
-for (const value of ["", " ", "abc", "-1", "65536", "99999", "80.5", "1e3", " 8090", "8090 ", "0x1f90", "123456"]) {
-  test(`PORT ${JSON.stringify(value)} is refused`, () => expect(() => listenPort(value)).toThrow(/PORT/));
+for (const value of [
+  "",
+  " ",
+  "abc",
+  "-1",
+  "65536",
+  "99999",
+  "80.5",
+  "1e3",
+  " 8090",
+  "8090 ",
+  "0x1f90",
+  "123456",
+]) {
+  test(`PORT ${JSON.stringify(value)} is refused`, () =>
+    expect(() => listenPort(value)).toThrow(/PORT/));
 }
 
 test("createFakeOidc refuses a mode outside the four, as the environment does", () => {

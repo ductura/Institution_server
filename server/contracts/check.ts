@@ -11,7 +11,8 @@ export function pathOf(inventoryFile: string): string {
 export function checkRoute(route: RouteContract): string[] {
   const problems: string[] = [];
   const at = (text: string) => problems.push(`${route.id}: ${text}`);
-  if (!/^[a-z][a-z-]*(\.[a-z][a-z-]*)+\.(get|post|put|patch|delete)$/.test(route.id)) at("id format");
+  if (!/^[a-z][a-z-]*(\.[a-z][a-z-]*)+\.(get|post|put|patch|delete)$/.test(route.id))
+    at("id format");
   if (!route.id.endsWith(`.${route.method.toLowerCase()}`)) at("id does not end with the method");
   if (!(ACCESS as readonly string[]).includes(route.access)) at("access outside the closed set");
   if (!route.path.startsWith(`${API_PREFIX}/`)) at(`path outside ${API_PREFIX}`);
@@ -19,7 +20,8 @@ export function checkRoute(route: RouteContract): string[] {
   const names = [...route.path.matchAll(/\{([A-Za-z]+)\}/g)].map((m) => m[1]).sort();
   const declared = Object.keys(route.request.params?.properties ?? {}).sort();
   if (names.join() !== declared.join()) at("path parameters and request.params differ");
-  if (route.request.body && (!route.request.contentType || !route.request.maxBodyBytes)) at("body without type or limit");
+  if (route.request.body && (!route.request.contentType || !route.request.maxBodyBytes))
+    at("body without type or limit");
   if (!route.responses.some((r) => r.status >= 200 && r.status < 400)) at("no success response");
   const seen = new Set<string>();
   for (const e of route.errors) {
@@ -43,15 +45,22 @@ export function checkInventory(
   for (const route of routes) {
     if (ids.has(route.id)) problems.push(`${route.id}: duplicate id`);
     ids.add(route.id);
-    if (!inventory[route.inventory]) problems.push(`${route.id}: ${route.inventory} is not in the inventory`);
-    if (pending.includes(route.inventory)) problems.push(`${route.id}: ${route.inventory} is also pending`);
+    if (!inventory[route.inventory])
+      problems.push(`${route.id}: ${route.inventory} is not in the inventory`);
+    if (pending.includes(route.inventory))
+      problems.push(`${route.id}: ${route.inventory} is also pending`);
   }
   for (const [file, methods] of Object.entries(inventory)) {
     if (file === fallbackFile || pending.includes(file)) continue;
-    const have = routes.filter((r) => r.inventory === file).map((r) => r.method).sort();
-    if (have.join() !== [...methods].sort().join()) problems.push(`${file}: methods ${have.join() || "none"}, inventory ${methods.join()}`);
+    const have = routes
+      .filter((r) => r.inventory === file)
+      .map((r) => r.method)
+      .sort();
+    if (have.join() !== [...methods].sort().join())
+      problems.push(`${file}: methods ${have.join() || "none"}, inventory ${methods.join()}`);
   }
-  for (const file of pending) if (!inventory[file]) problems.push(`${file}: pending but not in the inventory`);
+  for (const file of pending)
+    if (!inventory[file]) problems.push(`${file}: pending but not in the inventory`);
   if (!inventory[fallbackFile]) problems.push(`${fallbackFile}: fallback not in the inventory`);
   return problems;
 }

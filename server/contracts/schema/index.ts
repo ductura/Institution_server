@@ -72,7 +72,9 @@ export function defineRoute<const R extends RouteContract>(route: R): R {
 }
 
 export function error(status: number, code: string, body?: ErrorSpec["body"]): ErrorSpec {
-  return body === undefined ? { status, code, key: `errors.${code}` } : { status, code, key: `errors.${code}`, body };
+  return body === undefined
+    ? { status, code, key: `errors.${code}` }
+    : { status, code, key: `errors.${code}`, body };
 }
 
 /** The default error body: exactly one closed word. */

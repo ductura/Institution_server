@@ -2,7 +2,11 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
-const CapabilityStatus = Type.Union([Type.Literal("ok"), Type.Literal("nedostupno"), Type.Literal("nije_konfigurirano")]);
+const CapabilityStatus = Type.Union([
+  Type.Literal("ok"),
+  Type.Literal("nedostupno"),
+  Type.Literal("nije_konfigurirano"),
+]);
 // Only checked capabilities are reported; a missing one was not checked.
 const Capabilities = closed({
   database: Type.Optional(CapabilityStatus),
@@ -10,7 +14,11 @@ const Capabilities = closed({
   signing: Type.Optional(CapabilityStatus),
   queue: Type.Optional(CapabilityStatus),
 });
-const ComponentState = Type.Union([Type.Literal("radi"), Type.Literal("ne_radi"), Type.Literal("nije_ukljuceno")]);
+const ComponentState = Type.Union([
+  Type.Literal("radi"),
+  Type.Literal("ne_radi"),
+  Type.Literal("nije_ukljuceno"),
+]);
 
 export const health = defineRoute({
   id: "platform.health.get",
@@ -33,10 +41,18 @@ export const ready = defineRoute({
   summary: "Readiness per capability, closed words only.",
   request: {},
   responses: [
-    { status: 200, description: "ready", body: closed({ status: Type.Literal("ready"), capabilities: Capabilities }) },
+    {
+      status: 200,
+      description: "ready",
+      body: closed({ status: Type.Literal("ready"), capabilities: Capabilities }),
+    },
   ],
   errors: [
-    error(503, "unavailable", closed({ status: Type.Literal("unavailable"), capabilities: Capabilities })),
+    error(
+      503,
+      "unavailable",
+      closed({ status: Type.Literal("unavailable"), capabilities: Capabilities }),
+    ),
     error(503, "draining", closed({ status: Type.Literal("draining") })),
   ],
 });
@@ -55,7 +71,11 @@ export const status = defineRoute({
       description: "status",
       body: closed({
         checkedAt: Type.String({ format: "date-time", maxLength: 24 }),
-        components: closed({ writing: ComponentState, submission: ComponentState, mentorView: ComponentState }),
+        components: closed({
+          writing: ComponentState,
+          submission: ComponentState,
+          mentorView: ComponentState,
+        }),
       }),
     },
   ],
@@ -63,6 +83,9 @@ export const status = defineRoute({
 });
 
 /** The answer to every /api/v1 path no route handles, for any method (app/api/[...path]). */
-export const FALLBACK = { inventory: "app/api/[...path]/route.ts", error: error(404, "not_found") } as const;
+export const FALLBACK = {
+  inventory: "app/api/[...path]/route.ts",
+  error: error(404, "not_found"),
+} as const;
 
 export const platformRoutes = [health, ready, status] as const;

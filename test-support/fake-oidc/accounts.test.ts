@@ -2,7 +2,13 @@
 // cases, node:test replaced by vitest.
 import { expect, test } from "vitest";
 
-import { DEMO_ACCOUNTS, DEMO_HOME_ORG, DEMO_HOME_ORG_B, demoAccountClaims, type DemoAccountClaims } from "./accounts.ts";
+import {
+  DEMO_ACCOUNTS,
+  DEMO_HOME_ORG,
+  DEMO_HOME_ORG_B,
+  demoAccountClaims,
+  type DemoAccountClaims,
+} from "./accounts.ts";
 
 function claimsOf(id: string): DemoAccountClaims {
   const claims = demoAccountClaims(id);
@@ -11,8 +17,14 @@ function claimsOf(id: string): DemoAccountClaims {
 }
 
 test("fake OIDC provides two distinct synthetic student accounts", () => {
-  const students = Object.entries(DEMO_ACCOUNTS).filter(([, account]) => account.affiliation === "student");
-  expect(students.map(([id]) => id)).toStrictEqual(["demo-student", "demo-student-2", "demo-b-student"]);
+  const students = Object.entries(DEMO_ACCOUNTS).filter(
+    ([, account]) => account.affiliation === "student",
+  );
+  expect(students.map(([id]) => id)).toStrictEqual([
+    "demo-student",
+    "demo-student-2",
+    "demo-b-student",
+  ]);
   expect(new Set(students.map(([, account]) => account.name)).size).toBe(students.length);
 
   for (const [id, account] of students) {
@@ -53,7 +65,8 @@ test("the second synthetic teacher is another staff member of the same home orga
   // Playwright matches a button name as a case-insensitive substring: no
   // account name may contain another, or one click would find two buttons.
   const names = Object.values(DEMO_ACCOUNTS).map((account) => account.name.toLowerCase());
-  for (const name of names) expect(names.filter((other) => other.includes(name)).length, name).toBe(1);
+  for (const name of names)
+    expect(names.filter((other) => other.includes(name)).length, name).toBe(1);
 });
 
 // DAN-483: the AAI@EduHr shape, one institution per account, and a second
@@ -62,7 +75,11 @@ test("every demo account belongs to exactly one of the two invented institutions
   const orgs = new Set<string>();
   for (const [id, account] of Object.entries(DEMO_ACCOUNTS)) {
     const claims = claimsOf(id);
-    for (const key of ["hrEduPersonUniqueID", "hrEduPersonHomeOrg", "hrEduPersonAffiliation"] as const) {
+    for (const key of [
+      "hrEduPersonUniqueID",
+      "hrEduPersonHomeOrg",
+      "hrEduPersonAffiliation",
+    ] as const) {
       expect(Array.isArray(claims[key]) && claims[key].length === 1, `${id} ${key}`).toBe(true);
     }
     const [homeOrg] = claims.hrEduPersonHomeOrg;

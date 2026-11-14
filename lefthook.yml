@@ -1,0 +1,9 @@
+# Installed by `pnpm install` (prepare script). CI runs `pnpm format:check` as
+# well; the hook only fixes formatting before the commit instead of after the
+# push. It formats the staged files and stages the result again; files that are
+# not staged are left as they are. Files that .prettierignore lists are skipped.
+pre-commit:
+  commands:
+    format:
+      run: pnpm exec prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true

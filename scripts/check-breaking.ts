@@ -21,7 +21,10 @@ export function baseDocument(base: string, show = gitShow): unknown {
 
 function gitShow(spec: string): string | null {
   try {
-    return execFileSync("git", ["show", spec], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    return execFileSync("git", ["show", spec], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
   } catch {
     return null;
   }
@@ -36,7 +39,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   } else {
     const problems = breakingChanges(before, openapiDocument());
     if (problems.length > 0) {
-      console.error(`contracts: ${problems.length} change(s) break clients of ${base}:\n${problems.map((p) => `  ${p}`).join("\n")}`);
+      console.error(
+        `contracts: ${problems.length} change(s) break clients of ${base}:\n${problems.map((p) => `  ${p}`).join("\n")}`,
+      );
       process.exit(1);
     }
     console.log(`contracts: no breaking change against ${base}`);

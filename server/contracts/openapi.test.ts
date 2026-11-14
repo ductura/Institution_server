@@ -15,7 +15,9 @@ describe("published OpenAPI v1", () => {
     const major = API_VERSION.split(".")[0];
     expect(API_PREFIX).toBe(`/api/v${major}`);
     expect(OPENAPI_FILE.endsWith(`openapi/v${major}.json`)).toBe(true);
-    expect((JSON.parse(openapiJson()) as { info: { version: unknown } }).info.version).toBe(API_VERSION);
+    expect((JSON.parse(openapiJson()) as { info: { version: unknown } }).info.version).toBe(
+      API_VERSION,
+    );
   });
 
   it("is not also written into server/contracts/generated", () => {
@@ -27,8 +29,18 @@ describe("base document for the CI check", () => {
   const files = (present: Record<string, string>) => (spec: string) => present[spec] ?? null;
 
   it("reads openapi/v1.json, else the generated file of the revision before it, else nothing", () => {
-    expect(baseDocument("b", files({ "b:openapi/v1.json": '{"a":1}', "b:server/contracts/generated/openapi.json": '{"a":2}' }))).toEqual({ a: 1 });
-    expect(baseDocument("b", files({ "b:server/contracts/generated/openapi.json": '{"a":2}' }))).toEqual({ a: 2 });
+    expect(
+      baseDocument(
+        "b",
+        files({
+          "b:openapi/v1.json": '{"a":1}',
+          "b:server/contracts/generated/openapi.json": '{"a":2}',
+        }),
+      ),
+    ).toEqual({ a: 1 });
+    expect(
+      baseDocument("b", files({ "b:server/contracts/generated/openapi.json": '{"a":2}' })),
+    ).toEqual({ a: 2 });
     expect(baseDocument("b", files({}))).toBeNull();
   });
 });

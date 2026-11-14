@@ -14,6 +14,7 @@ function isFakeOidcMode(value: string): value is FakeOidcMode {
 /** The mode from the environment; unset or empty is success, a typo stops the provider. */
 export function fakeOidcMode(value: string | undefined): FakeOidcMode {
   if (value === undefined || value === "") return "success";
-  if (!isFakeOidcMode(value)) throw new Error(`FAKE_OIDC_MODE must be one of ${FAKE_OIDC_MODES.join(", ")}: ${value}`);
+  if (!isFakeOidcMode(value))
+    throw new Error(`FAKE_OIDC_MODE must be one of ${FAKE_OIDC_MODES.join(", ")}: ${value}`);
   return value;
 }

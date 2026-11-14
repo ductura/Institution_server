@@ -21,6 +21,8 @@ jobs:
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
+      - name: Formatiranje
+        run: pnpm format:check
       - name: Unit testovi
         run: pnpm test:unit
       - name: Svojstveni testovi

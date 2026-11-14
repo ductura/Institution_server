@@ -5,14 +5,19 @@
 type Obj = Record<string, unknown>;
 type Direction = "request" | "response";
 
-const obj = (v: unknown): Obj => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Obj) : {});
-const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+const obj = (v: unknown): Obj =>
+  typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Obj) : {};
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
 /** JSON with sorted keys, so two equal schemas give the same text. */
 function canonical(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(canonical).join(",")}]`;
   if (typeof v === "object" && v !== null) {
-    return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canonical((v as Obj)[k])}`).join(",")}}`;
+    return `{${Object.keys(v)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${canonical((v as Obj)[k])}`)
+      .join(",")}}`;
   }
   return JSON.stringify(v);
 }
@@ -28,22 +33,30 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
   const vb = variants(b);
   if (va || vb) {
     // A request must still accept every old value; a response may not send a new one.
-    const [must, have, word] = dir === "request" ? [va ?? [a], vb ?? [b], "no longer accepted"] : [vb ?? [b], va ?? [a], "new in response"];
+    const [must, have, word] =
+      dir === "request"
+        ? [va ?? [a], vb ?? [b], "no longer accepted"]
+        : [vb ?? [b], va ?? [a], "new in response"];
     const known = new Set(have.map(canonical));
     for (const v of must) if (!known.has(canonical(v))) out.push(`${at}: ${word} ${canonical(v)}`);
     return;
   }
-  if (a.type !== b.type) return void out.push(`${at}: type changed from ${String(a.type)} to ${String(b.type)}`);
+  if (a.type !== b.type)
+    return void out.push(`${at}: type changed from ${String(a.type)} to ${String(b.type)}`);
   const fixed = dir === "request" ? b.const : a.const;
-  if (fixed !== undefined && canonical(a.const) !== canonical(b.const)) return void out.push(`${at}: value changed`);
+  if (fixed !== undefined && canonical(a.const) !== canonical(b.const))
+    return void out.push(`${at}: value changed`);
   if (dir === "request") {
     for (const k of ["maxLength", "maximum", "maxItems", "maxProperties"]) {
-      if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] <= b[k])) out.push(`${at}: ${k} lowered`);
+      if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] <= b[k]))
+        out.push(`${at}: ${k} lowered`);
     }
     for (const k of ["minLength", "minimum", "minItems", "minProperties"]) {
-      if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] >= b[k])) out.push(`${at}: ${k} raised`);
+      if (typeof b[k] === "number" && !(typeof a[k] === "number" && a[k] >= b[k]))
+        out.push(`${at}: ${k} raised`);
     }
-    for (const k of ["format", "pattern"]) if (b[k] !== undefined && b[k] !== a[k]) out.push(`${at}: ${k} changed`);
+    for (const k of ["format", "pattern"])
+      if (b[k] !== undefined && b[k] !== a[k]) out.push(`${at}: ${k} changed`);
   }
   if (a.type === "array") schema(`${at}[]`, obj(a.items), obj(b.items), dir, out);
   if (a.type !== "object") return;
@@ -58,7 +71,8 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
       else if (b.additionalProperties === false) out.push(`${where}: field no longer accepted`);
       continue;
     }
-    if (dir === "response" && ra.has(name) && !rb.has(name)) out.push(`${where}: field became optional`);
+    if (dir === "response" && ra.has(name) && !rb.has(name))
+      out.push(`${where}: field became optional`);
     schema(where, obj(s), obj(pb[name]), dir, out);
   }
   if (dir === "request") {
@@ -68,27 +82,36 @@ function schema(at: string, a: Obj, b: Obj, dir: Direction, out: string[]): void
       const extra = a.additionalProperties;
       for (const [name, s] of Object.entries(pb)) {
         if (name in pa) continue;
-        if (typeof extra === "object" && extra !== null) schema(`${at}.${name}`, obj(extra), obj(s), dir, out);
+        if (typeof extra === "object" && extra !== null)
+          schema(`${at}.${name}`, obj(extra), obj(s), dir, out);
         else if (canonical(s) !== "{}") out.push(`${at}.${name}: field now constrained`);
       }
     }
-    if (a.additionalProperties !== false && b.additionalProperties === false) out.push(`${at}: extra fields no longer accepted`);
+    if (a.additionalProperties !== false && b.additionalProperties === false)
+      out.push(`${at}: extra fields no longer accepted`);
   }
 }
 
 function parameters(at: string, a: Obj, b: Obj, out: string[]): void {
-  const byKey = (op: Obj) => new Map(Array.isArray(op.parameters) ? op.parameters.map(obj).map((p) => [`${String(p.in)}:${String(p.name)}`, p]) : []);
+  const byKey = (op: Obj) =>
+    new Map(
+      Array.isArray(op.parameters)
+        ? op.parameters.map(obj).map((p) => [`${String(p.in)}:${String(p.name)}`, p])
+        : [],
+    );
   const pa = byKey(a);
   const pb = byKey(b);
   for (const [key, p] of pa) {
     const q = pb.get(key);
     if (!q) out.push(`${at}: parameter ${key} removed`);
     else {
-      if (p.required !== true && q.required === true) out.push(`${at}: parameter ${key} became required`);
+      if (p.required !== true && q.required === true)
+        out.push(`${at}: parameter ${key} became required`);
       schema(`${at} parameter ${key}`, obj(p.schema), obj(q.schema), "request", out);
     }
   }
-  for (const [key, q] of pb) if (!pa.has(key) && q.required === true) out.push(`${at}: new required parameter ${key}`);
+  for (const [key, q] of pb)
+    if (!pa.has(key) && q.required === true) out.push(`${at}: new required parameter ${key}`);
 }
 
 function requestBody(at: string, a: Obj, b: Obj, out: string[]): void {
@@ -103,7 +126,8 @@ function requestBody(at: string, a: Obj, b: Obj, out: string[]): void {
   }
   const la = a["x-max-body-bytes"];
   const lb = b["x-max-body-bytes"];
-  if (typeof lb === "number" && !(typeof la === "number" && la <= lb)) out.push(`${at}: body limit lowered`);
+  if (typeof lb === "number" && !(typeof la === "number" && la <= lb))
+    out.push(`${at}: body limit lowered`);
 }
 
 function successResponses(at: string, a: Obj, b: Obj, out: string[]): void {
@@ -118,9 +142,11 @@ function successResponses(at: string, a: Obj, b: Obj, out: string[]): void {
     const ja = obj(obj(r).content)["application/json"];
     const jb = obj(next.content)["application/json"];
     if (ja !== undefined && jb === undefined) out.push(`${at}: response ${status} body removed`);
-    else if (ja !== undefined) schema(`${at} response ${status}`, obj(obj(ja).schema), obj(obj(jb).schema), "response", out);
+    else if (ja !== undefined)
+      schema(`${at} response ${status}`, obj(obj(ja).schema), obj(obj(jb).schema), "response", out);
     const hb = obj(next.headers);
-    for (const h of Object.keys(obj(obj(r).headers))) if (!(h in hb)) out.push(`${at}: response ${status} header ${h} removed`);
+    for (const h of Object.keys(obj(obj(r).headers)))
+      if (!(h in hb)) out.push(`${at}: response ${status} header ${h} removed`);
   }
 }
 
@@ -139,12 +165,19 @@ function version(before: Obj, after: Obj, out: string[]): void {
   const a = parseVersion(obj(before.info).version, false);
   const b = parseVersion(raw, true);
   if (!b) return void out.push(`info.version: ${String(raw)} is not major.minor.patch`);
-  if (!a) return void out.push(`info.version: the base version ${String(obj(before.info).version)} is unreadable`);
-  if (a[0] !== b[0]) out.push(`info.version: major changed from ${a[0]} to ${b[0]}; a new major is a new document`);
+  if (!a)
+    return void out.push(
+      `info.version: the base version ${String(obj(before.info).version)} is unreadable`,
+    );
+  if (a[0] !== b[0])
+    out.push(`info.version: major changed from ${a[0]} to ${b[0]}; a new major is a new document`);
   const order = b.map((n, i) => n - (a[i] ?? 0)).find((d) => d !== 0) ?? 0;
   const body = (d: Obj) => canonical({ ...d, info: { ...obj(d.info), version: null } });
   if (order < 0) out.push(`info.version: lowered from ${a.join(".")} to ${b.join(".")}`);
-  else if (order === 0 && body(before) !== body(after)) out.push(`info.version: the document changed but the version did not rise above ${a.join(".")}`);
+  else if (order === 0 && body(before) !== body(after))
+    out.push(
+      `info.version: the document changed but the version did not rise above ${a.join(".")}`,
+    );
 }
 
 /** Every change from `before` to `after` that breaks a client of `before`; empty when none. */

@@ -1,4 +1,5 @@
 import { defineConfig } from "eslint/config";
+import prettierOff from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 import { localPlugin } from "./scripts/lint-rules/index.ts";
 
@@ -35,12 +36,7 @@ const WIRE_NAMES = [
 // Names fixed outside this repository that are not wire names: process
 // environment variables and the oidc-provider configuration keys (Configuration
 // "ttl"). A closed list of exact names, only for properties.
-const FIXED_NAMES = [
-  "NODE_ENV",
-  "PORT",
-  "IdToken",
-  "AccessToken",
-];
+const FIXED_NAMES = ["NODE_ENV", "PORT", "IdToken", "AccessToken"];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.
@@ -103,4 +99,7 @@ export default defineConfig(
       ],
     },
   },
+  // Last on purpose: switches off every rule that could fight Prettier, also in
+  // blocks above. tests/format/format.test.ts checks the resolved config.
+  prettierOff,
 );

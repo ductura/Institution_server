@@ -52,7 +52,10 @@ export function readAreas(markdown: string): { areas: MapArea[]; problems: strin
 }
 
 /** Allowed imports from section 2: area key to the area keys it may import. */
-export function readImports(markdown: string): { imports: Map<string, string[]>; problems: string[] } {
+export function readImports(markdown: string): {
+  imports: Map<string, string[]>;
+  problems: string[];
+} {
   const imports = new Map<string, string[]>();
   const problems: string[] = [];
   for (const cells of readTable(markdown, "## 2. Dopušteni uvozi")) {
@@ -60,7 +63,8 @@ export function readImports(markdown: string): { imports: Map<string, string[]>;
     const cell = cells[1] ?? "";
     const targets = backticked(cell);
     if (imports.has(area)) problems.push(`${area}: listed twice`);
-    else if (targets.length === 0 && cell !== "—") problems.push(`${area}: write targets in backticks or —`);
+    else if (targets.length === 0 && cell !== "—")
+      problems.push(`${area}: write targets in backticks or —`);
     else imports.set(area, targets);
   }
   return { imports, problems };
@@ -69,7 +73,8 @@ export function readImports(markdown: string): { imports: Map<string, string[]>;
 /** Area keys named in backticks in the "Tko ga zove" column of section 1. */
 export function readCallers(markdown: string): Map<string, string[]> {
   const callers = new Map<string, string[]>();
-  for (const cells of readTable(markdown, "## 1. Područja")) callers.set(cells[0] ?? "", backticked(cells[3] ?? ""));
+  for (const cells of readTable(markdown, "## 1. Područja"))
+    callers.set(cells[0] ?? "", backticked(cells[3] ?? ""));
   return callers;
 }
 
@@ -80,7 +85,9 @@ function backticked(cell: string): string[] {
 /** Folders directly in server/ and server/external/, as area keys (`external/x`). */
 export function listAreaFolders(root: string): string[] {
   const dirsIn = (path: string): string[] =>
-    existsSync(path) ? readdirSync(path).filter((name) => statSync(join(path, name)).isDirectory()) : [];
+    existsSync(path)
+      ? readdirSync(path).filter((name) => statSync(join(path, name)).isDirectory())
+      : [];
   const top = dirsIn(join(root, "server"));
   const external = dirsIn(join(root, "server", "external")).map((name) => `external/${name}`);
   return [...top.filter((name) => name !== "external"), ...external].sort();
@@ -91,11 +98,13 @@ export function checkFolders(areas: MapArea[], folders: string[]): string[] {
   const problems: string[] = [];
   for (const area of areas) {
     const exists = folders.includes(area.key);
-    if (area.status === "postoji" && !exists) problems.push(`${area.dir} is marked postoji but is missing`);
+    if (area.status === "postoji" && !exists)
+      problems.push(`${area.dir} is marked postoji but is missing`);
     if (area.status === "planirano" && exists) problems.push(`${area.dir} exists: mark it postoji`);
   }
   for (const folder of folders) {
-    if (!areas.some((a) => a.key === folder)) problems.push(`server/${folder} is not in docs/server-map.md`);
+    if (!areas.some((a) => a.key === folder))
+      problems.push(`server/${folder} is not in docs/server-map.md`);
   }
   return problems;
 }

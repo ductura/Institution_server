@@ -110,18 +110,24 @@ describe("every route is complete", () => {
 });
 
 describe("server/contracts imports only the schema library", () => {
-  const sources = readdirSync(CONTRACTS_DIR, { recursive: true, encoding: "utf8" })
-    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+  const sources = readdirSync(CONTRACTS_DIR, { recursive: true, encoding: "utf8" }).filter(
+    (f) => f.endsWith(".ts") && !f.endsWith(".test.ts"),
+  );
 
   it.each(sources)("%s", (file) => {
     const text = readFileSync(join(CONTRACTS_DIR, file), "utf8");
-    const specifiers = [...text.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)].map((m) => m[1] ?? "");
+    const specifiers = [...text.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)].map(
+      (m) => m[1] ?? "",
+    );
     for (const spec of specifiers) {
       const target = resolve(dirname(join(CONTRACTS_DIR, file)), spec);
       const inside = spec.startsWith(".") && !relative(CONTRACTS_DIR, target).startsWith("..");
       const allowed = inside || spec === "@sinclair/typebox";
       // The generated fake server is the one file that may use node:http.
-      expect(allowed || (file === join("generated", "fake-server", "index.ts") && spec === "node:http"), `${file}: ${spec}`).toBe(true);
+      expect(
+        allowed || (file === join("generated", "fake-server", "index.ts") && spec === "node:http"),
+        `${file}: ${spec}`,
+      ).toBe(true);
     }
   });
 });
@@ -166,8 +172,12 @@ describe("generated validators", () => {
   });
 
   it("login and back-channel logout ignore extra keys, like the Ductus routes", () => {
-    expect(validateInput("auth.login.get", "query", { returnTo: "/x".repeat(2000), utm: "1" })).toBe(true);
-    expect(validateInput("auth.backchannel-logout.post", "body", { logout_token: "t", extra: "1" })).toBe(true);
+    expect(
+      validateInput("auth.login.get", "query", { returnTo: "/x".repeat(2000), utm: "1" }),
+    ).toBe(true);
+    expect(
+      validateInput("auth.backchannel-logout.post", "body", { logout_token: "t", extra: "1" }),
+    ).toBe(true);
     expect(validateInput("auth.backchannel-logout.post", "body", { extra: "1" })).toBe(false);
   });
 });
@@ -186,23 +196,46 @@ describe("generated client", () => {
   it("sends JSON under /api/v1 and returns the body", async () => {
     const f = fakeFetch(200, { locale: "en" });
     const call = createClient("https://api.primjer.invalid", f.impl);
-    const res = await call("profile.interface-locale.post", { params: undefined, query: undefined, body: { locale: "en" } });
+    const res = await call("profile.interface-locale.post", {
+      params: undefined,
+      query: undefined,
+      body: { locale: "en" },
+    });
     expect(res).toEqual({ ok: true, status: 200, body: { locale: "en" }, headers: {} });
     expect(f.calls[0]?.url).toBe("https://api.primjer.invalid/api/v1/profile/interface-locale");
-    expect(f.calls[0]?.init).toMatchObject({ method: "POST", body: '{"locale":"en"}', redirect: "manual" });
+    expect(f.calls[0]?.init).toMatchObject({
+      method: "POST",
+      body: '{"locale":"en"}',
+      redirect: "manual",
+    });
   });
 
   it("maps errors to contract codes, unknown ones to unexpected", async () => {
     const id = "profile.interface-locale.post";
     const input = { params: undefined, query: undefined, body: { locale: "hr" as const } };
-    const c = (status: number, body?: unknown) => createClient("https://a.invalid", fakeFetch(status, body).impl)(id, input);
-    expect(await c(403, { error: "cross_site" })).toEqual({ ok: false, status: 403, code: "cross_site" });
+    const c = (status: number, body?: unknown) =>
+      createClient("https://a.invalid", fakeFetch(status, body).impl)(id, input);
+    expect(await c(403, { error: "cross_site" })).toEqual({
+      ok: false,
+      status: 403,
+      code: "cross_site",
+    });
     expect(await c(422)).toEqual({ ok: false, status: 422, code: "invalid_input" });
-    expect(await c(403, { error: "made_up" })).toEqual({ ok: false, status: 403, code: "unexpected" });
-    expect(await c(422, { error: "made_up" })).toEqual({ ok: false, status: 422, code: "unexpected" });
+    expect(await c(403, { error: "made_up" })).toEqual({
+      ok: false,
+      status: 403,
+      code: "unexpected",
+    });
+    expect(await c(422, { error: "made_up" })).toEqual({
+      ok: false,
+      status: 422,
+      code: "unexpected",
+    });
     expect(await c(500)).toEqual({ ok: false, status: 500, code: "unexpected" });
     const ready = createClient("https://a.invalid", fakeFetch(503, { status: "draining" }).impl);
-    expect(await ready("platform.ready.get", { params: undefined, query: undefined, body: undefined })).toEqual({
+    expect(
+      await ready("platform.ready.get", { params: undefined, query: undefined, body: undefined }),
+    ).toEqual({
       ok: false,
       status: 503,
       code: "draining",
@@ -210,22 +243,37 @@ describe("generated client", () => {
   });
 
   it("returns the contracted redirect headers: location and every set-cookie", async () => {
-    const headers = new Headers({ location: "https://idp.primjer.invalid/authorize", "x-other": "1" });
+    const headers = new Headers({
+      location: "https://idp.primjer.invalid/authorize",
+      "x-other": "1",
+    });
     headers.append("set-cookie", "a=1; HttpOnly");
     headers.append("set-cookie", "b=2; HttpOnly");
-    const impl = (async () => new Response(null, { status: 303, headers })) as unknown as typeof fetch;
-    const res = await createClient("https://a.invalid", impl)("auth.login.get", { params: undefined, query: {}, body: undefined });
+    const impl = (async () =>
+      new Response(null, { status: 303, headers })) as unknown as typeof fetch;
+    const res = await createClient("https://a.invalid", impl)("auth.login.get", {
+      params: undefined,
+      query: {},
+      body: undefined,
+    });
     expect(res).toEqual({
       ok: true,
       status: 303,
       body: undefined,
-      headers: { location: "https://idp.primjer.invalid/authorize", "set-cookie": ["a=1; HttpOnly", "b=2; HttpOnly"] },
+      headers: {
+        location: "https://idp.primjer.invalid/authorize",
+        "set-cookie": ["a=1; HttpOnly", "b=2; HttpOnly"],
+      },
     });
   });
 
   it("leaves out an undefined query value", async () => {
     const f = fakeFetch(303);
-    await createClient("https://a.invalid", f.impl)("auth.login.get", { params: undefined, query: { returnTo: undefined } as unknown as { returnTo?: string }, body: undefined });
+    await createClient("https://a.invalid", f.impl)("auth.login.get", {
+      params: undefined,
+      query: { returnTo: undefined } as unknown as { returnTo?: string },
+      body: undefined,
+    });
     expect(f.calls[0]?.url).toBe("https://a.invalid/api/v1/auth/login");
   });
 
@@ -238,6 +286,8 @@ describe("generated client", () => {
     });
     expect(res).toEqual({ ok: true, status: 200, body: undefined, headers: {} });
     expect(f.calls[0]?.init.body).toBe("logout_token=izmisljeni.token");
-    expect(f.calls[0]?.init.headers).toEqual({ "content-type": "application/x-www-form-urlencoded" });
+    expect(f.calls[0]?.init.headers).toEqual({
+      "content-type": "application/x-www-form-urlencoded",
+    });
   });
 });
