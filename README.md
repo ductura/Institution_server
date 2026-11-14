@@ -29,7 +29,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 |---|---|
 | `server/` | Kod poslužitelja i testovi uz njega |
 | `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera |
-| `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
+| `locales/` | Hrvatski tekstovi sučelja i poruka (zasad samo poruke gatea, `locales/hr.json`) |
 | `db/` | Migracije i pgTAP testovi (prazno) |
 | `test-support/` | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`) |
 | `docs/` | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |

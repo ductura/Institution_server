@@ -136,7 +136,7 @@ describe("risk floor", () => {
   });
 
   it("keeps the floor for a rename out of a critical path and for a deletion", () => {
-    const renamed = changedPaths([{ filename: "docs/moved.md", previous_filename: "server/session/a.ts" }]);
+    const renamed = changedPaths([{ filename: "docs/moved.md", previousFilename: "server/session/a.ts" }]);
     expect(minimumRisk(renamed).risk).toBe("critical");
     expect(minimumRisk(changedPaths([{ filename: ".github/workflows/ci.yml" }])).risk).toBe("critical");
   });
@@ -201,6 +201,28 @@ describe("PR metadata", () => {
         "Declared Risk low is below minimum critical (governance/trust-critical path; executable/runtime/config path).",
       );
     }
+  });
+
+  it("has a Croatian text in locales/hr.json for every error key", () => {
+    const catalogue: unknown = JSON.parse(readFileSync(resolve(ROOT, "locales/hr.json"), "utf8"));
+    const lookup = (key: string): unknown =>
+      key.split(".").reduce<unknown>((node, part) => (node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined), catalogue);
+    const bodies = [
+      "Risk: low\nTask: DAN-1\n",
+      "Agent: claude:w1:qa\nTask: DAN-1\n",
+      "Agent: claude:w1:qa\nRisk: low\n",
+      body("low"),
+    ];
+    const codes = new Set<string>();
+    for (const prBody of bodies) {
+      const result = evaluateMetadata(prBody, [".github/x.yml"]);
+      expect(result.ok).toBe(false);
+      if (result.ok) continue;
+      codes.add(result.error.code);
+      const value = lookup(result.error.messageKey);
+      expect(typeof value === "string" && value.length > 0, result.error.messageKey).toBe(true);
+    }
+    expect([...codes].sort()).toEqual(["AGENT_INVALID", "RISK_BELOW_FLOOR", "RISK_INVALID", "TASK_MISSING"]);
   });
 
   it("ships a PR template whose placeholders fail closed", () => {

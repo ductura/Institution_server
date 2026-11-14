@@ -112,13 +112,16 @@ export function minimumRisk(paths: readonly string[]): { risk: Risk; labels: str
   return { risk: RISKS[rank] ?? "critical", labels: [...labels] };
 }
 
-/** Paths of a REST pull-request files list; a rename counts under both names. */
+/**
+ * Paths of a pull-request files list; a rename counts under both names. The
+ * caller maps the REST field `previous_filename` to `previousFilename`.
+ */
 export function changedPaths(
-  files: readonly { filename: string; previous_filename?: string }[],
+  files: readonly { filename: string; previousFilename?: string }[],
 ): string[] {
   const out = new Set<string>();
   for (const file of files) {
-    for (const path of [file.filename, file.previous_filename]) if (path) out.add(normalizePath(path));
+    for (const path of [file.filename, file.previousFilename]) if (path) out.add(normalizePath(path));
   }
   return [...out].sort();
 }
