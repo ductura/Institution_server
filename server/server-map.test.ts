@@ -170,11 +170,29 @@ describe("docs/server-map.md", () => {
     expect(imports.get("contracts")).toEqual([]);
     expect(importers("http")).toEqual(["test-server"]);
     expect(importers("test-server")).toEqual([]);
+    // Adapters reach only the shared infrastructure; storage and keys may also
+    // use domain (Ductus#87 c.6884683623), still inward, as database does.
+    const infrastructure = ["settings", "log", "metrics"];
+    const mayUseDomain = ["external/storage", "external/keys"];
     for (const area of keys.filter((k) => k.startsWith("external/"))) {
-      expect(imports.get(area)?.filter((t) => !["settings", "log", "metrics"].includes(t))).toEqual(
-        [],
-      );
+      const allowed = mayUseDomain.includes(area) ? [...infrastructure, "domain"] : infrastructure;
+      expect(
+        imports.get(area)?.filter((t) => !allowed.includes(t)),
+        `${area} imports`,
+      ).toEqual([]);
     }
+  });
+
+  it("lets only storage and keys among the adapters import domain", () => {
+    expect(imports.get("external/storage")).toContain("domain");
+    expect(imports.get("external/keys")).toContain("domain");
+    expect(imports.get("external/srce-auth")).not.toContain("domain");
+    expect(imports.get("external/email")).not.toContain("domain");
+    expect(
+      importers("domain")
+        .filter((a) => a.startsWith("external/"))
+        .sort(),
+    ).toEqual(["external/keys", "external/storage"]);
   });
 
   it("names as callers exactly the areas that may import each area", () => {
