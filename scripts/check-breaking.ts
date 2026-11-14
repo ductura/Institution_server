@@ -37,14 +37,23 @@ export function gitShow(revision: string, file: string, run: Git = git): string 
   return run(["cat-file", "blob", `${revision}:${file}`]);
 }
 
-/** The published document at `base`, or null when that revision has none. */
+/**
+ * The published document at `base`, or null only when that revision has none.
+ * A document that is there but does not parse to a JSON object throws, so its
+ * content (e.g. `null`) can never read as a missing document.
+ */
 export function baseDocument(
   base: string,
   show: (revision: string, file: string) => string | null = gitShow,
 ): unknown {
   for (const file of BASE_FILES) {
     const text = show(base, file);
-    if (text !== null) return JSON.parse(text);
+    if (text === null) continue;
+    const document: unknown = JSON.parse(text);
+    if (typeof document !== "object" || document === null || Array.isArray(document)) {
+      throw new Error(`${base}:${file} is not a JSON object`);
+    }
+    return document;
   }
   return null;
 }

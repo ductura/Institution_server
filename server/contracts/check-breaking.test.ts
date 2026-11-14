@@ -40,6 +40,14 @@ describe("base document for the CI check", () => {
     };
     expect(() => baseDocument("b", show)).toThrow("read failed");
   });
+
+  it("a document that is there but is not a JSON object is not taken for a missing one", () => {
+    for (const text of ["null", "[]", "1", '"x"', "true"]) {
+      expect(() => baseDocument("b", files({ "b:openapi/v1.json": text }))).toThrow(
+        "b:openapi/v1.json is not a JSON object",
+      );
+    }
+  });
 });
 
 describe("gitShow", () => {
@@ -107,6 +115,7 @@ describe("gitShow and the CLI against a real repository", () => {
   let empty: string;
   let large: string;
   let unreadable: string;
+  let jsonNull: string;
   const bigDocument = JSON.stringify({
     openapi: "3.1.0",
     pad: "x".repeat(2 * DEFAULT_EXEC_BUFFER),
@@ -123,6 +132,9 @@ describe("gitShow and the CLI against a real repository", () => {
     mkdirSync(join(dir, "openapi", "v1.json"));
     writeFileSync(join(dir, "openapi", "v1.json", "part.json"), "{}");
     unreadable = commit("a directory where the document should be");
+    rmSync(join(dir, "openapi", "v1.json"), { recursive: true });
+    writeFileSync(join(dir, "openapi", "v1.json"), "null\n");
+    jsonNull = commit("a document whose content is null");
   });
 
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -162,5 +174,12 @@ describe("gitShow and the CLI against a real repository", () => {
     expect(result.stdout).not.toContain("has no published OpenAPI document");
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("openapi/v1.json");
+  });
+
+  it("the CLI fails with a non-zero exit when the base document is JSON null", () => {
+    const result = check(jsonNull);
+    expect(result.stdout).not.toContain("has no published OpenAPI document");
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("is not a JSON object");
   });
 });
