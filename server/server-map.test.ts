@@ -110,7 +110,12 @@ describe("checkFolders", () => {
 
   it("finds missing, unmarked and unmapped folders", () => {
     dir = mkdtempSync(join(tmpdir(), "server-map-"));
-    for (const path of ["server/contracts", "server/http", "server/stray", "server/external/email"]) {
+    for (const path of [
+      "server/contracts",
+      "server/http",
+      "server/stray",
+      "server/external/email",
+    ]) {
       mkdirSync(join(dir, path), { recursive: true });
     }
     const folders = listAreaFolders(dir);
@@ -165,13 +170,18 @@ describe("docs/server-map.md", () => {
     expect(importers("http")).toEqual(["test-server"]);
     expect(importers("test-server")).toEqual([]);
     for (const area of keys.filter((k) => k.startsWith("external/"))) {
-      expect(imports.get(area)?.filter((t) => !["settings", "log", "metrics"].includes(t))).toEqual([]);
+      expect(imports.get(area)?.filter((t) => !["settings", "log", "metrics"].includes(t))).toEqual(
+        [],
+      );
     }
   });
 
   it("names as callers exactly the areas that may import each area", () => {
     for (const [area, callers] of readCallers(MAP)) {
-      expect(callers.filter((c) => c !== "server.ts" && !keys.includes(c)), `${area}`).toEqual([]);
+      expect(
+        callers.filter((c) => c !== "server.ts" && !keys.includes(c)),
+        `${area}`,
+      ).toEqual([]);
       const named = callers.filter((c) => keys.includes(c)).sort();
       expect(named, `callers of ${area}`).toEqual(importers(area).sort());
     }

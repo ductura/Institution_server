@@ -26,7 +26,13 @@ export const interfaceLocaleGet = defineRoute({
   access: "signed_in",
   summary: "The caller's saved interface language, or null.",
   request: {},
-  responses: [{ status: 200, description: "saved value", body: closed({ locale: Type.Union([Locale, Type.Null()]) }) }],
+  responses: [
+    {
+      status: 200,
+      description: "saved value",
+      body: closed({ locale: Type.Union([Locale, Type.Null()]) }),
+    },
+  ],
   errors: [error(401, "unauthorized"), error(403, "forbidden"), error(503, "unavailable")],
 });
 
@@ -39,7 +45,12 @@ export const interfaceLocalePost = defineRoute({
   summary: "Saves the caller's interface language. Canonical JSON, nothing but the locale.",
   request: { contentType: "application/json", maxBodyBytes: 256, body: closed({ locale: Locale }) },
   responses: [{ status: 200, description: "saved", body: closed({ locale: Locale }) }],
-  errors: [...MUTATION_ERRORS, error(401, "unauthorized"), error(422, "invalid_input"), error(503, "unavailable")],
+  errors: [
+    ...MUTATION_ERRORS,
+    error(401, "unauthorized"),
+    error(422, "invalid_input"),
+    error(503, "unavailable"),
+  ],
 });
 
 export const profileRoutes = [interfaceLocaleGet, interfaceLocalePost] as const;

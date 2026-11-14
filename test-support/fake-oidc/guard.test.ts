@@ -23,7 +23,18 @@ describe("NODE_ENV guard", () => {
     expect(() => assertFakeOidcAllowed({})).not.toThrow();
   });
 
-  const REFUSED = ["production", "Production", "PRODUCTION", " production", "production ", "prod", "staging", " test ", "Test", "development\n"];
+  const REFUSED = [
+    "production",
+    "Production",
+    "PRODUCTION",
+    " production",
+    "production ",
+    "prod",
+    "staging",
+    " test ",
+    "Test",
+    "development\n",
+  ];
   for (const value of REFUSED) {
     test(`refuses NODE_ENV ${JSON.stringify(value)}`, () => {
       expect(() => assertFakeOidcAllowed({ NODE_ENV: value })).toThrow(/fake OIDC/);
@@ -45,7 +56,16 @@ describe("FAKE_OIDC_MODE", () => {
   for (const [value, mode] of ACCEPTED) {
     test(`${JSON.stringify(value)} is ${mode}`, () => expect(fakeOidcMode(value)).toBe(mode));
   }
-  for (const value of ["SUCCESS", "expire", " refuse", "refuse ", "none", "toString", "__proto__"]) {
-    test(`refuses ${JSON.stringify(value)}`, () => expect(() => fakeOidcMode(value)).toThrow(/FAKE_OIDC_MODE/));
+  for (const value of [
+    "SUCCESS",
+    "expire",
+    " refuse",
+    "refuse ",
+    "none",
+    "toString",
+    "__proto__",
+  ]) {
+    test(`refuses ${JSON.stringify(value)}`, () =>
+      expect(() => fakeOidcMode(value)).toThrow(/FAKE_OIDC_MODE/));
   }
 });

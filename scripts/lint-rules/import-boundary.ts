@@ -2,7 +2,12 @@ import path from "node:path";
 import type { Rule } from "eslint";
 
 type Node = Rule.Node;
-type Source = { type: string; value?: unknown; expressions?: unknown[]; quasis?: { value: { cooked?: string | null } }[] };
+type Source = {
+  type: string;
+  value?: unknown;
+  expressions?: unknown[];
+  quasis?: { value: { cooked?: string | null } }[];
+};
 
 /** The literal text of an import source, or null when it is not a static string. */
 function staticText(source: Source | null | undefined): string | null {

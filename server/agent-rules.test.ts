@@ -26,7 +26,8 @@ describe("helpers", () => {
   });
 
   it("extracts inline and reference links outside code", () => {
-    const md = '[a](x.md) `[b](y.md)`\n```\n[c](z.md)\n```\n[d](https://e.invalid "t")\n[r]: docs/R.md\n';
+    const md =
+      '[a](x.md) `[b](y.md)`\n```\n[c](z.md)\n```\n[d](https://e.invalid "t")\n[r]: docs/R.md\n';
     expect(extractLinks(md)).toEqual(["x.md", "https://e.invalid", "docs/R.md"]);
   });
 
@@ -49,7 +50,9 @@ describe("helpers", () => {
 
   it("maps only Ductus main blob links to a Ductus path", () => {
     expect(ductusPath(`${DUCTUS_BLOB_PREFIX}docs/PRODUCT.md#5`)).toBe("docs/PRODUCT.md");
-    expect(ductusPath("https://github.com/danielrisavi77-create/Ductus/blob/feature/CLAUDE.md")).toBeNull();
+    expect(
+      ductusPath("https://github.com/danielrisavi77-create/Ductus/blob/feature/CLAUDE.md"),
+    ).toBeNull();
   });
 
   it("rejects foreign links and unknown Ductus paths, accepts known ones", () => {

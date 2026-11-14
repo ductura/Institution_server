@@ -1,0 +1,8 @@
+# Tool output; everything else is formatted.
+node_modules/
+dist/
+coverage/
+pnpm-lock.yaml
+# Written by `pnpm contracts:generate`; server/contracts/contracts.test.ts keeps it
+# byte for byte equal to a fresh run.
+server/contracts/generated/
