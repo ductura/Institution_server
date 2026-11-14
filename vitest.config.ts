@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 
-// Three projects, told apart by file suffix. Tests live only in server/ with a
-// .test.ts suffix; other files belong to no project and do not run. There is no
+// Three projects, told apart by file suffix. Tests live in server/ (and lint
+// rule tests in tests/) with a .test.ts suffix; other files do not run. There is no
 // passWithNoTests, but vitest fails on an empty project only when that project
 // runs alone, so `pnpm test` and CI run the three projects one by one.
 const PROPERTY = "server/**/*.property.test.ts";
@@ -13,7 +13,7 @@ export default defineConfig({
       {
         test: {
           name: "unit",
-          include: ["server/**/*.test.ts"],
+          include: ["server/**/*.test.ts", "tests/**/*.test.ts"],
           exclude: [PROPERTY, INTEGRATION],
           environment: "node",
         },

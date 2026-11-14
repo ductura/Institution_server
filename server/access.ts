@@ -1,10 +1,10 @@
 // Login and permission helpers.
 
 /** A document as the access rules see it. */
-export interface AccessDoc {
+export type AccessDoc = {
   ownerId: string;
   sharedWith?: string[];
-}
+};
 
 /**
  * Reads the user identity from the Authorization header.

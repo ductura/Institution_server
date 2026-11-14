@@ -1,0 +1,48 @@
+import { defineConfig } from "eslint/config";
+import tseslint from "typescript-eslint";
+import { localPlugin } from "./scripts/lint-rules/index.ts";
+
+// Lint covers the whole repository. Only tool output is ignored; there is no
+// per-folder exception list. Inline directives are off: an `eslint-disable`
+// comment cannot switch a rule off, and `pnpm lint` fails on the warning it
+// leaves (--max-warnings 0), so nothing is silenced quietly.
+export default defineConfig(
+  { ignores: ["**/node_modules/", "**/dist/", "**/coverage/"] },
+  {
+    linterOptions: { noInlineConfig: true },
+    plugins: { "@typescript-eslint": tseslint.plugin, local: localPlugin },
+    languageOptions: { parser: tseslint.parser, sourceType: "module", ecmaVersion: "latest" },
+  },
+  {
+    files: ["**/*.{js,mjs,cjs,jsx,tsx,mts,cts}"],
+    rules: { "local/only-ts": "error" },
+  },
+  {
+    files: ["**/*.ts"],
+    rules: {
+      "local/kebab-case-filename": "error",
+      "local/test-file-suffix": "error",
+      "local/import-boundary": "error",
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+      "no-restricted-syntax": [
+        "error",
+        { selector: "TSEnumDeclaration", message: "enum is not allowed; use a union of literals." },
+      ],
+      "@typescript-eslint/naming-convention": [
+        "error",
+        { selector: "default", format: ["camelCase"] },
+        { selector: "variable", format: ["camelCase", "PascalCase", "UPPER_CASE"] },
+        { selector: "function", format: ["camelCase", "PascalCase"] },
+        { selector: "import", format: ["camelCase", "PascalCase"] },
+        { selector: "typeLike", format: ["PascalCase"] },
+        { selector: ["property", "method", "accessor"], format: ["camelCase", "PascalCase", "UPPER_CASE"] },
+        {
+          selector: ["property", "method", "accessor"],
+          modifiers: ["requiresQuotes"],
+          format: null,
+        },
+      ],
+    },
+  },
+);
