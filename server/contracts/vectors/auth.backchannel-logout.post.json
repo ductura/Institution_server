@@ -1,0 +1,52 @@
+{
+  "route": "auth.backchannel-logout.post",
+  "vectors": [
+    {
+      "name": "sessions-closed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "body": {
+          "logout_token": "izmisljeni.logout.token"
+        }
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "name": "invalid-logout-token",
+      "kind": "error",
+      "code": "invalid_logout_token",
+      "request": {
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "body": {
+          "logout_token": "nije-potpisan"
+        }
+      },
+      "response": {
+        "status": 400
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "body": {
+          "logout_token": "izmisljeni.logout.token"
+        }
+      },
+      "response": {
+        "status": 503
+      }
+    }
+  ]
+}

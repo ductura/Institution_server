@@ -1,0 +1,59 @@
+{
+  "route": "auth.logout.post",
+  "vectors": [
+    {
+      "name": "session-closed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin"
+        }
+      },
+      "response": {
+        "status": 303,
+        "headers": {
+          "location": "/",
+          "set-cookie": [
+            "__Host-ductus_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0"
+          ]
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "origin": "https://drugo.example.invalid",
+          "sec-fetch-site": "cross-site"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "text/html",
+        "body": "<!doctype html><html lang=\"hr\"><title>Ductura</title></html>"
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "text/html",
+        "body": "<!doctype html><html lang=\"hr\"><title>Ductura</title></html>"
+      }
+    }
+  ]
+}
