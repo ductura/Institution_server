@@ -10,24 +10,43 @@ import { openapiDocument } from "./generate-contracts.ts";
 // openapi/v1.json; before DAN-737 the same document lived in the generated folder.
 const BASE_FILES = ["openapi/v1.json", "server/contracts/generated/openapi.json"];
 
+/**
+ * Output limit for one git call. The default of execFileSync (1 MiB) is far
+ * below what a published document may grow to; a larger output still throws.
+ */
+export const GIT_MAX_BUFFER = 256 * 1024 * 1024;
+
+/** Runs git with the given arguments and returns its stdout; throws on any failure. */
+export type Git = (args: string[]) => string;
+
+const git: Git = (args) =>
+  execFileSync("git", args, {
+    encoding: "utf8",
+    maxBuffer: GIT_MAX_BUFFER,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+/**
+ * The content of `file` (relative to the repository root) at `revision`, or
+ * null only when that revision has no such path. Every other failure (unknown
+ * revision, a directory in place of the file, output over the buffer, a git
+ * error) throws, so the check can never pass because the base was unreadable.
+ */
+export function gitShow(revision: string, file: string, run: Git = git): string | null {
+  if (run(["ls-tree", "--full-tree", "--name-only", revision, "--", file]) === "") return null;
+  return run(["cat-file", "blob", `${revision}:${file}`]);
+}
+
 /** The published document at `base`, or null when that revision has none. */
-export function baseDocument(base: string, show = gitShow): unknown {
+export function baseDocument(
+  base: string,
+  show: (revision: string, file: string) => string | null = gitShow,
+): unknown {
   for (const file of BASE_FILES) {
-    const text = show(`${base}:${file}`);
+    const text = show(base, file);
     if (text !== null) return JSON.parse(text);
   }
   return null;
-}
-
-function gitShow(spec: string): string | null {
-  try {
-    return execFileSync("git", ["show", spec], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-  } catch {
-    return null;
-  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
