@@ -18,6 +18,7 @@ pnpm test               # sva tri vitest projekta, jedan za drugim
 pnpm test:unit
 pnpm test:property
 pnpm test:integration
+pnpm contracts:generate # ponovno generira server/contracts/generated iz ugovora
 ```
 
 Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
@@ -27,10 +28,11 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | Mapa | Sadržaj |
 |---|---|
 | `server/` | Kod poslužitelja i testovi uz njega |
+| `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera |
 | `locales/` | Hrvatski tekstovi sučelja i poruka (prazno) |
 | `db/` | Migracije i pgTAP testovi (prazno) |
 | `test-support/` | Zajednička pomagala za testove (prazno) |
-| `docs/` | Dokumentacija na hrvatskom (prazno) |
+| `docs/` | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 | `scripts/` | Alati repoa (lokalna lint pravila) |
 | `tests/` | Testovi alata repoa (lint) |
 
@@ -75,3 +77,11 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 | GET | `/api/documents` | Dokumenti prijavljenog korisnika |
 | GET | `/api/documents/:id` | Jedan dokument (vlasnik ili suradnik) |
 | PUT | `/api/documents/:id` | Izmjena (samo vlasnik) |
+
+## Ugovor API-ja (`server/contracts/`)
+
+Ugovor je izvor koda (DAN-736, Ductura U4). Svaka ruta ima shemu u `server/contracts/routes/`: ulaz (parametri putanje, upit, tijelo, vrsta i najveća veličina tijela), uspješne odgovore, greške (status, zatvoreni kod i ključ za locales `errors.<kod>`) i „tko smije” (`access`, zatvoren skup). „Tko smije” je deklaracija; ovlast i dalje odlučuje baza. `server/contracts` uvozi samo `@sinclair/typebox`.
+
+`pnpm contracts:generate` iz ugovora piše u `server/contracts/generated/`: `validate.ts` (validatori ulaza), `openapi.json` (OpenAPI 3.1), `types.ts`, `client.ts` (fetch klijent, radi i izvan preglednika) i `fake-server.ts` (ruta iz ugovora 501 dok ne dobije vektore, kriva metoda 405, ostalo 404 `not_found`). Generirane datoteke se commitaju; test pada kad se razlikuju od novog generiranja.
+
+Popis ruta je preslika inventara iz Ductusa (`server/contracts/inventory.ts`). Ruta izvan inventara ruši test. Ovaj korak pokriva 10 od 38 datoteka (platforma, prijava, jezik sučelja); ostalih 28 je u popisu `PENDING` i dobiva sheme u sljedećem PR-u. Popis se smije samo smanjivati.

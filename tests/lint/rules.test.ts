@@ -76,6 +76,11 @@ const failing: Case[] = [
   { file: AT, code: "export type myType = string;\n", rule: NAMING },
   { file: AT, code: "export const o = { some_key: 1 };\n", rule: NAMING },
   { file: AT, code: "export const f = (Bad_arg: string): string => Bad_arg;\n", rule: NAMING },
+  // the wire-name list is exact and covers only properties
+  { file: AT, code: "export const o = { logout_token_x: 1 };\n", rule: NAMING },
+  { file: AT, code: "export const o = { x_logout_token: 1 };\n", rule: NAMING },
+  { file: AT, code: "export const logout_token = 1;\n", rule: NAMING },
+  { file: AT, code: "export type logout_token = string;\n", rule: NAMING },
   // no-explicit-any, type over interface, no enum
   { file: AT, code: "export const f = (v: any): void => {};\n", rule: "@typescript-eslint/no-explicit-any" },
   { file: AT, code: "export interface A { a: string }\n", rule: "@typescript-eslint/consistent-type-definitions" },
@@ -105,6 +110,8 @@ const passing: Fixture[] = [
       "export const Schema = { camelKey: 1, UPPER_KEY: 2, 'content-type': 'x' };",
       "export type MyType = { a: string };",
       "export function doThing(value: unknown): unknown { return value; }",
+      "export const body = { logout_token: 'x' };",
+      "export type Body = { logout_token: string };",
       "",
     ].join("\n"),
   },

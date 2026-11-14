@@ -6,6 +6,13 @@ import { localPlugin } from "./scripts/lint-rules/index.ts";
 // per-folder exception list. Inline directives are off: an `eslint-disable`
 // comment cannot switch a rule off, and `pnpm lint` fails on the warning it
 // leaves (--max-warnings 0), so nothing is silenced quietly.
+// Property names an external protocol fixes on the wire. A closed list of exact
+// names, each with its standard; it is not a folder exception and covers only
+// properties, never variables, functions or types.
+const WIRE_NAMES = [
+  "logout_token", // OpenID Connect Back-Channel Logout 1.0, section 2.5
+];
+
 export default defineConfig(
   { ignores: ["**/node_modules/", "**/dist/", "**/coverage/"] },
   {
@@ -42,6 +49,11 @@ export default defineConfig(
         {
           selector: ["property", "method", "accessor"],
           modifiers: ["requiresQuotes"],
+          format: null,
+        },
+        {
+          selector: "property",
+          filter: { regex: `^(?:${WIRE_NAMES.join("|")})$`, match: true },
           format: null,
         },
       ],
