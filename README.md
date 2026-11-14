@@ -33,7 +33,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `openapi/`          | Objavljeni OpenAPI dokument `v1.json`, generiran iz ugovora                                                                                           |
 | `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera                                                    |
 | `locales/`          | Hrvatski tekstovi sučelja i poruka (zasad samo poruke gatea, `locales/hr.json`)                                                                       |
-| `db/`               | Migracije i pgTAP testovi (zasad samo dimni test okruženja CI-ja, `db/tests/00-environment.sql`)                                                      |
+| `db/`               | Migracije i pgTAP testovi (dimni test okruženja CI-ja `db/tests/`, matrica glavne baze `db/main/tests/`)                                              |
 | `test-support/`     | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`)                                                                                   |
 | `docs/`             | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 | `scripts/`          | Alati repoa (lokalna lint pravila, gate, CI u `scripts/ci/`)                                                                                          |
@@ -47,6 +47,7 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 - Imena su `camelCase`, `PascalCase` ili `UPPER_SNAKE`.
 - Zabranjeni su `any`, `interface` (umjesto njega `type`) i `enum`.
 - U drugu mapu uvozi se samo kroz njezin `index.ts`.
+- Upravljački program baze (`pg`, `pg-*`, `postgres`) uvozi samo `server/database` i testovi baze u `tests/db/` (`no-restricted-imports` i `database-boundary/no-restricted-dynamic-imports`, iz Ductusa; testovi u `tests/lint/pg-import-boundary*.test.ts`). `snake_case` imena stupaca i postavki baze dopuštena su samo u tim dvjema mapama.
 - Direktive u retku (`eslint-disable`) ne gase nijedno pravilo. Sama direktiva ruši `pnpm lint`.
 
 Lokalna pravila su u `scripts/lint-rules/`, a testovi nad fixtureima u `tests/lint/rules.test.ts`.
@@ -65,12 +66,12 @@ Testovi su u `tests/format/format.test.ts`.
 
 Vitest ima četiri projekta. Projekt određuje sufiks datoteke, a `database` mapa `tests/db`. Testovi su samo u `server/`, `test-support/` i `scripts/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
-| Projekt       | Datoteke                                                       | Što provjerava                                                             |
-| ------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `unit`        | `{server,test-support,tests,scripts}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje |
-| `property`    | `{server,test-support,tests,scripts}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                     |
-| `integration` | `{server,test-support,tests,scripts}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                   |
-| `database`    | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`) | Migracije glavne baze i zaključavanje migracija na pravom PostgreSQL-u     |
+| Projekt       | Datoteke                                                       | Što provjerava                                                                                                 |
+| ------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `unit`        | `{server,test-support,tests,scripts}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje                                     |
+| `property`    | `{server,test-support,tests,scripts}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                                                         |
+| `integration` | `{server,test-support,tests,scripts}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                                                       |
+| `database`    | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`) | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
 Pokriva je `server/app.integration.test.ts`.
@@ -79,7 +80,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 ## CI
 
-`.github/workflows/ci.yml` ima četiri posla: `scope` razvrstava promjene, `checks` pokreće typecheck, lint, formatiranje i tri vitest projekta, `database` podiže PostgreSQL 17 (ista glavna verzija kao produkcija, nativno iz PGDG repoa, bez Dockera) i pokreće pgTAP (`db/**/tests/*.sql`), zatim u drugom klasteru na `127.0.0.1:54329` stvara uloge iz `db/main/local/migrator.sql`, primjenjuje sve migracije kroz `scripts/db/migrate-locked.ts` i pokreće `pnpm test:database`, a `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Akcije su prikvačene na puni SHA. Pravila razvrstavanja i zbirnog statusa su u [scripts/ci/README.md](scripts/ci/README.md).
+`.github/workflows/ci.yml` ima četiri posla: `scope` razvrstava promjene, `checks` pokreće typecheck, lint, formatiranje i tri vitest projekta, `database` podiže PostgreSQL 17 (ista glavna verzija kao produkcija, nativno iz PGDG repoa, bez Dockera) i pokreće pgTAP okruženja (`db/tests/*.sql`), zatim u drugom klasteru na `127.0.0.1:54329` stvara uloge iz `db/main/local/migrator.sql`, primjenjuje sve migracije kroz `scripts/db/migrate-locked.ts` i pokreće `pnpm test:database`, a nakon nativnog stoga (`pnpm db:up:native`) i pgTAP matricu glavne baze (`pnpm test:db:native`, `db/main/tests`). `ci-ok` je jedini zbirni status. PR u kojem su samo obični dokumenti (`docs/**/*.md`, `README.md`) preskače posao baze i prolazi `ci-ok`; pad bilo kojeg potrebnog posla ruši `ci-ok`. Akcije su prikvačene na puni SHA. Pravila razvrstavanja i zbirnog statusa su u [scripts/ci/README.md](scripts/ci/README.md).
 
 ## Stanje kostura
 

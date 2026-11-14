@@ -28,6 +28,7 @@ const REQUIRED_AREAS = [
   "metrics",
   "roles",
   "settings",
+  "config",
   "legal",
   "backup",
   "deletion",

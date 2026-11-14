@@ -32,6 +32,14 @@ const BOUNDARY = "local/import-boundary";
 const NAMING = "@typescript-eslint/naming-convention";
 
 const failing: Case[] = [
+  // the database driver outside server/database (S-0.17; tests/lint/pg-import-boundary*)
+  { file: AT, code: imp("pg"), rule: "no-restricted-imports" },
+  {
+    file: AT,
+    code: 'export async function probe(): Promise<unknown> { return import("pg"); }\n',
+    rule: "database-boundary/no-restricted-dynamic-imports",
+    messageId: "restrictedPg",
+  },
   // import-boundary: leaving the folder other than through <folder>/index.ts
   ...["./sub/c.ts", "../c.ts", "../sib/c.ts", "./x/../../y/z.ts", "./sub/INDEX.ts"].map((spec) => ({
     file: AT,
@@ -119,6 +127,10 @@ const failing: Case[] = [
   })),
   // naming-convention
   { file: AT, code: "export const my_var = 1;\n", rule: NAMING },
+  // snake_case of the database only in server/database and tests/db (S-0.17)
+  { file: AT, code: "export const row = { user_id: 1 };\n", rule: NAMING },
+  { file: "server/log/b.ts", code: "export const row = { user_id: 1 };\n", rule: NAMING },
+  { file: AT, code: "export const keys = { Prezime: 1 };\n", rule: NAMING },
   { file: AT, code: "export function Do_thing(): void {}\n", rule: NAMING },
   { file: AT, code: "export type myType = string;\n", rule: NAMING },
   { file: AT, code: "export const o = { some_key: 1 };\n", rule: NAMING },
@@ -157,6 +169,12 @@ const failing: Case[] = [
 ];
 
 const passing: Fixture[] = [
+  {
+    file: "server/database/b.ts",
+    code: "export const row = { user_id: 1, statement_timeout: 0 };\n",
+  },
+  { file: "tests/db/b.integration.test.ts", code: "export const row = { user_id: 1 };\n" },
+  { file: "server/log/b.test.ts", code: "export const keys = { Prezime: 1 };\n" },
   ...[
     "./c.ts",
     "./index.ts",
