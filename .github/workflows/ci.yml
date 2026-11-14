@@ -4,8 +4,47 @@ on:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+# DAN-721: scope picks the jobs from the changed paths, ci-ok is the one
+# aggregate status. Both run scripts/ci from protected main (the PR base), never
+# from the PR head, so a PR cannot skip its own database job. A base without
+# scripts/ci (bootstrap) runs everything and requires every job to succeed.
 jobs:
-  test:
+  scope:
+    name: Opseg CI-ja
+    runs-on: ubuntu-latest
+    outputs:
+      profile: ${{ steps.classify.outputs.profile }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.base.sha || 'main' }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Razvrstavanje promjena
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" != pull_request ] || [ "$PR_BASE_REF" != main ]; then
+            echo 'profile=full' >> "$GITHUB_OUTPUT"
+          elif [ ! -f scripts/ci/scope.ts ] || [ -L scripts/ci/scope.ts ]; then
+            echo 'profile=full' >> "$GITHUB_OUTPUT"
+          else
+            [[ "$PR_HEAD" =~ ^[a-f0-9]{40}$ ]]
+            git fetch --no-tags --depth=1 origin "$PR_HEAD"
+            node scripts/ci/scope.ts >> "$GITHUB_OUTPUT"
+          fi
+
+  checks:
+    name: Provjere i testovi
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -34,3 +73,69 @@ jobs:
         run: |
           git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
           pnpm contracts:breaking FETCH_HEAD
+
+  database:
+    name: PostgreSQL i pgTAP
+    needs: scope
+    if: needs.scope.outputs.profile == 'full'
+    runs-on: ubuntu-latest
+    env:
+      PGBIN: /usr/lib/postgresql/17/bin
+      PGPORT: "5499"
+      PGUSER: postgres
+      PGDATABASE: ductura_ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Instalacija PostgreSQL-a (PGDG)
+        env:
+          PGDG_KEY_FINGERPRINT: B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/pgdg.asc" https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          gpg --show-keys --with-colons "$RUNNER_TEMP/pgdg.asc" | grep -qx "fpr:::::::::$PGDG_KEY_FINGERPRINT:"
+          sudo install -D -m 0644 "$RUNNER_TEMP/pgdg.asc" /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          . /etc/os-release
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends postgresql-17 postgresql-17-pgtap libtap-parser-sourcehandler-pgtap-perl
+      - name: Pokretanje baze
+        run: |
+          echo "PGHOST=$RUNNER_TEMP" >> "$GITHUB_ENV"
+          export PGHOST="$RUNNER_TEMP"
+          "$PGBIN/initdb" -D "$RUNNER_TEMP/pgdata" -U postgres --auth=trust --encoding=UTF8 --locale=C.UTF-8
+          "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/pgdata" -l "$RUNNER_TEMP/pg.log" -w start \
+            -o "-p $PGPORT -k $RUNNER_TEMP -c listen_addresses=''"
+          "$PGBIN/createdb" ductura_ci
+          "$PGBIN/psql" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION pgtap'
+      - name: pgTAP testovi
+        run: |
+          shopt -s nullglob globstar
+          files=(db/**/tests/*.sql)
+          if [ "${#files[@]}" -eq 0 ]; then echo 'No pgTAP test files found.' >&2; exit 1; fi
+          pg_prove --psql-bin "$PGBIN/psql" --failures "${files[@]}"
+
+  ci-ok:
+    name: ci-ok
+    needs: [scope, checks, database]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.base.sha || 'main' }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Zbirna provjera
+        env:
+          PROFILE: ${{ needs.scope.outputs.profile }}
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          if [ -f scripts/ci/ci-ok.ts ] && [ ! -L scripts/ci/ci-ok.ts ]; then
+            printf '%s' "$NEEDS" | node scripts/ci/ci-ok.ts
+          else
+            printf '%s' "$NEEDS" | jq -e 'length == 3 and all(.[]; .result == "success")'
+          fi

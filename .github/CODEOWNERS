@@ -1,0 +1,41 @@
+# ductura/server: owners of the paths with the critical risk floor
+# (CRITICAL_PATHS in scripts/engineering/risk-floor.ts).
+#
+# As in Ductus .github/CODEOWNERS, these entries only RECORD ownership. GitHub
+# requests a code-owner review only when the author is not the owner, and the
+# "Require review from Code Owners" setting is not changed by this file.
+# The machine protection is the risk floor, independent review and QA, and the
+# owner's merge command (D-97).
+#
+# The last matching rule wins; every rule has an owner, so no later rule can
+# clear an earlier one. server/risk-floor.test.ts checks that every critical
+# path is covered.
+/.github/ @danielrisavi77-create
+/CLAUDE.md @danielrisavi77-create
+/AGENTS.md @danielrisavi77-create
+/scripts/engineering/ @danielrisavi77-create
+/server/server.ts @danielrisavi77-create
+/server/http/ @danielrisavi77-create
+/server/traffic/ip-rules* @danielrisavi77-create
+/server/session/ @danielrisavi77-create
+/server/external/srce-auth/ @danielrisavi77-create
+/server/contracts/authz-matrix* @danielrisavi77-create
+/server/database/ @danielrisavi77-create
+/db/**/migrations/ @danielrisavi77-create
+/db/**/tests/ @danielrisavi77-create
+
+# Transitional, until server.ts and server/http replace them (docs/server-map.md).
+/server/index.ts @danielrisavi77-create
+/server/app.ts @danielrisavi77-create
+/server/access.ts @danielrisavi77-create
+
+# Agent instructions and configuration at any depth.
+CLAUDE*.md @danielrisavi77-create
+AGENTS*.md @danielrisavi77-create
+GEMINI*.md @danielrisavi77-create
+copilot-instructions.md @danielrisavi77-create
+*.instructions.md @danielrisavi77-create
+.mcp.json @danielrisavi77-create
+.claude/ @danielrisavi77-create
+.agents/ @danielrisavi77-create
+.codex/ @danielrisavi77-create
