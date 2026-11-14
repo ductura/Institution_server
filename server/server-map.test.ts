@@ -88,6 +88,22 @@ describe("readTable and readAreas", () => {
   });
 });
 
+describe("readCallers", () => {
+  it("reads backticked names from the callers column", () => {
+    const md = [
+      "## 1. Područja",
+      "| Područje | Mapa | Svrha | Tko ga zove | Podaci | Stanje |",
+      "|---|---|---|---|---|---|",
+      "| log | `server/log` | Zapisi | `http`, `sesion` | Baza zapisa | planirano |",
+      "| roles | `server/roles` | Uloge | samo testovi | — | planirano |",
+    ].join("\n");
+    expect([...readCallers(md)]).toEqual([
+      ["log", ["http", "sesion"]],
+      ["roles", []],
+    ]);
+  });
+});
+
 describe("checkFolders", () => {
   let dir = "";
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -155,6 +171,7 @@ describe("docs/server-map.md", () => {
 
   it("names as callers exactly the areas that may import each area", () => {
     for (const [area, callers] of readCallers(MAP)) {
+      expect(callers.filter((c) => c !== "server.ts" && !keys.includes(c)), `${area}`).toEqual([]);
       const named = callers.filter((c) => keys.includes(c)).sort();
       expect(named, `callers of ${area}`).toEqual(importers(area).sort());
     }

@@ -66,7 +66,7 @@ Uz tablicu vrijedi:
 
 - Smjer je prema unutra. `domain` i `contracts` ne uvoze ništa iz servera; `contracts` uvozi samo `@sinclair/typebox`.
 - `http` je jedini sastavljač. Nitko osim ulazne točke (`server.ts`) i `test-server` ne uvozi `http`.
-- Sastavljač stvara adaptere (`database`, `external/*`) i predaje ih područjima kao parametre (portovi, ARCHITECTURE §2a). Područje uvozi adapter samo radi tipa porta i ne stvara ga samo. Tako `test-server` kroz `http` predaje lažne zamjene (lažni AAI OIDC, PGlite), a proizvodni adapter nikad ne sadrži lažnog pružatelja.
+- Sastavljač stvara adaptere (`database`, `external/*`) i predaje ih područjima kao parametre (portovi, ARCHITECTURE §2a). Područja osim `http` uvoze `database` i `external/*` samo s `import type` (tip porta) i ne stvaraju adapter sama; S-1A-b to provjerava uz tablicu. Tako `test-server` kroz `http` predaje lažne zamjene (lažni AAI OIDC, PGlite), a proizvodni adapter nikad ne sadrži lažnog pružatelja.
 - Nitko ne uvozi `test-server`; proizvodni kod ne uvozi `test-support/`.
 - Feature područja ne uvoze jedno drugo; dijele podatke samo kroz bazu i RPC.
 - Adapteri u `external/` ne uvoze jedan drugoga ni feature područja.
