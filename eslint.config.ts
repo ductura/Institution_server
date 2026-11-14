@@ -33,6 +33,27 @@ const WIRE_NAMES = [
   "post_logout_redirect_uris", // OpenID Connect RP-Initiated Logout 1.0, section 3.1
   "backchannel_logout_uri", // OpenID Connect Back-Channel Logout 1.0, section 2.2
   "backchannel_logout_session_required", // OpenID Connect Back-Channel Logout 1.0, section 2.2
+  // S-0.18 (DAN-731), the login core ported from Ductus src/server/auth and its test provider.
+  "token_type", // RFC 6749, section 5.1
+  "expires_in", // RFC 6749, section 5.1
+  "key_ops", // RFC 7517 (JWK), section 4.3
+  "id_token_signed_response_alg", // OpenID Connect Dynamic Client Registration 1.0, section 2
+  "post_logout_redirect_uri", // OpenID Connect RP-Initiated Logout 1.0, section 2
+  "end_session_endpoint", // OpenID Connect RP-Initiated Logout 1.0, section 2.1
+  // OpenID Connect Discovery 1.0, section 3 (provider metadata).
+  "authorization_endpoint",
+  "token_endpoint",
+  "userinfo_endpoint",
+  "jwks_uri",
+  "response_types_supported",
+  "subject_types_supported",
+  "id_token_signing_alg_values_supported",
+  "code_challenge_methods_supported", // RFC 8414, section 2
+  // JWS algorithm names as keys of the pinned-algorithm table (RFC 7518 section 3.1; EdDSA RFC 8037).
+  "RS256",
+  "PS256",
+  "ES256",
+  "EdDSA",
 ];
 // Names fixed outside this repository that are not wire names: process
 // environment variables, the oidc-provider configuration keys (Configuration
@@ -65,6 +86,13 @@ const ENV_NAMES = [
   // server/config, server/database), and a variable that check must not ask for.
   "APP_DATABASE_URL",
   "DUCTUS_AUTH_PROVIDER",
+  // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.
+  "OIDC_ISSUER",
+  "OIDC_CLIENT_ID",
+  "OIDC_CLIENT_SECRET",
+  "OIDC_REDIRECT_URI",
+  "OIDC_CLOCK_TOLERANCE_SECONDS",
+  "OIDC_ID_TOKEN_ALG",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
@@ -116,6 +144,9 @@ const DATABASE_NAMES = [
   "server_version",
   "token_set",
   "user_id",
+  // The alias of the institution slug in the current-actor statement
+  // (current-actor.ts, S-0.18, DAN-731).
+  "institution_slug",
   // PostgreSQL setting names (pg_settings.name) that the log-settings check
   // reads; its tests state them as the keys of a settings row.
   "log_statement",
