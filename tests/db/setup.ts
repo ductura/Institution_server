@@ -8,6 +8,6 @@ import { foreignDatabaseUrls } from "./loopback-database-url.ts";
 const foreign = foreignDatabaseUrls(process.env);
 if (foreign.length > 0) {
   throw new Error(
-    `Integration tests run only against the local database (loopback host, port 54329 or 5432, no query): ${foreign.join(", ")}`,
+    `Integration tests run only against the local database (loopback host, port 54329, 54330 or 5432, no query): ${foreign.join(", ")}`,
   );
 }
