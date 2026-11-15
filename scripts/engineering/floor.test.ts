@@ -13,22 +13,45 @@ const repository = "example-org/example";
 const HEAD = "a".repeat(40);
 const NEXT = "b".repeat(40);
 
-function setup(event: unknown, pages: unknown[], status = 200, heads = [HEAD, HEAD]) {
+const BASE = "c".repeat(40);
+const OTHER_BASE = "d".repeat(40);
+
+type Comparison = { status?: unknown; commits?: unknown; files?: unknown };
+
+/**
+ * A fake GitHub API. `heads` and `bases` are the SHAs of successive PR reads.
+ * `compares` maps `base...head` to the comparison GitHub would return for
+ * those immutable SHAs; a plain file list becomes a comparison ending at its
+ * head.
+ */
+function setup(
+  event: unknown,
+  compares: Record<string, unknown[] | Comparison>,
+  status = 200,
+  heads = [HEAD, HEAD],
+  bases = [BASE, BASE],
+) {
   const dir = mkdtempSync(join(tmpdir(), "floor-"));
   const eventPath = join(dir, "event.json");
   writeFileSync(eventPath, JSON.stringify(event));
   const urls: string[] = [];
-  let headReads = 0;
+  let pullReads = 0;
   const fetchImpl = (url: string) => {
     urls.push(url);
     if (status !== 200) return Promise.resolve(new Response("error", { status }));
-    if (!url.includes("/files?")) {
-      const sha = heads[Math.min(headReads, heads.length - 1)];
-      headReads += 1;
-      return Promise.resolve(Response.json({ number: 7, head: { sha } }));
+    const compare = /\/compare\/([0-9a-f]+)\.\.\.([0-9a-z]+)$/.exec(url);
+    if (compare) {
+      const value = compares[`${compare[1]}...${compare[2]}`];
+      if (value === undefined) return Promise.resolve(new Response("missing", { status: 404 }));
+      const body = Array.isArray(value)
+        ? { status: "ahead", commits: [{ sha: "e".repeat(40) }, { sha: compare[2] }], files: value }
+        : value;
+      return Promise.resolve(Response.json(body));
     }
-    const page = Number(/[?&]page=(\d+)/.exec(url)?.[1] ?? "0");
-    return Promise.resolve(Response.json(pages[page - 1] ?? []));
+    const sha = heads[Math.min(pullReads, heads.length - 1)];
+    const base = bases[Math.min(pullReads, bases.length - 1)];
+    pullReads += 1;
+    return Promise.resolve(Response.json({ number: 7, head: { sha }, base: { sha: base } }));
   };
   // GitHub's own environment names, which the naming rule would reject as keys.
   const env: Record<string, string> = Object.fromEntries([
@@ -39,6 +62,8 @@ function setup(event: unknown, pages: unknown[], status = 200, heads = [HEAD, HE
   ]);
   return { env, fetchImpl, urls };
 }
+
+const at = (head: string, list: unknown[]) => ({ [`${BASE}...${head}`]: list });
 
 const files = (...names: string[]) => names.map((filename) => ({ filename }));
 // REST and event payloads in GitHub's snake_case wire names.
@@ -56,70 +81,164 @@ describe("pullNumber", () => {
 
 describe("pullRequestFloor", () => {
   it("gives the floor of the changed paths", async () => {
-    const low = setup(pr, [files("README.md")]);
+    const low = setup(pr, at(HEAD, files("README.md")));
     expect(await pullRequestFloor(low.env, low.fetchImpl)).toEqual({ risk: "low", headSha: HEAD });
     expect(low.urls).toEqual([
       `https://api.example.test/repos/${repository}/pulls/7`,
-      `https://api.example.test/repos/${repository}/pulls/7/files?per_page=100&page=1`,
+      `https://api.example.test/repos/${repository}/compare/${BASE}...${HEAD}`,
       `https://api.example.test/repos/${repository}/pulls/7`,
     ]);
-    const standard = setup(pr, [files("README.md", "server/logs/log.ts")]);
+    const standard = setup(pr, at(HEAD, files("README.md", "server/logs/log.ts")));
     expect((await pullRequestFloor(standard.env, standard.fetchImpl)).risk).toBe("standard");
   });
 
-  it("reads every page and counts a rename under both names", async () => {
-    const filler = Array.from({ length: 100 }, (_, i) => ({ filename: `docs/n${i}.md` }));
-    const paged = setup(pr, [filler, files("server/database/actor.ts")]);
-    expect((await pullRequestFloor(paged.env, paged.fetchImpl)).risk).toBe("critical");
-    expect(paged.urls.filter((url) => url.includes("/files?"))).toHaveLength(2);
-    const renamed = setup(pr, [
-      wire('[{"filename":"docs/old.md","previous_filename":".github/workflows/ci.yml"}]'),
-    ]);
+  it("reads the whole list and counts a rename under both names", async () => {
+    const filler = Array.from({ length: 298 }, (_, i) => ({ filename: `docs/n${i}.md` }));
+    const long = setup(pr, at(HEAD, [...filler, ...files("server/database/actor.ts")]));
+    expect(await pullRequestFloor(long.env, long.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: HEAD,
+    });
+    const renamed = setup(
+      pr,
+      at(
+        HEAD,
+        wire(
+          '[{"filename":"docs/old.md","previous_filename":".github/workflows/ci.yml"}]',
+        ) as unknown[],
+      ),
+    );
     expect((await pullRequestFloor(renamed.env, renamed.fetchImpl)).risk).toBe("critical");
   });
 
   it("gives critical for the first head when the head moves during the read", async () => {
-    const moved = setup(pr, [files("README.md")], 200, [HEAD, NEXT]);
+    const moved = setup(
+      pr,
+      { ...at(HEAD, files("README.md")), ...at(NEXT, files("README.md")) },
+      200,
+      [HEAD, NEXT],
+    );
     expect(await pullRequestFloor(moved.env, moved.fetchImpl)).toEqual({
       risk: "critical",
       headSha: HEAD,
     });
   });
 
+  it("reads the files of the returned head when the head goes A to B and back", async () => {
+    // A changes a critical path, B only the README. Both PR reads see A; the
+    // list is that of A by its SHA, whatever the branch pointed at meanwhile.
+    const aba = setup(pr, {
+      ...at(HEAD, files("server/database/actor.ts")),
+      ...at(NEXT, files("README.md")),
+    });
+    expect(await pullRequestFloor(aba.env, aba.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: HEAD,
+    });
+    expect(aba.urls.filter((url) => url.includes("/compare/"))).toEqual([
+      `https://api.example.test/repos/${repository}/compare/${BASE}...${HEAD}`,
+    ]);
+    expect(aba.urls.some((url) => url.includes("/files"))).toBe(false);
+  });
+
+  it("gives critical when the comparison is not that of the head", async () => {
+    const wrongEnd = setup(pr, {
+      [`${BASE}...${HEAD}`]: {
+        status: "ahead",
+        commits: [{ sha: NEXT }],
+        files: files("README.md"),
+      },
+    });
+    expect(await pullRequestFloor(wrongEnd.env, wrongEnd.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: HEAD,
+    });
+    for (const bad of [
+      { status: "identical", commits: [{ sha: HEAD }], files: files("README.md") },
+      { status: "behind", commits: [{ sha: HEAD }], files: files("README.md") },
+      { status: "ahead", commits: [], files: files("README.md") },
+      { status: "ahead", files: files("README.md") },
+      { status: "ahead", commits: [{ sha: HEAD }], files: [] },
+      { status: "ahead", commits: [{ sha: HEAD }] },
+      { status: "ahead", commits: [{ sha: HEAD }], files: [null] },
+      {
+        status: "ahead",
+        commits: [{ sha: HEAD }],
+        files: wire('[{"filename":"README.md","previous_filename":7}]'),
+      },
+    ]) {
+      const run = setup(pr, { [`${BASE}...${HEAD}`]: bad });
+      expect(await pullRequestFloor(run.env, run.fetchImpl)).toEqual({
+        risk: "critical",
+        headSha: HEAD,
+      });
+    }
+  });
+
+  it("gives critical when the base moves during the read", async () => {
+    const based = setup(
+      pr,
+      { ...at(HEAD, files("README.md")), [`${OTHER_BASE}...${HEAD}`]: files("README.md") },
+      200,
+      [HEAD, HEAD],
+      [BASE, OTHER_BASE],
+    );
+    expect(await pullRequestFloor(based.env, based.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: HEAD,
+    });
+  });
+
   it("gives no head SHA when the head is unknown or not a full SHA", async () => {
-    const short = setup(pr, [files("README.md")], 200, ["abc123"]);
+    const short = setup(pr, at(HEAD, files("README.md")), 200, ["abc123"]);
     expect(await pullRequestFloor(short.env, short.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: "",
+    });
+    const noBase = setup(pr, at(HEAD, files("README.md")), 200, [HEAD], ["abc123"]);
+    expect(await pullRequestFloor(noBase.env, noBase.fetchImpl)).toEqual({
       risk: "critical",
       headSha: "",
     });
   });
 
   it("fails closed to critical", async () => {
-    const apiError = setup(pr, [], 502);
+    const apiError = setup(pr, {}, 502);
     expect(await pullRequestFloor(apiError.env, apiError.fetchImpl)).toEqual({
       risk: "critical",
       headSha: "",
     });
-    const noPr = setup({ issue: { number: 7 } }, [files("README.md")]);
+    const noPr = setup({ issue: { number: 7 } }, at(HEAD, files("README.md")));
     expect(await pullRequestFloor(noPr.env, noPr.fetchImpl)).toEqual({
       risk: "critical",
       headSha: "",
     });
-    const nameless = setup(pr, [[{ status: "added" }]]);
+    const nameless = setup(pr, at(HEAD, [{ status: "added" }]));
     expect((await pullRequestFloor(nameless.env, nameless.fetchImpl)).risk).toBe("critical");
-    const full = Array.from({ length: 100 }, (_, i) => ({ filename: `docs/n${i}.md` }));
-    const cut = setup(
-      pr,
-      Array.from({ length: 30 }, () => full),
-    );
-    expect((await pullRequestFloor(cut.env, cut.fetchImpl)).risk).toBe("critical");
-    const badRepo = setup(pr, [files("README.md")]);
+    const missing = setup(pr, {});
+    expect((await pullRequestFloor(missing.env, missing.fetchImpl)).risk).toBe("critical");
+    const badRepo = setup(pr, at(HEAD, files("README.md")));
     expect(
       await pullRequestFloor(
         Object.fromEntries([...Object.entries(badRepo.env), ["GITHUB_REPOSITORY", "x"]]),
         badRepo.fetchImpl,
       ),
     ).toEqual({ risk: "critical", headSha: "" });
+  });
+
+  it("gives critical when the list may be cut", async () => {
+    // GitHub lists at most 300 files of a comparison; 300 may be a cut list,
+    // and a cut list of only low paths must never give a lower floor.
+    const full = Array.from({ length: 300 }, (_, i) => ({ filename: `docs/n${i}.md` }));
+    const cut = setup(pr, at(HEAD, full));
+    expect(await pullRequestFloor(cut.env, cut.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: HEAD,
+    });
+    const over = setup(pr, at(HEAD, [...full, { filename: "docs/extra.md" }]));
+    expect((await pullRequestFloor(over.env, over.fetchImpl)).risk).toBe("critical");
+    const under = setup(pr, at(HEAD, full.slice(1)));
+    expect((await pullRequestFloor(under.env, under.fetchImpl)).risk).toBe("low");
   });
 });
 

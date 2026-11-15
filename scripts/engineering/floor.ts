@@ -1,10 +1,11 @@
 // Risk floor of an open pull request for the engineering gate (S-0.10-b,
-// DAN-723): reads the PR's head SHA and changed files over REST and prints
+// DAN-723): reads the PR's head SHA and, from the compare of its base and
+// head SHAs, the changed files over REST and prints
 // `risk=<floor>` and `head-sha=<sha>` for $GITHUB_OUTPUT, from minimumRisk of
 // risk-floor.ts. The workflow .github/workflows/engineering-gate.yml runs it
 // from the default branch and passes both to the shared verdict check in
 // ductura/.github, which gives only pending when the head has moved. It fails
-// closed: any error, or a file list GitHub truncates, gives `critical`, and
+// closed: any error, or a file list GitHub may have cut, gives `critical`, and
 // an unknown head gives an empty SHA (pending).
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
@@ -13,9 +14,8 @@ import { changedPaths, minimumRisk, type Risk } from "./risk-floor.ts";
 type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 type Env = Record<string, string | undefined>;
 
-// GitHub lists at most 3000 files of a pull request.
-const FILE_LIST_CAP = 3000;
-const PAGE_SIZE = 100;
+// A comparison lists at most 300 files; a list that long may be cut.
+const FILE_LIST_CAP = 300;
 const TIMEOUT_MS = 20_000;
 
 /** The PR number of a pull_request_target or issue_comment event, else null. */
@@ -28,12 +28,16 @@ export function pullNumber(event: unknown): number | null {
   return typeof number === "number" && Number.isSafeInteger(number) && number > 0 ? number : null;
 }
 
-function pullApi(env: Env, number: number): string {
+function repoApi(env: Env): string {
   const repository = env["GITHUB_REPOSITORY"] ?? "";
   if (!/^[\w.-]+\/[\w.-]+$/.test(repository))
     throw new Error("GITHUB_REPOSITORY is missing or invalid.");
   const api = (env["GITHUB_API_URL"] ?? "https://api.github.com").replace(/\/+$/, "");
-  return `${api}/repos/${repository}/pulls/${number}`;
+  return `${api}/repos/${repository}`;
+}
+
+function pullApi(env: Env, number: number): string {
+  return `${repoApi(env)}/pulls/${number}`;
 }
 
 async function getJson(env: Env, url: string, fetchImpl: Fetch): Promise<unknown> {
@@ -48,48 +52,77 @@ async function getJson(env: Env, url: string, fetchImpl: Fetch): Promise<unknown
   return response.json();
 }
 
-async function headSha(env: Env, number: number, fetchImpl: Fetch): Promise<string> {
+const SHA_RE = /^[0-9a-f]{40}$/;
+
+type Refs = { base: string; head: string };
+
+/** The PR's base and head SHAs from one read; both full SHAs, else an error. */
+async function pullRefs(env: Env, number: number, fetchImpl: Fetch): Promise<Refs> {
   const pull = (await getJson(env, pullApi(env, number), fetchImpl)) as {
     head?: { sha?: unknown };
+    base?: { sha?: unknown };
   } | null;
-  const sha = pull?.head?.sha;
-  if (typeof sha !== "string" || !/^[0-9a-f]{40}$/.test(sha))
+  const head = pull?.head?.sha;
+  if (typeof head !== "string" || !SHA_RE.test(head))
     throw new Error("A pull request without a full head SHA.");
-  return sha;
+  const base = pull?.base?.sha;
+  if (typeof base !== "string" || !SHA_RE.test(base))
+    throw new Error("A pull request without a full base SHA.");
+  return { base, head };
 }
 
-async function listFiles(env: Env, number: number, fetchImpl: Fetch): Promise<string[]> {
+/**
+ * Changed paths between the merge base of `base` and `head`, the same diff as
+ * the PR's file list, but read from the compare of two immutable SHAs, so a
+ * head that moves and comes back cannot swap the list. Without paging
+ * parameters GitHub returns at most 300 files and puts the newest commit of
+ * the whole comparison last; a list that may be cut, or whose newest commit
+ * is not `head`, is an error.
+ */
+async function listFiles(env: Env, refs: Refs, fetchImpl: Fetch): Promise<string[]> {
+  const url = `${repoApi(env)}/compare/${refs.base}...${refs.head}`;
+  const compare = (await getJson(env, url, fetchImpl)) as Record<string, unknown> | null;
+  if (typeof compare !== "object" || compare === null) throw new Error("Expected a comparison.");
+  const status = compare["status"];
+  if (status !== "ahead" && status !== "diverged")
+    throw new Error(`The head is not ahead of the base (${String(status)}).`);
+  const commits = compare["commits"];
+  if (!Array.isArray(commits) || commits.length === 0)
+    throw new Error("A comparison without commits.");
+  const newest: unknown = commits[commits.length - 1];
+  const newestSha =
+    typeof newest === "object" && newest !== null
+      ? (newest as Record<string, unknown>)["sha"]
+      : null;
+  if (newestSha !== refs.head) throw new Error("The comparison does not end at the head.");
+  const list = compare["files"];
+  if (!Array.isArray(list) || list.length === 0)
+    throw new Error("Expected a non-empty array of files.");
+  if (list.length >= FILE_LIST_CAP)
+    throw new Error(`${FILE_LIST_CAP} or more files; GitHub may have cut the list.`);
   const files: { filename: string; previousFilename?: string }[] = [];
-  for (let page = 1; page <= FILE_LIST_CAP / PAGE_SIZE; page += 1) {
-    const batch = await getJson(
-      env,
-      `${pullApi(env, number)}/files?per_page=${PAGE_SIZE}&page=${page}`,
-      fetchImpl,
-    );
-    if (!Array.isArray(batch)) throw new Error("Expected an array of files.");
-    for (const item of batch as Record<string, unknown>[]) {
-      const filename = item["filename"];
-      const previous = item["previous_filename"];
-      if (typeof filename !== "string" || filename === "")
-        throw new Error("A file without a name.");
-      files.push(
-        typeof previous === "string" && previous
-          ? { filename, previousFilename: previous }
-          : { filename },
-      );
-    }
-    if (batch.length < PAGE_SIZE) return changedPaths(files);
+  for (const item of list as unknown[]) {
+    if (typeof item !== "object" || item === null) throw new Error("A file that is not an object.");
+    const record = item as Record<string, unknown>;
+    const filename = record["filename"];
+    const previous = record["previous_filename"];
+    if (typeof filename !== "string" || filename === "") throw new Error("A file without a name.");
+    if (previous !== undefined && (typeof previous !== "string" || previous === ""))
+      throw new Error("A file with an invalid previous name.");
+    files.push(previous ? { filename, previousFilename: previous } : { filename });
   }
-  throw new Error(`More than ${FILE_LIST_CAP - 1} files; GitHub may have cut the list.`);
+  return changedPaths(files);
 }
 
 export type Floor = { risk: Risk; headSha: string };
 
 /**
- * Floor of the event's PR and the head SHA it was computed for. The head is
- * read before and after the file list; a head that moved in between gives
- * `critical` for the first head, which the shared check then sees as stale.
- * Any error gives `critical` (fails closed), with the head if it is known.
+ * Floor of the event's PR and the head SHA it was computed for. The files come
+ * from the compare of the base and head SHAs of one read, so they belong to
+ * the returned head by construction. The PR is read again afterwards; a base
+ * or head that moved in between gives `critical` for the first head, which
+ * the shared check then sees as stale. Any error gives `critical` (fails
+ * closed), with the head if it is known.
  */
 export async function pullRequestFloor(env: Env, fetchImpl: Fetch = fetch): Promise<Floor> {
   let sha = "";
@@ -97,10 +130,12 @@ export async function pullRequestFloor(env: Env, fetchImpl: Fetch = fetch): Prom
     const event: unknown = JSON.parse(readFileSync(env["GITHUB_EVENT_PATH"] ?? "", "utf8"));
     const number = pullNumber(event);
     if (!number) return { risk: "critical", headSha: "" };
-    sha = await headSha(env, number, fetchImpl);
-    const { risk } = minimumRisk(await listFiles(env, number, fetchImpl));
-    if ((await headSha(env, number, fetchImpl)) !== sha)
-      throw new Error("The head moved while the files were read.");
+    const refs = await pullRefs(env, number, fetchImpl);
+    sha = refs.head;
+    const { risk } = minimumRisk(await listFiles(env, refs, fetchImpl));
+    const again = await pullRefs(env, number, fetchImpl);
+    if (again.head !== refs.head || again.base !== refs.base)
+      throw new Error("The base or head moved while the files were read.");
     return { risk, headSha: sha };
   } catch (error) {
     console.error(
