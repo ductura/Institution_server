@@ -69,6 +69,8 @@ export const BUILDER_NAMES: readonly string[] = [
   // Locale data of the runtime (Intl, toLocale*) is Croatian text too.
   ...["Intl", "toLocaleString", "toLocaleDateString", "toLocaleTimeString"],
 ];
+// One regex for every builder name as a whole word, built once (lint time).
+const BUILDER_WORD = new RegExp(`\\b(${BUILDER_NAMES.join("|")})\\b`, "u");
 // Modules whose default or namespace binding may only be read by a static member.
 const NAMESPACE_MODULES = ["node:util", "node:url", "node:string_decoder"];
 // Constructors whose `.text()` decodes bytes given to them.
@@ -258,7 +260,7 @@ export const noHardcodedText: Rule.RuleModule = {
       // An escape is a builder whatever the character it gives is.
       if (escapedCodes(raw).some((code) => code > 0x7f))
         context.report({ node, messageId: "builder", data: { name: "\\u escape" } });
-      const name = BUILDER_NAMES.find((n) => new RegExp(`\\b${n}\\b`, "u").test(text));
+      const name = BUILDER_WORD.exec(text)?.[1];
       if (name) context.report({ node, messageId: "builder", data: { name } });
     }
 
