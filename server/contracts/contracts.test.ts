@@ -123,9 +123,12 @@ describe("server/contracts imports only the schema library", () => {
       const target = resolve(dirname(join(CONTRACTS_DIR, file)), spec);
       const inside = spec.startsWith(".") && !relative(CONTRACTS_DIR, target).startsWith("..");
       const allowed = inside || spec === "@sinclair/typebox";
-      // The generated fake server is the one file that may use node:http.
+      // The generated fake server is the one file that may use node:http, and
+      // node:fs to read its vectors.json.
       expect(
-        allowed || (file === join("generated", "fake-server", "index.ts") && spec === "node:http"),
+        allowed ||
+          (file === join("generated", "fake-server", "index.ts") &&
+            (spec === "node:http" || spec === "node:fs")),
         `${file}: ${spec}`,
       ).toBe(true);
     }

@@ -215,6 +215,11 @@ const ESTREE_NODE_NAMES = [
 
 // The naming rule, with extra exact property names (`properties`) and extra
 // exact destructured names (`destructured`) for the folders of one block.
+// Any import of the generated fake server folder, however the path reaches it.
+const FAKE_SERVER_SPECIFIER = String.raw`(?:^|[\\/])generated[\\/]fake-server(?:$|[\\/])`;
+// Test code, which may use the fake server.
+const TEST_ONLY_FILES = ["**/*.test.ts", "server/test-server/**", "test-support/**"];
+
 function namingConvention(properties: string[], destructured: string[]): Linter.RuleEntry {
   return [
     "error",
@@ -308,6 +313,28 @@ export default defineConfig(
         {
           patterns: [
             { regex: PG_SPECIFIER, message: "Database access goes through server/database only." },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The fake server from the contracts (U8) answers with made-up vectors and
+    // never reaches production code: only tests, server/test-server and
+    // test-support may import it. server/contracts/fake-server.test.ts also
+    // walks the import graph of the production entry point.
+    files: ["**/*.ts"],
+    ignores: TEST_ONLY_FILES,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            { regex: PG_SPECIFIER, message: "Database access goes through server/database only." },
+            {
+              regex: FAKE_SERVER_SPECIFIER,
+              message: "The contract fake server is for tests only.",
+            },
           ],
         },
       ],

@@ -3,7 +3,7 @@
 // published OpenAPI document openapi/v1.json.
 // Generated files are committed; server/contracts/contracts.test.ts fails when
 // they differ from a fresh run. Usage: pnpm contracts:generate
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,9 +19,12 @@ import {
   PENDING,
   ROUTES,
   type RouteContract,
+  type Vector,
 } from "../server/contracts/index.ts";
 
 export const OUT_DIR = fileURLToPath(new URL("../server/contracts/generated/", import.meta.url));
+/** The success and error vectors (U7); the fake server answers with them. */
+const VECTORS_DIR = fileURLToPath(new URL("../server/contracts/vectors/", import.meta.url));
 /** The published API document; scripts/check-breaking.ts compares it with the base branch. */
 export const OPENAPI_FILE = fileURLToPath(new URL("../openapi/v1.json", import.meta.url));
 const HEADER =
@@ -204,8 +207,10 @@ export function generate(): Record<string, string> {
   const routes = contractRoutes();
   return {
     "client.ts": `${HEADER}${CLIENT_PREAMBLE}\n${routeTable(routes)}${CLIENT_BODY}`,
-    // Its own entry: it needs node:http, and generated/index.ts must load in a browser.
-    "fake-server/index.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes)}${FAKE_BODY(FALLBACK.error.code)}`,
+    // Its own folder: it needs node:http, and generated/index.ts must load in a
+    // browser. It imports nothing outside the folder, so U9 can move it as it is.
+    "fake-server/index.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes)}\nconst FALLBACK_CODE = ${JSON.stringify(FALLBACK.error.code)};\n${FAKE_BODY}`,
+    "fake-server/vectors.json": fakeVectors(routes),
     "types.ts": types(routes),
     "validate.ts": validators(routes),
     "index.ts": INDEX,
@@ -264,29 +269,207 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
 }
 `;
 
-const FAKE_PREAMBLE = `// Fake server from the contracts: a contracted route answers 501 until it has
-// vectors (U8), a known path with another method 405, anything else the fallback.
+/**
+ * The vectors of every route in route order, then file order. Each file must
+ * name its route; vectors.test.ts checks the rest (format, schemas, coverage).
+ * JSON data, not a .ts file: the vectors spell out made-up session cookies, and
+ * server/session/ended-mark-coverage.test.ts rightly refuses those in server code.
+ */
+function fakeVectors(routes: RouteContract[]): string {
+  const rows = routes.flatMap((r) => {
+    const file = JSON.parse(readFileSync(join(VECTORS_DIR, `${r.id}.json`), "utf8")) as {
+      route?: unknown;
+      vectors?: unknown;
+    };
+    if (file.route !== r.id || !Array.isArray(file.vectors))
+      throw new Error(`vectors/${r.id}.json is not the vectors file of ${r.id}`);
+    return (file.vectors as Vector[]).map((v) => ({
+      route: r.id,
+      name: v.name,
+      request: v.request,
+      response: v.response,
+    }));
+  });
+  return json(rows);
+}
+
+const FAKE_PREAMBLE = `// Fake server from the contracts (U8). A request that matches a vector of its
+// route gets exactly that vector's answer; a contracted route with no matching
+// vector answers 501, a known path with another method 405, anything else the
+// fallback. Test code only: eslint.config.ts keeps it out of production code.
+import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 `;
 
-const FAKE_BODY = (fallback: string) => `
-const MATCHERS = Object.values(ROUTE_TABLE).map((r) => ({
-  ...r,
-  pattern: new RegExp(\`^\${r.path.replace(/\\{\\w+\\}/g, "[^/]+")}$\`),
+// Written out as it is: no template literals inside, so String.raw keeps every backslash.
+const FAKE_BODY = String.raw`
+export type FakeVector = {
+  readonly route: string;
+  readonly name: string;
+  readonly request: {
+    readonly params?: Readonly<Record<string, string>>;
+    readonly query?: Readonly<Record<string, string>>;
+    readonly headers?: Readonly<Record<string, string>>;
+    readonly body?: unknown;
+    readonly rawBody?: string;
+  };
+  readonly response: {
+    readonly status: number;
+    readonly contentType?: string;
+    readonly headers?: Readonly<Record<string, string | readonly string[]>>;
+    readonly body?: unknown;
+  };
+};
+
+/** The vectors of server/contracts/vectors (U7), in route order, then file order. */
+export const VECTORS: readonly FakeVector[] = JSON.parse(
+  readFileSync(new URL("./vectors.json", import.meta.url), "utf8"),
+) as FakeVector[];
+
+/** Picks a vector by name when several match one request (first in file order otherwise). */
+export const FAKE_VECTOR_HEADER = "x-ductura-fake-vector";
+
+export type FakeRequest = {
+  readonly method: string;
+  readonly url: string;
+  readonly headers: Readonly<Record<string, string | readonly string[] | undefined>>;
+  readonly body: Uint8Array;
+};
+export type FakeAnswer = {
+  readonly status: number;
+  readonly headers: Record<string, string | string[]>;
+  readonly body: string;
+};
+
+const MATCHERS = Object.entries(ROUTE_TABLE).map(([id, r]) => ({
+  id,
+  method: r.method as string,
+  body: r.body as string | null,
+  names: [...r.path.matchAll(/\{(\w+)\}/g)].map((m) => m[1] ?? ""),
+  pattern: new RegExp("^" + r.path.replace(/\{\w+\}/g, "([^/]+)") + "$"),
 }));
+type Matcher = (typeof MATCHERS)[number];
+
+/**
+ * The answer to one request. A vector matches when the path parameters and the
+ * query equal its own, every header it names has its value (other headers are
+ * ignored) and the body is the same: bytes for rawBody, JSON or form fields by
+ * the route's content type for body, and empty when the vector has neither.
+ */
+export function answerFake(req: FakeRequest): FakeAnswer {
+  const url = new URL(req.url, "http://fake.invalid");
+  const onPath = MATCHERS.filter((m) => m.pattern.test(url.pathname));
+  const route = onPath.find((m) => m.method === req.method);
+  if (route === undefined) {
+    return onPath.length > 0
+      ? refusal(405, "method_not_allowed", { allow: onPath.map((m) => m.method).join(", ") })
+      : refusal(404, FALLBACK_CODE, {});
+  }
+  const wanted = header(req.headers, FAKE_VECTOR_HEADER);
+  const vector = VECTORS.find(
+    (v) =>
+      v.route === route.id &&
+      (wanted === undefined || v.name === wanted) &&
+      matches(route, v, url, req),
+  );
+  return vector === undefined ? refusal(501, "not_implemented", {}) : reply(vector);
+}
+
+function matches(route: Matcher, v: FakeVector, url: URL, req: FakeRequest): boolean {
+  const found = route.pattern.exec(url.pathname) ?? [];
+  const params: Record<string, string> = {};
+  try {
+    route.names.forEach((name, i) => (params[name] = decodeURIComponent(found[i + 1] ?? "")));
+  } catch {
+    return false;
+  }
+  const query = fields(url.searchParams);
+  if (!same(params, v.request.params ?? {}) || query === null || !same(query, v.request.query ?? {}))
+    return false;
+  for (const [name, value] of Object.entries(v.request.headers ?? {})) {
+    if (header(req.headers, name) !== value) return false;
+  }
+  return sameBody(route.body, v.request, req.body);
+}
+
+function sameBody(type: string | null, expected: FakeVector["request"], body: Uint8Array): boolean {
+  if (expected.rawBody !== undefined) return Buffer.compare(Buffer.from(expected.rawBody), body) === 0;
+  if (expected.body === undefined) return body.length === 0;
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(body);
+    if (type !== "application/x-www-form-urlencoded") return same(JSON.parse(text), expected.body);
+    const form = fields(new URLSearchParams(text));
+    return form !== null && same(form, expected.body);
+  } catch {
+    return false;
+  }
+}
+
+/** Query or form fields as an object; a repeated name matches no vector. */
+function fields(search: URLSearchParams): Record<string, string> | null {
+  const out: Record<string, string> = {};
+  for (const [name, value] of search) {
+    if (Object.hasOwn(out, name)) return null;
+    out[name] = value;
+  }
+  return out;
+}
+
+function header(headers: FakeRequest["headers"], name: string): string | undefined {
+  const value = headers[name.toLowerCase()];
+  return typeof value === "string" ? value : value?.join(", ");
+}
+
+/** Equal JSON values, whatever the order of object keys. */
+function same(a: unknown, b: unknown): boolean {
+  return canonical(a) === canonical(b);
+}
+
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return "[" + value.map(canonical).join(",") + "]";
+  if (value !== null && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record).sort();
+    return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonical(record[k])).join(",") + "}";
+  }
+  return String(JSON.stringify(value));
+}
+
+/** Exactly the vector: its status, the headers it names, its content type and body. */
+function reply(v: FakeVector): FakeAnswer {
+  const { status, contentType, headers = {}, body } = v.response;
+  const sent: Record<string, string | string[]> = {};
+  for (const [name, value] of Object.entries(headers)) sent[name] = typeof value === "string" ? value : [...value];
+  if (contentType !== undefined) sent["content-type"] = contentType;
+  const text = body === undefined ? "" : typeof body === "string" ? body : JSON.stringify(body);
+  return { status, headers: sent, body: text };
+}
+
+function refusal(status: number, code: string, extra: Record<string, string>): FakeAnswer {
+  return {
+    status,
+    headers: { "content-type": "application/json", "cache-control": "no-store", ...extra },
+    body: JSON.stringify({ error: code }),
+  };
+}
 
 export function createFakeServer(): Server {
   return createServer((req, res) => {
-    const path = new URL(req.url ?? "/", "http://fake.invalid").pathname;
-    const onPath = MATCHERS.filter((m) => m.pattern.test(path));
-    const route = onPath.find((m) => m.method === req.method);
-    const [status, code, extra] = route
-      ? [501, "not_implemented", {}]
-      : onPath.length > 0
-        ? [405, "method_not_allowed", { allow: onPath.map((m) => m.method).join(", ") }]
-        : [404, ${JSON.stringify(fallback)}, {}];
-    res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", ...extra });
-    res.end(JSON.stringify({ error: code }));
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("error", () => res.destroy());
+    req.on("end", () => {
+      const out = answerFake({
+        method: req.method ?? "GET",
+        url: req.url ?? "/",
+        headers: req.headers,
+        body: Buffer.concat(chunks),
+      });
+      // Only the headers the vector names (Node still adds its framing headers).
+      res.sendDate = false;
+      res.writeHead(out.status, out.headers);
+      res.end(out.body);
+    });
   });
 }
 `;
