@@ -3,12 +3,13 @@
 // the x-errors and x-fallback the guard keeps as they were in v1.
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { TObject } from "@sinclair/typebox";
 import { describe, expect, it } from "vitest";
 
 import { messagesEn, messagesHr, textOf, type MessageKey } from "../../locales/index.ts";
-import { openapiDocument, v1Key } from "../../scripts/index.ts";
+import { openapiDocument, toPosix, v1Key } from "../../scripts/index.ts";
 import {
   ERROR_MESSAGE_KEYS,
   error,
@@ -114,7 +115,8 @@ function stripXErrors(document: { paths: Record<string, Record<string, object>> 
 
 // v1Key is the one place that spells errors.<code>: no other source builds it.
 describe("server and script sources", () => {
-  const root = new URL("../../", import.meta.url).pathname;
+  // fileURLToPath: a URL's pathname keeps %20 and gives /D:/ on Windows.
+  const root = fileURLToPath(new URL("../../", import.meta.url));
   const sources = (dir: string): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
       const path = join(dir, entry.name);
@@ -127,7 +129,7 @@ describe("server and script sources", () => {
     const files = [...sources(join(root, "server")), ...sources(join(root, "scripts"))];
     const building = files
       .filter((file) => /errors\.\$\{/u.test(readFileSync(file, "utf8")))
-      .map((file) => relative(root, file));
+      .map((file) => toPosix(relative(root, file)));
     expect(building).toEqual(["scripts/generate-contracts.ts"]);
   });
 });

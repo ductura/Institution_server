@@ -226,6 +226,38 @@ describe("generated client", () => {
     });
   });
 
+  it("reads the code from `code` first (problem body, S-1L.3), never falls back on an unknown one", async () => {
+    const id = "profile.interface-locale.post";
+    const input = { params: undefined, query: undefined, body: { locale: "hr" as const } };
+    const c = async (status: number, body?: unknown) =>
+      (await createClient("https://a.invalid", fakeFetch(status, body).impl)(id, input)) as {
+        code?: string;
+      };
+    expect((await c(500, { code: "internal" })).code).toBe("internal");
+    const problem = {
+      error: "invalid_input",
+      code: "invalid_input",
+      messageKey: "errors.invalidInput",
+      status: 422,
+      requestId: "0f0e0d0c-0b0a-4908-8706-050403020100",
+    };
+    expect(await c(422, problem)).toEqual({ ok: false, status: 422, code: "invalid_input" });
+    // `code` wins over `error` and `status`, both ways.
+    expect((await c(500, { code: "made_up", error: "internal" })).code).toBe("unexpected");
+    expect((await c(403, { code: "made_up", error: "cross_site" })).code).toBe("unexpected");
+    expect((await c(403, { code: "cross_site", error: "made_up" })).code).toBe("cross_site");
+    expect((await c(503, { code: "internal", error: "internal" })).code).toBe("unexpected");
+    const ready = createClient(
+      "https://a.invalid",
+      fakeFetch(503, { status: "draining", code: "made_up" }).impl,
+    );
+    expect(
+      await ready("platform.ready.get", { params: undefined, query: undefined, body: undefined }),
+    ).toMatchObject({ code: "unexpected" });
+    // A `code` that is not a string is not a code: the next field names it.
+    expect((await c(500, { code: 500, error: "internal" })).code).toBe("internal");
+  });
+
   it("maps errors to contract codes, unknown ones to unexpected", async () => {
     const id = "profile.interface-locale.post";
     const input = { params: undefined, query: undefined, body: { locale: "hr" as const } };
