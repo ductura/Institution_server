@@ -9,6 +9,7 @@ import {
   AUTHORITY_REFUSED,
   engineFrom,
   openTestDatabase,
+  pgliteAllowedIn,
   POSTGRES_NOT_YET,
   testDatabaseNamed,
 } from "./create-test-database.ts";
@@ -60,6 +61,17 @@ describe("a test of authority", () => {
     );
   });
 
+  it.each([
+    ["a/b.pg.integration.test.ts", false],
+    ["a/b.PG.Integration.test.ts", false],
+    ["a\\.x\\b.pg.integration.test.ts", false],
+    ["a/b.integration.test.ts", true],
+    ["a/b.test.ts", true],
+    [undefined, true],
+  ] as const)("PGlite from %j: %s", (path, allowed) => {
+    expect(pgliteAllowedIn(path)).toBe(allowed);
+  });
+
   it("the postgres engine is not here yet (DAN-785 b)", async () => {
     await expect(openTestDatabase("main", "postgres", { authority: true })).rejects.toThrow(
       POSTGRES_NOT_YET,
@@ -99,23 +111,31 @@ describe("vitest.config.ts", () => {
 });
 
 describe("tests of authority", () => {
+  // Every folder vitest's DIRS glob reaches, dot folders included.
   const files: string[] = [];
   const walk = (dir: string): void => {
     for (const name of readdirSync(dir)) {
-      if (name === "node_modules" || name.startsWith(".")) continue;
+      if (name === "node_modules" || name === ".git") continue;
       const path = join(dir, name);
       if (statSync(path).isDirectory()) walk(path);
-      else if (name.endsWith(".pg.integration.test.ts")) files.push(relative(ROOT, path));
+      else if (/\.pg\.integration\.test\.ts$/iu.test(name)) files.push(relative(ROOT, path));
     }
   };
-  for (const dir of ["server", "packages", "test-support", "tests", "scripts", "infra", "db"])
+  for (const dir of [
+    "server",
+    "packages",
+    "test-support",
+    "tests",
+    "scripts",
+    "infra",
+    "db",
+    "locales",
+  ])
     walk(join(ROOT, dir));
 
-  it("none names PGlite", () => {
+  it("none names PGlite or the test fakes, in any spelling", () => {
     const naming = files.filter((file) =>
-      /@electric-sql\/pglite|test-fakes\/pglite|["']pglite["']/u.test(
-        readFileSync(join(ROOT, file), "utf8"),
-      ),
+      /pglite|test-fakes/iu.test(readFileSync(join(ROOT, file), "utf8")),
     );
     expect(naming).toEqual([]);
   });

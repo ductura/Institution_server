@@ -1,4 +1,5 @@
 import { migratedDump, openDump, sourceOf } from "@ductura/test-fakes/pglite";
+import { expect } from "vitest";
 
 import { type Database, DATABASES } from "../../scripts/db/index.ts";
 
@@ -46,6 +47,18 @@ const ENGINE = engineFrom(process.env);
 export const POSTGRES_NOT_YET = "the postgres engine comes with DAN-785 b (integration-pg)";
 
 export const AUTHORITY_REFUSED = "authority test needs real PostgreSQL (pnpm test:integration:pg)";
+
+export const PG_FILE_REFUSED = "a *.pg.integration.test.ts file runs only on real PostgreSQL";
+
+const PG_FILE = /\.pg\.integration\.test\.ts$/iu;
+
+/**
+ * Whether a test in `testPath` may open PGlite: never from a test of
+ * authority's file, whatever the environment says (adversarial pass, DAN-785).
+ */
+export function pgliteAllowedIn(testPath: string | undefined): boolean {
+  return testPath === undefined || !PG_FILE.test(testPath.replaceAll("\\", "/"));
+}
 
 /** The entry called `name` of `databases`; unknown is an error, never a default. */
 export function testDatabaseNamed(name: string, databases: readonly Database[]): Database {
@@ -102,6 +115,8 @@ export async function openTestDatabase(
 ): Promise<TestDatabase> {
   const target = testDatabaseNamed(name, databases);
   if (options.authority === true && engine !== "postgres") throw new Error(AUTHORITY_REFUSED);
+  if (engine === "pglite" && !pgliteAllowedIn(expect.getState().testPath))
+    throw new Error(PG_FILE_REFUSED);
   if (engine === "postgres") throw new Error(POSTGRES_NOT_YET);
   return openPglite(target);
 }
