@@ -28,13 +28,18 @@ export {
   readBase,
   readMigrations,
   renderLedger,
+  unlistedMigrationDirs,
 } from "./migrations-ledger.ts";
 export {
   dbmateArgs,
   dbmateBinary,
   LOCK_KEY,
   MIGRATIONS_DIR,
+  parseArgs,
   runLocked,
   startDbmate,
+  urlMismatch,
 } from "./migrate-locked.ts";
 export type { LockClient, LockedChild, RunLockedOptions } from "./migrate-locked.ts";
+export { DATABASES, databaseNamed } from "./databases.ts";
+export type { Database } from "./databases.ts";
