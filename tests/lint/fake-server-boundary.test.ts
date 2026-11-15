@@ -62,6 +62,80 @@ describe("fake server import boundary (eslint.config.ts)", () => {
     expect(await reported(filePath, code)).toBe(1);
   });
 
+  // QA on e34b91f6 (c.6886570274): every form a file can name a module with,
+  // each from the production entry point. The first passed the rule there.
+  const FAKE = "./contracts/generated/fake-server/index.ts";
+  it.each([
+    ["import x = require", `import fake = require("${FAKE}");\nexport const x = fake;\n`],
+    ["export import x = require", `export import fake = require("${FAKE}");\n`],
+    ["import", `import { createFakeServer } from "${FAKE}";\nexport const x = createFakeServer;\n`],
+    ["import of the side effects", `import "${FAKE}";\n`],
+    ["import type", `import type { FakeRequest } from "${FAKE}";\nexport type X = FakeRequest;\n`],
+    [
+      "import { type x }",
+      `import { type FakeRequest } from "${FAKE}";\nexport type X = FakeRequest;\n`,
+    ],
+    ["export from", `export { createFakeServer } from "${FAKE}";\n`],
+    ["export type from", `export type { FakeRequest } from "${FAKE}";\n`],
+    ["export * as", `export * as fake from "${FAKE}";\n`],
+    ["import()", `export const load = () => import("${FAKE}");\n`],
+    ["import() of a template", `export const load = () => import(\`${FAKE}\`);\n`],
+    ["typeof import()", `export type X = typeof import("${FAKE}");\n`],
+    ["import() type", `export type X = import("${FAKE}").FakeRequest;\n`],
+    ["require", `export const x: unknown = require("${FAKE}");\n`],
+    ["module.require", `export const x: unknown = module.require("${FAKE}");\n`],
+    ["require.resolve", `export const x = require.resolve("${FAKE}");\n`],
+    ["import.meta.resolve", `export const x = import.meta.resolve("${FAKE}");\n`],
+    ["/// <reference path>", `/// <reference path="${FAKE}" />\nexport {};\n`],
+  ])("rejects %s in server/index.ts", async (_, code) => {
+    expect(await reported("server/index.ts", code)).toBe(1);
+  });
+
+  // Spellings that load the same folder: a .js or no extension, the folder
+  // alone, another letter case (Windows, macOS), %-escapes, a file: URL.
+  it.each([
+    "./contracts/generated/fake-server/index.js",
+    "./contracts/generated/fake-server/index",
+    "./contracts/generated/fake-server",
+    "./contracts/generated/fake-server/",
+    "./contracts/generated/fake-server/vectors.json",
+    "./Contracts/Generated/Fake-Server/index.ts",
+    "./contracts/generated/fake%2Dserver/index.ts",
+    "./contracts/generated%2Ffake-server/index.ts",
+    "file:///repo/server/contracts/generated/fake-server/index.ts",
+    " ./contracts/generated/fake-server/index.ts",
+  ])("rejects the spelling %s", async (spec) => {
+    expect(await reported("server/index.ts", `import fake = require("${spec}");\n`)).toBe(1);
+    expect(await reported("server/index.ts", `export * from "${spec}";\n`)).toBe(1);
+  });
+
+  // A re-export through test code, where the rule is off, would carry the fake
+  // server into production; production code does not load test code at all.
+  it.each([
+    "./test-server/index.ts",
+    "../test-support/fakes/index.ts",
+    "./contracts/fake-server.test.ts",
+    "./contracts/example.integration.test.ts",
+    "./Test-Server/index.js",
+    "./test-server",
+  ])("rejects test code %s in server/index.ts", async (spec) => {
+    expect(await reported("server/index.ts", `export * from "${spec}";\n`)).toBe(1);
+    expect(await reported("server/index.ts", `import x = require("${spec}");\n`)).toBe(1);
+    expect(await reported("server/index.ts", `export type X = typeof import("${spec}");\n`)).toBe(
+      1,
+    );
+  });
+
+  it("allows a production helper and test code inside test code", async () => {
+    expect(await reported("server/index.ts", 'export * from "./contracts/index.ts";\n')).toBe(0);
+    expect(
+      await reported(
+        "server/test-server/index.ts",
+        'export * from "../../test-support/x/index.ts";\n',
+      ),
+    ).toBe(0);
+  });
+
   it.each([
     ["server/contracts/example.test.ts", "./generated/fake-server/index.ts"],
     ["server/contracts/example.integration.test.ts", "./generated/fake-server/index.ts"],
