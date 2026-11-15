@@ -1,4 +1,4 @@
-import pg from "pg";
+import type pg from "pg";
 
 import { createBackchannelLogout, type BackchannelLogout } from "./backchannel-logout.ts";
 import { createActorReader, type ActorReader } from "./current-actor.ts";

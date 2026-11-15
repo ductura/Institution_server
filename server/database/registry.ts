@@ -6,8 +6,10 @@
 // plain-label-check.ts command are the only other places that connect
 // (registry-boundary.test.ts).
 //
-// Nothing here ever logs or throws a connection string, a user or a password:
-// a message names the database or the variable, and at most an error code.
+// Nothing here logs or throws a connection string, a user or a password: a
+// message of the registry names the database or the variable, and at most an
+// error code. An error of the driver itself (a failed query) may name the host
+// or the user, so callers log only its code or name, never its message.
 import pg from "pg";
 
 /** The databases whose state the registry reports. */
@@ -48,10 +50,21 @@ const DATABASES: readonly DatabaseName[] = ["main", "logs", "legal"];
 /** Longest wait for the state of one database; past it the database is `nedostupno`. */
 export const HEALTH_TIMEOUT_MS = 2_000;
 
+/**
+ * Longest wait for one pool to end on shutdown; past it the pool counts as not
+ * closed and close() settles anyway. It is shorter than the shutdown grace
+ * (SHUTDOWN_GRACE_MS, 8 s), so a pool the driver cannot end (a connection
+ * stuck half made) does not hold the exit until the deadline.
+ */
+export const CLOSE_TIMEOUT_MS = 5_000;
+
 /** The pool settings of `name` without the connection string, which the registry adds. */
 export type PoolSettings = (connectionString: string, name: PoolName) => pg.PoolConfig;
 /** What the registry itself uses of a pool. */
-type Pool = { query(text: string): Promise<unknown>; end(): Promise<void> };
+type Pool = {
+  query(config: { text: string; query_timeout: number }): Promise<unknown>;
+  end(): Promise<void>;
+};
 
 export type RegistryOptions<P extends Pool> = {
   /** Settings of every pool (index.ts: appPoolConfig); the registry sets max from POOLS. */
@@ -104,20 +117,42 @@ function isPoolName(name: string): name is PoolName {
 }
 
 const POSTGRES = new Set(["postgres:", "postgresql:"]);
+const isPort = (text: string): boolean => /^[1-9]\d{0,4}$/u.test(text) && Number(text) <= 65_535;
+
+// Settles `work` within `ms`, or rejects; a timer never keeps the process up.
+async function within<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error("timed out")), ms);
+    timer.unref();
+  });
+  try {
+    return await Promise.race([work, late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // The connection string of `spec`, or the reason there is none. The text is
 // tested with URL.canParse, because the error of `new URL` carries the input,
 // password and all. Anything but a postgres URL is refused as well: the
-// driver would read another scheme in its own way.
+// driver would read another scheme in its own way. So is a value with spaces
+// around it (URL.canParse trims, the driver then dials another host) and a
+// `port` parameter that is not a port (the driver throws while connecting and
+// leaves a client its pool can never end).
 function connectionString(
   env: Readonly<Record<string, string | undefined>>,
   spec: PoolSpec,
 ): string | Error {
   const value = env[spec.variable];
   if (value === undefined || value.trim() === "") return new Error(`${spec.variable} is not set`);
-  if (!URL.canParse(value)) return new Error(`${spec.variable} is not a URL`);
-  if (!POSTGRES.has(new URL(value).protocol)) {
-    return new Error(`${spec.variable} is not a postgres URL`);
+  if (value !== value.trim() || !URL.canParse(value)) {
+    return new Error(`${spec.variable} is not a URL`);
+  }
+  const parsed = new URL(value);
+  if (!POSTGRES.has(parsed.protocol)) return new Error(`${spec.variable} is not a postgres URL`);
+  if (!parsed.searchParams.getAll("port").every(isPort)) {
+    return new Error(`${spec.variable} has an invalid port`);
   }
   return value;
 }
@@ -125,19 +160,10 @@ function connectionString(
 // Settles with "ok" when `check` does within the limit, else "nedostupno".
 // The error itself is never read: its message may name a host or a user.
 async function probe(check: () => Promise<unknown>): Promise<DatabaseHealth> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const late = new Promise<DatabaseHealth>((resolve) => {
-    timer = setTimeout(() => resolve("nedostupno"), HEALTH_TIMEOUT_MS);
-  });
-  const answer = check().then(
+  return within(check(), HEALTH_TIMEOUT_MS).then(
     (): DatabaseHealth => "ok",
     (): DatabaseHealth => "nedostupno",
   );
-  try {
-    return await Promise.race([answer, late]);
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 /**
@@ -154,6 +180,7 @@ export function createRegistry<P extends Pool = pg.Pool>(
       handleConnectionErrors(new pg.Pool(config), config.application_name) as unknown as P);
   const pools = new Map<PoolName, P>();
   let closed = false;
+  let closing: Promise<void> | undefined;
 
   const pool = (name: PoolName): P => {
     if (closed) throw new Error(CLOSED_MESSAGE);
@@ -170,7 +197,11 @@ export function createRegistry<P extends Pool = pg.Pool>(
   const stateOf = async (name: DatabaseName): Promise<DatabaseHealth> => {
     if (closed) return "nedostupno";
     if (connectionString(env, POOLS[name]) instanceof Error) return "nije_konfigurirano";
-    return probe(async () => pool(name).query("SELECT 1"));
+    // The statement has the same limit as the wait, so a check given up on
+    // does not keep its connection for the pool's longer query limit.
+    return probe(async () =>
+      pool(name).query({ text: "SELECT 1", query_timeout: HEALTH_TIMEOUT_MS }),
+    );
   };
 
   return {
@@ -181,12 +212,18 @@ export function createRegistry<P extends Pool = pg.Pool>(
         Object.fromEntries(DATABASES.map((name, at) => [name, states[at]])),
       ) as HealthReport;
     },
+    // A second call, also one made while the first is running, gets the same promise.
     async close() {
       closed = true;
-      const open = [...pools.values()];
-      const ended = await Promise.allSettled(open.map(async (made) => made.end()));
-      const failed = ended.filter((result) => result.status === "rejected").length;
-      if (failed > 0) throw new Error(`${failed} database pool(s) did not close`);
+      closing ??= (async () => {
+        const open = [...pools.values()];
+        const ended = await Promise.allSettled(
+          open.map(async (made) => within(made.end(), CLOSE_TIMEOUT_MS)),
+        );
+        const failed = ended.filter((result) => result.status === "rejected").length;
+        if (failed > 0) throw new Error(`${failed} database pool(s) did not close`);
+      })();
+      return closing;
     },
   };
 }

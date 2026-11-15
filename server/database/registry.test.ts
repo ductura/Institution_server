@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 
 import type pg from "pg";
 
-import { CLOSED_MESSAGE, createRegistry, HEALTH_TIMEOUT_MS, POOLS } from "./registry.ts";
+import {
+  CLOSE_TIMEOUT_MS,
+  CLOSED_MESSAGE,
+  createRegistry,
+  HEALTH_TIMEOUT_MS,
+  POOLS,
+} from "./registry.ts";
 
 // S-1F-a (DAN-783). The pools are fakes; every URL and password is invented
 // and never dialled. CANARY is a password that must never show up in an
@@ -22,7 +28,7 @@ const ENV: Record<string, string | undefined> = {
 
 type Fake = {
   config: pg.PoolConfig;
-  query: Mock<(text: string) => Promise<unknown>>;
+  query: Mock<(config: { text: string; query_timeout: number }) => Promise<unknown>>;
   end: Mock<() => Promise<void>>;
 };
 
@@ -104,6 +110,34 @@ describe("registry pools", () => {
     expect(() => other.registry.pool("logs")).toThrow("LOGS_DATABASE_URL is not a postgres URL");
   });
 
+  // Attack review: URL.canParse trims, and a `port` parameter that is not a
+  // port makes the driver throw while connecting, leaving a client the pool
+  // can never end.
+  it.each([
+    { case: "a leading space", value: ` ${url("logs")}`, reason: "is not a URL" },
+    { case: "a trailing newline", value: `${url("logs")}\n`, reason: "is not a URL" },
+    { case: "port=abc", value: `${url("logs")}?port=abc`, reason: "has an invalid port" },
+    { case: "port=0", value: `${url("logs")}?port=0`, reason: "has an invalid port" },
+    { case: "port=65536", value: `${url("logs")}?port=65536`, reason: "has an invalid port" },
+    {
+      case: "a second, bad port",
+      value: `${url("logs")}?sslmode=disable&port=5432&port=x`,
+      reason: "has an invalid port",
+    },
+  ])("refuses a value with $case, without the value", async ({ value, reason }) => {
+    const { registry, made } = setup({ ...ENV, [LOGS]: value });
+    const error = await failureOf(() => registry.pool("logs"));
+    expect((error as Error).message).toBe(`LOGS_DATABASE_URL ${reason}`);
+    expect(texts(error)).not.toContain(CANARY);
+    expect((await registry.health()).logs).toBe("nije_konfigurirano");
+    expect(made.filter((fake) => fake.config.application_name === "logs")).toEqual([]);
+  });
+
+  it("takes a valid port parameter", () => {
+    const { registry } = setup({ ...ENV, [LOGS]: `${url("logs")}?port=54330` });
+    expect(() => registry.pool("logs")).not.toThrow();
+  });
+
   it("reads the environment at first use, not when it is made", () => {
     const env: Record<string, string | undefined> = {};
     const { registry } = setup(env);
@@ -121,6 +155,12 @@ describe("registry health", () => {
     expect(report).toEqual({ main: "ok", logs: "nedostupno", legal: "nije_konfigurirano" });
     expect(Object.isFrozen(report)).toBe(true);
     expect(texts(report)).not.toContain(CANARY);
+    // The check statement has the limit of the wait, so a given-up check
+    // does not hold a connection for the pool's longer query limit.
+    expect(byName("main")?.query).toHaveBeenCalledWith({
+      text: "SELECT 1",
+      query_timeout: HEALTH_TIMEOUT_MS,
+    });
     // A database without its variable is not dialled.
     expect(byName("legal")).toBeUndefined();
     expect(byName("auth")).toBeUndefined();
@@ -172,6 +212,31 @@ describe("registry close", () => {
     expect((error as Error).message).toBe("1 database pool(s) did not close");
     expect(texts(error)).not.toContain(CANARY);
     expect(made.map((fake) => fake.end.mock.calls.length)).toEqual([1, 1, 1]);
+  });
+
+  it("settles when a pool never ends, within the close limit", async () => {
+    vi.useFakeTimers();
+    const { registry, made, byName } = setup();
+    registry.pool("main");
+    registry.pool("logs");
+    byName("logs")?.end.mockReturnValue(new Promise(() => {}));
+    const closing = registry.close().then(
+      () => "closed",
+      (error: unknown) => (error as Error).message,
+    );
+    await vi.advanceTimersByTimeAsync(CLOSE_TIMEOUT_MS);
+    await expect(closing).resolves.toBe("1 database pool(s) did not close");
+    expect(made.map((fake) => fake.end.mock.calls.length)).toEqual([1, 1]);
+  });
+
+  it("gives a second close, also one during the first, the same outcome", async () => {
+    const { registry, made } = setup();
+    registry.pool("main");
+    const first = registry.close();
+    const second = registry.close();
+    await expect(Promise.all([first, second])).resolves.toEqual([undefined, undefined]);
+    await expect(registry.close()).resolves.toBeUndefined();
+    expect(made[0]?.end).toHaveBeenCalledTimes(1);
   });
 
   it("makes no pool to close it", async () => {
