@@ -142,6 +142,25 @@ describe("invariant 1: every leaf is read", () => {
     expect(errorCode(root)).toBe("NOT_TEXT hr.ts");
   });
 
+  // QA of PR-b2: what the scan reads must be what the app reads, once and as written.
+  it.each([
+    ["a getter", `tagline: ${TAGLINE_EN}`, 'get tagline() { return "Skip"; }'],
+    [
+      "a Proxy",
+      "export const messagesEn: Messages = en;",
+      "export const messagesEn = new Proxy(en, {});",
+    ],
+    [
+      "inherited text",
+      "const en = {",
+      'const en = {\n  __proto__: { __proto__: null, note: "Suspicious edit" },',
+    ],
+  ])("fails on %s", (_, from, to) => {
+    const root = copy();
+    edit(root, "en.ts", from, to);
+    expect(errorCode(root)).toBe("NOT_TEXT en.ts");
+  });
+
   it("fails on an export that is a function not on the list", () => {
     const root = copy();
     writeFileSync(
@@ -242,13 +261,23 @@ describe("invariant 3: kopir- and copy only in the words of §5", () => {
 describe("invariant 4: Croatian in en", () => {
   it("flags a Croatian letter, also written apart, and a Croatian word", () => {
     const root = copy();
-    probe(root, "en.ts", ["Sažetak", "Prec\u030Cica", "Sumnjivo", "SAŽETAK", "Summary"]);
+    probe(root, "en.ts", [
+      "Sažetak",
+      "Prec\u030Cica",
+      "Sumnjivo",
+      "SAŽETAK",
+      "Summary",
+      "Pod\u0335a",
+      "Mis\u0306",
+    ]);
     const scan = report(root);
     expect(found(scan).filter((line) => line.includes("probe"))).toEqual([
       "en.ts probe.0: Croatian letter in English text",
       "en.ts probe.1: Croatian letter in English text",
       "en.ts probe.2: forbidden term: sumnjivo",
       "en.ts probe.3: Croatian letter in English text",
+      "en.ts probe.5: Croatian letter in English text",
+      "en.ts probe.6: Croatian letter in English text",
     ]);
   });
 
@@ -310,6 +339,16 @@ describe("invariant 6: the exception for Risk: does not spread", () => {
       "hr.json gate.risk_below_floor: forbidden term: rizik",
       "hr.json signing.timeout: forbidden term: risk",
     ]);
+  });
+
+  it("excuses one Risk: and only the term of the literal itself", () => {
+    const root = copy();
+    edit(root, "hr.json", "Risk: mora biti low", "Risk: score mora biti low");
+    expect(found(report(root))).toEqual([
+      "hr.json gate.risk_invalid: forbidden term: risk score, trust score, attention score, suspicion score",
+    ]);
+    edit(root, "hr.json", "Prijavljeni Risk: niži", "Prijavljeni Risk: niži, High Risk: viši");
+    expect(errorCode(root)).toBe("STALE_EXCEPTION hr.json");
   });
 
   it("does not mask Risk: in other letter case", () => {

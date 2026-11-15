@@ -5,12 +5,13 @@
  */
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { types } from "node:util";
 import vm from "node:vm";
 
 import ts from "typescript";
 
 import { shownText, unreadableCharacters } from "./characters.ts";
-import { findForbiddenTerms, foldText } from "./terms.ts";
+import { findForbiddenTerms, foldText, type ForbiddenTerm } from "./terms.ts";
 
 type Catalogue = {
   readonly lang: "hr" | "en";
@@ -53,13 +54,8 @@ export const SAME_IN_BOTH: readonly string[] = [
   "accessLog.roleAlone.mentor",
 ];
 
-export type Exception = {
-  readonly file: string;
-  readonly path: string;
-  /** Masked before the dictionary is matched, in exactly these characters. */
-  readonly literal: string;
-  readonly reason: string;
-};
+/** `literal` is masked before the dictionary is matched, in exactly these characters. */
+export type Exception = Readonly<{ file: string; path: string; literal: string; reason: string }>;
 
 const RISK_LINE =
   "the name of the line a PR description must hold for the gate (Risk:), not an interface word (Ductus#1836 c.6890541239, point 3)";
@@ -70,13 +66,8 @@ export const EXCEPTIONS: readonly Exception[] = [
   { file: "hr.json", path: "gate.risk_below_floor", literal: "Risk:", reason: RISK_LINE },
 ];
 
-export type Finding = {
-  readonly file: string;
-  readonly path: string;
-  /** The text, with characters a log cannot show written by their escape. */
-  readonly text: string;
-  readonly reason: string;
-};
+/** `text` writes characters a log cannot show by their escape (`shownText`). */
+export type Finding = Readonly<{ file: string; path: string; text: string; reason: string }>;
 
 export type ScanError = {
   readonly code:
@@ -140,18 +131,24 @@ function scan(dir: string): ScanReport {
     const lang = CATALOGUES[file]!.lang;
     for (const [leafPath, text] of leaves) {
       let masked = text;
+      const excused = new Set<ForbiddenTerm>();
       for (const exception of EXCEPTIONS.filter((e) => e.file === file && e.path === leafPath)) {
-        // Stale when the literal is gone from the text or the dictionary no longer flags it.
-        const live = text.includes(exception.literal) && findForbiddenTerms(exception.literal)[0];
-        if (!live) fail("STALE_EXCEPTION", file, `${leafPath}: ${exception.literal}`);
-        masked = masked.replaceAll(exception.literal, ".");
+        // Exactly one occurrence, which the dictionary still flags; only the terms of the literal alone are excused.
+        const own = findForbiddenTerms(exception.literal);
+        if (text.split(exception.literal).length !== 2 || own.length === 0) {
+          fail("STALE_EXCEPTION", file, `${leafPath}: ${exception.literal}`);
+        }
+        masked = masked.replace(exception.literal, ".");
+        for (const term of own) excused.add(term);
       }
-      for (const term of findForbiddenTerms(masked)) {
+      const unmasked = findForbiddenTerms(text).filter((term) => !excused.has(term));
+      for (const term of new Set([...findForbiddenTerms(masked), ...unmasked])) {
         add(file, leafPath, text, `forbidden term: ${term.entry}`);
       }
       const characters = unreadableCharacters(text);
       if (characters.length > 0) add(file, leafPath, text, `characters: ${characters.join(" ")}`);
-      if (lang === "en" && /[čćđšž]/iu.test(text.normalize("NFKC"))) {
+      // A combining mark left after NFKC (d + U+0335, s + U+0306) can draw a Croatian letter too.
+      if (lang === "en" && /[čćđšž]|\p{M}/iu.test(text.normalize("NFKC"))) {
         add(file, leafPath, text, "Croatian letter in English text");
       }
     }
@@ -242,6 +239,9 @@ function evaluate(file: string, full: string, raw: string): Record<string, unkno
   return module.exports;
 }
 
+/** The own keys of `Object.prototype` of any realm: an object whose prototype has other keys could hide inherited text. */
+const OBJECT = Object.getOwnPropertyNames(Object.prototype).sort().join();
+
 /** Puts every text under `node` into `leaves` and returns the number of keys it went through. */
 function walk(file: string, node: unknown, at: string, leaves: Map<string, string>): number {
   if (typeof node === "string") {
@@ -251,18 +251,19 @@ function walk(file: string, node: unknown, at: string, leaves: Map<string, strin
   }
   // A plain object or an array of any realm (a catalogue runs in its own context); not a Map or a class instance.
   const proto: unknown = typeof node === "object" && node ? Object.getPrototypeOf(node) : undefined;
-  const object = proto === null || (proto !== undefined && Object.getPrototypeOf(proto) === null);
-  if (
-    !Array.isArray(node) &&
-    !(object && Object.prototype.toString.call(node) === "[object Object]")
-  ) {
+  const object =
+    proto === null || (proto && Object.getOwnPropertyNames(proto).sort().join() === OBJECT);
+  const plain =
+    Array.isArray(node) || (object && Object.prototype.toString.call(node) === "[object Object]");
+  if (!plain || types.isProxy(node)) {
     return fail("NOT_TEXT", file, `${at || "(root)"}: ${typeof node}`);
   }
   let keys = 0;
   for (const key of Reflect.ownKeys(node as object)) {
     if (typeof key === "symbol") return fail("NOT_TEXT", file, `${at}: symbol key`);
     if (Array.isArray(node) && key === "length") continue;
-    const value = (node as Record<string, unknown>)[key];
+    const { value, get, set } = Object.getOwnPropertyDescriptor(node, key)!;
+    if (get || set) return fail("NOT_TEXT", file, `${at}.${key}: accessor`);
     keys += Array.isArray(node) ? 0 : 1;
     keys += walk(file, value, at ? `${at}.${key}` : key, leaves);
   }

@@ -123,8 +123,9 @@ export function unreadableCharacters(text: string): string[] {
   for (const char of text) {
     const folded = foldLetters(char);
     if (
+      // Local addition: the long s (U+017F) folds to "s" but is drawn like "f" (QA of PR-b2).
       /\p{L}/u.test(char)
-        ? !/^[a-z]*$/.test(folded)
+        ? !/^[a-z]*$/.test(folded) || char === "\u017F"
         : /\p{N}/u.test(char) && /[^a-z0-9]/.test(folded.replace(/[^\p{L}\p{N}]/gu, ""))
     )
       found.push(char);

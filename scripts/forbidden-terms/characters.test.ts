@@ -21,6 +21,7 @@ describe("characters interface text may not hold", () => {
     ["Cyrillic i", `R${cp(0x456)}zik`, ["U+0456"]],
     ["Cyrillic a", `Kopir${cp(0x430)}no`, ["U+0430"]],
     ["Greek omicron", `Skriven${cp(0x3bf)}`, ["U+03BF"]],
+    ["long s, drawn like f (local addition, QA of PR-b2)", `${cp(0x17f)}lagged`, ["U+017F"]],
     ["dotless i", `R${cp(0x131)}zik`, ["U+0131"]],
     ["IPA letter", `Sum${cp(0x272)}jivo`, ["U+0272"]],
     ["Cyrillic letter in a word that is no entry", `Predan${cp(0x43e)}`, ["U+043E"]],
