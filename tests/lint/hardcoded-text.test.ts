@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,6 +54,22 @@ tester.run("no-hardcoded-text", rule, {
     // Machine tokens inside a longer text: a wire value in SQL, a query key.
     ok("export const q = \"SELECT CASE WHEN x THEN 'nije_konfigurirano' END\";"),
     ok("export const u = (a: string, b: string) => `?prije=${a}&zapis=${b}`;"),
+    // Short words that are also English or technical tokens (adversarial review).
+    ok('export const q = "select u.id from users u where u.email = $1";'),
+    ok('export const u = "https://example.invalid/u/profile";'),
+    ok('export const m = "Invalid character U+200B in token";'),
+    ok('export const h = "TE: trailers";'),
+    ok('export const l = "hr, en, da";'),
+    ok('export const m = "unsupported operator ne";'),
+    ok('export const m = "KMS SA key missing";'),
+    ok('export const m = "su postgres -c psql";'),
+    ok('export const m = "user bio field";'),
+    ok('export const r = new RegExp("[a-z]+ u", "g");'),
+    ok('export const x = "de ad be ef ce da";'),
+    ok('export const f = ["g", "u"].join("");'),
+    ok('export const f = ["SELECT", "u.id", "FROM", "users", "u"].join(" ");'),
+    ok('export const k = "statusPage.states.ne_radi";'),
+    ok('export const d = "5f3c9a0e2b7d4c18";'),
   ],
   invalid: [
     // Croatian letters, including escapes and the decomposed form.
@@ -93,6 +110,63 @@ tester.run("no-hardcoded-text", rule, {
     bad('import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;', "exempt"),
     bad('export { x } from "./y.test.ts";', "exempt"),
     bad('export const m = import("./y.test.ts");', "exempt"),
+    // Adversarial review: invisible and control characters, enclosed letters.
+    bad('export const e = "Prijava j\\u200Be obavezna.";', "sentence"),
+    bad('export const e = "N\\u00ADije prona\\u00ADdeno.";', "sentence"),
+    bad('export const e = "Prijava j\\u0001e obavezna.";', "sentence"),
+    bad('export const e = "Prijava \\u24D9e obavezna.";', "sentence"),
+    // Machine-token shapes and stripped keys.
+    bad('export const e = "prijava-je-obavezna";', "sentence"),
+    bad('export const e = "prijava_je_obavezna";', "sentence"),
+    bad('export const e = "Prijava je= obavezna.";', "sentence"),
+    bad('export const e = "Prijava je_obavezna.";', "sentence"),
+    bad('export const e = "Dokument ne postoji.";', "sentence"),
+    bad('export const e = "DOKUMENT NE POSTOJI";', "sentence"),
+    bad('export const e = "Odjavite se.";', "sentence"),
+    bad('export const e = "Unesite ime i lozinku.";', "sentence"),
+    // Wrappers and calls the rule folds.
+    bad('export const e = "Prijava".concat(" je", " obavezna.");', "sentence"),
+    bad(
+      'export const e = (b: boolean) => "Prijava " + (b ? "je" : "nije") + " obavezna.";',
+      "sentence",
+    ),
+    bad('export const e = (n?: string) => "Prijava " + (n ?? "je") + " obavezna.";', "sentence"),
+    bad('export const e = (n: string) => "Prijava " + (n || "je") + " obavezna.";', "sentence"),
+    bad(
+      'export const e = ("Prijava" as string) + (" je" satisfies string) + " obavezna.";',
+      "sentence",
+    ),
+    bad('export const e = "Prijava " + String("je") + " obavezna.";', "sentence"),
+    bad('export const e = "Prijava " + (0, "je") + " obavezna.";', "sentence"),
+    bad(
+      'const id = (s: TemplateStringsArray) => s[0];\nexport const e = "Prijava " + id`je` + " obavezna.";',
+      "sentence",
+    ),
+    bad('export const e = ["Prijava", "obavezna."].join(" je ");', "sentence"),
+    bad('export const e = [...["Prijava"], ...["je"], ...["obavezna."]].join(" ");', "sentence"),
+    bad('const j = "je";\nexport const e = `Prijava ${j} obavezna.`;', "sentence"),
+    bad(
+      'const a = "Prijava";\nconst b = "je";\nexport const e = a + " " + b + " obavezna.";',
+      "sentence",
+    ),
+    bad('export const e = "Prijava je obavezna.".trim().toUpperCase();', "sentence"),
+    // Names and regex sources.
+    bad("export const o = { nijePronađeno: 0 };", "letter"),
+    bad("export function pronađeno(): void {}", "letter"),
+    bad("export const e = /Prijava je obavezna\\./.source;", "sentence"),
+    bad("export const e = /Nije pronađeno/u.source;", "letter"),
+    // Char codes through apply, spread, unary plus and numeric strings.
+    bad("export const e = String.fromCharCode.apply(null, [106, 101, 32, 110, 101]);", "sentence"),
+    bad("export const e = String.fromCharCode(...[106, 101, 32, 110, 101]);", "sentence"),
+    bad("export const e = String.fromCharCode(+106, +101, +32, +110, +101);", "sentence"),
+    bad('export const e = String.fromCharCode("106", "101", "32", "110", "101");', "sentence"),
+    // Hex, base64 with a line end, percent text with a broken tail.
+    bad(
+      'export const e = Buffer.from("5072696a617661206a65206f626176657a6e612e", "hex");',
+      "sentence",
+    ),
+    bad('export const e = atob("UHJpamF2YSBqZSBvYmF2ZXpuYS4K");', "sentence"),
+    bad('export const e = decodeURIComponent("%50rijava%20je%20obavezna%");', "sentence"),
   ],
 });
 
@@ -104,6 +178,16 @@ describe("textProblem", () => {
     expect(textProblem("RISK_BELOW_FLOOR")).toBeNull();
     expect(textProblem("statusPage.states.notWorking")).toBeNull();
     expect(textProblem("je")).toBeNull();
+  });
+});
+
+describe("lint-ignored folders", () => {
+  it("hold no tracked file under server/ (dist/, coverage/ and node_modules/ are not linted)", () => {
+    const tracked = execFileSync("git", ["ls-files", "server"], { cwd: ROOT, encoding: "utf8" });
+    const hidden = tracked
+      .split("\n")
+      .filter((f) => /(?:^|\/)(?:dist|coverage|node_modules)\//u.test(f));
+    expect(hidden).toEqual([]);
   });
 });
 

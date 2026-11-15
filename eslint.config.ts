@@ -275,6 +275,11 @@ const ESTREE_NODE_NAMES = [
   "TemplateLiteral",
   "BinaryExpression",
   "ArrayExpression",
+  "ConditionalExpression",
+  "LogicalExpression",
+  "TaggedTemplateExpression",
+  "Identifier",
+  "PrivateIdentifier",
 ];
 
 // The naming rule, with extra exact property names (`properties`) and extra
