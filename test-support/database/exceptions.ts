@@ -16,4 +16,29 @@ export type ParityException = {
   readonly reason: string;
 };
 
-export const PARITY_EXCEPTIONS: readonly ParityException[] = Object.freeze([]);
+// PGlite is initialised with the C collation and cannot take another; CI and
+// the local stack use a UTF-8 locale (initdb --locale=C.UTF-8, the compose
+// image's default). Text ORDER BY and comparisons can differ, so a test that
+// depends on collation order belongs in integration-pg.
+const COLLATION =
+  "PGlite has only the C collation; the cluster's locale comes from initdb, not a migration";
+
+export const PARITY_EXCEPTIONS: readonly ParityException[] = Object.freeze(
+  ["main", "logs", "legal"].flatMap(
+    (database) =>
+      [
+        {
+          database,
+          only: "pglite",
+          line: "database collation-c=true provider=c",
+          reason: COLLATION,
+        },
+        {
+          database,
+          only: "postgres",
+          line: "database collation-c=false provider=c",
+          reason: COLLATION,
+        },
+      ] as const,
+  ),
+);

@@ -60,6 +60,14 @@ describe("createTestDatabase on PGlite", () => {
       "ALTER TABLE public.schema_migrations ENABLE ROW LEVEL SECURITY;",
       "GRANT USAGE ON SCHEMA public TO PUBLIC;",
       "CREATE FUNCTION public.f() RETURNS int LANGUAGE sql SECURITY DEFINER AS 'SELECT 1';",
+      // Blind spots the adversarial pass found (DAN-785).
+      "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ductus_app;",
+      "GRANT ductus_evidence TO ductus_app;",
+      "ALTER ROLE ductus_app BYPASSRLS;",
+      "ALTER ROLE ductus_app SET row_security = off;",
+      "ALTER SEQUENCE collaboration.revision_request_seq INCREMENT BY 2;",
+      "CREATE DOMAIN public.d AS int CHECK (VALUE > 0);",
+      "CREATE VIEW public.v AS SELECT 1 AS x; ALTER VIEW public.v SET (security_barrier);",
     ]) {
       await db.reset();
       await db.exec(change);

@@ -45,10 +45,15 @@ export function adminUrl(target: Database, compose: string): string {
 // The applied versions are checked once per database and process.
 const checked = new Map<string, Promise<void>>();
 
+// A database a test committed to is no longer the migrated one. The table is
+// committed on purpose, so every later open fails, in any process, until
+// `pnpm db:migrate` starts from a fresh database (adversarial pass, DAN-785).
+const DIRTY = "public.ductura_test_committed";
+
 async function checkMigrated(client: pg.Client, target: Database): Promise<void> {
   const files = readdirSync(resolve(ROOT, target.migrationsDir))
     .filter((name) => name.endsWith(".sql"))
-    .map((name) => name.split("_")[0])
+    .map((name) => /^(\d+)_/u.exec(name)?.[1] ?? name)
     .sort();
   const applied = await client.query<{ version: string }>(
     "SELECT version FROM public.schema_migrations ORDER BY version",
@@ -61,6 +66,16 @@ async function checkMigrated(client: pg.Client, target: Database): Promise<void>
   }
 }
 
+// Settings a client may send at connection (PGOPTIONS) that a test must not
+// inherit; the driver itself sends only these two.
+const CLIENT_SETTINGS =
+  "SELECT name FROM pg_catalog.pg_settings WHERE source = 'client' AND name NOT IN ('application_name', 'client_encoding')";
+
+// Sequences are not transactional: reset() puts them back as they were.
+const SEQUENCES = `SELECT pg_catalog.format('%I.%I', schemaname, sequencename) AS name,
+  COALESCE(last_value, start_value)::text AS value, (last_value IS NOT NULL) AS called
+  FROM pg_catalog.pg_sequences`;
+
 /** The migrated database of `target`, one transaction per test. */
 export async function openPostgresDatabase(target: Database): Promise<TestDatabase> {
   const client = new pg.Client({
@@ -69,23 +84,69 @@ export async function openPostgresDatabase(target: Database): Promise<TestDataba
   });
   await client.connect();
   let xid = "";
+  let sequences: { name: string; value: string; called: boolean }[] = [];
   const begin = async (): Promise<void> => {
     await client.query("BEGIN");
     xid = (await client.query<{ x: string }>("SELECT pg_catalog.txid_current()::text AS x")).rows[0]
       ?.x as string;
   };
-  // A COMMIT or ROLLBACK inside the test's SQL would let it outlive the test.
-  const sameTransaction = async (): Promise<void> => {
-    const now = await client.query<{ x: string }>("SELECT pg_catalog.txid_current()::text AS x");
-    if (now.rows[0]?.x !== xid) throw new Error("the test ended its own transaction");
+  // Back to the session the test got: no prepared statement, advisory lock,
+  // temporary object or setting, and every sequence where it was.
+  const rollback = async (): Promise<void> => {
+    await client.query("ROLLBACK");
+    await client.query("DISCARD ALL");
+    for (const { name, value, called } of sequences)
+      await client.query("SELECT pg_catalog.setval($1::regclass, $2::bigint, $3)", [
+        name,
+        value,
+        called,
+      ]);
+  };
+  // A COMMIT or ROLLBACK inside the test's SQL ends the transaction: checked
+  // after every call, failed ones too, since a commit may precede the error.
+  const run = async <T>(sql: string, params?: unknown[]): Promise<pg.QueryResult> => {
+    let failure: unknown = null;
+    let result: pg.QueryResult | null = null;
+    try {
+      result = await client.query(sql, params);
+    } catch (error) {
+      failure = error;
+    }
+    let same = true;
+    try {
+      const now = await client.query<{ x: string }>("SELECT pg_catalog.txid_current()::text AS x");
+      same = now.rows[0]?.x === xid;
+    } catch (error) {
+      // 25P02: the test's transaction is aborted, but it is still ours.
+      if ((error as { code?: string }).code !== "25P02") throw error;
+    }
+    if (!same) {
+      await client.query("ROLLBACK");
+      await client.query(`CREATE TABLE IF NOT EXISTS ${DIRTY} ()`);
+      throw new Error("the test ended its own transaction; its changes may be committed");
+    }
+    if (failure !== null) throw failure;
+    return result as pg.QueryResult<T & pg.QueryResultRow>;
   };
   try {
-    let check = checked.get(target.name);
+    const settings = await client.query<{ name: string }>(CLIENT_SETTINGS);
+    if (settings.rows.length > 0)
+      throw new Error(
+        `connection settings from the client: ${settings.rows.map((row) => row.name).join(", ")} (PGOPTIONS?)`,
+      );
+    const marked = await client.query<{ t: string | null }>(
+      `SELECT pg_catalog.to_regclass('${DIRTY}')::text AS t`,
+    );
+    if (marked.rows[0]?.t !== null)
+      throw new Error(`${target.name}: an earlier test committed to it; migrate a fresh database`);
+    let check = checked.get(`${target.name}\0${target.migrationsDir}`);
     if (check === undefined) {
       check = checkMigrated(client, target);
-      checked.set(target.name, check);
+      checked.set(`${target.name}\0${target.migrationsDir}`, check);
     }
     await check;
+    sequences = (await client.query<{ name: string; value: string; called: boolean }>(SEQUENCES))
+      .rows;
     await begin();
   } catch (error) {
     await client.end();
@@ -94,22 +155,19 @@ export async function openPostgresDatabase(target: Database): Promise<TestDataba
   return {
     name: target.name,
     engine: "postgres",
-    query: async <T>(sql: string, params?: unknown[]) => {
-      const result = await client.query(sql, params);
-      await sameTransaction();
-      return { rows: result.rows as T[] };
-    },
+    query: async <T>(sql: string, params?: unknown[]) => ({
+      rows: (await run<T>(sql, params)).rows as T[],
+    }),
     exec: async (sql) => {
-      await client.query(sql);
-      await sameTransaction();
+      await run(sql);
     },
     reset: async () => {
-      await client.query("ROLLBACK");
+      await rollback();
       await begin();
     },
     close: async () => {
       try {
-        await client.query("ROLLBACK");
+        await rollback();
       } finally {
         await client.end();
       }

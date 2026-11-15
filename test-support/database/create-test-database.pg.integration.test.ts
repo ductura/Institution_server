@@ -1,6 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { createTestDatabase, type TestDatabase } from "./create-test-database.ts";
+import pg from "pg";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+
+import { type Database } from "../../scripts/db/index.ts";
+import { createTestDatabase, openTestDatabase, type TestDatabase } from "./create-test-database.ts";
 
 // S-1F-e (DAN-785): the postgres engine (project `integration-pg`), over the
 // databases `pnpm db:migrate` or the CI job `database` migrated. These are
@@ -44,11 +50,88 @@ describe("createTestDatabase on real PostgreSQL", () => {
     expect((await b.query(probe)).rows).toEqual([{ t: null, u: "ductus", r: 0 }]);
   });
 
-  it.each(["COMMIT", "ROLLBACK", "COMMIT; BEGIN", "END; BEGIN"])(
-    "a test that ends its own transaction (%s) fails",
-    async (end) => {
-      const db = track(await createTestDatabase("logs", { authority: true }));
-      await expect(db.exec(`SELECT 1; ${end}`)).rejects.toThrow(/ended its own transaction/u);
-    },
-  );
+  it("reset puts back sequences, advisory locks and prepared statements", async () => {
+    const a = track(await createTestDatabase("main", { authority: true }));
+    const seq =
+      "SELECT last_value::text AS v, is_called AS c FROM collaboration.revision_request_seq";
+    const before = (await a.query(seq)).rows;
+    await a.exec(`SELECT nextval('collaboration.revision_request_seq'), pg_advisory_lock(785785);
+      PREPARE ductura_probe_statement AS SELECT 1;`);
+    await a.reset();
+    expect((await a.query(seq)).rows).toEqual(before);
+    await a.exec("PREPARE ductura_probe_statement AS SELECT 1");
+    const b = track(await createTestDatabase("main", { authority: true }));
+    expect((await b.query("SELECT pg_try_advisory_lock(785785) AS l")).rows).toEqual([{ l: true }]);
+  });
+});
+
+// Detection on a throwaway database of the local cluster: a test that ends
+// its transaction marks the database as committed to, for good.
+describe("a test that ends its own transaction", () => {
+  const admin = new pg.Client({
+    connectionString: "postgres://ductus:ductus-local-only@127.0.0.1:54329/postgres",
+  });
+  const dir = mkdtempSync(join(tmpdir(), "test-database-commit-"));
+  const probe: Database = {
+    name: "probe",
+    database: `ductura_commit_probe_${process.pid}`,
+    migrationsDir: dir,
+    ledger: join(dir, "migrations.sum"),
+    migrator: "ductus",
+    service: "postgres-main",
+  };
+  const url = `postgres://ductus:ductus-local-only@127.0.0.1:54329/${probe.database}`;
+  const fresh = async (): Promise<void> => {
+    await admin.query(`DROP DATABASE IF EXISTS ${probe.database}`);
+    await admin.query(`CREATE DATABASE ${probe.database}`);
+    const c = new pg.Client({ connectionString: url });
+    await c.connect();
+    await c.query("CREATE TABLE public.schema_migrations (version varchar PRIMARY KEY)");
+    await c.end();
+  };
+  beforeAll(async () => {
+    await admin.connect();
+  });
+  afterAll(async () => {
+    await admin.query(`DROP DATABASE IF EXISTS ${probe.database}`);
+    await admin.end();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it.each([
+    "COMMIT",
+    "ROLLBACK",
+    "COMMIT; BEGIN",
+    "END; BEGIN",
+    "COMMIT AND CHAIN",
+    "COMMIT; SELECT 1/0",
+    "ROLLBACK; CREATE TABLE public.escaped (v int)",
+  ])("fails (%s), and the database is refused from then on", async (end) => {
+    await fresh();
+    const db = track(await openTestDatabase("probe", "postgres", {}, [probe]));
+    await expect(db.exec(`SELECT 1; ${end}`)).rejects.toThrow(/ended its own transaction/u);
+    await expect(openTestDatabase("probe", "postgres", {}, [probe])).rejects.toThrow(
+      /committed to it/u,
+    );
+  });
+
+  it("an aborted transaction is still the test's own", async () => {
+    await fresh();
+    const db = track(await openTestDatabase("probe", "postgres", {}, [probe]));
+    await expect(db.exec("SELECT 1/0")).rejects.toThrow(/division by zero/u);
+    await db.reset();
+    expect((await db.query("SELECT 1 AS v")).rows).toEqual([{ v: 1 }]);
+  });
+
+  it("refuses settings sent at connection (PGOPTIONS)", async () => {
+    await fresh();
+    process.env["PGOPTIONS"] = "-c session_replication_role=replica";
+    try {
+      await expect(openTestDatabase("probe", "postgres", {}, [probe])).rejects.toThrow(
+        /session_replication_role/u,
+      );
+    } finally {
+      delete process.env["PGOPTIONS"];
+    }
+  });
 });
