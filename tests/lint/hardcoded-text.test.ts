@@ -174,6 +174,15 @@ tester.run("no-hardcoded-text", rule, {
     ),
     bad('export const message = "Prijava " + /je/.source + " obavezna.";', "sentence"),
     bad("export const message = `Prijava ${/je/.source} obavezna.`;", "sentence"),
+    // Review FAIL c.6895754450: short encoded text, a const array of codes.
+    bad('export const e = Buffer.from("xIxhag==", "base64").toString("utf8");', "letter"),
+    bad('export const e = atob("xIxhag==");', "letter"),
+    bad("const CODES = [273];\nexport const MESSAGE = String.fromCharCode(...CODES);", "letter"),
+    bad(
+      "const CODES = [273];\nexport const MESSAGE = String.fromCharCode.apply(null, CODES);",
+      "letter",
+    ),
+    bad("const D = 273;\nexport const MESSAGE = String.fromCharCode(D);", "letter"),
     // Names and regex sources.
     bad("export const o = { nijePronađeno: 0 };", "letter"),
     bad("export function pronađeno(): void {}", "letter"),
@@ -217,6 +226,30 @@ describe("folding cost", () => {
     const lines = ["const n0 = 1;"];
     for (let i = 1; i <= 40; i++) lines.push(`const n${i} = n${i - 1} + n${i - 1};`);
     lines.push("export const last = n40;");
+    const eslint = new ESLint({
+      cwd: ROOT,
+      overrideConfigFile: true,
+      overrideConfig: [
+        {
+          files: ["**/*.ts"],
+          languageOptions: { parser: tseslint.parser },
+          plugins: { local: localPlugin },
+          rules: { [RULE]: "error" },
+        },
+      ],
+    });
+    const started = performance.now();
+    const [result] = await eslint.lintText(lines.join("\n"), { filePath: file });
+    expect(result?.messages).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(5000);
+  }, 20000);
+});
+
+describe("folded text length (review FAIL c.6895754450)", () => {
+  it("cuts a doubling chain of strings instead of building 2^40 characters", async () => {
+    const lines = ['const a0 = "x";'];
+    for (let i = 1; i <= 40; i++) lines.push(`const a${i} = a${i - 1} + a${i - 1};`);
+    lines.push("export function unused(): string {\n  return a40;\n}");
     const eslint = new ESLint({
       cwd: ROOT,
       overrideConfigFile: true,

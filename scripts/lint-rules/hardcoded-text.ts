@@ -20,12 +20,14 @@
 // `satisfies` and `!`, arrays with spread (joined with "", " " and the
 // separator of `.join`), a `const` name, String.fromCharCode and
 // String.fromCodePoint (also with spread, `.apply` and `.call`), `.source`
-// of a regex literal, and the percent, base64 and hex decoded forms of a text.
+// of a regex literal, the percent, base64 and hex decoded forms of a text, and
+// what atob, Buffer.from (with an encoding) and decodeURIComponent give for a
+// folded text. A folded text is cut at MAX_LENGTH characters.
 // A text is reported once, at the outermost node.
 //
 // What lint cannot see, left to review: text built at run time (`+=` in a
 // loop, `.replace`, `.split().reverse()`, number bases, lookups through
-// Object.keys or a `let`, a decoder applied twice, an alias of String),
+// Object.keys or a `let`, an alias of String or Buffer),
 // English sentences, which are not told apart from developer messages of
 // programming errors (§8), a Croatian sentence with none of the listed words,
 // and a two-part token (`nije.pronadeno`).
@@ -105,6 +107,11 @@ const INVISIBLE = /(?![\t\n\r])[\p{Cf}\p{Cc}]/gu;
 const HOLE = " ";
 // At most this many alternative texts per node (a ternary has two).
 const MAX_ALTERNATIVES = 32;
+// Folded texts are cut at this length, so a chain that doubles a text
+// (`const a1 = a0 + a0` ... `a40`) cannot build gigabytes during lint (review
+// FAIL c.6895754450). A sentence starts long before this point.
+const MAX_LENGTH = 4096;
+const clip = (text: string): string => text.slice(0, MAX_LENGTH);
 // One machine token with no space: a lowercase snake, kebab or dotted name
 // (a wire value such as `nije_ukljuceno`, a header `content-type`), an
 // UPPER_SNAKE error code, or a key with camelCase segments (`auth.signIn`).
@@ -152,10 +159,28 @@ export function textProblem(text: string): "letter" | "sentence" | null {
 }
 
 /** Readable decoded forms of a text: percent, base64 and hex encodings. */
+// Readable text (printable ASCII and Croatian letters), never random bytes.
+const readable = (t: string): boolean => /^[\x20-\x7E\t\n\rčćžšđČĆŽŠĐ]+$/u.test(t);
+// Encodings of Buffer.from whose decoded form the rule reads.
+const BUFFER_ENCODINGS = new Set([
+  "base64",
+  "base64url",
+  "hex",
+  "utf8",
+  "utf-8",
+  "latin1",
+  "ascii",
+]);
+
+/** The text Buffer.from(text, encoding) holds, read as UTF-8, when readable. */
+function decodeBuffer(text: string, encoding: string): string | null {
+  if (!BUFFER_ENCODINGS.has(encoding.toLowerCase())) return null;
+  const decoded = Buffer.from(text, encoding.toLowerCase() as BufferEncoding).toString("utf8");
+  return readable(decoded) ? decoded : null;
+}
+
 function decodings(text: string): string[] {
   const out: string[] = [];
-  // Readable text (printable ASCII and Croatian letters), never random bytes.
-  const readable = (t: string): boolean => /^[\x20-\x7E\t\n\rčćžšđČĆŽŠĐ]+$/u.test(t);
   if (/%[0-9a-f]{2}/iu.test(text)) {
     try {
       out.push(decodeURIComponent(text));
@@ -192,7 +217,7 @@ const SAME_WORDS = new Set(["toString", "valueOf", "trim", "trimStart", "trimEnd
 const CASE = new Set(["toLowerCase", "toUpperCase", "toLocaleLowerCase", "toLocaleUpperCase"]);
 
 function cross(left: string[], right: string[]): string[] {
-  return left.flatMap((l) => right.map((r) => l + r)).slice(0, MAX_ALTERNATIVES);
+  return left.flatMap((l) => right.map((r) => clip(l + r))).slice(0, MAX_ALTERNATIVES);
 }
 
 function memberName(node: Loose | undefined, fold: (n: Loose) => string[] | null): string | null {
@@ -205,6 +230,17 @@ function memberName(node: Loose | undefined, fold: (n: Loose) => string[] | null
  * The texts a node can write when the rule can fold it, holes as HOLE; null
  * when it writes nothing the rule can see.
  */
+/** The array literal a node stands for: itself, behind a wrapper or a `const` name. */
+function arrayOf(node: Loose | undefined | null, resolve: Resolve): Loose | null {
+  for (let depth = 0; node && depth < 8; depth++) {
+    if (node.type === "ArrayExpression") return node;
+    if (node.type === "Identifier") node = resolve(node);
+    else if (WRAPPERS.has(node.type)) node = node.expression;
+    else return null;
+  }
+  return null;
+}
+
 function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[] | null {
   const seen = new Set<Loose>();
   // Each node is folded once per file: a const shared by later ones
@@ -232,36 +268,47 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
     }
     return combos.some((c) => c.some((i) => i !== HOLE)) ? combos : null;
   }
-  /** The array literal a node stands for: itself, behind a wrapper or a `const` name. */
-  function arrayOf(node: Loose | undefined | null): Loose | null {
-    for (let depth = 0; node && depth < 8; depth++) {
-      if (node.type === "ArrayExpression") return node;
-      if (node.type === "Identifier") node = resolve(node);
-      else if (WRAPPERS.has(node.type)) node = node.expression;
-      else return null;
-    }
-    return null;
-  }
   function call(node: Loose): string[] | null {
     const callee = node.callee;
     const args = node.arguments ?? [];
-    const codes = charCodes(node, fold);
+    const codes = charCodes(node, fold, resolve);
     if (codes !== null) return [codes];
+    // Decoders called on a text the rule can fold (review FAIL c.6895754450):
+    // atob, Buffer.from with an encoding, decodeURIComponent and decodeURI.
+    const calleeName = callee?.type === "Identifier" ? callee.name : null;
+    if (calleeName === "atob" && args[0]) {
+      const texts = fold(args[0])?.map((t) => decodeBuffer(t, "base64"));
+      return texts?.some((t) => t !== null) ? texts.map((t) => t ?? HOLE) : null;
+    }
+    if ((calleeName === "decodeURIComponent" || calleeName === "decodeURI") && args[0]) {
+      const texts = fold(args[0]);
+      return texts ? texts.map((t) => decodings(t)[0] ?? t) : null;
+    }
+    if (
+      callee?.type === "MemberExpression" &&
+      callee.object?.type === "Identifier" &&
+      callee.object.name === "Buffer" &&
+      memberName(callee, fold) === "from" &&
+      args[0]
+    ) {
+      const encoding = args[1] ? fold(args[1])?.[0] : "utf8";
+      if (!encoding) return null;
+      const texts = fold(args[0])?.map((t) => decodeBuffer(t, encoding));
+      return texts?.some((t) => t !== null) ? texts.map((t) => t ?? HOLE) : null;
+    }
     if (callee?.type === "Identifier" && callee.name === "String" && args.length === 1)
       return fold(args[0]);
     const name = memberName(callee, fold);
     const object = callee?.object;
     if (!name || !object) return null;
-    const array = arrayOf(object);
+    const array = arrayOf(object, resolve);
     if (name === "join" && array) {
       const combos = items(array);
       if (!combos) return null;
       const seps = args[0] ? (fold(args[0]) ?? [HOLE]) : [","];
-      return combos.flatMap((list) => [
-        ...seps.map((sep) => list.join(sep)),
-        list.join(""),
-        list.join(" "),
-      ]);
+      return combos.flatMap((list) =>
+        [...seps.map((sep) => list.join(sep)), list.join(""), list.join(" ")].map(clip),
+      );
     }
     const base = fold(object);
     if (!base) return null;
@@ -315,7 +362,9 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
         // Joined as words; a multi-part machine token (`ne_radi`, `NOT_FOUND`)
         // is one value of a list, not a word of a sentence.
         const word = (i: string): string => (/[._-]|^[A-Z0-9]+$/u.test(i) && isToken(i) ? HOLE : i);
-        return combos ? combos.flatMap((list) => [list.join(""), list.map(word).join(" ")]) : null;
+        return combos
+          ? combos.flatMap((list) => [clip(list.join("")), clip(list.map(word).join(" "))])
+          : null;
       }
       case "CallExpression":
         return call(node);
@@ -337,10 +386,11 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
 }
 
 /** One code of String.fromCharCode: a number, `+n`, `-n` or a numeric string. */
-function code(node: Loose | undefined): number | null {
-  if (!node) return null;
+function code(node: Loose | undefined | null, resolve: Resolve, depth = 0): number | null {
+  if (!node || depth > 8) return null;
+  if (node.type === "Identifier") return code(resolve(node), resolve, depth + 1);
   if (node.type === "UnaryExpression" && (node.operator === "+" || node.operator === "-"))
-    return code(node.argument as Loose);
+    return code(node.argument as Loose, resolve, depth + 1);
   if (node.type !== "Literal") return null;
   const n = typeof node.value === "string" ? Number(node.value) : node.value;
   return typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : null;
@@ -350,22 +400,29 @@ function code(node: Loose | undefined): number | null {
  * The text of `String.fromCharCode(...)` or `String.fromCodePoint(...)`, also
  * with spread arrays and through `.apply(x, [...])` and `.call(x, ...)`.
  */
-function charCodes(node: Loose, fold: (n: Loose) => string[] | null): string | null {
+function charCodes(
+  node: Loose,
+  fold: (n: Loose) => string[] | null,
+  resolve: Resolve,
+): string | null {
   let callee = node.callee;
   let args = node.arguments ?? [];
   const via = memberName(callee, fold);
   if ((via === "apply" || via === "call") && callee?.object?.type === "MemberExpression") {
     callee = callee.object;
     args =
-      via === "apply" ? (args[1]?.elements?.filter((e): e is Loose => !!e) ?? []) : args.slice(1);
+      via === "apply"
+        ? (arrayOf(args[1], resolve)?.elements?.filter((e): e is Loose => !!e) ?? [])
+        : args.slice(1);
   }
   if (callee?.type !== "MemberExpression" || callee.object?.name !== "String") return null;
   const key = memberName(callee, fold);
   if (key !== "fromCharCode" && key !== "fromCodePoint") return null;
+  // A spread or `.apply` array may be a `const` name (review FAIL c.6895754450).
   const flat = args.flatMap((a) =>
-    a.type === "SpreadElement" ? ((a.argument as Loose).elements ?? []) : [a],
+    a.type === "SpreadElement" ? (arrayOf(a.argument as Loose, resolve)?.elements ?? [null]) : [a],
   );
-  const codes = flat.map((a) => code(a ?? undefined));
+  const codes = flat.map((a) => code(a, resolve));
   if (codes.length === 0 || !codes.every((c): c is number => c !== null)) return null;
   try {
     return key === "fromCharCode" ? String.fromCharCode(...codes) : String.fromCodePoint(...codes);
