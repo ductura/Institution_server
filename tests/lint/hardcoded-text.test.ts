@@ -221,12 +221,22 @@ describe("DECODER_ALLOWED", () => {
       'export const e = (b: boolean) => decodeURIComponent(b ? "%C4%91" : "x");',
       'export const e = (x?: string) => decodeURIComponent(x ?? "%C4%91");',
       'export const e = decodeURIComponent("%C4" + "%91");',
+      // Review FAIL c.6900338168: a wrapped callee, a template with text.
+      'export const e = decodeURIComponent!("%C4%91");',
+      'export const e = (decodeURIComponent as (s: string) => string)("%C4%91");',
+      "export const e = decodeURIComponent(`%C4%91`);",
     ])
       expect(await ids(code, file), code).toContain("builder");
     // Input with an empty fallback or a literal inside a call is still input.
     expect(
       await ids('export const e = (x?: string) => decodeURIComponent(x ?? "");', file),
     ).toEqual([]);
+    // Review FAIL c.6900338168: a template of input only, an empty template.
+    for (const code of [
+      "export const e = (x: string) => decodeURIComponent(`${x}`);",
+      "export const e = decodeURIComponent(``);",
+    ])
+      expect(await ids(code, file), code).toEqual([]);
     expect(
       await ids(
         'export const e = (x: string) => decodeURIComponent(x.replaceAll("+", " "));',

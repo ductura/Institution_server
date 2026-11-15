@@ -79,6 +79,8 @@ const BYTE_HOLDERS = ["Response", "Blob", "File"];
 const STRING_BUILDERS = new Set(["raw", "fromCharCode", "fromCodePoint"]);
 // Names under which the global object is reachable.
 const GLOBAL_HOLDERS = ["globalThis", "global", "window", "self"];
+// TypeScript wrappers and an optional chain around an expression.
+const WRAPPERS = /^TS(?:As|Satisfies|NonNull|TypeAssertion)Expression$|^ChainExpression$/u;
 // Array methods that may take String as their callback (`xs.map(String)`).
 const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex", "flatMap"];
 /**
@@ -281,9 +283,12 @@ export const noHardcodedText: Rule.RuleModule = {
         | undefined;
       if (!n) return false;
       if (n.type === "Literal") return n.value !== "";
-      if (n.type === "TemplateLiteral") return true;
-      if (/^TS(?:As|Satisfies|NonNull|TypeAssertion)Expression$|^ChainExpression$/u.test(n.type))
-        return literalLeaf(n.expression);
+      // A template is a literal only when a static piece has text (`${x}` is input).
+      if (n.type === "TemplateLiteral")
+        return ((n.quasis ?? []) as { value: { cooked?: string | null } }[]).some(
+          (q) => (q.value.cooked ?? "") !== "",
+        );
+      if (WRAPPERS.test(n.type)) return literalLeaf(n.expression);
       if (n.type === "SequenceExpression") return literalLeaf(n.expressions?.at(-1));
       if (n.type === "ConditionalExpression")
         return literalLeaf(n.consequent) || literalLeaf(n.alternate);
@@ -300,6 +305,9 @@ export const noHardcodedText: Rule.RuleModule = {
       if (name === "TextDecoder") return true;
       let call = node.parent;
       if (call?.type === "MemberExpression" && call.object === node) call = call.parent;
+      // `decodeURIComponent!(…)`, `(decodeURIComponent as F)(…)`: the callee is
+      // wrapped (review FAIL c.6900338168 on #65).
+      while (call && WRAPPERS.test(call.type)) call = call.parent;
       const isCall = call?.type === "CallExpression" || call?.type === "NewExpression";
       return !(isCall && literalLeaf(call?.arguments?.[0]));
     }
