@@ -63,10 +63,9 @@ export const IMPORT_META = "import.meta";
 export const DYNAMIC_LOAD_ALLOWED: Readonly<
   Record<string, Readonly<Record<string, readonly string[]>>>
 > = {
-  // The local entry point reads PORT (found by lint, not in the c.6891713609 table).
-  "server/index.ts": { process: ["env"] },
   // The entry point reads the environment and sets the exit code (S-1B-a, DAN-775).
-  "server/server.ts": { process: ["env", "exitCode"] },
+  // On shutdown it listens to SIGTERM and SIGINT and exits with a code (S-1B-c, DAN-778).
+  "server/server.ts": { process: ["env", "exitCode", "exit", "on", "off"] },
   // The logs hook waits for stdout and stderr to drain (S-1B-c, DAN-778).
   "server/http/shutdown.ts": { process: ["stdout", "stderr"] },
   "server/config/environment.ts": { process: ["env"] },
@@ -120,6 +119,9 @@ export const KEY_LITERAL_ALLOWED: Readonly<
 /** node: modules production server code may import, always with the prefix. */
 export const NODE_MODULES: readonly string[] = [
   ...["crypto", "fs", "fs/promises", "path", "url", "util", "http", "async_hooks"],
+  // net.Server.close stops listening without ending connections that still
+  // write a body (server/http/start.ts, S-1B-c, DAN-778); it loads no code.
+  "net",
 ];
 // A package subpath: plain segments, no ".", ".." or empty segment.
 const SUBPATH_RE = /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)*$/u;

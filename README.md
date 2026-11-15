@@ -11,7 +11,8 @@ Zajednički API za sva Ductura sučelja: prijava AAI@EduHr, ovlasti, baza i poza
 
 ```bash
 pnpm install
-pnpm start              # samo lokalno: http://localhost:4000 (PORT mijenja priključak)
+pnpm build              # jedan ulaz server/server.ts -> jedna datoteka dist/server.js (esbuild)
+pnpm start              # node dist/server.js; traži APP_DATABASE_URL, sluša na HOST:PORT (zadano 127.0.0.1:4000)
 pnpm typecheck          # TypeScript strict, bez izlaznih datoteka
 pnpm lint               # ESLint nad cijelim repoom, bez upozorenja
 pnpm test               # unit, property i integration, jedan za drugim (bez baze)
@@ -23,7 +24,7 @@ pnpm contracts:generate # ponovno generira server/contracts/generated i openapi/
 pnpm contracts:breaking [ref] # ruši se kad ugovor lomi klijente openapi/v1.json na ref (zadano origin/main)
 ```
 
-Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
+Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm build`); skripte i testovi se pokreću izravno (Node 24, `tsx`), bez koraka prevođenja. Neispravna okolina zaustavlja pokretanje prije slušanja, s izlaznim kodom 1 i retkom koji imenuje varijablu, nikad vrijednost. Baza se pri pokretanju ne otvara.
 
 ## Struktura
 
@@ -92,9 +93,11 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 
 ## API
 
+Ulaz `server/server.ts` danas montira samo `GET /api/v1/health`. Ostale rute u tablici ima samo stari kostur `server/app.ts`, koji ostaje kao dimni test do S-1H.3 i više se ne pokreće kao server.
+
 | Metoda | Putanja              | Opis                                  |
 | ------ | -------------------- | ------------------------------------- |
-| GET    | `/health`            | Provjera rada                         |
+| GET    | `/api/v1/health`     | Provjera rada (`dist/server.js`)      |
 | GET    | `/api/documents`     | Dokumenti prijavljenog korisnika      |
 | GET    | `/api/documents/:id` | Jedan dokument (vlasnik ili suradnik) |
 | PUT    | `/api/documents/:id` | Izmjena (samo vlasnik)                |

@@ -1,5 +1,5 @@
-// The one entry point of the server (S-1B-a, DAN-775); part a2 builds it
-// into dist/server.js. Read top to bottom it is the overview: the environment check, the
+// The one entry point of the server (S-1B-a, DAN-775), built into
+// dist/server.js by `pnpm build` (scripts/build). Read top to bottom it is the overview: the environment check, the
 // databases, the layers, the areas whose routes are mounted, the start and the
 // place for shutdown. It may import only http, settings and config
 // (docs/server-map.md §2); it never opens a database connection itself.
@@ -9,12 +9,17 @@ import {
   listenAddress,
   listenProblems,
   originProblems,
+  shutdownGraceMs,
+  shutdownProblems,
 } from "./config/index.ts";
 import {
   type AreaWithRoutes,
   createDatabases,
-  HEALTH_ROUTE,
   createLayers,
+  createShutdownCoordinator,
+  FLUSH_LOGS,
+  HEALTH_ROUTE,
+  installShutdown,
   routesOf,
   startServer,
 } from "./http/index.ts";
@@ -24,6 +29,7 @@ import {
 const problems = [
   ...environmentProblems(process.env),
   ...listenProblems(process.env),
+  ...shutdownProblems(process.env),
   ...originProblems(process.env),
 ];
 
@@ -56,10 +62,13 @@ async function main(): Promise<void> {
     return;
   }
   const { host, port } = listenAddress(process.env);
+  const databases = createDatabases();
+  const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
   const running = await startServer({
     host,
     port,
-    databases: createDatabases(),
+    databases,
+    shutdown,
     layers: LAYERS,
     routes: [HEALTH_ROUTE, ...routesOf(AREAS)],
   }).catch((error: unknown) => {
@@ -73,8 +82,20 @@ async function main(): Promise<void> {
   if (running === undefined) return;
   console.log(JSON.stringify({ event: "server.listening", host, port: running.port }));
 
-  // 5. Shutdown. S-1B-c attaches SIGTERM and draining here, through
-  //    running.close(). Until then SIGTERM ends the process (Node default).
+  // 5. Shutdown (S-1B-c). The first SIGTERM or SIGINT: stop accepting, finish
+  //    the started requests, flush the logs, close the databases, exit 0;
+  //    whatever is left at the deadline exits 1 (server/http/shutdown.ts).
+  type Signal = "SIGTERM" | "SIGINT";
+  const signals = {
+    on: (signal: Signal, listener: () => void) => process.on(signal, listener),
+    off: (signal: Signal, listener: () => void) => process.off(signal, listener),
+  };
+  installShutdown(signals, {
+    coordinator: shutdown,
+    listener: running,
+    hooks: [FLUSH_LOGS, { name: "databases", run: () => databases.close() }],
+    exit: (code) => process.exit(code),
+  });
 }
 
 await main();

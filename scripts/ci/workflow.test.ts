@@ -115,6 +115,24 @@ describe("ci.yml", () => {
     );
   });
 
+  // S-1F-c a2 (DAN-779): the legal database is created, provisioned and
+  // migrated in the main cluster after the main migrations, before the tests.
+  it("the database job brings up the legal database through the locked runner before the migration tests", () => {
+    const database = job("database");
+    const create = database.indexOf("-f db/legal/local/create-database.sql");
+    const bootstrap = database.indexOf("-f db/legal/local/migrator.sql");
+    const migrate = database.indexOf(
+      'node scripts/db/migrate-locked.ts --database legal --url "$LEGAL_DATABASE_URL?sslmode=disable&role=ductus_legal_migrator"',
+    );
+    const count = database.indexOf("find db/legal/migrations -maxdepth 1 -name '*.sql'");
+    const tests = database.search(/\n {8}run: pnpm test:database\n/);
+    expect(create).toBeGreaterThan(database.indexOf("-f db/main/local/app-login.sql"));
+    expect(bootstrap).toBeGreaterThan(create);
+    expect(migrate).toBeGreaterThan(bootstrap);
+    expect(count).toBeGreaterThan(migrate);
+    expect(tests).toBeGreaterThan(count);
+  });
+
   it("checks run every repository check and test project", () => {
     const checks = job("checks");
     for (const script of [
