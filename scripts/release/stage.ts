@@ -2,9 +2,17 @@ import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "no
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { Type, type Static } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 import ts from "typescript";
 
-import { REGISTRY, REPOSITORY_URL, TEST_ONLY_PACKAGES, type PackageSpec } from "./manifest.ts";
+import {
+  CONTRACTS,
+  REGISTRY,
+  REPOSITORY_URL,
+  TEST_ONLY_PACKAGES,
+  type PackageSpec,
+} from "./manifest.ts";
 
 // Stages a package for `npm publish` (U10, DAN-742): TypeScript compiled to
 // JavaScript with declarations, the data files, and a package.json written
@@ -20,17 +28,33 @@ type SourceManifest = {
   readonly dependencies?: Readonly<Record<string, string>>;
 };
 
-export type PublishManifest = {
-  readonly name: string;
-  readonly version: string;
-  readonly description: string;
-  readonly type: "module";
-  readonly exports: Readonly<Record<string, { readonly types: string; readonly default: string }>>;
-  readonly files: readonly string[];
-  readonly dependencies: Readonly<Record<string, string>>;
-  readonly publishConfig: { readonly registry: string };
-  readonly repository: { readonly type: "git"; readonly url: string; readonly directory: string };
-};
+const EXACT = "^\\d+\\.\\d+\\.\\d+$";
+const Strict = { additionalProperties: false };
+
+// The whole publish manifest: no other field (private, bin, directories,
+// peer, optional or bundled dependencies, imports, main), and publishConfig is
+// the registry alone, since pnpm and yarn would publish its other fields.
+const PublishManifestSchema = Type.Object(
+  {
+    name: Type.String({ pattern: "^@ductura/[a-z0-9-]+$" }),
+    version: Type.String({ pattern: EXACT }),
+    description: Type.String(),
+    type: Type.Literal("module"),
+    exports: Type.Record(
+      Type.String(),
+      Type.Object({ types: Type.String(), default: Type.String() }, Strict),
+    ),
+    files: Type.Array(Type.String()),
+    dependencies: Type.Record(Type.String(), Type.String({ pattern: EXACT })),
+    publishConfig: Type.Object({ registry: Type.Literal(REGISTRY) }, Strict),
+    repository: Type.Object(
+      { type: Type.Literal("git"), url: Type.Literal(REPOSITORY_URL), directory: Type.String() },
+      Strict,
+    ),
+  },
+  Strict,
+);
+export type PublishManifest = Static<typeof PublishManifestSchema>;
 
 const toJs = (source: string): string => `./${source.replace(/\.ts$/u, ".js")}`;
 const toDts = (source: string): string => `./${source.replace(/\.ts$/u, ".d.ts")}`;
@@ -60,35 +84,25 @@ export function publishManifest(spec: PackageSpec, source: SourceManifest): Publ
   };
 }
 
-const EXACT_VERSION = /^\d+\.\d+\.\d+$/u;
-
-/** Every way `manifest` (as parsed JSON) is not fit to publish as `spec`. */
-export function manifestErrors(spec: PackageSpec, manifest: Record<string, unknown>): string[] {
+/** Every way `manifest` (parsed JSON) is not fit to publish as `spec`. */
+export function manifestErrors(spec: PackageSpec, manifest: unknown): string[] {
+  const shape = [...Value.Errors(PublishManifestSchema, manifest)].map(
+    (error) => `manifest ${error.path || "/"}: ${error.message}`,
+  );
+  if (shape.length > 0) return shape;
+  const own = manifest as PublishManifest;
   const errors: string[] = [];
-  if ("private" in manifest) errors.push("private is set");
-  if ("bin" in manifest || "scripts" in manifest) errors.push("bin or scripts is set");
-  if (manifest.name !== spec.name || !spec.name.startsWith("@ductura/"))
-    errors.push("name is not the package name in @ductura");
-  const config = manifest.publishConfig as { registry?: unknown } | undefined;
-  if (config?.registry !== REGISTRY) errors.push(`registry is not ${REGISTRY}`);
-  const repository = manifest.repository as { url?: unknown } | undefined;
-  if (repository?.url !== REPOSITORY_URL) errors.push("repository is not ductura/server");
-  const exports = (manifest.exports ?? {}) as Record<string, Record<string, string>>;
-  if ("./pglite" in exports) errors.push("exports /pglite");
-  for (const [path, target] of Object.entries(exports))
-    for (const file of Object.values(target))
+  if (own.name !== spec.name) errors.push(`manifest names ${own.name}`);
+  if ("./pglite" in own.exports) errors.push("exports /pglite");
+  for (const [path, target] of Object.entries(own.exports))
+    for (const file of [target.types, target.default])
       if (!spec.files.includes(file.replace(/^\.\//u, "")))
         errors.push(`export ${path} points to ${file}, not in the package`);
-  const dependencies = (manifest.dependencies ?? {}) as Record<string, unknown>;
-  for (const [name, version] of Object.entries(dependencies)) {
+  for (const name of Object.keys(own.dependencies)) {
     if (!spec.dependencies.includes(name)) errors.push(`unexpected dependency ${name}`);
-    if (typeof version !== "string" || !EXACT_VERSION.test(version))
-      errors.push(`dependency ${name} has no exact version`);
+    if (spec === CONTRACTS && TEST_ONLY_PACKAGES.includes(name))
+      errors.push(`contracts depend on ${name}`);
   }
-  if (spec.name === "@ductura/contracts")
-    for (const field of ["dependencies", "peerDependencies", "optionalDependencies"])
-      for (const name of Object.keys((manifest[field] ?? {}) as object))
-        if (TEST_ONLY_PACKAGES.includes(name)) errors.push(`contracts depend on ${name}`);
   return errors;
 }
 

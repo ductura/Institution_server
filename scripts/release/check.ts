@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, posix, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { PACKAGES, TEST_FAKES, type PackageSpec } from "./manifest.ts";
@@ -22,6 +22,44 @@ export function importStaged(entry: string, nodeEnv: string) {
   return { status: run.status, stderr: run.stderr };
 }
 
+const GUARD_MESSAGE = "fake OIDC runs only locally and in CI";
+const SPECIFIER = /(?:\bfrom|\bimport)\s*\(?\s*["']([^"']+)["']/gu;
+
+/** Every file under `dir`, as a path relative to it with "/". */
+function filesOnDisk(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(dir, join(entry.parentPath, entry.name)).replaceAll("\\", "/"));
+}
+
+/**
+ * Every import of the packed JavaScript that the installed package could not
+ * satisfy: a relative file outside the list, or a package it does not declare.
+ */
+export function importErrors(
+  code: Readonly<Record<string, string>>,
+  files: readonly string[],
+  dependencies: readonly string[],
+): string[] {
+  const errors: string[] = [];
+  for (const [path, text] of Object.entries(code))
+    for (const [, specifier = ""] of text.matchAll(SPECIFIER)) {
+      if (specifier.startsWith("node:")) continue;
+      if (specifier.startsWith(".")) {
+        const target = posix.normalize(posix.join(posix.dirname(path), specifier));
+        if (!files.includes(target))
+          errors.push(`${path} imports ${specifier}, not in the package`);
+        continue;
+      }
+      const name = specifier
+        .split("/")
+        .slice(0, specifier.startsWith("@") ? 2 : 1)
+        .join("/");
+      if (!dependencies.includes(name)) errors.push(`${path} imports undeclared ${name}`);
+    }
+  return errors;
+}
+
 /** Every problem of the staged package of `spec` in `dir`. */
 export function checkStaged(spec: PackageSpec, dir: string): string[] {
   const pack = packFiles(dir)[0];
@@ -30,19 +68,27 @@ export function checkStaged(spec: PackageSpec, dir: string): string[] {
     string,
     unknown
   >;
+  const read = (list: readonly string[]) =>
+    Object.fromEntries(list.map((path) => [path, readFileSync(join(dir, path), "utf8")]));
   const errors = [
     ...(pack.name === spec.name ? [] : [`npm pack names ${pack.name}`]),
     ...compareFiles(paths, spec.files),
+    ...compareFiles(filesOnDisk(dir), spec.files).map((error) => `on disk: ${error}`),
+    ...importErrors(
+      read(paths.filter((path) => path.endsWith(".js"))),
+      paths,
+      Object.keys((manifest.dependencies ?? {}) as object),
+    ),
     ...manifestErrors(spec, manifest),
-    ...scanSecrets(
-      Object.fromEntries(paths.map((path) => [path, readFileSync(join(dir, path), "utf8")])),
-    ).map((finding) => `${finding.kind} in ${finding.path}`),
+    ...scanSecrets(read(paths)).map((finding) => `${finding.kind} in ${finding.path}`),
   ];
   if (spec === TEST_FAKES) {
     for (const file of Object.values(spec.exports)) {
       const entry = join(dir, file.replace(/\.ts$/u, ".js"));
-      if (importStaged(entry, "production").status === 0)
-        errors.push(`${file} loads with NODE_ENV=production`);
+      // Refused by the guard, not by some other error.
+      const production = importStaged(entry, "production");
+      if (production.status === 0 || !production.stderr.includes(GUARD_MESSAGE))
+        errors.push(`${file} is not refused by the guard with NODE_ENV=production`);
       const local = importStaged(entry, "test");
       if (local.status !== 0) errors.push(`${file} does not load in test: ${local.stderr}`);
     }

@@ -11,7 +11,8 @@ export const PackOutputSchema = Type.Tuple([
     version: Type.String({ minLength: 1 }),
     files: Type.Array(
       Type.Object({
-        path: Type.String({ minLength: 1 }),
+        // Relative, inside the package: check.ts reads every path.
+        path: Type.String({ pattern: "^(?!/)(?!(?:.*/)?\\.\\.(?:/|$))[^\\\\]+$" }),
         size: Type.Integer({ minimum: 0 }),
         mode: Type.Integer({ minimum: 0 }),
       }),

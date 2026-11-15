@@ -6,9 +6,11 @@ import { describe, expect, it } from "vitest";
 import { API_VERSION } from "../../server/contracts/index.ts";
 import {
   compareFiles,
+  importErrors,
   CONTRACTS,
   manifestErrors,
   PACKAGES,
+  REGISTRY,
   parsePackOutput,
   publishManifest,
   scanSecrets,
@@ -46,6 +48,14 @@ describe("npm pack output", () => {
     ["a file without path", JSON.stringify([{ ...PACK, files: [{ size: 1, mode: 420 }] }])],
     ["an empty path", JSON.stringify([{ ...PACK, files: [{ path: "", size: 1, mode: 420 }] }])],
     ["files not an array", JSON.stringify([{ ...PACK, files: "a.js" }])],
+    [
+      "a path outside",
+      JSON.stringify([{ ...PACK, files: [{ path: "../x", size: 1, mode: 420 }] }]),
+    ],
+    [
+      "an absolute path",
+      JSON.stringify([{ ...PACK, files: [{ path: "/x", size: 1, mode: 420 }] }]),
+    ],
   ])("refuses %s", (_, text) => {
     expect(() => parsePackOutput(text)).toThrow(/npm pack/u);
   });
@@ -74,6 +84,13 @@ describe("secret scan", () => {
     [`npm_${"c".repeat(36)}`, "npm token"],
     ["AKIAABCDEFGHIJKLMNOP", "AWS access key"],
     ["postgres://user:pass@db.invalid/x", "database URL with password"],
+    ["-----BEGIN PGP PRIVATE KEY BLOCK-----", "private key"],
+    ["POSTGRES://u:pw@db.invalid", "database URL with password"],
+    ["postgres://:pw@db.invalid", "database URL with password"],
+    ["postgresql://db.invalid/x?password=pw", "database URL with password"],
+    [`npm_${"c".repeat(37)}`, "npm token"],
+    ["ASIAABCDEFGHIJKLMNOP", "AWS access key"],
+    [`{"kty":"EC","d":"${"k".repeat(43)}"}`, "private JWK"],
   ])("finds %j", (text, kind) => {
     expect(scanSecrets({ "x.js": text })).toEqual([{ path: "x.js", kind }]);
   });
@@ -108,42 +125,81 @@ describe("publish manifest", () => {
   });
 
   it.each([
-    ["private", { private: true }, /private is set/u],
-    ["bin", { bin: { x: "./x.js" } }, /bin or scripts/u],
+    ["private", { private: true }, /manifest \/private/u],
+    ["bin", { bin: { x: "./x.js" } }, /manifest \/bin/u],
+    ["directories.bin", { directories: { bin: "./b" } }, /manifest \/directories/u],
+    ["main", { main: "./x.js" }, /manifest \/main/u],
+    ["imports", { imports: { "#x": "./x.js" } }, /manifest \/imports/u],
+    ["a peer", { peerDependencies: { "@electric-sql/pglite": "*" } }, /manifest \/peer/u],
+    ["an optional", { optionalDependencies: { x: "1.0.0" } }, /manifest \/optional/u],
+    ["bundled", { bundleDependencies: ["oidc-provider"] }, /manifest \/bundle/u],
     [
       "another registry",
       { publishConfig: { registry: "https://registry.npmjs.org" } },
       /registry/u,
     ],
-    ["another name", { name: "test-fakes" }, /name/u],
+    [
+      "publishConfig with exports",
+      { publishConfig: { registry: REGISTRY, exports: { "./pglite": {} } } },
+      /publishConfig\/exports/u,
+    ],
+    ["another name", { name: "@ductura/other" }, /manifest names/u],
+    ["a name outside @ductura", { name: "test-fakes" }, /manifest \/name/u],
     [
       "another repository",
-      { repository: { url: "git+https://github.com/x/y.git" } },
+      { repository: { type: "git", url: "x", directory: "y" } },
       /repository/u,
     ],
     [
       "/pglite",
-      { exports: { "./pglite": { default: "./packages/test-fakes/pglite/index.js" } } },
-      /pglite/u,
+      { exports: { "./pglite": { types: "./a.d.ts", default: "./a.js" } } },
+      /exports \/pglite/u,
     ],
     [
+      "nested conditions",
+      { exports: { ".": { node: { default: "./a.js" } } } },
+      /manifest \/exports/u,
+    ],
+    ["string exports", { exports: "./a.js" }, /manifest \/exports/u],
+    [
       "a missing export target",
-      { exports: { ".": { default: "./nope.js" } } },
+      { exports: { ".": { types: "./nope.d.ts", default: "./nope.js" } } },
       /not in the package/u,
     ],
     ["an extra dependency", { dependencies: { "@electric-sql/pglite": "0.3.14" } }, /unexpected/u],
-    ["a range", { dependencies: { "oidc-provider": "^9.12.2" } }, /exact version/u],
+    ["a range", { dependencies: { "oidc-provider": "^9.12.2" } }, /manifest \/dependencies/u],
   ])("test-fakes refuses %s", (_, change, error) => {
     expect(manifestErrors(TEST_FAKES, { ...manifest(), ...change }).join("\n")).toMatch(error);
   });
 
-  it.each(["dependencies", "peerDependencies", "optionalDependencies"])(
-    "contracts refuse test-fakes in %s",
-    (field) => {
-      const own = { ...manifest(CONTRACTS), [field]: { "@ductura/test-fakes": "0.1.0" } };
-      expect(manifestErrors(CONTRACTS, own).join("\n")).toMatch(
-        /contracts depend on @ductura\/test-fakes/u,
-      );
-    },
-  );
+  it.each([null, "x", []])("refuses the manifest %j", (value) => {
+    expect(manifestErrors(TEST_FAKES, value)).not.toEqual([]);
+  });
+
+  it("contracts refuse test-fakes as a dependency", () => {
+    const own = { ...manifest(CONTRACTS), dependencies: { "@ductura/test-fakes": "0.1.0" } };
+    expect(manifestErrors(CONTRACTS, own).join("\n")).toMatch(
+      /contracts depend on @ductura\/test-fakes/u,
+    );
+  });
+});
+
+describe("imports of the packed code", () => {
+  const FILES = ["a/index.js", "a/b.js"];
+  it("accepts node:, listed files and declared packages", () => {
+    const code = 'import "node:fs";\nexport * from "./b.js";\nimport { x } from "dep/sub";';
+    expect(importErrors({ "a/index.js": code }, FILES, ["dep"])).toEqual([]);
+  });
+
+  it.each([
+    ['export * from "./extra.js";', "a/index.js imports ./extra.js, not in the package"],
+    ['import "../../outside.js";', "a/index.js imports ../../outside.js, not in the package"],
+    [
+      'import { Type } from "@sinclair/typebox/value";',
+      "a/index.js imports undeclared @sinclair/typebox",
+    ],
+    ['const m = await import("oidc-provider");', "a/index.js imports undeclared oidc-provider"],
+  ])("refuses %s", (code, error) => {
+    expect(importErrors({ "a/index.js": code }, FILES, ["dep"])).toEqual([error]);
+  });
 });

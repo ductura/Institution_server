@@ -55,6 +55,25 @@ describe("staged packages", () => {
     60_000,
   );
 
+  it("refuses a test-fakes entry that fails in production for another reason", () => {
+    const dir = stage();
+    const file = join(dir, "packages/test-fakes/clock/index.js");
+    writeFileSync(file, 'throw new Error("unrelated");\n');
+    expect(checkStaged(TEST_FAKES, dir)).toContain(
+      "@ductura/test-fakes: packages/test-fakes/clock/index.ts is not refused by the guard with NODE_ENV=production",
+    );
+  }, 120_000);
+
+  it("refuses an unlisted file left on disk and an import of it", () => {
+    const dir = stage(CONTRACTS);
+    writeFileSync(join(dir, "extra.js"), "export {};\n");
+    const index = join(dir, "server/contracts/generated/index.js");
+    writeFileSync(index, `${readFileSync(index, "utf8")}export * from "../../../extra.js";\n`);
+    const errors = checkStaged(CONTRACTS, dir);
+    expect(errors).toContain("@ductura/contracts: on disk: unexpected file extra.js");
+    expect(errors.join("\n")).toMatch(/imports \.\.\/\.\.\/\.\.\/extra\.js, not in the package/u);
+  }, 60_000);
+
   it("refuses a missing file", () => {
     const dir = stage(CONTRACTS);
     rmSync(join(dir, "openapi", "v1.json"));
@@ -74,14 +93,14 @@ describe("staged packages", () => {
     editManifest(dir, (manifest) => {
       manifest.private = true;
     });
-    expect(checkStaged(CONTRACTS, dir).join("\n")).toMatch(/private is set/u);
+    expect(checkStaged(CONTRACTS, dir).join("\n")).toMatch(/manifest \/private/u);
   }, 60_000);
 
   it("refuses a test-fakes root that loads in production", () => {
     const dir = stage();
     writeFileSync(join(dir, "packages/test-fakes/release.js"), "export const x = 1;\n");
     expect(checkStaged(TEST_FAKES, dir)).toContain(
-      "@ductura/test-fakes: packages/test-fakes/release.ts loads with NODE_ENV=production",
+      "@ductura/test-fakes: packages/test-fakes/release.ts is not refused by the guard with NODE_ENV=production",
     );
   }, 120_000);
 });
