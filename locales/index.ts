@@ -1,6 +1,14 @@
 export { messagesHr, textOf, type MessageKey, type Messages } from "./hr.ts";
 export { messagesEn } from "./en.ts";
-export { catalogueGaps, type CatalogueGaps } from "./parity.ts";
+export {
+  catalogueGaps,
+  isCompleteCatalogue,
+  offeredLanguages,
+  DEFAULT_LANGUAGE,
+  INTERFACE_CATALOGUES,
+  OFFERED_LANGUAGES,
+  type CatalogueGaps,
+} from "./parity.ts";
 export {
   digestOf,
   sourcePath,

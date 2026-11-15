@@ -6,6 +6,8 @@
  * `{placeholders}` in every text. The `Messages` type checks the shape when a
  * catalogue is compiled; this checks the values a catalogue holds at run time.
  */
+import { messagesEn } from "./en.ts";
+import { messagesHr } from "./hr.ts";
 
 type Leaf =
   | { readonly kind: "text"; readonly placeholders: string }
@@ -97,3 +99,88 @@ export function catalogueGaps(reference: unknown, other: unknown): CatalogueGaps
     if (want.get(id)?.leaf.kind !== leaf.kind) gaps.extra.push(path);
   return gaps;
 }
+
+/**
+ * A text a reader cannot see: white space, format characters (zero-width
+ * spaces and joiners, soft hyphen) and the filler letters that render blank.
+ */
+const INVISIBLE = /^[\s\p{Cf}\u115F\u1160\u3164\uFFA0\u2800]*$/u;
+
+/**
+ * Texts of a catalogue that hold nothing a reader can see, and sections whose
+ * form (list or table) differs from the reference. A missing text would be
+ * shown as an empty label, and a table where a list stands has no length.
+ */
+function unfitTexts(reference: unknown, node: unknown, segments: readonly string[] = []): string[] {
+  if (typeof node === "string") return INVISIBLE.test(node) ? [shownPath(segments)] : [];
+  if (typeof node !== "object" || node === null) return [];
+  if (Array.isArray(node) !== Array.isArray(reference)) return [shownPath(segments)];
+  return Object.entries(node).flatMap(([key, value]) =>
+    unfitTexts(
+      typeof reference === "object" && reference !== null
+        ? (reference as Record<string, unknown>)[key]
+        : undefined,
+      value,
+      [...segments, key],
+    ),
+  );
+}
+
+/**
+ * A catalogue is complete when it has every key of the reference and no other,
+ * the same `{placeholders}` in every text, a list wherever the reference has
+ * one, and no text a reader cannot see. It is checked by
+ * value, at run time; a catalogue that throws while it is read is not complete.
+ */
+export function isCompleteCatalogue(reference: unknown, candidate: unknown): boolean {
+  try {
+    const gaps = catalogueGaps(reference, candidate);
+    return (
+      gaps.missing.length === 0 &&
+      gaps.extra.length === 0 &&
+      gaps.placeholders.length === 0 &&
+      unfitTexts(reference, candidate).length === 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Croatian is the default interface language and the reference of every other catalogue. */
+export const DEFAULT_LANGUAGE = "hr";
+
+/** An ISO 639-1 code other than Croatian, in lower case: `HR`, ` hr` or `hr-HR` are not candidates. */
+const LANGUAGE_CODE = /^(?!hr$)[a-z]{2}$/;
+
+/**
+ * The interface languages to offer: Croatian always and first, then every other
+ * language whose catalogue is complete against the Croatian one (S-1L.5, DAN-781).
+ * Croatian is never taken from `catalogues`: an entry under `hr`, or under any
+ * code that is not two lower-case letters, is not a candidate, and catalogues
+ * that cannot be listed leave only the default.
+ */
+export function offeredLanguages(
+  reference: unknown,
+  catalogues: Readonly<Record<string, unknown>>,
+): string[] {
+  const offered = [DEFAULT_LANGUAGE];
+  try {
+    for (const [language, catalogue] of Object.entries(catalogues))
+      if (LANGUAGE_CODE.test(language) && isCompleteCatalogue(reference, catalogue))
+        offered.push(language);
+  } catch {
+    // Catalogues that cannot be listed offer nothing but the default.
+    return [DEFAULT_LANGUAGE];
+  }
+  return offered;
+}
+
+/** Every interface catalogue of this repository other than Croatian, by language. */
+export const INTERFACE_CATALOGUES: Readonly<Record<string, unknown>> = Object.freeze({
+  en: messagesEn,
+});
+
+/** The languages the interface offers today; a catalogue that falls behind Croatian drops out. */
+export const OFFERED_LANGUAGES: readonly string[] = Object.freeze(
+  offeredLanguages(messagesHr, INTERFACE_CATALOGUES),
+);
