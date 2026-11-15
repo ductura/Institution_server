@@ -26,6 +26,7 @@ async function lint({ file, code }: Fixture): Promise<ESLint.LintResult["message
 
 const SRC = "export const a = 1;\n";
 const AT = "server/a/b.ts";
+const SCRIPT = "scripts/a/b.ts";
 const imp = (spec: string): string => `import { x } from "${spec}";\n`;
 
 const BOUNDARY = "local/import-boundary";
@@ -49,6 +50,9 @@ const failing: Case[] = [
   // area-boundary: areas import each other only as docs/server-map.md §2 allows
   // (S-1A-b; tests/lint/area-boundary.test.ts)
   { file: "server/log/b.ts", code: imp("../database/index.ts"), rule: "local/area-boundary" },
+  // no-dynamic-load: loader globals and modules off the allow-list (S-1A-c;
+  // tests/lint/dynamic-load.test.ts)
+  { file: AT, code: "export const m = process.argv;\n", rule: "local/no-dynamic-load" },
   // import-boundary: leaving the folder other than through <folder>/index.ts
   ...["./sub/c.ts", "../c.ts", "../sib/c.ts", "./x/../../y/z.ts", "./sub/INDEX.ts"].map((spec) => ({
     file: AT,
@@ -192,16 +196,18 @@ const passing: Fixture[] = [
     "../sib/index.ts",
     "./sub/../c.ts",
     "node:fs",
-    "fast-check",
   ].map((spec) => ({ file: AT, code: imp(spec) })),
+  // Outside server/: server code may load only its dependencies and no
+  // import()/require (local/no-dynamic-load, tests/lint/dynamic-load.test.ts).
+  { file: SCRIPT, code: imp("fast-check") },
   { file: AT, code: 'export { x } from "./c.ts";\nexport * from "./sub/index.ts";\n' },
   {
     file: AT,
     code: 'import type { T } from "./sub/index.ts";\ntype M = typeof import("../index.ts");\n',
   },
-  { file: AT, code: 'import m = require("./sub/index.ts");\n' },
+  { file: SCRIPT, code: 'import m = require("./sub/index.ts");\n' },
   {
-    file: AT,
+    file: SCRIPT,
     code: 'const m = await import("./sub/index.ts");\nconst n = await import(`./c.ts`);\n',
   },
   ...[

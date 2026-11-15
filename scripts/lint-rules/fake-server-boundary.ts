@@ -15,7 +15,7 @@ const FAKE_SERVER_RE = /(?:^|\/)generated\/fake-server(?:$|[/?#.])/iu;
 // Test code, by its path from the repository root: the folders and suffixes of
 // TEST_ONLY_FILES in eslint.config.ts. It may import the fake server, so a
 // re-export there would carry it into production code.
-const TEST_ONLY_RE =
+export const TEST_ONLY_RE =
   /^(?:test-support|server\/test-server|packages\/test-fakes)(?:\/|$)|\.test\.[cm]?[jt]s$/iu;
 // The test fakes package (U9) by name, with or without a subpath, any case.
 const TEST_FAKES_PACKAGE_RE = /^@ductura\/test-fakes(?:$|[/?#])/iu;

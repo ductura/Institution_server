@@ -255,6 +255,17 @@ const ESTREE_NODE_NAMES = [
   "CallExpression",
   "TSImportType",
   "TSExternalModuleReference",
+  // local/no-dynamic-load (DAN-770).
+  "MetaProperty",
+  "TSImportEqualsDeclaration",
+  "MemberExpression",
+  "Property",
+  "ImportSpecifier",
+  "ImportDefaultSpecifier",
+  "ImportNamespaceSpecifier",
+  "ExportSpecifier",
+  "Literal",
+  "TemplateElement",
 ];
 
 // The naming rule, with extra exact property names (`properties`) and extra
@@ -419,6 +430,15 @@ export default defineConfig(
     files: ["**/*.ts"],
     ignores: TEST_ONLY_FILES,
     rules: { "local/no-fake-server-import": "error" },
+  },
+  {
+    // Production server code loads modules only by a static import, through an
+    // allow-list (S-1A-c, DAN-770). Tests are left out as a class: production
+    // code cannot import them (testCode above), and
+    // tests/lint/dynamic-load.test.ts checks the two sets cover all of server/.
+    files: ["server/**/*.ts"],
+    ignores: ["server/**/*.test.ts"],
+    rules: { "local/no-dynamic-load": "error" },
   },
   // Last on purpose: switches off every rule that could fight Prettier, also in
   // blocks above. tests/format/format.test.ts checks the resolved config.
