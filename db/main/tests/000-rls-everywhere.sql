@@ -32,7 +32,10 @@
 BEGIN;
 -- Nothing below resolves through the caller's search path: "$user" or any
 -- schema before pgTAP's could hold a planted is_empty, ok or operator. The
--- path is pg_catalog, then the schema pgTAP lives in, and nothing else.
+-- path is pg_catalog, pg_temp (so the helper views below, which are also
+-- named with pg_temp., come before anything in pgTAP's schema), then the
+-- schema pgTAP lives in, and nothing else. pg_temp is never searched for
+-- functions or operators.
 SET LOCAL search_path TO pg_catalog, pg_temp;
 CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA public;
 SET LOCAL lc_messages TO 'C';
@@ -50,7 +53,7 @@ BEGIN
   SELECT n.nspname INTO STRICT tap_schema
   FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid OPERATOR(pg_catalog.=) e.extnamespace
   WHERE e.extname OPERATOR(pg_catalog.=) 'pgtap';
-  PERFORM pg_catalog.set_config('search_path', pg_catalog.format('pg_catalog, %I, pg_temp', tap_schema), true);
+  PERFORM pg_catalog.set_config('search_path', pg_catalog.format('pg_catalog, pg_temp, %I', tap_schema), true);
 
   SELECT pg_catalog.string_agg(x.found, ', ') INTO planted FROM (
     SELECT p.oid::pg_catalog.regprocedure::text AS found FROM pg_catalog.pg_proc p
@@ -80,34 +83,34 @@ BEGIN
 END
 $$;
 
-SELECT plan(20);
+SELECT plan(21);
 
-CREATE TEMP VIEW checked_table AS
+CREATE VIEW pg_temp.checked_table AS
   SELECT c.oid, n.nspname || '.' || c.relname AS name, c.relrowsecurity, c.relforcerowsecurity
   FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
   WHERE c.relkind IN ('r', 'p', 'f')
     AND c.oid >= 16384 AND c.relpersistence <> 't'
     AND (n.nspname, c.relname) NOT IN (('public', 'schema_migrations'));
 
-CREATE TEMP VIEW rls_gap AS
-  SELECT name AS found FROM checked_table WHERE NOT (relrowsecurity AND relforcerowsecurity);
+CREATE VIEW pg_temp.rls_gap AS
+  SELECT name AS found FROM pg_temp.checked_table WHERE NOT (relrowsecurity AND relforcerowsecurity);
 
-CREATE TEMP VIEW policy_gap AS
-  SELECT name AS found FROM checked_table t
+CREATE VIEW pg_temp.policy_gap AS
+  SELECT name AS found FROM pg_temp.checked_table t
   WHERE NOT EXISTS (SELECT 1 FROM pg_catalog.pg_policy p WHERE p.polrelid = t.oid);
 
 -- The negative controls below look only at the objects they make, so a real
 -- gap fails the checks of section 1 and the last one, not every control.
-CREATE TEMP VIEW probe_rls_gap AS
-  SELECT found FROM rls_gap WHERE found LIKE '%test\_rls\_probe%';
-CREATE TEMP VIEW probe_policy_gap AS
-  SELECT found FROM policy_gap WHERE found LIKE '%test\_rls\_probe%';
+CREATE VIEW pg_temp.probe_rls_gap AS
+  SELECT found FROM pg_temp.rls_gap WHERE found LIKE '%test\_rls\_probe%';
+CREATE VIEW pg_temp.probe_policy_gap AS
+  SELECT found FROM pg_temp.policy_gap WHERE found LIKE '%test\_rls\_probe%';
 
 -- Every right on the ledger held by a role that is neither its owner nor a
 -- superuser, or by PUBLIC. has_*_privilege resolves groups, PUBLIC and the
 -- predefined roles (pg_read_all_data and the like), so a right reached through
 -- membership shows on the member; the predefined roles themselves are left out.
-CREATE TEMP VIEW ledger_right AS
+CREATE VIEW pg_temp.ledger_right AS
   SELECT DISTINCT r.rolname || ': ' || p.privilege
          || CASE WHEN g.rolname = r.rolname THEN '' ELSE ' via ' || g.rolname END AS found
   FROM (SELECT x.oid, x.rolname::text FROM pg_catalog.pg_roles x
@@ -131,7 +134,7 @@ CREATE TEMP VIEW ledger_right AS
      OR (p.privilege IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
          AND has_any_column_privilege(g.rolname, 'public.schema_migrations'::regclass, p.privilege));
 
-CREATE TEMP VIEW ledger_shape AS
+CREATE VIEW pg_temp.ledger_shape AS
   SELECT 'owner ' || c.relowner::regrole::text AS found FROM pg_class c
   WHERE c.oid = 'public.schema_migrations'::regclass
     AND c.relowner <> (SELECT datdba FROM pg_database WHERE datname = current_database())
@@ -151,41 +154,41 @@ CREATE TEMP VIEW ledger_shape AS
              WHERE w.oid = d.objid AND v.relpersistence = 't'));
 
 -- 1. The database as migrated.
-SELECT is_empty('SELECT found FROM rls_gap', 'every table has ENABLE and FORCE ROW LEVEL SECURITY');
-SELECT is_empty('SELECT found FROM policy_gap', 'every table has at least one policy');
+SELECT is_empty('SELECT found FROM pg_temp.rls_gap', 'every table has ENABLE and FORCE ROW LEVEL SECURITY');
+SELECT is_empty('SELECT found FROM pg_temp.policy_gap', 'every table has at least one policy');
 SELECT is(
   (SELECT count(*)::int FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
    WHERE (n.nspname, c.relname) IN (('public', 'schema_migrations')) AND c.relkind IN ('r', 'p', 'f')),
   1, 'exactly one named exception exists: public.schema_migrations');
-SELECT is_empty('SELECT found FROM ledger_shape', 'the ledger is a plain table of the database owner that nothing reads through');
-SELECT is_empty('SELECT found FROM ledger_right', 'no role but the owner of the ledger and the superusers, nor PUBLIC, holds a right on it, inherited or by SET ROLE');
+SELECT is_empty('SELECT found FROM pg_temp.ledger_shape', 'the ledger is a plain table of the database owner that nothing reads through');
+SELECT is_empty('SELECT found FROM pg_temp.ledger_right', 'no role but the owner of the ledger and the superusers, nor PUBLIC, holds a right on it, inherited or by SET ROLE');
 
 -- 2. Negative controls: each table that breaks the rule is caught.
 CREATE SCHEMA test_rls_probe;
 CREATE TABLE test_rls_probe.plain (id int);
-SELECT set_eq('SELECT found FROM probe_rls_gap', ARRAY['test_rls_probe.plain'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['test_rls_probe.plain'],
   'a table without RLS in a new schema is caught');
 DROP TABLE test_rls_probe.plain;
 
 CREATE TABLE public.test_rls_probe_plain (id int);
-SELECT set_eq('SELECT found FROM probe_rls_gap', ARRAY['public.test_rls_probe_plain'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['public.test_rls_probe_plain'],
   'a table without RLS in public is caught');
 DROP TABLE public.test_rls_probe_plain;
 
 CREATE TABLE test_rls_probe.schema_migrations (version text);
-SELECT set_eq('SELECT found FROM probe_rls_gap', ARRAY['test_rls_probe.schema_migrations'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['test_rls_probe.schema_migrations'],
   'the exception holds for public.schema_migrations only, not for the name in another schema');
 DROP TABLE test_rls_probe.schema_migrations;
 
 CREATE TABLE test_rls_probe.not_forced (id int);
 ALTER TABLE test_rls_probe.not_forced ENABLE ROW LEVEL SECURITY;
 CREATE POLICY test_own ON test_rls_probe.not_forced USING (false);
-SELECT set_eq('SELECT found FROM probe_rls_gap', ARRAY['test_rls_probe.not_forced'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['test_rls_probe.not_forced'],
   'ENABLE without FORCE is caught');
 DROP TABLE test_rls_probe.not_forced;
 
 CREATE UNLOGGED TABLE test_rls_probe.unlogged (id int);
-SELECT set_eq('SELECT found FROM probe_rls_gap', ARRAY['test_rls_probe.unlogged'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['test_rls_probe.unlogged'],
   'an UNLOGGED table without RLS is caught');
 DROP TABLE test_rls_probe.unlogged;
 
@@ -193,28 +196,37 @@ CREATE TABLE test_rls_probe.parent (id int) PARTITION BY RANGE (id);
 ALTER TABLE test_rls_probe.parent ENABLE ROW LEVEL SECURITY, FORCE ROW LEVEL SECURITY;
 CREATE POLICY test_own ON test_rls_probe.parent USING (false);
 CREATE TABLE test_rls_probe.part PARTITION OF test_rls_probe.parent FOR VALUES FROM (0) TO (10);
-SELECT set_eq('SELECT found FROM probe_rls_gap', ARRAY['test_rls_probe.part'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['test_rls_probe.part'],
   'a partition without RLS of its own is caught, its parent with RLS is not');
-SELECT set_eq('SELECT found FROM probe_policy_gap', ARRAY['test_rls_probe.part'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_policy_gap', ARRAY['test_rls_probe.part'],
   'a partition without a policy of its own is caught');
 DROP TABLE test_rls_probe.parent;
 
 CREATE FOREIGN DATA WRAPPER test_rls_probe_fdw;
 CREATE SERVER test_rls_probe_server FOREIGN DATA WRAPPER test_rls_probe_fdw;
 CREATE FOREIGN TABLE test_rls_probe.remote (id int) SERVER test_rls_probe_server;
-SELECT set_eq('SELECT found FROM probe_rls_gap', ARRAY['test_rls_probe.remote'],
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['test_rls_probe.remote'],
   'a foreign table, which cannot carry RLS, is caught');
 DROP FOREIGN TABLE test_rls_probe.remote;
 DROP SERVER test_rls_probe_server;
 DROP FOREIGN DATA WRAPPER test_rls_probe_fdw;
 
+CREATE VIEW public.rls_gap AS SELECT NULL::text AS found WHERE false;
+CREATE VIEW public.checked_table AS SELECT 0::oid AS oid, NULL::text AS name, true AS relrowsecurity, true AS relforcerowsecurity WHERE false;
+CREATE TABLE test_rls_probe.shadowed (id int);
+SELECT set_eq('SELECT found FROM pg_temp.probe_rls_gap', ARRAY['test_rls_probe.shadowed'],
+  'views planted in public under the helper names do not hide a table without RLS');
+DROP TABLE test_rls_probe.shadowed;
+DROP VIEW public.checked_table;
+DROP VIEW public.rls_gap;
+
 CREATE TABLE test_rls_probe.no_policy (id int);
 ALTER TABLE test_rls_probe.no_policy ENABLE ROW LEVEL SECURITY, FORCE ROW LEVEL SECURITY;
-SELECT is_empty('SELECT found FROM probe_rls_gap', 'a table with ENABLE and FORCE passes the RLS check');
-SELECT set_eq('SELECT found FROM probe_policy_gap', ARRAY['test_rls_probe.no_policy'],
+SELECT is_empty('SELECT found FROM pg_temp.probe_rls_gap', 'a table with ENABLE and FORCE passes the RLS check');
+SELECT set_eq('SELECT found FROM pg_temp.probe_policy_gap', ARRAY['test_rls_probe.no_policy'],
   'a table with ENABLE and FORCE but no policy is caught');
 CREATE POLICY test_own ON test_rls_probe.no_policy USING (false);
-SELECT is_empty('SELECT found FROM probe_rls_gap UNION ALL SELECT found FROM probe_policy_gap',
+SELECT is_empty('SELECT found FROM pg_temp.probe_rls_gap UNION ALL SELECT found FROM pg_temp.probe_policy_gap',
   'a table with ENABLE, FORCE and a policy passes both checks');
 DROP TABLE test_rls_probe.no_policy;
 DROP SCHEMA test_rls_probe;
@@ -222,20 +234,20 @@ DROP SCHEMA test_rls_probe;
 -- 3. The ledger exception stops holding once anyone else gets a right on it.
 CREATE ROLE test_rls_probe_reader NOLOGIN;
 GRANT SELECT ON public.schema_migrations TO test_rls_probe_reader;
-SELECT set_eq('SELECT found FROM ledger_right', ARRAY['test_rls_probe_reader: SELECT'],
+SELECT set_eq('SELECT found FROM pg_temp.ledger_right', ARRAY['test_rls_probe_reader: SELECT'],
   'a right on the ledger granted to another role is caught');
 REVOKE SELECT ON public.schema_migrations FROM test_rls_probe_reader;
 DROP ROLE test_rls_probe_reader;
 CREATE ROLE test_rls_probe_auditor NOLOGIN NOINHERIT IN ROLE pg_read_all_data;
-SELECT set_eq('SELECT found FROM ledger_right', ARRAY['test_rls_probe_auditor: SELECT via pg_read_all_data'],
+SELECT set_eq('SELECT found FROM pg_temp.ledger_right', ARRAY['test_rls_probe_auditor: SELECT via pg_read_all_data'],
   'a NOINHERIT member of pg_read_all_data, who reads the ledger after SET ROLE, is caught');
 DROP ROLE test_rls_probe_auditor;
 GRANT SELECT (version) ON public.schema_migrations TO PUBLIC;
-SELECT isnt_empty($$ SELECT found FROM ledger_right WHERE found = 'public: SELECT' $$,
+SELECT isnt_empty($$ SELECT found FROM pg_temp.ledger_right WHERE found = 'public: SELECT' $$,
   'a column right on the ledger granted to PUBLIC is caught');
 REVOKE SELECT (version) ON public.schema_migrations FROM PUBLIC;
 
-SELECT is_empty('SELECT found FROM rls_gap UNION ALL SELECT found FROM policy_gap UNION ALL SELECT found FROM ledger_right',
+SELECT is_empty('SELECT found FROM pg_temp.rls_gap UNION ALL SELECT found FROM pg_temp.policy_gap UNION ALL SELECT found FROM pg_temp.ledger_right',
   'the database is clean again once the controls are taken back');
 
 SELECT * FROM finish();
