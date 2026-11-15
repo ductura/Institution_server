@@ -21,6 +21,8 @@
     "test:database": "vitest run --project database",
     "contracts:generate": "tsx scripts/generate-contracts.ts",
     "contracts:breaking": "tsx scripts/check-breaking.ts",
+    "release:stage": "node scripts/release/check.ts --stage-only",
+    "release:check": "node scripts/release/check.ts",
     "db:up": "docker compose up -d --build --wait postgres-main && pnpm db:migrate",
     "db:up:native": "node scripts/db/native-db.ts up",
     "db:provision": "docker compose exec -T postgres-main psql -U ductus -d ductus -v ON_ERROR_STOP=1 -q < db/main/local/migrator.sql",
