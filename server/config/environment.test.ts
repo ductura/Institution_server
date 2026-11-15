@@ -62,7 +62,11 @@ describe("listenProblems and listenAddress", () => {
     },
   );
 
-  it.each(["", " ", " 0.0.0.0"])("refuses HOST %j", (host) => {
-    expect(listenProblems({ HOST: host })).toEqual(["HOST is empty or has spaces"]);
-  });
+  // Review and QA on 3332cee: a space inside the value passed.
+  it.each(["", " ", " 0.0.0.0", "127.0 .0.1", "127.0.0.1\t", "local\nhost", "0.0.0.0\u00a0"])(
+    "refuses HOST %j",
+    (host) => {
+      expect(listenProblems({ HOST: host })).toEqual(["HOST is empty or has spaces"]);
+    },
+  );
 });

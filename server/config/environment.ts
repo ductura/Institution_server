@@ -39,7 +39,7 @@ export function listenProblems(env: Env = process.env): string[] {
     problems.push("PORT is not a port number");
   }
   const host = env.HOST;
-  if (host !== undefined && (host.trim() === "" || host.trim() !== host)) {
+  if (host !== undefined && (host === "" || /\s/u.test(host))) {
     problems.push("HOST is empty or has spaces");
   }
   return problems;
