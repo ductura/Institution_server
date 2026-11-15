@@ -284,6 +284,7 @@ const ESTREE_NODE_NAMES = [
   "PrivateIdentifier",
   "JSXIdentifier",
   "JSXText",
+  "NewExpression",
   "TemplateLiteral",
 ];
 
