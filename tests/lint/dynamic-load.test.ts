@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
 import { describe, expect, it } from "vitest";
 
-import { DYNAMIC_LOAD_ALLOWED, IMPORT_META, TEST_ONLY_RE } from "../../scripts/lint-rules/index.ts";
+import {
+  DYNAMIC_LOAD_ALLOWED,
+  IMPORT_META,
+  KEY_LITERAL_ALLOWED,
+  TEST_ONLY_RE,
+} from "../../scripts/lint-rules/index.ts";
 
 // S-1A-c (DAN-770): server code loads modules only by a static import, through
 // an allow-list (contract Ductus#1836 c.6891713609). The fixtures cover every
@@ -154,13 +159,30 @@ const failing: Case[] = [
     "file:///app/server/database/index.ts",
     "/app/server/database/index.ts",
   ].flatMap((spec) => at(LOG, "module", importForms(spec))),
-  // The Function constructor through `constructor`.
-  ...at(LOG, "constructor", [
+  // The Function constructor through `constructor`, and node:crypto's native
+  // engine loader, in every static spelling (attack pass on this PR).
+  ...at(LOG, "key", [
     "export const F = (async () => 1).constructor;\n",
     'export const F = (() => 1)["constructor"];\n',
     "export const F = (() => 1)[`constructor`];\n",
     "const { constructor: F } = () => 1;\nexport { F };\n",
+    'const { "constructor": F } = () => 1;\nexport { F };\n',
     "export const F = Object.getPrototypeOf(async function () {}).constructor;\n",
+    'export const F = Reflect.get(Object.getPrototypeOf(() => 0), "constructor");\n',
+    'export const F = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(() => 0), "constructor");\n',
+    'export const F = (() => 1)["constr" + "uctor"];\n',
+    'export const F = (() => 1)[`constr${"uct"}or`];\n',
+    'const k = "constructor";\nexport const F = Reflect.get(() => 1, k);\n',
+    'import { setEngine } from "node:crypto";\nexport const s = setEngine;\n',
+    'import { setEngine as s } from "node:crypto";\nexport { s };\n',
+    'import * as c from "node:crypto";\nexport const s = c.setEngine;\n',
+    'import * as c from "node:crypto";\nexport const s = c["set" + "Engine"];\n',
+    'import * as c from "node:crypto";\nconst { setEngine } = c;\nexport { setEngine };\n',
+    'export { setEngine } from "node:crypto";\n',
+  ]),
+  // The literal is allowed only in the file that holds it as data.
+  ...at("server/domain/document/edit-step2.ts", "key", [
+    'export const keys = new Set(["__proto__", "constructor", "prototype"]);\n',
   ]),
 ];
 
@@ -174,6 +196,12 @@ const passing: Case[] = [
   ]),
   ...at("server/domain/forensics/evidence-receipt-verifier.ts", "", [
     'export const ok = typeof globalThis.atob === "function" && !!globalThis.crypto?.subtle;\n',
+  ]),
+  ...at("server/domain/document/edit-step.ts", "", [
+    'export const keys = new Set(["__proto__", "constructor", "prototype"]);\n',
+  ]),
+  ...at(LOG, "", [
+    'export const s = `constr${String(1)}`;\nexport const t = "construct" + "ion";\n',
   ]),
   ...at("server/domain/forensics/golden-vectors/load.ts", "", [
     'export const u = new URL("./x.json", import.meta.url);\n',
@@ -191,7 +219,6 @@ const passing: Case[] = [
     'import { Value } from "@sinclair/typebox/value";\nexport const v = Value;\n',
     'import { Type } from "@sinclair/typebox";\nexport const t = Type;\n',
     "export class X {\n  constructor() {}\n}\n",
-    'export const keys = new Set(["constructor", "__proto__"]);\n',
     "export const o = { constructor: 1 };\n",
   ]),
 ];
@@ -264,6 +291,14 @@ describe("the rule covers the whole of server/", () => {
           ).toBe(true);
         }
       }
+    }
+  });
+
+  it("allows a forbidden key as a string only in tracked files that hold it", () => {
+    for (const [file, keys] of Object.entries(KEY_LITERAL_ALLOWED)) {
+      expect(tracked, file).toContain(file);
+      const text = readFileSync(path.join(ROOT, file), "utf8");
+      for (const key of keys) expect(text, `${file} ${key}`).toContain(`"${key}"`);
     }
   });
 

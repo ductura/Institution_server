@@ -9,8 +9,11 @@
 // production code cannot import them (local/no-fake-server-import, testCode),
 // and tests/lint/dynamic-load.test.ts checks both sets cover all of server/.
 //
-// What the rule cannot see: a key computed at run time that yields
-// "constructor" (fn[k], Reflect.get(fn, "constr" + "uctor")) and the internals
+// The keys of FORBIDDEN_KEYS (the Function constructor, a native engine
+// loader) fail as a member, a destructured or imported name and as any static
+// string, folded across `+` ("constr" + "uctor"), so Reflect.get(fn,
+// "constructor") fails too. What the rule cannot see: a key built at run time
+// (fn[k] with k from a join, a lookup by descriptor value) and the internals
 // of dependencies. Both need a runtime guard, not lint.
 import { readFileSync } from "node:fs";
 import { posix } from "node:path";
@@ -35,6 +38,10 @@ type Loose = {
   importKind?: string;
   exportKind?: string;
   moduleReference?: Loose;
+  operator?: string;
+  left?: Loose;
+  right?: Loose;
+  imported?: Loose;
 };
 
 /** Globals that can load a module or run a string as code. */
@@ -84,6 +91,18 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
   "server/contracts/generated/fake-server/index.ts": { [IMPORT_META]: ["url"] },
 };
 
+/**
+ * Keys that reach a loader from an allowed value: `constructor` gives the
+ * Function constructor of any function, and `setEngine` of node:crypto loads a
+ * native library.
+ */
+export const FORBIDDEN_KEYS: readonly string[] = ["constructor", "setEngine"];
+/** The only files that may hold a forbidden key as a string, as data. */
+export const KEY_LITERAL_ALLOWED: Readonly<Record<string, readonly string[]>> = {
+  // FORBIDDEN_KEYS of the edit-step validator: keys a payload may not carry.
+  "server/domain/document/edit-step.ts": ["constructor"],
+};
+
 /** node: modules production server code may import, always with the prefix. */
 export const NODE_MODULES: readonly string[] = [
   ...["crypto", "fs", "fs/promises", "path", "url", "util", "http", "async_hooks"],
@@ -105,11 +124,29 @@ export function runtimeDependencies(root: string): readonly string[] {
   return names;
 }
 
-// The text of a literal or of a template without interpolation, else undefined.
+// The text of a string literal, or of a template or `+` built only of static
+// parts, else undefined.
 function staticText(node: Loose | undefined): string | undefined {
   if (node?.type === "Literal" && typeof node.value === "string") return node.value;
-  if (node?.type === "TemplateLiteral" && node.expressions?.length === 0)
-    return node.quasis?.[0]?.value.cooked ?? undefined;
+  if (node?.type === "BinaryExpression" && node.operator === "+") {
+    const left = staticText(node.left);
+    const right = staticText(node.right);
+    return left === undefined || right === undefined ? undefined : left + right;
+  }
+  if (node?.type === "TemplateLiteral") {
+    // `constr${"uctor"}`: every interpolation static, joined with the quasis.
+    let text = "";
+    for (const [index, quasi] of (node.quasis ?? []).entries()) {
+      if (typeof quasi.value.cooked !== "string") return undefined;
+      text += quasi.value.cooked;
+      const expression = node.expressions?.[index] as Loose | undefined;
+      if (expression === undefined) continue;
+      const part = staticText(expression);
+      if (part === undefined) return undefined;
+      text += part;
+    }
+    return text;
+  }
   return undefined;
 }
 
@@ -151,7 +188,7 @@ export const noDynamicLoad: Rule.RuleModule = {
       importRequire: "`import x = require()` is not allowed in server code (DAN-770).",
       module:
         "'{{spec}}' is not on the allow-list: a relative file in server/, an allowed node: module or a package from dependencies (DAN-770).",
-      constructor: "Access to `constructor` reaches the Function constructor (DAN-770).",
+      key: "'{{key}}' reaches a loader (the Function constructor or a native engine) (DAN-770).",
     },
   },
   create(context) {
@@ -193,9 +230,18 @@ export const noDynamicLoad: Rule.RuleModule = {
       context.report({ node: node as Node, messageId: "global", data: { name } });
     }
 
-    function checkConstructor(node: Node, key: Loose | undefined, computed?: boolean): void {
-      if (keyName(key, computed) === "constructor")
-        context.report({ node, messageId: "constructor" });
+    function checkKey(node: Node, key: string | undefined): void {
+      if (key !== undefined && FORBIDDEN_KEYS.includes(key))
+        context.report({ node, messageId: "key", data: { key } });
+    }
+
+    // A static string anywhere, reported once at the outermost `+`.
+    function checkString(node: Node): void {
+      const loose = node as unknown as Loose;
+      if (loose.parent?.type === "BinaryExpression" && loose.parent.operator === "+") return;
+      const text = staticText(loose);
+      if (text !== undefined && !(KEY_LITERAL_ALLOWED[file] ?? []).includes(text))
+        checkKey(node, text);
     }
 
     return {
@@ -235,12 +281,17 @@ export const noDynamicLoad: Rule.RuleModule = {
       ExportAllDeclaration: (node) =>
         checkSource(node, node.source as Loose, (node as Loose).exportKind),
       MemberExpression(node) {
-        checkConstructor(node, node.property as Loose, node.computed);
+        if (!node.computed) checkKey(node, keyName(node.property as Loose, false));
       },
       Property(node) {
-        if ((node as Loose).parent?.type === "ObjectPattern")
-          checkConstructor(node, node.key as Loose, node.computed);
+        if ((node as Loose).parent?.type === "ObjectPattern" && !node.computed)
+          checkKey(node, keyName(node.key as Loose, false));
       },
+      ImportSpecifier: (node) => checkKey(node, keyName(node.imported as Loose, false)),
+      ExportSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
+      Literal: (node) => checkString(node),
+      TemplateLiteral: (node) => checkString(node),
+      BinaryExpression: (node) => checkString(node),
     };
   },
 };

@@ -260,6 +260,11 @@ const ESTREE_NODE_NAMES = [
   "TSImportEqualsDeclaration",
   "MemberExpression",
   "Property",
+  "ImportSpecifier",
+  "ExportSpecifier",
+  "Literal",
+  "TemplateLiteral",
+  "BinaryExpression",
 ];
 
 // The naming rule, with extra exact property names (`properties`) and extra

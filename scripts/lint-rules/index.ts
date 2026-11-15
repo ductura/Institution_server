@@ -20,5 +20,10 @@ export const localPlugin: ESLint.Plugin = {
 };
 export { databaseBoundaryPlugin, PG_SPECIFIER } from "./database-boundary.ts";
 export { AREA_IMPORTS, areaOf, ENTRY } from "./area-boundary.ts";
-export { DYNAMIC_LOAD_ALLOWED, IMPORT_META, LOADER_GLOBALS } from "./dynamic-load.ts";
+export {
+  DYNAMIC_LOAD_ALLOWED,
+  IMPORT_META,
+  KEY_LITERAL_ALLOWED,
+  LOADER_GLOBALS,
+} from "./dynamic-load.ts";
 export { TEST_ONLY_RE } from "./fake-server-boundary.ts";
