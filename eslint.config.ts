@@ -216,6 +216,33 @@ const STORAGE_NAMES = [
   "EVIDENCE_S3_FAK_B_KEY_ID",
   "EVIDENCE_S3_FAK_B_SECRET",
 ];
+// S-1L.1 (DAN-768): keys of the interface catalogues in locales/ that are the
+// values the server sends (work types, AI policies and purposes, states of a
+// work, record and view kinds). The catalogues are ported from Ductus
+// src/lib/i18n at d52a92c3 with no text changed, and a screen reads a text by
+// the value it got (`workTypes[workType]`), so the keys keep that spelling. A
+// closed list of exact names, only for properties, only in locales/.
+const LOCALE_KEYS = [
+  "bachelor_thesis",
+  "doctoral_thesis",
+  "fast_path",
+  "has_gaps",
+  "in_progress",
+  "literature_search",
+  "live_view",
+  "master_thesis",
+  "not_observed",
+  "not_started",
+  "notice_pending",
+  "partially_allowed",
+  "process_summary",
+  "seminar_paper",
+  "seminar_teacher",
+  "short_paper",
+  "specialist_thesis",
+  "submitted_text",
+  "with_gaps",
+];
 // ESTree node types: ESLint fixes them as the method names of a rule visitor
 // (scripts/lint-rules). A closed list of exact names, only for object-literal
 // methods, never variables, functions or types.
@@ -314,6 +341,10 @@ export default defineConfig(
   {
     files: ["server/external/storage/**/*.ts"],
     rules: { "@typescript-eslint/naming-convention": namingConvention(STORAGE_NAMES, []) },
+  },
+  {
+    files: ["locales/**/*.ts"],
+    rules: { "@typescript-eslint/naming-convention": namingConvention(LOCALE_KEYS, []) },
   },
   {
     files: ["server/log/**/*.ts"],
