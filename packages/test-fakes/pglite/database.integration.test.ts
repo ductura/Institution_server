@@ -52,8 +52,9 @@ async function migratorDatabase(): Promise<PGlite> {
   await db.exec(`CREATE ROLE ductus_migrator NOLOGIN NOSUPERUSER NOBYPASSRLS;
     CREATE ROLE app_group NOLOGIN NOBYPASSRLS;
     GRANT CREATE ON SCHEMA public TO ductus_migrator;
+    SET ROLE ductus_migrator;
     CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY);
-    GRANT INSERT, SELECT ON public.schema_migrations TO ductus_migrator;`);
+    RESET ROLE;`);
   return reopen(db, "ductus_migrator");
 }
 
@@ -205,6 +206,36 @@ describe("migration source", () => {
                 (SELECT count(*)::int FROM pg_catalog.pg_roles WHERE rolname = 'evil') AS evil`,
       );
       expect(state.rows).toEqual([{ versions: ["1"], bypass: false, evil: 0 }]);
+    } finally {
+      await db.close();
+    }
+  });
+
+  it.each([
+    "CREATE TABLE public.c1 (v int); COMMIT;",
+    "CREATE TABLE public.c1 (v int); COMMIT; BEGIN;",
+    "CREATE TABLE public.c1 (v int); COMMIT; BEGIN; SET LOCAL ductura.fake_migration = 'on';",
+  ])("refuses a migration that ends its own transaction: %s", async (up) => {
+    const db = await migratorDatabase();
+    try {
+      await expect(applyMigrations(db, [{ name: "1_m.sql", version: "1", up }])).rejects.toThrow(
+        /^1_m\.sql: ends its own transaction/u,
+      );
+      const applied = await db.query("SELECT version FROM public.schema_migrations");
+      expect(applied.rows).toEqual([]);
+    } finally {
+      await db.close();
+    }
+  });
+
+  it("refuses a ledger a migration turned into a view", async () => {
+    const db = await migratorDatabase();
+    try {
+      const up = `ALTER TABLE public.schema_migrations RENAME TO ledger_kept;
+        CREATE VIEW public.schema_migrations AS SELECT version FROM public.ledger_kept;`;
+      await expect(applyMigrations(db, [{ name: "1_m.sql", version: "1", up }])).rejects.toThrow(
+        /no longer a plain table/u,
+      );
     } finally {
       await db.close();
     }

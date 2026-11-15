@@ -86,14 +86,18 @@ export async function applyMigrations(db: PGlite, migrations: readonly Migration
   const session = await db.query<{ u: string }>("SELECT session_user AS u");
   if (session.rows[0]?.u !== MIGRATOR)
     throw new Error(`migrations run with ${MIGRATOR} as the session user`);
+  const xact = async (): Promise<string> =>
+    String(
+      (await db.query<{ x: string }>("SELECT pg_catalog.pg_current_xact_id()::text AS x")).rows[0]
+        ?.x,
+    );
   for (const migration of migrations) {
-    await db.exec("BEGIN; SET LOCAL ductura.fake_migration = 'on';");
+    await db.exec("BEGIN");
     try {
+      // A migration cannot forge its transaction id, so a COMMIT inside it shows.
+      const before = await xact();
       await db.exec(migration.up);
-      const inside = await db.query<{ on: string | null }>(
-        "SELECT current_setting('ductura.fake_migration', true) AS on",
-      );
-      if (inside.rows[0]?.on !== "on") throw new Error("ends its own transaction");
+      if ((await xact()) !== before) throw new Error("ends its own transaction");
       await db.exec("RESET ROLE");
       await db.query("INSERT INTO public.schema_migrations (version) VALUES ($1)", [
         migration.version,
@@ -104,6 +108,15 @@ export async function applyMigrations(db: PGlite, migrations: readonly Migration
       throw new Error(`${migration.name}: ${(error as Error).message}`, { cause: error });
     }
   }
+  // The returned database is the superuser's: the ledger it reads must stay a
+  // plain table of the migrator, not a view or rule a migration put there.
+  const ledger = await db.query<{ ok: boolean }>(
+    `SELECT c.relkind = 'r' AND pg_catalog.pg_get_userbyid(c.relowner) = '${MIGRATOR}'
+            AND NOT c.relhasrules AND NOT c.relhastriggers AS ok
+       FROM pg_catalog.pg_class c WHERE c.oid = 'public.schema_migrations'::regclass`,
+  );
+  if (ledger.rows[0]?.ok !== true)
+    throw new Error(`public.schema_migrations is no longer a plain table of ${MIGRATOR}`);
 }
 
 export type PgliteDatabase = { readonly db: PGlite; close(): Promise<void> };
