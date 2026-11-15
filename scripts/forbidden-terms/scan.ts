@@ -240,7 +240,7 @@ function evaluate(file: string, full: string, raw: string): Record<string, unkno
   return module.exports;
 }
 
-/** The prototypes a table may have, by identity: this realm's and those of each catalogue's context. */
+/** Object.prototype and Array.prototype of this realm (JSON) and of each catalogue's context, compared with ===. */
 const [OBJECTS, ARRAYS] = [
   new Set<unknown>([Object.prototype]),
   new Set<unknown>([Array.prototype]),
@@ -253,22 +253,22 @@ function walk(file: string, node: unknown, at: string, leaves: Map<string, strin
     leaves.set(at, node);
     return 0;
   }
-  // A plain object or an array of any realm (a catalogue runs in its own context); not a Map or a class instance.
+  // #44 c.6892192874: the prototype is exactly Object.prototype or Array.prototype (=== OBJECTS, ARRAYS); null, any
+  // other prototype, a Proxy, an accessor, a symbol, a key that is not enumerable and a hole are input errors.
   const proto: unknown = typeof node === "object" && node ? Object.getPrototypeOf(node) : undefined;
-  const object = proto === null || OBJECTS.has(proto);
   const array = Array.isArray(node) && ARRAYS.has(proto);
-  const plain = array || (object && Object.prototype.toString.call(node) === "[object Object]");
-  if (!plain || types.isProxy(node)) {
+  if (!(array || OBJECTS.has(proto)) || types.isProxy(node)) {
     return fail("NOT_TEXT", file, `${at || "(root)"}: ${typeof node}`);
   }
+  if (array && Object.keys(node).length !== node.length) fail("NOT_TEXT", file, `${at}: hole`);
   let keys = 0;
   for (const key of Reflect.ownKeys(node as object)) {
     if (typeof key === "symbol") return fail("NOT_TEXT", file, `${at}: symbol key`);
-    if (Array.isArray(node) && key === "length") continue;
-    const { value, get, set } = Object.getOwnPropertyDescriptor(node, key)!;
-    if (get || set) return fail("NOT_TEXT", file, `${at}.${key}: accessor`);
-    keys += Array.isArray(node) ? 0 : 1;
-    keys += walk(file, value, at ? `${at}.${key}` : key, leaves);
+    if (array && key === "length") continue;
+    const property = Object.getOwnPropertyDescriptor(node, key)!;
+    if (!("value" in property) || !property.enumerable) fail("NOT_TEXT", file, `${at}.${key}`);
+    keys += array ? 0 : 1;
+    keys += walk(file, property.value, at ? `${at}.${key}` : key, leaves);
   }
   return keys;
 }

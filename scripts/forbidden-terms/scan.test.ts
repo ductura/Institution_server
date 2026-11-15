@@ -215,6 +215,29 @@ export const probe = Object.create(proto);
     expect(errorCode(root)).toBe("UNREADABLE_FILE en.ts");
   });
 
+  // Orchestrator's hard cut (#44 c.6892192874): exactly Object.prototype or Array.prototype, data properties only.
+  it.each([
+    [
+      "Object.create(null)",
+      'export const probe = Object.assign(Object.create(null), { a: "Predano" });',
+    ],
+    [
+      "Object.create over Object.prototype with inherited text",
+      'const base = Object.create(Object.prototype);\nbase.note = "Suspicious edit";\nexport const probe = Object.create(base);',
+    ],
+    [
+      "a key that is not enumerable",
+      'export const probe = Object.defineProperty({}, "a", { value: "Suspicious edit", enumerable: false });',
+    ],
+    ["an array with a hole", 'export const probe = ["Predano", , "Predano"];'],
+    ["a getter on an export", 'export const probe = { get a() { return "Suspicious edit"; } };'],
+  ])("fails on %s", (_, source) => {
+    const root = copy();
+    const file = path.join(root, "locales", "en.ts");
+    writeFileSync(file, `${readFileSync(file, "utf8")}\n${source}\n`);
+    expect(errorCode(root)).toBe("NOT_TEXT en.ts");
+  });
+
   it("fails on an export that is a function not on the list", () => {
     const root = copy();
     writeFileSync(
