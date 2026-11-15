@@ -295,6 +295,18 @@ const failing: Case[] = [
     "export class X {\n  setEngine(): void {}\n}\n",
     "export class X {\n  setEngine?: number;\n  declare setEngine2: number;\n}\n",
   ]),
+  // Attack pass on this PR: a regular expression carries the key in its
+  // source or a group name (also as a \u escape); a raw template piece.
+  ...at(LOG, "key", [
+    "export const F = Reflect.get(() => 0, /constructor/.source);\n",
+    'import * as c from "node:crypto";\nexport const e = Reflect.get(c, /setEngine/.source);\n',
+    "export const s = /x/v.flags + /setEngine/dgimsuy.source;\n",
+    'export const g = Object.keys(/(?<constructor>a)/u.exec("a")?.groups ?? {})[0];\n',
+    "export const s = /\\k<constructor>(?<constructor>a)/.source;\n",
+    'export const k = Object.keys(/(?<\\u{63}onstructor>a)/u.exec("a")?.groups ?? {})[0];\n',
+    'export const k = Object.keys(/(?<set\\u0045ngine>a)/.exec("a")?.groups ?? {})[0];\n',
+    "export const s = String.raw`\\x0constructor`.slice(3);\n",
+  ]),
   // The exception is only the key of a class constructor: a method, a
   // property or a member named constructor is not one.
   ...at(LOG, "key", [
@@ -373,6 +385,7 @@ const passing: Case[] = [
     "export const C = class {\n  constructor(public engine: string) {}\n};\n",
     "export function construct(engine: number, setEngines: number): number {\n  return engine + setEngines;\n}\n",
     "export const o = { constructed: 1, setEngineering: 2, Constructor: 3, SetEngine: 4 };\n",
+    'export const r = /(?<engine>\\u{63}onstruct)/u.test("x") && String.raw`\\x0b`.length > 0;\n',
   ]),
 ];
 

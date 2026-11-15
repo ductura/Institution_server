@@ -144,6 +144,14 @@ export function runtimeDependencies(root: string): readonly string[] {
   return names;
 }
 
+// `\u{…}` and `\uXXXX` escapes as the characters they stand for.
+function decodeUnicodeEscapes(text: string): string {
+  return text.replace(/\\u\{([0-9a-fA-F]+)\}|\\u([0-9a-fA-F]{4})/gu, (whole, braced, plain) => {
+    const code = Number.parseInt(String(braced ?? plain), 16);
+    return code <= 0x10ffff ? String.fromCodePoint(code) : whole;
+  });
+}
+
 // A binding only declared for the type checker (`declare const require`,
 // `declare global { var process }`) is still the real global at run time.
 function isAmbient(variable: Scope.Variable): boolean {
@@ -316,9 +324,15 @@ export const noDynamicLoad: Rule.RuleModule = {
         const literal = node as unknown as Loose;
         if (typeof literal.value === "string")
           checkText(node, literal.value, isDataElement(literal));
+        // A regular expression: its source text and its group names (which may
+        // be \u escapes) reach a key at run time (.source, .groups) (DAN-773).
+        const pattern = (node as { regex?: { pattern: string } }).regex?.pattern;
+        if (pattern !== undefined)
+          checkText(node, `${pattern}\0${decodeUnicodeEscapes(pattern)}`, false);
       },
+      // The cooked text and the source text (String.raw) of a template piece.
       TemplateElement(node) {
-        checkText(node, node.value.cooked ?? node.value.raw, false);
+        checkText(node, `${node.value.cooked ?? ""}\0${node.value.raw}`, false);
       },
     };
   },
