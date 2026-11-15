@@ -1634,6 +1634,18 @@
     }
   },
   {
+    "route": "platform.health.get",
+    "name": "internal",
+    "request": {},
+    "response": {
+      "status": 500,
+      "contentType": "application/json",
+      "body": {
+        "error": "internal"
+      }
+    }
+  },
+  {
     "route": "platform.ready.get",
     "name": "ready",
     "request": {},

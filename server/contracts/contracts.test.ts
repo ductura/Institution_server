@@ -235,6 +235,22 @@ describe("generated client", () => {
       code: "unexpected",
     });
     expect(await c(500)).toEqual({ ok: false, status: 500, code: "unexpected" });
+    // The shared 500 internal (DAN-776) only when the body names it.
+    expect(await c(500, { error: "internal" })).toEqual({
+      ok: false,
+      status: 500,
+      code: "internal",
+    });
+    expect(await c(500, { error: "made_up" })).toEqual({
+      ok: false,
+      status: 500,
+      code: "unexpected",
+    });
+    expect(await c(503, { error: "internal" })).toEqual({
+      ok: false,
+      status: 503,
+      code: "unexpected",
+    });
     const ready = createClient("https://a.invalid", fakeFetch(503, { status: "draining" }).impl);
     expect(
       await ready("platform.ready.get", { params: undefined, query: undefined, body: undefined }),

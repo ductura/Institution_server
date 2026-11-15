@@ -1,11 +1,11 @@
 // Router of /api/v1 (docs/server-map.md §3, step 8). A route is its contract
 // from server/contracts plus a handler; the method and path come from the
 // contract only. Refusals use the error words of the contract: FALLBACK
-// (404 not_found) and the 405 of the fake server (U8). Later steps (session,
+// (404 not_found), INTERNAL (500 internal) and the 405 of the fake server (U8). Later steps (session,
 // schema from the contract) attach here with S-1B-b and U4.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { FALLBACK, type RouteContract } from "../contracts/index.ts";
+import { FALLBACK, INTERNAL, type RouteContract } from "../contracts/index.ts";
 
 export type Handler = (request: IncomingMessage, response: ServerResponse) => Promise<void>;
 export type Route = { readonly contract: RouteContract; readonly handle: Handler };
@@ -20,12 +20,32 @@ export function sendJson(
   body: unknown,
   headers: Readonly<Record<string, string>> = {},
 ): void {
+  // Serialized before the head: a body that cannot be (BigInt, a cycle, a
+  // throwing toJSON) throws while a 500 internal can still be sent instead.
+  const text = JSON.stringify(body);
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "cache-control": NO_STORE,
     ...headers,
   });
-  response.end(JSON.stringify(body));
+  response.end(text);
+}
+
+/** The body of the 500 answer, exactly the contract's: one closed word, nothing else. */
+export const INTERNAL_BODY = { error: INTERNAL.error.code } as const;
+
+/**
+ * The name of a thrown value for the log, never its message. Reading it never
+ * throws: a throwing "name" getter, a Proxy or a revoked Proxy give a fixed word.
+ */
+export function errorName(error: unknown): string {
+  try {
+    if (!(error instanceof Error)) return error === null ? "null" : typeof error;
+    const name: unknown = error.name;
+    return typeof name === "string" && /^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(name) ? name : "Error";
+  } catch {
+    return "unreadable";
+  }
 }
 
 // An origin-form path as sent: "/" then no "//", backslash or dot segment. Nothing is
@@ -68,9 +88,8 @@ export function createRouter(routes: readonly Route[]): Router {
       await route.handle(request, response);
     } catch (error) {
       // Only the name of the error: never its message, the request or a token.
-      const name = error instanceof Error ? error.name : typeof error;
-      console.error("route failed", route.contract.id, name);
-      if (!response.headersSent) sendJson(response, 500, { error: "internal" });
+      console.error("route failed", route.contract.id, errorName(error));
+      if (!response.headersSent) sendJson(response, INTERNAL.error.status, INTERNAL_BODY);
       else response.destroy();
     }
   };

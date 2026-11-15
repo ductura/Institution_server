@@ -4,9 +4,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { Server as NetServer, type Socket } from "node:net";
 
+import { INTERNAL } from "../contracts/index.ts";
+
 import type { Databases } from "./databases.ts";
 import { createPipeline, type Layers } from "./pipeline.ts";
-import { createRouter, type Route, sendJson } from "./router.ts";
+import { createRouter, errorName, type Route, sendJson } from "./router.ts";
 import { applySecurityHeaders, refuse } from "./security-headers.ts";
 import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
 
@@ -167,8 +169,8 @@ export async function startServer(options: StartOptions): Promise<Running> {
     const done = track(socket, exchange, 1, () => ticket.release());
     void handle(request, response)
       .catch((error: unknown) => {
-        console.error("request failed", error instanceof Error ? error.name : typeof error);
-        if (!response.headersSent) refuse(response, 500, "internal");
+        console.error("request failed", errorName(error));
+        if (!response.headersSent) refuse(response, INTERNAL.error.status, INTERNAL.error.code);
         else response.destroy();
       })
       .finally(done);

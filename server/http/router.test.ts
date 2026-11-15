@@ -1,10 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
-import { ROUTES } from "../contracts/index.ts";
+import { Value } from "@sinclair/typebox/value";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { errorBody, INTERNAL, ROUTES, type VectorFile } from "../contracts/index.ts";
 import { HEALTH_ROUTE } from "./health.ts";
-import { createRouter, type Route, routePath } from "./router.ts";
+import { createRouter, errorName, type Route, routePath, sendJson } from "./router.ts";
 
 type Answer = {
   status?: number;
@@ -104,5 +107,148 @@ describe("createRouter", () => {
 
   it("refuses two routes on one method and path", () => {
     expect(() => createRouter([HEALTH_ROUTE, HEALTH_ROUTE])).toThrow(/duplicate route/u);
+  });
+});
+
+// DAN-776: every failing handler answers exactly the contract's 500 internal.
+// The canary is a made-up string; it stands for anything from inside the server.
+const CANARY = "made-up-canary-7f3a";
+const HEALTH_VECTORS = JSON.parse(
+  readFileSync(new URL("../contracts/vectors/platform.health.get.json", import.meta.url), "utf8"),
+) as VectorFile;
+const INTERNAL_VECTOR = HEALTH_VECTORS.vectors.find((v) => v.name === "internal");
+
+function leaky(): Error {
+  const failure = new RangeError(`${CANARY} message /srv/${CANARY}.ts`, { cause: CANARY });
+  failure.stack = `RangeError: ${CANARY}\n    at /srv/${CANARY}.ts:1:1`;
+  Object.assign(failure, { detail: CANARY, sql: `select '${CANARY}'` });
+  return failure;
+}
+
+const hostileName = Object.create(Error.prototype, {
+  name: {
+    get() {
+      throw new Error(CANARY);
+    },
+  },
+}) as unknown;
+/** Made on use: the test runner itself cannot read a revoked Proxy. */
+function revokedProxy(): unknown {
+  const revoked = Proxy.revocable(new Error(CANARY), {});
+  revoked.revoke();
+  return revoked.proxy;
+}
+const cyclic: Record<string, unknown> = {};
+cyclic.self = cyclic;
+
+const FAILURES: [string, () => Promise<void>][] = [
+  ["an Error with the canary everywhere", () => Promise.reject(leaky())],
+  ["a thrown string", () => Promise.reject(CANARY)],
+  ["a thrown null", () => Promise.reject(null)],
+  ["an error whose name getter throws", () => Promise.reject(hostileName)],
+  ["a revoked Proxy", () => Promise.reject(revokedProxy())],
+  ["a Proxy around an error", () => Promise.reject(new Proxy(leaky(), { get: () => CANARY }))],
+  [
+    "a rejected promise awaited later",
+    async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      throw leaky();
+    },
+  ],
+];
+const BODIES: [string, unknown][] = [
+  ["a BigInt", { n: 1n }],
+  ["a cycle", cyclic],
+  [
+    "a throwing toJSON",
+    {
+      toJSON() {
+        throw leaky();
+      },
+    },
+  ],
+];
+
+describe("createRouter on a failing handler (DAN-776)", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const quiet = () => vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const failingWith = (handle: Route["handle"]) =>
+    createRouter([HEALTH_ROUTE, { contract: contract("platform.ready.get"), handle }]);
+
+  it("has the vector of 500 internal to compare with", () => {
+    expect(INTERNAL_VECTOR?.response).toEqual({
+      status: 500,
+      contentType: "application/json",
+      body: { error: "internal" },
+    });
+  });
+
+  it.each([
+    ...FAILURES,
+    ...BODIES.map(([what, body]): [string, () => Promise<void>] => [
+      `a body with ${what}`,
+      async () => sendJson({ writeHead: () => undefined } as never, 200, body),
+    ]),
+  ])("%s: the contract's 500, nothing from inside", async (_, fail) => {
+    const log = quiet();
+    const answer = await call(failingWith(fail), "GET", "/api/v1/ready");
+    expect(answer.status).toBe(INTERNAL.error.status);
+    const body: unknown = JSON.parse(answer.body ?? "");
+    expect(Value.Check(errorBody(INTERNAL.error.code), body)).toBe(true);
+    expect(body).toEqual(INTERNAL_VECTOR?.response.body);
+    expect(answer.body).toBe('{"error":"internal"}');
+    expect(answer.headers?.["content-type"]).toBe("application/json; charset=utf-8");
+    expect(answer.destroyed).toBeUndefined();
+    // The log has the route and a closed name, never the canary.
+    expect(JSON.stringify(log.mock.calls)).not.toContain(CANARY);
+    const next = await call(failingWith(fail), "GET", "/api/v1/health");
+    expect(next.status).toBe(200);
+  });
+
+  it.each(BODIES)(
+    "a handler answering %s gets 500 internal, not a cut connection",
+    async (_, body) => {
+      quiet();
+      const answer = await call(
+        failingWith(async (_request, response) => sendJson(response, 200, body)),
+        "GET",
+        "/api/v1/ready",
+      );
+      expect([answer.status, answer.body]).toEqual([500, '{"error":"internal"}']);
+    },
+  );
+
+  it("a failure after the head was sent writes nothing more and cuts the connection", async () => {
+    quiet();
+    const answer = await call(
+      failingWith(async (_request, response) => {
+        response.writeHead(200, { "content-type": "text/plain" });
+        throw leaky();
+      }),
+      "GET",
+      "/api/v1/ready",
+    );
+    expect(answer.status).toBe(200);
+    expect(answer.body).toBeUndefined();
+    expect(answer.destroyed).toBe(true);
+  });
+});
+
+describe("errorName", () => {
+  it.each([
+    [new TypeError(CANARY), "TypeError"],
+    [leaky(), "RangeError"],
+    [Object.assign(new Error(CANARY), { name: `${CANARY} with spaces` }), "Error"],
+    [Object.assign(new Error(CANARY), { name: 42 }), "Error"],
+    [() => hostileName, "unreadable"],
+    [revokedProxy, "unreadable"],
+    [CANARY, "string"],
+    [null, "null"],
+    [undefined, "undefined"],
+    [{ name: CANARY }, "object"],
+  ])("%#: a closed word, never the message", (error, name) => {
+    // Hostile values come as factories, so the runner never formats them.
+    const made = name === "unreadable" ? (error as () => unknown)() : error;
+    expect(errorName(made)).toBe(name);
   });
 });

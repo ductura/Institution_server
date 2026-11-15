@@ -5,7 +5,10 @@
 // stops the request before the application.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { INTERNAL } from "../contracts/index.ts";
+
 import { originLayer } from "./mutation-request.ts";
+import { errorName } from "./router.ts";
 import { refuse, securityHeadersLayer } from "./security-headers.ts";
 
 export const PIPELINE_STEPS = Object.freeze([
@@ -96,13 +99,13 @@ export function createPipeline(layers: Layers, app: App): App {
       try {
         outcome = await layer(request, response);
       } catch (error) {
-        console.error("layer failed", error instanceof Error ? error.name : typeof error);
+        console.error("layer failed", errorName(error));
         outcome = undefined;
       }
       // Anything but "next" from a layer that has not answered, or "next" from
       // one that has, ends the request here; the application never runs.
       if (outcome === "next" && !answered(response)) continue;
-      if (!response.headersSent) refuse(response, 500, "internal");
+      if (!response.headersSent) refuse(response, INTERNAL.error.status, INTERNAL.error.code);
       else if (!response.writableEnded) response.destroy();
       return;
     }

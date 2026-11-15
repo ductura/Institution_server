@@ -10,6 +10,7 @@ import {
   VECTORS,
   type FakeVector,
 } from "./generated/fake-server/index.ts";
+import { createClient } from "./generated/index.ts";
 
 const server = createFakeServer();
 let port = 0;
@@ -110,6 +111,18 @@ describe("fake server over HTTP", () => {
   it("405 lists the allowed methods", async () => {
     const res = await send("PUT", "/api/v1/profile/interface-locale");
     expect(res.headers.allow).toBe("GET, POST");
+  });
+
+  it("answers 500 internal when it is picked, and the generated client knows the code", async () => {
+    const pick = (async (url: URL, init: RequestInit) =>
+      fetch(url, { ...init, headers: { [FAKE_VECTOR_HEADER]: "internal" } })) as typeof fetch;
+    const call = createClient(`http://127.0.0.1:${port}`, pick);
+    const none = { params: undefined, query: undefined, body: undefined };
+    expect(await call("platform.health.get", none)).toEqual({
+      ok: false,
+      status: 500,
+      code: "internal",
+    });
   });
 
   it("a health check without a pick gets its success vector", async () => {
