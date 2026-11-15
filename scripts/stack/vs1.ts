@@ -13,7 +13,15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { SERVER_NODE_FLAGS } from "../build/index.ts";
 import { fileStore, spawnRun, up as provision } from "../db/index.ts";
 import { parseArgs, SLOTS, type StackConfig, stackConfig, stackPorts } from "./config.ts";
-import { commandLine, portFree, startDetached, stopProcess, waitHealthy } from "./processes.ts";
+import {
+  commandLine,
+  isStackPostmaster,
+  portFree,
+  postgresOptions,
+  startDetached,
+  stopProcess,
+  waitHealthy,
+} from "./processes.ts";
 import * as stateFile from "./state.ts";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -37,8 +45,10 @@ async function must(what: string, command: string, args: string[]): Promise<void
 /** The pid in postmaster.pid when it is this stack's running postmaster, else null. */
 function ourPostmaster(): number | null {
   if (!existsSync(join(PGDATA, "postmaster.pid"))) return null;
-  const pid = Number(readFileSync(join(PGDATA, "postmaster.pid"), "utf8").split("\n")[0]);
-  return (commandLine(pid) ?? "").includes(` -D ${PGDATA} `) ? pid : null;
+  // postmaster.pid: pid on line 1, port on line 4.
+  const lines = readFileSync(join(PGDATA, "postmaster.pid"), "utf8").split("\n");
+  const [pid, port] = [Number(lines[0]), Number(lines[3])];
+  return isStackPostmaster(commandLine(pid) ?? "", PGDATA, DIR, port) ? pid : null;
 }
 
 /** Run under the lock: refuses to start over a stack that runs, or a busy port. */
@@ -69,7 +79,7 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   ];
   if (!existsSync(PGDATA))
     await must("initdb", "initdb", ["-D", PGDATA, "-U", userInfo().username, ...init]);
-  const options = `-p ${postgres} -k ${DIR} -c listen_addresses=127.0.0.1 -c unix_socket_permissions=0700`;
+  const options = postgresOptions(postgres, DIR);
   await must("pg_ctl start", "pg_ctl", [
     "-D",
     PGDATA,

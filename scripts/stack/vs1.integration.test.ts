@@ -141,6 +141,31 @@ describe("up while another up holds the lock", () => {
   });
 });
 
+describe("down with a leftover postmaster.pid", () => {
+  it("leaves a reused pid alone even when its arguments carry -D <pgdata>", async () => {
+    expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
+    const pgdata = join(ROOT, ".stack/vs1/pgdata");
+    expect(existsSync(pgdata), "remove the local .stack/vs1/pgdata before the tests").toBe(false);
+    const args = ["-e", "setTimeout(() => {}, 60000)", "--", "-D", pgdata, "extra"];
+    const pid = await startDetached(process.execPath, args, {
+      cwd: dir,
+      env: { PATH: process.env.PATH ?? "" },
+      log: join(dir, "foreign.log"),
+    });
+    try {
+      mkdirSync(pgdata, { recursive: true });
+      writeFileSync(join(pgdata, "postmaster.pid"), `${pid}\n${pgdata}\n0\n54397\n`);
+      const result = run(["down"], {});
+      expect(result.stderr).toMatch(/postmaster\.pid is not ours/u);
+      expect(result.status).toBe(0);
+      expect(commandLine(pid)).toContain(`-D ${pgdata}`);
+    } finally {
+      process.kill(-pid, "SIGKILL");
+      rmSync(pgdata, { recursive: true, force: true });
+    }
+  }, 30_000);
+});
+
 describe("the server build", () => {
   it("bundles neither the stack nor the fake provider", async () => {
     const outfile = join(dir, "server.js");

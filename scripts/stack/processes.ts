@@ -100,3 +100,24 @@ export async function stopProcess(
   for (let tries = 0; tries < 20 && alive(); tries += 1) await wait(100);
   return "stopped";
 }
+
+/** The options the stack starts its postmaster with (pg_ctl -o). */
+export const postgresOptions = (port: number, socketDir: string): string =>
+  `-p ${port} -k ${socketDir} -c listen_addresses=127.0.0.1 -c unix_socket_permissions=0700`;
+
+/**
+ * True only for the stack's own postmaster: a `postgres` binary given exactly
+ * `-D <pgdata>` and the stack's options, as pg_ctl starts it. A reused pid
+ * whose arguments merely contain that text is not ours.
+ */
+export function isStackPostmaster(
+  line: string,
+  pgdata: string,
+  socketDir: string,
+  port: number,
+): boolean {
+  const args = ` -D ${pgdata} ${postgresOptions(port, socketDir)}`;
+  if (!line.endsWith(args)) return false;
+  const binary = line.slice(0, -args.length);
+  return binary.startsWith("/") && binary.endsWith("/postgres") && !/\s/u.test(binary);
+}

@@ -6,7 +6,14 @@ import type { AddressInfo } from "node:net";
 
 import { describe, expect, it } from "vitest";
 
-import { commandLine, portFree, stopProcess, waitHealthy } from "./index.ts";
+import {
+  commandLine,
+  isStackPostmaster,
+  portFree,
+  postgresOptions,
+  stopProcess,
+  waitHealthy,
+} from "./index.ts";
 
 const noWait = async (): Promise<void> => {};
 
@@ -117,6 +124,41 @@ describe("commandLine", () => {
 
   it("is null for a process that does not exist", () => {
     expect(commandLine(2 ** 22 + 7)).toBeNull();
+  });
+});
+
+describe("isStackPostmaster", () => {
+  const pgdata = "/r/.stack/vs1/pgdata";
+  const dir = "/r/.stack/vs1";
+  const ours = `/usr/lib/postgresql/17/bin/postgres -D ${pgdata} ${postgresOptions(54360, dir)}`;
+
+  it("accepts the postmaster pg_ctl starts", () => {
+    expect(isStackPostmaster(ours, pgdata, dir, 54360)).toBe(true);
+  });
+
+  it.each([
+    [
+      "a process that only carries -D <pgdata> among its arguments",
+      `node /tmp/x.js -- -D ${pgdata} extra`,
+    ],
+    [
+      "the same arguments after another program",
+      `/usr/bin/sleep -D ${pgdata} ${postgresOptions(54360, dir)}`,
+    ],
+    ["a relative postgres", `postgres -D ${pgdata} ${postgresOptions(54360, dir)}`],
+    [
+      "a wrapper before postgres",
+      `/bin/sh -c /usr/lib/postgresql/17/bin/postgres -D ${pgdata} ${postgresOptions(54360, dir)}`,
+    ],
+    ["another data directory", ours.replace(pgdata, "/other/pgdata")],
+    ["extra arguments", `${ours} -c x=1`],
+    ["an empty line", ""],
+  ])("refuses %s", (_, line) => {
+    expect(isStackPostmaster(line, pgdata, dir, 54360)).toBe(false);
+  });
+
+  it("refuses our postmaster line for another port", () => {
+    expect(isStackPostmaster(ours, pgdata, dir, 54361)).toBe(false);
   });
 });
 
