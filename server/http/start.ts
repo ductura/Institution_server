@@ -28,7 +28,7 @@ export async function startServer(options: StartOptions): Promise<Running> {
   const shutdown = options.shutdown ?? createShutdownCoordinator();
   // Responses whose headers are not sent yet: once draining they say
   // Connection: close, so no client is told it may reuse the connection.
-  const pending = new Set<ServerResponse>();
+  const pending = new Map<ServerResponse, Socket>();
   // Requests in flight per connection. Node's closeIdleConnections (also run
   // by http.Server.close) counts a connection idle as soon as its response
   // ended, while the body may still be in the socket buffer, so shutdown ends
@@ -52,7 +52,7 @@ export async function startServer(options: StartOptions): Promise<Running> {
       connection.active += 1;
       connection.served = true;
     }
-    pending.add(response);
+    pending.set(response, socket);
     // The ticket is held until the handler settled and the last byte left the
     // process (or the socket closed): a client that disconnects does not end
     // the drain under a running handler, and a large body is not cut by exit.
@@ -106,7 +106,14 @@ export async function startServer(options: StartOptions): Promise<Running> {
   return {
     port,
     stopAccepting: () => {
-      for (const response of pending) if (!response.headersSent) response.shouldKeepAlive = false;
+      // Only the last accepted response on a connection says Connection:
+      // close; an earlier one would close it under the pipelined ones after it.
+      const last = new Map<Socket, ServerResponse>();
+      // A queued pipelined response has no socket of its own yet; its request does.
+      for (const [response, socket] of pending) last.set(socket, response);
+      for (const response of last.values()) {
+        if (!response.headersSent) response.shouldKeepAlive = false;
+      }
       // Stop listening without http.Server.close, which would also end
       // connections whose last body is still being written (see above).
       NetServer.prototype.close.call(server);

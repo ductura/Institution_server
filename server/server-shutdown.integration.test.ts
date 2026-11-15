@@ -213,6 +213,20 @@ describe("shutdown in the middle of a slow request", () => {
     expect(await server.exit).toBe(0);
   }, 20_000);
 
+  // Codex review on 7c473c5: requests already accepted on one pipelined
+  // connection all get their answer; only the last one closes it.
+  it("pipelined requests accepted before the signal all get their answer, then exit 0", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["400"]);
+    const piped = await open(server.port);
+    piped.socket.write(GET("/api/v1/health?slow") + GET("/api/v1/health?slow"));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    server.child.kill("SIGTERM");
+    await piped.closed;
+    expect(piped.text().match(/HTTP\/1\.1 200 OK/gu)).toHaveLength(2);
+    expect(await server.exit).toBe(0);
+    expect(server.err()).toBe("");
+  }, 20_000);
+
   // QA on c3862f3, F2: a body larger than the socket buffers reaches a slow
   // reader whole before the process exits 0.
   it("a large body to a client that reads late arrives whole, then exit 0", async () => {
