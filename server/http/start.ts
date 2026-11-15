@@ -64,22 +64,27 @@ export async function startServer(options: StartOptions): Promise<Running> {
       ticket.release();
       if (shutdown.state() !== "running") endIfIdle(socket);
     };
+    // The output is over once, when the last byte left the process or the
+    // socket closed. The socket is watched as well, because a pipelined
+    // response still queued behind another has no close of its own in every
+    // Node 24 release when the client leaves.
+    let outputOpen = true;
+    const outputOver = () => {
+      if (!outputOpen) return;
+      outputOpen = false;
+      pending.delete(response);
+      socket.off("close", outputOver);
+      socket.off("finish", outputOver);
+      done();
+    };
+    socket.once("close", outputOver);
     response.once("close", () => {
       pending.delete(response);
-      if (socket.destroyed || socket.writableLength === 0) return done();
-      let waiting = true;
-      const flushed = () => {
-        if (!waiting) return;
-        waiting = false;
-        socket.off("close", flushed);
-        socket.off("finish", flushed);
-        done();
-      };
-      socket.once("close", flushed);
+      if (socket.destroyed || socket.writableLength === 0) return outputOver();
       // Writes leave in order: the callback of an empty write, or the finish
       // of an ended socket, comes after every byte before it.
-      if (socket.writableEnded) socket.once("finish", flushed);
-      else socket.write("", flushed);
+      if (socket.writableEnded) socket.once("finish", outputOver);
+      else socket.write("", outputOver);
     });
     void handle(request, response)
       .catch((error: unknown) => {

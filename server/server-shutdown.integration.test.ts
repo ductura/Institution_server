@@ -227,6 +227,25 @@ describe("shutdown in the middle of a slow request", () => {
     expect(server.err()).toBe("");
   }, 20_000);
 
+  // Review on 132af0a: a queued pipelined response gets no close event when
+  // the client leaves; its ticket must still end with the socket.
+  it("pipelined requests whose client leaves: the handlers finish, exit 0 well before the deadline", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "8000" }, ["800"]);
+    const piped = await open(server.port);
+    // A slow first and a fast second: the second answer waits queued, with no
+    // socket of its own, behind the first.
+    piped.socket.write(GET("/api/v1/health?slow") + GET("/api/v1/health"));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const signalled = Date.now();
+    server.child.kill("SIGTERM");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    piped.socket.destroy();
+    expect(await server.exit).toBe(0);
+    expect(Date.now() - signalled).toBeLessThan(4_000);
+    expect(server.out().match(/"event":"route\.done"/gu)).toHaveLength(1);
+    expect(server.err()).toBe("");
+  }, 20_000);
+
   // QA on c3862f3, F2: a body larger than the socket buffers reaches a slow
   // reader whole before the process exits 0.
   it("a large body to a client that reads late arrives whole, then exit 0", async () => {
