@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md"
   },
   "x-fallback": {
@@ -2027,14 +2027,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2047,14 +2063,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2067,14 +2099,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2171,8 +2219,8 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2184,8 +2232,8 @@
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2197,8 +2245,8 @@
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2210,8 +2258,8 @@
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2232,14 +2280,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2254,8 +2318,8 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2267,8 +2331,8 @@
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2280,8 +2344,8 @@
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2302,14 +2366,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTimeout",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 408,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2322,14 +2402,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTooLarge",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2342,14 +2438,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupportedMediaType",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 415,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2362,14 +2474,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalidInput",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2382,14 +2510,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }

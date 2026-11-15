@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { messagesEn } from "./en.ts";
 import { messagesHr } from "./hr.ts";
 import { catalogueGaps } from "./parity.ts";
-import { SOURCE_TEXT_CHANGES, withSourceTexts } from "./source.ts";
+import { SOURCE_TEXT_CHANGES, withoutAdditions, withSourceTexts } from "./source.ts";
 
 const none = { missing: [], extra: [], placeholders: [] };
 
@@ -188,7 +188,7 @@ describe("interface catalogues", () => {
   it("holds for every text the port changed on purpose", () => {
     for (const { language, path } of SOURCE_TEXT_CHANGES) {
       const [port, other] = language === "hr" ? [messagesHr, messagesEn] : [messagesEn, messagesHr];
-      expect(catalogueGaps(withSourceTexts(port, language), port)).toEqual(none);
+      expect(catalogueGaps(withSourceTexts(port, language), withoutAdditions(port))).toEqual(none);
       expect(catalogueGaps(port, other).placeholders).not.toContain(path);
     }
   });

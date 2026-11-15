@@ -13,6 +13,7 @@ import { TypeCompiler } from "@sinclair/typebox/compiler";
 import {
   API_VERSION,
   checkInventory,
+  errorBody,
   FALLBACK,
   INVENTORY,
   INVENTORY_SOURCE,
@@ -95,7 +96,7 @@ function openapi(routes: RouteContract[]): unknown {
     }
     for (const status of [...new Set(r.errors.map((e) => e.status))]) {
       const errs = r.errors.filter((e) => e.status === status);
-      const bodies = errs.map((e) => (e.body === undefined ? errorSchema(e.code) : e.body));
+      const bodies = errs.map((e) => e.body ?? errorBody(e.code, e.status));
       const json = bodies.filter((b): b is TSchema => typeof b === "object").map(plain);
       responses[String(status)] = {
         description: errs.map((e) => e.code).join(", "),
@@ -125,10 +126,11 @@ function openapi(routes: RouteContract[]): unknown {
           }
         : {}),
       responses,
-      "x-errors": r.errors.map(({ status, code, key }) => ({ status, code, key })),
+      "x-errors": r.errors.map(({ status, code }) => ({ status, code, key: v1Key(code) })),
     };
   }
-  const { status, code, key } = FALLBACK.error;
+  const { status, code } = FALLBACK.error;
+  const key = v1Key(code);
   return {
     openapi: "3.1.0",
     info: { title: "Ductura API", version: API_VERSION, "x-inventory-source": INVENTORY_SOURCE },
@@ -137,13 +139,14 @@ function openapi(routes: RouteContract[]): unknown {
   };
 }
 
-function errorSchema(code: string): TSchema {
-  return {
-    type: "object",
-    additionalProperties: false,
-    required: ["error"],
-    properties: { error: { const: code, type: "string" } },
-  } as unknown as TSchema;
+/**
+ * The key x-errors and x-fallback publish in v1: errors.<code>, as before
+ * S-1L.3. The guard (breaking.ts) lets no x- value change within v1, so the
+ * camelCase messageKey (ERROR_MESSAGE_KEYS) is published in the body schema
+ * only; x-errors takes it with v2 (DAN-789, "Poznate granice").
+ */
+export function v1Key(code: string): string {
+  return `errors.${code}`;
 }
 
 function types(routes: RouteContract[]): string {
@@ -290,9 +293,10 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
       return { ok: true, status: res.status, body, headers } as Result<Id>;
     }
     const known = (route.errors as Record<number, readonly string[] | undefined>)[res.status] ?? [];
-    // The code is in "error"; readiness carries it in "status" ({status: "draining"}).
-    const fields = body && typeof body === "object" ? (body as { error?: unknown; status?: unknown }) : {};
-    const sent = fields.error ?? fields.status;
+    // The code is in "code" (problem body, S-1L.3); a v1 body without it has it in "error",
+    // and readiness and evidence in "status" ({status: "draining"}).
+    const fields = body && typeof body === "object" ? (body as { code?: unknown; error?: unknown; status?: unknown }) : {};
+    const sent = [fields.code, fields.error, fields.status].find((value) => typeof value === "string");
     // A body without a code takes the only code of its status; an unknown code is never renamed.
     // A shared code (500 internal) counts only when the body names it, never for a bare status.
     const shared = (SHARED_ERRORS as Record<number, readonly string[] | undefined>)[res.status] ?? [];

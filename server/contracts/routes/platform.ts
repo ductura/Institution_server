@@ -63,6 +63,7 @@ export const ready = defineRoute({
     },
   ],
   errors: [
+    // Two errors of one status (a oneOf): v1 keeps both bodies as they are.
     error(
       503,
       "unavailable",
@@ -103,10 +104,16 @@ export const FALLBACK = {
   error: error(404, "not_found"),
 } as const;
 
+/** The answer to a known path with a method it has no route for; `allow` names those. */
+export const METHOD_NOT_ALLOWED = {
+  error: error(405, "method_not_allowed"),
+} as const;
+
 /**
  * The answer of any route whose handler fails before the first byte of its
- * answer (DAN-776). Exactly `{"error":"internal"}`: never the message, name or
- * stack of the error, a request id or anything else from inside the server.
+ * answer (DAN-776). Only the problem body of `internal` (S-1L.3): never the
+ * message, name or stack of the error, SQL or anything else from inside the
+ * server but the request id.
  */
 export const INTERNAL = {
   error: error(500, "internal"),

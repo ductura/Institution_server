@@ -51,9 +51,10 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
       return { ok: true, status: res.status, body, headers } as Result<Id>;
     }
     const known = (route.errors as Record<number, readonly string[] | undefined>)[res.status] ?? [];
-    // The code is in "error"; readiness carries it in "status" ({status: "draining"}).
-    const fields = body && typeof body === "object" ? (body as { error?: unknown; status?: unknown }) : {};
-    const sent = fields.error ?? fields.status;
+    // The code is in "code" (problem body, S-1L.3); a v1 body without it has it in "error",
+    // and readiness and evidence in "status" ({status: "draining"}).
+    const fields = body && typeof body === "object" ? (body as { code?: unknown; error?: unknown; status?: unknown }) : {};
+    const sent = [fields.code, fields.error, fields.status].find((value) => typeof value === "string");
     // A body without a code takes the only code of its status; an unknown code is never renamed.
     // A shared code (500 internal) counts only when the body names it, never for a bare status.
     const shared = (SHARED_ERRORS as Record<number, readonly string[] | undefined>)[res.status] ?? [];
