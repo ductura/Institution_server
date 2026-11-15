@@ -437,9 +437,31 @@ describe("invariant 1b: a .ts catalogue is data, read without running it", () =>
     expect(flagged(scan, "hr.ts")).toEqual(["probe.a", "probe.b.0"]);
   });
 
-  it("keeps textOf outside the catalogues", () => {
-    const hr = readFileSync(path.join(REPO_ROOT, "locales", "hr.ts"), "utf8");
-    expect(hr).not.toMatch(/\bfunction\b/u);
+  it("fails on hr.ts that exports textOf again", () => {
+    const root = copy();
+    const file = path.join(root, "locales", "hr.ts");
+    const textOf = 'export function textOf(): string {\n  return "Sumnjivo";\n}';
+    writeFileSync(file, `${readFileSync(file, "utf8")}\n${textOf}\n`);
+    expect(errorCode(root)).toBe("UNKNOWN_EXPORT hr.ts");
+  });
+
+  // Adversarial pass on DAN-774: forms that keep or add runtime code.
+  it.each([
+    [
+      "an import that is type-only per name, which still loads hr.ts",
+      'import { type Messages as M } from "./hr.ts";',
+    ],
+    ["an enum", 'enum Probe { A = "Suspicious edit" }'],
+    ["a namespace", 'namespace Probe { export const a = "Suspicious edit"; }'],
+    ["an ambient constant", "declare const probe: string;"],
+    ["an import alias", "import Probe = globalThis.String;"],
+    ["a using declaration", "using probe = null;"],
+  ])("fails on %s", (_, source) => {
+    expect(withSource(source)).toBe("UNREADABLE_FILE en.ts");
+  });
+
+  it("fails on a re-export of another module", () => {
+    expect(withSource('export * from "./hr.ts";')).toBe("UNKNOWN_EXPORT en.ts");
   });
 });
 
