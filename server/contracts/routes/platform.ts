@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error, problemFields } from "../schema/index.ts";
+import { closed, defineRoute, error } from "../schema/index.ts";
 
 const CapabilityStatus = Type.Union([
   Type.Literal("ok"),
@@ -63,21 +63,13 @@ export const ready = defineRoute({
     },
   ],
   errors: [
-    // Readiness keeps the word in `status` (v1), so the problem fields come without it.
+    // Two errors of one status (a oneOf): v1 keeps both bodies as they are.
     error(
       503,
       "unavailable",
-      closed({
-        status: Type.Literal("unavailable"),
-        capabilities: Capabilities,
-        ...problemFields("unavailable", 503, false),
-      }),
+      closed({ status: Type.Literal("unavailable"), capabilities: Capabilities }),
     ),
-    error(
-      503,
-      "draining",
-      closed({ status: Type.Literal("draining"), ...problemFields("draining", 503, false) }),
-    ),
+    error(503, "draining", closed({ status: Type.Literal("draining") })),
   ],
 });
 

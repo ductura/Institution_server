@@ -3,7 +3,7 @@
 // nothing of its error (message, stack, SQL) but the problem of 500 internal.
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { REQUEST_ID_PATTERN, ROUTES } from "../contracts/index.ts";
+import { messageKeyOf, REQUEST_ID_PATTERN, ROUTES } from "../contracts/index.ts";
 import { createDatabases } from "./databases.ts";
 import { HEALTH_ROUTE } from "./health.ts";
 import { createLayers } from "./pipeline.ts";
@@ -58,7 +58,6 @@ describe("problem bodies on the wire", () => {
       405,
       "method_not_allowed",
     ],
-    ["403", "/api/v1/health", { method: "POST" }, 403, "origin_missing"],
   ] as const)(
     "%s has exactly the four fields and v1's error",
     async (_, path, init, status, code) => {
@@ -71,11 +70,21 @@ describe("problem bodies on the wire", () => {
         "requestId",
         "status",
       ]);
-      expect(body).toMatchObject({ code, error: code, messageKey: `errors.${code}`, status });
+      expect(body).toMatchObject({ code, error: code, messageKey: messageKeyOf(code), status });
       expect(body["requestId"]).toMatch(UUID_V4);
       expect(response.headers.get("x-request-id")).toBe(body["requestId"]);
     },
   );
+
+  it("403 is a oneOf in v1: exactly {error}, the server's id only in X-Request-Id", async () => {
+    const { response, body } = await refusal("/api/v1/health", {
+      method: "POST",
+      headers: { "x-request-id": FORGED },
+    });
+    expect([response.status, body]).toEqual([403, { error: "origin_missing" }]);
+    expect(response.headers.get("x-request-id")).toMatch(UUID_V4);
+    expect(response.headers.get("x-request-id")).not.toBe(FORGED);
+  });
 
   it("never takes the request id from the client", async () => {
     const forged = { "x-request-id": FORGED, "request-id": FORGED, "x-correlation-id": FORGED };

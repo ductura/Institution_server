@@ -82,10 +82,10 @@ afterAll(() => {
 });
 
 /** The problem body of a contract error (S-1L.3); the request id is new each time. */
-const problem = (status: number, code: string) => ({
+const problem = (status: number, code: string, messageKey: string) => ({
   error: code,
   code,
-  messageKey: `errors.${code}`,
+  messageKey,
   status,
   requestId: expect.stringMatching(
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
@@ -133,12 +133,16 @@ describe("dist/server.js", () => {
   it("refuses an unknown path, another method and a trailing slash in the contract format", async () => {
     const [server, port] = await start({ APP_ORIGIN: "https://ductura.invalid" });
     const unknown = await fetch(url(port, "/api/v1/nope?x=1"));
-    expect([unknown.status, await unknown.json()]).toEqual([404, problem(404, "not_found")]);
+    expect([unknown.status, await unknown.json()]).toEqual([
+      404,
+      problem(404, "not_found", "errors.notFound"),
+    ]);
     const slash = await fetch(url(port, "/api/v1/health/"));
     expect(slash.status).toBe(404);
     // Step 7 (S-1B-b) comes before the router: a POST without our Origin never reaches it.
     const foreign = await fetch(url(port, "/api/v1/health"), { method: "POST" });
-    expect([foreign.status, await foreign.json()]).toEqual([403, problem(403, "origin_missing")]);
+    // 403 is a oneOf in v1 (v1Error), so its body stays {error}.
+    expect([foreign.status, await foreign.json()]).toEqual([403, { error: "origin_missing" }]);
     const post = await fetch(url(port, "/api/v1/health"), {
       method: "POST",
       headers: { origin: "https://ductura.invalid" },
@@ -146,7 +150,7 @@ describe("dist/server.js", () => {
     expect([post.status, post.headers.get("allow"), await post.json()]).toEqual([
       405,
       "GET",
-      problem(405, "method_not_allowed"),
+      problem(405, "method_not_allowed", "errors.methodNotAllowed"),
     ]);
     const head = await fetch(url(port, "/api/v1/health"), { method: "HEAD" });
     expect(head.status).toBe(405);

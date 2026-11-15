@@ -2,6 +2,10 @@
 // schema library (TypeBox) and its own files, so any client can depend on it.
 import { Type, type TObject, type TSchema } from "@sinclair/typebox";
 
+import { messageKeyOf } from "./message-keys.ts";
+
+export { ERROR_MESSAGE_KEYS, messageKeyOf } from "./message-keys.ts";
+
 /** Who may call a route. A declaration for clients and docs: the database still decides (RLS, RPC). */
 export const ACCESS = [
   "anyone",
@@ -25,15 +29,17 @@ export const API_PREFIX = "/api/v1";
 
 /**
  * An error answer. `code` is the closed word on the wire, `key` the locales key
- * a client shows; neither is ever a sentence. `body` defaults to the problem
- * body of `errorBody`; "none" means no body, "html" a page for a browser
- * navigation.
+ * a client shows (ERROR_MESSAGE_KEYS); neither is ever a sentence. `body`
+ * defaults to the problem body of `errorBody`; "none" means no body, "html" a
+ * page for a browser navigation. `v1` marks an error that keeps the v1 body
+ * {error: code} on the wire (v1Error).
  */
 export type ErrorSpec = {
   readonly status: number;
   readonly code: string;
   readonly key: string;
   readonly body?: TSchema | "none" | "html";
+  readonly v1?: true;
 };
 
 export type SuccessSpec = {
@@ -73,8 +79,18 @@ export function defineRoute<const R extends RouteContract>(route: R): R {
 }
 
 export function error(status: number, code: string, body?: ErrorSpec["body"]): ErrorSpec {
-  const key = `errors.${code}`;
-  return { status, code, key, body: body ?? errorBody(code, status) };
+  return { status, code, key: messageKeyOf(code), body: body ?? errorBody(code, status) };
+}
+
+/**
+ * An error that keeps the v1 body {error: code}, without the problem fields:
+ * one of several errors of a status, whose bodies are a oneOf in v1 that the
+ * guard (breaking.ts) lets no field into. The server answers it in the same
+ * shape (server/http/problem.ts).
+ */
+export function v1Error(status: number, code: string): ErrorSpec {
+  const body = Type.Object({ error: Type.Literal(code) }, { additionalProperties: false });
+  return { status, code, key: messageKeyOf(code), body, v1: true };
 }
 
 /**
@@ -88,14 +104,13 @@ export const REQUEST_ID_PATTERN =
  * The problem fields of an error answer (S-1L.3, DAN-789): the code, the
  * locales key, the HTTP status and the request id. The server sends all four
  * on every JSON error; v1 declares them optional because its guard
- * (breaking.ts) allows only optional new response fields. `status` is left
- * out where a v1 body already uses that name for the code.
+ * (breaking.ts) allows only optional new response fields.
  */
-export function problemFields(code: string, status: number, withStatus = true) {
+export function problemFields(code: string, status: number) {
   return {
     code: Type.Optional(Type.Literal(code)),
-    messageKey: Type.Optional(Type.Literal(`errors.${code}`)),
-    ...(withStatus ? { status: Type.Optional(Type.Literal(status)) } : {}),
+    messageKey: Type.Optional(Type.Literal(messageKeyOf(code))),
+    status: Type.Optional(Type.Literal(status)),
     requestId: Type.Optional(Type.String({ pattern: REQUEST_ID_PATTERN })),
   };
 }

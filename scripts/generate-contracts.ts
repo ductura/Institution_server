@@ -126,16 +126,27 @@ function openapi(routes: RouteContract[]): unknown {
           }
         : {}),
       responses,
-      "x-errors": r.errors.map(({ status, code, key }) => ({ status, code, key })),
+      "x-errors": r.errors.map(({ status, code }) => ({ status, code, key: v1Key(code) })),
     };
   }
-  const { status, code, key } = FALLBACK.error;
+  const { status, code } = FALLBACK.error;
+  const key = v1Key(code);
   return {
     openapi: "3.1.0",
     info: { title: "Ductura API", version: API_VERSION, "x-inventory-source": INVENTORY_SOURCE },
     "x-fallback": { status, code, key, inventory: FALLBACK.inventory },
     paths,
   };
+}
+
+/**
+ * The key x-errors and x-fallback publish in v1: errors.<code>, as before
+ * S-1L.3. The guard (breaking.ts) lets no x- value change within v1, so the
+ * camelCase messageKey (ERROR_MESSAGE_KEYS) is published in the body schema
+ * only; x-errors takes it with v2 (DAN-789, "Poznate granice").
+ */
+export function v1Key(code: string): string {
+  return `errors.${code}`;
 }
 
 function types(routes: RouteContract[]): string {

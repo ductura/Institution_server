@@ -1,6 +1,12 @@
 // Checks a set of contracts against the format and the route inventory. The
 // generator refuses to write while any problem is reported.
-import { ACCESS, API_PREFIX, type Method, type RouteContract } from "./schema/index.ts";
+import {
+  ACCESS,
+  API_PREFIX,
+  ERROR_MESSAGE_KEYS,
+  type Method,
+  type RouteContract,
+} from "./schema/index.ts";
 
 /** app/api/a/[b]/route.ts -> /api/v1/a/{b} */
 export function pathOf(inventoryFile: string): string {
@@ -27,7 +33,7 @@ export function checkRoute(route: RouteContract): string[] {
   for (const e of route.errors) {
     if (e.status < 400 || e.status > 599) at(`error status ${e.status}`);
     if (!/^[a-z][a-z_]*$/.test(e.code)) at(`error code ${e.code}`);
-    if (e.key !== `errors.${e.code}`) at(`error key ${e.key}`);
+    if (e.key !== ERROR_MESSAGE_KEYS.get(e.code)) at(`error key ${e.key}`);
     if (seen.has(`${e.status} ${e.code}`)) at(`duplicate error ${e.status} ${e.code}`);
     seen.add(`${e.status} ${e.code}`);
   }

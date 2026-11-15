@@ -80,7 +80,7 @@ describe("readBodyWithLimit on a real server", () => {
     const text = await answer(socket);
     expect(text).toMatch(/^HTTP\/1\.1 413 /u);
     expect(text).toContain(
-      '{"error":"body_too_large","code":"body_too_large","messageKey":"errors.body_too_large","status":413,"requestId":"',
+      '{"error":"body_too_large","code":"body_too_large","messageKey":"errors.bodyTooLarge","status":413,"requestId":"',
     );
     expect(text).toContain("Connection: close");
     expect(Date.now() - started).toBeLessThan(2_000);
@@ -101,7 +101,7 @@ describe("readBodyWithLimit on a real server", () => {
     const text = await answer(socket);
     expect(text).toMatch(/^HTTP\/1\.1 408 /u);
     expect(text).toContain(
-      '{"error":"body_timeout","code":"body_timeout","messageKey":"errors.body_timeout","status":408,"requestId":"',
+      '{"error":"body_timeout","code":"body_timeout","messageKey":"errors.bodyTimeout","status":408,"requestId":"',
     );
   });
 

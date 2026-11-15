@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { Value } from "@sinclair/typebox/value";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { errorBody, INTERNAL, ROUTES, type VectorFile } from "../contracts/index.ts";
+import { errorBody, INTERNAL, messageKeyOf, ROUTES, type VectorFile } from "../contracts/index.ts";
 import { HEALTH_ROUTE } from "./health.ts";
 import { createRouter, errorName, type Route, routePath, sendJson } from "./router.ts";
 
@@ -57,7 +57,7 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 const problem = (status: number, code: string) => ({
   error: code,
   code,
-  messageKey: `errors.${code}`,
+  messageKey: messageKeyOf(code),
   status,
   requestId: expect.stringMatching(UUID_V4),
 });

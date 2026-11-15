@@ -214,11 +214,6 @@ export const SOURCE_TEXT_CHANGES: readonly TextChange[] = [
   },
 ];
 
-/**
- * A copy of `table` with each text of `SOURCE_TEXT_CHANGES` for `language` put
- * back to its source text. Throws when a recorded path does not hold the
- * recorded new text, so the list cannot go stale.
- */
 /** A copy of the table without the sections added after the port (SOURCE_ADDITIONS). */
 export function withoutAdditions<T>(table: T): T {
   const copy = structuredClone(table);
@@ -230,7 +225,12 @@ export function withoutAdditions<T>(table: T): T {
   return copy;
 }
 
-/** The table as the source had it: without the additions, the recorded changes put back. */
+/**
+ * A copy of `table` without the additions and with each text of
+ * `SOURCE_TEXT_CHANGES` for `language` put back to its source text. Throws
+ * when a recorded path does not hold the recorded new text, so the list
+ * cannot go stale.
+ */
 export function withSourceTexts<T>(table: T, language: "hr" | "en"): T {
   const copy = withoutAdditions(table);
   for (const change of SOURCE_TEXT_CHANGES.filter((each) => each.language === language)) {
