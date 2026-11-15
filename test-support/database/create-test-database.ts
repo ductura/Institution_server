@@ -2,6 +2,7 @@ import { migratedDump, openDump, sourceOf } from "@ductura/test-fakes/pglite";
 import { expect } from "vitest";
 
 import { type Database, DATABASES } from "../../scripts/db/index.ts";
+import { openPostgresDatabase } from "./postgres.ts";
 
 // S-1F-e (DAN-785): every database of scripts/db/databases.ts has a fake for
 // tests, built from the same migrations. A new database is a new entry there
@@ -10,9 +11,8 @@ import { type Database, DATABASES } from "../../scripts/db/index.ts";
 // Two engines, picked by the vitest project (vitest.config.ts):
 // - pglite, project `integration` (`pnpm test:integration`): in process, a
 //   fresh copy of the migrated database per open and per reset;
-// - postgres: the migrated local or CI database, each test in one transaction
-//   rolled back. It comes with the second part of S-1F-e (DAN-785 b, project
-//   `integration-pg`); until then opening it is an error.
+// - postgres, project `integration-pg` (`pnpm test:integration:pg`): the
+//   migrated local or CI database, each test in one transaction rolled back.
 // PGlite is no proof of privileges, RLS or SECURITY DEFINER (S-0.3), so a test
 // of authority runs only on postgres: its file is *.pg.integration.test.ts and
 // it asks with { authority: true }, which PGlite refuses before opening.
@@ -44,20 +44,24 @@ export function engineFrom(env: Readonly<Record<string, string | undefined>>): T
 // Read once: a test that changes the variable later does not change the engine.
 const ENGINE = engineFrom(process.env);
 
-export const POSTGRES_NOT_YET = "the postgres engine comes with DAN-785 b (integration-pg)";
-
 export const AUTHORITY_REFUSED = "authority test needs real PostgreSQL (pnpm test:integration:pg)";
 
 export const PG_FILE_REFUSED = "a *.pg.integration.test.ts file runs only on real PostgreSQL";
 
 const PG_FILE = /\.pg\.integration\.test\.ts$/iu;
 
+// The one file of integration-pg that opens PGlite on purpose: it compares engines.
+const PARITY_FILE = "test-support/database/migration-parity.pg.integration.test.ts";
+
 /**
  * Whether a test in `testPath` may open PGlite: never from a test of
- * authority's file, whatever the environment says (adversarial pass, DAN-785).
+ * authority's file, whatever the environment says (adversarial pass, DAN-785),
+ * except the parity test.
  */
 export function pgliteAllowedIn(testPath: string | undefined): boolean {
-  return testPath === undefined || !PG_FILE.test(testPath.replaceAll("\\", "/"));
+  if (testPath === undefined) return true;
+  const path = testPath.replaceAll("\\", "/");
+  return !PG_FILE.test(path) || path.endsWith(`/${PARITY_FILE}`);
 }
 
 /** The entry called `name` of `databases`; unknown is an error, never a default. */
@@ -117,8 +121,7 @@ export async function openTestDatabase(
   if (options.authority === true && engine !== "postgres") throw new Error(AUTHORITY_REFUSED);
   if (engine === "pglite" && !pgliteAllowedIn(expect.getState().testPath))
     throw new Error(PG_FILE_REFUSED);
-  if (engine === "postgres") throw new Error(POSTGRES_NOT_YET);
-  return openPglite(target);
+  return engine === "pglite" ? openPglite(target) : openPostgresDatabase(target);
 }
 
 /** A test database of `name` on the engine of the running vitest project. */

@@ -19,7 +19,8 @@ pnpm test               # unit, property i integration, jedan za drugim (bez baz
 pnpm test:unit
 pnpm test:property
 pnpm test:integration  # integracijski testovi; testne baze na PGliteu (test-support/database)
-pnpm test:database      # testovi migracija; traže migriranu bazu na 127.0.0.1:54329 (posao database u CI-ju)
+pnpm test:integration:pg # testovi ovlasti (*.pg.integration.test.ts) na pravom PostgreSQL-u; traže migrirane baze
+pnpm test:database      # testovi migracija, zatim test:integration:pg; traže migrirane baze na 127.0.0.1:54329 i :54330 (posao database u CI-ju)
 pnpm contracts:generate # ponovno generira server/contracts/generated i openapi/v1.json iz ugovora
 pnpm contracts:breaking [ref] # ruši se kad ugovor lomi klijente openapi/v1.json na ref (zadano origin/main)
 ```
@@ -66,14 +67,15 @@ Testovi su u `tests/format/format.test.ts`.
 
 ## Testovi
 
-Vitest ima četiri projekta. Projekt određuje sufiks datoteke, a `database` mapa `tests/db`. Testovi su samo u `server/`, `test-support/` i `scripts/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
+Vitest ima pet projekata. Projekt određuje sufiks datoteke, a `database` mapa `tests/db`. Testovi su samo u `server/`, `test-support/` i `scripts/` (testovi lint pravila u `tests/`) sa sufiksom `.test.ts`; datoteka izvan toga ne pripada nijednom projektu i ne pokreće se. Projekt bez ijedne datoteke ruši pokretanje, zato `pnpm test` i CI pokreću projekte jedan po jedan.
 
-| Projekt       | Datoteke                                                       | Što provjerava                                                                                                 |
-| ------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `unit`        | `{server,test-support,tests,scripts}/**/*.test.ts`             | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje                                     |
-| `property`    | `{server,test-support,tests,scripts}/**/*.property.test.ts`    | Svojstva pravila pristupa (fast-check)                                                                         |
-| `integration` | `{server,test-support,tests,scripts}/**/*.integration.test.ts` | HTTP poslužitelj od zahtjeva do odgovora                                                                       |
-| `database`    | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`) | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u |
+| Projekt          | Datoteke                                                              | Što provjerava                                                                                                   |
+| ---------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `unit`           | `{server,test-support,tests,scripts}/**/*.test.ts`                    | Pomoćne funkcije, memorijsku bazu, dimni test, lint pravila i formatiranje                                       |
+| `property`       | `{server,test-support,tests,scripts}/**/*.property.test.ts`           | Svojstva pravila pristupa (fast-check)                                                                           |
+| `integration`    | `{server,test-support,tests,scripts}/**/*.integration.test.ts`        | HTTP poslužitelj od zahtjeva do odgovora                                                                         |
+| `database`       | `tests/db/**/*.integration.test.ts` (izuzeti iz `integration`)        | Migracije glavne baze, zaključavanje migracija i sloj baze (`withActor`, `openSession`) na pravom PostgreSQL-u   |
+| `integration-pg` | `**/*.pg.integration.test.ts` (izuzeti iz `integration` i `database`) | Testovi ovlasti i paritet migracija PGlite/PostgreSQL ([test-support/database](test-support/database/README.md)) |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
 Pokriva je `server/app.integration.test.ts`.
