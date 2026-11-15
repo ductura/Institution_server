@@ -8,6 +8,14 @@
 -- Unlike ductus_migrator, no role here has CREATEROLE: the roles are made
 -- only here (B0.1), and the migrations only check them. No role has LOGIN;
 -- logins join a group role later, so no password lives in this file.
+--
+-- It runs as a superuser in a database the migrator owns, and an owner can
+-- set the database's search_path and put functions in public. So nothing
+-- here resolves through search_path: it is pg_catalog only for this one
+-- transaction (SET LOCAL, so the session keeps its own), and every call is
+-- qualified.
+BEGIN;
+SET LOCAL search_path = pg_catalog;
 DO $$
 DECLARE
   logs_roles CONSTANT text[] := ARRAY[
@@ -18,13 +26,13 @@ DECLARE
   ];
   role_name text;
 BEGIN
-  IF current_database() <> 'ductus_logs' THEN
-    RAISE EXCEPTION 'db/logs/local/migrator.sql runs only in ductus_logs (current: %)', current_database();
+  IF pg_catalog.current_database() <> 'ductus_logs' THEN
+    RAISE EXCEPTION 'db/logs/local/migrator.sql runs only in ductus_logs (current: %)', pg_catalog.current_database();
   END IF;
 
   FOREACH role_name IN ARRAY logs_roles LOOP
     IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = role_name) THEN
-      EXECUTE format(
+      EXECUTE pg_catalog.format(
         'CREATE ROLE %I NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
         role_name
       );
@@ -47,10 +55,11 @@ BEGIN
     RAISE EXCEPTION 'role % is a member of another role', role_name;
   END IF;
 
-  EXECUTE format('ALTER DATABASE %I OWNER TO ductus_logs_migrator', current_database());
+  EXECUTE pg_catalog.format('ALTER DATABASE %I OWNER TO ductus_logs_migrator', pg_catalog.current_database());
   -- A database migrated before this file ran keeps its ledger.
-  IF to_regclass('public.schema_migrations') IS NOT NULL THEN
+  IF pg_catalog.to_regclass('public.schema_migrations') IS NOT NULL THEN
     ALTER TABLE public.schema_migrations OWNER TO ductus_logs_migrator;
   END IF;
 END
 $$;
+COMMIT;

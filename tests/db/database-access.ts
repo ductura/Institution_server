@@ -15,7 +15,13 @@ export type AccessPolicy = Readonly<Record<string, Readonly<Record<string, reado
 const DATABASE_PRIVILEGES = ["CONNECT", "CREATE", "TEMPORARY"] as const;
 const SCHEMA_PRIVILEGES = ["USAGE", "CREATE"] as const;
 
-/** The policy of one database: its owner holds everything, `connect` may connect and use `public`. */
+/**
+ * The policy of one database: its owner holds everything, `connect` may
+ * connect and use `public`. Since PostgreSQL 15 `public` belongs to
+ * pg_database_owner, the stand-in for the database's owner, and the built-in
+ * pg_read_all_data and pg_write_all_data use every schema by definition; the
+ * integration test holds that no role is a member of a built-in role.
+ */
 export function databasePolicy(
   database: string,
   owner: string,
@@ -24,7 +30,10 @@ export function databasePolicy(
   const all = [owner, ...connect];
   return {
     [`database:${database}`]: { connect: all, create: [owner], temporary: [owner] },
-    [`schema:${database}.public`]: { usage: all, create: [owner] },
+    [`schema:${database}.public`]: {
+      usage: [...all, "pg_database_owner", "pg_read_all_data", "pg_write_all_data"],
+      create: [owner, "pg_database_owner"],
+    },
   };
 }
 

@@ -119,21 +119,26 @@ async function connectAs(adminUrl: string, role: string, database: string): Prom
   }
 }
 
+type Queryable = Pick<pg.Pool, "query">;
+
 /**
- * Every non-builtin role, and PUBLIC as a role of its own, × every database of
- * `databases` (and its public schema). PUBLIC's rows come from the ACL itself,
- * so a grant to PUBLIC fails even in a cluster where no other role would show it.
+ * Every role (the built-in pg_* ones included), and PUBLIC as a role of its
+ * own, × every database of `databases` and, with `withSchemas`, every schema
+ * of the connected database but the system ones. A role reaches what it
+ * inherits or may SET ROLE to. PUBLIC's rows come from the ACL itself, so a
+ * grant to PUBLIC fails even where no other role would show it.
  */
 async function catalogue(
-  pool: pg.Pool,
+  pool: Queryable,
   databases: string[],
-  withSchema: boolean,
+  withSchemas: boolean,
 ): Promise<{ roles: RoleRow[]; grants: GrantRow[] }> {
   const roles = await pool.query<RoleRow>(`
     SELECT r.rolname AS role, r.rolsuper AS superuser,
            ARRAY(SELECT g.rolname::text FROM pg_catalog.pg_roles g
-                 WHERE pg_catalog.pg_has_role(r.oid, g.oid, 'USAGE')) AS inherits
-    FROM pg_catalog.pg_roles r WHERE r.rolname !~ '^pg_'
+                 WHERE pg_catalog.pg_has_role(r.oid, g.oid, 'USAGE')
+                    OR pg_catalog.pg_has_role(r.oid, g.oid, 'SET')) AS inherits
+    FROM pg_catalog.pg_roles r
     UNION ALL SELECT 'PUBLIC', false, ARRAY['PUBLIC']`);
   const grants = await pool.query<GrantRow>(
     `SELECT r.rolname AS role, 'database:' || d.datname AS object, p.privilege,
@@ -141,7 +146,7 @@ async function catalogue(
      FROM pg_catalog.pg_roles r
      CROSS JOIN pg_catalog.pg_database d
      CROSS JOIN unnest(ARRAY['CONNECT', 'CREATE', 'TEMPORARY']) AS p(privilege)
-     WHERE r.rolname !~ '^pg_' AND d.datname = ANY ($1)
+     WHERE d.datname = ANY ($1)
      UNION ALL
      SELECT 'PUBLIC', 'database:' || d.datname, p.privilege,
             EXISTS (SELECT 1 FROM aclexplode(coalesce(d.datacl, acldefault('d', d.datdba))) a
@@ -152,24 +157,41 @@ async function catalogue(
     [databases],
   );
   const rows = [...grants.rows];
-  if (withSchema) {
-    const schema = await pool.query<GrantRow>(
-      `SELECT r.rolname AS role, 'schema:' || current_database() || '.public' AS object, p.privilege,
-              pg_catalog.has_schema_privilege(r.oid, 'public', p.privilege) AS granted
-       FROM pg_catalog.pg_roles r
+  if (withSchemas) {
+    const schemas = `FROM pg_catalog.pg_namespace n
        CROSS JOIN unnest(ARRAY['USAGE', 'CREATE']) AS p(privilege)
-       WHERE r.rolname !~ '^pg_'
+       WHERE n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+         AND n.nspname !~ '^pg_(toast_)?temp_'`;
+    const schema = await pool.query<GrantRow>(
+      `SELECT r.rolname AS role, 'schema:' || current_database() || '.' || n.nspname AS object,
+              p.privilege, pg_catalog.has_schema_privilege(r.oid, n.oid, p.privilege) AS granted
+       FROM pg_catalog.pg_roles r CROSS JOIN pg_catalog.pg_namespace n
+       CROSS JOIN unnest(ARRAY['USAGE', 'CREATE']) AS p(privilege)
+       WHERE n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+         AND n.nspname !~ '^pg_(toast_)?temp_'
        UNION ALL
-       SELECT 'PUBLIC', 'schema:' || current_database() || '.public', p.privilege,
+       SELECT 'PUBLIC', 'schema:' || current_database() || '.' || n.nspname, p.privilege,
               EXISTS (SELECT 1 FROM aclexplode(coalesce(n.nspacl, acldefault('n', n.nspowner))) a
                       WHERE a.grantee = 0 AND a.privilege_type = p.privilege)
-       FROM pg_catalog.pg_namespace n
-       CROSS JOIN unnest(ARRAY['USAGE', 'CREATE']) AS p(privilege)
-       WHERE n.nspname = 'public'`,
+       ${schemas}`,
     );
     rows.push(...schema.rows);
   }
   return { roles: roles.rows, grants: rows };
+}
+
+/** The logs catalogue checked inside a transaction after `steps`, always rolled back. */
+async function logsErrorsAfter(steps: string[]): Promise<string[]> {
+  const client = await logs.connect();
+  try {
+    await client.query("BEGIN");
+    for (const step of steps) await client.query(step);
+    const { roles, grants } = await catalogue(client, ["ductus_logs"], true);
+    return checkDatabaseAccess(roles, grants, LOGS_POLICY).errors;
+  } finally {
+    await client.query("ROLLBACK");
+    client.release();
+  }
 }
 
 describe("who reaches which database (whole catalogue)", () => {
@@ -186,6 +208,56 @@ describe("who reaches which database (whole catalogue)", () => {
     const result = checkDatabaseAccess(roles, grants, LOGS_POLICY);
     expect(result.errors).toEqual([]);
     expect(result.checked).toBe(roles.length * 5);
+  });
+
+  // Attack run, finding 3: what the catalogue alone would not show.
+  it("the logs cluster has one superuser, no other role with an elevated attribute or login, and no member of a built-in role", async () => {
+    const { rows } = await logs.query<{ rolname: string; rolsuper: boolean }>(
+      `SELECT rolname, rolsuper FROM pg_catalog.pg_roles
+       WHERE rolname !~ '^pg_'
+         AND (rolsuper OR rolcanlogin OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls)`,
+    );
+    expect(rows).toEqual([{ rolname: "ductus", rolsuper: true }]);
+    const { rows: builtin } = await logs.query(
+      `SELECT m.member::regrole::text AS member, m.roleid::regrole::text AS builtin
+       FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles r ON r.oid = m.roleid
+       WHERE r.rolname ~ '^pg_' AND m.member::regrole::text !~ '^pg_'`,
+    );
+    expect(builtin).toEqual([]);
+  });
+
+  it.each([
+    [
+      "a grant to a built-in role",
+      "GRANT CONNECT, TEMPORARY ON DATABASE ductus_logs TO pg_signal_backend",
+      /pg_signal_backend has CONNECT/,
+    ],
+    [
+      "CREATE in public for a built-in role",
+      "GRANT CREATE ON SCHEMA public TO pg_write_all_data",
+      /pg_write_all_data has CREATE on schema:ductus_logs\.public/,
+    ],
+    [
+      "a schema besides public",
+      "CREATE SCHEMA w779_extra",
+      /on schema:ductus_logs\.w779_extra is not in the policy/,
+    ],
+    [
+      "a schema open to PUBLIC",
+      "CREATE SCHEMA w779_open; GRANT USAGE ON SCHEMA w779_open TO PUBLIC",
+      /USAGE on schema:ductus_logs\.w779_open is not in the policy/,
+    ],
+  ])("the catalogue check fails on %s", async (_label, step, error) => {
+    expect((await logsErrorsAfter([step])).join("\n")).toMatch(error);
+  });
+
+  it("the catalogue check fails on a login that may SET ROLE to the migrator without inheriting it", async () => {
+    const role = `w779_setonly_${suffix}`;
+    const errors = await logsErrorsAfter([
+      `CREATE ROLE ${role} LOGIN`,
+      `GRANT ductus_logs_migrator TO ${role} WITH INHERIT FALSE, SET TRUE`,
+    ]);
+    expect(errors.join("\n")).toMatch(new RegExp(`${role} lacks CREATE on database:ductus_logs`));
   });
 
   it("the main cluster: the main database stays closed to everyone but its roles", async () => {
@@ -343,6 +415,9 @@ describe("migrating twice and the provisioning file", () => {
     );
     expect(before.rows.length).toBeGreaterThan(0);
     await logs.query(readFileSync(BOOTSTRAP, "utf8"));
+    expect((await logs.query("SHOW search_path")).rows[0]).not.toEqual({
+      search_path: "pg_catalog",
+    });
     const runner = (args: string[]): number | null =>
       spawnSync(process.execPath, [`${ROOT}scripts/db/migrate-locked.ts`, ...args], {
         cwd: ROOT,
@@ -370,6 +445,25 @@ describe("migrating twice and the provisioning file", () => {
     await expect(main.query(readFileSync(BOOTSTRAP, "utf8"))).rejects.toThrow(
       /runs only in ductus_logs/,
     );
+  });
+
+  // Attack run, finding 2: a database owner could shadow current_database()
+  // in public and point search_path at it; the file resolves nothing there.
+  it("the provisioning file cannot be fooled by a function in public on the search path", async () => {
+    const client = await main.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SET LOCAL search_path = public, pg_catalog");
+      await client.query(
+        "CREATE FUNCTION public.current_database() RETURNS name LANGUAGE sql AS $f$ SELECT 'ductus_logs'::name $f$",
+      );
+      await expect(client.query(readFileSync(BOOTSTRAP, "utf8"))).rejects.toThrow(
+        /runs only in ductus_logs \(current: ductus\)/,
+      );
+    } finally {
+      await client.query("ROLLBACK");
+      client.release();
+    }
   });
 
   it("the loopback rule takes the logs port and refuses a query or another host", () => {

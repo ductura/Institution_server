@@ -92,6 +92,14 @@ export function urlMismatch(url: string, database: Database): string | null {
   if (name !== database.database) {
     return `the URL does not name the database ${database.database} of --database ${database.name}`;
   }
+  // dbmate takes host, port, dbname, user and more from the query too, and
+  // PostgreSQL reads startup parameters without regard to case, so the query
+  // may hold exactly sslmode and one role, nothing else.
+  const keys = [...parsed.searchParams.keys()];
+  const extra = keys.filter((key) => key !== "sslmode" && key !== "role");
+  if (extra.length > 0) {
+    return `the URL may carry only sslmode and role in its query, not ${extra.join(", ")}`;
+  }
   const roles = parsed.searchParams.getAll("role");
   if (roles.length !== 1 || roles[0] !== database.migrator) {
     return `the URL must run as ${database.migrator} (one role=${database.migrator})`;

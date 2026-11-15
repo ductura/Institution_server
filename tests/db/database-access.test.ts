@@ -20,13 +20,23 @@ const roles: RoleRow[] = [
   { role: "x_writer", superuser: false, inherits: ["x_writer"] },
   { role: "x_writer_login", superuser: false, inherits: ["x_writer_login", "x_writer"] },
   { role: "main_app", superuser: false, inherits: ["main_app"] },
+  { role: "pg_database_owner", superuser: false, inherits: ["pg_database_owner"] },
+  { role: "pg_read_all_data", superuser: false, inherits: ["pg_read_all_data"] },
+  { role: "pg_write_all_data", superuser: false, inherits: ["pg_write_all_data"] },
 ];
 const HOLDS: Record<string, string[]> = {
   "database:db_x|CONNECT": ["x_migrator", "x_writer", "x_writer_login"],
   "database:db_x|CREATE": ["x_migrator"],
   "database:db_x|TEMPORARY": ["x_migrator"],
-  "schema:db_x.public|USAGE": ["x_migrator", "x_writer", "x_writer_login"],
-  "schema:db_x.public|CREATE": ["x_migrator"],
+  "schema:db_x.public|USAGE": [
+    "x_migrator",
+    "x_writer",
+    "x_writer_login",
+    "pg_database_owner",
+    "pg_read_all_data",
+    "pg_write_all_data",
+  ],
+  "schema:db_x.public|CREATE": ["x_migrator", "pg_database_owner"],
 };
 
 /** The full, correct catalogue: every role × object × privilege. */

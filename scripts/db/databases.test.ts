@@ -75,6 +75,15 @@ test("migrate-locked refuses an unknown database, a URL of another database and 
     [good.replace("&role=ductus_logs_migrator", ""), /must run as/],
     [`${good}&role=ductus`, /must run as/],
     ["not a url", /not a valid URL/],
+    // Finding 1 of the attack run: dbmate obeys these keys, PostgreSQL ignores case.
+    [`${good}&database=other`, /only sslmode and role in its query, not database/],
+    [`${good}&dbname=other`, /not dbname/],
+    [`${good}&ROLE=ductus`, /not ROLE/],
+    [`${good}&Role=ductus`, /not Role/],
+    [`${good}&port=54329`, /not port/],
+    [`${good}&host=10.0.0.1`, /not host/],
+    [`${good}&user=ductus`, /not user/],
+    [`${good}&options=-c%20role%3Dductus`, /not options/],
   ];
   for (const [url, error] of cases) {
     assert.match(urlMismatch(url, logs) ?? "", error, url);
