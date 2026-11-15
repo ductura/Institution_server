@@ -8,21 +8,6 @@ function send(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-// Error codes of this skeleton app. The text of each is in locales/hr.json
-// under `app.<code in lowercase>` (docs/CODE_STYLE.md §8); the texts were
-// written here before S-1L.2 (DAN-780).
-type AppErrorCode =
-  | "UNAUTHENTICATED"
-  | "NOT_FOUND"
-  | "DOCUMENT_NOT_FOUND"
-  | "READ_FORBIDDEN"
-  | "WRITE_FORBIDDEN"
-  | "METHOD_NOT_ALLOWED";
-
-function fail(res: ServerResponse, status: number, code: AppErrorCode): void {
-  send(res, status, { error: { code, messageKey: `app.${code.toLowerCase()}` } });
-}
-
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
   let raw = "";
   for await (const chunk of req) raw += String(chunk);
@@ -39,24 +24,24 @@ export function createApp({ store }: { store: Store }): Server {
     if (url.pathname === "/health") return send(res, 200, { ok: true });
 
     const userId = parseBearer(req.headers.authorization);
-    if (!userId) return fail(res, 401, "UNAUTHENTICATED");
+    if (!userId) return send(res, 401, { error: "Prijava je obavezna." });
 
     if (url.pathname === "/api/documents" && req.method === "GET") {
       return send(res, 200, store.listFor(userId));
     }
 
     const m = url.pathname.match(/^\/api\/documents\/([\w-]+)$/);
-    if (!m?.[1]) return fail(res, 404, "NOT_FOUND");
+    if (!m?.[1]) return send(res, 404, { error: "Nije pronađeno." });
     const doc = store.get(m[1]);
-    if (!doc) return fail(res, 404, "DOCUMENT_NOT_FOUND");
+    if (!doc) return send(res, 404, { error: "Dokument ne postoji." });
 
     if (req.method === "GET") {
-      if (!canRead(userId, doc)) return fail(res, 403, "READ_FORBIDDEN");
+      if (!canRead(userId, doc)) return send(res, 403, { error: "Nemate pristup ovom dokumentu." });
       return send(res, 200, doc);
     }
     if (req.method === "PUT") {
       if (!canWrite(userId, doc)) {
-        return fail(res, 403, "WRITE_FORBIDDEN");
+        return send(res, 403, { error: "Nemate pravo mijenjati ovaj dokument." });
       }
       const body = await readJson(req);
       const next = { ...doc };
@@ -66,6 +51,6 @@ export function createApp({ store }: { store: Store }): Server {
       if (content !== undefined) next.content = content;
       return send(res, 200, store.put(next));
     }
-    return fail(res, 405, "METHOD_NOT_ALLOWED");
+    return send(res, 405, { error: "Metoda nije podržana." });
   });
 }

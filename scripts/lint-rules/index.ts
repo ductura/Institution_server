@@ -28,5 +28,12 @@ export {
   KEY_LITERAL_ALLOWED,
   LOADER_GLOBALS,
 } from "./dynamic-load.ts";
-export { isExempt, STRONG_WORDS, TEXT_EXEMPT, textProblem, WEAK_WORDS } from "./hardcoded-text.ts";
+export {
+  isExempt,
+  STRONG_WORDS,
+  TEXT_EXEMPT,
+  TEXT_TRANSITIONAL,
+  textProblem,
+  WEAK_WORDS,
+} from "./hardcoded-text.ts";
 export { TEST_ONLY_RE } from "./fake-server-boundary.ts";

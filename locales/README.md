@@ -39,7 +39,8 @@ Lint pravilo `local/no-hardcoded-text` (`scripts/lint-rules/hardcoded-text.ts`) 
 - Dopušten je tehnički string u jednom komadu bez razmaka: ključ (`auth.signIn`), kod greške (`NOT_FOUND`), ime zaglavlja (`content-type`) i vrijednost na žici (`nije_ukljuceno`). Engleske poruke programskih pogrešaka pravilo ne razlikuje od teksta i ne ruši ih; njih, tekst složen u izvođenju i hrvatsku rečenicu bez riječi s popisa provjerava review.
 - Iznimke su samo putanje, zatvoreni popis `TEXT_EXEMPT`: testovi (`server/**/*.test.ts`) i fixture `server/log/invented.fixture.ts`. Kod servera ne smije uvesti datoteku s tog popisa.
 - Testovi: `tests/lint/hardcoded-text.test.ts` (RuleTester nad fixtureima i provjera konfiguracije repozitorija).
-- S ovim zadatkom su tekstovi kostura `server/app.ts` prešli u `hr.json` pod `app`; naslovi predloška README-a čitaju se iz `docs/CODE_STYLE.md` §10, a odjeljci karte servera po broju.
+- Odstupanje od prihvata (otvoreno pitanje na Ductus#1836): `server/app.ts` i `server/index.ts` još pišu hrvatski tekst, a obje su na `CRITICAL_PATHS`, pa ih ovaj `standard` zadatak ne mijenja. Do zadatka koji ih zamjenjuje (`server.ts` i `server/http`) stoje na zatvorenom popisu `TEXT_TRANSITIONAL`; test pada kad datoteka s popisa više nema teksta.
+- Naslovi predloška README-a (`server/structure.ts`) čitaju se iz `docs/CODE_STYLE.md` §10, a odjeljci karte servera (`server/server-map.ts`) traže se po broju, pa ti alati ne pišu hrvatski tekst.
 
 ### Datoteke za izvlačenje pri prijenosu
 

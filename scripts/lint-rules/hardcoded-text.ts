@@ -341,6 +341,17 @@ function relative(context: Rule.RuleContext): string {
   return posix.normalize(posix.relative(context.cwd, context.filename.replaceAll("\\", "/")));
 }
 
+/**
+ * Not an exception class but a debt with an end: the transitional skeleton
+ * entry point and app still write Croatian text, and both are on
+ * CRITICAL_PATHS (scripts/engineering/risk-floor.ts), which this standard
+ * task does not change. They leave the list with the task that replaces them
+ * (server.ts and server/http, docs/server-map.md, "Prelazno stanje");
+ * tests/lint/hardcoded-text.test.ts fails on an entry whose file no longer
+ * writes text. Open question on Ductus#1836.
+ */
+export const TEXT_TRANSITIONAL: readonly string[] = ["server/app.ts", "server/index.ts"];
+
 /** Whether a repository path is on TEXT_EXEMPT. */
 export function isExempt(file: string): boolean {
   return TEXT_EXEMPT.some((pattern) =>

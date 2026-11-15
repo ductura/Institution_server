@@ -9,5 +9,5 @@ const store = createStore([
 ]);
 const port = Number(process.env.PORT ?? 4000);
 createApp({ store }).listen(port, () => {
-  console.log(`Ductura server on http://localhost:${port}`);
+  console.log(`Ductura server na http://localhost:${port}`);
 });

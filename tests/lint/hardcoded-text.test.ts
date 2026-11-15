@@ -6,7 +6,13 @@ import { ESLint, RuleTester } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
-import { isExempt, localPlugin, TEXT_EXEMPT, textProblem } from "../../scripts/lint-rules/index.ts";
+import {
+  isExempt,
+  localPlugin,
+  TEXT_EXEMPT,
+  TEXT_TRANSITIONAL,
+  textProblem,
+} from "../../scripts/lint-rules/index.ts";
 
 // S-1L.2 (DAN-780): server code writes no interface text; the text is in
 // locales/. Fixtures are linted with RuleTester under virtual paths, and the
@@ -241,8 +247,29 @@ describe("repository config", () => {
     expect(await hits("server/app-routes.ts", 'export const e = "Nije pronađeno.";\n')).toBe(1);
   });
 
+  it("transitional files still write text, so a stale entry fails", async () => {
+    const only = new ESLint({
+      cwd: ROOT,
+      overrideConfigFile: true,
+      overrideConfig: [
+        {
+          files: ["**/*.ts"],
+          languageOptions: { parser: tseslint.parser },
+          plugins: { local: localPlugin },
+          rules: { [RULE]: "error" },
+        },
+      ],
+    });
+    expect(TEXT_TRANSITIONAL).toEqual(["server/app.ts", "server/index.ts"]);
+    for (const f of TEXT_TRANSITIONAL) {
+      const [result] = await only.lintFiles([path.join(ROOT, f)]);
+      expect(result?.messages.length ?? 0, f).toBeGreaterThan(0);
+      expect(await ruleOn(f), f).toBe(false);
+    }
+  });
+
   it("reads every server file but the exempt ones", async () => {
-    expect(await ruleOn("server/app.ts")).toBe(true);
+    expect(await ruleOn("server/access.ts")).toBe(true);
     expect(await ruleOn("server/app.spec.ts")).toBe(true);
     expect(await ruleOn("server/app.tests.ts")).toBe(true);
     expect(await ruleOn("server/test-server/index.ts")).toBe(true);

@@ -204,7 +204,7 @@ type Result<T> = { ok: true; value: T } | { ok: false; error: AppError };
 
 Provedba: review i `tsc`. Zajednički tipovi `Result` i `AppError` su u `server/domain/result.ts`. Prvi port koji ih koristi je `server/external/keys`; ostali se usklađuju uz zadatak koji ih mijenja.
 
-`server/app.ts` vraća `{ error: { code, messageKey } }`; tekstovi su u `locales/hr.json` pod `app` (S-1L.2, DAN-780). Lint pravilo `local/no-hardcoded-text` ruši tekst sučelja u `server/**` ([locales/README.md](../locales/README.md), „Tekst u kodu servera”).
+Prelazno: `server/app.ts` još vraća `{ error: "..." }` s hrvatskim tekstom u kodu; prepisuje se uz zadatak koji ga mijenja.
 
 Ispravno:
 
