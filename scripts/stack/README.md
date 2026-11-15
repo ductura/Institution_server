@@ -15,7 +15,7 @@ Sve je u `.stack/vs1/` (u `.gitignore`):
 - `server.log`, `postgres.log`: izlaz procesa.
 - `state.json`: SHA repoa i oznaka promijenjenog stabla, verzije `@ductura/server`, `@ductura/contracts`, `@ductura/test-fakes`, `oidc-provider`, `pg` i Nodea, SHA-256 `dist/server.js`, okruženje, portovi i PID-ovi.
 
-`up` čeka `GET /api/v1/health` = 200; ako bilo koji korak ne uspije, gasi što je već pokrenuo i izlazi s 1. Istodobno smije raditi samo jedan `up` (`up.lock`). Putanja repoa smije imati samo slova, znamenke, `.`, `_`, `-` i `/`, jer `pg_ctl` predaje `-o` ljusci, a socket ima najviše 107 bajtova.
+`up` čeka `GET /api/v1/health` = 200; ako bilo koji korak ne uspije, gasi što je već pokrenuo (i PID koji nije stigao u `state.json`) i izlazi s 1. Istodobno smije raditi samo jedan `up` (`lock.ts`: `up.lock` nastaje s O_EXCL; zaostali lock čiji vlasnik više ne radi preuzima samo nositelj `up.lock.takeover`, pa ga dva procesa ne mogu preuzeti istodobno). Putanja repoa smije imati samo slova, znamenke, `.`, `_`, `-` i `/`, jer `pg_ctl` predaje `-o` ljusci, a socket ima najviše 107 bajtova.
 
 `down` šalje SIGTERM (nakon 10 s SIGKILL) samo PID-u iz `state.json`, i samo dok je naredbeni redak procesa točno onaj s kojim je pokrenut (`ps -ww`, neovisno o `COLUMNS`). PostgreSQL gasi `pg_ctl stop` samo ako PID iz `postmaster.pid` pripada našem klasteru (`-D .stack/vs1/pgdata`). Ako `state.json` nedostaje ili je oštećen, `down` i dalje gasi PostgreSQL i provjerava portove iz `VS1_*` ili zadane. Tuđi procesi i stogovi se ne diraju. Docker se ne koristi.
 
@@ -40,4 +40,4 @@ Isti origin: preloader na `/`, web na `/app/`. Ovdje su samo mjesta za priključ
 
 ## Testovi
 
-`config.test.ts` (okruženja, `NODE_ENV`, portovi), `processes.test.ts` (gašenje samo vlastitih procesa, čekanje healtha, slobodan port), `state.test.ts` (SHA, verzije, datoteka 0600), `vs1.integration.test.ts` (skripta odbija bez pokretanja ičega; izgradnja servera ne sadrži stog ni lažni pružatelj). Cijeli stog na pravom PostgreSQL-u pokreće CI, posao „PostgreSQL i pgTAP”, korak „Stog VS-1”.
+`config.test.ts` (okruženja, `NODE_ENV`, portovi), `processes.test.ts` (gašenje samo vlastitih procesa, bez SIGKILL-a preuzetom PID-u, čekanje healtha, slobodan port), `lock.test.ts` (jedan `up`, isključivo preuzimanje zaostalog locka), `state.test.ts` (SHA, verzije, datoteka 0600, oštećeno stanje), `vs1.integration.test.ts` (skripta odbija bez pokretanja ičega; `down` bez stanja ili sa stanjem iz memorije; izgradnja servera ne sadrži stog ni lažni pružatelj). Cijeli stog na pravom PostgreSQL-u pokreće CI, posao „PostgreSQL i pgTAP”, korak „Stog VS-1”.
