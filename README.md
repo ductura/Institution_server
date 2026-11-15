@@ -12,7 +12,7 @@ Zajednički API za sva Ductura sučelja: prijava AAI@EduHr, ovlasti, baza i poza
 ```bash
 pnpm install
 pnpm build              # jedan ulaz server/server.ts -> jedna datoteka dist/server.js (esbuild)
-pnpm start              # node dist/server.js; traži APP_DATABASE_URL, sluša na HOST:PORT (zadano 127.0.0.1:4000)
+pnpm start              # node --disallow-code-generation-from-strings dist/server.js (DAN-772); traži APP_DATABASE_URL, sluša na HOST:PORT (zadano 127.0.0.1:4000)
 pnpm typecheck          # TypeScript strict, bez izlaznih datoteka
 pnpm lint               # ESLint nad cijelim repoom, bez upozorenja
 pnpm test               # unit, property i integration, jedan za drugim (bez baze)

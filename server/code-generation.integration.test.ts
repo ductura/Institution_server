@@ -2,8 +2,9 @@
 // built as `pnpm build` builds it and started with the exact command of
 // `pnpm start`; test-support/code-generation-probe is loaded into the same
 // process through `--import` in front of those arguments and reports what eval and the Function
-// constructor do there. The server must still start, so its dependencies load
-// under the flag. No Docker: the database host is .invalid and nothing
+// constructor do there. The server must still start under the flag: what the
+// bundle loads at startup (pg, TypeBox) loads; queries, openid-client and the
+// AWS SDK are not reached here. No Docker: the database host is .invalid and nothing
 // connects at startup. Invented values only.
 import { type ChildProcess, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -39,16 +40,17 @@ async function run(args: readonly string[]): Promise<Report> {
   const stderr: string[] = [];
   child.stdout?.on("data", (chunk: Buffer) => stdout.push(String(chunk)));
   child.stderr?.on("data", (chunk: Buffer) => stderr.push(String(chunk)));
-  const exit = new Promise<void>((resolve) => child.on("exit", () => resolve()));
+  // "close", not "exit": stdout is read to the end before the probe line is looked for.
+  const closed = new Promise<void>((resolve) => child.on("close", () => resolve()));
   const deadline = Date.now() + 10_000;
   const lines = (): string[] => stdout.join("").split("\n");
-  while (Date.now() < deadline && child.exitCode === null) {
+  while (Date.now() < deadline && child.exitCode === null && child.signalCode === null) {
     if (lines().some((l) => l.includes("server.listening"))) break;
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
   const listening = lines().some((l) => l.includes("server.listening"));
   child.kill("SIGTERM");
-  await exit;
+  await closed;
   const line = lines().find((l) => l.includes("codegen.probe"));
   if (line === undefined) throw new Error(`no probe line: ${stderr.join("")}`);
   return { probe: (JSON.parse(line) as { results: Record<string, string> }).results, listening };
