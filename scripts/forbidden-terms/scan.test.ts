@@ -136,6 +136,14 @@ describe("invariant 1: every leaf is read", () => {
     expect(errorCode(root)).toBe("NOT_TEXT hr.json");
   });
 
+  it("fails with the result, not a throw, when a catalogue throws a value that cannot be shown", () => {
+    const root = copy();
+    const file = path.join(root, "locales", "en.ts");
+    const thrower = 'throw { toString() { throw new Error("no"); } };';
+    writeFileSync(file, `${readFileSync(file, "utf8")}\n${thrower}\n`);
+    expect(errorCode(root)).toBe("UNREADABLE_FILE en.ts");
+  });
+
   it("fails on a catalogue that needs a runtime import", () => {
     const root = copy();
     edit(
@@ -235,6 +243,9 @@ export const probe = Object.create(proto);
       "an array with a hole and a named key",
       'export const probe = Object.assign(new Array<string>(1), { label: "Ready" });',
     ],
+    // Orchestrator's third round (#44 c.6892510145): the shapes it names, and what the JSON copy catches.
+    ["an array with a named key", 'export const probe = Object.assign([], { label: "Ready" });'],
+    ["a Proxy that is not revoked", 'export const probe = new Proxy({ a: "Predano" }, {});'],
     [
       "a revoked Proxy",
       "const revocable = Proxy.revocable({}, {});\nrevocable.revoke();\nexport const probe = revocable.proxy;",

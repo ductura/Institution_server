@@ -4,7 +4,7 @@
  */
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { types } from "node:util";
+import { isDeepStrictEqual, types } from "node:util";
 import vm from "node:vm";
 
 import ts from "typescript";
@@ -117,8 +117,15 @@ function scan(dir: string): ScanReport {
     }
   }
   const texts = new Map<string, Map<string, string>>();
-  for (const [file, catalogue] of Object.entries(CATALOGUES))
-    texts.set(file, readCatalogue(dir, file, catalogue));
+  for (const [file, catalogue] of Object.entries(CATALOGUES)) {
+    // #44 c.6892510145: whatever a catalogue throws while it is read is an input error, never thrown on.
+    try {
+      texts.set(file, readCatalogue(dir, file, catalogue));
+    } catch (error) {
+      if (error instanceof InputError) throw error;
+      fail("UNREADABLE_FILE", file, "the catalogue threw while it was read");
+    }
+  }
   const findings: Finding[] = [];
   const add = (file: string, leafPath: string, text: string, reason: string): void => {
     findings.push({ file, path: leafPath, text: shownText(text), reason });
@@ -186,13 +193,7 @@ function readCatalogue(dir: string, file: string, catalogue: Catalogue): Map<str
   }
   const leaves = new Map<string, string>();
   if (catalogue.table === undefined) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (error) {
-      return fail("UNREADABLE_FILE", file, String(error));
-    }
-    const keys = walk(file, parsed, "", leaves);
+    const keys = walk(file, JSON.parse(raw) as unknown, "", leaves);
     // JSON.parse keeps the last of two equal keys, so an earlier text would go unread.
     const tokens = raw.match(/"(?:[^"\\]|\\.)*"/g)?.length ?? 0;
     if (tokens !== keys + leaves.size) {
@@ -200,41 +201,40 @@ function readCatalogue(dir: string, file: string, catalogue: Catalogue): Map<str
     }
     return leaves;
   }
-  const module = evaluate(file, full, raw);
+  const [module, copy] = evaluate(full, raw);
   if (!Object.hasOwn(module, catalogue.table)) fail("UNKNOWN_EXPORT", file, catalogue.table);
   const table = module[catalogue.table];
-  walk(file, table, "", leaves);
   for (const [name, value] of Object.entries(module)) {
-    if (name === catalogue.table || value === table) continue;
+    if (name !== catalogue.table && value === table) continue;
     if (typeof value === "function") {
       if (!catalogue.functions?.includes(name)) fail("UNKNOWN_EXPORT", file, name);
       continue;
     }
-    walk(file, value, name, leaves);
+    walk(file, value, name === catalogue.table ? "" : name, leaves);
+    // #44 c.6892510145: the export must equal its JSON copy made in its own realm, which drops every shape JSON has not.
+    if (!isDeepStrictEqual(value, copy(value))) fail("NOT_TEXT", file, `${name}: not plain JSON`);
   }
   return leaves;
 }
 
-type CjsModule = { exports: Record<string, unknown> };
+type Copy = (value: unknown) => unknown;
+type CjsSetUp = [object, object, { exports: Record<string, unknown> }, Copy];
 
 /** A `.ts` catalogue's exports, read as scripts/locales/source-digest.ts reads one; no runtime imports. */
-function evaluate(file: string, full: string, raw: string): Record<string, unknown> {
+function evaluate(full: string, raw: string): [Record<string, unknown>, Copy] {
   const { outputText } = ts.transpileModule(raw, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2023 },
   });
-  // The catalogue gets only objects of its own context, whose prototypes are frozen before it runs.
+  // Its own context, whose prototypes are frozen and whose JSON copy is taken before the catalogue runs.
   const context = vm.createContext(Object.create(null) as object);
   const intrinsics = "Object.freeze(Object.prototype), Object.freeze(Array.prototype)";
-  const setUp = `module = { exports: {} }; exports = module.exports; [${intrinsics}, module]`;
-  const [object, array, module] = vm.runInContext(setUp, context) as [object, object, CjsModule];
+  const copy = "((p, s) => (value) => p(s(value)))(JSON.parse, JSON.stringify)";
+  const setUp = `module = { exports: {} }; exports = module.exports; [${intrinsics}, module, ${copy}]`;
+  const [object, array, module, roundTrip] = vm.runInContext(setUp, context) as CjsSetUp;
   OBJECTS.add(object);
   ARRAYS.add(array);
-  try {
-    vm.runInContext(outputText, context, { filename: full });
-  } catch (error) {
-    return fail("UNREADABLE_FILE", file, String(error));
-  }
-  return module.exports;
+  vm.runInContext(outputText, context, { filename: full });
+  return [module.exports, roundTrip];
 }
 
 /** Object.prototype and Array.prototype of this realm (JSON) and of each catalogue's context, compared with ===. */
