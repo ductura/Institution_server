@@ -119,7 +119,31 @@ export function textProblem(text: string): "letter" | "sentence" | null {
 // Escapes in source text, after an even run of backslashes: their code points.
 const ESCAPE = /(?<!\\)(?:\\\\)*\\(?:u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2}))/gu;
 function escapedCodes(raw: string): number[] {
-  return [...raw.matchAll(ESCAPE)].map((m) => Number.parseInt(m[1] ?? m[2] ?? m[3] ?? "0", 16));
+  const units = [...raw.matchAll(ESCAPE)].map((m) => ({
+    code: Number.parseInt(m[1] ?? m[2] ?? m[3] ?? "0", 16),
+    end: (m.index ?? 0) + m[0].length,
+    start: m.index ?? 0,
+  }));
+  // A high and a low surrogate written one after the other are one code point
+  // (review FAIL on #64: `\\uD801\\uDC00` is U+10400).
+  const codes: number[] = [];
+  for (let i = 0; i < units.length; i += 1) {
+    const high = units[i];
+    const low = units[i + 1];
+    if (
+      high &&
+      low &&
+      high.code >= 0xd800 &&
+      high.code <= 0xdbff &&
+      low.code >= 0xdc00 &&
+      low.code <= 0xdfff &&
+      high.end === low.start
+    ) {
+      codes.push(0x10000 + (high.code - 0xd800) * 0x400 + (low.code - 0xdc00));
+      i += 1;
+    } else if (high) codes.push(high.code);
+  }
+  return codes;
 }
 /** Whether a text spells a non-ASCII character in an encoded form. */
 // A code point that is a letter or a mark outside ASCII (not a control or a space).
@@ -130,7 +154,7 @@ export function encodesNonAscii(text: string): boolean {
   // A UTF-8 lead byte and a continuation byte, percent-encoded.
   if (/%[c-fC-F][0-9a-fA-F]%[89abAB][0-9a-fA-F]/u.test(text)) return true;
   // A data: URL, a punycode label.
-  if (/\bdata:[^,\s]*,/u.test(text) || /(?:^|[./@])xn--/iu.test(text)) return true;
+  if (/\bdata:[^,\s]*,/iu.test(text) || /(?:^|[./@])xn--/iu.test(text)) return true;
   const entities = text.matchAll(/&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?/gu);
   if ([...entities].some((m) => isLetterCode(Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16))))
     return true;
