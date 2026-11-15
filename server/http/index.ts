@@ -14,3 +14,11 @@ export {
   type Step,
 } from "./pipeline.ts";
 export { startServer, type Running, type StartOptions } from "./start.ts";
+export {
+  createShutdownCoordinator,
+  FLUSH_LOGS,
+  installShutdown,
+  SHUTDOWN_GRACE_MS,
+  type ShutdownCoordinator,
+  type ShutdownHook,
+} from "./shutdown.ts";
