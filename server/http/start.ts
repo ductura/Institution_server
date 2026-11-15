@@ -29,6 +29,8 @@ export async function startServer(options: StartOptions): Promise<Running> {
   // Responses whose headers are not sent yet: once draining they say
   // Connection: close, so no client is told it may reuse the connection.
   const pending = new Map<ServerResponse, Socket>();
+  // The response marked at shutdown to close each connection.
+  const closing = new Map<Socket, ServerResponse>();
   // Requests in flight per connection. Node's closeIdleConnections (also run
   // by http.Server.close) counts a connection idle as soon as its response
   // ended, while the body may still be in the socket buffer, so shutdown ends
@@ -41,6 +43,11 @@ export async function startServer(options: StartOptions): Promise<Running> {
   const server = createServer((request, response) => {
     const ticket = shutdown.begin();
     if (ticket === null) {
+      // This refusal now comes last on its connection: an earlier response
+      // marked to close it, not yet sent, keeps it open so the 503 arrives.
+      const earlier = closing.get(request.socket);
+      if (earlier !== undefined && !earlier.headersSent) earlier.shouldKeepAlive = true;
+      closing.delete(request.socket);
       // The contract's word and format; refuse also closes the connection.
       response.setHeader("Retry-After", "1");
       refuse(response, 503, "unavailable");
@@ -96,7 +103,10 @@ export async function startServer(options: StartOptions): Promise<Running> {
   });
   server.on("connection", (socket: Socket) => {
     connections.set(socket, { active: 0, served: false });
-    socket.once("close", () => connections.delete(socket));
+    socket.once("close", () => {
+      connections.delete(socket);
+      closing.delete(socket);
+    });
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -116,8 +126,10 @@ export async function startServer(options: StartOptions): Promise<Running> {
       const last = new Map<Socket, ServerResponse>();
       // A queued pipelined response has no socket of its own yet; its request does.
       for (const [response, socket] of pending) last.set(socket, response);
-      for (const response of last.values()) {
-        if (!response.headersSent) response.shouldKeepAlive = false;
+      for (const [socket, response] of last) {
+        if (response.headersSent) continue;
+        response.shouldKeepAlive = false;
+        closing.set(socket, response);
       }
       // Stop listening without http.Server.close, which would also end
       // connections whose last body is still being written (see above).

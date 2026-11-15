@@ -246,6 +246,24 @@ describe("shutdown in the middle of a slow request", () => {
     expect(server.err()).toBe("");
   }, 20_000);
 
+  // QA on c4d4f62: a request sent on the same connection after the signal,
+  // behind one still running, gets its 503 instead of a closed connection.
+  it("a request on the same connection after the signal gets 503 after the running one", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["600"]);
+    const conn = await open(server.port);
+    conn.socket.write(GET("/api/v1/health?slow"));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    server.child.kill("SIGTERM");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    conn.socket.write(GET("/api/v1/health"));
+    await conn.closed;
+    const statuses = conn.text().match(/HTTP\/1\.1 \d{3}/gu);
+    expect(statuses).toEqual(["HTTP/1.1 200", "HTTP/1.1 503"]);
+    expect(conn.text()).toContain('{"error":"unavailable"}');
+    expect(await server.exit).toBe(0);
+    expect(server.out().match(/"event":"route\.done"/gu)).toHaveLength(1);
+  }, 20_000);
+
   // QA on c3862f3, F2: a body larger than the socket buffers reaches a slow
   // reader whole before the process exits 0.
   it("a large body to a client that reads late arrives whole, then exit 0", async () => {
