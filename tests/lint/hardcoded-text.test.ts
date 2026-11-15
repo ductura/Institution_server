@@ -7,6 +7,8 @@ import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
 import {
+  BUILDER_NAMES,
+  DECODER_ALLOWED,
   isExempt,
   localPlugin,
   repoPath,
@@ -16,7 +18,7 @@ import {
 } from "../../scripts/lint-rules/index.ts";
 
 // S-1L.2 (DAN-780): server code writes no interface text. The rule reads only
-// direct literals; text builders are part b
+// direct literals and forbids text builders whatever their arguments
 // (orchestrator decision Ductus#87 c.6896146643; contract Ductus#1836
 // c.6896182732). Fixtures are linted under virtual paths with the repository
 // config. Literal cases are carried over from ductura/server#51.
@@ -57,16 +59,24 @@ const passing: string[] = [
   'export const t = "a\\tb\\u0041\\x41\\u{7e}";',
   "export const u = (n: number) => `\\\\u${n}`;",
   '// Prijava je obavezna, đ\nexport const r = /[\\u010d\\u0111]/u;\nexport const d = "d";',
-  // String and Buffer used plainly.
+  // String used plainly. Buffer builders are DAN-784 (c.6899577620).
   "export const s = (x: unknown) => String(x);",
   "export const s = (x: unknown) => new String(x);",
+  "export const s = (xs: number[]) => xs.map((x) => String(x));",
   "export const s = (xs: number[]) => xs.map(String);",
   "export const p = String.prototype.trim;",
+  // Buffer used plainly passes (review FAIL on #77: coverage kept from main).
   "export const b = Buffer.alloc(4);",
   "export const b = (x: Uint8Array) => Buffer.from(x).byteLength;",
   "export const b = (xs: Buffer[]) => Buffer.concat(xs);",
   "export const b = (x: Buffer): Buffer => x;",
   "export type B = typeof Buffer;",
+  'export const d = (b: Uint8Array) => Buffer.from(b).toString("hex");',
+  // DAN-793: a wrapper does not change an allowed use of String.
+  "export const s = (x: unknown) => String!(x);",
+  "export const s = (x: unknown) => (String as StringConstructor)(x);",
+  "export const s = (xs: number[]) => xs.map(String!);",
+  "export const p = (String.prototype as typeof String.prototype).trim;",
   // A schema library's String is not the global.
   "const Type = { String: () => 1 };\nexport const t = Type.String();",
   "export const raw = (x: { raw: string }) => x.raw;",
@@ -75,10 +85,12 @@ const passing: string[] = [
   "export const q = \"name like '%admin%'\";",
   'export const q = "?page=1&ordering=desc&filtering=on";',
   'export const h = "a &amp; b &lt; c";',
-  'export const d = (b: Uint8Array) => Buffer.from(b).toString("hex");',
   "export const r = (x: Uint8Array) => new Response(x);",
   'import { fileURLToPath } from "node:url";\nexport const f = fileURLToPath;',
   'import * as util from "node:util";\nexport const f = util.inspect;',
+  'import * as util from "node:util";\nexport const f = (util as typeof util).inspect;',
+  'import type * as util from "node:util";\nexport type O = util.InspectOptions;',
+  'import * as util from "node:util";\nexport type O = util.InspectOptions;',
   "export const t = (a: string, b: string) => `${a}: ${b}`;",
   "export const r = /^[a-z]+$/u;",
 ];
@@ -107,12 +119,80 @@ const failing: [messageId: string, code: string][] = [
   ["letter", "export const o = { nijePronađeno: 0 };"],
   ["letter", "export function pronađeno(): void {}"],
   ["letter", "export class K {\n  #pronađeno = 1;\n}"],
+  // (2) Escapes that give a non-ASCII character, in strings and templates.
+  ["builder", 'export const e = "\\u00e9";'],
+  ["builder", 'export const e = "\\xe9";'],
+  ["builder", 'export const e = "\\u{1F600}";'],
+  ["builder", "export const e = `\\u00e9`;"],
+  ["builder", "export const e = (n: number) => `${n}\\xe9`;"],
+  // (2) fromCharCode and fromCodePoint, directly, by alias and computed member.
+  ["builder", "export const e = String.fromCharCode(0x111);"],
+  ["builder", "export const e = String.fromCodePoint(0x111);"],
+  ["builder", 'export const e = String["fromCharCode"](0x111);'],
+  ["builder", "export const e = String[`fromCodePoint`](0x111);"],
+  ["builder", "export const e = (k: 'raw') => String[k];"],
+  ["value", "const S = String;\nexport const e = S.fromCharCode(0x111);"],
+  ["builder", "const S = String;\nexport const e = S.fromCharCode(0x111);"],
+  ["builder", 'const k = "fromCharCode";\nexport const e = 1;\nexport { k };'],
+  ["builder", 'export const e = Reflect.get(String, "fromCharCode")(0x111);'],
+  ["builder", "const { fromCharCode } = String;\nexport const e = fromCharCode(0x111);"],
+  ["value", "const { fromCodePoint: f } = String;\nexport const e = f(0x111);"],
+  ["value", "export const e = globalThis.String.fromCharCode(0x111);"],
+  ["value", 'export const e = globalThis["String"];'],
+  ["builder", "export const e = String.fromCharCode.apply(null, [0x111]);"],
+  ["value", "export const s = [String][0];"],
+  // Review FAIL c.6900113231: String as a callback or as thisArg.
+  ["value", "export const s = (xs: number[]) => xs.map((x) => x, String);"],
+  [
+    "value",
+    "export const e = [0].map(function (this: StringConstructor) {\n  return this;\n}, String)[0];",
+  ],
+  ["value", "declare global {\n  var String: StringConstructor;\n}\nexport const s = String;"],
+  // (2) String.raw.
+  ["builder", "export const e = String.raw`a`;"],
+  ["builder", "const { raw } = { raw: String.raw };\nexport const e = raw;"],
+  // (2) Decoders.
+  ["builder", 'export const e = atob("xIxhag==");'],
+  ["builder", 'export const e = globalThis.atob("xIxhag==");'],
+  ["builder", "export const e = (b: Uint8Array) => new TextDecoder().decode(b);"],
+  ["builder", 'import { TextDecoder as D } from "node:util";\nexport const d = new D();'],
+  ["builder", 'import * as u from "node:util";\nexport const d = new u.TextDecoder();'],
+  ["builder", 'export const e = decodeURIComponent("Prona%C4%91eno");'],
+  ["builder", "export const e = (x: string) => decodeURIComponent(x);"],
+  ["builder", "export const e = (x: string) => decodeURI(x);"],
+  ["builder", "export const e = (x: string) => unescape(x);"],
+  ["builder", 'export const e = Reflect.get(globalThis, "atob");'],
   // Adversarial review of the contract (w780b): static forms it found.
   // Encoded forms (escapes as text, %, entities, data:, punycode) are DAN-784.
   ["letter", "export const e = /čekaj/u.source;"],
   ["letter", "export const r = /[čćžšđ]/u;"],
   ["sentence", "export const e = /Molimo pokusajte ponovno/u.source;"],
+  ["value", 'export const e = Reflect.get(String, "x");'],
+  ["value", "export const e = ((f: unknown) => f)(String);"],
+  ["builder", "export const e = Reflect.get(String.prototype, 1);"],
+  ["builder", "export const e = new TextDecoderStream();"],
+  ["builder", "export const e = new Response(new Uint8Array([196, 141])).text();"],
+  ["builder", "export const e = new Blob([new Uint8Array([196, 141])]).text();"],
+  ["value", 'import util from "node:util";\nexport const e = Object.values(util);'],
+  ["value", 'import * as u from "node:url";\nexport const e = Reflect.get(u, "x");'],
+  ["builder", 'import { domainToUnicode } from "node:url";\nexport const e = domainToUnicode;'],
+  ["builder", 'export const e = new Intl.DisplayNames(["hr"], { type: "language" });'],
+  ["builder", 'export const e = new Date(0).toLocaleDateString("hr-HR");'],
   ["sentence", "export const e = (x: string) => `Molimo ${x} pokusajte ${x} ponovno`;"],
+  // DAN-793: every TypeScript wrapper, nested, around String, a member key,
+  // globalThis, a byte holder and a namespace import.
+  ["builder", "export const e = (String as StringConstructor).fromCharCode(0x111);"],
+  ["builder", "export const e = String!.fromCodePoint(0x111);"],
+  ["builder", "export const e = (<StringConstructor>String).raw`a`;"],
+  ["builder", "export const e = ((String satisfies object)! as typeof String).raw`a`;"],
+  ["builder", 'export const e = String["fromCharCode" as const](0x111);'],
+  ["builder", "export const e = (k: 'raw') => (String as StringConstructor)[k];"],
+  ["builder", "export const e = (String.prototype as object)!;"],
+  ["value", "export const e = (globalThis as typeof globalThis).String;"],
+  ["value", 'export const e = globalThis!["String"];'],
+  ["builder", "export const e = new Response(new Uint8Array([196, 141]) as BodyInit).text();"],
+  ["builder", "export const e = new (Blob as typeof Blob)([new Uint8Array([196, 141])]).text();"],
+  ["value", 'import util from "node:util";\nexport const e = Object.values(util!);'],
   // (3) Server code may not import a test or a fixture.
   ["exempt", 'import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;'],
   ["exempt", 'export { x } from "./y.test.ts";'],
@@ -151,6 +231,88 @@ describe("local/no-hardcoded-text", () => {
     expect(await lint("export const v = <p>Šifra</p>;")).toEqual(["letter"]);
     expect(await lint('export const v = <p title="Nije pronađeno">x</p>;')).toEqual(["letter"]);
     expect(await lint("export const v = <p>{x}</p>;")).toEqual([]);
+  });
+});
+
+describe("DECODER_ALLOWED", () => {
+  it("allows a listed decoder on input, never on a literal", async () => {
+    const file = "server/contracts/work-id.ts";
+    expect(DECODER_ALLOWED[file]).toEqual(["decodeURIComponent"]);
+    expect(await ids("export const e = (x: string) => decodeURIComponent(x);", file)).toEqual([]);
+    expect(await ids('export const e = decodeURIComponent("%C4%91");', file)).toContain("builder");
+    expect(await ids("export const e = decodeURIComponent(`a`);", file)).toContain("builder");
+    // Review FAIL c.6900113231: a literal under a TypeScript wrapper or an operator.
+    for (const code of [
+      'export const e = decodeURIComponent("%C4%91" as const);',
+      'export const e = decodeURIComponent("%C4%91" satisfies string);',
+      'export const e = decodeURIComponent(("%C4%91"));',
+      'export const e = decodeURIComponent((0, "%C4%91"));',
+      'export const e = (b: boolean) => decodeURIComponent(b ? "%C4%91" : "x");',
+      'export const e = (x?: string) => decodeURIComponent(x ?? "%C4%91");',
+      'export const e = decodeURIComponent("%C4" + "%91");',
+      // Review FAIL c.6900338168: a wrapped callee, a template with text.
+      'export const e = decodeURIComponent!("%C4%91");',
+      'export const e = (decodeURIComponent as (s: string) => string)("%C4%91");',
+      "export const e = decodeURIComponent(`%C4%91`);",
+    ])
+      expect(await ids(code, file), code).toContain("builder");
+    // Input with an empty fallback or a literal inside a call is still input.
+    for (const code of [
+      "export const e = (x: string) => decodeURIComponent!(x);",
+      "export const e = (x: unknown) => (decodeURIComponent as (s: string) => string)(x as string);",
+      "export const e = (x: string) => decodeURIComponent(`${x}` as string);",
+      "export const e = (x: string) => decodeURIComponent?.(x);",
+      "export const e = (x: string, y: string) => decodeURIComponent(`${x}${y}`);",
+      "export const e = (x: string) => decodeURIComponent.call(null, x);",
+    ])
+      expect(await ids(code, file), code).toEqual([]);
+    expect(
+      await ids('export const e = (x?: string) => decodeURIComponent(x ?? "");', file),
+    ).toEqual([]);
+    // Review FAIL c.6900338168: a template of input only, an empty template.
+    for (const code of [
+      "export const e = (x: string) => decodeURIComponent(`${x}`);",
+      "export const e = decodeURIComponent(``);",
+    ])
+      expect(await ids(code, file), code).toEqual([]);
+    expect(
+      await ids(
+        'export const e = (x: string) => decodeURIComponent(x.replaceAll("+", " "));',
+        file,
+      ),
+    ).toEqual([]);
+    // DAN-793: one wrapper each on the callee and on the argument, and nested.
+    for (const code of [
+      'export const e = (decodeURIComponent satisfies (s: string) => string)("%C4%91");',
+      'export const e = (<(s: string) => string>decodeURIComponent)("%C4%91");',
+      'export const e = (decodeURIComponent<never>)("%C4%91");',
+      'export const e = decodeURIComponent?.("%C4%91");',
+      'export const e = ((decodeURIComponent! as typeof decodeURIComponent)!)("%C4%91");',
+      'export const e = globalThis.decodeURIComponent!("%C4%91");',
+      'export const e = decodeURIComponent("%C4%91"!);',
+      'export const e = decodeURIComponent(<string>"%C4%91");',
+      'export const e = decodeURIComponent((("%C4%91" as string)! satisfies string));',
+      "export const e = decodeURIComponent(`%C4${1}` as string);",
+      // Adversarial review (DAN-793): a literal inside a template expression.
+      'export const e = decodeURIComponent(`${"%C4%91"}`);',
+      'export const e = decodeURIComponent?.(`${`${"%C4%91" as string}`}`!);',
+      "export const e = decodeURIComponent(/%C4%91/ as unknown as string);",
+      "export const e = new ((TextDecoder as typeof TextDecoder)!)().decode(new Uint8Array([1]));",
+    ])
+      expect(await ids(code, file), code).toContain("builder");
+    // Only the listed name: another decoder in the same file fails.
+    expect(await ids("export const e = (x: string) => atob(x);", file)).toContain("builder");
+    expect(await ids("export const e = String.fromCharCode(1);", file)).toContain("builder");
+  });
+
+  it("lists files that exist and use each listed builder", () => {
+    for (const [file, names] of Object.entries(DECODER_ALLOWED)) {
+      const source = readFileSync(path.join(ROOT, file), "utf8");
+      for (const name of names) {
+        expect(BUILDER_NAMES.includes(name), name).toBe(true);
+        expect(source.includes(name), `${file}: ${name}`).toBe(true);
+      }
+    }
   });
 });
 
