@@ -2,6 +2,7 @@
 // (S-1B-a, DAN-775). Dependencies are bundled, so the file runs with node and
 // nothing else; pg-native stays out because pg loads it only on request.
 import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { build } from "esbuild";
@@ -28,7 +29,9 @@ export async function buildServer(root: string, outfile: string = OUTFILE): Prom
   });
 }
 
-// argv[1] keeps a symlinked path, import.meta.url is the real one.
+// argv[1] keeps a symlinked path, import.meta.url is the real one. An
+// optional argument names another output file (scripts/build/server.integration.test.ts).
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  await buildServer(fileURLToPath(new URL("../..", import.meta.url)));
+  const outfile = process.argv[2] === undefined ? OUTFILE : resolve(process.argv[2]);
+  await buildServer(fileURLToPath(new URL("../..", import.meta.url)), outfile);
 }
