@@ -1,14 +1,17 @@
-// The real process of the entry point (S-1B-a, DAN-775): `node server/server.ts`
-// (Node 24 strips the types; part a2 switches this to the built dist/server.js),
-// started with a minimal environment of invented values, stopped with SIGTERM.
-// No Docker: the database host is .invalid and nothing may connect to it at
-// startup.
+// The real process of dist/server.js (S-1B-a, DAN-775): built with the same
+// function as `pnpm build` into a temporary folder and started there, away
+// from node_modules, so the one file is all it needs. A minimal environment of
+// invented values; stopped with SIGTERM. No Docker: the database host is
+// .invalid and nothing may connect to it at startup.
 import { type ChildProcess, spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { buildServer } from "../scripts/build/index.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CANARY = "invented-canary-7f3a";
@@ -26,13 +29,14 @@ type Started = {
   exit: Promise<number | null>;
 };
 
-const ENTRY = join(ROOT, "server/server.ts");
+let dir: string;
+let outfile: string;
 const children: ChildProcess[] = [];
 
 function run(env: Record<string, string>): Started {
   // No inherited variables: only what the case names (and PATH for node).
-  const child = spawn(process.execPath, [ENTRY], {
-    cwd: ROOT,
+  const child = spawn(process.execPath, [outfile], {
+    cwd: dir,
     env: { PATH: process.env.PATH ?? "", OIDC_CLIENT_SECRET: CANARY, ...env },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -65,11 +69,18 @@ const start = async (env: Record<string, string> = {}): Promise<[Started, number
 };
 const url = (port: number, path: string): string => `http://127.0.0.1:${port}${path}`;
 
+beforeAll(async () => {
+  dir = mkdtempSync(join(tmpdir(), "ductura-server-"));
+  outfile = join(dir, "server.js");
+  await buildServer(ROOT, outfile);
+}, 60_000);
+
 afterAll(() => {
   for (const child of children) if (child.exitCode === null) child.kill("SIGKILL");
+  rmSync(dir, { recursive: true, force: true });
 });
 
-describe("server/server.ts", () => {
+describe("dist/server.js", () => {
   it("answers health as its contract vector, says nothing else and stops on SIGTERM", async () => {
     const [server, port] = await start();
     const response = await fetch(url(port, "/api/v1/health"), {
@@ -140,4 +151,14 @@ describe("server/server.ts", () => {
     },
     20_000,
   );
+
+  it("a second process on a taken port exits 1 and the first keeps answering", async () => {
+    const [first, port] = await start();
+    const second = run({ PORT: String(port), APP_DATABASE_URL: DATABASE_URL });
+    expect(await second.exit).toBe(1);
+    expect(second.stderr.join("")).toBe("listen failed: EADDRINUSE\n");
+    expect((await fetch(url(port, "/api/v1/health"))).status).toBe(200);
+    first.child.kill("SIGTERM");
+    await first.exit;
+  }, 20_000);
 });
