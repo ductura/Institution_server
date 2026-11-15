@@ -46,6 +46,13 @@ const CHANGE_DECISION =
   "https://github.com/danielrisavi77-create/Ductus/issues/1836#issuecomment-6889314023";
 const NOUN_FINDING = "https://github.com/ductura/server/pull/38#issuecomment-6889516654";
 
+/**
+ * Top-level sections added after the port, with texts Ductus does not have;
+ * the source digest is taken without them. `errors`: the texts of the server's
+ * error codes (S-1L.3, DAN-789, server/http/problem.ts).
+ */
+export const SOURCE_ADDITIONS: readonly string[] = ["errors"];
+
 /** A text the port changed on purpose: its path in the port, the source text and the new one. */
 export type TextChange = {
   readonly language: "hr" | "en";
@@ -207,13 +214,25 @@ export const SOURCE_TEXT_CHANGES: readonly TextChange[] = [
   },
 ];
 
+/** A copy of the table without the sections added after the port (SOURCE_ADDITIONS). */
+export function withoutAdditions<T>(table: T): T {
+  const copy = structuredClone(table);
+  for (const section of SOURCE_ADDITIONS) {
+    if (!isObject(copy) || !Object.hasOwn(copy, section))
+      throw new Error(`no added section ${section}`);
+    delete copy[section];
+  }
+  return copy;
+}
+
 /**
- * A copy of `table` with each text of `SOURCE_TEXT_CHANGES` for `language` put
- * back to its source text. Throws when a recorded path does not hold the
- * recorded new text, so the list cannot go stale.
+ * A copy of `table` without the additions and with each text of
+ * `SOURCE_TEXT_CHANGES` for `language` put back to its source text. Throws
+ * when a recorded path does not hold the recorded new text, so the list
+ * cannot go stale.
  */
 export function withSourceTexts<T>(table: T, language: "hr" | "en"): T {
-  const copy = structuredClone(table);
+  const copy = withoutAdditions(table);
   for (const change of SOURCE_TEXT_CHANGES.filter((each) => each.language === language)) {
     const keys = change.path.split(".");
     const last = keys.pop() ?? "";

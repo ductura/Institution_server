@@ -153,7 +153,7 @@ function checkVector(
   if (!spec) return [...problems, `code ${String(vector.code)} is not a contract error`];
   if (spec.status !== response.status)
     problems.push(`status ${response.status}, contract says ${spec.status}`);
-  problems.push(...checkBody(spec.body ?? errorBody(spec.code), response, check));
+  problems.push(...checkBody(spec.body ?? errorBody(spec.code, spec.status), response, check));
   return problems;
 }
 

@@ -205,7 +205,7 @@ describe("createRouter on a failing handler (DAN-776)", () => {
     const answer = await call(failingWith(fail), "GET", "/api/v1/ready");
     expect(answer.status).toBe(INTERNAL.error.status);
     const body: unknown = JSON.parse(answer.body ?? "");
-    expect(Value.Check(errorBody(INTERNAL.error.code), body)).toBe(true);
+    expect(Value.Check(errorBody(INTERNAL.error.code, INTERNAL.error.status), body)).toBe(true);
     expect(body).toEqual(INTERNAL_VECTOR?.response.body);
     expect(answer.body).toBe('{"error":"internal"}');
     expect(answer.headers?.["content-type"]).toBe("application/json; charset=utf-8");

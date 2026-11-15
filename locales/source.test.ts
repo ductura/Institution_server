@@ -13,6 +13,8 @@ import {
   SOURCE_TEXT_CHANGES,
   sourcePath,
   textPairs,
+  SOURCE_ADDITIONS,
+  withoutAdditions,
   withSourceTexts,
 } from "./source.ts";
 import { textOf } from "./text-of.ts";
@@ -72,6 +74,23 @@ describe("port from Ductus", () => {
   });
 });
 
+describe("sections added after the port", () => {
+  it.each(TABLES)("%s adds only the errors section, and only at the top", (_language, table) => {
+    expect(SOURCE_ADDITIONS).toEqual(["errors"]);
+    const all = textPairs(table).map(([path]) => path.join("."));
+    const kept = new Set(textPairs(withoutAdditions(table)).map(([path]) => path.join(".")));
+    const added = all.filter((path) => !kept.has(path));
+    expect(added.length).toBeGreaterThan(0);
+    expect(added.every((path) => path.startsWith("errors."))).toBe(true);
+  });
+
+  it("refuses a table without an added section", () => {
+    const rest: Record<string, unknown> = { ...messagesHr };
+    delete rest["errors"];
+    expect(() => withoutAdditions(rest)).toThrow("no added section errors");
+  });
+});
+
 describe("text changes", () => {
   const texts = (table: unknown) =>
     new Map(textPairs(table).map(([path, text]) => [path.join("."), text]));
@@ -79,7 +98,10 @@ describe("text changes", () => {
   it.each(TABLES)(
     "%s differs from its source texts exactly in the recorded ones",
     (language, table) => {
-      const [port, source] = [texts(table), texts(withSourceTexts(table, language))];
+      const [port, source] = [
+        texts(withoutAdditions(table)),
+        texts(withSourceTexts(table, language)),
+      ];
       const changed = [...port].filter(([path, text]) => source.get(path) !== text);
       const recorded = SOURCE_TEXT_CHANGES.filter((change) => change.language === language);
       expect(changed.map(([path]) => path).sort()).toEqual(recorded.map((c) => c.path).sort());

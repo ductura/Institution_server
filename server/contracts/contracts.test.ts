@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { generate, OUT_DIR, toPosix } from "../../scripts/index.ts";
 import { checkInventory, checkRoute, pathOf } from "./check.ts";
 import { createClient, validateInput } from "./generated/index.ts";
-import { FALLBACK, ROUTES, defineRoute, error } from "./index.ts";
+import { FALLBACK, ROUTES, defineRoute, error, type RouteContract } from "./index.ts";
 import { INVENTORY, PENDING } from "./inventory.ts";
 
 const CONTRACTS_DIR = dirname(fileURLToPath(import.meta.url));
@@ -98,14 +98,27 @@ describe("every route is complete", () => {
       summary: "bad",
       request: { body: Type.Object({}) },
       responses: [],
-      errors: [{ status: 400, code: "x", key: "Neispravno." }, error(400, "x")],
+      errors: [{ status: 400, code: "invalid", key: "Neispravno." }, error(400, "invalid")],
     });
     expect(checkRoute(bad)).toEqual([
       "platform.bad.post: body without type or limit",
       "platform.bad.post: no success response",
       "platform.bad.post: error key Neispravno.",
-      "platform.bad.post: duplicate error 400 x",
+      "platform.bad.post: duplicate error 400 invalid",
     ]);
+  });
+
+  it("refuses an error whose key is not the one of ERROR_MESSAGE_KEYS", () => {
+    const health = ROUTES.find((r) => r.id === "platform.health.get") as RouteContract;
+    const route = (errors: RouteContract["errors"]) =>
+      checkRoute(defineRoute({ ...health, id: "platform.keys.get", errors }));
+    expect(route([{ status: 404, code: "not_found", key: "errors.not_found" }])).toEqual([
+      "platform.keys.get: error key errors.not_found",
+    ]);
+    expect(route([{ status: 400, code: "x", key: "errors.x" }])).toEqual([
+      "platform.keys.get: error key errors.x",
+    ]);
+    expect(() => error(400, "x")).toThrow(/no message key for x/u);
   });
 });
 
@@ -211,6 +224,38 @@ describe("generated client", () => {
       body: '{"locale":"en"}',
       redirect: "manual",
     });
+  });
+
+  it("reads the code from `code` first (problem body, S-1L.3), never falls back on an unknown one", async () => {
+    const id = "profile.interface-locale.post";
+    const input = { params: undefined, query: undefined, body: { locale: "hr" as const } };
+    const c = async (status: number, body?: unknown) =>
+      (await createClient("https://a.invalid", fakeFetch(status, body).impl)(id, input)) as {
+        code?: string;
+      };
+    expect((await c(500, { code: "internal" })).code).toBe("internal");
+    const problem = {
+      error: "invalid_input",
+      code: "invalid_input",
+      messageKey: "errors.invalidInput",
+      status: 422,
+      requestId: "0f0e0d0c-0b0a-4908-8706-050403020100",
+    };
+    expect(await c(422, problem)).toEqual({ ok: false, status: 422, code: "invalid_input" });
+    // `code` wins over `error` and `status`, both ways.
+    expect((await c(500, { code: "made_up", error: "internal" })).code).toBe("unexpected");
+    expect((await c(403, { code: "made_up", error: "cross_site" })).code).toBe("unexpected");
+    expect((await c(403, { code: "cross_site", error: "made_up" })).code).toBe("cross_site");
+    expect((await c(503, { code: "internal", error: "internal" })).code).toBe("unexpected");
+    const ready = createClient(
+      "https://a.invalid",
+      fakeFetch(503, { status: "draining", code: "made_up" }).impl,
+    );
+    expect(
+      await ready("platform.ready.get", { params: undefined, query: undefined, body: undefined }),
+    ).toMatchObject({ code: "unexpected" });
+    // A `code` that is not a string is not a code: the next field names it.
+    expect((await c(500, { code: 500, error: "internal" })).code).toBe("internal");
   });
 
   it("maps errors to contract codes, unknown ones to unexpected", async () => {

@@ -1,6 +1,6 @@
 import { Type, type TSchema } from "@sinclair/typebox";
 
-import { closed, defineRoute, type ErrorSpec } from "../schema/index.ts";
+import { closed, defineRoute, type ErrorSpec, messageKeyOf } from "../schema/index.ts";
 
 // Port of Ductus src/server/evidence/{open,commit}-route.ts and ingest-http.ts at
 // d52a92c3 (docs/BACKEND.md 4.13). These two routes answer every refusal as
@@ -102,7 +102,7 @@ function refusal(status: number, code: string, extra: Record<string, TSchema> = 
   return {
     status,
     code,
-    key: `errors.${code}`,
+    key: messageKeyOf(code),
     body: closed({ status: Type.Literal(code), ...extra }),
   };
 }
