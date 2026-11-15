@@ -65,17 +65,20 @@ BEGIN
   -- not survive it.
   EXECUTE format('REVOKE ALL ON DATABASE %I FROM PUBLIC', current_database());
   FOR role_name IN
-    SELECT DISTINCT a.grantee::regrole::text
+    -- The raw rolname: regrole::text is already quoted, and %I would quote it again.
+    SELECT DISTINCT r.rolname
     FROM pg_catalog.pg_database d, aclexplode(d.datacl) a
-    WHERE d.datname = current_database() AND a.grantee <> 0 AND a.grantee <> d.datdba
+    JOIN pg_catalog.pg_roles r ON r.oid = a.grantee
+    WHERE d.datname = current_database() AND a.grantee <> d.datdba
   LOOP
     EXECUTE format('REVOKE ALL ON DATABASE %I FROM %I', current_database(), role_name);
   END LOOP;
   REVOKE ALL ON SCHEMA public FROM PUBLIC;
   FOR role_name IN
-    SELECT DISTINCT a.grantee::regrole::text
+    SELECT DISTINCT r.rolname
     FROM pg_catalog.pg_namespace n, aclexplode(n.nspacl) a
-    WHERE n.nspname = 'public' AND a.grantee <> 0 AND a.grantee <> n.nspowner
+    JOIN pg_catalog.pg_roles r ON r.oid = a.grantee
+    WHERE n.nspname = 'public' AND a.grantee <> n.nspowner
   LOOP
     EXECUTE format('REVOKE ALL ON SCHEMA public FROM %I', role_name);
   END LOOP;

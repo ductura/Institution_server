@@ -325,6 +325,10 @@ describe("the legal roles migration refuses a wrong cluster", () => {
       await client.query("BEGIN");
       await client.query("GRANT CONNECT, TEMPORARY ON DATABASE ductus_legal TO ductus_app");
       await client.query("GRANT CREATE, USAGE ON SCHEMA public TO ductus_worker");
+      // Codex on #57: a role whose name needs quoting is revoked too.
+      await client.query(`CREATE ROLE "W779 Legal ${suffix}" NOLOGIN`);
+      await client.query(`GRANT CONNECT ON DATABASE ductus_legal TO "W779 Legal ${suffix}"`);
+      await client.query(`GRANT USAGE ON SCHEMA public TO "W779 Legal ${suffix}"`);
       await client.query("SET LOCAL ROLE ductus_legal_migrator");
       await client.query(upSection(MIGRATION));
       await client.query("RESET ROLE");
