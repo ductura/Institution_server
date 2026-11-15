@@ -161,8 +161,12 @@ describe("@ductura/test-fakes stays out of production", () => {
   });
 
   it.each([
-    `export { createTestDatabase } from "../test-support/database/index.ts";\n`,
-    `export const load = () => import("../test-support/database/create-test-database.ts");\n`,
+    `export { createTestDatabase } from "../test-support/database/index.ts";
+`,
+    `export const load = () => import("../test-support/database/postgres.ts");
+`,
+    `export * from "../test-support/database/exceptions.ts";
+`,
   ])("the walk sees a production file that loads test-support: %s", (code) => {
     const probe = join(REPO_ROOT, "server", "boundary-probe.ts");
     const loaded = loadedFiles([probe], { [probe]: code });

@@ -175,6 +175,11 @@ export async function startServer(options: StartOptions): Promise<Running> {
       })
       .finally(done);
   });
+  // Node's header count limit (maxHeadersCount) silently drops later headers
+  // on some versions, which could hide the X-Forwarded-For a trusted proxy
+  // appended after forged ones (Codex on DAN-790). Without a count only the
+  // byte limit (maxHeaderSize, 431) bounds the headers, and none is dropped.
+  server.maxHeadersCount = 0;
   server.on("connection", (socket: Socket) => {
     connections.set(socket, { open: [], served: false, refused: 0, final: null, marked: null });
     socket.once("close", () => {

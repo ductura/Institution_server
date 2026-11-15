@@ -7,7 +7,6 @@ export {
   openTestDatabase,
   PG_FILE_REFUSED,
   pgliteAllowedIn,
-  POSTGRES_NOT_YET,
   testDatabaseNamed,
 } from "./create-test-database.ts";
 export type {

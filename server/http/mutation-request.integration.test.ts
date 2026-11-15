@@ -161,36 +161,61 @@ describe("a pipelined request behind a refusal", () => {
 // Adversarial pass on 74ced6c: each kept chunk held its whole read buffer, so
 // one-byte chunks cost far more memory than the limit. A child process with
 // --expose-gc measures what stays alive while the body is being read.
+// DAN-792: V8 frees the backing stores of dead ArrayBuffers on a background
+// thread after a full GC, so arrayBuffers read right after one gc() can still
+// count dead chunks under load (28 MB seen in CI). The next GC first finishes
+// that sweep, so the probe collects until two readings agree.
+const KEPT = 2000 * 64 * 1024;
+
+function measure(keepParents: boolean): { alive: number; size: number } {
+  const module = fileURLToPath(new URL("./mutation-request.ts", import.meta.url));
+  const probe = `
+    import { Readable } from "node:stream";
+    import { readBodyWithLimit } from ${JSON.stringify(module)};
+    const N = 2000;
+    // The negative control: the probe itself keeps every parent buffer.
+    const kept = ${JSON.stringify(keepParents)} ? [] : null;
+    // Pushed from outside read(), so each chunk reaches the reader at once
+    // and none waits in the stream's own buffer when memory is measured.
+    const body = new Readable({ read() {} });
+    body.headers = {};
+    const pending = readBodyWithLimit(body, N);
+    for (let sent = 0; sent < N; sent += 1) {
+      const chunk = Buffer.alloc(64 * 1024).subarray(0, 1);
+      kept?.push(chunk);
+      body.push(chunk);
+      if (sent % 50 === 0) await new Promise((resolve) => setImmediate(resolve));
+    }
+    await new Promise((resolve) => setImmediate(resolve));
+    let alive = Infinity;
+    for (let round = 0; round < 10; round += 1) {
+      globalThis.gc();
+      const now = process.memoryUsage().arrayBuffers;
+      if (now === alive) break;
+      alive = now;
+    }
+    body.push(null);
+    const result = await pending;
+    console.log(JSON.stringify({ alive, kept: kept?.length ?? 0, size: result.ok ? result.bytes.byteLength : -1 }));
+  `;
+  const run = spawnSync(process.execPath, ["--expose-gc", "--input-type=module", "-e", probe], {
+    encoding: "utf8",
+    timeout: 20_000,
+  });
+  return JSON.parse(run.stdout) as { alive: number; size: number };
+}
+
 describe("memory while reading", () => {
   it("keeps about the limit alive, not every chunk's parent buffer", () => {
-    const module = fileURLToPath(new URL("./mutation-request.ts", import.meta.url));
-    const probe = `
-      import { Readable } from "node:stream";
-      import { readBodyWithLimit } from ${JSON.stringify(module)};
-      const N = 2000;
-      // Pushed from outside read(), so each chunk reaches the reader at once
-      // and none waits in the stream's own buffer when memory is measured.
-      const body = new Readable({ read() {} });
-      body.headers = {};
-      const pending = readBodyWithLimit(body, N);
-      for (let sent = 0; sent < N; sent += 1) {
-        body.push(Buffer.alloc(64 * 1024).subarray(0, 1));
-        if (sent % 50 === 0) await new Promise((resolve) => setImmediate(resolve));
-      }
-      await new Promise((resolve) => setImmediate(resolve));
-      globalThis.gc();
-      const alive = process.memoryUsage().arrayBuffers;
-      body.push(null);
-      const result = await pending;
-      console.log(JSON.stringify({ alive, size: result.ok ? result.bytes.byteLength : -1 }));
-    `;
-    const run = spawnSync(process.execPath, ["--expose-gc", "--input-type=module", "-e", probe], {
-      encoding: "utf8",
-      timeout: 20_000,
-    });
-    const { alive, size } = JSON.parse(run.stdout) as { alive: number; size: number };
+    const { alive, size } = measure(false);
     expect(size).toBe(2000);
     // Kept chunks: 2000 x 64 KiB = 125 MiB.
     expect(alive).toBeLessThan(16 * 1024 * 1024);
+  }, 30_000);
+
+  it("sees the parent buffers when something keeps them", () => {
+    const { alive, size } = measure(true);
+    expect(size).toBe(2000);
+    expect(alive).toBeGreaterThan(KEPT);
   }, 30_000);
 });

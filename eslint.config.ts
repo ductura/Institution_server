@@ -108,6 +108,18 @@ const ENV_NAMES = [
   "HOST",
   // The shutdown deadline (S-1B-c, DAN-778, server/config).
   "SHUTDOWN_GRACE_MS",
+  // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
+  "VS1_POSTGRES_PORT",
+  "VS1_SERVER_PORT",
+  "VS1_OIDC_PORT",
+  "VS1_STACK_DIR",
+  "HOME",
+  // What the stack hands the fake OIDC provider (DAN-787), names from
+  // packages/test-fakes/oidc/server.ts.
+  "ISSUER",
+  "REDIRECT_URI",
+  "POST_LOGOUT_REDIRECT_URI",
+  "BACKCHANNEL_LOGOUT_URI",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
@@ -286,6 +298,7 @@ const ESTREE_NODE_NAMES = [
   "PrivateIdentifier",
   "JSXIdentifier",
   "JSXText",
+  "NewExpression",
   "TemplateLiteral",
 ];
 
@@ -439,7 +452,8 @@ export default defineConfig(
   {
     // The database tests check the database directly. The session-GUC guard
     // (server/database/session-guc-scope.test.ts) is inside server/database.
-    files: ["server/database/**", "tests/db/**"],
+    // test-support/database (S-1F-e) opens the migrated test databases.
+    files: ["server/database/**", "tests/db/**", "test-support/database/**"],
     rules: {
       "no-restricted-imports": "off",
       "database-boundary/no-restricted-dynamic-imports": "off",
