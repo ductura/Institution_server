@@ -358,7 +358,8 @@ export async function testDb({
   });
 }
 
-function spawnRun(
+/** Runs `command` in the repository root; resolves to its exit code (Run). */
+export function spawnRun(
   command: string,
   args: string[],
   { env, input, stdinFile }: RunOptions = {},

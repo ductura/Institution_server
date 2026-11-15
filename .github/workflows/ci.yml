@@ -252,6 +252,26 @@ jobs:
       # above globs only db/tests, so the matrix never runs on its empty database.
       - name: pgTAP glavne baze (pnpm test:db:native)
         run: PATH="$PGBIN:$PATH" pnpm test:db:native
+      # DAN-759: the VS-1 stack (scripts/stack) on its own cluster and ports,
+      # after every step above, so it weakens none of them. up waits for
+      # /api/v1/health; down must leave no port of the stack answering and no
+      # process of it running.
+      - name: Stog VS-1 (pnpm stack:vs1 up --env ci)
+        run: |
+          pnpm build
+          PATH="$PGBIN:$PATH" pnpm stack:vs1 up --env ci
+          pnpm stack:vs1 status
+          curl -fsS http://127.0.0.1:4100/api/v1/health
+      - name: Gašenje stoga VS-1 (pnpm stack:vs1 down)
+        if: always()
+        run: |
+          PATH="$PGBIN:$PATH" pnpm stack:vs1 down
+          for port in 54360 4100; do
+            if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "port $port still answers" >&2; exit 1; fi
+          done
+          if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata)"; then
+            echo "a process of the stack is still running" >&2; exit 1
+          fi
 
   ci-ok:
     name: ci-ok

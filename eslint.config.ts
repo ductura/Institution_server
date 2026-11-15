@@ -100,6 +100,11 @@ const ENV_NAMES = [
   "HOST",
   // The shutdown deadline (S-1B-c, DAN-778, server/config).
   "SHUTDOWN_GRACE_MS",
+  // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
+  "VS1_POSTGRES_PORT",
+  "VS1_SERVER_PORT",
+  "VS1_OIDC_PORT",
+  "HOME",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
