@@ -10,27 +10,11 @@ import { type IncomingMessage, type ServerResponse, STATUS_CODES } from "node:ht
 
 import { INTERNAL } from "../contracts/index.ts";
 
-import { INTERNAL_BODY, sendJson } from "./json.ts";
+import { sendProblem } from "./problem.ts";
+import { requestIdOf } from "./request-id.ts";
+import { SECURITY_HEADERS } from "./security-header-values.ts";
 
-export const SECURITY_HEADERS: readonly { readonly key: string; readonly value: string }[] =
-  Object.freeze([
-    { key: "X-Frame-Options", value: "DENY" },
-    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-    { key: "X-Content-Type-Options", value: "nosniff" },
-    // Ignored over plain http (RFC 6797 §8.1); it acts behind TLS.
-    { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
-    {
-      key: "Permissions-Policy",
-      value:
-        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), display-capture=(), clipboard-write=(self)",
-    },
-    // API responses carry no markup to run; nothing may load from them.
-    {
-      key: "Content-Security-Policy",
-      value: "default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
-    },
-    { key: "Cache-Control", value: "no-store" },
-  ]);
+export { SECURITY_HEADERS };
 
 /** Sets each header the response does not have yet; a route's own value stays. */
 export function applySecurityHeaders(response: ServerResponse): void {
@@ -50,19 +34,18 @@ export async function securityHeadersLayer(
 }
 
 /**
- * The one way a layer refuses: the contract's error body {"error": code}
- * (server/contracts, errorBody) with the security headers, whichever step
- * refuses. The connection closes after it, so Node does not read and discard
+ * The one way a layer refuses: the contract's problem body (problem.ts) with
+ * the security headers, whichever step refuses. The connection closes after it, so Node does not read and discard
  * an unread body of any size to keep the connection alive.
  */
 export function refuse(response: ServerResponse, status: number, code: string): void {
   applySecurityHeaders(response);
   if (!response.headersSent) response.setHeader("Connection", "close");
-  sendJson(response, status, { error: code });
+  sendProblem(response, status, code);
 }
 
 /**
- * The contract's 500 for a failed request (DAN-776), exactly INTERNAL. Before
+ * The contract's 500 for a failed request (DAN-776), the problem of INTERNAL. Before
  * the head, whatever the failed handler or layer set (headers, trailers, status line)
  * is dropped, so nothing of it reaches the client; the security headers are set
  * again and the connection closes. After the head an unfinished answer is cut
@@ -80,8 +63,10 @@ export function answerInternal(response: ServerResponse): void {
     response.addTrailers({});
     response.statusMessage = STATUS_CODES[INTERNAL.error.status] ?? "";
     applySecurityHeaders(response);
+    // The same id again: the headers above were dropped with the failed answer's.
+    requestIdOf(response);
     response.setHeader("Connection", "close");
-    sendJson(response, INTERNAL.error.status, INTERNAL_BODY);
+    sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
   } catch {
     response.destroy();
   }

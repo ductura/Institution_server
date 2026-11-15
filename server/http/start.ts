@@ -6,7 +6,9 @@ import { Server as NetServer, type Socket } from "node:net";
 
 import type { Databases } from "./databases.ts";
 import { createPipeline, type Layers } from "./pipeline.ts";
-import { createRouter, errorName, type Route, sendJson } from "./router.ts";
+import { sendProblem } from "./problem.ts";
+import { requestIdOf } from "./request-id.ts";
+import { createRouter, errorName, type Route } from "./router.ts";
 import { answerInternal, applySecurityHeaders, refuse } from "./security-headers.ts";
 import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
 
@@ -139,10 +141,8 @@ export async function startServer(options: StartOptions): Promise<Running> {
         return;
       }
       applySecurityHeaders(response);
-      // With a length an HTTP/1.0 keep-alive request stays open as well.
-      const body = { error: "unavailable" };
-      const length = String(Buffer.byteLength(JSON.stringify(body)));
-      sendJson(response, 503, body, { "content-length": length });
+      // writeJson states the length, so an HTTP/1.0 keep-alive request stays open as well.
+      sendProblem(response, 503, "unavailable");
     };
     // One turn of the event loop reads what the kernel already holds for
     // this socket: Node may have resumed reading only now (backpressure).
@@ -167,7 +167,7 @@ export async function startServer(options: StartOptions): Promise<Running> {
     const done = track(socket, exchange, 1, () => ticket.release());
     void handle(request, response)
       .catch((error: unknown) => {
-        console.error("request failed", errorName(error));
+        console.error("request failed", errorName(error), requestIdOf(response));
         answerInternal(response);
       })
       .finally(done);

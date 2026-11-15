@@ -104,6 +104,10 @@ function bodyOf(raw: string): string {
   }
 }
 
+/** The problem body of 503 unavailable (S-1L.3), with a request id of the server's own. */
+const UNAVAILABLE =
+  /\{"error":"unavailable","code":"unavailable","messageKey":"errors\.unavailable","status":503,"requestId":"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"\}/u;
+
 describe("server/server.ts shutdown", () => {
   it.each(["SIGTERM", "SIGINT"] as const)(
     "%s: closes an idle kept-alive connection, stops listening and exits 0",
@@ -190,7 +194,7 @@ describe("shutdown in the middle of a slow request", () => {
     expect(statusOf(racing.text())).toBe("HTTP/1.1 503 Service Unavailable");
     expect(racing.text().toLowerCase()).toContain("connection: close");
     expect(racing.text().toLowerCase()).toContain("cache-control: no-store");
-    expect(bodyOf(racing.text())).toBe('{"error":"unavailable"}');
+    expect(bodyOf(racing.text())).toMatch(UNAVAILABLE);
     await slow.closed;
     expect(bodyOf(slow.text())).toBe('{"status":"ok"}');
     expect(await server.exit).toBe(0);
@@ -261,7 +265,7 @@ describe("shutdown in the middle of a slow request", () => {
     await conn.closed;
     const statuses = conn.text().match(/HTTP\/1\.1 \d{3}/gu);
     expect(statuses).toEqual(["HTTP/1.1 200", "HTTP/1.1 503"]);
-    expect(conn.text()).toContain('{"error":"unavailable"}');
+    expect(conn.text()).toMatch(UNAVAILABLE);
     expect(await server.exit).toBe(0);
     expect(server.out().match(/"event":"route\.done"/gu)).toHaveLength(1);
   }, 20_000);
@@ -369,7 +373,10 @@ describe("requests parsed while draining", () => {
     conn.socket.write(GET("/api/v1/health") + GET("/api/v1/health"));
     await conn.closed;
     expect(heads(conn.text())).toEqual(["200 keep-alive", "503 keep-alive", "503 close"]);
-    expect(conn.text().match(/\{"error":"unavailable"\}/gu)).toHaveLength(2);
+    expect(conn.text().match(new RegExp(UNAVAILABLE.source, "gu"))).toHaveLength(2);
+    // Each refusal has an id of its own.
+    const ids = [...conn.text().matchAll(/"requestId":"([^"]+)"/gu)].map((m) => m[1]);
+    expect(new Set(ids).size).toBe(2);
     expect(conn.text().match(/retry-after: 1/giu)).toHaveLength(2);
     expect(await server.exit).toBe(0);
     expect(server.err()).toBe("");

@@ -56,9 +56,18 @@ describe("contract vectors", () => {
       kind: "error",
       code: "internal",
       request: {},
-      // Until server/http sends the problem body (DAN-789 b), the vector is v1's,
-      // which the problem schema still accepts (the new fields are optional).
-      response: { status: 500, contentType: "application/json", body: { error: "internal" } },
+      response: {
+        status: 500,
+        contentType: "application/json",
+        // The problem body (S-1L.3); the server makes a new request id each time.
+        body: {
+          error: "internal",
+          code: "internal",
+          messageKey: "errors.internal",
+          status: 500,
+          requestId: "00000000-0000-4000-8000-000000000000",
+        },
+      },
     });
   });
 });

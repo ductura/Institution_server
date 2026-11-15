@@ -123,8 +123,14 @@ describe("pipeline on a real server", () => {
     async (_, lines, code) => {
       handled = 0;
       const answer = await send(server.port, "POST", lines);
+      // 403 is a oneOf in v1 (v1Error): the body stays {error}, the id is in the header.
       expect([answer.status, JSON.parse(answer.body), handled]).toEqual([403, { error: code }, 0]);
       expect(answer.headers).toContain("Connection: close");
+      expect(answer.headers).toContainEqual(
+        expect.stringMatching(
+          /^X-Request-Id: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+        ),
+      );
       const names = answer.headers.map((line) => line.split(":")[0]?.toLowerCase());
       for (const { key } of SECURITY_HEADERS) {
         expect(

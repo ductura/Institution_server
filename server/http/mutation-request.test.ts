@@ -143,6 +143,9 @@ describe("originLayer", () => {
       headersSent: false,
       hasHeader: (key: string) => set.has(key.toLowerCase()),
       setHeader: (key: string, value: string) => set.set(key.toLowerCase(), value),
+      getHeaderNames: () => [...set.keys()],
+      removeHeader: (key: string) => set.delete(key.toLowerCase()),
+      addTrailers: () => undefined,
       writeHead(status: number, headers: Record<string, string>) {
         answer.status = status;
         answer.headers = { ...Object.fromEntries(set), ...headers };
@@ -159,10 +162,12 @@ describe("originLayer", () => {
       },
     });
     expect(await originLayer(ORIGIN)(req, response)).toBe("done");
-    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([
-      403,
-      { error: "origin_mismatch" },
-    ]);
+    const sent: unknown = JSON.parse(answer.body ?? "");
+    // 403 is a oneOf in v1, so the body stays {error} (v1Error); the id is in the header.
+    expect([answer.status, sent]).toEqual([403, { error: "origin_mismatch" }]);
+    expect(answer.headers?.["x-request-id"]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+    );
     expect(answer.headers?.["x-frame-options"]).toBe("DENY");
     expect(touched).toEqual([]);
   });

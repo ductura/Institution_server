@@ -79,7 +79,9 @@ describe("readBodyWithLimit on a real server", () => {
     const started = Date.now();
     const text = await answer(socket);
     expect(text).toMatch(/^HTTP\/1\.1 413 /u);
-    expect(text).toContain('{"error":"body_too_large"}');
+    expect(text).toContain(
+      '{"error":"body_too_large","code":"body_too_large","messageKey":"errors.bodyTooLarge","status":413,"requestId":"',
+    );
     expect(text).toContain("Connection: close");
     expect(Date.now() - started).toBeLessThan(2_000);
   });
@@ -98,7 +100,9 @@ describe("readBodyWithLimit on a real server", () => {
     socket.write("01234");
     const text = await answer(socket);
     expect(text).toMatch(/^HTTP\/1\.1 408 /u);
-    expect(text).toContain('{"error":"body_timeout"}');
+    expect(text).toContain(
+      '{"error":"body_timeout","code":"body_timeout","messageKey":"errors.bodyTimeout","status":408,"requestId":"',
+    );
   });
 
   it("gives body_stream_error when the client goes away mid-body", async () => {

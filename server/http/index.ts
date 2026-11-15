@@ -8,6 +8,8 @@ export {
   readBodyWithLimit,
   type LimitedBodyResult,
 } from "./mutation-request.ts";
+export { knownError, problemOf, sendProblem, type Problem } from "./problem.ts";
+export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { createRouter, routePath, type Handler, type Route, type Router } from "./router.ts";
 export {
   createLayers,

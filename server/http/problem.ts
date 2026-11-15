@@ -1,0 +1,100 @@
+// The one way server/http answers an error (S-1L.3, DAN-789): the problem
+// body {code, messageKey, status, requestId} of a contract error, plus the v1
+// word `error` (server/contracts, errorBody). Only errors of SERVER_ERRORS are
+// answered; a code or status outside it is a programming error and becomes
+// 500 internal, so no route can answer a key without a text in locales/.
+// An error marked v1 (v1Error, a oneOf in v1) keeps exactly {error: code}.
+// The body never carries an error's message, name, stack or SQL.
+import { type ServerResponse, STATUS_CODES } from "node:http";
+
+import { type ErrorSpec, INTERNAL, SERVER_ERRORS } from "../contracts/index.ts";
+
+import { writeJson } from "./json.ts";
+import { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
+import { SECURITY_HEADERS } from "./security-header-values.ts";
+
+/**
+ * Headers an error answer keeps from before: the security headers, the
+ * request id, Connection (refuse() closes) and Retry-After (503 while draining). Anything else a handler set
+ * (Content-Length, Content-Encoding, Trailer, Set-Cookie, Location ...) would
+ * break or leak through the problem body, so it is dropped.
+ */
+const KEPT = new Set(
+  [...SECURITY_HEADERS.map(({ key }) => key), REQUEST_ID_HEADER, "Connection", "Retry-After"].map(
+    (name) => name.toLowerCase(),
+  ),
+);
+
+/** Responses whose head sendProblem writes; the router lets only these be errors. */
+const answering = new WeakSet<ServerResponse>();
+
+/** True while sendProblem writes this response's head (router.ts guards writeHead). */
+export function isProblemAnswer(response: ServerResponse): boolean {
+  return answering.has(response);
+}
+
+/** The v1 body of an error marked v1: only the closed word. */
+export type V1ErrorBody = { readonly error: string };
+
+export type Problem = {
+  readonly error: string;
+  readonly code: string;
+  readonly messageKey: string;
+  readonly status: number;
+  readonly requestId: string;
+};
+
+const BY_STATUS_AND_CODE: ReadonlyMap<string, ErrorSpec> = new Map(
+  SERVER_ERRORS.map((spec) => [`${spec.status} ${spec.code}`, spec]),
+);
+
+/** The contract error for this status and code, or undefined when there is none. */
+export function knownError(status: number, code: string): ErrorSpec | undefined {
+  return BY_STATUS_AND_CODE.get(`${status} ${code}`);
+}
+
+/**
+ * The problem body of a contract error; anything unknown gives the body of
+ * 500 internal. Built from the contract's own spec, never from the caller's
+ * text, so the key and status always match the code.
+ */
+export function problemOf(status: number, code: string, requestId: string): Problem {
+  return problemOfSpec(knownError(status, code) ?? INTERNAL.error, requestId);
+}
+
+function problemOfSpec(spec: ErrorSpec, requestId: string): Problem {
+  return {
+    error: spec.code,
+    code: spec.code,
+    messageKey: spec.key,
+    status: spec.status,
+    requestId,
+  };
+}
+
+/**
+ * Answers the contract error for this status and code as a problem body, or
+ * as {error: code} when it is marked v1; an unknown pair answers 500 internal
+ * instead. X-Request-Id carries the request id either way.
+ */
+export function sendProblem(
+  response: ServerResponse,
+  status: number,
+  code: string,
+  headers: { readonly allow?: string } = {},
+): void {
+  const spec = knownError(status, code) ?? INTERNAL.error;
+  if (!response.headersSent) {
+    for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
+    // Trailers are kept apart from the headers; adding none clears them.
+    response.addTrailers({});
+    response.statusMessage = STATUS_CODES[spec.status] ?? "";
+  }
+  answering.add(response);
+  const requestId = requestIdOf(response);
+  const body: Problem | V1ErrorBody = spec.v1
+    ? { error: spec.code }
+    : problemOfSpec(spec, requestId);
+  const extra: Record<string, string> = headers.allow === undefined ? {} : { allow: headers.allow };
+  writeJson(response, spec.status, body, extra);
+}
