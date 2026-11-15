@@ -12,6 +12,19 @@
           "status": "ok"
         }
       }
+    },
+    {
+      "name": "alive-with-version",
+      "kind": "success",
+      "request": {},
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "status": "ok",
+          "version": "1.1.0"
+        }
+      }
     }
   ]
 }

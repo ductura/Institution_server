@@ -28,7 +28,22 @@ export const health = defineRoute({
   access: "anyone",
   summary: "Liveness: the process answers. Reads no database, session or environment.",
   request: {},
-  responses: [{ status: 200, description: "alive", body: closed({ status: Type.Literal("ok") }) }],
+  responses: [
+    {
+      status: 200,
+      description: "alive",
+      body: closed({
+        status: Type.Literal("ok"),
+        // The API version (API_VERSION) for the preloader; optional until S-1M-a sends it.
+        version: Type.Optional(
+          Type.String({
+            pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+            description: "API version, major.minor.patch",
+          }),
+        ),
+      }),
+    },
+  ],
   errors: [],
 });
 

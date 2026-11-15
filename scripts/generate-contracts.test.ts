@@ -1,0 +1,52 @@
+// The cleanup of compiled validators in the contract generator (DAN-758):
+// it must touch only what TypeBox writes, never a field name or pattern text.
+import { Type } from "@sinclair/typebox";
+import ts from "typescript";
+import { describe, expect, it } from "vitest";
+
+import { compileValidator } from "./index.ts";
+
+/** The compiled check, transpiled to JavaScript and run. */
+function run(code: string): (value: unknown) => boolean {
+  const js = ts.transpileModule(`return ${code};`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  return new Function(js)() as (value: unknown) => boolean;
+}
+
+// The name TypeBox gives its own regex constants, used here as a field name.
+const FIELD = "local_0";
+
+describe("compileValidator", () => {
+  it("keeps a field named local_0 and a pattern that says local_1", () => {
+    const schema = Type.Object(
+      { [FIELD]: Type.String({ pattern: "^local_1$" }) },
+      { additionalProperties: false },
+    );
+    const code = compileValidator(schema, "test:body");
+    expect(code).toContain("value['local_0']");
+    expect(code).toContain("local_1");
+    expect(code).not.toMatch(/const local_\d+ =/);
+    const check = run(code);
+    expect(check({ [FIELD]: "local_1" })).toBe(true);
+    expect(check({ [FIELD]: "local1" })).toBe(false);
+    expect(check({ local0: "local_1" })).toBe(false);
+  });
+
+  it("checks array items, integer bounds and closed objects", () => {
+    const schema = Type.Object(
+      {
+        n: Type.Integer({ minimum: 0 }),
+        list: Type.Array(Type.String({ pattern: "^a+$" }), { minItems: 1, maxItems: 1 }),
+      },
+      { additionalProperties: false },
+    );
+    const check = run(compileValidator(schema, "test:body"));
+    expect(check({ n: 0, list: ["aa"] })).toBe(true);
+    expect(check({ n: 0.5, list: ["aa"] })).toBe(false);
+    expect(check({ n: "0", list: ["aa"] })).toBe(false);
+    expect(check({ n: 0, list: ["b"] })).toBe(false);
+    expect(check({ n: 0, list: ["a", "a"] })).toBe(false);
+    expect(check({ n: 0, list: ["a"], extra: 1 })).toBe(false);
+  });
+});

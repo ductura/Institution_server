@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md"
   },
   "x-fallback": {
@@ -273,6 +273,1355 @@
         ]
       }
     },
+    "/api/v1/evidence/commit": {
+      "post": {
+        "operationId": "evidence.commit.post",
+        "summary": "One evidence segment and the document after it. Same Origin, `ductus-protocol: 1` (signed now, 200) or `2` (signed by the worker: 202 pending_signature, then the same request again).",
+        "x-access": "student_owner",
+        "x-inventory": "app/api/evidence/commit/route.ts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "documentId",
+                  "clientTransactionId",
+                  "baseRevision",
+                  "segments",
+                  "document"
+                ],
+                "properties": {
+                  "documentId": {
+                    "type": "string"
+                  },
+                  "clientTransactionId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$",
+                    "type": "string"
+                  },
+                  "baseRevision": {
+                    "minimum": 0,
+                    "maximum": 9007199254740990,
+                    "type": "integer"
+                  },
+                  "segments": {
+                    "minItems": 1,
+                    "maxItems": 1,
+                    "type": "array",
+                    "items": {
+                      "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+                      "type": "string"
+                    }
+                  },
+                  "document": {
+                    "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 5596504,
+        "responses": {
+          "200": {
+            "description": "stored and signed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "revision",
+                    "receipt"
+                  ],
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "const": "committed",
+                          "type": "string"
+                        },
+                        {
+                          "const": "duplicate",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revision": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "receipt": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "signedReceipt"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "signed",
+                          "type": "string"
+                        },
+                        "signedReceipt": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "payload",
+                            "payloadDigestSha256",
+                            "signature"
+                          ],
+                          "properties": {
+                            "payload": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "receiptSchema",
+                                "receiptId",
+                                "evidencePackageId",
+                                "documentId",
+                                "sessionId",
+                                "segmentId",
+                                "segmentHash",
+                                "predecessorSegmentHash",
+                                "previousReceiptId",
+                                "evidenceSchema",
+                                "evidenceProfileId",
+                                "sequenceFrom",
+                                "sequenceTo",
+                                "eventCount",
+                                "payloadBytes",
+                                "acceptedAt",
+                                "revision",
+                                "clientTransactionId",
+                                "evidenceDomainId",
+                                "principalId"
+                              ],
+                              "properties": {
+                                "receiptSchema": {
+                                  "const": "ductus-evidence-receipt-v2",
+                                  "type": "string"
+                                },
+                                "receiptId": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "evidencePackageId": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "documentId": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "sessionId": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "segmentId": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "segmentHash": {
+                                  "pattern": "^[0-9a-f]{64}$",
+                                  "type": "string"
+                                },
+                                "predecessorSegmentHash": {
+                                  "anyOf": [
+                                    {
+                                      "pattern": "^[0-9a-f]{64}$",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "previousReceiptId": {
+                                  "anyOf": [
+                                    {
+                                      "minLength": 1,
+                                      "maxLength": 256,
+                                      "pattern": "\\S",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "evidenceSchema": {
+                                  "anyOf": [
+                                    {
+                                      "const": "ductus-evidence-segment-v2",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "ductus-evidence-segment-v3",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "evidenceProfileId": {
+                                  "minLength": 1,
+                                  "maxLength": 120,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "sequenceFrom": {
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991,
+                                  "type": "integer"
+                                },
+                                "sequenceTo": {
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991,
+                                  "type": "integer"
+                                },
+                                "eventCount": {
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991,
+                                  "type": "integer"
+                                },
+                                "payloadBytes": {
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991,
+                                  "type": "integer"
+                                },
+                                "acceptedAt": {
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                  "type": "string"
+                                },
+                                "revision": {
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991,
+                                  "type": "integer"
+                                },
+                                "clientTransactionId": {
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$",
+                                  "type": "string"
+                                },
+                                "evidenceDomainId": {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                  "type": "string"
+                                },
+                                "principalId": {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "payloadDigestSha256": {
+                              "pattern": "^[0-9a-f]{64}$",
+                              "type": "string"
+                            },
+                            "signature": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "algorithm",
+                                "keyId",
+                                "keyVersion",
+                                "signatureEncoding",
+                                "signatureBase64Url"
+                              ],
+                              "properties": {
+                                "algorithm": {
+                                  "const": "Ed25519",
+                                  "type": "string"
+                                },
+                                "keyId": {
+                                  "minLength": 1,
+                                  "maxLength": 2048,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "keyVersion": {
+                                  "minLength": 1,
+                                  "maxLength": 256,
+                                  "pattern": "\\S",
+                                  "type": "string"
+                                },
+                                "signatureEncoding": {
+                                  "const": "raw",
+                                  "type": "string"
+                                },
+                                "signatureBase64Url": {
+                                  "pattern": "^[A-Za-z0-9_-]{86}$",
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "stored, receipt pending_signature (protocol 2 only); not an acknowledgement",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "revision",
+                    "receipt"
+                  ],
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        {
+                          "const": "committed",
+                          "type": "string"
+                        },
+                        {
+                          "const": "duplicate",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revision": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "receipt": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "pending_signature",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "bad_request",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "unauthenticated",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "forbidden",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "not_found",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "timeout",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_accepting, stale_base, chain_conflict, not_continuous, txid_reused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "not_accepting",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "currentRevision",
+                        "documentHash",
+                        "headSegmentHash",
+                        "lastSequenceTo"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "stale_base",
+                          "type": "string"
+                        },
+                        "currentRevision": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        },
+                        "documentHash": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        "headSegmentHash": {
+                          "anyOf": [
+                            {
+                              "pattern": "^[0-9a-f]{64}$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "lastSequenceTo": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "currentRevision",
+                        "documentHash",
+                        "headSegmentHash",
+                        "lastSequenceTo"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "chain_conflict",
+                          "type": "string"
+                        },
+                        "currentRevision": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        },
+                        "documentHash": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        "headSegmentHash": {
+                          "anyOf": [
+                            {
+                              "pattern": "^[0-9a-f]{64}$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "lastSequenceTo": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "currentRevision",
+                        "documentHash",
+                        "headSegmentHash",
+                        "lastSequenceTo"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "not_continuous",
+                          "type": "string"
+                        },
+                        "currentRevision": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        },
+                        "documentHash": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        "headSegmentHash": {
+                          "anyOf": [
+                            {
+                              "pattern": "^[0-9a-f]{64}$",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "lastSequenceTo": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "txid_reused",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "too_large",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid, document_mismatch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "invalid",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "document_mismatch",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "upgrade_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "upgrade_required",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "stage"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "stage": {
+                      "anyOf": [
+                        {
+                          "const": "context",
+                          "type": "string"
+                        },
+                        {
+                          "const": "storage",
+                          "type": "string"
+                        },
+                        {
+                          "const": "repository",
+                          "type": "string"
+                        },
+                        {
+                          "const": "signing",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 426,
+            "code": "upgrade_required",
+            "key": "errors.upgrade_required"
+          },
+          {
+            "status": 415,
+            "code": "unsupported_media_type",
+            "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 401,
+            "code": "unauthenticated",
+            "key": "errors.unauthenticated"
+          },
+          {
+            "status": 413,
+            "code": "too_large",
+            "key": "errors.too_large"
+          },
+          {
+            "status": 408,
+            "code": "timeout",
+            "key": "errors.timeout"
+          },
+          {
+            "status": 400,
+            "code": "bad_request",
+            "key": "errors.bad_request"
+          },
+          {
+            "status": 422,
+            "code": "invalid",
+            "key": "errors.invalid"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 409,
+            "code": "not_accepting",
+            "key": "errors.not_accepting"
+          },
+          {
+            "status": 409,
+            "code": "stale_base",
+            "key": "errors.stale_base"
+          },
+          {
+            "status": 409,
+            "code": "chain_conflict",
+            "key": "errors.chain_conflict"
+          },
+          {
+            "status": 409,
+            "code": "not_continuous",
+            "key": "errors.not_continuous"
+          },
+          {
+            "status": 409,
+            "code": "txid_reused",
+            "key": "errors.txid_reused"
+          },
+          {
+            "status": 422,
+            "code": "document_mismatch",
+            "key": "errors.document_mismatch"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/evidence/open": {
+      "post": {
+        "operationId": "evidence.open.post",
+        "summary": "The caller's own work for one assignment and its current revision; `start: true` makes it. Same Origin, `ductus-protocol: 1`; anyone but the student gets 404.",
+        "x-access": "student",
+        "x-inventory": "app/api/evidence/open/route.ts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "assignmentId"
+                ],
+                "properties": {
+                  "assignmentId": {
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 1024,
+        "responses": {
+          "200": {
+            "description": "opened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "documentId",
+                    "evidenceProfileId",
+                    "currentRevision",
+                    "documentHash",
+                    "headSegmentHash",
+                    "lastSequenceTo",
+                    "document",
+                    "receiptKeys",
+                    "submitted"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "opened",
+                      "type": "string"
+                    },
+                    "documentId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "evidenceProfileId": {
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": "\\S",
+                      "type": "string"
+                    },
+                    "currentRevision": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "documentHash": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "headSegmentHash": {
+                      "anyOf": [
+                        {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastSequenceTo": {
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "document": {
+                      "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+                      "type": "string"
+                    },
+                    "receiptKeys": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "algorithm",
+                          "keyId",
+                          "keyVersion",
+                          "encoding",
+                          "keyBase64Url",
+                          "evidenceDomainId",
+                          "purpose",
+                          "validFrom",
+                          "validTo",
+                          "revokedAt"
+                        ],
+                        "properties": {
+                          "algorithm": {
+                            "anyOf": [
+                              {
+                                "const": "Ed25519",
+                                "type": "string"
+                              },
+                              {
+                                "const": "ECDSA_P256_SHA256",
+                                "type": "string"
+                              },
+                              {
+                                "const": "RSA_PSS_SHA256",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "keyId": {
+                            "minLength": 1,
+                            "maxLength": 2048,
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "keyVersion": {
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "pattern": "\\S",
+                            "type": "string"
+                          },
+                          "encoding": {
+                            "const": "spki-der",
+                            "type": "string"
+                          },
+                          "keyBase64Url": {
+                            "pattern": "^[A-Za-z0-9_-]+$",
+                            "maxLength": 4096,
+                            "type": "string"
+                          },
+                          "evidenceDomainId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          },
+                          "purpose": {
+                            "const": "receipt",
+                            "type": "string"
+                          },
+                          "validFrom": {
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                            "type": "string"
+                          },
+                          "validTo": {
+                            "anyOf": [
+                              {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "revokedAt": {
+                            "anyOf": [
+                              {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "submitted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "bad_request",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "unauthenticated",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "forbidden",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "not_found",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "timeout",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_accepting, not_started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "not_accepting",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "not_started",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "too_large",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "invalid",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "upgrade_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "upgrade_required",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "stage"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "stage": {
+                      "const": "context",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 426,
+            "code": "upgrade_required",
+            "key": "errors.upgrade_required"
+          },
+          {
+            "status": 415,
+            "code": "unsupported_media_type",
+            "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 401,
+            "code": "unauthenticated",
+            "key": "errors.unauthenticated"
+          },
+          {
+            "status": 413,
+            "code": "too_large",
+            "key": "errors.too_large"
+          },
+          {
+            "status": 408,
+            "code": "timeout",
+            "key": "errors.timeout"
+          },
+          {
+            "status": 400,
+            "code": "bad_request",
+            "key": "errors.bad_request"
+          },
+          {
+            "status": 422,
+            "code": "invalid",
+            "key": "errors.invalid"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 409,
+            "code": "not_accepting",
+            "key": "errors.not_accepting"
+          },
+          {
+            "status": 409,
+            "code": "not_started",
+            "key": "errors.not_started"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "operationId": "platform.health.get",
@@ -293,6 +1642,11 @@
                   "properties": {
                     "status": {
                       "const": "ok",
+                      "type": "string"
+                    },
+                    "version": {
+                      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+                      "description": "API version, major.minor.patch",
                       "type": "string"
                     }
                   }
