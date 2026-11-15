@@ -1,6 +1,6 @@
 # Vektori ugovora
 
-Primjeri zahtjeva i odgovora za svaku rutu iz `server/contracts` (S-1H.4, DAN-739). Jedna datoteka po ruti, ime je ID rute (`platform.ready.get.json`). Lažni server (U8) vraća upravo ove odgovore, a prenesena ruta je gotova kad ih server prolazi.
+Primjeri zahtjeva i odgovora za svaku rutu iz `server/contracts` (S-1H.4, DAN-739). Jedna datoteka po ruti, ime je ID rute (`platform.ready.get.json`). Lažni server (U8, `server/contracts/generated/fake-server/`) vraća upravo ove odgovore, a prenesena ruta je gotova kad ih server prolazi. Generator ih ugrađuje u lažni server, pa promjena vektora traži `pnpm contracts:generate`.
 
 Oblik datoteke opisuje `VectorFileSchema` u [`../vectors.ts`](../vectors.ts): `route` i popis `vectors`, svaki s `name`, `kind` (`success` ili `error`), `code` za grešku, `request` (`params`, `query`, `headers`, `body` ili `rawBody`) i `response` (`status`, `contentType`, `headers`, `body`).
 

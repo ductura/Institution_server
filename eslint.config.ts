@@ -232,6 +232,9 @@ const ESTREE_NODE_NAMES = [
 
 // The naming rule, with extra exact property names (`properties`) and extra
 // exact destructured names (`destructured`) for the folders of one block.
+// Test code, which may use the contract fake server (local/no-fake-server-import).
+const TEST_ONLY_FILES = ["**/*.test.ts", "server/test-server/**", "test-support/**"];
+
 function namingConvention(properties: string[], destructured: string[]): Linter.RuleEntry {
   return [
     "error",
@@ -342,6 +345,16 @@ export default defineConfig(
       "no-restricted-imports": "off",
       "database-boundary/no-restricted-dynamic-imports": "off",
     },
+  },
+  {
+    // The fake server from the contracts (U8) answers with made-up vectors and
+    // never reaches production code. Its own rule, so the database exception
+    // to no-restricted-imports below or above cannot switch it off.
+    // server/contracts/fake-server.test.ts also walks the import graph of the
+    // production entry point.
+    files: ["**/*.ts"],
+    ignores: TEST_ONLY_FILES,
+    rules: { "local/no-fake-server-import": "error" },
   },
   // Last on purpose: switches off every rule that could fight Prettier, also in
   // blocks above. tests/format/format.test.ts checks the resolved config.

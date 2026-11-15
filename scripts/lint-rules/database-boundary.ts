@@ -136,7 +136,7 @@ function isLoaderCall(context: Rule.RuleContext, callee: Loose): boolean {
 // Report every literal specifier that `test` matches, in the forms a file can
 // name a module with: static import and export, import(), and a loader call
 // (isLoaderCall) with the specifier as its first argument.
-function specifierVisitors(
+export function specifierVisitors(
   context: Rule.RuleContext,
   test: (specifier: string) => boolean,
   messageId: string,
