@@ -36,7 +36,9 @@ function isStatus(value: string): value is AreaStatus {
 export function readAreas(markdown: string): { areas: MapArea[]; problems: string[] } {
   const areas: MapArea[] = [];
   const problems: string[] = [];
-  for (const cells of readTable(markdown, "## 1. Područja")) {
+  // Sections are found by number: their Croatian titles are text, which
+  // server code does not write (S-1L.2, DAN-780).
+  for (const cells of readTable(markdown, "## 1. ")) {
     const key = cells[0] ?? "";
     const dir = cells[1]?.match(/^`(server\/[a-z0-9/-]+)`$/)?.[1];
     const status = cells.at(-1) ?? "";
@@ -58,7 +60,7 @@ export function readImports(markdown: string): {
 } {
   const imports = new Map<string, string[]>();
   const problems: string[] = [];
-  for (const cells of readTable(markdown, "## 2. Dopušteni uvozi")) {
+  for (const cells of readTable(markdown, "## 2. ")) {
     const area = cells[0] ?? "";
     const cell = cells[1] ?? "";
     const targets = backticked(cell);
@@ -73,7 +75,7 @@ export function readImports(markdown: string): {
 /** Area keys named in backticks in the "Tko ga zove" column of section 1. */
 export function readCallers(markdown: string): Map<string, string[]> {
   const callers = new Map<string, string[]>();
-  for (const cells of readTable(markdown, "## 1. Područja"))
+  for (const cells of readTable(markdown, "## 1. "))
     callers.set(cells[0] ?? "", backticked(cells[3] ?? ""));
   return callers;
 }

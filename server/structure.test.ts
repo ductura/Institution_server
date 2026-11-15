@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { readAreas } from "./server-map.ts";
-import { checkAreaFiles, checkReadmeTemplate, README_HEADINGS } from "./structure.ts";
+import { checkAreaFiles, checkReadmeTemplate, readmeHeadings } from "./structure.ts";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const { areas } = readAreas(readFileSync(join(ROOT, "docs", "server-map.md"), "utf8"));
@@ -25,9 +25,20 @@ const TEMPLATE_AREAS = [
   "downloads",
 ];
 
-const TEMPLATE = README_HEADINGS.map((h) => `${h}\n\nTekst.\n`).join("\n");
+const HEADINGS = readmeHeadings(ROOT);
+const TEMPLATE = HEADINGS.map((h) => `${h}\n\nTekst.\n`).join("\n");
 
 describe("area structure in this repo", () => {
+  it("reads the five template headings from docs/CODE_STYLE.md §10", () => {
+    expect(HEADINGS).toEqual([
+      "## Što radi",
+      "## Tko ga zove",
+      "## Koje podatke dira",
+      "## Što izvozi",
+      "## Što ne smije uvoziti",
+    ]);
+  });
+
   it("reads existing areas from the map", () => {
     expect(EXISTING).toEqual(expect.arrayContaining(TEMPLATE_AREAS));
   });
@@ -37,7 +48,7 @@ describe("area structure in this repo", () => {
   });
 
   it("template areas have every README heading", () => {
-    expect(TEMPLATE_AREAS.flatMap((key) => checkReadmeTemplate(ROOT, key))).toEqual([]);
+    expect(TEMPLATE_AREAS.flatMap((key) => checkReadmeTemplate(ROOT, key, HEADINGS))).toEqual([]);
   });
 });
 
@@ -56,7 +67,7 @@ describe("checkAreaFiles and checkReadmeTemplate on a fixture", () => {
   it("accepts a complete area", () => {
     const r = fixture({ "index.ts": "export {};\n", "README.md": TEMPLATE });
     expect(checkAreaFiles(r, "invented")).toEqual([]);
-    expect(checkReadmeTemplate(r, "invented")).toEqual([]);
+    expect(checkReadmeTemplate(r, "invented", HEADINGS)).toEqual([]);
   });
 
   it("fails an area without README.md", () => {
@@ -82,8 +93,26 @@ describe("checkAreaFiles and checkReadmeTemplate on a fixture", () => {
       "index.ts": "export {};\n",
       "README.md": TEMPLATE.replace("## Tko ga zove\n", "## Tko ga poziva\n"),
     });
-    expect(checkReadmeTemplate(r, "invented")).toEqual([
+    expect(checkReadmeTemplate(r, "invented", HEADINGS)).toEqual([
       'server/invented/README.md: missing "## Tko ga zove"',
+    ]);
+  });
+
+  it("reads the template headings from a CRLF checkout (review FAIL c.6894724569)", () => {
+    const r = fixture({});
+    const doc = readFileSync(join(ROOT, "docs", "CODE_STYLE.md"), "utf8").replace(
+      /\r?\n/gu,
+      "\r\n",
+    );
+    mkdirSync(join(r, "docs"), { recursive: true });
+    writeFileSync(join(r, "docs", "CODE_STYLE.md"), doc);
+    expect(readmeHeadings(r)).toEqual(HEADINGS);
+  });
+
+  it("fails a README check that has no headings to check", () => {
+    const r = fixture({ "index.ts": "export {};\n", "README.md": TEMPLATE });
+    expect(checkReadmeTemplate(r, "invented", [])).toEqual([
+      "server/invented/README.md: no template headings to check",
     ]);
   });
 
@@ -92,7 +121,7 @@ describe("checkAreaFiles and checkReadmeTemplate on a fixture", () => {
       "index.ts": "export {};\n",
       "README.md": TEMPLATE.replace("## Što izvozi", "### Što izvozi"),
     });
-    expect(checkReadmeTemplate(r, "invented")).toEqual([
+    expect(checkReadmeTemplate(r, "invented", HEADINGS)).toEqual([
       'server/invented/README.md: missing "## Što izvozi"',
     ]);
   });

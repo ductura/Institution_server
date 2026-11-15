@@ -2,7 +2,13 @@ import type { Linter } from "eslint";
 import { defineConfig } from "eslint/config";
 import prettierOff from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
-import { databaseBoundaryPlugin, localPlugin, PG_SPECIFIER } from "./scripts/lint-rules/index.ts";
+import {
+  databaseBoundaryPlugin,
+  localPlugin,
+  PG_SPECIFIER,
+  TEXT_EXEMPT,
+  TEXT_TRANSITIONAL,
+} from "./scripts/lint-rules/index.ts";
 
 // Lint covers the whole repository. Only tool output is ignored; there is no
 // per-folder exception list. Inline directives are off: an `eslint-disable`
@@ -275,6 +281,12 @@ const ESTREE_NODE_NAMES = [
   "ExportSpecifier",
   "Literal",
   "TemplateElement",
+  // local/no-hardcoded-text (DAN-780).
+  "Identifier",
+  "PrivateIdentifier",
+  "JSXIdentifier",
+  "JSXText",
+  "TemplateLiteral",
 ];
 
 // The naming rule, with extra exact property names (`properties`) and extra
@@ -452,6 +464,13 @@ export default defineConfig(
     files: ["server/**/*.ts"],
     ignores: ["server/**/*.test.ts"],
     rules: { "local/no-dynamic-load": "error" },
+  },
+  {
+    // Interface text lives in locales/ (S-1L.2, DAN-780). Left out: tests and
+    // fixtures (TEXT_EXEMPT) and the transitional server (TEXT_TRANSITIONAL).
+    files: ["server/**/*.ts"],
+    ignores: [...TEXT_EXEMPT, ...TEXT_TRANSITIONAL],
+    rules: { "local/no-hardcoded-text": "error" },
   },
   // Last on purpose: switches off every rule that could fight Prettier, also in
   // blocks above. tests/format/format.test.ts checks the resolved config.
