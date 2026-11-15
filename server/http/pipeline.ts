@@ -18,7 +18,12 @@ export const PIPELINE_STEPS = Object.freeze([
 ] as const);
 export type Step = (typeof PIPELINE_STEPS)[number];
 
-/** "done" means the layer answered (refused) and the request stops there. */
+/**
+ * "done" means the layer answered (refused) and the request stops there. A
+ * layer refuses only through refuse() and only together with "done", and
+ * answers nothing after it returned: the pipeline cannot see a late answer
+ * or a statusCode set without one (wave 5 follows this).
+ */
 export type Layer = (
   request: IncomingMessage,
   response: ServerResponse,
@@ -66,7 +71,7 @@ export function createPipeline(layers: Layers, app: App): App {
       try {
         outcome = await layer(request, response);
       } catch (error) {
-        console.error("layer failed", (error as Error).name);
+        console.error("layer failed", error instanceof Error ? error.name : typeof error);
         outcome = undefined;
       }
       // Anything but "next" from a layer that has not answered, or "next" from

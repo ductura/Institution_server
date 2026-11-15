@@ -50,9 +50,11 @@ export async function securityHeadersLayer(
 /**
  * The one way a layer refuses: the contract's error body {"error": code}
  * (server/contracts, errorBody) with the security headers, whichever step
- * refuses.
+ * refuses. The connection closes after it, so Node does not read and discard
+ * an unread body of any size to keep the connection alive.
  */
 export function refuse(response: ServerResponse, status: number, code: string): void {
   applySecurityHeaders(response);
+  if (!response.headersSent) response.setHeader("Connection", "close");
   sendJson(response, status, { error: code });
 }

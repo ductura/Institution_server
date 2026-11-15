@@ -124,6 +124,7 @@ describe("pipeline on a real server", () => {
       handled = 0;
       const answer = await send(server.port, "POST", lines);
       expect([answer.status, JSON.parse(answer.body), handled]).toEqual([403, { error: code }, 0]);
+      expect(answer.headers).toContain("Connection: close");
       const names = answer.headers.map((line) => line.split(":")[0]?.toLowerCase());
       for (const { key } of SECURITY_HEADERS) {
         expect(
@@ -159,6 +160,36 @@ describe("pipeline on a real server", () => {
     const post = await send(refusing.port, "POST", [`Origin: ${ORIGIN}`]);
     const get = await send(refusing.port, "GET", [], "/api/v1/health");
     expect([post.status, get.status, handled]).toEqual([429, 429, 0]);
+  });
+
+  // Adversarial pass: a refusal kept the connection alive, so Node read and
+  // discarded the whole declared body.
+  it("closes the connection after a refusal instead of reading a large body", async () => {
+    const answer = await new Promise<string>((resolve, reject) => {
+      const socket = connect(server.port, "127.0.0.1");
+      let text = "";
+      socket.on("data", (chunk: Buffer) => (text += chunk.toString("latin1")));
+      socket.on("error", reject);
+      socket.on("close", () => resolve(text));
+      socket.write(`POST ${PATH} HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100000000\r\n\r\n`);
+    });
+    expect(answer).toMatch(/^HTTP\/1\.1 403 /u);
+    expect(answer).toContain("Connection: close");
+  });
+
+  it("answers a layer that throws a non-error with 500 and the security headers", async () => {
+    const throwing = await start({
+      ...createLayers({ expectedOrigin: ORIGIN }),
+      clientIp: async () => Promise.reject(null as unknown as Error),
+    });
+    try {
+      handled = 0;
+      const answer = await send(throwing.port, "GET", [], "/api/v1/health");
+      expect([answer.status, handled]).toEqual([500, 0]);
+      expect(answer.headers).toContain("X-Frame-Options: DENY");
+    } finally {
+      await throwing.close();
+    }
   });
 
   it("refuses every POST when no origin is configured", async () => {

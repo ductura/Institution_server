@@ -145,6 +145,8 @@ describe("createPipeline", () => {
 
   it.each([
     ["throws", async () => Promise.reject(new TypeError("invented-canary"))],
+    // Adversarial pass: a thrown null broke the log line and lost the headers.
+    ["throws null", async () => Promise.reject(null as unknown as Error)],
     ["answers undefined", async () => undefined],
     ["answers an unknown word", async () => "skip"],
     ["answers done without answering", async () => "done"],

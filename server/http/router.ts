@@ -68,7 +68,8 @@ export function createRouter(routes: readonly Route[]): Router {
       await route.handle(request, response);
     } catch (error) {
       // Only the name of the error: never its message, the request or a token.
-      console.error("route failed", route.contract.id, (error as Error).name);
+      const name = error instanceof Error ? error.name : typeof error;
+      console.error("route failed", route.contract.id, name);
       if (!response.headersSent) sendJson(response, 500, { error: "internal" });
       else response.destroy();
     }

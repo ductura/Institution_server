@@ -5,7 +5,8 @@ import { createServer } from "node:http";
 
 import type { Databases } from "./databases.ts";
 import { createPipeline, type Layers } from "./pipeline.ts";
-import { createRouter, type Route, sendJson } from "./router.ts";
+import { createRouter, type Route } from "./router.ts";
+import { refuse } from "./security-headers.ts";
 
 export type StartOptions = {
   readonly host: string;
@@ -22,8 +23,8 @@ export async function startServer(options: StartOptions): Promise<Running> {
   const handle = createPipeline(options.layers, createRouter(options.routes));
   const server = createServer((request, response) => {
     void handle(request, response).catch((error: unknown) => {
-      console.error("request failed", (error as Error).name);
-      if (!response.headersSent) sendJson(response, 500, { error: "internal" });
+      console.error("request failed", error instanceof Error ? error.name : typeof error);
+      if (!response.headersSent) refuse(response, 500, "internal");
       else response.destroy();
     });
   });
