@@ -1,0 +1,40 @@
+# Rute vertikalnog presjeka VS-1
+
+Ugovori ruta koje koristi VS-1 i zadaci koji isporučuju njihove handlere (DAN-758, U4-b; ugovor Ductus#1836 c.6895688936, potvrda c.6895833111). Oblik je prenesen iz Ductusa na `d52a92c3`, bez redizajna: `src/client/evidence-ingest.ts`, `docs/backend/server-route-inventory.md` i rute u `app/api/`.
+
+Ugovor je u `server/contracts/routes/`, a vektori su u `server/contracts/vectors/<id rute>.json`. Lažni server (`server/contracts/generated/fake-server/`) za svaki vektor vraća točno njegov odgovor, nikad `501`. Handler je gotov kad prolazi vektore svoje rute.
+
+Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/golden-vectors/evidence-v2.json`, Ductus `d52a92c3`). Segment v2 i snimka su pravi bajtovi lanca. Potvrda v2 potpisana je javnim testnim ključem RFC 8032 TEST 1, čija je javna polovica u `receiptKeys` odgovora open. Zato vjeran handler s istim stanjem i istim ključem dolazi točno do odgovora svakog vektora. To provjerava `tests/contracts/evidence-domain.test.ts` domenskim provjeriteljima.
+
+## Ruta → handler → test
+
+| Korak VS-1                    | Ruta (ID ugovora)                                                                                                                               | Izvor u Ductusu `d52a92c3`                                                                      | Handler isporučuje                                                                | Test ugovora i vektora                                                                                          |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Studentska sesija             | `GET /api/v1/auth/login` (`auth.login.get`), `GET /api/v1/auth/callback` (`auth.callback.get`), `POST /api/v1/auth/logout` (`auth.logout.post`) | `app/api/auth/{login,callback,logout}/route.ts`                                                 | S-1E-a (tok prijave preko lažnog OIDC-a), S-1D-d (kolačić i istek)                | `server/contracts/vectors.test.ts`, `server/contracts/fake-server.test.ts` (ugovor iz U4-a, ovdje bez promjene) |
+| Provjera servera i verzije    | `GET /api/v1/health` (`platform.health.get`)                                                                                                    | `app/api/health/route.ts`                                                                       | Danas `server/http/health.ts` (`{status:"ok"}`); polje `version` šalje **S-1M-a** | `server/server.integration.test.ts`, vektori `alive` i `alive-with-version`                                     |
+| Otvaranje rada                | `POST /api/v1/evidence/open` (`evidence.open.post`)                                                                                             | `app/api/evidence/open/route.ts`, `src/server/evidence/open-route.ts`, `ingest-http.ts`         | **S-M-5**, uski rez VS-1, PR „`open`” ([PLAN.md](PLAN.md) §5)                     | `server/contracts/evidence.test.ts`, vektori `evidence.open.post.json`                                          |
+| Spremanje (commit)            | `POST /api/v1/evidence/commit` (`evidence.commit.post`), protokol `1`                                                                           | `app/api/evidence/commit/route.ts`, `src/server/evidence/commit-route.ts`, `evidence-commit.ts` | **S-M-5**, uski rez VS-1, PR „`commit`”                                           | `server/contracts/evidence.test.ts`, vektori `evidence.commit.post.json`                                        |
+| `202 pending_signature`       | `POST /api/v1/evidence/commit`, protokol `2`                                                                                                    | isto, `asyncSigning` (DAN-518)                                                                  | **VS-1b** unutar S-M-5 (worker, red poslova, oporavak)                            | vektori `committed-pending-signature`, `duplicate-pending-signature`, `duplicate-signed-after-pending`          |
+| Ponovno čitanje iste revizije | `POST /api/v1/evidence/open` ponovno                                                                                                            | kao otvaranje rada                                                                              | **S-M-5** (isti handler kao otvaranje)                                            | vektor `opened-after-commit`; test „open after the commit reports the committed revision”                       |
+
+**Napomena o oznaci zadatka.** Ductusov inventar ruta za `evidence/open` i `evidence/commit` piše S-1E-\*. To je Ductusova oznaka. U ovom repou handlere isporučuje S-M-5 kroz uski rez VS-1 (PLAN §5, odluka Ductus#87 c.6880835493). Nesklad ostaje zabilježen dok ga orkestrator ne razriješi u Linearu.
+
+`evidence/replay` (R3) nije dio VS-1. Ostaje u `PENDING` (`server/contracts/inventory.ts`) do svog zadatka (potvrda c.6895833111).
+
+## Pravila oblika
+
+- **Tijelo greške.** Rute evidencije svaku grešku vraćaju kao `{status: <kod>}`, a ne `{error: <kod>}`, jer tako čita klijent Ductusa. 503 je `{status: "unavailable", stage}` uz zaglavlje `retry-after: 5`. Zaglavlje je samo u vektorima, jer `ErrorSpec` nema polje za zaglavlja. `stage` je kod open uvijek `context`, a kod commit jedan od `context`, `storage`, `repository` ili `signing`.
+- **Zaštita prije tijela.** Kontrole idu ovim redom:
+  - metoda (405 `method_not_allowed`; u ovom repou to daje router);
+  - `Origin` i `Sec-Fetch-Site` (403 `forbidden`);
+  - `ductus-protocol` (426 `upgrade_required`);
+  - `Content-Type` (415);
+  - oblik kolačića sesije (401 `unauthenticated`);
+  - samo kod commita i prije čitanja tijela: živa sesija u bazi (401 `unauthenticated` ili 503 sa `stage: context`), osim kad deklarirana duljina već daje 400 ili 413;
+  - tijelo pod granicom veličine (413 `too_large`) i vremena (408 `timeout`, 400 `bad_request`).
+- **Zatvoreno tijelo.** Svako nepoznato polje daje 422 `invalid`. `start` mora biti boolean, a `segments` ima točno jedan element. Bajtovi su standardni base64 s paddingom.
+- **Tuđi rad.** Tuđi ili nepostojeći rad daje isti 404 `not_found` s istim tijelom. Nastavnik na `open` također dobiva 404.
+- **202 nije potvrda.** `202` dolazi samo pod `ductus-protocol: 2`, uz `retry-after: 2` i `receipt.status = "pending_signature"`. Klijent šalje isti zahtjev dok ne dobije 200 s potpisanom potvrdom. 200 uvijek nosi `receipt.status = "signed"`.
+- **Zaglavlje `ductus-protocol`.** Ugovor ga zasad navodi u opisu rute i u vektorima. Format ugovora (`RequestSpec`) još nema polje za zaglavlja zahtjeva.
+- **Generirani klijent** (`generated/client.ts`) ne pokriva ove dvije rute. Ne šalje `ductus-protocol`, `Origin` ni kolačić, a od greške čita samo kod, pa gubi stanje rada iz 409 i `stage` iz 503. Klijent evidencije ostaje Ductusov `src/client/evidence-ingest.ts` dok `RequestSpec` ne dobije zaglavlja.
+- **`receiptKeys`** može biti prazan popis kad domena nema ključ potvrde. Ruta ga tada šalje uz 200, a klijent rad smatra nedostupnim.

@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "node scripts/build/server.ts",
-    "start": "node dist/server.js",
+    "start": "node --disallow-code-generation-from-strings dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --flag unstable_native_nodejs_ts_config -c eslint.config.ts --max-warnings 0 .",
     "format": "prettier --write .",

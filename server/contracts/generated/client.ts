@@ -8,6 +8,8 @@ export const ROUTE_TABLE = {
   "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, headers: ["location","set-cookie"], errors: {"503":["unavailable"]} },
   "auth.logout-all.post": { method: "POST", path: "/api/v1/auth/logout-all", body: null, headers: ["location","set-cookie"], errors: {"403":["forbidden"],"503":["unavailable"]} },
   "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, headers: ["location","set-cookie"], errors: {"403":["forbidden"],"503":["unavailable"]} },
+  "evidence.commit.post": { method: "POST", path: "/api/v1/evidence/commit", body: "application/json", headers: ["retry-after"], errors: {"400":["bad_request"],"401":["unauthenticated"],"403":["forbidden"],"404":["not_found"],"408":["timeout"],"409":["not_accepting","stale_base","chain_conflict","not_continuous","txid_reused"],"413":["too_large"],"415":["unsupported_media_type"],"422":["invalid","document_mismatch"],"426":["upgrade_required"],"503":["unavailable"]} },
+  "evidence.open.post": { method: "POST", path: "/api/v1/evidence/open", body: "application/json", headers: [], errors: {"400":["bad_request"],"401":["unauthenticated"],"403":["forbidden"],"404":["not_found"],"408":["timeout"],"409":["not_accepting","not_started"],"413":["too_large"],"415":["unsupported_media_type"],"422":["invalid"],"426":["upgrade_required"],"503":["unavailable"]} },
   "platform.health.get": { method: "GET", path: "/api/v1/health", body: null, headers: [], errors: {} },
   "platform.ready.get": { method: "GET", path: "/api/v1/ready", body: null, headers: [], errors: {"503":["unavailable","draining"]} },
   "platform.status.get": { method: "GET", path: "/api/v1/status", body: null, headers: [], errors: {"503":["unavailable"]} },

@@ -1,6 +1,7 @@
 export { baseDocument, GIT_MAX_BUFFER, gitShow } from "./check-breaking.ts";
 export type { Git } from "./check-breaking.ts";
 export {
+  compileValidator,
   generate,
   OPENAPI_FILE,
   openapiDocument,

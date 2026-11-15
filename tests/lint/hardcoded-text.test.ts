@@ -280,7 +280,18 @@ describe("textProblem and encodesNonAscii", () => {
   it("finds a non-ASCII character spelled in an encoded form", () => {
     for (const t of ["\\u010d", "\\u{10d}", "\\xe9", "%C4%8D", "&#269;", "&#x10D;", "&ccaron;"])
       expect(encodesNonAscii(t), t).toBe(true);
-    for (const t of ["\\u0041", "%20", "&#65;", "&amp;", "a%2Fb", "\\\\u", "100%"])
+    // Control characters and spaces spelled as escapes are not text (a schema pattern).
+    for (const t of [
+      "\\u0041",
+      "%20",
+      "&#65;",
+      "&amp;",
+      "a%2Fb",
+      "\\\\u",
+      "100%",
+      "\\u009f",
+      "&#160;",
+    ])
       expect(encodesNonAscii(t), t).toBe(false);
   });
 });

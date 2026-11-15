@@ -184,14 +184,17 @@ function escapedCodes(raw: string): number[] {
   return [...raw.matchAll(ESCAPE)].map((m) => Number.parseInt(m[1] ?? m[2] ?? m[3] ?? "0", 16));
 }
 /** Whether a text spells a non-ASCII character in an encoded form. */
+// A code point that is a letter or a mark outside ASCII (not a control or a space).
+const isLetterCode = (code: number): boolean =>
+  code > 0x7f && code <= 0x10ffff && NON_ASCII_LETTER.test(String.fromCodePoint(code));
 export function encodesNonAscii(text: string): boolean {
-  if (escapedCodes(text).some((code) => code > 0x7f)) return true;
+  if (escapedCodes(text).some(isLetterCode)) return true;
   // A UTF-8 lead byte and a continuation byte, percent-encoded.
   if (/%[c-fC-F][0-9a-fA-F]%[89abAB][0-9a-fA-F]/u.test(text)) return true;
   // A data: URL, a punycode label.
   if (/\bdata:[^,\s]*,/u.test(text) || /(?:^|[./@])xn--/iu.test(text)) return true;
   const entities = text.matchAll(/&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?/gu);
-  if ([...entities].some((m) => Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16) > 0x7f))
+  if ([...entities].some((m) => isLetterCode(Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16))))
     return true;
   const named = [...text.matchAll(/&([A-Za-z][A-Za-z0-9]*);/gu)].map((m) => m[1] ?? "");
   return named.some((n) => !["amp", "lt", "gt", "quot", "apos"].includes(n));

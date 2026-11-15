@@ -75,7 +75,7 @@ const overHttp = VECTORS.filter((v) => v.request.headers?.["content-length"] ===
 
 describe("fake server over HTTP", () => {
   it("sends all but the framing vectors over the wire", () => {
-    expect(VECTORS.length - overHttp.length).toBe(4);
+    expect(VECTORS.length - overHttp.length).toBe(9);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
@@ -96,7 +96,8 @@ describe("fake server over HTTP", () => {
     ["GET", "/api/v1/health?x=1", 501, "not_implemented"],
     ["POST", "/api/v1/profile/interface-locale", 501, "not_implemented"],
     ["DELETE", "/api/v1/health", 405, "method_not_allowed"],
-    ["GET", "/api/v1/evidence/commit", 404, "not_found"],
+    ["GET", "/api/v1/evidence/replay", 404, "not_found"],
+    ["GET", "/api/v1/evidence/commit", 405, "method_not_allowed"],
     ["GET", "/api/v1/health/extra", 404, "not_found"],
     ["GET", "/health", 404, "not_found"],
   ])("%s %s -> %i %s", async (method, path, status, code) => {
