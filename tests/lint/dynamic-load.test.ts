@@ -178,6 +178,11 @@ const failing: Case[] = [
     'import { createHash as setEngine } from "node:crypto";\nexport const h = setEngine;\n',
     'import * as setEngine from "node:crypto";\nexport const h = setEngine;\n',
     'import setEngine from "node:crypto";\nexport const h = setEngine;\n',
+    // Decision c.6892510394: the same names written as strings.
+    'export { createHash as "setEngine" } from "node:crypto";\n',
+    'import { createHash } from "node:crypto";\nexport { createHash as "constructor" };\n',
+    'import { "setEngine" as s } from "node:crypto";\nexport const h = s;\n',
+    'export * as "constructor" from "node:crypto";\n',
     // Decision c.6892342579: any literal or template piece containing the key.
     'export const s = "xconstructorx";\n',
     "export const f = (x: string): string => `a${x}constructor`;\n",
