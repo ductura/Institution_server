@@ -2,7 +2,8 @@
 
 Izgradnja servera (S-1B-a, DAN-775).
 
-- `server.ts`: `buildServer(root, outfile)` esbuildom pakira jedinu ulaznu točku `server/server.ts` u jednu datoteku `dist/server.js`, s ugrađenim ovisnostima (`pg-native` ostaje vani). `pnpm build` je poziva, a `pnpm start` pokreće `node dist/server.js`.
+- `server.ts`: `buildServer(root, outfile)` esbuildom pakira jedinu ulaznu točku `server/server.ts` u jednu datoteku `dist/server.js`, s ugrađenim ovisnostima (`pg-native` ostaje vani). `pnpm build` je poziva, a `pnpm start` pokreće `node --disallow-code-generation-from-strings dist/server.js`.
+- `node-flags.ts`: `SERVER_NODE_FLAGS`, Node opcije s kojima radi svaki proces servera (DAN-772), i `START_SCRIPT`, naredba skripte `start`. S `--disallow-code-generation-from-strings` `eval`, `Function` i konstruktor bilo koje funkcije (obične, asinkrone i generatorske) bacaju `EvalError` umjesto da izvrše string kao kod, i kad je ključ složen u vrijeme izvođenja ili je poziv u ovisnosti, što lint pravilo `local/no-dynamic-load` (DAN-770) ne vidi. Opcija ne pokriva `node:vm`, `worker_threads` s `eval`, uvoz `data:`, `Module#_compile` ni WebAssembly; kod servera ne smije uvesti `node:vm`, `node:worker_threads` ni `node:module` (lint), ali ovisnost bi mogla, i opcija je ne bi zaustavila (`dist/server.js` ih danas nema). `node-flags.test.ts` provjerava skriptu `start` i da svaki test u `server/` koji pokreće proces `node` prosljeđuje te opcije (iznimke su imenovane s razlogom), a `server/code-generation.integration.test.ts` ponašanje u pravom procesu.
 - `index.ts`: javno sučelje mape.
 
 `node scripts/build/server.ts [izlazna-datoteka]` gradi u drugu datoteku; `scripts/build/server.integration.test.ts` tako pokreće skriptu kao proces, i izravno i kroz putanju sa simboličkom vezom. Integracijski test `server/server.integration.test.ts` gradi istom funkcijom u privremenu mapu i pokreće pravi proces.
