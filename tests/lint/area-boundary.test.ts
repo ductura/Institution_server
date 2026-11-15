@@ -139,6 +139,43 @@ const failing: Case[] = [
   ]),
 ];
 
+// Bypasses found by the adversarial run on the first head of this PR; each
+// loads the forbidden module at run time.
+const REPO = path.basename(ROOT);
+const bypasses: Case[] = [
+  // leaving the repository and coming back in
+  ...all("server/log/x.ts", "edge", [`../../../${REPO}/server/database/index.ts`]),
+  // URL parsing drops tab, CR and LF inside a relative specifier
+  ...all("server/log/x.ts", "edge", ["./\t../database/index.ts", "./.\\n./database/index.ts"]),
+  { file: "server/domain/x.ts", code: 'import("./\t../log/index.ts");\n', messageId: "edge" },
+  ...all("server/session/x.ts", "typeOnly", ["./\\r../database/index.ts"]),
+  // loaders the name matching cannot follow, and builtins without an import
+  ...["server/log/x.ts", "server/session/x.ts", "server/x.ts"].flatMap((file) =>
+    all(file, "loader", ["node:module", "module"]),
+  ),
+  {
+    file: "server/log/x.ts",
+    code: 'const { createRequire: cr } = await import("node:module");\n',
+    messageId: "loader",
+  },
+  ...[
+    'export const fs = process.getBuiltinModule("node:fs");\n',
+    'export const fs = process["getBuiltinModule"]("node:fs");\n',
+    'export const fs = globalThis.process.getBuiltinModule("node:fs");\n',
+    "export const m = process.mainModule;\n",
+  ].map((code) => ({ file: "server/domain/x.ts", code, messageId: "loader" })),
+  // laundering through a folder outside server/
+  ...all("server/log/x.ts", "outside", ["../../scripts/hop/index.ts", "../../db/x/index.ts"]),
+  { file: "server/x.ts", code: imp("../scripts/index.ts"), messageId: "outside" },
+  // URL schemes
+  ...all("server/log/x.ts", "scheme", [
+    "data:text/javascript,export * from 'file:///app/server/database/index.ts'",
+    "https://example.invalid/x.ts",
+  ]),
+  // a routes.ts directly in server/ is still a routes file
+  ...all("server/routes.ts", "routes", ["./http/index.ts", "fast-check"]),
+];
+
 const passing: { file: string; code: string }[] = [
   { file: DB, code: imp("../domain/index.ts") + imp("./with-actor.ts") + imp("pg") },
   { file: "server/domain/x.ts", code: imp("node:crypto") + imp("./forensics/index.ts") },
@@ -171,6 +208,8 @@ const passing: { file: string; code: string }[] = [
     ].join("\n"),
   },
   { file: "server/session/x.test.ts", code: imp("../database/index.ts") },
+  { file: "server/contracts/x.test.ts", code: imp("../../scripts/index.ts") + imp("node:module") },
+  { file: "server/log/x.ts", code: "export const env = process.env;\n" },
   {
     file: "server/http/x.ts",
     code: imp("../database/index.ts") + imp("../external/keys/index.ts"),
@@ -190,6 +229,10 @@ describe("area boundaries (PLAN §3, docs/server-map.md §2)", () => {
     expect(await ids(file, code)).toContain(`${RULE}:${messageId}`);
   });
 
+  it.each(bypasses)("closes bypass: $file · $code", async ({ file, code, messageId }) => {
+    expect(await ids(file, code)).toContain(`${RULE}:${messageId}`);
+  });
+
   it.each(passing)("passes: $file · $code", async ({ file, code }) => {
     expect((await ids(file, code)).filter((id) => id.startsWith(`${RULE}:`))).toEqual([]);
   });
@@ -206,6 +249,10 @@ describe("area boundaries (PLAN §3, docs/server-map.md §2)", () => {
       "try {} catch {}",
       "export const v = a ? 1 : 2;",
       "export const v = await a;",
+      "export const v = a && 1;",
+      "export const v = a ?? 1;",
+      "export const v = a?.b;",
+      "throw a;",
     ]) {
       expect(await ids("server/roles/routes.ts", `declare const a: never;\n${body}\n`)).toContain(
         "no-restricted-syntax:restrictedSyntax",

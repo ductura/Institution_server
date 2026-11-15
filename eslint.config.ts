@@ -226,6 +226,7 @@ const ESTREE_NODE_NAMES = [
   "ExportAllDeclaration",
   "ImportExpression",
   "CallExpression",
+  "MemberExpression",
   "TSImportType",
   "TSExternalModuleReference",
 ];
@@ -325,6 +326,9 @@ export default defineConfig(
           "TryStatement",
           "ConditionalExpression",
           "AwaitExpression",
+          "LogicalExpression",
+          "ChainExpression",
+          "ThrowStatement",
         ].map((selector) => ({ selector, message: "routes.ts holds no logic (PLAN §3, rule 3)." })),
       ],
     },

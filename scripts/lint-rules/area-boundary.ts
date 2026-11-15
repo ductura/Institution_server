@@ -68,6 +68,12 @@ const PGLITE_RE =
 const PGLITE_ALLOWED_RE = /^(?:server\/database|tests\/db|packages\/test-fakes\/pglite)\//u;
 // Package self-reference and subpath imports would bypass the relative-path checks.
 const ALIAS_RE = /^(?:#|@ductura\/server(?:$|\/))/iu;
+// A URL scheme other than node: (data:, file:, http:) loads code past the path checks.
+const SCHEME_RE = /^(?!node:)[a-z][a-z0-9+.-]*:/iu;
+// Loaders that take a specifier the rule cannot follow once renamed (createRequire
+// from node:module) and process members that load a module without an import.
+const LOADER_MODULE_RE = /^(?:node:)?module(?:$|\/)/iu;
+const LOADER_PROCESS = new Set(["getBuiltinModule", "mainModule", "binding", "dlopen"]);
 
 /** The area of a repository path, ENTRY for server/*.ts, undefined outside server/. */
 export function areaOf(path: string): string | undefined {
@@ -80,19 +86,19 @@ export function areaOf(path: string): string | undefined {
 }
 
 // The forms a specifier takes for the module it loads: either slash, without
-// a query or fragment, %-escapes decoded; each read as text and normalized.
+// a query or fragment, %-escapes decoded, and without tab, CR and LF (URL
+// parsing drops them, so "./\t../x" loads ../x); each read as text and normalized.
 function spellings(specifier: string): string[] {
-  const cut = specifier
-    .trim()
-    .replace(/\\/g, "/")
-    .replace(/[?#].*$/su, "");
-  let decoded = cut;
-  try {
-    decoded = decodeURIComponent(cut);
-  } catch {
-    // An invalid escape loads nothing; the other spelling is still tested.
-  }
-  return [...new Set([specifier.trim(), cut, decoded, posix.normalize(cut)])];
+  return [specifier.trim(), specifier.replace(/[\t\n\r]/gu, "").trim()].flatMap((text) => {
+    const cut = text.replace(/\\/g, "/").replace(/[?#].*$/su, "");
+    let decoded = cut;
+    try {
+      decoded = decodeURIComponent(cut).replace(/[\t\n\r]/gu, "");
+    } catch {
+      // An invalid escape loads nothing; the other spellings are still tested.
+    }
+    return [...new Set([text, cut, decoded, posix.normalize(cut)])];
+  });
 }
 
 export const areaBoundary: Rule.RuleModule = {
@@ -109,17 +115,19 @@ export const areaBoundary: Rule.RuleModule = {
       ui: "Nothing imports React, Next.js or a .tsx/.jsx module (PLAN §3, rule 4).",
       pglite: "Only server/database imports PGlite (PLAN §3, rule 4).",
       alias: "Import server code by a relative path, not by a package alias.",
+      outside: "Server code imports nothing outside server/ by path; use a package.",
+      scheme: "Import by path or package name, not by a URL scheme.",
+      loader: "Server code does not load modules through node:module or process.",
     },
   },
   create(context) {
-    const file = posix.normalize(
-      posix.relative(context.cwd.replace(/\\/g, "/"), context.filename.replace(/\\/g, "/")),
-    );
+    const root = context.cwd.replace(/\\/g, "/");
+    const file = posix.normalize(posix.relative(root, context.filename.replace(/\\/g, "/")));
     const dir = posix.dirname(file);
     const fromArea = areaOf(file);
     const known = fromArea === ENTRY || (fromArea !== undefined && fromArea in AREA_IMPORTS);
     const isTest = /\.test\.ts$/iu.test(file);
-    const isRoutes = !isTest && fromArea !== ENTRY && posix.basename(file) === "routes.ts";
+    const isRoutes = !isTest && posix.basename(file) === "routes.ts";
     const pure =
       !isTest && fromArea !== undefined && fromArea in PURE_PACKAGES && !PURE_EXEMPT_RE.test(file);
 
@@ -143,7 +151,9 @@ export const areaBoundary: Rule.RuleModule = {
     function checkRelative(node: Node, specifier: string, typeOnly: boolean): void {
       for (const text of spellings(specifier)) {
         if (!/^\.\.?(?:\/|$)/u.test(text)) continue;
-        const target = posix.normalize(posix.join(dir, text));
+        // Resolved from the absolute root, so leaving the repository and coming
+        // back in ("../../../server/server/x") lands on the same file.
+        const target = posix.relative(root, posix.join(root, dir, text));
         const to = target.startsWith("../") ? undefined : areaOf(target);
         if (to === fromArea) {
           if (isRoutes && target !== `${dir}/service.ts`) return report(node, "routes");
@@ -152,6 +162,7 @@ export const areaBoundary: Rule.RuleModule = {
         if (to === undefined) {
           if (pure) return report(node, "pure");
           if (isRoutes) return report(node, "routes");
+          if (!isTest) return report(node, "outside");
           continue;
         }
         checkCross(node, target, to, typeOnly);
@@ -170,6 +181,9 @@ export const areaBoundary: Rule.RuleModule = {
       if (/^\.\.?(?:[/\\]|$)/u.test(specifier.trim()))
         return checkRelative(node, specifier, typeOnly);
       if (ALIAS_RE.test(specifier.trim())) return report(node, "alias");
+      if (forms.some((text) => SCHEME_RE.test(text))) return report(node, "scheme");
+      if (!isTest && forms.some((text) => LOADER_MODULE_RE.test(text)))
+        return report(node, "loader");
       if (pure && PURE_PACKAGES[fromArea ?? ""]?.test(specifier) !== true) report(node, "pure");
       else if (isRoutes) report(node, "routes");
     }
@@ -187,6 +201,17 @@ export const areaBoundary: Rule.RuleModule = {
       },
       TSImportType(node: Node & { source?: unknown; argument?: { literal?: unknown } }) {
         check(node, node.source ?? node.argument?.literal, true);
+      },
+      MemberExpression(node) {
+        if (!known || isTest) return;
+        const object = node.object as Loose;
+        const property = node.property as Loose;
+        const name = node.computed ? property.value : property.name;
+        const isProcess =
+          (object.type === "Identifier" && object.name === "process") ||
+          (object.type === "MemberExpression" && object.property?.name === "process");
+        if (isProcess && typeof name === "string" && LOADER_PROCESS.has(name))
+          report(node, "loader");
       },
       TSExternalModuleReference(node: Node & { expression?: unknown }) {
         const parent = (node as { parent?: Kinded }).parent;
