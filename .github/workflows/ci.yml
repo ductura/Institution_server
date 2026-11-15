@@ -87,6 +87,14 @@ jobs:
         run: pnpm test:property
       - name: Integracijski testovi
         run: pnpm test:integration
+      # U10-b (DAN-742): the whole path of publish.yml except the upload, with
+      # no token: stage and check, pack, check the unpacked tarball, and a dry
+      # run of `npm publish` of each tarball.
+      - name: Probna objava
+        run: |
+          pnpm release:check
+          pnpm release:tarball contracts test-fakes
+          for file in dist/release/tarball/*.tgz; do npm publish --dry-run --ignore-scripts "$file"; done
       - name: Zaštita od lomljenja ugovora
         if: github.event_name == 'pull_request'
         run: |
