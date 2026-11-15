@@ -183,6 +183,31 @@ jobs:
           files="$(find db/main/migrations -maxdepth 1 -name '*.sql' | wc -l)"
           echo "Primijenjeno $applied od $files migracija."
           [ "$applied" -eq "$files" ]
+      # S-1F-c (DAN-779): the logs database in a cluster of its own, as compose
+      # postgres-logs (127.0.0.1:54330, superuser ductus with the public
+      # local-only password of compose.yaml, no secret). It is provisioned by
+      # db/logs/local/migrator.sql and migrated by `migrate-locked --database
+      # logs` as ductus_logs_migrator, as `pnpm db:migrate:logs` does;
+      # tests/db/logs-database.integration.test.ts (pnpm test:database) checks
+      # it next to the main database above.
+      - name: Baza zapisa (migrate-locked --database logs)
+        env:
+          LOGS_PASSWORD: ductus-logs-local-only
+          LOGS_DATABASE_URL: postgres://ductus:ductus-logs-local-only@127.0.0.1:54330/ductus_logs
+        run: |
+          printf '%s\n' "$LOGS_PASSWORD" > "$RUNNER_TEMP/logs-password"
+          "$PGBIN/initdb" -D "$RUNNER_TEMP/logs-data" -U ductus --pwfile="$RUNNER_TEMP/logs-password" \
+            --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8
+          "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/logs-data" -l "$RUNNER_TEMP/logs.log" -w start \
+            -o "-p 54330 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"
+          "$PGBIN/psql" "postgres://ductus:$LOGS_PASSWORD@127.0.0.1:54330/postgres" -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE ductus_logs'
+          "$PGBIN/psql" "$LOGS_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f db/logs/local/migrator.sql
+          node scripts/db/migrate-locked.ts --database logs --url "$LOGS_DATABASE_URL?sslmode=disable&role=ductus_logs_migrator"
+          applied="$("$PGBIN/psql" "$LOGS_DATABASE_URL" -tAc 'SELECT count(*) FROM public.schema_migrations')"
+          files="$(find db/logs/migrations -maxdepth 1 -name '*.sql' | wc -l)"
+          echo "Primijenjeno $applied od $files migracija baze zapisa."
+          [ "$applied" -eq "$files" ]
       # S-0.14 (DAN-727): `pnpm db:up:native` brings the main database up
       # natively, as on a developer machine, on its own cluster of the
       # runner user (socket as superuser, loopback TCP with SCRAM), twice: the
@@ -202,6 +227,7 @@ jobs:
       - name: Testovi migracija
         env:
           DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
+          LOGS_DATABASE_URL: postgres://ductus:ductus-logs-local-only@127.0.0.1:54330/ductus_logs
         run: pnpm test:database
       # S-0.15 (DAN-728): the pgTAP matrix ported from Ductus db/tests
       # (db/main/tests) against the migrated and provisioned native main

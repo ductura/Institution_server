@@ -93,6 +93,28 @@ describe("ci.yml", () => {
     expect(config).toMatch(/name: "database",\n\s+include: \[DATABASE\],/);
   });
 
+  // S-1F-c (DAN-779): the logs database is provisioned and migrated in its own
+  // cluster before the migration tests, which get its URL.
+  it("the database job brings up the logs database through the locked runner before the migration tests", () => {
+    const database = job("database");
+    const cluster = database.indexOf('-o "-p 54330 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"');
+    const bootstrap = database.indexOf("-f db/logs/local/migrator.sql");
+    const migrate = database.indexOf(
+      'node scripts/db/migrate-locked.ts --database logs --url "$LOGS_DATABASE_URL?sslmode=disable&role=ductus_logs_migrator"',
+    );
+    const count = database.indexOf("find db/logs/migrations -maxdepth 1 -name '*.sql'");
+    const tests = database.search(/\n {8}run: pnpm test:database\n/);
+    expect(cluster).toBeGreaterThan(database.indexOf('[ "$applied" -eq "$files" ]'));
+    expect(bootstrap).toBeGreaterThan(cluster);
+    expect(migrate).toBeGreaterThan(bootstrap);
+    expect(count).toBeGreaterThan(migrate);
+    expect(tests).toBeGreaterThan(count);
+    const testStep = database.slice(database.indexOf("- name: Testovi migracija"), tests);
+    expect(testStep).toContain(
+      "LOGS_DATABASE_URL: postgres://ductus:ductus-logs-local-only@127.0.0.1:54330/ductus_logs",
+    );
+  });
+
   it("checks run every repository check and test project", () => {
     const checks = job("checks");
     for (const script of [

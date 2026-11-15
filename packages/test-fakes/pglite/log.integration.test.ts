@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -113,9 +114,17 @@ describe("createFakeLogDatabase", () => {
     expect(await a.entries()).toHaveLength(2);
   });
 
-  it("the temporary schema is gone once the log database has migrations (S-1F)", () => {
+  // S-1F-c (DAN-779) brought db/logs/migrations with roles only; the fake
+  // stands in for the log table, so it has to go once a migration of the log
+  // database creates a table (S-1F-b/S-1F-e).
+  it("the temporary schema is gone once a migration of the log database creates a table (S-1F)", () => {
     const schema = fileURLToPath(new URL("./log-schema.sql", import.meta.url));
-    const migrations = fileURLToPath(new URL("../../../db/logs/migrations", import.meta.url));
-    expect(existsSync(schema) && existsSync(migrations)).toBe(false);
+    const dir = fileURLToPath(new URL("../../../db/logs/migrations", import.meta.url));
+    const tables = existsSync(dir)
+      ? readdirSync(dir).filter((name) =>
+          /\bCREATE\s+(?:UNLOGGED\s+)?TABLE\b/iu.test(readFileSync(join(dir, name), "utf8")),
+        )
+      : [];
+    expect(existsSync(schema) && tables.length > 0).toBe(false);
   });
 });

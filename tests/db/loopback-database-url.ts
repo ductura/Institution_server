@@ -3,9 +3,10 @@
 // no query and no fragment (F-167), on the local port (F-019).
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const PROTOCOLS = new Set(["postgres:", "postgresql:"]);
-// 54329: compose, the native stack and CI; 5432: scripts/db/native-db.mjs.
+// 54329: compose, the native stack and CI; 5432: scripts/db/native-db.mjs;
+// 54330: the logs database (compose postgres-logs and CI, S-1F-c).
 // A URL without a port would take PGPORT from the environment.
-const LOCAL_PORTS = new Set(["54329", "5432"]);
+const LOCAL_PORTS = new Set(["54329", "5432", "54330"]);
 // Text that the driver and URL could split differently: whitespace, a
 // backslash, a second "@" or a "%" that is no escape.
 const AMBIGUOUS = /[\s\\]|@.*@|%(?![0-9A-Fa-f]{2})/u;
@@ -37,6 +38,7 @@ export const DATABASE_URL_VARIABLES = [
   "DATABASE_URL",
   "APP_DATABASE_URL",
   "AUTH_DATABASE_URL",
+  "LOGS_DATABASE_URL",
 ] as const;
 
 /** Names of the set variables whose URL is not a local database. */
