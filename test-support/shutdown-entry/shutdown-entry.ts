@@ -3,7 +3,9 @@
 // route, because the real entry has no route that takes time. Not built, not
 // exported, never run outside tests. Invented values only.
 // Arguments: <slow ms> <hook>; the deadline is SHUTDOWN_GRACE_MS.
-//   slow ms  how long GET /api/v1/health?slow takes before it answers
+//   slow ms  how long GET /api/v1/health?slow takes before it answers; when
+//            it is done it writes {"event":"route.done"} to stdout
+//   ?big     answers a 5 MB body at once, larger than any socket buffer
 //   hook     "ok" (default), "throw" or "hang": a hook after the logs
 import {
   createDatabases,
@@ -29,6 +31,7 @@ const HOOKS: Record<string, ShutdownHook> = {
   hang: { name: "databases", run: () => new Promise<void>(() => undefined) },
 };
 const hook = HOOKS[hookArgument] ?? HOOKS.ok;
+const BIG_BYTES = 5 * 1024 * 1024;
 
 const shutdown = createShutdownCoordinator({ graceMs });
 const running = await startServer({
@@ -41,7 +44,15 @@ const running = await startServer({
     {
       contract: HEALTH_ROUTE.contract,
       handle: async (request, response) => {
-        if (request.url?.endsWith("?slow")) await new Promise((r) => setTimeout(r, slowMs));
+        if (request.url?.endsWith("?big")) {
+          response.writeHead(200, { "content-type": "text/plain" });
+          response.end("x".repeat(BIG_BYTES));
+          return;
+        }
+        if (request.url?.endsWith("?slow")) {
+          await new Promise((r) => setTimeout(r, slowMs));
+          console.log(JSON.stringify({ event: "route.done" }));
+        }
         await HEALTH_ROUTE.handle(request, response);
       },
     },

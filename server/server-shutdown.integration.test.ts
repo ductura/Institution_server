@@ -194,6 +194,58 @@ describe("shutdown in the middle of a slow request", () => {
     expect(await server.exit).toBe(0);
   }, 20_000);
 
+  // QA on c3862f3, F1: a response that is sent while draining tells the
+  // client not to reuse the connection.
+  it("a response sent while draining says Connection: close", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["400"]);
+    const first = await open(server.port);
+    first.socket.write(GET("/api/v1/health?slow"));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const second = await open(server.port);
+    second.socket.write(GET("/api/v1/health?slow"));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    server.child.kill("SIGTERM");
+    await first.closed;
+    expect(statusOf(first.text())).toBe("HTTP/1.1 200 OK");
+    expect(first.text().toLowerCase()).toContain("connection: close");
+    expect(first.text().toLowerCase()).not.toContain("keep-alive");
+    await second.closed;
+    expect(await server.exit).toBe(0);
+  }, 20_000);
+
+  // QA on c3862f3, F2: a body larger than the socket buffers reaches a slow
+  // reader whole before the process exits 0.
+  it("a large body to a client that reads late arrives whole, then exit 0", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" });
+    const big = await open(server.port);
+    big.socket.pause();
+    big.socket.write(GET("/api/v1/health?big"));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    server.child.kill("SIGTERM");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(server.child.exitCode).toBeNull();
+    big.socket.resume();
+    expect(await server.exit).toBe(0);
+    await big.closed;
+    expect(bodyOf(big.text())).toHaveLength(5 * 1024 * 1024);
+  }, 20_000);
+
+  // QA on c3862f3, F3: a client that leaves does not end the drain while its
+  // handler still runs.
+  it("a client that disconnects mid-request: the handler still finishes before exit 0", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["1000"]);
+    const leaving = await open(server.port);
+    leaving.socket.write(GET("/api/v1/health?slow"));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    server.child.kill("SIGTERM");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    leaving.socket.destroy();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(server.child.exitCode).toBeNull();
+    expect(await server.exit).toBe(0);
+    expect(server.out()).toContain('"event":"route.done"');
+  }, 20_000);
+
   it("a request longer than the deadline: exit 1 within the deadline, with the reason", async () => {
     const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "300" }, ["60000"]);
     const slow = await open(server.port);

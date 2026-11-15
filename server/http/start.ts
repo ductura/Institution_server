@@ -2,6 +2,7 @@
 // the bound port or rejects with the error code (EADDRINUSE, EACCES), so the
 // entry point can refuse to start with a clear line instead of a stack.
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { Server as NetServer, type Socket } from "node:net";
 
 import type { Databases } from "./databases.ts";
 import { createRouter, type Route, sendJson } from "./router.ts";
@@ -36,28 +37,75 @@ const UNAVAILABLE = { connection: "close", "retry-after": "1" };
 export async function startServer(options: StartOptions): Promise<Running> {
   const route = createRouter(options.routes);
   const shutdown = options.shutdown ?? createShutdownCoordinator();
+  // Responses whose headers are not sent yet: once draining they say
+  // Connection: close, so no client is told it may reuse the connection.
+  const pending = new Set<ServerResponse>();
+  // Requests in flight per connection. Node's closeIdleConnections (also run
+  // by http.Server.close) counts a connection idle as soon as its response
+  // ended, while the body may still be in the socket buffer, so shutdown ends
+  // only connections that served a request and hold none now.
+  const connections = new Map<Socket, { active: number; served: boolean }>();
+  const endIfIdle = (socket: Socket) => {
+    const state = connections.get(socket);
+    if (state?.served === true && state.active === 0) socket.end();
+  };
   const server = createServer((request, response) => {
     const ticket = shutdown.begin();
     if (ticket === null) {
       sendJson(response, 503, { error: "unavailable" }, UNAVAILABLE);
       return;
     }
-    response.once("close", () => {
+    const socket = request.socket;
+    const connection = connections.get(socket);
+    if (connection !== undefined) {
+      connection.active += 1;
+      connection.served = true;
+    }
+    pending.add(response);
+    // The ticket is held until the handler settled and the last byte left the
+    // process (or the socket closed): a client that disconnects does not end
+    // the drain under a running handler, and a large body is not cut by exit.
+    let open = 2;
+    const done = () => {
+      open -= 1;
+      if (open > 0) return;
+      if (connection !== undefined) connection.active -= 1;
       ticket.release();
-      // A kept-alive connection whose last request ended while draining is
-      // idle now and closes, so it cannot carry a new request.
-      if (shutdown.state() !== "running") setImmediate(() => server.closeIdleConnections());
+      if (shutdown.state() !== "running") endIfIdle(socket);
+    };
+    response.once("close", () => {
+      pending.delete(response);
+      if (socket.destroyed || socket.writableLength === 0) return done();
+      let waiting = true;
+      const flushed = () => {
+        if (!waiting) return;
+        waiting = false;
+        socket.off("close", flushed);
+        socket.off("finish", flushed);
+        done();
+      };
+      socket.once("close", flushed);
+      // Writes leave in order: the callback of an empty write, or the finish
+      // of an ended socket, comes after every byte before it.
+      if (socket.writableEnded) socket.once("finish", flushed);
+      else socket.write("", flushed);
     });
     void (async () => {
       for (const layer of options.layers) {
         if ((await layer(request, response)) === "done") return;
       }
       await route(request, response);
-    })().catch((error: unknown) => {
-      console.error("request failed", (error as Error).name);
-      if (!response.headersSent) sendJson(response, 500, { error: "internal" });
-      else response.destroy();
-    });
+    })()
+      .catch((error: unknown) => {
+        console.error("request failed", (error as Error).name);
+        if (!response.headersSent) sendJson(response, 500, { error: "internal" });
+        else response.destroy();
+      })
+      .finally(done);
+  });
+  server.on("connection", (socket: Socket) => {
+    connections.set(socket, { active: 0, served: false });
+    socket.once("close", () => connections.delete(socket));
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -72,8 +120,11 @@ export async function startServer(options: StartOptions): Promise<Running> {
   return {
     port,
     stopAccepting: () => {
-      server.close();
-      server.closeIdleConnections();
+      for (const response of pending) if (!response.headersSent) response.shouldKeepAlive = false;
+      // Stop listening without http.Server.close, which would also end
+      // connections whose last body is still being written (see above).
+      NetServer.prototype.close.call(server);
+      for (const socket of connections.keys()) endIfIdle(socket);
     },
     closeAllConnections: () => server.closeAllConnections(),
     close: () =>

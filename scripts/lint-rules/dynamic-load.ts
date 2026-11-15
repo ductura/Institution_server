@@ -121,6 +121,9 @@ export const KEY_LITERAL_ALLOWED: Readonly<
 /** node: modules production server code may import, always with the prefix. */
 export const NODE_MODULES: readonly string[] = [
   ...["crypto", "fs", "fs/promises", "path", "url", "util", "http", "async_hooks"],
+  // net.Server.close stops listening without ending connections that still
+  // write a body (server/http/start.ts, S-1B-c, DAN-778); it loads no code.
+  "net",
 ];
 // A package subpath: plain segments, no ".", ".." or empty segment.
 const SUBPATH_RE = /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)*$/u;
