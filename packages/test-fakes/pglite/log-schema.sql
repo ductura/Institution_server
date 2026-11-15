@@ -1,7 +1,8 @@
 -- U9-b (DAN-741): temporary schema of the fake log database, until S-1F brings
 -- the migrations of the log database (db/logs/migrations); S-1F deletes this
--- file and the fake applies those migrations instead (log.test.ts fails while
--- both exist). Append-only: the writer has INSERT and SELECT only, and the
+-- file and the fake applies those migrations instead (log.integration.test.ts fails while
+-- both exist). Append-only: the writer has SELECT and INSERT of kind and
+-- payload only (no forged id or at), and the
 -- triggers refuse UPDATE, DELETE and TRUNCATE for everyone, also the owner, a
 -- superuser and session_replication_role = replica (ENABLE ALWAYS).
 CREATE ROLE fake_logs_owner NOLOGIN NOSUPERUSER NOBYPASSRLS;
@@ -31,5 +32,5 @@ ALTER TABLE logs.entry ENABLE ALWAYS TRIGGER entry_no_truncate;
 REVOKE ALL ON logs.entry FROM PUBLIC;
 REVOKE UPDATE, DELETE, TRUNCATE ON logs.entry FROM fake_logs_owner;
 GRANT USAGE ON SCHEMA logs TO fake_logs_writer;
-GRANT SELECT, INSERT ON logs.entry TO fake_logs_writer;
+GRANT SELECT, INSERT (kind, payload) ON logs.entry TO fake_logs_writer;
 RESET ROLE;

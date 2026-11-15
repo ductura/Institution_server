@@ -72,6 +72,19 @@ describe("createFakeLogDatabase", () => {
     await log.db.exec("ROLLBACK");
   });
 
+  it.each([
+    "INSERT INTO logs.entry (id, kind, payload) OVERRIDING SYSTEM VALUE VALUES (-5, 'x', '{}')",
+    "INSERT INTO logs.entry (at, kind, payload) VALUES ('1999-01-01', 'x', '{}')",
+  ])("the writer cannot forge the order: %s", async (sql) => {
+    const log = await seeded();
+    const before = await log.entries();
+    await expect(
+      log.db.exec(`BEGIN; SET LOCAL ROLE fake_logs_writer; ${sql}; COMMIT;`),
+    ).rejects.toThrow(/permission denied/u);
+    await log.db.exec("ROLLBACK");
+    expect(await log.entries()).toEqual(before);
+  });
+
   it("a GRANT by the writer gives it nothing", async () => {
     const log = await seeded();
     await log.db.exec(

@@ -159,6 +159,40 @@ describe("migration source", () => {
     );
   });
 
+  it("reads the markers only at the start of a line, as dbmate", () => {
+    const up = upSection(
+      "a.sql",
+      "-- migrate:up\nCREATE TABLE a ();\n  -- dropped in -- migrate:down\nCREATE TABLE b ();\n-- migrate:down\nDROP x;",
+    );
+    expect(up).toMatch(/CREATE TABLE b/u);
+    expect(up).not.toMatch(/DROP/u);
+    expect(() => upSection("a.sql", "SELECT 1; -- migrate:up\nSELECT 2;")).toThrow(
+      /no "-- migrate:up"/u,
+    );
+  });
+
+  it.each([
+    ["COMMIT", "CREATE TABLE public.c1 (v int); COMMIT;", /ends its own transaction/u],
+    ["RESET ROLE", "RESET ROLE; CREATE TABLE public.r1 (v int);", /ran as the superuser/u],
+    ["RESET ROLE", "RESET ROLE; CREATE ROLE evil SUPERUSER;", /ran as the superuser/u],
+  ])("refuses a migration that leaves the migrator role (%s)", async (_what, up, message) => {
+    const db = new PGlite();
+    try {
+      await db.exec(`CREATE ROLE ductus_migrator NOLOGIN NOSUPERUSER NOBYPASSRLS;
+        GRANT CREATE ON SCHEMA public TO ductus_migrator;
+        CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY);
+        GRANT INSERT ON public.schema_migrations TO ductus_migrator;`);
+      await applyMigrations(db, [{ name: "1_m.sql", version: "1", up: "SELECT 1; RESET ROLE;" }]);
+      await expect(applyMigrations(db, [{ name: "2_m.sql", version: "2", up }])).rejects.toThrow(
+        message,
+      );
+      const applied = await db.query("SELECT version FROM public.schema_migrations");
+      expect(applied.rows).toEqual([{ version: "1" }]);
+    } finally {
+      await db.close();
+    }
+  });
+
   it("refuses a file name dbmate would not read as a version", async () => {
     const source = copy((dir) => writeFileSync(join(dir, "extra.sql"), "-- migrate:up\n"));
     await rewriteLedger(source.ledger, source.dir);

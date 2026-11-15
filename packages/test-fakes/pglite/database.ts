@@ -25,21 +25,23 @@ export const MAIN_SOURCE: MigrationSource = {
 const LOCAL = join(ROOT, "db", "main", "local");
 const NAME_RE = /^(\d+)_[^/\\]+\.sql$/u;
 const UP = "-- migrate:up";
-const DOWN = "-- migrate:down";
+// dbmate reads the markers only at the start of a line.
+const UP_RE = /^--\s*migrate:up(?:[ \t]+(\S.*))?[ \t]*$/mu;
+const DOWN_RE = /^--\s*migrate:down(?:\s*$|\s+\S)/mu;
 
 export type Migration = { readonly name: string; readonly version: string; readonly up: string };
 
 /** The part dbmate runs on `up`: from `-- migrate:up` to `-- migrate:down`. */
 export function upSection(name: string, sql: string): string {
-  const start = sql.indexOf(UP);
-  if (start < 0) throw new Error(`${name}: no "${UP}" marker`);
-  const lineEnd = sql.indexOf("\n", start);
-  const options = sql.slice(start + UP.length, lineEnd < 0 ? undefined : lineEnd).trim();
+  const up = UP_RE.exec(sql);
+  if (up === null) throw new Error(`${name}: no "${UP}" marker`);
   // dbmate runs every migration in a transaction unless told otherwise; this
   // fake knows only that default.
+  const options = up[1]?.trim() ?? "";
   if (options !== "") throw new Error(`${name}: unsupported dbmate option "${options}"`);
-  const end = sql.indexOf(DOWN, start);
-  return sql.slice(start, end < 0 ? undefined : end);
+  const rest = sql.slice(up.index);
+  const end = DOWN_RE.exec(rest)?.index;
+  return rest.slice(0, end);
 }
 
 /** Every migration of `source`, in file name order, after the ledger matches the bytes. */
@@ -61,12 +63,39 @@ export function loadMigrations(source: MigrationSource): Migration[] {
   });
 }
 
-/** Applies each migration in its own transaction as ductus_migrator, as dbmate with `role=`. */
+// Objects owned by the bootstrap superuser, and superusers: a migration adds
+// none, as the role it runs as cannot.
+const SUPERUSER_FOOTPRINT = `SELECT
+  (SELECT count(*) FROM pg_catalog.pg_class WHERE relowner = 10)
+  + (SELECT count(*) FROM pg_catalog.pg_proc WHERE proowner = 10)
+  + (SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspowner = 10)
+  + (SELECT count(*) FROM pg_catalog.pg_type WHERE typowner = 10)
+  + (SELECT count(*) FROM pg_catalog.pg_roles WHERE rolsuper) AS n`;
+
+const footprint = async (db: PGlite): Promise<string> =>
+  String((await db.query<{ n: string | number }>(SUPERUSER_FOOTPRINT)).rows[0]?.n);
+
+/**
+ * Applies each migration in its own transaction as ductus_migrator, as dbmate
+ * with `role=`. There the role is the connection's, so RESET ROLE returns to
+ * it; here SET LOCAL ends at RESET ROLE or COMMIT and the rest would run as the
+ * superuser. So a COMMIT inside a migration, or anything it leaves owned by
+ * the superuser, is refused.
+ */
 export async function applyMigrations(db: PGlite, migrations: readonly Migration[]): Promise<void> {
   for (const migration of migrations) {
-    await db.exec("BEGIN; SET LOCAL ROLE ductus_migrator;");
+    const before = await footprint(db);
+    await db.exec(
+      "BEGIN; SET LOCAL ROLE ductus_migrator; SET LOCAL ductura.fake_migration = 'on';",
+    );
     try {
       await db.exec(migration.up);
+      const inside = await db.query<{ on: string | null }>(
+        "SELECT current_setting('ductura.fake_migration', true) AS on",
+      );
+      if (inside.rows[0]?.on !== "on") throw new Error("ends its own transaction");
+      if ((await footprint(db)) !== before) throw new Error("ran as the superuser");
+      await db.exec("SET LOCAL ROLE ductus_migrator");
       await db.query("INSERT INTO public.schema_migrations (version) VALUES ($1)", [
         migration.version,
       ]);
@@ -86,7 +115,8 @@ export async function createFromSource(source: MigrationSource): Promise<PgliteD
   const db = new PGlite();
   try {
     await db.waitReady;
-    // What `pnpm db:migrate` runs around dbmate (package.json).
+    // The parts of `pnpm db:migrate` (package.json) the main database needs
+    // here; the worker and auth login roles are not provisioned.
     await db.exec(readFileSync(join(LOCAL, "migrator.sql"), "utf8"));
     await db.exec(
       "SET ROLE ductus_migrator; CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY); RESET ROLE;",
