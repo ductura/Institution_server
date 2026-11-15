@@ -157,7 +157,8 @@ export function encodesNonAscii(text: string): boolean {
   // (WHATWG URL, review FAIL c.6896957758 on #64), so they are dropped first.
   // data: URLs are not read here: DAN-784 (Ductus#87 c.6897002897).
   const url = text.replace(/[\t\n\r]/gu, "");
-  if (/(?:^|[./@])xn--/iu.test(url)) return true;
+  // Any `xn--`, whatever stands before it (review FAIL c.6898791986: `http:xn--…`).
+  if (/xn--/iu.test(url)) return true;
   const entities = text.matchAll(/&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?/gu);
   if ([...entities].some((m) => isLetterCode(Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16))))
     return true;
