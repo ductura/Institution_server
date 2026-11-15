@@ -9,7 +9,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "start": "tsx server/index.ts",
+    "build": "node scripts/build/server.ts",
+    "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --flag unstable_native_nodejs_ts_config -c eslint.config.ts --max-warnings 0 .",
     "format": "prettier --write .",
@@ -52,6 +53,7 @@
     "@types/oidc-provider": "9.12.1",
     "@types/pg": "8.23.1",
     "dbmate": "2.36.0",
+    "esbuild": "0.28.2",
     "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
     "fast-check": "^4.10.2",
