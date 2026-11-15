@@ -242,35 +242,40 @@ function unwrapped(node: Loose | null | undefined): Loose | null | undefined {
   return value;
 }
 
-// The keys `export = <expression>` gives module.exports, as far as the
-// syntax shows them: a name, an object's non-computed keys, a class's name
-// and static members, a function's name; through type wrappers, the last
-// expression of a sequence and every branch of a condition or `||`/`&&`/`??`.
-// A value from elsewhere (`export = o`) is data flow, outside lint.
-function assignedNames(node: Loose | null | undefined): Loose[] {
+// The names an exported value carries, as far as the syntax shows them: a
+// name, a named function or class expression, through type wrappers, the
+// last expression of a sequence and every branch of a condition or
+// `||`/`&&`/`??`. With `keys` (`export =`, whose value is module.exports)
+// also an object's non-computed keys and a class's static members. A value
+// from elsewhere (`export = o`) is data flow, outside lint.
+function valueNames(node: Loose | null | undefined, keys: boolean): Loose[] {
   const value = unwrapped(node);
   switch (value?.type) {
     case "Identifier":
       return [value];
     case "ObjectExpression":
-      return (value.properties ?? []).flatMap((property) =>
-        property.type === "Property" && !property.computed && property.key ? [property.key] : [],
-      );
+      return keys
+        ? (value.properties ?? []).flatMap((property) =>
+            property.type === "Property" && !property.computed && property.key
+              ? [property.key]
+              : [],
+          )
+        : [];
     case "ClassExpression": {
       const members = (value.body as Loose | undefined)?.body;
       return [
         ...qualifiedNames(value.id),
-        ...(Array.isArray(members) ? members : []).flatMap((member) =>
+        ...(keys && Array.isArray(members) ? members : []).flatMap((member) =>
           member.static === true && !member.computed && member.key ? [member.key] : [],
         ),
       ];
     }
     case "SequenceExpression":
-      return assignedNames((value.expressions as Loose[] | undefined)?.at(-1));
+      return valueNames((value.expressions as Loose[] | undefined)?.at(-1), keys);
     case "ConditionalExpression":
-      return [...assignedNames(value.consequent), ...assignedNames(value.alternate)];
+      return [...valueNames(value.consequent, keys), ...valueNames(value.alternate, keys)];
     case "LogicalExpression":
-      return [...assignedNames(value.left), ...assignedNames(value.right)];
+      return [...valueNames(value.left, keys), ...valueNames(value.right, keys)];
     default:
       return declaredNames(value);
   }
@@ -293,18 +298,15 @@ export function exportedNames(node: Loose): Loose[] {
           specifier.exported as Loose,
         ]),
       ];
-    case "ExportDefaultDeclaration": {
+    case "ExportDefaultDeclaration":
       // The namespace key is `default`; a forbidden binding behind it fails
-      // the same way through any wrapper or sequence.
-      let value = unwrapped(node.declaration);
-      while (value?.type === "SequenceExpression")
-        value = unwrapped((value.expressions as Loose[] | undefined)?.at(-1));
-      return value?.type === "Identifier" ? [value] : declaredNames(value);
-    }
+      // the same way through any wrapper, sequence or branch (review FAIL
+      // c.6894474949).
+      return valueNames(node.declaration, false);
     case "ExportAllDeclaration":
       return node.exported ? [node.exported] : [];
     case "TSExportAssignment":
-      return assignedNames(node.expression);
+      return valueNames(node.expression, true);
     case "TSNamespaceExportDeclaration":
       return node.id ? [node.id] : [];
     default:

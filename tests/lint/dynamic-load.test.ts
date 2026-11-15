@@ -107,6 +107,11 @@ const exportForms = (name: string): string[] => [
   `const ${name}: number | undefined = 1;\nexport default ${name}!;\n`,
   `const ${name} = 1;\nexport default <number>${name};\n`,
   `const ${name} = 1;\nexport default (0, ${name});\n`,
+  // Review FAIL c.6894474949: every branch of a default export.
+  `export default Math.random() > 0.5 ? function ${name}(): void {} : function engine(): void {};\n`,
+  `export default Math.random() > 0.5 ? (): void => {} : class ${name} {};\n`,
+  `const ${name} = 1;\nexport default undefined ?? ${name};\n`,
+  `const ${name} = 1;\nexport default (0, Math.random() > 0.5 ? 1 : ${name}) as number;\n`,
   `function ${name}<T>(x: T): T {\n  return x;\n}\nexport default ${name}<string>;\n`,
 ];
 
