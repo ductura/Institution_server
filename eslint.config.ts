@@ -93,6 +93,9 @@ const ENV_NAMES = [
   "OIDC_REDIRECT_URI",
   "OIDC_CLOCK_TOLERANCE_SECONDS",
   "OIDC_ID_TOKEN_ALG",
+  // Where the entry point listens (S-1B-a, server/config).
+  "PORT",
+  "HOST",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported

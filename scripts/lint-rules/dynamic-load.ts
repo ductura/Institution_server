@@ -65,6 +65,8 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
 > = {
   // The local entry point reads PORT (found by lint, not in the c.6891713609 table).
   "server/index.ts": { process: ["env"] },
+  // The entry point reads the environment and sets the exit code (S-1B-a, DAN-775).
+  "server/server.ts": { process: ["env", "exitCode"] },
   "server/config/environment.ts": { process: ["env"] },
   "server/database/index.ts": { process: ["env"] },
   "server/database/plain-label-check.ts": {
