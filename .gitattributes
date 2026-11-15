@@ -10,6 +10,8 @@ db/main/migrations.sum text eol=lf
 db/main/local/** text eol=lf
 # The logs database (S-1F-c, DAN-779): its migrations, ledger and local files.
 db/logs/** text eol=lf
+# The legal texts database (S-1F-c a2), the same way.
+db/legal/** text eol=lf
 # Local stack files (S-0.14): psql reads the provisioning SQL with \if and
 # \gexec, and the shell script runs inside the Linux image, where a CRLF line
 # ends in "\r". scripts/db/local-files.test.ts checks the attributes and bytes.

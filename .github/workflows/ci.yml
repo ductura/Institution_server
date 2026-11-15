@@ -183,6 +183,22 @@ jobs:
           files="$(find db/main/migrations -maxdepth 1 -name '*.sql' | wc -l)"
           echo "Primijenjeno $applied od $files migracija."
           [ "$applied" -eq "$files" ]
+      # S-1F-c a2 (DAN-779): the legal texts database next to the main one, in
+      # the cluster above, as `pnpm db:migrate:legal` makes it: created once,
+      # provisioned by db/legal/local/migrator.sql, migrated by `migrate-locked
+      # --database legal` as ductus_legal_migrator.
+      - name: Baza pravnih tekstova (migrate-locked --database legal)
+        env:
+          DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
+          LEGAL_DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus_legal
+        run: |
+          "$PGBIN/psql" "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f db/legal/local/create-database.sql
+          "$PGBIN/psql" "$LEGAL_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f db/legal/local/migrator.sql
+          node scripts/db/migrate-locked.ts --database legal --url "$LEGAL_DATABASE_URL?sslmode=disable&role=ductus_legal_migrator"
+          applied="$("$PGBIN/psql" "$LEGAL_DATABASE_URL" -tAc 'SELECT count(*) FROM public.schema_migrations')"
+          files="$(find db/legal/migrations -maxdepth 1 -name '*.sql' | wc -l)"
+          echo "Primijenjeno $applied od $files migracija baze pravnih tekstova."
+          [ "$applied" -eq "$files" ]
       # S-1F-c (DAN-779): the logs database in a cluster of its own, as compose
       # postgres-logs (127.0.0.1:54330, superuser ductus with the public
       # local-only password of compose.yaml, no secret). It is provisioned by

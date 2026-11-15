@@ -1,5 +1,5 @@
-// The one entry point of the server (S-1B-a, DAN-775); part a2 builds it
-// into dist/server.js. Read top to bottom it is the overview: the environment check, the
+// The one entry point of the server (S-1B-a, DAN-775), built into
+// dist/server.js by `pnpm build` (scripts/build). Read top to bottom it is the overview: the environment check, the
 // databases, the layers, the areas whose routes are mounted, the start and the
 // place for shutdown. It may import only http, settings and config
 // (docs/server-map.md §2); it never opens a database connection itself.

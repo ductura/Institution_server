@@ -343,16 +343,16 @@ describe("the fake server stays out of production", () => {
     expect(reads.map((m) => m[1])).toEqual(["./vectors.json"]);
   });
 
-  it("is not reachable from the production entry point server/index.ts", () => {
-    const reached = reachable(repoFiles(), "server/index.ts");
-    expect(reached).toContain("server/app.ts");
+  it("is not reachable from the production entry point server/server.ts", () => {
+    const reached = reachable(repoFiles(), "server/server.ts");
+    expect(reached).toContain("server/http/start.ts");
     expect(testOnly(reached)).toEqual([]);
   });
 
   // QA on e34b91f6 (c.6886570274): the walk sees every form and spelling. Each
-  // case puts one line into server/index.ts over the files on disk.
+  // case puts one line into server/server.ts over the files on disk.
   const FAKE = "./contracts/generated/fake-server/index.ts";
-  const ENTRY = "server/index.ts";
+  const ENTRY = "server/server.ts";
   // A `/// <reference>` counts only at the top of a file, so it goes first.
   const withEntry = (line: string): string[] => {
     const entry = readFileSync(join(REPO_ROOT, ENTRY), "utf8");

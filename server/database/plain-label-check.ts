@@ -137,6 +137,12 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Only when this file itself is the script: bundled into dist/server.js,
+// import.meta.url is the bundle's, which is also argv[1] (DAN-775).
+if (
+  import.meta.url.endsWith("/plain-label-check.ts") &&
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   process.exitCode = await main();
 }

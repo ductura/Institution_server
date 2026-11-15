@@ -21,7 +21,7 @@ test("pnpm db:migrate:main applies migrations only through the locked runner", (
     scripts["db:migrate:main"] ?? "",
     /node scripts\/db\/migrate-locked\.ts --url "[^"]+role=ductus_migrator"/,
   );
-  for (const name of ["db:migrate", "db:migrate:main", "db:migrate:logs"]) {
+  for (const name of ["db:migrate", "db:migrate:main", "db:migrate:logs", "db:migrate:legal"]) {
     assert.doesNotMatch(scripts[name] ?? "", /\bdbmate\b[^&]*\sup\b/);
   }
 });

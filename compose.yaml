@@ -2,7 +2,8 @@
 # and every credential below is a local-only value. Ported from Ductus
 # compose.yaml at d52a92c3 (S-0.14, DAN-727): only the main database service,
 # renamed postgres-main. The logs database has its own service, postgres-logs
-# (S-1F-c, DAN-779).
+# (S-1F-c, DAN-779); the legal texts database ductus_legal lives in
+# postgres-main next to ductus (`pnpm db:migrate:legal` makes it).
 # The image default is the digest-pinned image Ductus CI uses (F-017).
 name: ductura-server
 
