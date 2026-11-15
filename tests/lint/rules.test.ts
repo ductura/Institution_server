@@ -31,6 +31,7 @@ const imp = (spec: string): string => `import { x } from "${spec}";\n`;
 
 const BOUNDARY = "local/import-boundary";
 const NAMING = "@typescript-eslint/naming-convention";
+const RENAMED = "local/renamed-import-name";
 
 const failing: Case[] = [
   // the database driver outside server/database (S-0.17; tests/lint/pg-import-boundary*)
@@ -161,6 +162,28 @@ const failing: Case[] = [
   { file: AT, code: "export class C { BadMethod(): void {} }\n", rule: NAMING },
   { file: AT, code: 'import Bad_import from "fast-check";\n', rule: NAMING },
   { file: AT, code: 'import BadImport from "fast-check";\n', rule: NAMING },
+  // a renamed import or export: naming-convention skips named imports (DAN-757)
+  ...[
+    'import { a as bad_import } from "./c.ts";',
+    'import { a as Bad_x } from "./c.ts";',
+    'import { a as _b } from "./c.ts";',
+    'import { a as b_ } from "./c.ts";',
+    'import { a as B__C } from "./c.ts";',
+    'import x, { a as bad_b } from "./c.ts";',
+    'import type { A as bad_b } from "./c.ts";',
+    'import { type A as bad_b } from "./c.ts";',
+    'import { default as bad_b } from "./c.ts";',
+    'import { "a-b" as bad_b } from "./c.ts";',
+    'export { a as bad_b } from "./c.ts";',
+    'export type { A as bad_b } from "./c.ts";',
+    "const a = 1;\nexport { a as bad_b };",
+    'const a = 1;\nexport { a as "bad_b" };',
+    'export { "x-y" as bad_b } from "./c.ts";',
+    'export * as bad_ns from "./c.ts";',
+    'import bad_x = require("./c.ts");',
+    "namespace Ns { export const m = 1; }\nimport bad_x = Ns.m;",
+    "namespace Ns { export const m = 1; }\nexport import bad_x = Ns.m;",
+  ].map((code) => ({ file: SCRIPT, code: `${code}\n`, rule: RENAMED })),
   // the ESTree-name list is exact and covers only object-literal methods
   { file: AT, code: "export function Program(): void {}\n", rule: NAMING },
   { file: AT, code: "export const o = { ProgramX(): void {} };\n", rule: NAMING },
@@ -223,6 +246,27 @@ const passing: Fixture[] = [
     "x.integration.test.ts",
   ].map((name) => ({ file: `server/${name}`, code: SRC })),
   { file: "vitest.config.ts", code: SRC },
+  // a name kept as another module wrote it, and the allowed aliases (DAN-757)
+  ...[
+    'import { Type } from "./c.ts";',
+    'import { type Server } from "./c.ts";',
+    'import type { Server } from "./c.ts";',
+    'import { snake_name } from "./c.ts";',
+    'import * as ns from "./c.ts";',
+    'import x, { snake_name } from "./c.ts";',
+    'import { a as b, c as C, d as MAX_D } from "./c.ts";',
+    'import { snake_name as snakeName } from "./c.ts";',
+    'import { "a-b" as aB } from "./c.ts";',
+    'export { snake_name } from "./c.ts";',
+    'export { a as default } from "./c.ts";',
+    'export { a as b, c as C } from "./c.ts";',
+    "const a = 1;\nexport { a as MAX_A };",
+    'const a = 1;\nexport { a as "x-y" };',
+    'export { snake_name as "snake_name" } from "./c.ts";',
+    'export * from "./c.ts";',
+    'export * as ns from "./c.ts";',
+    'import m = require("./c.ts");',
+  ].map((code) => ({ file: SCRIPT, code: `${code}\n` })),
   { file: "test-support/make-user.ts", code: SRC },
   {
     file: AT,

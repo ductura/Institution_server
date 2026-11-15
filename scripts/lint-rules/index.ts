@@ -5,6 +5,7 @@ import { areaBoundary } from "./area-boundary.ts";
 import { importBoundary } from "./import-boundary.ts";
 import { noDynamicLoad } from "./dynamic-load.ts";
 import { noHardcodedText } from "./hardcoded-text.ts";
+import { renamedImportName } from "./renamed-import-name.ts";
 
 /** Repository-local ESLint rules, registered under the `local` plugin name. */
 export const localPlugin: ESLint.Plugin = {
@@ -18,6 +19,7 @@ export const localPlugin: ESLint.Plugin = {
     "no-fake-server-import": noFakeServerImport,
     "no-dynamic-load": noDynamicLoad,
     "no-hardcoded-text": noHardcodedText,
+    "renamed-import-name": renamedImportName,
   },
 };
 export { databaseBoundaryPlugin, PG_SPECIFIER } from "./database-boundary.ts";
