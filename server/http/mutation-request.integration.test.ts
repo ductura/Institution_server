@@ -164,23 +164,20 @@ describe("memory while reading", () => {
       import { Readable } from "node:stream";
       import { readBodyWithLimit } from ${JSON.stringify(module)};
       const N = 2000;
-      let sent = 0;
-      let alive = 0;
-      const body = new Readable({
-        highWaterMark: 1,
-        read() {
-          if (sent === N) {
-            globalThis.gc();
-            alive = process.memoryUsage().arrayBuffers;
-            this.push(null);
-            return;
-          }
-          sent += 1;
-          this.push(Buffer.alloc(64 * 1024).subarray(0, 1));
-        },
-      });
+      // Pushed from outside read(), so each chunk reaches the reader at once
+      // and none waits in the stream's own buffer when memory is measured.
+      const body = new Readable({ read() {} });
       body.headers = {};
-      const result = await readBodyWithLimit(body, N);
+      const pending = readBodyWithLimit(body, N);
+      for (let sent = 0; sent < N; sent += 1) {
+        body.push(Buffer.alloc(64 * 1024).subarray(0, 1));
+        if (sent % 50 === 0) await new Promise((resolve) => setImmediate(resolve));
+      }
+      await new Promise((resolve) => setImmediate(resolve));
+      globalThis.gc();
+      const alive = process.memoryUsage().arrayBuffers;
+      body.push(null);
+      const result = await pending;
       console.log(JSON.stringify({ alive, size: result.ok ? result.bytes.byteLength : -1 }));
     `;
     const run = spawnSync(process.execPath, ["--expose-gc", "--input-type=module", "-e", probe], {
