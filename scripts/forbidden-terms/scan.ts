@@ -13,13 +13,8 @@ import ts from "typescript";
 import { shownText, unreadableCharacters } from "./characters.ts";
 import { findForbiddenTerms, foldText, type ForbiddenTerm } from "./terms.ts";
 
-type Catalogue = {
-  readonly lang: "hr" | "en";
-  /** The export that holds the table (`.ts`); a `.json` catalogue is the table. */
-  readonly table?: string;
-  /** Exports that may be functions; any other function export is an input error. */
-  readonly functions?: readonly string[];
-};
+/** `table` is the export of a `.ts` catalogue that holds it; `functions` are the only exports that may be functions. */
+type Catalogue = Readonly<{ lang: "hr" | "en"; table?: string; functions?: readonly string[] }>;
 
 /** Every catalogue under locales/, by file name. */
 export const CATALOGUES: Readonly<Record<string, Catalogue>> = {
@@ -58,7 +53,7 @@ export const SAME_IN_BOTH: readonly string[] = [
 export type Exception = Readonly<{ file: string; path: string; literal: string; reason: string }>;
 
 const RISK_LINE =
-  "the name of the line a PR description must hold for the gate (Risk:), not an interface word (Ductus#1836 c.6890541239, point 3)";
+  "the name of a PR description line for the gate (Ductus#1836 c.6890541239, point 3)";
 
 /** The closed list of exceptions to the dictionary; a stale one fails the scan. */
 export const EXCEPTIONS: readonly Exception[] = [
@@ -123,9 +118,8 @@ function scan(dir: string): ScanReport {
     }
   }
   const texts = new Map<string, Map<string, string>>();
-  for (const [file, catalogue] of Object.entries(CATALOGUES)) {
+  for (const [file, catalogue] of Object.entries(CATALOGUES))
     texts.set(file, readCatalogue(dir, file, catalogue));
-  }
   const findings: Finding[] = [];
   const add = (file: string, leafPath: string, text: string, reason: string): void => {
     findings.push({ file, path: leafPath, text: shownText(text), reason });
@@ -156,11 +150,8 @@ function scan(dir: string): ScanReport {
       }
     }
   }
-  for (const exception of EXCEPTIONS) {
-    if (!texts.get(exception.file)?.has(exception.path)) {
-      fail("STALE_EXCEPTION", exception.file, `${exception.path}: no such text`);
-    }
-  }
+  const gone = EXCEPTIONS.find((exception) => !texts.get(exception.file)?.has(exception.path));
+  if (gone) fail("STALE_EXCEPTION", gone.file, `${gone.path}: no such text`);
   findings.push(...untranslated(texts.get("hr.ts")!, texts.get("en.ts")!));
   const read = Object.fromEntries([...texts].map(([file, leaves]) => [file, leaves.size]));
   return { findings, read };
@@ -181,9 +172,8 @@ function untranslated(hr: Map<string, string>, en: Map<string, string>): Finding
       findings.push({ file: "en.ts", path: leafPath, text: shownText(text), reason });
     if (listed && !same) fail("STALE_SAME_IN_BOTH", "en.ts", leafPath);
   }
-  for (const leafPath of SAME_IN_BOTH) {
-    if (!en.has(leafPath)) fail("STALE_SAME_IN_BOTH", "en.ts", `${leafPath}: no such text`);
-  }
+  const gone = SAME_IN_BOTH.find((leafPath) => !en.has(leafPath));
+  if (gone) fail("STALE_SAME_IN_BOTH", "en.ts", `${gone}: no such text`);
   return findings;
 }
 
@@ -228,23 +218,33 @@ function readCatalogue(dir: string, file: string, catalogue: Catalogue): Map<str
   return leaves;
 }
 
+type CjsModule = { exports: Record<string, unknown> };
+
 /** A `.ts` catalogue's exports, read as scripts/locales/source-digest.ts reads one; no runtime imports. */
 function evaluate(file: string, full: string, raw: string): Record<string, unknown> {
   const { outputText } = ts.transpileModule(raw, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2023 },
   });
-  const module = { exports: {} as Record<string, unknown> };
+  // The catalogue gets only objects of its own context, whose prototypes are frozen before it runs.
+  const context = vm.createContext(Object.create(null) as object);
+  const intrinsics = "Object.freeze(Object.prototype), Object.freeze(Array.prototype)";
+  const setUp = `module = { exports: {} }; exports = module.exports; [${intrinsics}, module]`;
+  const [object, array, module] = vm.runInContext(setUp, context) as [object, object, CjsModule];
+  OBJECTS.add(object);
+  ARRAYS.add(array);
   try {
-    vm.runInNewContext(outputText, { module, exports: module.exports }, { filename: full });
+    vm.runInContext(outputText, context, { filename: full });
   } catch (error) {
     return fail("UNREADABLE_FILE", file, String(error));
   }
   return module.exports;
 }
 
-/** The own keys of an object, sorted: a prototype with other keys than `Object.prototype` or `Array.prototype` of any realm could hide inherited text. */
-const names = (of: unknown): string => (of ? Object.getOwnPropertyNames(of).sort().join() : "");
-const [OBJECT, ARRAY] = [names(Object.prototype), names(Array.prototype)];
+/** The prototypes a table may have, by identity: this realm's and those of each catalogue's context. */
+const [OBJECTS, ARRAYS] = [
+  new Set<unknown>([Object.prototype]),
+  new Set<unknown>([Array.prototype]),
+];
 
 /** Puts every text under `node` into `leaves` and returns the number of keys it went through. */
 function walk(file: string, node: unknown, at: string, leaves: Map<string, string>): number {
@@ -255,9 +255,8 @@ function walk(file: string, node: unknown, at: string, leaves: Map<string, strin
   }
   // A plain object or an array of any realm (a catalogue runs in its own context); not a Map or a class instance.
   const proto: unknown = typeof node === "object" && node ? Object.getPrototypeOf(node) : undefined;
-  const object = proto === null || names(proto) === OBJECT;
-  const array =
-    Array.isArray(node) && names(proto) === ARRAY && names(Object.getPrototypeOf(proto)) === OBJECT;
+  const object = proto === null || OBJECTS.has(proto);
+  const array = Array.isArray(node) && ARRAYS.has(proto);
   const plain = array || (object && Object.prototype.toString.call(node) === "[object Object]");
   if (!plain || types.isProxy(node)) {
     return fail("NOT_TEXT", file, `${at || "(root)"}: ${typeof node}`);

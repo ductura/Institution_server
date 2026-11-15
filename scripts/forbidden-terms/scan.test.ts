@@ -189,6 +189,32 @@ describe("invariant 1: every leaf is read", () => {
     expect(errorCode(root)).toBe("NOT_TEXT en.ts");
   });
 
+  // Review FAIL c.6892188812: a prototype is accepted by identity, not by the names of its keys.
+  it("fails on an object whose prototype copies Object.prototype and holds text", () => {
+    const root = copy();
+    writeFileSync(
+      path.join(root, "locales", "en.ts"),
+      `${readFileSync(path.join(root, "locales", "en.ts"), "utf8")}
+const proto = Object.create(null);
+for (const key of Object.getOwnPropertyNames(Object.prototype)) proto[key] = "Suspicious edit";
+export const probe = Object.create(proto);
+`,
+    );
+    expect(errorCode(root)).toBe("NOT_TEXT en.ts");
+  });
+
+  it("fails on a catalogue that writes text into its own Object.prototype", () => {
+    const root = copy();
+    probe(root, "en.ts", []);
+    edit(
+      root,
+      "en.ts",
+      "export const probe = [];",
+      'Object.defineProperty(Object.prototype, "note", { value: "Suspicious edit" });',
+    );
+    expect(errorCode(root)).toBe("UNREADABLE_FILE en.ts");
+  });
+
   it("fails on an export that is a function not on the list", () => {
     const root = copy();
     writeFileSync(
