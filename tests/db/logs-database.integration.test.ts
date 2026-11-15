@@ -415,9 +415,11 @@ describe("migrating twice and the provisioning file", () => {
     );
     expect(before.rows.length).toBeGreaterThan(0);
     await logs.query(readFileSync(BOOTSTRAP, "utf8"));
-    expect((await logs.query("SHOW search_path")).rows[0]).not.toEqual({
-      search_path: "pg_catalog",
-    });
+    // SET LOCAL: the pooled session keeps its own search_path.
+    const shown = await logs.query<{ path: string }>(
+      "SELECT pg_catalog.current_setting('search_path') AS path",
+    );
+    expect(shown.rows[0]?.path).not.toBe("pg_catalog");
     const runner = (args: string[]): number | null =>
       spawnSync(process.execPath, [`${ROOT}scripts/db/migrate-locked.ts`, ...args], {
         cwd: ROOT,
