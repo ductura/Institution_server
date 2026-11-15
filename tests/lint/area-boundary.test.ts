@@ -164,6 +164,23 @@ const bypasses: Case[] = [
     'export const fs = globalThis.process.getBuiltinModule("node:fs");\n',
     "export const m = process.mainModule;\n",
   ].map((code) => ({ file: "server/domain/x.ts", code, messageId: "loader" })),
+  // review of 58ecd97 (Codex r4576951391, r4576951392; FAIL c.6888904929)
+  ...[
+    'const { getBuiltinModule } = process;\nexport const fs = getBuiltinModule("node:fs");\n',
+    'const { getBuiltinModule: g } = globalThis.process;\nexport const fs = g("node:fs");\n',
+    'export const fs = process["binding"]("fs");\n',
+    'const k = "x";\nexport const m = process[k];\n',
+  ].map((code) => ({ file: "server/domain/x.ts", code, messageId: "loader" })),
+  ...[
+    'import { getBuiltinModule } from "node:process";\nconst { createRequire: cr } = getBuiltinModule("module");\nexport const db = cr(import.meta.url)("../database/index.ts");\n',
+    'import { getBuiltinModule as g } from "node:process";\nexport const m = g("module");\n',
+    'import p from "process";\nexport const m = p;\n',
+  ].map((code) => ({ file: "server/log/x.ts", code, messageId: "loader" })),
+  ...all("server/log/x.ts", "edge", [
+    "../settings/\t./../index.ts",
+    "../settings/\\n./../index.ts",
+  ]),
+  ...all("server/domain/forensics/golden-vectors/load.ts-extra.ts", "pure", ["node:fs"]),
   // laundering through a folder outside server/
   ...all("server/log/x.ts", "outside", ["../../scripts/hop/index.ts", "../../db/x/index.ts"]),
   { file: "server/x.ts", code: imp("../scripts/index.ts"), messageId: "outside" },

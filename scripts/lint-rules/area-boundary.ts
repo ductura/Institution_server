@@ -58,7 +58,7 @@ const PURE_PACKAGES: Readonly<Record<string, RegExp>> = {
 // Code that only tests run: the golden-vector loader and the contract fake
 // server (U8, kept out of production by local/no-fake-server-import).
 const PURE_EXEMPT_RE =
-  /^server\/(?:domain\/forensics\/golden-vectors\/load\.ts|contracts\/generated\/fake-server\/)/u;
+  /^server\/(?:domain\/forensics\/golden-vectors\/load\.ts$|contracts\/generated\/fake-server\/)/u;
 // Rule 4: nobody imports React, Next.js or a .tsx/.jsx module; PGlite only
 // where the database lives (server/database, its tests, the PGlite fake of #35).
 const UI_RE =
@@ -72,8 +72,11 @@ const ALIAS_RE = /^(?:#|@ductura\/server(?:$|\/))/iu;
 const SCHEME_RE = /^(?!node:)[a-z][a-z0-9+.-]*:/iu;
 // Loaders that take a specifier the rule cannot follow once renamed (createRequire
 // from node:module) and process members that load a module without an import.
-const LOADER_MODULE_RE = /^(?:node:)?module(?:$|\/)/iu;
-const LOADER_PROCESS = new Set(["getBuiltinModule", "mainModule", "binding", "dlopen"]);
+// node:process is also banned: it hands out the same members under any name.
+const LOADER_MODULE_RE = /^(?:node:)?(?:module|process)(?:$|\/)/iu;
+// Names that load a module wherever they appear: a member, a destructured key,
+// an import name or a string key ("getBuiltinModule" in process).
+const LOADER_NAMES = new Set(["getBuiltinModule", "mainModule", "dlopen"]);
 
 /** The area of a repository path, ENTRY for server/*.ts, undefined outside server/. */
 export function areaOf(path: string): string | undefined {
@@ -135,17 +138,18 @@ export const areaBoundary: Rule.RuleModule = {
       context.report({ node, messageId, data: { from: fromArea ?? "", to } });
     }
 
-    function checkCross(node: Node, target: string, to: string, typeOnly: boolean): void {
+    // The message for an import of area `to` at `target`, or undefined when it is allowed.
+    function crossProblem(target: string, to: string, typeOnly: boolean): string | undefined {
       if (isRoutes) {
-        if (!ROUTES_IMPORTS.includes(to) || (to === "http" && !typeOnly)) report(node, "routes");
+        if (!ROUTES_IMPORTS.includes(to) || (to === "http" && !typeOnly)) return "routes";
       } else {
         const row = fromArea === ENTRY ? ENTRY_IMPORTS : (AREA_IMPORTS[fromArea ?? ""] ?? []);
-        if (!row.includes(to)) return report(node, "edge", to);
+        if (!row.includes(to)) return "edge";
         const adapter = to === "database" || to.startsWith("external/");
         if (adapter && !typeOnly && !isTest && fromArea !== "http" && fromArea !== ENTRY)
-          return report(node, "typeOnly", to);
+          return "typeOnly";
       }
-      if (target !== `server/${to}/index.ts`) report(node, "public", to);
+      return target === `server/${to}/index.ts` ? undefined : "public";
     }
 
     function checkRelative(node: Node, specifier: string, typeOnly: boolean): void {
@@ -165,8 +169,10 @@ export const areaBoundary: Rule.RuleModule = {
           if (!isTest) return report(node, "outside");
           continue;
         }
-        checkCross(node, target, to, typeOnly);
-        return;
+        // Every spelling must pass: an allowed edge in one does not excuse another
+        // ("../settings/\t./../index.ts" is settings as text, server/index.ts to Node).
+        const problem = crossProblem(target, to, typeOnly);
+        if (problem !== undefined) return report(node, problem, to);
       }
     }
 
@@ -202,15 +208,25 @@ export const areaBoundary: Rule.RuleModule = {
       TSImportType(node: Node & { source?: unknown; argument?: { literal?: unknown } }) {
         check(node, node.source ?? node.argument?.literal, true);
       },
+      Identifier(node) {
+        if (known && !isTest && LOADER_NAMES.has(node.name)) report(node, "loader");
+      },
+      Literal(node) {
+        const value = (node as { value?: unknown }).value;
+        if (known && !isTest && typeof value === "string" && LOADER_NAMES.has(value))
+          report(node, "loader");
+      },
       MemberExpression(node) {
+        // process.binding, and process[key] with a key the rule cannot read.
         if (!known || isTest) return;
         const object = node.object as Loose;
-        const property = node.property as Loose;
-        const name = node.computed ? property.value : property.name;
         const isProcess =
           (object.type === "Identifier" && object.name === "process") ||
           (object.type === "MemberExpression" && object.property?.name === "process");
-        if (isProcess && typeof name === "string" && LOADER_PROCESS.has(name))
+        if (!isProcess) return;
+        const property = node.property as Loose;
+        const key = node.computed && property.type === "Literal" ? property.value : property.name;
+        if ((node.computed && property.type !== "Literal") || key === "binding")
           report(node, "loader");
       },
       TSExternalModuleReference(node: Node & { expression?: unknown }) {
