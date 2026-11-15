@@ -10,11 +10,11 @@
 // and tests/lint/dynamic-load.test.ts checks both sets cover all of server/.
 //
 // The keys of FORBIDDEN_KEYS (the Function constructor, a native engine
-// loader) fail as a member, a destructured or imported name and as any static
-// string, folded across `+` ("constr" + "uctor"), so Reflect.get(fn,
+// loader) fail as a member, a destructured or imported name, and inside any
+// string literal or template piece, whatever its parent, so Reflect.get(fn,
 // "constructor") fails too. What the rule cannot see: a key built at run time
-// (fn[k] with k from a join, a lookup by descriptor value) and the internals
-// of dependencies. Both need a runtime guard, not lint.
+// ("constr" + "uctor", fn[k] with k from a join, a lookup by descriptor value)
+// and the internals of dependencies. Both need a runtime guard, not lint.
 import { readFileSync } from "node:fs";
 import { posix } from "node:path";
 import type { Rule, Scope } from "eslint";
@@ -38,9 +38,6 @@ type Loose = {
   importKind?: string;
   exportKind?: string;
   moduleReference?: Loose;
-  operator?: string;
-  left?: Loose;
-  right?: Loose;
   imported?: Loose;
   callee?: Loose;
   arguments?: unknown[];
@@ -134,29 +131,12 @@ export function runtimeDependencies(root: string): readonly string[] {
   return names;
 }
 
-// The text of a string literal, or of a template or `+` built only of static
-// parts, else undefined.
+// The text of a string literal or of a template without interpolation (a
+// key as written; nothing is folded).
 function staticText(node: Loose | undefined): string | undefined {
   if (node?.type === "Literal" && typeof node.value === "string") return node.value;
-  if (node?.type === "BinaryExpression" && node.operator === "+") {
-    const left = staticText(node.left);
-    const right = staticText(node.right);
-    return left === undefined || right === undefined ? undefined : left + right;
-  }
-  if (node?.type === "TemplateLiteral") {
-    // `constr${"uctor"}`: every interpolation static, joined with the quasis.
-    let text = "";
-    for (const [index, quasi] of (node.quasis ?? []).entries()) {
-      if (typeof quasi.value.cooked !== "string") return undefined;
-      text += quasi.value.cooked;
-      const expression = node.expressions?.[index] as Loose | undefined;
-      if (expression === undefined) continue;
-      const part = staticText(expression);
-      if (part === undefined) return undefined;
-      text += part;
-    }
-    return text;
-  }
+  if (node?.type === "TemplateLiteral" && node.expressions?.length === 0)
+    return node.quasis?.[0]?.value.cooked ?? undefined;
   return undefined;
 }
 
@@ -274,28 +254,15 @@ export const noDynamicLoad: Rule.RuleModule = {
       );
     }
 
-    // A static string anywhere, reported once at the outermost static `+`, except an
-    // element of the data declaration of KEY_LITERAL_ALLOWED.
-    function checkString(node: Node): void {
-      const loose = node as unknown as Loose;
-      // Left to the parent only when the parent `+` folds to a static string;
-      // in `"constructor" + suffix` the literal itself is checked.
-      const parent = loose.parent;
-      if (
-        parent?.type === "BinaryExpression" &&
-        parent.operator === "+" &&
-        staticText(parent) !== undefined
-      )
-        return;
-      const text = staticText(loose);
-      if (text === undefined) {
-        // A template with a dynamic part: each static piece is still checked.
-        for (const quasi of loose.type === "TemplateLiteral" ? (loose.quasis ?? []) : [])
-          checkKey(node, quasi.value.cooked ?? undefined);
-        return;
-      }
-      if (KEY_LITERAL_ALLOWED[file]?.keys.includes(text) === true && isDataElement(loose)) return;
-      checkKey(node, text);
+    // Every string literal and every template piece that contains a forbidden
+    // key fails, whatever its parent: no skipping by parent and no folding
+    // (orchestrator decision on #45, c.6892342579). Only the direct elements
+    // of the data declaration of KEY_LITERAL_ALLOWED are exempt.
+    function checkText(node: Node, text: string, exempt: boolean): void {
+      const key = FORBIDDEN_KEYS.find((name) => text.includes(name));
+      if (key === undefined) return;
+      if (exempt && text === key && KEY_LITERAL_ALLOWED[file]?.keys.includes(key) === true) return;
+      context.report({ node, messageId: "key", data: { key } });
     }
 
     return {
@@ -343,9 +310,14 @@ export const noDynamicLoad: Rule.RuleModule = {
       },
       ImportSpecifier: (node) => checkKey(node, keyName(node.imported as Loose, false)),
       ExportSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
-      Literal: (node) => checkString(node),
-      TemplateLiteral: (node) => checkString(node),
-      BinaryExpression: (node) => checkString(node),
+      Literal(node) {
+        const literal = node as unknown as Loose;
+        if (typeof literal.value === "string")
+          checkText(node, literal.value, isDataElement(literal));
+      },
+      TemplateElement(node) {
+        checkText(node, node.value.cooked ?? node.value.raw, false);
+      },
     };
   },
 };

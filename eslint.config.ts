@@ -263,8 +263,7 @@ const ESTREE_NODE_NAMES = [
   "ImportSpecifier",
   "ExportSpecifier",
   "Literal",
-  "TemplateLiteral",
-  "BinaryExpression",
+  "TemplateElement",
 ];
 
 // The naming rule, with extra exact property names (`properties`) and extra
