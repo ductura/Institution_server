@@ -2,3 +2,25 @@
 export { ROLES_ROUTES } from "./routes.ts";
 export { ROLES_SCHEMAS } from "./schemas.ts";
 export type { RolesService } from "./service.ts";
+export { ACCOUNT_KINDS, LOGIN_ROWS, isAccountKind, loginOf } from "./account-kinds.ts";
+export type { AccountKind, Login, LoginMethod } from "./account-kinds.ts";
+export {
+  ACTIONS,
+  CONTENT_ACTIONS,
+  CONTENT_SCOPES,
+  DELETION_ACTIONS,
+  OTHER_ACTIONS,
+  PERMISSION_ROWS,
+  SCOPES,
+  isAction,
+  scopeOf,
+} from "./permissions.ts";
+export type {
+  Action,
+  CellFor,
+  ContentAction,
+  ContentScope,
+  KindCells,
+  PermissionRow,
+  Scope,
+} from "./permissions.ts";
