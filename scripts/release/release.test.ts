@@ -122,6 +122,12 @@ describe("publish manifest", () => {
     expect(TEST_FAKES.files.some((path) => path.includes("pglite"))).toBe(false);
   });
 
+  it("contracts export the OpenAPI document", () => {
+    expect((manifest(CONTRACTS).exports as Record<string, unknown>)["./openapi/v1.json"]).toBe(
+      "./openapi/v1.json",
+    );
+  });
+
   it("the contracts major is the API major", () => {
     expect(source(CONTRACTS.dir).version.split(".")[0]).toBe(API_VERSION.split(".")[0]);
   });
@@ -163,6 +169,16 @@ describe("publish manifest", () => {
       /manifest \/exports/u,
     ],
     ["string exports", { exports: "./a.js" }, /manifest \/exports/u],
+    [
+      "a code export without declarations",
+      { exports: { "./x": "./packages/test-fakes/release.js" } },
+      /manifest \/exports/u,
+    ],
+    [
+      "a data export not in the package",
+      { exports: { "./x.json": "./x.json" } },
+      /not in the package/u,
+    ],
     [
       "a missing export target",
       { exports: { ".": { types: "./nope.d.ts", default: "./nope.js" } } },

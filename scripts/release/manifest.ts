@@ -12,6 +12,8 @@ export type PackageSpec = {
   readonly dir: string;
   /** Published subpath → source file (repository path). */
   readonly exports: Readonly<Record<string, string>>;
+  /** Published subpath → data file (tarball path), exported as it is. */
+  readonly dataExports: Readonly<Record<string, string>>;
   /** Tarball path → source file (repository path), copied as they are. */
   readonly data: Readonly<Record<string, string>>;
   /** Dependencies of the source package.json that are published. */
@@ -29,6 +31,8 @@ export const CONTRACTS: PackageSpec = {
   name: "@ductura/contracts",
   dir: "packages/contracts",
   exports: { ".": "packages/contracts/index.ts" },
+  // The contract document itself, info.version included, for clients and tools.
+  dataExports: { "./openapi/v1.json": "./openapi/v1.json" },
   data: { "openapi/v1.json": "openapi/v1.json", "README.md": "packages/contracts/README.md" },
   dependencies: [],
   files: [
@@ -56,6 +60,7 @@ export const TEST_FAKES: PackageSpec = {
     ".": `${FAKES}/release.ts`,
     ...Object.fromEntries(MODULES.map((name) => [`./${name}`, `${FAKES}/${name}/index.ts`])),
   },
+  dataExports: {},
   data: {
     [`${GENERATED}/fake-server/vectors.json`]: `${GENERATED}/fake-server/vectors.json`,
     "README.md": `${FAKES}/README.md`,

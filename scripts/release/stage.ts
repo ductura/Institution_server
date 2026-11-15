@@ -42,7 +42,11 @@ const PublishManifestSchema = Type.Object(
     type: Type.Literal("module"),
     exports: Type.Record(
       Type.String(),
-      Type.Object({ types: Type.String(), default: Type.String() }, Strict),
+      Type.Union([
+        Type.Object({ types: Type.String(), default: Type.String() }, Strict),
+        // A data file only: code always comes with its declarations.
+        Type.String({ pattern: "\\.json$" }),
+      ]),
     ),
     files: Type.Array(Type.String()),
     dependencies: Type.Record(Type.String(), Type.String({ pattern: EXACT })),
@@ -71,12 +75,15 @@ export function publishManifest(spec: PackageSpec, source: SourceManifest): Publ
     version: source.version,
     description: source.description,
     type: "module",
-    exports: Object.fromEntries(
-      Object.entries(spec.exports).map(([path, file]) => [
-        path,
-        { types: toDts(file), default: toJs(file) },
-      ]),
-    ),
+    exports: {
+      ...Object.fromEntries(
+        Object.entries(spec.exports).map(([path, file]) => [
+          path,
+          { types: toDts(file), default: toJs(file) },
+        ]),
+      ),
+      ...spec.dataExports,
+    },
     files: spec.files.filter((path) => path !== "package.json"),
     dependencies,
     publishConfig: { registry: REGISTRY },
@@ -95,7 +102,7 @@ export function manifestErrors(spec: PackageSpec, manifest: unknown): string[] {
   if (own.name !== spec.name) errors.push(`manifest names ${own.name}`);
   if ("./pglite" in own.exports) errors.push("exports /pglite");
   for (const [path, target] of Object.entries(own.exports))
-    for (const file of [target.types, target.default])
+    for (const file of typeof target === "string" ? [target] : [target.types, target.default])
       if (!spec.files.includes(file.replace(/^\.\//u, "")))
         errors.push(`export ${path} points to ${file}, not in the package`);
   for (const name of Object.keys(own.dependencies)) {

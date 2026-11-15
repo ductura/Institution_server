@@ -1,8 +1,10 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
+import { API_VERSION } from "../../server/contracts/index.ts";
 import { checkStaged, CONTRACTS, PACKAGES, stagePackage, TEST_FAKES } from "./index.ts";
 import { ROOT } from "./stage.ts";
 
@@ -119,4 +121,25 @@ describe("staged packages", () => {
       "@ductura/test-fakes: export ./clock (./packages/test-fakes/clock/clock.js) is not refused by the guard with NODE_ENV=production",
     );
   }, 120_000);
+
+  it("a consumer resolves and loads @ductura/contracts/openapi/v1.json", () => {
+    const consumer = join(TMP, String((run += 1)));
+    mkdirSync(join(consumer, "node_modules", "@ductura"), { recursive: true });
+    symlinkSync(
+      stage(CONTRACTS),
+      join(consumer, "node_modules", "@ductura", "contracts"),
+      "junction",
+    );
+    const code = [
+      'const url = import.meta.resolve("@ductura/contracts/openapi/v1.json");',
+      'const { default: doc } = await import(url, { with: { type: "json" } });',
+      "console.log(doc.info.version);",
+    ].join("\n");
+    const loaded = spawnSync(process.execPath, ["--input-type=module", "--eval", code], {
+      cwd: consumer,
+      encoding: "utf8",
+    });
+    expect(loaded.stderr).toBe("");
+    expect(loaded.stdout.trim()).toBe(API_VERSION);
+  }, 60_000);
 });
