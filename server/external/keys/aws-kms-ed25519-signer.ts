@@ -163,21 +163,27 @@ export class AwsKmsEd25519SigningKeyProvider implements SigningKeyProvider {
     };
   }
 
-  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<boolean> {
+  /**
+   * A signature that does not verify, or one outside the trusted versions, is
+   * `{ ok: true, value: false }`; a classified transport fault is its result
+   * (docs/CODE_STYLE.md §8), not a quiet false: the KMS gave no answer.
+   */
+  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<Result<boolean>> {
+    const invalid = { ok: true, value: false } as const;
     if (
       signature.algorithm !== "Ed25519" ||
       signature.signatureEncoding !== "raw" ||
       signature.keyId !== this.configuredKeyId ||
       !this.trustedKeyVersions.has(signature.keyVersion)
     ) {
-      return false;
+      return invalid;
     }
 
     const bytes = fromBase64Url(signature.signatureBase64Url);
-    if (!bytes) return false;
+    if (!bytes) return invalid;
 
-    try {
-      return await this.transport.verify({
+    return call(() =>
+      this.transport.verify({
         // Verify against the exact key version/ARN that signed the receipt,
         // not a possibly rotated alias.
         keyId: signature.keyVersion,
@@ -185,10 +191,8 @@ export class AwsKmsEd25519SigningKeyProvider implements SigningKeyProvider {
         signature: bytes,
         messageType: AWS_KMS_RAW_MESSAGE_TYPE,
         signingAlgorithm: AWS_KMS_ED25519_ALGORITHM,
-      });
-    } catch {
-      return false;
-    }
+      }),
+    );
   }
 
   async publicVerificationKey(): Promise<Result<PublicVerificationKey>> {

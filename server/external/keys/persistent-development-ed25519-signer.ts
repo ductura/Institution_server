@@ -33,7 +33,8 @@ export type DevelopmentSigningKeyFault =
   | "signing_key_missing"
   | "signing_key_not_regular_file"
   | "signing_key_permissions"
-  | "signing_key_malformed";
+  | "signing_key_malformed"
+  | "signing_key_unreadable";
 
 /** The message is the closed code; it never holds the path or a key byte. */
 export class DevelopmentSigningKeyError extends Error {
@@ -152,17 +153,31 @@ export class PersistentDevelopmentEd25519SigningKeyProvider implements SigningKe
     const handle = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)).catch(() =>
       fail("signing_key_not_regular_file"),
     );
-    let seed: Buffer;
+    // An I/O fault of the opened file (EIO, EACCES and the like) is a closed
+    // fault too, never a raw throw out of the port (docs/CODE_STYLE.md §8).
+    let seed: Buffer | undefined;
+    let fault: unknown;
     try {
-      const stat = await handle.stat();
+      const stat = await handle.stat().catch(() => fail("signing_key_unreadable"));
       if (!stat.isFile()) fail("signing_key_not_regular_file");
       if (process.platform !== "win32" && (stat.mode & 0o077) !== 0)
         fail("signing_key_permissions");
       // Judged before reading, so a path to a large file reads nothing of it.
       if (stat.size !== SEED_BYTES) fail("signing_key_malformed");
-      seed = await handle.readFile();
-    } finally {
-      await handle.close();
+      seed = await handle.readFile().catch(() => fail("signing_key_unreadable"));
+    } catch (error) {
+      fault = error;
+    }
+    // Closed on every path; a close fault does not hide an earlier one.
+    const closed = await handle.close().then(
+      () => true,
+      () => false,
+    );
+    if (fault !== undefined) throw fault;
+    if (seed === undefined) throw new Error("unreachable: seed read without a fault");
+    if (!closed) {
+      seed.fill(0);
+      fail("signing_key_unreadable");
     }
     if (seed.byteLength !== SEED_BYTES) fail("signing_key_malformed");
     const privateKey = createPrivateKey({
@@ -177,8 +192,9 @@ export class PersistentDevelopmentEd25519SigningKeyProvider implements SigningKe
   }
 
   /**
-   * The key at the port boundary (docs/CODE_STYLE.md §8): a closed seed fault
-   * becomes its result; any other throw is not swallowed. The production
+   * The key at the port boundary (docs/CODE_STYLE.md §8), for sign, verify
+   * and publicVerificationKey alike: a closed seed fault becomes its result;
+   * any other throw is not swallowed. The production
    * guard never reaches here, since it refuses construction.
    */
   private async keyResult(): Promise<Result<LoadedKey>> {
@@ -224,21 +240,25 @@ export class PersistentDevelopmentEd25519SigningKeyProvider implements SigningKe
     };
   }
 
-  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<boolean> {
-    const key = await this.key();
+  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<Result<boolean>> {
+    const key = await this.keyResult();
+    if (!key.ok) return key;
     if (
       signature.algorithm !== "Ed25519" ||
       signature.signatureEncoding !== "raw" ||
-      signature.keyId !== key.keyId ||
-      signature.keyVersion !== key.keyVersion
+      signature.keyId !== key.value.keyId ||
+      signature.keyVersion !== key.value.keyVersion
     ) {
-      return false;
+      return { ok: true, value: false };
     }
-    return nodeVerify(
-      null,
-      Buffer.from(message),
-      key.publicKey,
-      Buffer.from(signature.signatureBase64Url, "base64url"),
-    );
+    return {
+      ok: true,
+      value: nodeVerify(
+        null,
+        Buffer.from(message),
+        key.value.publicKey,
+        Buffer.from(signature.signatureBase64Url, "base64url"),
+      ),
+    };
   }
 }

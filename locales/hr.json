@@ -20,6 +20,7 @@
     "key_missing": "Datoteka razvojnog ključa za potpisivanje ne postoji.",
     "key_not_regular_file": "Razvojni ključ za potpisivanje mora biti obična datoteka.",
     "key_permissions": "Datoteku razvojnog ključa za potpisivanje smije čitati samo njezin vlasnik.",
-    "key_malformed": "Datoteka razvojnog ključa za potpisivanje nije ispravna."
+    "key_malformed": "Datoteka razvojnog ključa za potpisivanje nije ispravna.",
+    "key_unreadable": "Datoteku razvojnog ključa za potpisivanje nije moguće pročitati."
   }
 }

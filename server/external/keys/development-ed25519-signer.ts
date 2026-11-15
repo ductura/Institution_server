@@ -69,20 +69,23 @@ export class DevelopmentEd25519SigningKeyProvider implements SigningKeyProvider 
     };
   }
 
-  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<boolean> {
+  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<Result<boolean>> {
     if (
       signature.algorithm !== "Ed25519" ||
       signature.signatureEncoding !== "raw" ||
       signature.keyId !== this.keyId ||
       signature.keyVersion !== this.keyVersion
     ) {
-      return false;
+      return { ok: true, value: false };
     }
-    return nodeVerify(
-      null,
-      Buffer.from(message),
-      this.publicKey,
-      Buffer.from(signature.signatureBase64Url, "base64url"),
-    );
+    return {
+      ok: true,
+      value: nodeVerify(
+        null,
+        Buffer.from(message),
+        this.publicKey,
+        Buffer.from(signature.signatureBase64Url, "base64url"),
+      ),
+    };
   }
 }

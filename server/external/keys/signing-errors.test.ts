@@ -53,6 +53,6 @@ describe("signing port errors (docs/CODE_STYLE.md §8)", () => {
       expect(developmentKeyError(fault).code).toBe(fault.toUpperCase());
     }
     expect(DEVELOPMENT_KEY_RESULT_FAULTS).not.toContain("signing_key_production");
-    expect(DEVELOPMENT_KEY_RESULT_FAULTS).toHaveLength(7);
+    expect(DEVELOPMENT_KEY_RESULT_FAULTS).toHaveLength(8);
   });
 });

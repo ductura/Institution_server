@@ -450,8 +450,11 @@ describe("FakeKmsClient behind the SDK transport", () => {
     if (!signed.ok) throw new Error(`expected ok, got ${signed.error.code}`);
     const envelope = signed.value;
     expect(envelope.keyVersion).toBe(first);
-    expect(await provider.verify(MESSAGE, envelope)).toBe(true);
-    expect(await provider.verify(new TextEncoder().encode("drugo"), envelope)).toBe(false);
+    expect(await provider.verify(MESSAGE, envelope)).toEqual({ ok: true, value: true });
+    expect(await provider.verify(new TextEncoder().encode("drugo"), envelope)).toEqual({
+      ok: true,
+      value: false,
+    });
 
     const fetched = await provider.publicVerificationKey();
     if (!fetched.ok) throw new Error(`expected ok, got ${fetched.error.code}`);
@@ -511,9 +514,20 @@ describe("FakeKmsClient behind the SDK transport", () => {
     await expect(provider.publicVerificationKey()).resolves.toEqual(
       error("SIGNING_UNAVAILABLE", "signing.unavailable"),
     );
+    fake.fault = null;
+    const signed = await provider.sign(MESSAGE);
+    if (!signed.ok) throw new Error(`expected ok, got ${signed.error.code}`);
     fake.fault = "hang";
     await expect(provider.sign(MESSAGE)).resolves.toEqual(
       error("SIGNING_TIMEOUT", "signing.timeout"),
+    );
+    // A Verify that gets no answer is a fault, not a signature that failed.
+    await expect(provider.verify(MESSAGE, signed.value)).resolves.toEqual(
+      error("SIGNING_TIMEOUT", "signing.timeout"),
+    );
+    fake.fault = "network";
+    await expect(provider.verify(MESSAGE, signed.value)).resolves.toEqual(
+      error("SIGNING_UNAVAILABLE", "signing.unavailable"),
     );
     fake.fault = null;
     const missing = new AwsKmsEd25519SigningKeyProvider(transport, "alias/nepostojeci", [first]);
@@ -536,7 +550,7 @@ describe("FakeKmsClient behind the SDK transport", () => {
     await expect(provider.sign(MESSAGE)).resolves.toEqual(notTrusted);
     await expect(provider.publicVerificationKey()).resolves.toEqual(notTrusted);
     // The pinned historical version still verifies after rotation.
-    expect(await provider.verify(MESSAGE, before)).toBe(true);
+    expect(await provider.verify(MESSAGE, before)).toEqual({ ok: true, value: true });
     const rotated = new AwsKmsEd25519SigningKeyProvider(transport, ALIAS, [first, second]);
     await expect(rotated.sign(MESSAGE)).resolves.toMatchObject({
       ok: true,

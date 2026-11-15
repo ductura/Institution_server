@@ -62,15 +62,7 @@ async function resultFault(promise: Promise<Result<unknown>>) {
   return error.code;
 }
 
-// verify keeps its boolean contract, so a seed fault there is still thrown.
-async function fault(promise: Promise<unknown>) {
-  const error = await promise.then(
-    () => null,
-    (e: unknown) => e,
-  );
-  expect(error).toBeInstanceOf(DevelopmentSigningKeyError);
-  return (error as DevelopmentSigningKeyError).code;
-}
+const verified = (value: boolean) => ({ ok: true, value });
 
 describe("persistent development signer", () => {
   it("gives the same key, identity and signature from the same seed in two instances", async () => {
@@ -106,9 +98,9 @@ describe("persistent development signer", () => {
     expect(
       nodeVerify(null, MESSAGE, publicKey, Buffer.from(signature.signatureBase64Url, "base64url")),
     ).toBe(true);
-    expect(await s.verify(MESSAGE, signature)).toBe(true);
-    expect(await s.verify(new TextEncoder().encode("other"), signature)).toBe(false);
-    expect(await s.verify(MESSAGE, { ...signature, keyVersion: "1" })).toBe(false);
+    expect(await s.verify(MESSAGE, signature)).toEqual(verified(true));
+    expect(await s.verify(new TextEncoder().encode("other"), signature)).toEqual(verified(false));
+    expect(await s.verify(MESSAGE, { ...signature, keyVersion: "1" })).toEqual(verified(false));
   });
 
   it("refuses construction in production (T9)", () => {
@@ -159,7 +151,9 @@ describe("persistent development signer", () => {
     const s = signer(path);
     expect(await resultFault(s.sign(MESSAGE))).toBe(code.toUpperCase());
     expect(await resultFault(s.publicVerificationKey())).toBe(code.toUpperCase());
-    expect(await fault(s.verify(MESSAGE, await ok(signer(file("seed")).sign(MESSAGE))))).toBe(code);
+    // verify returns the same fault as a result, never a throw (§8).
+    const envelope = await ok(signer(file("seed")).sign(MESSAGE));
+    expect(await resultFault(s.verify(MESSAGE, envelope))).toBe(code.toUpperCase());
   });
 
   it("judges a seed under a link to the repository by where it leads, also before its directory exists", async () => {
@@ -187,15 +181,13 @@ describe("persistent development signer", () => {
     const result = await signer(canary).sign(MESSAGE);
     expect(result).toEqual({ ok: false, error: developmentKeyError("signing_key_missing") });
     expect(JSON.stringify(result)).not.toContain("canary");
-    // verify still throws the fault; its message holds no path either.
-    const error = await signer(canary)
-      .verify(MESSAGE, await ok(signer(file("seed")).sign(MESSAGE)))
-      .catch((e: unknown) => e as Error);
-    expect(error).toBeInstanceOf(DevelopmentSigningKeyError);
-    expect(String(error)).not.toContain("canary");
-    expect(
-      JSON.stringify({ ...(error as object), message: (error as Error).message }),
-    ).not.toContain("canary");
+    // verify returns the same fault as a result; it names no path either.
+    const verifiedResult = await signer(canary).verify(
+      MESSAGE,
+      await ok(signer(file("seed")).sign(MESSAGE)),
+    );
+    expect(verifiedResult).toEqual(result);
+    expect(JSON.stringify(verifiedResult)).not.toContain("canary");
   });
 
   it("reads the file again after a fault, so a key made later is used", async () => {

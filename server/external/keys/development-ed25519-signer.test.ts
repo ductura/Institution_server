@@ -16,10 +16,14 @@ describe("DevelopmentEd25519SigningKeyProvider", () => {
       keyVersion: "v7",
     });
     expect(signature.signatureBase64Url.length).toBeGreaterThan(40);
-    expect(await signer.verify(bytes, signature)).toBe(true);
+    expect(await signer.verify(bytes, signature)).toEqual({ ok: true, value: true });
 
     const tampered = new TextEncoder().encode("Pisač evidence receipt!");
-    expect(await signer.verify(tampered, signature)).toBe(false);
+    expect(await signer.verify(tampered, signature)).toEqual({ ok: true, value: false });
+    expect(await signer.verify(bytes, { ...signature, keyVersion: "v8" })).toEqual({
+      ok: true,
+      value: false,
+    });
 
     expect(await signer.publicVerificationKey()).toMatchObject({
       ok: true,

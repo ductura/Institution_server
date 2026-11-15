@@ -57,6 +57,8 @@ export function developmentKeyError(fault: DevelopmentSigningKeyResultFault): Ap
       return error("SIGNING_KEY_PERMISSIONS", "signing.key_permissions");
     case "signing_key_malformed":
       return error("SIGNING_KEY_MALFORMED", "signing.key_malformed");
+    case "signing_key_unreadable":
+      return error("SIGNING_KEY_UNREADABLE", "signing.key_unreadable");
   }
 }
 
@@ -77,6 +79,7 @@ export const DEVELOPMENT_KEY_RESULT_FAULTS: readonly DevelopmentSigningKeyResult
   "signing_key_not_regular_file",
   "signing_key_permissions",
   "signing_key_malformed",
+  "signing_key_unreadable",
 ];
 
 /** Every error the signing port can return, for the locale test. */
