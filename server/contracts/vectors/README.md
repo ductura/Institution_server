@@ -8,6 +8,7 @@ Oblik datoteke opisuje `VectorFileSchema` u [`../vectors.ts`](../vectors.ts): `r
 
 - ruta nema datoteku ili datoteka nema rutu;
 - ruti nedostaje vektor za neki status uspjeha ili za neku grešku iz njezine sheme;
+- zajednička greška (`SHARED_ERRORS`, npr. 500 `internal`) nema vektor ni u jednoj datoteci; takav vektor smije stajati u datoteci bilo koje rute;
 - odgovor ne odgovara shemi rute (tijelo greške, vlastita shema, bez tijela, HTML stranica);
 - zahtjev vektora uspjeha ne prolazi validaciju ulaza iz ugovora.
 

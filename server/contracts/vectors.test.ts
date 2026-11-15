@@ -6,7 +6,7 @@ import { FormatRegistry, Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
-import { ROUTES, closed, defineRoute, error } from "./index.ts";
+import { INTERNAL, ROUTES, SHARED_ERRORS, closed, defineRoute, error } from "./index.ts";
 import { checkVectors, type VectorFile } from "./vectors.ts";
 
 const VECTORS_DIR = fileURLToPath(new URL("./vectors/", import.meta.url));
@@ -39,7 +39,20 @@ describe("contract vectors", () => {
   });
 
   it("every route has a success and every error, all matching its schemas", () => {
-    expect(checkVectors(ROUTES, load(), check)).toEqual([]);
+    expect(checkVectors(ROUTES, load(), check, SHARED_ERRORS)).toEqual([]);
+  });
+
+  it("500 internal is a shared error with exactly the closed body (DAN-776)", () => {
+    expect(INTERNAL.error).toEqual({ status: 500, code: "internal", key: "errors.internal" });
+    expect(SHARED_ERRORS).toEqual([INTERNAL.error]);
+    const health = load()["platform.health.get"] as VectorFile;
+    expect(health.vectors.find((v) => v.name === "internal")).toEqual({
+      name: "internal",
+      kind: "error",
+      code: "internal",
+      request: {},
+      response: { status: 500, contentType: "application/json", body: { error: "internal" } },
+    });
   });
 });
 
@@ -88,6 +101,46 @@ describe("checkVectors refuses", () => {
 
   it("nothing for a complete file", () => {
     expect(run(file(success, invalid, unavailable))).toEqual([]);
+  });
+
+  describe("a shared error (500 internal)", () => {
+    const internal = {
+      name: "internal",
+      kind: "error",
+      code: "internal",
+      request: {},
+      response: { status: 500, contentType: "application/json", body: { error: "internal" } },
+    } as const;
+    const shared = (f: unknown) => checkVectors([route], { [route.id]: f }, check, SHARED_ERRORS);
+
+    it("is accepted in any route's file", () => {
+      expect(shared(file(success, invalid, unavailable, internal))).toEqual([]);
+    });
+
+    it("needs a vector in at least one file", () => {
+      expect(shared(file(success, invalid, unavailable))).toEqual([
+        "no vector for shared error 500 internal",
+      ]);
+    });
+
+    it("with another status, an extra field or no JSON is refused", () => {
+      const at = "made-up.thing.post: internal: ";
+      const wrong = (response: VectorFile["vectors"][number]["response"]) =>
+        shared(file(success, invalid, unavailable, { ...internal, response }));
+      expect(wrong({ ...internal.response, status: 200 })).toEqual([
+        `${at}status 200, contract says 500`,
+      ]);
+      expect(
+        wrong({ ...internal.response, body: { error: "internal", message: "made-up canary" } }),
+      ).toEqual([`${at}response body does not match the contract`]);
+      expect(wrong({ status: 500 })).toEqual([`${at}the contract answers with JSON`]);
+    });
+
+    it("is not a contract error where it is not passed as shared", () => {
+      expect(run(file(success, invalid, unavailable, internal))).toEqual([
+        "made-up.thing.post: internal: code internal is not a contract error",
+      ]);
+    });
   });
 
   it("a route without a vector for one of its errors", () => {

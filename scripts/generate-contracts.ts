@@ -18,6 +18,7 @@ import {
   INVENTORY_SOURCE,
   PENDING,
   ROUTES,
+  SHARED_ERRORS,
   type RouteContract,
   type Vector,
 } from "../server/contracts/index.ts";
@@ -157,7 +158,8 @@ function types(routes: RouteContract[]): string {
     const codes = r.errors.map((e) => JSON.stringify(e.code)).join(" | ") || "never";
     return `  ${JSON.stringify(r.id)}: {\n    params: ${part(r.request.params)};\n    query: ${part(r.request.query)};\n    body: ${part(r.request.body)};\n    success: ${ok};\n    errorCode: ${codes};\n  };`;
   });
-  return `${HEADER}\nexport type Operations = {\n${ops.join("\n")}\n};\n\nexport type OperationId = keyof Operations;\n`;
+  const shared = SHARED_ERRORS.map((e) => JSON.stringify(e.code)).join(" | ") || "never";
+  return `${HEADER}\nexport type Operations = {\n${ops.join("\n")}\n};\n\nexport type OperationId = keyof Operations;\n\n/** Codes any route may answer besides its own (SHARED_ERRORS, e.g. 500 internal). */\nexport type SharedErrorCode = ${shared};\n`;
 }
 
 function routeTable(routes: RouteContract[]): string {
@@ -171,6 +173,13 @@ function routeTable(routes: RouteContract[]): string {
     return `  ${JSON.stringify(r.id)}: { method: ${JSON.stringify(r.method)}, path: ${JSON.stringify(r.path)}, body: ${JSON.stringify(r.request.contentType ?? null)}, headers: ${JSON.stringify([...new Set(r.responses.flatMap((s) => s.headers ?? []))])}, errors: ${JSON.stringify(codes)} },`;
   });
   return `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;\n`;
+}
+
+/** The shared errors by status, as the client reads them. */
+function sharedTable(): string {
+  const codes: Record<string, string[]> = {};
+  for (const e of SHARED_ERRORS) (codes[String(e.status)] ??= []).push(e.code);
+  return `\nexport const SHARED_ERRORS = ${JSON.stringify(codes)} as const;\n`;
 }
 
 /**
@@ -228,7 +237,7 @@ export const openapiDocument = (): unknown => JSON.parse(openapiJson());
 export function generate(): Record<string, string> {
   const routes = contractRoutes();
   return {
-    "client.ts": `${HEADER}${CLIENT_PREAMBLE}\n${routeTable(routes)}${CLIENT_BODY}`,
+    "client.ts": `${HEADER}${CLIENT_PREAMBLE}\n${routeTable(routes)}${sharedTable()}${CLIENT_BODY}`,
     // Its own folder: it needs node:http, and generated/index.ts must load in a
     // browser. It imports nothing outside the folder, so U9 can move it as it is.
     "fake-server/index.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes)}\nconst FALLBACK_CODE = ${JSON.stringify(FALLBACK.error.code)};\n${FAKE_BODY}`,
@@ -240,19 +249,19 @@ export function generate(): Record<string, string> {
 }
 
 const INDEX = `${HEADER}export { createClient, type Result } from "./client.ts";
-export type { OperationId, Operations } from "./types.ts";
+export type { OperationId, Operations, SharedErrorCode } from "./types.ts";
 export { VALIDATORS, validateInput } from "./validate.ts";
 `;
 
 const CLIENT_PREAMBLE = `// Fetch client for /api/v1. Works from any runtime with fetch, not only a browser.
-import type { OperationId, Operations } from "./types.ts";
+import type { OperationId, Operations, SharedErrorCode } from "./types.ts";
 `;
 
 const CLIENT_BODY = `
 type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body">;
 export type Result<Id extends OperationId> =
   | (Operations[Id]["success"] & { ok: true })
-  | { ok: false; status: number; code: Operations[Id]["errorCode"] | "unexpected" };
+  | { ok: false; status: number; code: Operations[Id]["errorCode"] | SharedErrorCode | "unexpected" };
 
 export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   return async function call<Id extends OperationId>(id: Id, input: Input<Id>): Promise<Result<Id>> {
@@ -285,7 +294,9 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     const fields = body && typeof body === "object" ? (body as { error?: unknown; status?: unknown }) : {};
     const sent = fields.error ?? fields.status;
     // A body without a code takes the only code of its status; an unknown code is never renamed.
-    const code = typeof sent === "string" ? (known.includes(sent) ? sent : "unexpected") : known.length === 1 ? known[0] : "unexpected";
+    // A shared code (500 internal) counts only when the body names it, never for a bare status.
+    const shared = (SHARED_ERRORS as Record<number, readonly string[] | undefined>)[res.status] ?? [];
+    const code = typeof sent === "string" ? (known.includes(sent) || shared.includes(sent) ? sent : "unexpected") : known.length === 1 ? known[0] : "unexpected";
     return { ok: false, status: res.status, code } as Result<Id>;
   };
 }

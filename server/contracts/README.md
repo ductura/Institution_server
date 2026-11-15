@@ -16,8 +16,12 @@ Ništa; samo sheme.
 
 ## Što izvozi
 
-`ROUTES` (sve rute s ugovorom), `INVENTORY` i `checkInventory`, sheme iz `schema/`, `checkVectors`, `breakingChanges`, `API_VERSION`, `FALLBACK` i pomoćne funkcije za ID rada (`isWorkId`, `workIdFromPath`). Točan popis je u `index.ts`.
+`ROUTES` (sve rute s ugovorom), `INVENTORY` i `checkInventory`, sheme iz `schema/`, `checkVectors`, `breakingChanges`, `API_VERSION`, `FALLBACK`, `INTERNAL` i `SHARED_ERRORS` i pomoćne funkcije za ID rada (`isWorkId`, `workIdFromPath`). Točan popis je u `index.ts`.
 
 ## Što ne smije uvoziti
 
 Ništa iz drugih područja; od knjižnica samo `@sinclair/typebox` ([karta servera, §2](../../docs/server-map.md#2-dopušteni-uvozi)).
+
+## Zajednička greška `internal` (DAN-776)
+
+`INTERNAL` je odgovor bilo koje rute kad rukovatelj padne prije prvog bajta: 500 i točno `{"error":"internal"}`, ključ `errors.internal`. Nikad ne nosi poruku, ime, stog ni drugi podatak iz servera. Nalazi se u `SHARED_ERRORS`. Generirani klijent ga prepoznaje na svakoj ruti, ali samo kad ga tijelo navodi. Lažni server ga vraća uz `x-ductura-fake-vector: internal` (vektor u `platform.health.get.json`). Poznata granica: `internal` nije u `openapi/v1.json` dok guard nekompatibilnih promjena ne dopusti novi zajednički odgovor (Ductus#1836 c.6896639138).

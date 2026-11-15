@@ -6,9 +6,11 @@
 // before its config runs; here every answer goes through the pipeline, so the
 // layer sets the headers and refuse() carries them on refusals of the steps
 // before it (3 to 5).
-import type { IncomingMessage, ServerResponse } from "node:http";
+import { type IncomingMessage, type ServerResponse, STATUS_CODES } from "node:http";
 
-import { sendJson } from "./router.ts";
+import { INTERNAL } from "../contracts/index.ts";
+
+import { INTERNAL_BODY, sendJson } from "./json.ts";
 
 export const SECURITY_HEADERS: readonly { readonly key: string; readonly value: string }[] =
   Object.freeze([
@@ -57,4 +59,30 @@ export function refuse(response: ServerResponse, status: number, code: string): 
   applySecurityHeaders(response);
   if (!response.headersSent) response.setHeader("Connection", "close");
   sendJson(response, status, { error: code });
+}
+
+/**
+ * The contract's 500 for a failed request (DAN-776), exactly INTERNAL. Before
+ * the head, whatever the failed handler or layer set (headers, trailers, status line)
+ * is dropped, so nothing of it reaches the client; the security headers are set
+ * again and the connection closes. After the head an unfinished answer is cut
+ * and a finished one is left to complete. Never throws: a failure here cuts
+ * the connection instead of reaching the process as an unhandled rejection.
+ */
+export function answerInternal(response: ServerResponse): void {
+  try {
+    if (response.headersSent) {
+      if (!response.writableEnded) response.destroy();
+      return;
+    }
+    for (const name of response.getHeaderNames()) response.removeHeader(name);
+    // Trailers are kept apart from the headers; adding none clears them.
+    response.addTrailers({});
+    response.statusMessage = STATUS_CODES[INTERNAL.error.status] ?? "";
+    applySecurityHeaders(response);
+    response.setHeader("Connection", "close");
+    sendJson(response, INTERNAL.error.status, INTERNAL_BODY);
+  } catch {
+    response.destroy();
+  }
 }

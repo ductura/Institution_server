@@ -103,4 +103,16 @@ export const FALLBACK = {
   error: error(404, "not_found"),
 } as const;
 
+/**
+ * The answer of any route whose handler fails before the first byte of its
+ * answer (DAN-776). Exactly `{"error":"internal"}`: never the message, name or
+ * stack of the error, a request id or anything else from inside the server.
+ */
+export const INTERNAL = {
+  error: error(500, "internal"),
+} as const;
+
+/** Answers every route may give besides its own errors. */
+export const SHARED_ERRORS = [INTERNAL.error] as const;
+
 export const platformRoutes = [health, ready, status] as const;
