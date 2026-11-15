@@ -63,6 +63,7 @@ type Loose = {
   alternate?: Loose;
   static?: boolean;
   body?: Loose | Loose[];
+  shorthand?: boolean;
 };
 
 /** Globals that can load a module or run a string as code. */
@@ -242,42 +243,88 @@ function unwrapped(node: Loose | null | undefined): Loose | null | undefined {
   return value;
 }
 
-// The names an exported value carries, as far as the syntax shows them: a
-// name, a named function or class expression, through type wrappers, the
-// last expression of a sequence and every branch of a condition or
-// `||`/`&&`/`??`. With `keys` (`export =`, whose value is module.exports)
-// also an object's non-computed keys and a class's static members. A value
-// from elsewhere (`export = o`) is data flow, outside lint.
-function valueNames(node: Loose | null | undefined, keys: boolean): Loose[] {
+type VisitorKeys = Readonly<Record<string, readonly string[] | undefined>>;
+
+function isNode(value: unknown): value is Loose {
+  return typeof value === "object" && value !== null && typeof (value as Loose).type === "string";
+}
+
+// Every name an exported value contains, from the whole expression tree, so
+// that no wrapper (`await`, a call, an index, a type assertion) needs a case
+// of its own (review FAILs c.6894474949, c.6894641035): every identifier,
+// the name of every function or class expression, and the computed parts of
+// members and keys. Function and class bodies are not the exported value
+// and are not entered. With `keys` (`export =`, whose value is
+// module.exports) the non-computed keys of an object and the static members
+// of a class also count, through type wrappers, `await`, the last
+// expression of a sequence and the branches of a condition or
+// `||`/`&&`/`??`. A value from elsewhere (`export = o`) is data flow,
+// outside lint.
+function valueNames(
+  node: Loose | null | undefined,
+  keys: boolean,
+  visitorKeys: VisitorKeys,
+): Loose[] {
   const value = unwrapped(node);
-  switch (value?.type) {
+  if (!value) return [];
+  const inner = (child: unknown, childKeys = false): Loose[] =>
+    isNode(child) ? valueNames(child, childKeys, visitorKeys) : [];
+  switch (value.type) {
     case "Identifier":
       return [value];
-    case "ObjectExpression":
-      return keys
-        ? (value.properties ?? []).flatMap((property) =>
-            property.type === "Property" && !property.computed && property.key
-              ? [property.key]
-              : [],
-          )
-        : [];
+    case "AwaitExpression":
+      return inner(value.argument, keys);
+    case "SequenceExpression": {
+      const expressions = (value.expressions ?? []).filter(isNode);
+      return expressions.flatMap((expression, index) =>
+        inner(expression, keys && index === expressions.length - 1),
+      );
+    }
+    case "ConditionalExpression":
+      return [
+        ...inner((value as { test?: unknown }).test),
+        ...inner(value.consequent, keys),
+        ...inner(value.alternate, keys),
+      ];
+    case "LogicalExpression":
+      return [...inner(value.left, keys), ...inner(value.right, keys)];
+    case "FunctionExpression":
+    case "ArrowFunctionExpression":
+      return qualifiedNames(value.id);
     case "ClassExpression": {
       const members = (value.body as Loose | undefined)?.body;
       return [
         ...qualifiedNames(value.id),
+        ...inner((value as { superClass?: unknown }).superClass),
         ...(keys && Array.isArray(members) ? members : []).flatMap((member) =>
           member.static === true && !member.computed && member.key ? [member.key] : [],
         ),
       ];
     }
-    case "SequenceExpression":
-      return valueNames((value.expressions as Loose[] | undefined)?.at(-1), keys);
-    case "ConditionalExpression":
-      return [...valueNames(value.consequent, keys), ...valueNames(value.alternate, keys)];
-    case "LogicalExpression":
-      return [...valueNames(value.left, keys), ...valueNames(value.right, keys)];
-    default:
-      return declaredNames(value);
+    case "MemberExpression":
+      return [...inner(value.object), ...(value.computed ? inner(value.property) : [])];
+    case "ObjectExpression":
+      return (value.properties ?? []).flatMap((property) => {
+        if (property.type !== "Property") return inner(property);
+        const key = property.computed
+          ? inner(property.key)
+          : keys && property.key
+            ? [property.key]
+            : [];
+        // A shorthand `{ a }` has one name; its value is the same identifier.
+        return property.shorthand === true
+          ? key.length > 0
+            ? key
+            : inner(property.value)
+          : [...key, ...inner(property.value)];
+      });
+    default: {
+      const record = value as unknown as Record<string, unknown>;
+      return (visitorKeys[value.type] ?? []).flatMap((name) => {
+        const child = record[name];
+        return (Array.isArray(child) ? child : [child]).flatMap((item) => inner(item));
+      });
+    }
   }
 }
 
@@ -288,7 +335,7 @@ function valueNames(node: Loose | null | undefined, keys: boolean): Loose[] {
  * default`, `export =` of a name or of an object's keys, `export as
  * namespace`. One list, so that no form needs a check of its own.
  */
-export function exportedNames(node: Loose): Loose[] {
+export function exportedNames(node: Loose, visitorKeys: VisitorKeys): Loose[] {
   switch (node.type) {
     case "ExportNamedDeclaration":
       return [
@@ -299,14 +346,18 @@ export function exportedNames(node: Loose): Loose[] {
         ]),
       ];
     case "ExportDefaultDeclaration":
-      // The namespace key is `default`; a forbidden binding behind it fails
-      // the same way through any wrapper, sequence or branch (review FAIL
-      // c.6894474949).
-      return valueNames(node.declaration, false);
+      // The namespace key is `default`; a forbidden name inside the
+      // exported value fails the same way, whatever wraps it.
+      return node.declaration?.type === "FunctionDeclaration" ||
+        node.declaration?.type === "ClassDeclaration" ||
+        node.declaration?.type === "TSDeclareFunction" ||
+        node.declaration?.type === "TSInterfaceDeclaration"
+        ? declaredNames(node.declaration)
+        : valueNames(node.declaration, false, visitorKeys);
     case "ExportAllDeclaration":
       return node.exported ? [node.exported] : [];
     case "TSExportAssignment":
-      return valueNames(node.expression, true);
+      return valueNames(node.expression, true, visitorKeys);
     case "TSNamespaceExportDeclaration":
       return node.id ? [node.id] : [];
     default:
@@ -375,7 +426,10 @@ export const noDynamicLoad: Rule.RuleModule = {
 
     // The one check of exported names: every form goes through exportedNames().
     function checkExportedNames(node: Node): void {
-      for (const name of exportedNames(node as unknown as Loose))
+      for (const name of exportedNames(
+        node as unknown as Loose,
+        context.sourceCode.visitorKeys as VisitorKeys,
+      ))
         checkKey(name as unknown as Node, keyName(name, false));
     }
 

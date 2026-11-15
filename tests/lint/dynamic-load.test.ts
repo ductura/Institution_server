@@ -112,6 +112,18 @@ const exportForms = (name: string): string[] => [
   `export default Math.random() > 0.5 ? (): void => {} : class ${name} {};\n`,
   `const ${name} = 1;\nexport default undefined ?? ${name};\n`,
   `const ${name} = 1;\nexport default (0, Math.random() > 0.5 ? 1 : ${name}) as number;\n`,
+  // Review FAIL c.6894641035: any wrapper around the exported value.
+  `export default await (function ${name}(): void {});\n`,
+  `export default Object.freeze(function ${name}(): void {});\n`,
+  `export default [function ${name}(): void {}][0];\n`,
+  `export default (function ${name}(): void {}).bind(null);\n`,
+  `export default new (class ${name} {})();\n`,
+  `export default { a: function ${name}(): void {} };\n`,
+  `const ${name} = 1;\nexport default { a: ${name} };\n`,
+  `const ${name} = 1;\nexport default [${name}];\n`,
+  `const ${name} = 1;\nexport default \`\${${name}}\`;\n`,
+  `const ${name} = class {};\nexport default (class extends ${name} {});\n`,
+  `export = await { ${name}: 1 };\n`,
   `function ${name}<T>(x: T): T {\n  return x;\n}\nexport default ${name}<string>;\n`,
 ];
 
