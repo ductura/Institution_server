@@ -20,7 +20,8 @@
 --   * public.schema_migrations: the dbmate ledger, written by the migrator
 --     alone. It holds only while it is a plain table of the database owner
 --     that no partition, inheritance, view or rule reaches, and while no role
---     but its owner and the superusers, nor PUBLIC, holds any right on it
+--     but its owner and the superusers, nor PUBLIC, holds any right on it,
+--     inherited or reachable by SET ROLE
 --     (checked below; 011 holds more in main).
 -- A function or operator on the search path that would shadow pg_catalog
 -- stops the file before any test (the DO block); everything else runs with
@@ -32,7 +33,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(19);
+SELECT plan(20);
 -- pgTAP itself resolves through the search path, so a function or operator
 -- planted there (the migrator owns each database and may create in public)
 -- could change what it computes: none may exist outside an extension that is
@@ -95,18 +96,28 @@ CREATE TEMP VIEW probe_policy_gap AS
 -- predefined roles (pg_read_all_data and the like), so a right reached through
 -- membership shows on the member; the predefined roles themselves are left out.
 CREATE TEMP VIEW ledger_right AS
-  SELECT r.rolname || ': ' || p.privilege AS found
-  FROM (SELECT x.rolname::text FROM pg_catalog.pg_roles x
+  SELECT DISTINCT r.rolname || ': ' || p.privilege
+         || CASE WHEN g.rolname = r.rolname THEN '' ELSE ' via ' || g.rolname END AS found
+  FROM (SELECT x.oid, x.rolname::text FROM pg_catalog.pg_roles x
         WHERE NOT x.rolsuper AND x.rolname NOT LIKE 'pg\_%'
           AND x.oid <> (SELECT relowner FROM pg_catalog.pg_class WHERE oid = 'public.schema_migrations'::regclass)
-        UNION ALL SELECT 'public') AS r (rolname)
+        UNION ALL SELECT 0, 'public') AS r (oid, rolname)
+  -- A right reached by SET ROLE counts as much as an inherited one: a
+  -- NOINHERIT member of pg_read_all_data, or of the owner, reads the ledger
+  -- after SET ROLE, and has_table_privilege on the member alone does not see
+  -- it. So every role the member may become (MEMBER: direct or indirect, with
+  -- or without INHERIT) is read too, the member itself included.
+  JOIN LATERAL (SELECT y.rolname::text FROM pg_catalog.pg_roles y
+                WHERE r.oid = 0 AND y.oid = 0
+                   OR r.oid <> 0 AND pg_has_role(r.oid, y.oid, 'MEMBER')
+                UNION ALL SELECT 'public' WHERE r.oid = 0) AS g (rolname) ON true
   CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']
               -- PostgreSQL 17 (production, CI) adds MAINTAIN.
               || CASE WHEN current_setting('server_version_num')::int >= 170000
                       THEN ARRAY['MAINTAIN'] ELSE '{}'::text[] END) AS p (privilege)
-  WHERE has_table_privilege(r.rolname, 'public.schema_migrations'::regclass, p.privilege)
+  WHERE has_table_privilege(g.rolname, 'public.schema_migrations'::regclass, p.privilege)
      OR (p.privilege IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
-         AND has_any_column_privilege(r.rolname, 'public.schema_migrations'::regclass, p.privilege));
+         AND has_any_column_privilege(g.rolname, 'public.schema_migrations'::regclass, p.privilege));
 
 CREATE TEMP VIEW ledger_shape AS
   SELECT 'owner ' || c.relowner::regrole::text AS found FROM pg_class c
@@ -136,7 +147,7 @@ SELECT is(
    WHERE (n.nspname, c.relname) IN (('public', 'schema_migrations')) AND c.relkind IN ('r', 'p', 'f')),
   1, 'exactly one named exception exists: public.schema_migrations');
 SELECT is_empty('SELECT found FROM ledger_shape', 'the ledger is a plain table of the database owner that nothing reads through');
-SELECT is_empty('SELECT found FROM ledger_right', 'no role but the owner of the ledger and the superusers, nor PUBLIC, holds a right on it');
+SELECT is_empty('SELECT found FROM ledger_right', 'no role but the owner of the ledger and the superusers, nor PUBLIC, holds a right on it, inherited or by SET ROLE');
 
 -- 2. Negative controls: each table that breaks the rule is caught.
 CREATE SCHEMA test_rls_probe;
@@ -204,6 +215,10 @@ SELECT set_eq('SELECT found FROM ledger_right', ARRAY['test_rls_probe_reader: SE
   'a right on the ledger granted to another role is caught');
 REVOKE SELECT ON public.schema_migrations FROM test_rls_probe_reader;
 DROP ROLE test_rls_probe_reader;
+CREATE ROLE test_rls_probe_auditor NOLOGIN NOINHERIT IN ROLE pg_read_all_data;
+SELECT set_eq('SELECT found FROM ledger_right', ARRAY['test_rls_probe_auditor: SELECT via pg_read_all_data'],
+  'a NOINHERIT member of pg_read_all_data, who reads the ledger after SET ROLE, is caught');
+DROP ROLE test_rls_probe_auditor;
 GRANT SELECT (version) ON public.schema_migrations TO PUBLIC;
 SELECT isnt_empty($$ SELECT found FROM ledger_right WHERE found = 'public: SELECT' $$,
   'a column right on the ledger granted to PUBLIC is caught');
