@@ -42,6 +42,10 @@ type Loose = {
   left?: Loose;
   right?: Loose;
   imported?: Loose;
+  callee?: Loose;
+  arguments?: unknown[];
+  id?: Loose;
+  init?: unknown;
 };
 
 /** Globals that can load a module or run a string as code. */
@@ -97,10 +101,16 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
  * native library.
  */
 export const FORBIDDEN_KEYS: readonly string[] = ["constructor", "setEngine"];
-/** The only files that may hold a forbidden key as a string, as an array element (data). */
-export const KEY_LITERAL_ALLOWED: Readonly<Record<string, readonly string[]>> = {
+/**
+ * The only places a forbidden key may stand as a string: an element of the
+ * array in `const <binding> = new Set([...])` at the top of the file, with the
+ * global Set. Nothing else in that file is exempt (spread, argument, key).
+ */
+export const KEY_LITERAL_ALLOWED: Readonly<
+  Record<string, { readonly binding: string; readonly keys: readonly string[] }>
+> = {
   // FORBIDDEN_KEYS of the edit-step validator: keys a payload may not carry.
-  "server/domain/document/edit-step.ts": ["constructor"],
+  "server/domain/document/edit-step.ts": { binding: "FORBIDDEN_KEYS", keys: ["constructor"] },
 };
 
 /** node: modules production server code may import, always with the prefix. */
@@ -235,16 +245,43 @@ export const noDynamicLoad: Rule.RuleModule = {
         context.report({ node, messageId: "key", data: { key } });
     }
 
-    // A static string anywhere, reported once at the outermost `+`. The data
-    // exemption holds only for an element of an array literal, never for a
-    // key, an argument or a binding (`fn["constructor"]` fails in that file too).
+    // The one data declaration of KEY_LITERAL_ALLOWED: the literal is a direct
+    // element of `const <binding> = new Set([...])` at the top level, and Set
+    // is the global (not a local class that could run the value).
+    function isDataElement(node: Loose): boolean {
+      const entry = KEY_LITERAL_ALLOWED[file];
+      const array = node.parent;
+      const created = array?.parent;
+      const declarator = created?.parent;
+      const declaration = declarator?.parent;
+      return (
+        entry !== undefined &&
+        array?.type === "ArrayExpression" &&
+        created?.type === "NewExpression" &&
+        created.callee?.type === "Identifier" &&
+        created.callee.name === "Set" &&
+        created.arguments?.[0] === array &&
+        declarator?.type === "VariableDeclarator" &&
+        declarator.id?.type === "Identifier" &&
+        declarator.id.name === entry.binding &&
+        declarator.init === created &&
+        declaration?.type === "VariableDeclaration" &&
+        declaration.kind === "const" &&
+        declaration.parent?.type === "Program" &&
+        context.sourceCode
+          .getScope(created as unknown as Node)
+          .through.some((reference) => reference.identifier === created.callee)
+      );
+    }
+
+    // A static string anywhere, reported once at the outermost `+`, except an
+    // element of the data declaration of KEY_LITERAL_ALLOWED.
     function checkString(node: Node): void {
       const loose = node as unknown as Loose;
       if (loose.parent?.type === "BinaryExpression" && loose.parent.operator === "+") return;
       const text = staticText(loose);
       if (text === undefined) return;
-      const data = loose.parent?.type === "ArrayExpression";
-      if (data && (KEY_LITERAL_ALLOWED[file] ?? []).includes(text)) return;
+      if (KEY_LITERAL_ALLOWED[file]?.keys.includes(text) === true && isDataElement(loose)) return;
       checkKey(node, text);
     }
 

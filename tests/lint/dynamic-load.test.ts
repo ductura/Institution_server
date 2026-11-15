@@ -191,6 +191,15 @@ const failing: Case[] = [
     'const k = "constructor";\nexport const F = Reflect.get(() => 0, k);\n',
     'const { "constructor": F } = () => 0;\nexport { F };\n',
     'export const F = (() => 0)["constr" + "uctor"];\n',
+    // Review FAIL c.6892186063: a spread array literal straight into a loader.
+    'export const load = Reflect.get(() => 0, ...(["constructor"] as const));\n',
+    'export const F = Reflect.get(() => 0, ["constructor"][0]);\n',
+    'export const OTHER = new Set(["constructor"]);\n',
+    'export const FORBIDDEN_KEYS = new Set(["constructor"], ["constructor"]);\n',
+    'function f(): void {\n  const FORBIDDEN_KEYS = new Set(["constructor"]);\n  void FORBIDDEN_KEYS;\n}\nexport { f };\n',
+    'let FORBIDDEN_KEYS = new Set(["constructor"]);\nFORBIDDEN_KEYS = new Set();\nexport { FORBIDDEN_KEYS };\n',
+    'class Set {\n  constructor(a: string[]) {\n    void a;\n  }\n}\nconst FORBIDDEN_KEYS = new Set(["constructor"]);\nexport { FORBIDDEN_KEYS };\n',
+    'const FORBIDDEN_KEYS = new Set([...["constructor"]]);\nexport { FORBIDDEN_KEYS };\n',
   ]),
 ];
 
@@ -206,7 +215,7 @@ const passing: Case[] = [
     'export const ok = typeof globalThis.atob === "function" && !!globalThis.crypto?.subtle;\n',
   ]),
   ...at("server/domain/document/edit-step.ts", "", [
-    'export const keys = new Set(["__proto__", "constructor", "prototype"]);\n',
+    'const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);\nexport const has = (k: string): boolean => FORBIDDEN_KEYS.has(k);\n',
   ]),
   ...at(LOG, "", [
     'export const s = `constr${String(1)}`;\nexport const t = "construct" + "ion";\n',
@@ -303,9 +312,10 @@ describe("the rule covers the whole of server/", () => {
   });
 
   it("allows a forbidden key as a string only in tracked files that hold it", () => {
-    for (const [file, keys] of Object.entries(KEY_LITERAL_ALLOWED)) {
+    for (const [file, { binding, keys }] of Object.entries(KEY_LITERAL_ALLOWED)) {
       expect(tracked, file).toContain(file);
       const text = readFileSync(path.join(ROOT, file), "utf8");
+      expect(text, file).toContain(`const ${binding} = new Set([`);
       for (const key of keys) expect(text, `${file} ${key}`).toContain(`"${key}"`);
     }
   });
