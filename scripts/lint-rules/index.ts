@@ -29,8 +29,6 @@ export {
   LOADER_GLOBALS,
 } from "./dynamic-load.ts";
 export {
-  BUILDER_NAMES,
-  DECODER_ALLOWED,
   encodesNonAscii,
   isExempt,
   repoPath,
