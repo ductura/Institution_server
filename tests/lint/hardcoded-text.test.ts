@@ -202,6 +202,9 @@ const failing: [messageId: string, code: string][] = [
   // data: URLs are DAN-784 (Ductus#87 c.6897002897).
   ["encoded", 'export const e = new URL("http://xn-\\r-ekaj-fua.hr/");'],
   ["encoded", 'export const e = new URL("http://xn-\\t-ekaj-fua.hr/");'],
+  // Review FAIL c.6898791986: no "//", or any other character before the label.
+  ["encoded", 'export const e = new URL("http:xn--ekaj-fua.hr/");'],
+  ["encoded", 'export const e = new URL("http:\\\\XN--ekaj-fua.hr/");'],
   // (3) Server code may not import a test or a fixture.
   ["exempt", 'import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;'],
   ["exempt", 'export { x } from "./y.test.ts";'],
