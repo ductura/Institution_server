@@ -1,6 +1,7 @@
 import type { ESLint } from "eslint";
 import { kebabCaseFilename, onlyTs, testFileSuffix } from "./file-name.ts";
 import { noFakeServerImport } from "./fake-server-boundary.ts";
+import { areaBoundary } from "./area-boundary.ts";
 import { importBoundary } from "./import-boundary.ts";
 
 /** Repository-local ESLint rules, registered under the `local` plugin name. */
@@ -11,7 +12,9 @@ export const localPlugin: ESLint.Plugin = {
     "test-file-suffix": testFileSuffix,
     "only-ts": onlyTs,
     "import-boundary": importBoundary,
+    "area-boundary": areaBoundary,
     "no-fake-server-import": noFakeServerImport,
   },
 };
 export { databaseBoundaryPlugin, PG_SPECIFIER } from "./database-boundary.ts";
+export { AREA_IMPORTS, areaOf, ENTRY } from "./area-boundary.ts";

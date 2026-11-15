@@ -322,6 +322,8 @@ export default defineConfig(
       "local/kebab-case-filename": "error",
       "local/test-file-suffix": "error",
       "local/import-boundary": "error",
+      // Areas import each other only as docs/server-map.md §2 allows (S-1A-b).
+      "local/area-boundary": "error",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/consistent-type-definitions": ["error", "type"],
       "no-restricted-syntax": [
@@ -329,6 +331,32 @@ export default defineConfig(
         { selector: "TSEnumDeclaration", message: "enum is not allowed; use a union of literals." },
       ],
       "@typescript-eslint/naming-convention": namingConvention([], []),
+    },
+  },
+  {
+    // PLAN §3, rule 3: routes.ts holds no logic, only route declarations. The
+    // enum ban is repeated because these options replace the block above.
+    files: ["server/**/routes.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        { selector: "TSEnumDeclaration", message: "enum is not allowed; use a union of literals." },
+        ...[
+          "IfStatement",
+          "SwitchStatement",
+          "ForStatement",
+          "ForInStatement",
+          "ForOfStatement",
+          "WhileStatement",
+          "DoWhileStatement",
+          "TryStatement",
+          "ConditionalExpression",
+          "AwaitExpression",
+          "LogicalExpression",
+          "ChainExpression",
+          "ThrowStatement",
+        ].map((selector) => ({ selector, message: "routes.ts holds no logic (PLAN §3, rule 3)." })),
+      ],
     },
   },
   {
