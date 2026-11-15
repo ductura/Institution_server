@@ -252,6 +252,30 @@ jobs:
       # above globs only db/tests, so the matrix never runs on its empty database.
       - name: pgTAP glavne baze (pnpm test:db:native)
         run: PATH="$PGBIN:$PATH" pnpm test:db:native
+      # DAN-759: the VS-1 stack (scripts/stack) on its own cluster and ports,
+      # after every step above, so it weakens none of them. up waits for
+      # /api/v1/health; down must leave no port of the stack answering and no
+      # process of it running.
+      - name: Stog VS-1 (pnpm stack:vs1 up --env ci)
+        id: vs1-up
+        run: |
+          pnpm build
+          PATH="$PGBIN:$PATH" pnpm stack:vs1 up --env ci
+          curl -fsS http://127.0.0.1:4100/api/v1/health
+          # Health reads no database: check that the server's own login reaches it.
+          "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'
+      # Also after a failed up, but not when the job stopped before it (then
+      # nothing of the stack runs and pnpm may not even be installed).
+      - name: Gašenje stoga VS-1 (pnpm stack:vs1 down)
+        if: always() && steps.vs1-up.outcome != 'skipped'
+        run: |
+          PATH="$PGBIN:$PATH" pnpm stack:vs1 down
+          for port in 54360 4100; do
+            if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "port $port still answers" >&2; exit 1; fi
+          done
+          if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata)"; then
+            echo "a process of the stack is still running" >&2; exit 1
+          fi
 
   ci-ok:
     name: ci-ok

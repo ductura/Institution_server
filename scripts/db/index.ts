@@ -13,6 +13,7 @@ export {
   pgProveArgs,
   READY_ATTEMPTS,
   ROLE_MARKER,
+  spawnRun,
   testDb,
   up,
   WORKER_PASSWORD_VAR,
