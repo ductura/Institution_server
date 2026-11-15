@@ -47,9 +47,18 @@ Izvor: Ductus [CLAUDE.md](https://github.com/danielrisavi77-create/Ductus/blob/m
 | issue #1091 za izvještaje sesija u oblaku                                       | Ductus issue #1836                                                                                                                                                                                        |
 | issue ovog repoa, labele `ready-for-claude` i `claude:in-progress`, `Closes #N` | issuei i labele su u Ductusu; pisac u oblaku veže `DAN-xxx` i ispravan `Risk:` (Ductus [pisac-oblak.md](https://github.com/danielrisavi77-create/Ductus/blob/main/.claude/uloge/pisac-oblak.md), korak 3) |
 | `pnpm orch:overlap`, `pnpm orch:preflight`                                      | još ne postoje (S-0.21); u izvještaju napiši da su preskočeni                                                                                                                                             |
-| `scripts/forbidden-terms/scan.ts`                                               | još ne postoji; do tada rječnik provjerava review                                                                                                                                                         |
+| `scripts/forbidden-terms/scan.ts`                                               | `scripts/forbidden-terms/scan.ts`, samo `locales/**` (niže, „Skener zabranjenih izraza”)                                                                                                                  |
 
 Pravila po putanjama su u [.claude/rules/](.claude/rules/) i podsjetnik su, ne nova pravila. Test `server/agent-rules.test.ts` provjerava da svaka datoteka pravila upućuje na izvor u Ductusu, da relativna poveznica vodi na postojeću datoteku u repou, a poveznica na Ductus na dokument s ručno provjerenog popisa u `server/agent-rules.ts`. Da je svaka stavka preslika izvora, provjerava review.
+
+## Skener zabranjenih izraza
+
+`scanLocales` u `scripts/forbidden-terms/scan.ts` čita svaki tekst u `locales/**` i provjerava ga rječnikom zabranjenih izraza obaju jezika (Ductus `docs/PRODUCT.md` §5) i provjerom nečitljivih znakova; u `en` ne smije biti hrvatskog teksta. Pokreće ga `scripts/forbidden-terms/scan.test.ts` u `pnpm test` (CI „Provjere i testovi”, korak „Unit testovi”). Opis je u [scripts/forbidden-terms/README.md](scripts/forbidden-terms/README.md).
+
+- Izraz s popisa ne smije se pojaviti u sučelju.
+- Rječnik (`terms.ts`), iznimke (`EXCEPTIONS`, `SAME_IN_BOTH`) i popis datoteka u `locales/` mijenjaju se samo u `scripts/forbidden-terms/`, uz test.
+- Tekst izvan `locales/` i ne-kataloge skener ne čita; njih i dalje provjerava review.
+- Poznata granica: katalog se obilazi kao živi JS objekt, pa egzotični oblici (getter, Proxy) nisu zatvoreni do DAN-774.
 
 ## Jezik
 
