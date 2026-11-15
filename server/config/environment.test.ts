@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  appOrigin,
   DEFAULT_SHUTDOWN_GRACE_MS,
   environmentProblems,
   listenAddress,
   listenProblems,
+  originProblems,
   shutdownGraceMs,
   shutdownProblems,
 } from "./environment.ts";
@@ -76,6 +78,40 @@ describe("listenProblems and listenAddress", () => {
       expect(listenProblems({ HOST: host })).toEqual(["HOST is empty or has spaces"]);
     },
   );
+});
+
+// S-1B-b (DAN-777): the origin a state-changing request must carry.
+describe("originProblems and appOrigin", () => {
+  it.each(["https://ductura.invalid", "http://127.0.0.1:4000", "https://ductura.invalid:8443"])(
+    "accepts the bare origin %j",
+    (origin) => {
+      expect(originProblems({ APP_ORIGIN: origin })).toEqual([]);
+      expect(appOrigin({ APP_ORIGIN: origin })).toBe(origin);
+    },
+  );
+
+  it("is optional; without it every state-changing request is refused (null)", () => {
+    expect(originProblems({})).toEqual([]);
+    expect(appOrigin({})).toBeNull();
+  });
+
+  it.each([
+    "",
+    "null",
+    "https://invented-secret.invalid/",
+    "https://invented-secret.invalid/x",
+    "https://INVENTED-SECRET.invalid",
+    "ftp://invented-secret.invalid",
+    "file:///invented-secret",
+    "invented-secret.invalid",
+    " https://invented-secret.invalid",
+    "https://user:invented-secret@ductura.invalid",
+  ])("refuses APP_ORIGIN %j by name only and never uses it", (origin) => {
+    const problems = originProblems({ APP_ORIGIN: origin });
+    expect(problems).toEqual(["APP_ORIGIN is not a bare http(s) origin"]);
+    expect(problems.join(" ")).not.toContain("invented-secret");
+    expect(appOrigin({ APP_ORIGIN: origin })).toBeNull();
+  });
 });
 
 // S-1B-c (DAN-778): the shutdown deadline. The validator is checked over the

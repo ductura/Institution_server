@@ -29,3 +29,31 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - Iznimke su zatvoren popis `EXCEPTIONS`; danas samo doslovni „Risk:” u `hr.json` `gate.risk_invalid` i `gate.risk_below_floor` (ime retka u opisu PR-a). Zastarjela stavka `EXCEPTIONS` ili `SAME_IN_BOTH` ruši skener.
 
 Tekstovi sučelja moraju poštovati rječnik zabranjenih izraza (Ductus `docs/PRODUCT.md` §5).
+
+## Dodavanje jezika (S-1L.5, DAN-781)
+
+Hrvatski je zadani jezik sučelja i uvijek se nudi, prvi. Drugi se jezik nudi samo kad je njegov katalog potpun prema `hr`: `OFFERED_LANGUAGES` u `parity.ts` računa se iz `offeredLanguages(messagesHr, INTERFACE_CATALOGUES)` pri učitavanju. Nepotpun katalog ispada iz ponude sam, bez ručnog isključivanja.
+
+Katalog je potpun (`isCompleteCatalogue`) kad vrijedi sve od ovoga:
+
+- ima svaki ključ iz `hr` i nijedan drugi, na istoj dubini (ugniježđen ključ koji `hr` nema je višak);
+- svaki popis ima jednako stavki kao u `hr`, a gdje `hr` ima popis, i kandidat ima popis (ne tablicu s ključevima `0`, `1`…);
+- svaki tekst ima iste `{placeholdere}` kao hrvatski;
+- svaki tekst ima barem jedno vidljivo slovo, broj, interpunkciju ili simbol; razmaci, znakovi nulte širine, meka crtica, samostalni kombinirajući znakovi (npr. U+034F), znakovi privatne uporabe i prazna slova-ispune ne broje se;
+- katalog se može pročitati do kraja (katalog koji baci grešku nije potpun).
+
+Kandidat je samo kod od dva mala slova (ISO 639-1) različit od `hr`; unos `hr`, `HR`, ` hr` ili `hr-HR` se zanemaruje. Zadani jezik ne dolazi iz popisa kandidata, pa ga ni pogrešan unos ne može zamijeniti ni maknuti; popis koji se ne može pročitati ostavlja samo hrvatski. `INTERFACE_CATALOGUES` i `OFFERED_LANGUAGES` su zamrznuti.
+
+### Postupak
+
+1. Dodaj `locales/<kod>.ts` (kod jezika po ISO 639-1, npr. `de`) s izvozom `messages<Kod>` i `satisfies Messages`, po uzoru na `en.ts`. Typecheck ruši katalog kojem nedostaje ključ.
+2. Upiši izvoz u `INTERFACE_CATALOGUES` u `parity.ts` i u `locales/index.ts`.
+3. Razvrstaj novu datoteku u `CATALOGUES` skenera (`scripts/forbidden-terms/scan.ts`) s jezikom i imenom izvoza; nerazvrstana datoteka ruši skener. Rječnik zabranjenih izraza za taj jezik mora postojati prije nego što se jezik ponudi.
+4. Ažuriraj očekivane vrijednosti u testovima: `Object.keys(INTERFACE_CATALOGUES)` i `OFFERED_LANGUAGES` u `available.test.ts` te broj pročitanih tekstova u `scripts/forbidden-terms/scan.test.ts`.
+
+### Provjere prije PR-a
+
+- `pnpm typecheck`: katalog ispunjava `Messages`.
+- `pnpm test`: `available.test.ts` (jezik je u `OFFERED_LANGUAGES`), `parity.test.ts` i skener zabranjenih izraza.
+- Ručno: `catalogueGaps(messagesHr, messages<Kod>)` vraća prazne `missing`, `extra` i `placeholders`; ako jezik nije u ponudi, to su razlozi.
+- Jezik koji nije preveden do kraja ostaje izvan `INTERFACE_CATALOGUES` ili izvan ponude; djelomičan prijevod se ne nudi.

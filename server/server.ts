@@ -4,20 +4,22 @@
 // place for shutdown. It may import only http, settings and config
 // (docs/server-map.md §2); it never opens a database connection itself.
 import {
+  appOrigin,
   environmentProblems,
   listenAddress,
   listenProblems,
+  originProblems,
   shutdownGraceMs,
   shutdownProblems,
 } from "./config/index.ts";
 import {
   type AreaWithRoutes,
   createDatabases,
+  createLayers,
   createShutdownCoordinator,
   FLUSH_LOGS,
   HEALTH_ROUTE,
   installShutdown,
-  type Layer,
   routesOf,
   startServer,
 } from "./http/index.ts";
@@ -28,14 +30,16 @@ const problems = [
   ...environmentProblems(process.env),
   ...listenProblems(process.env),
   ...shutdownProblems(process.env),
+  ...originProblems(process.env),
 ];
 
 // 2. Databases. Building the registry opens nothing: server/database connects
 //    on first use. S-1F-a adds the logs and legal databases.
 // 3. Layers, in the order of docs/server-map.md §3, steps 2 to 7: client IP,
 //    IP rules, rate limit, traffic record, security headers, origin check.
-//    S-1B-b fills them.
-const LAYERS: readonly Layer[] = [];
+//    The order is fixed in http (PIPELINE_STEPS); steps 2 to 5 are empty
+//    until wave 5. Without APP_ORIGIN every state-changing request gets 403.
+const LAYERS = createLayers({ expectedOrigin: appOrigin(process.env) });
 
 // 4. Areas whose routes are mounted. Every server/<area>/routes.ts is named
 //    here (server/server.test.ts); test-server mounts its own.

@@ -1,27 +1,20 @@
-// The HTTP server: layers in order, then the router. Listening resolves with
-// the bound port or rejects with the error code (EADDRINUSE, EACCES), so the
+// The HTTP server: the layers of pipeline.ts, then the router. Listening
+// resolves with the bound port or rejects with the error code (EADDRINUSE, EACCES), so the
 // entry point can refuse to start with a clear line instead of a stack.
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createServer, type ServerResponse } from "node:http";
 import { Server as NetServer, type Socket } from "node:net";
 
 import type { Databases } from "./databases.ts";
-import { createRouter, type Route, sendJson } from "./router.ts";
+import { createPipeline, type Layers } from "./pipeline.ts";
+import { createRouter, type Route } from "./router.ts";
+import { refuse } from "./security-headers.ts";
 import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
-
-/**
- * One step before the router (docs/server-map.md §3, steps 2 to 7). "done"
- * means the layer answered and the request stops there. S-1B-b fills the
- * layers and may change this type; it is internal to http.
- */
-export type Layer = (
-  request: IncomingMessage,
-  response: ServerResponse,
-) => Promise<"next" | "done">;
 
 export type StartOptions = {
   readonly host: string;
   readonly port: number;
-  readonly layers: readonly Layer[];
+  /** One layer per step of docs/server-map.md §3, 2 to 7; the order is the pipeline's. */
+  readonly layers: Layers;
   readonly routes: readonly Route[];
   /** Handed to the services of the areas when they get routes (S-M); nothing reads it yet. */
   readonly databases: Databases;
@@ -30,12 +23,8 @@ export type StartOptions = {
 };
 export type Running = Listener & { readonly port: number; close(): Promise<void> };
 
-// The refusal while shutting down: the contract's word and format, and the
-// connection is not kept for another request.
-const UNAVAILABLE = { connection: "close", "retry-after": "1" };
-
 export async function startServer(options: StartOptions): Promise<Running> {
-  const route = createRouter(options.routes);
+  const handle = createPipeline(options.layers, createRouter(options.routes));
   const shutdown = options.shutdown ?? createShutdownCoordinator();
   // Responses whose headers are not sent yet: once draining they say
   // Connection: close, so no client is told it may reuse the connection.
@@ -52,7 +41,9 @@ export async function startServer(options: StartOptions): Promise<Running> {
   const server = createServer((request, response) => {
     const ticket = shutdown.begin();
     if (ticket === null) {
-      sendJson(response, 503, { error: "unavailable" }, UNAVAILABLE);
+      // The contract's word and format; refuse also closes the connection.
+      response.setHeader("Retry-After", "1");
+      refuse(response, 503, "unavailable");
       return;
     }
     const socket = request.socket;
@@ -90,15 +81,10 @@ export async function startServer(options: StartOptions): Promise<Running> {
       if (socket.writableEnded) socket.once("finish", flushed);
       else socket.write("", flushed);
     });
-    void (async () => {
-      for (const layer of options.layers) {
-        if ((await layer(request, response)) === "done") return;
-      }
-      await route(request, response);
-    })()
+    void handle(request, response)
       .catch((error: unknown) => {
-        console.error("request failed", (error as Error).name);
-        if (!response.headersSent) sendJson(response, 500, { error: "internal" });
+        console.error("request failed", error instanceof Error ? error.name : typeof error);
+        if (!response.headersSent) refuse(response, 500, "internal");
         else response.destroy();
       })
       .finally(done);

@@ -9,6 +9,7 @@
 //   hook     "ok" (default), "throw" or "hang": a hook after the logs
 import {
   createDatabases,
+  createLayers,
   createShutdownCoordinator,
   FLUSH_LOGS,
   HEALTH_ROUTE,
@@ -38,7 +39,7 @@ const running = await startServer({
   host: "127.0.0.1",
   port: 0,
   databases: createDatabases(),
-  layers: [],
+  layers: createLayers({ expectedOrigin: null }),
   shutdown,
   routes: [
     {
