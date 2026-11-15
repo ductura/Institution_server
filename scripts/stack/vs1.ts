@@ -18,6 +18,7 @@ import { SERVER_NODE_FLAGS } from "../build/index.ts";
 import { fileStore, spawnRun, up as provision } from "../db/index.ts";
 import { parseArgs, SLOTS, type StackConfig, stackConfig, stackPorts } from "./config.ts";
 import { commandLine, portFree, startDetached, stopProcess, waitHealthy } from "./processes.ts";
+import { clearStaleLock, takeLock } from "./lock.ts";
 import * as stateFile from "./state.ts";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -104,7 +105,7 @@ export async function up(config: StackConfig): Promise<void> {
   }
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
   chmodSync(DIR, 0o700);
-  takeLock();
+  takeLock(LOCK, lockOwnerRuns);
   try {
     const state: stateFile.StackState = {
       env: config.env,
@@ -119,27 +120,13 @@ export async function up(config: StackConfig): Promise<void> {
     stateFile.writeState(STATE, state);
     // From here on a failure stops whatever already started.
     await start(config, state).catch(async (error: unknown) => {
-      await down().catch(() => false);
+      // The state in memory, which holds the server pid even when writing it failed.
+      await down(state).catch(() => false);
       throw error;
     });
   } finally {
     rmSync(LOCK, { force: true });
   }
-}
-
-// One `up` at a time: a second one fails here instead of sharing PGDATA. A lock
-// left by an `up` that was killed or interrupted by a restart (its pid no longer
-// runs this script) is taken over.
-function takeLock(): void {
-  try {
-    writeFileSync(LOCK, String(process.pid), { flag: "wx", mode: 0o600 });
-    return;
-  } catch (error) {
-    if (Reflect.get(error as object, "code") !== "EEXIST") throw error;
-  }
-  const owner = Number(readFileSync(LOCK, "utf8"));
-  if (lockOwnerRuns(owner)) throw new Error(`another up (pid ${owner}) is running`);
-  writeFileSync(LOCK, String(process.pid), { mode: 0o600 });
 }
 
 const lockOwnerRuns = (pid: number): boolean =>
@@ -162,8 +149,8 @@ async function stopPostgres(): Promise<void> {
 }
 
 /** Stops what the stack started; false when a port of the stack still answers. */
-export async function down(): Promise<boolean> {
-  const read = stateFile.readState(STATE);
+export async function down(given?: stateFile.StackState): Promise<boolean> {
+  const read = given ?? stateFile.readState(STATE);
   if (read === "unreadable") console.error("state.json is unreadable; stopping PostgreSQL only");
   const state = read === "unreadable" ? null : read;
   const server = state?.processes.server;
@@ -180,7 +167,12 @@ export async function down(): Promise<boolean> {
     free = false;
   }
   if (free) rmSync(STATE, { force: true });
-  if (existsSync(LOCK) && !lockOwnerRuns(Number(readFileSync(LOCK, "utf8")))) rmSync(LOCK);
+  // A lock left by an interrupted up; a running up keeps its own.
+  try {
+    clearStaleLock(LOCK, lockOwnerRuns);
+  } catch {
+    // its owner still runs
+  }
   return free;
 }
 

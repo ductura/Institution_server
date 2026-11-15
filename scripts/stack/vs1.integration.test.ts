@@ -10,7 +10,8 @@ import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { buildServer } from "../build/index.ts";
-import { portFree } from "./index.ts";
+import { commandLine, portFree, type StackState, startDetached } from "./index.ts";
+import { down } from "./vs1.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts/stack/vs1.ts");
@@ -91,6 +92,32 @@ describe("pnpm stack:vs1 down without a state", () => {
     expect(run(["down"], {}).status).toBe(0);
     expect(existsSync(lock)).toBe(false);
   });
+});
+
+describe("down with the state of a failed up", () => {
+  it("stops a process known only from memory, as the rollback of up passes it", async () => {
+    expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
+    const args = ["-e", "setTimeout(() => {}, 60000)"];
+    const pid = await startDetached(process.execPath, args, {
+      cwd: dir,
+      env: { PATH: process.env.PATH ?? "" },
+      log: join(dir, "child.log"),
+    });
+    const marker = [process.execPath, ...args].join(" ");
+    expect(commandLine(pid)).toBe(marker);
+    const state: StackState = {
+      env: "ci",
+      startedAt: new Date().toISOString(),
+      repo: { sha: "0".repeat(40), dirty: false },
+      versions: {},
+      serverBuildSha256: "",
+      ports: { postgres: 54397, server: 4197, oidc: 4297 },
+      processes: { server: { pid, marker } },
+      pgdata: join(dir, "pgdata"),
+    };
+    expect(await down(state)).toBe(true);
+    expect(commandLine(pid)).toBeNull();
+  }, 30_000);
 });
 
 describe("the server build", () => {
