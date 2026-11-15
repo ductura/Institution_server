@@ -79,6 +79,8 @@ const BYTE_HOLDERS = ["Response", "Blob", "File"];
 const STRING_BUILDERS = new Set(["raw", "fromCharCode", "fromCodePoint"]);
 // Names under which the global object is reachable.
 const GLOBAL_HOLDERS = ["globalThis", "global", "window", "self"];
+// Array methods that may take String as their callback (`xs.map(String)`).
+const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex", "flatMap"];
 /**
  * Files that decode input at run time, each with the builders it may use. A closed list:
  * tests/lint/hardcoded-text.test.ts checks each entry is used. Contract
@@ -325,8 +327,18 @@ export const noHardcodedText: Rule.RuleModule = {
         name === "String"
       )
         return;
-      // No argument position is allowed, `.map(String)` included: a callback
-      // and a `thisArg` look the same (review FAIL c.6900113231 on #65).
+      // `.map(String)`: only the first argument of an array method, the callback.
+      // A `thisArg` and every other argument are values (review FAIL
+      // c.6900113231 on #65, orchestrator order c.6900141699).
+      const method = parent?.callee?.type === "MemberExpression" ? memberName(parent.callee) : null;
+      if (
+        parent?.type === "CallExpression" &&
+        name === "String" &&
+        parent.arguments?.[0] === node &&
+        method !== null &&
+        CALLBACK_METHODS.includes(method)
+      )
+        return;
       if (parent?.type !== "MemberExpression" || parent.object !== node) {
         if (parent?.type !== "TSQualifiedName")
           context.report({ node: node as Node, messageId: "value", data: { name } });

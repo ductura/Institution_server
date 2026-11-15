@@ -63,6 +63,7 @@ const passing: string[] = [
   "export const s = (x: unknown) => String(x);",
   "export const s = (x: unknown) => new String(x);",
   "export const s = (xs: number[]) => xs.map((x) => String(x));",
+  "export const s = (xs: number[]) => xs.map(String);",
   "export const p = String.prototype.trim;",
   // A schema library's String is not the global.
   "const Type = { String: () => 1 };\nexport const t = Type.String();",
@@ -126,7 +127,7 @@ const failing: [messageId: string, code: string][] = [
   ["builder", "export const e = String.fromCharCode.apply(null, [0x111]);"],
   ["value", "export const s = [String][0];"],
   // Review FAIL c.6900113231: String as a callback or as thisArg.
-  ["value", "export const s = (xs: number[]) => xs.map(String);"],
+  ["value", "export const s = (xs: number[]) => xs.map((x) => x, String);"],
   [
     "value",
     "export const e = [0].map(function (this: StringConstructor) {\n  return this;\n}, String)[0];",
