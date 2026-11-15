@@ -82,6 +82,8 @@ const passing: string[] = [
   'import { fileURLToPath } from "node:url";\nexport const f = fileURLToPath;',
   'import * as util from "node:util";\nexport const f = util.inspect;',
   'import * as util from "node:util";\nexport const f = (util as typeof util).inspect;',
+  'import type * as util from "node:util";\nexport type O = util.InspectOptions;',
+  'import * as util from "node:util";\nexport type O = util.InspectOptions;',
   "export const t = (a: string, b: string) => `${a}: ${b}`;",
   "export const r = /^[a-z]+$/u;",
 ];

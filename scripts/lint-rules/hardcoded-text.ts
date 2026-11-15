@@ -461,7 +461,10 @@ export const noHardcodedText: Rule.RuleModule = {
         for (const variable of context.sourceCode.getDeclaredVariables(node)) {
           for (const reference of variable.references) {
             const id = reference.identifier as unknown as Loose;
-            if (inTypeQuery(id)) continue;
+            // A type (`util.InspectOptions`, `typeof util`) reads no value.
+            const typeOnly =
+              (reference as { isValueReference?: boolean }).isValueReference === false;
+            if (typeOnly || inTypeQuery(id)) continue;
             const self = outer(id);
             const up = self.parent;
             const read = up?.type === "MemberExpression" && up.object === self && !up.computed;
