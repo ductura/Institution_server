@@ -4,6 +4,7 @@ import { noFakeServerImport } from "./fake-server-boundary.ts";
 import { areaBoundary } from "./area-boundary.ts";
 import { importBoundary } from "./import-boundary.ts";
 import { noDynamicLoad } from "./dynamic-load.ts";
+import { noHardcodedText } from "./hardcoded-text.ts";
 import { renamedImportName } from "./renamed-import-name.ts";
 
 /** Repository-local ESLint rules, registered under the `local` plugin name. */
@@ -17,6 +18,7 @@ export const localPlugin: ESLint.Plugin = {
     "area-boundary": areaBoundary,
     "no-fake-server-import": noFakeServerImport,
     "no-dynamic-load": noDynamicLoad,
+    "no-hardcoded-text": noHardcodedText,
     "renamed-import-name": renamedImportName,
   },
 };
@@ -28,4 +30,11 @@ export {
   KEY_LITERAL_ALLOWED,
   LOADER_GLOBALS,
 } from "./dynamic-load.ts";
+export {
+  isExempt,
+  repoPath,
+  TEXT_EXEMPT,
+  TEXT_TRANSITIONAL,
+  textProblem,
+} from "./hardcoded-text.ts";
 export { TEST_ONLY_RE } from "./fake-server-boundary.ts";

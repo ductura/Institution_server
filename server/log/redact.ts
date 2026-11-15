@@ -108,7 +108,7 @@ export function isSensitiveKey(key: string): boolean {
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
+    .replace(/\u0111/g, "d")
     .replace(/[^a-z0-9]/g, "");
   return (
     SENSITIVE_EXACT.has(normalized) || SENSITIVE_PARTS.some((part) => normalized.includes(part))
@@ -129,7 +129,7 @@ const JWT = /\beyJ[\w-]*\.[\w-]*\.[\w-]*/g;
  * is one key here as it is in an object.
  */
 const KEY_VALUE =
-  /(["']?)([A-Za-z0-9_.čćžšđČĆŽŠĐ-]{2,40})\1(\s*[:=]\s*)("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)?/g;
+  /(["']?)([A-Za-z0-9_.\u010d\u0107\u017e\u0161\u0111\u010c\u0106\u017d\u0160\u0110-]{2,40})\1(\s*[:=]\s*)("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)?/g;
 /** A credential header written as text: everything to the end of the line. */
 const HEADER_LINE = /\b((?:proxy-)?authorization|(?:set-)?cookie)(\s*:\s*)[^\n]*/gi;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
