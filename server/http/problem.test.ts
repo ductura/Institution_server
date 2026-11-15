@@ -10,10 +10,7 @@ import type { TObject, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
-import { messagesEn, messagesHr, textOf, type MessageKey } from "../../locales/index.ts";
 import {
-  error,
-  ERROR_MESSAGE_KEYS,
   type ErrorSpec,
   FALLBACK,
   INTERNAL,
@@ -22,7 +19,6 @@ import {
   ROUTES,
   SERVER_ERRORS,
   SHARED_ERRORS,
-  v1Error,
 } from "../contracts/index.ts";
 import { sendJson } from "./json.ts";
 import { knownError, problemOf, sendProblem } from "./problem.ts";
@@ -49,61 +45,8 @@ function fakeResponse() {
   return { response: response as unknown as ServerResponse, answer };
 }
 
-const camel = (code: string) =>
-  code.replace(/_([a-z])/gu, (_, letter: string) => letter.toUpperCase());
-
-describe("every messageKey of the server", () => {
-  it("is in the registry, with the key of its code in ERROR_MESSAGE_KEYS", () => {
-    expect(SERVER_ERRORS).toEqual(
-      expect.arrayContaining([...SHARED_ERRORS, FALLBACK.error, METHOD_NOT_ALLOWED.error]),
-    );
-    for (const route of ROUTES)
-      expect(SERVER_ERRORS).toEqual(expect.arrayContaining([...route.errors]));
-    for (const spec of SERVER_ERRORS) expect(spec.key).toBe(ERROR_MESSAGE_KEYS.get(spec.code));
-  });
-
-  it("ERROR_MESSAGE_KEYS maps each snake_case code to errors.<camelCase>, and every row is used", () => {
-    const used = new Set(SERVER_ERRORS.map((spec) => spec.code));
-    for (const [code, key] of ERROR_MESSAGE_KEYS) {
-      expect(code).toMatch(/^[a-z]+(?:_[a-z]+)*$/u);
-      expect(key).toBe(`errors.${camel(code)}`);
-      expect(used.has(code)).toBe(true);
-    }
-    expect(new Set(ERROR_MESSAGE_KEYS.values()).size).toBe(ERROR_MESSAGE_KEYS.size);
-  });
-
-  it("a code without a row cannot be declared", () => {
-    expect(() => error(404, "made_up_code")).toThrow(/no message key/u);
-    expect(() => v1Error(400, "__proto__")).toThrow(/no message key/u);
-  });
-
-  it("each status and code is answered in one shape: v1 or the problem body", () => {
-    const v1 = new Set(SERVER_ERRORS.filter((spec) => spec.v1).map((s) => `${s.status} ${s.code}`));
-    const problem = SERVER_ERRORS.filter(
-      (spec) => !spec.v1 && typeof spec.body === "object" && "messageKey" in properties(spec.body),
-    ).map((spec) => `${spec.status} ${spec.code}`);
-    expect(problem.filter((pair) => v1.has(pair))).toEqual([]);
-  });
-
-  it.each(SERVER_ERRORS.map((spec) => [spec.key, spec.status] as const))(
-    "%s (%i) has a text in hr and en",
-    (key) => {
-      expect(textOf(messagesHr, key as MessageKey)).toEqual(expect.stringMatching(/\S/u));
-      expect(textOf(messagesEn, key as MessageKey)).toEqual(expect.stringMatching(/\S/u));
-    },
-  );
-
-  it("has no text in errors that no error uses", () => {
-    const used = new Set(SERVER_ERRORS.map((spec) => spec.key));
-    for (const table of [messagesHr, messagesEn])
-      expect(Object.keys(table.errors).filter((name) => !used.has(`errors.${name}`))).toEqual([]);
-  });
-
-  it("an unknown key fails the check above", () => {
-    expect(() => textOf(messagesHr, "errors.madeUpCode" as MessageKey)).toThrow();
-    expect(() => textOf(messagesHr, "errors.not_found" as MessageKey)).toThrow();
-  });
-});
+// The table, the texts in hr and en and option (c) in the contract are
+// tested in server/contracts/message-keys.test.ts (DAN-789 a).
 
 // Bodies that keep a v1 shape the guard does not let change (PR opis, "Poznate
 // granice"): a page for a browser navigation, no body, the code in `status`, or
@@ -159,19 +102,6 @@ describe("every route in the inventory", () => {
     expect(props["requestId"]).toMatchObject({ type: "string", pattern: REQUEST_ID_PATTERN });
     // The answer problem.ts gives is valid against the route's own schema.
     expect(Value.Check(spec.body as TSchema, problemOf(status, code, ID))).toBe(true);
-  });
-
-  // Option (c) of DAN-789: a field added under a oneOf breaks v1 (breaking.ts),
-  // so no status with several JSON errors may carry the problem fields.
-  it("has no problem body under a oneOf (a status with several JSON errors)", () => {
-    for (const route of ROUTES) {
-      const json = route.errors.filter((spec) => typeof spec.body === "object");
-      for (const spec of json) {
-        if (json.filter((other) => other.status === spec.status).length < 2) continue;
-        const where = `${route.id} ${spec.status} ${spec.code}`;
-        expect(Object.keys(properties(spec.body as TSchema)), where).not.toContain("messageKey");
-      }
-    }
   });
 
   it("the shared errors, the fallback and 405 have the default problem body", () => {
