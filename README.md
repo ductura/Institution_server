@@ -18,7 +18,7 @@ pnpm lint               # ESLint nad cijelim repoom, bez upozorenja
 pnpm test               # unit, property i integration, jedan za drugim (bez baze)
 pnpm test:unit
 pnpm test:property
-pnpm test:integration
+pnpm test:integration  # integracijski testovi; testne baze na PGliteu (test-support/database)
 pnpm test:database      # testovi migracija; traže migriranu bazu na 127.0.0.1:54329 (posao database u CI-ju)
 pnpm contracts:generate # ponovno generira server/contracts/generated i openapi/v1.json iz ugovora
 pnpm contracts:breaking [ref] # ruši se kad ugovor lomi klijente openapi/v1.json na ref (zadano origin/main)
