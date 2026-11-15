@@ -25,7 +25,7 @@ Svi primjeri koriste izmišljene podatke (domena `.invalid`), nikad stvarne osob
 | 7   | Testovi uz kod, tri sufiksa                         | review (vitest pokreće samo ta tri sufiksa)                    |
 | 8   | Jedan oblik rezultata i greške                      | review (tipovi kad se uvedu zajednički `Result`/`AppError`)    |
 | 9   | `snake_case` u `camelCase` samo u `server/database` | review                                                         |
-| 10  | Svaka mapa ima `index.ts`, kod, testove i README    | review                                                         |
+| 10  | Svaka mapa ima `index.ts`, kod, testove i README    | test za `index.ts` i README, ostalo review                     |
 | 11  | CSS moduli nose ime komponente                      | review (lint kad ga web repozitoriji uvedu)                    |
 | 12  | Nove skripte u TypeScriptu                          | review                                                         |
 | 13  | Poveznice u dokumentima moraju vrijediti            | test                                                           |
@@ -255,11 +255,27 @@ Svaka mapa s kodom ima:
 
 - `index.ts` koji izvozi javno sučelje mape (pravilo 6);
 - kod i testove uz njega (pravilo 7);
-- `README.md` na hrvatskom: čemu mapa služi, što izvozi i što ne smije uvoziti.
+- `README.md` na hrvatskom prema predlošku niže.
 
-Provedba: review.
+Predložak README-a područja: naslov je put mape, zatim jedna rečenica s poveznicom na [Kartu servera](server-map.md), pa pet odjeljaka ovim redom. Sadržaj se prepisuje iz karte (§1 i §2), ne izmišlja.
 
-Prelazno: `server/` nema `README.md` (README u korijenu opisuje strukturu), a `server/index.ts` je ulazna točka, ne izvoz sučelja. Mape bez koda (`db/`, `locales/`, `test-support/`, `docs/`) trenutačno su prazne i README dobivaju kad dobiju sadržaj.
+```md
+# server/<područje>
+
+## Što radi
+
+## Tko ga zove
+
+## Koje podatke dira
+
+## Što izvozi
+
+## Što ne smije uvoziti
+```
+
+Provedba: test (`server/structure.test.ts`) za `index.ts` i `README.md` svakog područja koje u karti postoji i za naslove predloška u područjima s popisa u testu; ostalo review.
+
+Prelazno: README-i područja nastali prije predloška (`session`, `database`, `log`, `config`, `domain`, `external/srce-auth`, `external/storage`, `external/keys`) prelaze na njega kad ih zadatak ionako mijenja; tada područje ulazi u popis u `server/structure.test.ts`. `server/` nema `README.md` (README u korijenu opisuje strukturu), a `server/index.ts` je ulazna točka, ne izvoz sučelja. Mape bez koda (`db/`, `locales/`, `test-support/`, `docs/`) trenutačno su prazne i README dobivaju kad dobiju sadržaj.
 
 Ispravno:
 
