@@ -11,7 +11,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { buildServer } from "../build/index.ts";
 import { commandLine, portFree, type StackState, startDetached } from "./index.ts";
-import { down } from "./vs1.ts";
+import { down, preflight } from "./vs1.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts/stack/vs1.ts");
@@ -118,6 +118,21 @@ describe("down with the state of a failed up", () => {
     expect(await down(state)).toBe(true);
     expect(commandLine(pid)).toBeNull();
   }, 30_000);
+});
+
+describe("preflight, run under the lock", () => {
+  it("refuses when another up already wrote its state", async () => {
+    expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
+    mkdirSync(dirname(STATE), { recursive: true });
+    writeFileSync(STATE, "{}");
+    try {
+      await expect(
+        preflight({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } }),
+      ).rejects.toThrow(/stack is up/u);
+    } finally {
+      rmSync(STATE, { force: true });
+    }
+  });
 });
 
 describe("the server build", () => {

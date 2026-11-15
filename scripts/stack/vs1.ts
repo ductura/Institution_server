@@ -28,7 +28,6 @@ const LOCK = join(DIR, "up.lock");
 const PGDATA = join(DIR, "pgdata");
 const SERVER = join(ROOT, "dist", "server.js");
 const HEALTH = "/api/v1/health";
-const SCRIPT = fileURLToPath(import.meta.url);
 // pg_ctl hands -o to /bin/sh, and a Unix socket path has at most 107 bytes.
 const SAFE_PATH = /^\/[A-Za-z0-9._/-]+$/u;
 
@@ -93,20 +92,13 @@ export async function up(config: StackConfig): Promise<void> {
   if (process.getuid?.() === 0) {
     throw new Error("run the stack as an ordinary user (initdb refuses root)");
   }
-  if (stateFile.readState(STATE) !== null) {
-    throw new Error("the stack is up; run pnpm stack:vs1 down");
-  }
-  if (!existsSync(SERVER)) throw new Error("dist/server.js is missing; run pnpm build");
-  if (!SAFE_PATH.test(DIR) || `${DIR}/.s.PGSQL.${config.ports.postgres}`.length > 107) {
-    throw new Error("the checkout path must be short and use only letters, digits, . _ - and /");
-  }
-  for (const [name, port] of Object.entries(config.ports)) {
-    if (!(await portFree(port))) throw new Error(`port ${port} (${name}) is in use`);
-  }
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
   chmodSync(DIR, 0o700);
-  takeLock(LOCK, lockOwnerRuns);
+  takeLock(LOCK);
   try {
+    // Checked under the lock: an up that waited here sees the stack another
+    // one started meanwhile, and stops before it starts or rolls back anything.
+    await preflight(config);
     const state: stateFile.StackState = {
       env: config.env,
       startedAt: new Date().toISOString(),
@@ -129,20 +121,39 @@ export async function up(config: StackConfig): Promise<void> {
   }
 }
 
-const lockOwnerRuns = (pid: number): boolean =>
-  Number.isInteger(pid) && pid > 1 && (commandLine(pid) ?? "").includes(SCRIPT);
+/** Refuses to start over anything of the stack that already runs, or a busy port. */
+export async function preflight(config: StackConfig): Promise<void> {
+  if (stateFile.readState(STATE) !== null) {
+    throw new Error("the stack is up; run pnpm stack:vs1 down");
+  }
+  if (ourPostmaster() !== null)
+    throw new Error("the stack's PostgreSQL runs; run pnpm stack:vs1 down");
+  if (!existsSync(SERVER)) throw new Error("dist/server.js is missing; run pnpm build");
+  if (!SAFE_PATH.test(DIR) || `${DIR}/.s.PGSQL.${config.ports.postgres}`.length > 107) {
+    throw new Error("the checkout path must be short and use only letters, digits, . _ - and /");
+  }
+  for (const [name, port] of Object.entries(config.ports)) {
+    if (!(await portFree(port))) throw new Error(`port ${port} (${name}) is in use`);
+  }
+}
 
-// pg_ctl signals whatever holds the pid in postmaster.pid; a stale file after
-// a reboot may name someone else's process, so the pid must be our postmaster.
-async function stopPostgres(): Promise<void> {
+/** The pid in postmaster.pid when it is this stack's running postmaster, else null. */
+function ourPostmaster(): number | null {
   let pid: number;
   try {
     pid = Number(readFileSync(join(PGDATA, "postmaster.pid"), "utf8").split("\n")[0]);
   } catch {
-    return;
+    return null;
   }
-  if (!(commandLine(pid) ?? "").includes(` -D ${PGDATA} `)) {
-    console.error(`postmaster.pid names pid ${pid}, not this stack's PostgreSQL; left alone`);
+  return (commandLine(pid) ?? "").includes(` -D ${PGDATA} `) ? pid : null;
+}
+
+// pg_ctl signals whatever holds the pid in postmaster.pid; a stale file after
+// a reboot may name someone else's process, so the pid must be our postmaster.
+async function stopPostgres(): Promise<void> {
+  if (!existsSync(join(PGDATA, "postmaster.pid"))) return;
+  if (ourPostmaster() === null) {
+    console.error("postmaster.pid does not name this stack's PostgreSQL; left alone");
     return;
   }
   await must("pg_ctl stop", "pg_ctl", ["-D", PGDATA, "-w", "stop", "-m", "fast"]);
@@ -169,7 +180,7 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
   if (free) rmSync(STATE, { force: true });
   // A lock left by an interrupted up; a running up keeps its own.
   try {
-    clearStaleLock(LOCK, lockOwnerRuns);
+    clearStaleLock(LOCK);
   } catch {
     // its owner still runs
   }
