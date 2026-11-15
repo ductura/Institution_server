@@ -4,7 +4,7 @@ Pravila pisanja koda u `ductura/server`. Vrijede i za ostale Ductura repozitorij
 
 Svako pravilo navodi **provedbu**, tj. što ga provjerava:
 
-- **planirano S-0.7**: ESLint pravilo još ne postoji (zaseban zadatak S-0.7); do uvođenja pravilo čuva review;
+- **lint**: ESLint pravilo iz `eslint.config.ts` (ili lokalno pravilo iz `scripts/lint-rules/`); `pnpm lint` s `--max-warnings 0` pada na svakom nalazu, a inline direktive su isključene;
 - **formater**: automatsko formatiranje;
 - **tipovi**: `tsc` sa strogim postavkama iz `tsconfig.json` (već vrijedi u CI-ju);
 - **test**: automatski test u repou;
@@ -14,27 +14,27 @@ Svi primjeri koriste izmišljene podatke (domena `.invalid`), nikad stvarne osob
 
 ## Pregled
 
-| #   | Pravilo                                             | Provedba                                                       |
-| --- | --------------------------------------------------- | -------------------------------------------------------------- |
-| 1   | Datoteke u kebab-caseu                              | planirano S-0.7, do tada review                                |
-| 2   | `camelCase`, `PascalCase`, `UPPER_SNAKE`            | planirano S-0.7, do tada review                                |
-| 3   | Bez `any`                                           | planirano S-0.7, do tada review (implicitni `any` hvata `tsc`) |
-| 4   | `type` umjesto `interface`                          | planirano S-0.7, do tada review                                |
-| 5   | Bez `enum`                                          | planirano S-0.7, do tada review                                |
-| 6   | Uvoz samo kroz `index.ts`                           | lint `local/import-boundary` i `local/area-boundary`           |
-| 7   | Testovi uz kod, tri sufiksa                         | review (vitest pokreće samo ta tri sufiksa)                    |
-| 8   | Jedan oblik rezultata i greške                      | review (tipovi kad se uvedu zajednički `Result`/`AppError`)    |
-| 9   | `snake_case` u `camelCase` samo u `server/database` | review                                                         |
-| 10  | Svaka mapa ima `index.ts`, kod, testove i README    | test za `index.ts` i README, ostalo review                     |
-| 11  | CSS moduli nose ime komponente                      | review (lint kad ga web repozitoriji uvedu)                    |
-| 12  | Nove skripte u TypeScriptu                          | review                                                         |
-| 13  | Poveznice u dokumentima moraju vrijediti            | test                                                           |
+| #   | Pravilo                                             | Provedba                                                                  |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------- |
+| 1   | Datoteke u kebab-caseu                              | lint `local/kebab-case-filename` za `.ts`, ostalo review                  |
+| 2   | `camelCase`, `PascalCase`, `UPPER_SNAKE`            | lint `@typescript-eslint/naming-convention` i `local/renamed-import-name` |
+| 3   | Bez `any`                                           | lint `@typescript-eslint/no-explicit-any`; implicitni `any` hvata `tsc`   |
+| 4   | `type` umjesto `interface`                          | lint `@typescript-eslint/consistent-type-definitions`                     |
+| 5   | Bez `enum`                                          | lint `no-restricted-syntax`                                               |
+| 6   | Uvoz samo kroz `index.ts`                           | lint `local/import-boundary` i `local/area-boundary`                      |
+| 7   | Testovi uz kod, tri sufiksa                         | lint `local/test-file-suffix`, ostalo review                              |
+| 8   | Jedan oblik rezultata i greške                      | review (tipovi kad se uvedu zajednički `Result`/`AppError`)               |
+| 9   | `snake_case` u `camelCase` samo u `server/database` | lint `@typescript-eslint/naming-convention` (popisi imena), ostalo review |
+| 10  | Svaka mapa ima `index.ts`, kod, testove i README    | test za `index.ts` i README, ostalo review                                |
+| 11  | CSS moduli nose ime komponente                      | review (lint kad ga web repozitoriji uvedu)                               |
+| 12  | Nove skripte u TypeScriptu                          | lint `local/only-ts`, `.sh` review                                        |
+| 13  | Poveznice u dokumentima moraju vrijediti            | test                                                                      |
 
 ## 1. Datoteke u kebab-caseu
 
 Imena datoteka i mapa su malim slovima, riječi odvojene crticom. Iznimke: dokumenti u korijenu i `docs/` u `UPPER_SNAKE.md` (`README.md`, `CODE_STYLE.md`) i datoteke koje alat traži pod fiksnim imenom (`.nvmrc`).
 
-Provedba: planirano S-0.7, do tada review.
+Provedba: lint `local/kebab-case-filename` za svaku `.ts` datoteku (svaki dio imena odvojen točkom je kebab-case). Imena mapa i ostalih datoteka čuva review.
 
 Ispravno:
 
@@ -56,7 +56,7 @@ server/Session_Store.ts
 - tipovi i generički parametri: `PascalCase`;
 - prave konstante na razini modula (nepromjenjiva vrijednost poznata pri učitavanju): `UPPER_SNAKE`.
 
-Provedba: planirano S-0.7 (`@typescript-eslint/naming-convention`), do tada review.
+Provedba: lint `@typescript-eslint/naming-convention` i `local/renamed-import-name`. Prvo pravilo ne gleda imenovani uvoz, pa drugo traži da lokalno ime preimenovanog uvoza (`import { a as b }`) javno ime preimenovanog izvoza (`export { a as b }`, i kad je napisano kao string), ime u `export * as ns` i ime u `import x = …` bude `camelCase`, `PascalCase` ili `UPPER_CASE`; ime preuzeto iz drugog modula bez preimenovanja (`import { snake_name }`) ostaje kakvo jest. Imena koja zadaje vanjski protokol ili alat su zatvoreni popisi u `eslint.config.ts`. Razliku između prave konstante i obične vrijednosti u `UPPER_SNAKE` čuva review.
 
 Ispravno:
 
@@ -80,7 +80,7 @@ function IsExpired() {}
 
 Nepoznat oblik je `unknown`, pa se sužava provjerom. `any` gasi provjeru tipova i ne smije se pojaviti ni u testovima.
 
-Provedba: planirano S-0.7 (`no-explicit-any`), do tada review. Implicitni `any` već hvata `strict` u `tsconfig.json`.
+Provedba: lint `@typescript-eslint/no-explicit-any`. Implicitni `any` hvata `strict` u `tsconfig.json`.
 
 Ispravno:
 
@@ -103,7 +103,7 @@ function parseBearer(header: any) {
 
 Oblici podataka se pišu kao `type`. Jedan način pisanja, bez spajanja deklaracija i nenamjernog proširivanja.
 
-Provedba: planirano S-0.7 (`consistent-type-definitions: type`), do tada review.
+Provedba: lint `@typescript-eslint/consistent-type-definitions` (`type`).
 
 Ispravno:
 
@@ -119,13 +119,11 @@ interface Doc extends AccessDoc {
 }
 ```
 
-Prelazno: kostur (`server/access.ts`, `server/store.ts`) još ima `interface`. Prepisuje se kad ga zadatak ionako mijenja ili uz uvođenje pravila u S-0.7.
-
 ## 5. Bez `enum`
 
 Skup dopuštenih vrijednosti je unija stringovnih literala, po potrebi izvedena iz `as const` polja. `enum` stvara izvršni kod i nejasne brojčane vrijednosti.
 
-Provedba: planirano S-0.7 (`no-restricted-syntax` za `TSEnumDeclaration`), do tada review.
+Provedba: lint `no-restricted-syntax` za `TSEnumDeclaration` (i `const enum`).
 
 Ispravno:
 
@@ -174,7 +172,7 @@ Test je u istoj mapi kao kod koji provjerava i ima isto ime plus sufiks. Sufiks 
 | `.property.test.ts`    | `property`    | svojstveni testovi (fast-check)         |
 | `.integration.test.ts` | `integration` | više dijelova skupa, HTTP, kasnije baza |
 
-Provedba: review. Datoteka s drugim sufiksom ili izvan mapa iz `vitest.config.ts` (`server/`, `test-support/`, `scripts/`, `tests/`) ne pripada nijednom projektu i tiho se ne pokreće, CI ostaje zelen; zato reviewer provjerava sufikse. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
+Provedba: lint `local/test-file-suffix` za datoteku koja po imenu izgleda kao test (`x.spec.ts`, `x.e2e.test.ts`), ostalo review. Datoteka s drugim sufiksom ili izvan mapa iz `vitest.config.ts` (`server/`, `test-support/`, `scripts/`, `tests/`) ne pripada nijednom projektu i tiho se ne pokreće, CI ostaje zelen; zato reviewer provjerava sufikse. Test se nikad ne briše ni preskače bez jednakovrijedne zamjene.
 
 Prelazno: `server/smoke.test.ts` nema pripadni `smoke.ts` (dimni test cijelog kostura).
 
@@ -230,7 +228,7 @@ function readTitle(raw: unknown): string {
 
 Stupci u bazi su `snake_case`. Pretvorba u `camelCase` događa se samo u `server/database` (mapiranje redaka u objekte i obrnuto). Ostatak koda nikad ne vidi `snake_case` i ne radi vlastite pretvorbe.
 
-Provedba: review.
+Provedba: lint `@typescript-eslint/naming-convention` odbija `snake_case`; imena iz baze (`DATABASE_NAMES`) dopušta samo u `server/database` i `tests/db`, a stupce koje čitaju testovi migracija (`COLUMN_NAMES`) kao zatvoren popis. Gdje se pretvorba radi čuva review.
 
 Ispravno:
 
@@ -318,7 +316,7 @@ styles.css                  /* globalno, ime ne govori čije je */
 
 Nove skripte (alati, migracijska pomagala, provjere) pišu se u TypeScriptu i pokreću preko `tsx`, ne u `.sh`, `.js` ni `.mjs`. Jedini dopušteni shell su jednoredne naredbe u `package.json` i koraci u CI-ju.
 
-Provedba: review.
+Provedba: lint `local/only-ts` (`.js`, `.mjs`, `.cjs`, `.jsx`, `.tsx`, `.mts`, `.cts`, u bilo kojoj veličini slova); `.sh` i ostalo review.
 
 Ispravno:
 
@@ -353,4 +351,4 @@ Vidi [Pravilnik koda](docs/CODE-STYLE.md).
 
 ## Kako se pravilo mijenja
 
-Promjena pravilnika je zaseban PR s `docs:` prefiksom. Kad lint dobije novo pravilo (S-0.7), u tablici „Pregled” i u pripadnom odjeljku promijeni se redak „Provedba” u istom PR-u.
+Promjena pravilnika je zaseban PR s `docs:` prefiksom. Kad lint dobije novo pravilo, u tablici „Pregled” i u pripadnom odjeljku promijeni se redak „Provedba” u istom PR-u.

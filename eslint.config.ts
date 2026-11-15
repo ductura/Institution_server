@@ -362,6 +362,9 @@ export default defineConfig(
         { selector: "TSEnumDeclaration", message: "enum is not allowed; use a union of literals." },
       ],
       "@typescript-eslint/naming-convention": namingConvention([], []),
+      // naming-convention skips named imports; a renamed import or export is
+      // checked here (DAN-757).
+      "local/renamed-import-name": "error",
     },
   },
   {
