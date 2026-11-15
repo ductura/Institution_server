@@ -9,7 +9,6 @@ import { describe, expect, it } from "vitest";
 import {
   BUILDER_NAMES,
   DECODER_ALLOWED,
-  encodesNonAscii,
   isExempt,
   localPlugin,
   repoPath,
@@ -113,12 +112,6 @@ const failing: [messageId: string, code: string][] = [
   ["letter", "export const o = { nijePronađeno: 0 };"],
   ["letter", "export function pronađeno(): void {}"],
   ["letter", "export class K {\n  #pronađeno = 1;\n}"],
-  // (1) Encoded forms written as text.
-  ["encoded", "export const e = JSON.parse('\"prona\\\\u0111eno\"');"],
-  ["encoded", 'export const e = new URL("http://x.invalid/?m=Prona%C4%91eno");'],
-  ["encoded", 'export const e = "<p>Prona&#273;eno</p>";'],
-  ["encoded", 'export const e = "<p>Prona&#x111;eno</p>";'],
-  ["encoded", 'export const e = "<p>&scaron;ifra</p>";'],
   // (2) Escapes that give a non-ASCII character, in strings and templates.
   ["builder", 'export const e = "\\u00e9";'],
   ["builder", 'export const e = "\\xe9";'],
@@ -173,6 +166,7 @@ const failing: [messageId: string, code: string][] = [
   ["value", 'import { Buffer as B } from "node:buffer";\nexport const e = [B];'],
   ["value", "export const e = Reflect.get(Buffer, 'from');"],
   // Adversarial review of the contract (w780b): static forms it found.
+  // Encoded forms (escapes as text, %, entities, data:, punycode) are DAN-784.
   ["letter", "export const e = /čekaj/u.source;"],
   ["letter", "export const r = /[čćžšđ]/u;"],
   ["sentence", "export const e = /Molimo pokusajte ponovno/u.source;"],
@@ -191,20 +185,9 @@ const failing: [messageId: string, code: string][] = [
   ["value", 'import util from "node:util";\nexport const e = Object.values(util);'],
   ["value", 'import * as u from "node:url";\nexport const e = Reflect.get(u, "x");'],
   ["builder", 'import { domainToUnicode } from "node:url";\nexport const e = domainToUnicode;'],
-  ["encoded", 'export const e = new URL("http://xn--ekaj-fua.hr/");'],
   ["builder", 'export const e = new Intl.DisplayNames(["hr"], { type: "language" });'],
   ["builder", 'export const e = new Date(0).toLocaleDateString("hr-HR");'],
   ["sentence", "export const e = (x: string) => `Molimo ${x} pokusajte ${x} ponovno`;"],
-  ["encoded", 'export const e = "&eth;";'],
-  // Review FAIL on #64 (cxcrs64): a surrogate pair.
-  ["encoded", "export const e = JSON.parse('\"\\\\uD801\\\\uDC00\"');"],
-  // Review FAIL c.6896957758: tab and line ends inside a URL are dropped by the parser.
-  // data: URLs are DAN-784 (Ductus#87 c.6897002897).
-  ["encoded", 'export const e = new URL("http://xn-\\r-ekaj-fua.hr/");'],
-  ["encoded", 'export const e = new URL("http://xn-\\t-ekaj-fua.hr/");'],
-  // Review FAIL c.6898791986: no "//", or any other character before the label.
-  ["encoded", 'export const e = new URL("http:xn--ekaj-fua.hr/");'],
-  ["encoded", 'export const e = new URL("http:\\\\XN--ekaj-fua.hr/");'],
   // (3) Server code may not import a test or a fixture.
   ["exempt", 'import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;'],
   ["exempt", 'export { x } from "./y.test.ts";'],
@@ -284,7 +267,7 @@ describe("DECODER_ALLOWED", () => {
   });
 });
 
-describe("textProblem and encodesNonAscii", () => {
+describe("textProblem", () => {
   it("tells a sentence without diacritics from a technical string", () => {
     expect(textProblem("Dokument ne postoji.")).toBe("sentence");
     expect(textProblem("Metoda nije podrzana")).toBe("sentence");
@@ -292,24 +275,6 @@ describe("textProblem and encodesNonAscii", () => {
     expect(textProblem("RISK_BELOW_FLOOR")).toBeNull();
     expect(textProblem("statusPage.states.notWorking")).toBeNull();
     expect(textProblem("je")).toBeNull();
-  });
-
-  it("finds a non-ASCII character spelled in an encoded form", () => {
-    for (const t of ["\\u010d", "\\u{10d}", "\\xe9", "%C4%8D", "&#269;", "&#x10D;", "&ccaron;"])
-      expect(encodesNonAscii(t), t).toBe(true);
-    // Control characters and spaces spelled as escapes are not text (a schema pattern).
-    for (const t of [
-      "\\u0041",
-      "%20",
-      "&#65;",
-      "&amp;",
-      "a%2Fb",
-      "\\\\u",
-      "100%",
-      "\\u009f",
-      "&#160;",
-    ])
-      expect(encodesNonAscii(t), t).toBe(false);
   });
 });
 

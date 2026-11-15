@@ -33,7 +33,6 @@ export {
 export {
   BUILDER_NAMES,
   DECODER_ALLOWED,
-  encodesNonAscii,
   isExempt,
   repoPath,
   TEXT_EXEMPT,

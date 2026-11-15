@@ -7,9 +7,9 @@
 // 1. Direct literals: a string literal, each static piece of a template, a JSX
 //    text and a name (identifier) are interface text when they
 //    hold a letter outside ASCII or a Croatian sentence (textProblem, the
-//    measure of ductura/server#51). A literal that spells a non-ASCII
-//    character in an encoded form (`\\u010d`, `%C4%8D`, `&#269;`) is reported
-//    too, since JSON.parse, URLSearchParams or a browser decode it.
+//    measure of ductura/server#51). Only literal text is read: encoded forms
+//    (`\\u010d` as text, `%C4%8D`, `&#269;`, `data:`, punycode) are DAN-784
+//    (Ductus#87 c.6897002897 and the orchestrator's second cut on #64).
 // 2. Text builders are not allowed, whatever their arguments: `\u`, `\x` and
 //    `\u{}` escapes that give a non-ASCII character; the names in BUILDER_NAMES
 //    wherever they stand (a reference, a member, a key, an import, a
@@ -207,27 +207,6 @@ function escapedCodes(raw: string): number[] {
   }
   return codes;
 }
-/** Whether a text spells a non-ASCII character in an encoded form. */
-// A code point that is a letter or a mark outside ASCII (not a control or a space).
-const isLetterCode = (code: number): boolean =>
-  code > 0x7f && code <= 0x10ffff && NON_ASCII_LETTER.test(String.fromCodePoint(code));
-export function encodesNonAscii(text: string): boolean {
-  if (escapedCodes(text).some(isLetterCode)) return true;
-  // A UTF-8 lead byte and a continuation byte, percent-encoded.
-  if (/%[c-fC-F][0-9a-fA-F]%[89abAB][0-9a-fA-F]/u.test(text)) return true;
-  // A punycode label. A URL parser drops tab and line ends anywhere in a URL
-  // (WHATWG URL, review FAIL c.6896957758 on #64), so they are dropped first.
-  // data: URLs are not read here: DAN-784 (Ductus#87 c.6897002897).
-  const url = text.replace(/[\t\n\r]/gu, "");
-  // Any `xn--`, whatever stands before it (review FAIL c.6898791986: `http:xn--…`).
-  if (/xn--/iu.test(url)) return true;
-  const entities = text.matchAll(/&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?/gu);
-  if ([...entities].some((m) => isLetterCode(Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16))))
-    return true;
-  const named = [...text.matchAll(/&([A-Za-z][A-Za-z0-9]*);/gu)].map((m) => m[1] ?? "");
-  return named.some((n) => !["amp", "lt", "gt", "quot", "apos"].includes(n));
-}
-
 /** A repository path of the linted file, with `/` separators, also on Windows. */
 export function repoPath(cwd: string, filename: string): string {
   const windows = /^[A-Za-z]:[\\/]/u.test(cwd) || /^[A-Za-z]:[\\/]/u.test(filename);
@@ -273,7 +252,6 @@ export const noHardcodedText: Rule.RuleModule = {
       letter:
         "Text with a non-ASCII letter ({{text}}): move it to locales/ and return a messageKey.",
       sentence: "Croatian sentence ({{text}}): move it to locales/ and return a messageKey.",
-      encoded: "An encoded non-ASCII character ({{text}}) is interface text in another form.",
       builder: "'{{name}}' builds text from codes or bytes; it is not allowed in server code.",
       value:
         "'{{name}}' may only be called or read by a static member here ({{name}}(x), {{name}}.member).",
@@ -288,8 +266,6 @@ export const noHardcodedText: Rule.RuleModule = {
       const problem = textProblem(text);
       if (problem) {
         context.report({ node, messageId: problem, data: { text: JSON.stringify(text) } });
-      } else if (encodesNonAscii(text)) {
-        context.report({ node, messageId: "encoded", data: { text: JSON.stringify(text) } });
       }
       // An escape is a builder whatever the character it gives is.
       if (escapedCodes(raw).some((code) => code > 0x7f))
