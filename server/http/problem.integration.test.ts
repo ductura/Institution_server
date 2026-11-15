@@ -1,13 +1,16 @@
 // S-1L.3 (DAN-789) on a real server: every refusal is a problem body with an
 // id the server made, the client cannot choose it, and a failing handler gives
 // nothing of its error (message, stack, SQL) but the problem of 500 internal.
+import { connect } from "node:net";
+
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { messageKeyOf, REQUEST_ID_PATTERN, ROUTES } from "../contracts/index.ts";
 import { createDatabases } from "./databases.ts";
 import { HEALTH_ROUTE } from "./health.ts";
 import { createLayers } from "./pipeline.ts";
-import type { Route } from "./router.ts";
+import { problemOf, sendProblem } from "./problem.ts";
+import { type Route, sendJson } from "./router.ts";
 import { type Running, startServer } from "./start.ts";
 
 const ORIGIN = "https://ductura.invalid";
@@ -28,13 +31,50 @@ const failing: Route = {
   },
 };
 
+const status = ROUTES.find((route) => route.id === "platform.status.get");
+if (status === undefined) throw new Error("no contract");
+// Handlers that try to answer an error around sendProblem or to leave their
+// own state on its answer (napadački prolaz, DAN-789 b); ?case= picks one.
+const CASES: Record<string, Route["handle"]> = {
+  length: async (_, r) => (r.setHeader("Content-Length", "3"), sendProblem(r, 404, "not_found")),
+  encoding: async (_, r) => (
+    r.setHeader("Content-Encoding", "gzip"),
+    sendProblem(r, 404, "not_found")
+  ),
+  leftovers: async (_, r) => {
+    r.setHeader("Set-Cookie", `s=${CANARY}`);
+    r.setHeader("Location", `https://${CANARY}.invalid/`);
+    r.setHeader("Trailer", "x-t");
+    r.addTrailers({ "x-t": CANARY });
+    r.statusMessage = CANARY;
+    sendProblem(r, 404, "not_found");
+  },
+  writeHead: async (_, r) => {
+    r.writeHead(403, { "content-type": "application/json" });
+    r.end(JSON.stringify({ error: "forbidden", detail: CANARY }));
+  },
+  statusCode: async (_, r) => {
+    r.statusCode = 404;
+    r.end(JSON.stringify({ error: CANARY }));
+  },
+  sendJson399: async (_, r) => sendJson(r, 399, { error: CANARY }),
+  sendJson204: async (_, r) => sendJson(r, 204, { error: CANARY }),
+};
+const scenarios: Route = {
+  contract: status,
+  handle: async (request, response) => {
+    const name = new URL(request.url ?? "/", "http://x.invalid").searchParams.get("case") ?? "";
+    await CASES[name]?.(request, response);
+  },
+};
+
 let server: Running;
 beforeAll(async () => {
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
     layers: createLayers({ expectedOrigin: ORIGIN }),
-    routes: [HEALTH_ROUTE, failing],
+    routes: [HEALTH_ROUTE, failing, scenarios],
     databases: createDatabases(),
   });
 });
@@ -130,5 +170,44 @@ describe("problem bodies on the wire", () => {
     const response = await fetch(url("/api/v1/health"));
     expect(await response.json()).toEqual({ status: "ok" });
     expect(response.headers.get("x-request-id")).toBeNull();
+  });
+});
+
+describe("a handler cannot answer an error around sendProblem", () => {
+  it.each(["writeHead", "statusCode", "sendJson399", "sendJson204"])(
+    "%s: 500 internal, nothing of the handler's body",
+    async (name) => {
+      const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        const { response, text, body } = await refusal(`/api/v1/status?case=${name}`);
+        expect(response.status).toBe(500);
+        expect(text).not.toContain(CANARY);
+        expect(body).toEqual(problemOf(500, "internal", String(body["requestId"])));
+        expect(response.headers.get("x-request-id")).toBe(body["requestId"]);
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
+});
+
+describe("sendProblem drops what the handler set before it", () => {
+  it.each(["length", "encoding"])("%s: the problem body arrives whole", async (name) => {
+    const { response, body } = await refusal(`/api/v1/status?case=${name}`);
+    expect(response.status).toBe(404);
+    expect(body).toEqual(problemOf(404, "not_found", String(body["requestId"])));
+  });
+
+  it("no cookie, location, trailer or status text of the handler", async () => {
+    const socket = connect(server.port, "127.0.0.1");
+    socket.write(
+      "GET /api/v1/status?case=leftovers HTTP/1.1\r\nHost: x\r\nTE: trailers\r\nConnection: close\r\n\r\n",
+    );
+    let raw = "";
+    for await (const chunk of socket) raw += String(chunk);
+    expect(raw).toMatch(/^HTTP\/1\.1 404 Not Found\r\n/u);
+    expect(raw).not.toContain(CANARY);
+    expect(raw.toLowerCase()).not.toMatch(/set-cookie|location:|trailer/u);
+    expect(raw).toMatch(/X-Frame-Options: DENY/u);
   });
 });

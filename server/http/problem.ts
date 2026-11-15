@@ -5,12 +5,33 @@
 // 500 internal, so no route can answer a key without a text in locales/.
 // An error marked v1 (v1Error, a oneOf in v1) keeps exactly {error: code}.
 // The body never carries an error's message, name, stack or SQL.
-import type { ServerResponse } from "node:http";
+import { type ServerResponse, STATUS_CODES } from "node:http";
 
 import { type ErrorSpec, INTERNAL, SERVER_ERRORS } from "../contracts/index.ts";
 
 import { writeJson } from "./json.ts";
-import { requestIdOf } from "./request-id.ts";
+import { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
+import { SECURITY_HEADERS } from "./security-header-values.ts";
+
+/**
+ * Headers an error answer keeps from before: the security headers, the
+ * request id, Connection (refuse() closes) and Retry-After (503 while draining). Anything else a handler set
+ * (Content-Length, Content-Encoding, Trailer, Set-Cookie, Location ...) would
+ * break or leak through the problem body, so it is dropped.
+ */
+const KEPT = new Set(
+  [...SECURITY_HEADERS.map(({ key }) => key), REQUEST_ID_HEADER, "Connection", "Retry-After"].map(
+    (name) => name.toLowerCase(),
+  ),
+);
+
+/** Responses whose head sendProblem writes; the router lets only these be errors. */
+const answering = new WeakSet<ServerResponse>();
+
+/** True while sendProblem writes this response's head (router.ts guards writeHead). */
+export function isProblemAnswer(response: ServerResponse): boolean {
+  return answering.has(response);
+}
 
 /** The v1 body of an error marked v1: only the closed word. */
 export type V1ErrorBody = { readonly error: string };
@@ -51,11 +72,6 @@ function problemOfSpec(spec: ErrorSpec, requestId: string): Problem {
   };
 }
 
-/** The problem body for this response, with its request id. */
-export function problemFor(response: ServerResponse, status: number, code: string): Problem {
-  return problemOf(status, code, requestIdOf(response));
-}
-
 /**
  * Answers the contract error for this status and code as a problem body, or
  * as {error: code} when it is marked v1; an unknown pair answers 500 internal
@@ -65,12 +81,20 @@ export function sendProblem(
   response: ServerResponse,
   status: number,
   code: string,
-  headers: Readonly<Record<string, string>> = {},
+  headers: { readonly allow?: string } = {},
 ): void {
   const spec = knownError(status, code) ?? INTERNAL.error;
+  if (!response.headersSent) {
+    for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
+    // Trailers are kept apart from the headers; adding none clears them.
+    response.addTrailers({});
+    response.statusMessage = STATUS_CODES[spec.status] ?? "";
+  }
+  answering.add(response);
   const requestId = requestIdOf(response);
   const body: Problem | V1ErrorBody = spec.v1
     ? { error: spec.code }
     : problemOfSpec(spec, requestId);
-  writeJson(response, spec.status, body, headers);
+  const extra: Record<string, string> = headers.allow === undefined ? {} : { allow: headers.allow };
+  writeJson(response, spec.status, body, extra);
 }

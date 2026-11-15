@@ -34,7 +34,14 @@ function fakeResponse() {
   };
   const response = {
     headersSent: false,
+    statusMessage: "",
+    trailers: undefined as object | undefined,
     setHeader: (name: string, value: string) => (answer.headers[name.toLowerCase()] = value),
+    getHeaderNames: () => Object.keys(answer.headers),
+    removeHeader: (name: string) => delete answer.headers[name.toLowerCase()],
+    addTrailers(trailers: object) {
+      this.trailers = trailers;
+    },
     writeHead(status: number, headers: Record<string, string>) {
       answer.status = status;
       Object.assign(answer.headers, headers);
@@ -160,6 +167,50 @@ describe("problemOf and sendProblem", () => {
     expect(answer.headers["x-request-id"]).toMatch(UUID_V4);
   });
 
+  it("drop what was set before but the security headers, Connection and Retry-After", () => {
+    const { response, answer } = fakeResponse();
+    for (const [name, value] of [
+      ["Content-Length", "3"],
+      ["Content-Encoding", "gzip"],
+      ["Set-Cookie", "s=1"],
+      ["Location", "https://x.invalid/"],
+      ["Trailer", "x-t"],
+      ["X-Frame-Options", "DENY"],
+      ["Connection", "close"],
+      ["Retry-After", "1"],
+    ] as const)
+      response.setHeader(name, value);
+    response.addTrailers({ "x-t": "1" });
+    response.statusMessage = "db down";
+    sendProblem(response, 404, "not_found");
+    const body = answer.body ?? "";
+    expect(answer.headers).toEqual({
+      "x-frame-options": "DENY",
+      connection: "close",
+      "retry-after": "1",
+      "x-request-id": expect.stringMatching(UUID_V4),
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "content-length": String(Buffer.byteLength(body)),
+    });
+    expect([
+      response.statusMessage,
+      (response as unknown as { trailers: object }).trailers,
+    ]).toEqual(["Not Found", {}]);
+  });
+
+  it.each(["X-Request-Id", "x-request-id", "Content-Type", "cache-control"])(
+    "a caller cannot replace %s",
+    (name) => {
+      const { response, answer } = fakeResponse();
+      const headers = { [name]: "11111111-1111-4111-8111-111111111111" };
+      expect(() => sendJson(response, 200, {}, headers)).toThrow(/set by writeJson/u);
+      // sendProblem takes only `allow`; anything else is not passed on.
+      sendProblem(response, 404, "not_found", headers as { allow?: string });
+      expect(answer.headers[name.toLowerCase()]).not.toBe("11111111-1111-4111-8111-111111111111");
+    },
+  );
+
   it("an unknown pair is answered as 500, not with the caller's status", () => {
     const { response, answer } = fakeResponse();
     sendProblem(response, 404, "made_up_code");
@@ -178,7 +229,7 @@ describe("requestIdOf", () => {
 });
 
 describe("sendJson", () => {
-  it.each([400, 404, 500, 599, 1000, Number.NaN, 200.5])(
+  it.each([400, 404, 500, 599, 1000, Number.NaN, 200.5, 0, 101, 199, 204, 205, 301, 399])(
     "refuses status %s: an error goes through sendProblem",
     (status) => {
       const { response, answer } = fakeResponse();
@@ -188,9 +239,8 @@ describe("sendJson", () => {
   );
 });
 
-// Only these files write JSON with writeJson: sendJson, sendProblem and the
-// refusal while draining, which sends a problemFor body.
-const WRITERS = ["server/http/json.ts", "server/http/problem.ts", "server/http/start.ts"];
+// Only these files write JSON with writeJson: sendJson and sendProblem.
+const WRITERS = ["server/http/json.ts", "server/http/problem.ts"];
 // The transitional HTTP server is a smoke test only (docs/server-map.md, "Prelazno stanje").
 const LEGACY = ["server/app.ts"];
 
@@ -206,7 +256,7 @@ describe("server code", () => {
   const root = new URL("../../", import.meta.url).pathname;
   const files = sources(join(root, "server")).map((path) => relative(root, path));
 
-  it("writes JSON with writeJson only in the three writers", () => {
+  it("writes JSON with writeJson only in the two writers", () => {
     const using = files.filter((file) =>
       /\bwriteJson\s*\(/u.test(readFileSync(join(root, file), "utf8")),
     );

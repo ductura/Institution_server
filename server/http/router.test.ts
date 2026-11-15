@@ -270,7 +270,8 @@ describe("createRouter on a failing handler (DAN-776)", () => {
     expect(JSON.parse(answer.body ?? "")).toEqual(problem(500, "internal"));
     expect(JSON.stringify(answer.headers)).not.toContain(CANARY);
     expect(answer.headers).not.toHaveProperty("content-encoding");
-    expect(answer.headers).not.toHaveProperty("content-length");
+    // The handler's length is gone; the answer states its own.
+    expect(answer.headers?.["content-length"]).toBe(String(Buffer.byteLength(answer.body ?? "")));
     expect(answer.headers?.["x-frame-options"]).toBe("DENY");
     expect(answer.headers?.connection).toBe("close");
   });

@@ -143,6 +143,9 @@ describe("originLayer", () => {
       headersSent: false,
       hasHeader: (key: string) => set.has(key.toLowerCase()),
       setHeader: (key: string, value: string) => set.set(key.toLowerCase(), value),
+      getHeaderNames: () => [...set.keys()],
+      removeHeader: (key: string) => set.delete(key.toLowerCase()),
+      addTrailers: () => undefined,
       writeHead(status: number, headers: Record<string, string>) {
         answer.status = status;
         answer.headers = { ...Object.fromEntries(set), ...headers };

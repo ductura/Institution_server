@@ -7,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { FALLBACK, METHOD_NOT_ALLOWED, type RouteContract } from "../contracts/index.ts";
 
-import { sendProblem } from "./problem.ts";
+import { isProblemAnswer, sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 import { answerInternal } from "./security-headers.ts";
 
@@ -82,6 +82,7 @@ export function createRouter(routes: readonly Route[]): Router {
       return;
     }
     try {
+      guardErrorHead(response);
       await route.handle(request, response);
     } catch (error) {
       // Only the name of the error: never its message, the request or a token.
@@ -90,4 +91,22 @@ export function createRouter(routes: readonly Route[]): Router {
       answerInternal(response);
     }
   };
+}
+
+/**
+ * A handler's head with a status of 400 or more (writeHead, or statusCode
+ * with end, write or flushHeaders, which all call writeHead) throws unless
+ * sendProblem writes it, so no route answers an error outside the problem
+ * body (S-1L.3): the throw becomes 500 internal like any failed handler.
+ */
+function guardErrorHead(response: ServerResponse): void {
+  const writeHead = response.writeHead;
+  const guarded = function (this: ServerResponse, ...args: Parameters<typeof writeHead>) {
+    const [status] = args;
+    if ((typeof status !== "number" || status >= 400) && !isProblemAnswer(response)) {
+      throw new Error("an error answer goes through sendProblem");
+    }
+    return writeHead.apply(this, args);
+  };
+  response.writeHead = guarded as typeof writeHead;
 }
