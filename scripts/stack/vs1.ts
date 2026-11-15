@@ -7,7 +7,7 @@
 // are DAN-787; the preloader and web are slots in config.ts.
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { userInfo } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { SERVER_NODE_FLAGS } from "../build/index.ts";
@@ -25,7 +25,8 @@ import {
 import * as stateFile from "./state.ts";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const DIR = join(ROOT, ".stack", "vs1");
+// VS1_STACK_DIR moves the whole stack (tests use a temporary one).
+const DIR = resolve(process.env.VS1_STACK_DIR ?? join(ROOT, ".stack", "vs1"));
 const STATE = join(DIR, "state.json");
 export const LOCK = join(DIR, "up.lock");
 const PGDATA = join(DIR, "pgdata");

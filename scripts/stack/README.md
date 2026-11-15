@@ -8,7 +8,7 @@ pnpm stack:vs1 up [--env local|ci]   # PostgreSQL i server iz dist/server.js
 pnpm stack:vs1 down                  # gasi što je up pokrenuo, provjerava da su portovi slobodni
 ```
 
-Sve je u `.stack/vs1/` (0700, u `.gitignore`):
+Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli stog; integracijski testovi tako koriste privremeni direktorij i nikad ne diraju lokalni `.stack/vs1`.
 
 - `pgdata/`: vlastiti PostgreSQL klaster (`initdb` i `pg_ctl` iz `PATH`). Sluša samo na `127.0.0.1`, a socket je u `.stack/vs1/` (0700). Provizija i migracije su iste kao `pnpm db:up:native` (`scripts/db/native-db.ts`). Lozinka prijave `ductus` je u `pg-password` (0600). `initdb` ne radi kao root, pa stog odbija root.
 - `server.log`, `postgres.log`: izlaz procesa.

@@ -104,6 +104,7 @@ const ENV_NAMES = [
   "VS1_POSTGRES_PORT",
   "VS1_SERVER_PORT",
   "VS1_OIDC_PORT",
+  "VS1_STACK_DIR",
   "HOME",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
