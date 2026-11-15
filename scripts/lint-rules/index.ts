@@ -31,7 +31,6 @@ export {
   LOADER_GLOBALS,
 } from "./dynamic-load.ts";
 export {
-  encodesNonAscii,
   isExempt,
   repoPath,
   TEXT_EXEMPT,
