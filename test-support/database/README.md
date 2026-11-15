@@ -3,7 +3,7 @@
 Svaka baza iz `scripts/db/databases.ts` (`main`, `logs`, `legal` i svaka buduća) ima testnu inačicu iz istih migracija. Nova baza je novi redak u tom popisu, uz `db/<ime>/migrations`, `migrations.sum` i `local/migrator.sql`; ovdje se ne mijenja ništa.
 
 ```ts
-import { createTestDatabase } from "../../test-support/database/create-test-database.ts";
+import { createTestDatabase } from "../../test-support/database/index.ts";
 
 const db = await createTestDatabase("logs");
 await db.query("SELECT 1");
