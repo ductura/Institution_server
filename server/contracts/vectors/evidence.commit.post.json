@@ -6,20 +6,20 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -36,33 +36,33 @@
             "signedReceipt": {
               "payload": {
                 "receiptSchema": "ductus-evidence-receipt-v2",
-                "receiptId": "izmisljena-potvrda-0001",
-                "evidencePackageId": "izmisljeni-paket-0001",
-                "documentId": "00000000-0000-4000-8000-0000000000d1",
-                "sessionId": "izmisljena-sesija-0001",
-                "segmentId": "izmisljeni-segment-0001",
-                "segmentHash": "62bf15c21709f493f78994dc6f75d5179dee476e79d2657a0e0d9e0fe67a4725",
+                "receiptId": "potvrda-izmisljena-v2-1",
+                "evidencePackageId": "paket-izmisljeni-zv-1",
+                "documentId": "dokument-izmisljeni-zv-1",
+                "sessionId": "sesija-izmisljena-zv-1",
+                "segmentId": "odsjecak-zv-1",
+                "segmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
                 "predecessorSegmentHash": null,
                 "previousReceiptId": null,
                 "evidenceSchema": "ductus-evidence-segment-v2",
-                "evidenceProfileId": "izmisljeni-profil-v2",
+                "evidenceProfileId": "standard-v1",
                 "sequenceFrom": 1,
-                "sequenceTo": 4,
-                "eventCount": 4,
-                "payloadBytes": 97,
+                "sequenceTo": 2,
+                "eventCount": 2,
+                "payloadBytes": 1554,
                 "acceptedAt": "2026-11-15T10:00:00.000Z",
                 "revision": 1,
                 "clientTransactionId": "izmisljena-transakcija-0001",
-                "evidenceDomainId": "00000000-0000-4000-8000-0000000000e1",
-                "principalId": "00000000-0000-4000-8000-0000000000f1"
+                "evidenceDomainId": "d21fe0a3-103c-42e5-a29e-c102f9030af5",
+                "principalId": "72cd1705-85fc-4754-a382-c2500d038368"
               },
-              "payloadDigestSha256": "549d5b0c8039f6fe396da2a246a35de49701ed03df2a7beafa96da96e027d758",
+              "payloadDigestSha256": "8e4865f36df61da20b96ea48e5971c09f423dafd4444952be4e883f93d42f316",
               "signature": {
                 "algorithm": "Ed25519",
-                "keyId": "izmisljeni-kljuc-0001",
+                "keyId": "ductus-golden-rfc8032-test-1",
                 "keyVersion": "1",
                 "signatureEncoding": "raw",
-                "signatureBase64Url": "izmisljeniPotpisZaVektoreUgovora0001"
+                "signatureBase64Url": "kMAWsnqmS8VOqaM5T4eLSRPtPW16hx-ADGJmG4FhrfTOq5hZM7654co3mUUi4p3731F_G5Sl2O9JfgL9oSsRAQ"
               }
             }
           }
@@ -74,20 +74,20 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -104,33 +104,33 @@
             "signedReceipt": {
               "payload": {
                 "receiptSchema": "ductus-evidence-receipt-v2",
-                "receiptId": "izmisljena-potvrda-0001",
-                "evidencePackageId": "izmisljeni-paket-0001",
-                "documentId": "00000000-0000-4000-8000-0000000000d1",
-                "sessionId": "izmisljena-sesija-0001",
-                "segmentId": "izmisljeni-segment-0001",
-                "segmentHash": "62bf15c21709f493f78994dc6f75d5179dee476e79d2657a0e0d9e0fe67a4725",
+                "receiptId": "potvrda-izmisljena-v2-1",
+                "evidencePackageId": "paket-izmisljeni-zv-1",
+                "documentId": "dokument-izmisljeni-zv-1",
+                "sessionId": "sesija-izmisljena-zv-1",
+                "segmentId": "odsjecak-zv-1",
+                "segmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
                 "predecessorSegmentHash": null,
                 "previousReceiptId": null,
                 "evidenceSchema": "ductus-evidence-segment-v2",
-                "evidenceProfileId": "izmisljeni-profil-v2",
+                "evidenceProfileId": "standard-v1",
                 "sequenceFrom": 1,
-                "sequenceTo": 4,
-                "eventCount": 4,
-                "payloadBytes": 97,
+                "sequenceTo": 2,
+                "eventCount": 2,
+                "payloadBytes": 1554,
                 "acceptedAt": "2026-11-15T10:00:00.000Z",
                 "revision": 1,
                 "clientTransactionId": "izmisljena-transakcija-0001",
-                "evidenceDomainId": "00000000-0000-4000-8000-0000000000e1",
-                "principalId": "00000000-0000-4000-8000-0000000000f1"
+                "evidenceDomainId": "d21fe0a3-103c-42e5-a29e-c102f9030af5",
+                "principalId": "72cd1705-85fc-4754-a382-c2500d038368"
               },
-              "payloadDigestSha256": "549d5b0c8039f6fe396da2a246a35de49701ed03df2a7beafa96da96e027d758",
+              "payloadDigestSha256": "8e4865f36df61da20b96ea48e5971c09f423dafd4444952be4e883f93d42f316",
               "signature": {
                 "algorithm": "Ed25519",
-                "keyId": "izmisljeni-kljuc-0001",
+                "keyId": "ductus-golden-rfc8032-test-1",
                 "keyVersion": "1",
                 "signatureEncoding": "raw",
-                "signatureBase64Url": "izmisljeniPotpisZaVektoreUgovora0001"
+                "signatureBase64Url": "kMAWsnqmS8VOqaM5T4eLSRPtPW16hx-ADGJmG4FhrfTOq5hZM7654co3mUUi4p3731F_G5Sl2O9JfgL9oSsRAQ"
               }
             }
           }
@@ -142,20 +142,20 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "2"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -179,20 +179,20 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "2"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -216,20 +216,20 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "2"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -246,33 +246,33 @@
             "signedReceipt": {
               "payload": {
                 "receiptSchema": "ductus-evidence-receipt-v2",
-                "receiptId": "izmisljena-potvrda-0001",
-                "evidencePackageId": "izmisljeni-paket-0001",
-                "documentId": "00000000-0000-4000-8000-0000000000d1",
-                "sessionId": "izmisljena-sesija-0001",
-                "segmentId": "izmisljeni-segment-0001",
-                "segmentHash": "62bf15c21709f493f78994dc6f75d5179dee476e79d2657a0e0d9e0fe67a4725",
+                "receiptId": "potvrda-izmisljena-v2-1",
+                "evidencePackageId": "paket-izmisljeni-zv-1",
+                "documentId": "dokument-izmisljeni-zv-1",
+                "sessionId": "sesija-izmisljena-zv-1",
+                "segmentId": "odsjecak-zv-1",
+                "segmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
                 "predecessorSegmentHash": null,
                 "previousReceiptId": null,
                 "evidenceSchema": "ductus-evidence-segment-v2",
-                "evidenceProfileId": "izmisljeni-profil-v2",
+                "evidenceProfileId": "standard-v1",
                 "sequenceFrom": 1,
-                "sequenceTo": 4,
-                "eventCount": 4,
-                "payloadBytes": 97,
+                "sequenceTo": 2,
+                "eventCount": 2,
+                "payloadBytes": 1554,
                 "acceptedAt": "2026-11-15T10:00:00.000Z",
                 "revision": 1,
                 "clientTransactionId": "izmisljena-transakcija-0001",
-                "evidenceDomainId": "00000000-0000-4000-8000-0000000000e1",
-                "principalId": "00000000-0000-4000-8000-0000000000f1"
+                "evidenceDomainId": "d21fe0a3-103c-42e5-a29e-c102f9030af5",
+                "principalId": "72cd1705-85fc-4754-a382-c2500d038368"
               },
-              "payloadDigestSha256": "549d5b0c8039f6fe396da2a246a35de49701ed03df2a7beafa96da96e027d758",
+              "payloadDigestSha256": "8e4865f36df61da20b96ea48e5971c09f423dafd4444952be4e883f93d42f316",
               "signature": {
                 "algorithm": "Ed25519",
-                "keyId": "izmisljeni-kljuc-0001",
+                "keyId": "ductus-golden-rfc8032-test-1",
                 "keyVersion": "1",
                 "signatureEncoding": "raw",
-                "signatureBase64Url": "izmisljeniPotpisZaVektoreUgovora0001"
+                "signatureBase64Url": "kMAWsnqmS8VOqaM5T4eLSRPtPW16hx-ADGJmG4FhrfTOq5hZM7654co3mUUi4p3731F_G5Sl2O9JfgL9oSsRAQ"
               }
             }
           }
@@ -285,20 +285,20 @@
       "code": "forbidden",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "cross-site",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -318,20 +318,20 @@
       "code": "upgrade_required",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "3"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -351,13 +351,13 @@
       "code": "unsupported_media_type",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "text/plain",
           "ductus-protocol": "1"
         },
-        "rawBody": "{\"documentId\": \"00000000-0000-4000-8000-0000000000d1\", \"clientTransactionId\": \"izmisljena-transakcija-0001\", \"baseRevision\": 0, \"segments\": [\"eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ==\"], \"document\": \"eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0=\"}"
+        "rawBody": "{\"documentId\":\"dokument-izmisljeni-zv-1\",\"clientTransactionId\":\"izmisljena-transakcija-0001\",\"baseRevision\":0,\"segments\":[\"eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9\"],\"document\":\"eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9\"}"
       },
       "response": {
         "status": 415,
@@ -383,13 +383,13 @@
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -409,7 +409,7 @@
       "code": "too_large",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -435,7 +435,7 @@
       "code": "timeout",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -461,7 +461,7 @@
       "code": "bad_request",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -469,13 +469,13 @@
           "content-length": "1x"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -495,20 +495,20 @@
       "code": "invalid",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0=",
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9",
           "actorId": "izmisljeni-nastavnik-0001"
         }
       },
@@ -529,21 +529,21 @@
       "code": "invalid",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ==",
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9",
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -563,18 +563,18 @@
       "code": "invalid",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
           "document": "nije base64!"
         }
@@ -596,20 +596,20 @@
       "code": "document_mismatch",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0002",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOltdLCJzY2hlbWFWZXJzaW9uIjoxfQ=="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOltdLCJpZCI6IjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyIsInR5cGUiOiJwYXJhZ3JhcGgifSx7ImNoaWxkcmVuIjpbXSwiaWQiOiI4YjNlMmQ3MS02YzRmLTRhOTAtYjVkMi1lMTdmMGE5YzNiNDYiLCJ0eXBlIjoicGFyYWdyYXBoIn1dLCJzY2hlbWFWZXJzaW9uIjoxfQ=="
         }
       },
       "response": {
@@ -629,20 +629,20 @@
       "code": "not_found",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d2",
+          "documentId": "dokument-tudji-izmisljeni-1",
           "clientTransactionId": "izmisljena-transakcija-0003",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -662,20 +662,20 @@
       "code": "not_accepting",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0004",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -695,20 +695,20 @@
       "code": "stale_base",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0005",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -720,9 +720,9 @@
         "body": {
           "status": "stale_base",
           "currentRevision": 1,
-          "documentHash": "3a94e5d825616d7296b42d923f4fa9c2c7f71c09661c45f5bd8da3abb26441c8",
-          "headSegmentHash": "62bf15c21709f493f78994dc6f75d5179dee476e79d2657a0e0d9e0fe67a4725",
-          "lastSequenceTo": 4
+          "documentHash": "c4653a345dc2b69e192e1cccc63c6bdaec210c1d806da446d2150bdf38e1111f",
+          "headSegmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
+          "lastSequenceTo": 2
         }
       }
     },
@@ -732,20 +732,20 @@
       "code": "chain_conflict",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0006",
           "baseRevision": 1,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -757,9 +757,9 @@
         "body": {
           "status": "chain_conflict",
           "currentRevision": 1,
-          "documentHash": "3a94e5d825616d7296b42d923f4fa9c2c7f71c09661c45f5bd8da3abb26441c8",
-          "headSegmentHash": "62bf15c21709f493f78994dc6f75d5179dee476e79d2657a0e0d9e0fe67a4725",
-          "lastSequenceTo": 4
+          "documentHash": "c4653a345dc2b69e192e1cccc63c6bdaec210c1d806da446d2150bdf38e1111f",
+          "headSegmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
+          "lastSequenceTo": 2
         }
       }
     },
@@ -769,20 +769,20 @@
       "code": "not_continuous",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0007",
-          "baseRevision": 1,
+          "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -793,10 +793,10 @@
         },
         "body": {
           "status": "not_continuous",
-          "currentRevision": 1,
-          "documentHash": "3a94e5d825616d7296b42d923f4fa9c2c7f71c09661c45f5bd8da3abb26441c8",
-          "headSegmentHash": "62bf15c21709f493f78994dc6f75d5179dee476e79d2657a0e0d9e0fe67a4725",
-          "lastSequenceTo": 4
+          "currentRevision": 0,
+          "documentHash": "aca7b39f72ca9ea84fb7b23127592aa65481bce62044d7bf0a3e4b6345060163",
+          "headSegmentHash": null,
+          "lastSequenceTo": 0
         }
       }
     },
@@ -806,20 +806,20 @@
       "code": "txid_reused",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0001",
-          "baseRevision": 0,
+          "baseRevision": 1,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImE4ODRlNjA3OTM2NTczZTEyNmYwNmEyMzBmNGE2MDQ3YmNmODNjNGFhMTVmMGQyYzNjNmViOTEyZGE0MDAzZTAiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJjNDY1M2EzNDVkYzJiNjllMTkyZTFjY2NjNjNjNmJkYWVjMjEwYzFkODA2ZGE0NDZkMjE1MGJkZjM4ZTExMTFmIiwic2VxdWVuY2UiOjMsInNvdXJjZSI6ImNvbXBvc2l0aW9uIiwic3RlcHMiOlt7ImZyb20iOjYxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiWmF2csWhZXRhayBzIHJhemR2b2plbmltIHpuYWtvbSBjzIwuIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6NjF9XX0seyJhZnRlckRvY3VtZW50SGFzaCI6IjhlZTE0MjEwNWY3MzU0YTZjZjViMGQ2NGNjMTE3YmIwYTIyZTdkNjIyMWJlNjk3YmMyOGRlNzQ5OTk4YTkyMDMiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJhODg0ZTYwNzkzNjU3M2UxMjZmMDZhMjMwZjRhNjA0N2JjZjgzYzRhYTE1ZjBkMmMzYzZlYjkxMmRhNDAwM2UwIiwic2VxdWVuY2UiOjQsInNvdXJjZSI6ImtleWxlc3MtaW5wdXQiLCJzdGVwcyI6W3siZnJvbSI6OTUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiIgRGlvIHVuZXNlbiBiZXogdGlwa2kuIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6OTV9XSwidG91Y2hlZE5vZGVJZHMiOlsiOGIzZTJkNzEtNmM0Zi00YTkwLWI1ZDItZTE3ZjBhOWMzYjQ2Il19LHsiYWZ0ZXJEb2N1bWVudEhhc2giOiJhY2E3YjM5ZjcyY2E5ZWE4NGZiN2IyMzEyNzU5MmFhNjU0ODFiY2U2MjA0NGQ3YmYwYTNlNGI2MzQ1MDYwMTYzIiwiYmVmb3JlRG9jdW1lbnRIYXNoIjoiOGVlMTQyMTA1ZjczNTRhNmNmNWIwZDY0Y2MxMTdiYjBhMjJlN2Q2MjIxYmU2OTdiYzI4ZGU3NDk5OThhOTIwMyIsInNlcXVlbmNlIjo1LCJzb3VyY2UiOiJ1bmF0dHJpYnV0ZWQiLCJzdGVwcyI6W3siZnJvbSI6MTE3LCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiIERpbyBiZXogYXRyaWJ1Y2lqZS4iLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxMTd9XSwidG91Y2hlZE5vZGVJZHMiOlsiOGIzZTJkNzEtNmM0Zi00YTkwLWI1ZDItZTE3ZjBhOWMzYjQ2Il19XSwiZXZpZGVuY2VQcm9maWxlSWQiOiJzdGFuZGFyZC12MSIsImV2aWRlbmNlU2NoZW1hIjoiZHVjdHVzLWV2aWRlbmNlLXNlZ21lbnQtdjIiLCJmaW5hbERvY3VtZW50SGFzaCI6ImFjYTdiMzlmNzJjYTllYTg0ZmI3YjIzMTI3NTkyYWE2NTQ4MWJjZTYyMDQ0ZDdiZjBhM2U0YjYzNDUwNjAxNjMiLCJoYXNoQWxnb3JpdGhtIjoic2hhMjU2IiwiaW5pdGlhbERvY3VtZW50SGFzaCI6ImM0NjUzYTM0NWRjMmI2OWUxOTJlMWNjY2M2M2M2YmRhZWMyMTBjMWQ4MDZkYTQ0NmQyMTUwYmRmMzhlMTExMWYiLCJvYnNlcnZlZEVuZGVkQXQiOiIyMDI2LTEwLTEyVDA4OjAyOjAwLjAwMFoiLCJvYnNlcnZlZFN0YXJ0ZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsInByZWRlY2Vzc29yU2VnbWVudEhhc2giOiIyMzVhYzk3YTRiMDA4NWUxOWFhZWFlMzZhYmQ3ZmUzOGY2ODNlM2IzNWY4NzNlZjQ2ZjBmMTk4YjAxNzcxODc1Iiwic2VnbWVudElkIjoib2RzamVjYWstenYtMiIsInNlcXVlbmNlRnJvbSI6Mywic2VxdWVuY2VUbyI6NSwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMiJ9"
           ],
-          "document": "eyJibG9ja3MiOltdLCJzY2hlbWFWZXJzaW9uIjoxfSA="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IlphdnLFoWV0YWsgcyByYXpkdm9qZW5pbSB6bmFrb20gY8yMLiBEaW8gdW5lc2VuIGJleiB0aXBraS4gRGlvIGJleiBhdHJpYnVjaWplLiIsInR5cGUiOiJ0ZXh0In1dLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -839,20 +839,20 @@
       "code": "unavailable",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0008",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {
@@ -874,20 +874,20 @@
       "code": "unavailable",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1"
         },
         "body": {
-          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "documentId": "dokument-izmisljeni-zv-1",
           "clientTransactionId": "izmisljena-transakcija-0009",
           "baseRevision": 0,
           "segments": [
-            "eyJldmlkZW5jZVNjaGVtYSI6ImR1Y3R1cy1ldmlkZW5jZS1zZWdtZW50LXYyIiwiaXptaXNsamVubyI6dHJ1ZSwic2VxdWVuY2VGcm9tIjoxLCJzZXF1ZW5jZVRvIjo0fQ=="
+            "eyJjYW5vbmljYWxpemF0aW9uIjoiUkZDODc4NS1KQ1MiLCJjYXB0dXJlQ29udGV4dCI6eyJlZGl0b3JNb2RlbCI6InByb3NlbWlycm9yIiwidHJhbnNhY3Rpb25Gb3JtYXQiOiJkdWN0dXMtZWRpdC1zdGVwcy12MSJ9LCJkb2N1bWVudElkIjoiZG9rdW1lbnQtaXptaXNsamVuaS16di0xIiwiZXZlbnRzIjpbeyJhZnRlckRvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJiZWZvcmVEb2N1bWVudEhhc2giOiJkZjg5Njc5ZjRhNzdhMjdmNGM2NjlhMTJjNDQzYTcyODQyM2QzNmYxMjQ3YjY5MzczM2M5NmI0NTVmMTcyNTM1Iiwic2VxdWVuY2UiOjEsInNvdXJjZSI6ImVkaXRvciIsInN0ZXBzIjpbeyJmcm9tIjoxLCJzbGljZSI6eyJjb250ZW50IjpbeyJ0ZXh0IjoiSXptacWhbGplbmkgcG/EjWV0YWsgbyDEjWFqdSBpIMWhdW1pLiAiLCJ0eXBlIjoidGV4dCJ9XX0sInN0ZXBUeXBlIjoicmVwbGFjZSIsInRvIjoxfV0sInRvdWNoZWROb2RlSWRzIjpbIjVmMGMxZThhLTNiN2QtNGMyZS05YTYxLTBkNGU4YjJmN2MxMyJdfSx7ImFmdGVyRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImJlZm9yZURvY3VtZW50SGFzaCI6ImQ1MTU2MzQ2OGZmNGRmMmFmYjJhNmY3OTA5Yzc0MjYxMDhhN2UwYjE0MjVmYTdlNjg0N2Q3MWYzZTU0MTlkMWUiLCJzZXF1ZW5jZSI6Miwic291cmNlIjoicGFzdGUiLCJzdGVwcyI6W3siZnJvbSI6MzUsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiJaYWxpamVwbGplbmkgZGlvIPCfmIAuICIsInR5cGUiOiJ0ZXh0In1dfSwic3RlcFR5cGUiOiJyZXBsYWNlIiwidG8iOjM1fSx7ImZyb20iOjEsInNsaWNlIjp7ImNvbnRlbnQiOlt7InRleHQiOiLEkDogIiwidHlwZSI6InRleHQifV19LCJzdGVwVHlwZSI6InJlcGxhY2UiLCJ0byI6MX1dLCJ0b3VjaGVkTm9kZUlkcyI6WyI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiXX1dLCJldmlkZW5jZVByb2ZpbGVJZCI6InN0YW5kYXJkLXYxIiwiZXZpZGVuY2VTY2hlbWEiOiJkdWN0dXMtZXZpZGVuY2Utc2VnbWVudC12MiIsImZpbmFsRG9jdW1lbnRIYXNoIjoiYzQ2NTNhMzQ1ZGMyYjY5ZTE5MmUxY2NjYzYzYzZiZGFlYzIxMGMxZDgwNmRhNDQ2ZDIxNTBiZGYzOGUxMTExZiIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbml0aWFsRG9jdW1lbnRIYXNoIjoiZGY4OTY3OWY0YTc3YTI3ZjRjNjY5YTEyYzQ0M2E3Mjg0MjNkMzZmMTI0N2I2OTM3MzNjOTZiNDU1ZjE3MjUzNSIsIm9ic2VydmVkRW5kZWRBdCI6IjIwMjYtMTAtMTJUMDg6MDI6MDAuMDAwWiIsIm9ic2VydmVkU3RhcnRlZEF0IjoiMjAyNi0xMC0xMlQwODowMTowMC4wMDBaIiwicHJlZGVjZXNzb3JTZWdtZW50SGFzaCI6bnVsbCwic2VnbWVudElkIjoib2RzamVjYWstenYtMSIsInNlcXVlbmNlRnJvbSI6MSwic2VxdWVuY2VUbyI6Miwic2Vzc2lvbklkIjoic2VzaWphLWl6bWlzbGplbmEtenYtMSJ9"
           ],
-          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0="
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6IsSQOiBJem1pxaFsamVuaSBwb8SNZXRhayBvIMSNYWp1IGkgxaF1bWkuIFphbGlqZXBsamVuaSBkaW8g8J+YgC4gIiwidHlwZSI6InRleHQifV0sImlkIjoiNWYwYzFlOGEtM2I3ZC00YzJlLTlhNjEtMGQ0ZThiMmY3YzEzIiwidHlwZSI6InBhcmFncmFwaCJ9LHsiY2hpbGRyZW4iOltdLCJpZCI6IjhiM2UyZDcxLTZjNGYtNGE5MC1iNWQyLWUxN2YwYTljM2I0NiIsInR5cGUiOiJwYXJhZ3JhcGgifV0sInNjaGVtYVZlcnNpb24iOjF9"
         }
       },
       "response": {

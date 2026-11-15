@@ -4,6 +4,8 @@ Ugovori ruta koje koristi VS-1 i zadaci koji isporučuju njihove handlere (DAN-7
 
 Ugovor je u `server/contracts/routes/`, a vektori su u `server/contracts/vectors/<id rute>.json`. Lažni server (`server/contracts/generated/fake-server/`) za svaki vektor vraća točno njegov odgovor, nikad `501`. Handler je gotov kad prolazi vektore svoje rute.
 
+Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/golden-vectors/evidence-v2.json`, Ductus `d52a92c3`). Segment v2 i snimka su pravi bajtovi lanca. Potvrda v2 potpisana je javnim testnim ključem RFC 8032 TEST 1, čija je javna polovica u `receiptKeys` odgovora open. Zato vjeran handler s istim stanjem i istim ključem dolazi točno do odgovora svakog vektora. To provjerava `tests/contracts/evidence-domain.test.ts` domenskim provjeriteljima.
+
 ## Ruta → handler → test
 
 | Korak VS-1                    | Ruta (ID ugovora)                                                                                                                               | Izvor u Ductusu `d52a92c3`                                                                      | Handler isporučuje                                                                | Test ugovora i vektora                                                                                          |
@@ -21,9 +23,18 @@ Ugovor je u `server/contracts/routes/`, a vektori su u `server/contracts/vectors
 
 ## Pravila oblika
 
-- **Tijelo greške.** Rute evidencije svaku grešku vraćaju kao `{status: <kod>}`, a ne `{error: <kod>}`, jer tako čita klijent Ductusa. 503 je `{status: "unavailable", stage}` uz zaglavlje `retry-after: 5`. `stage` je kod open uvijek `context`, a kod commit jedan od `context`, `storage`, `repository` ili `signing`.
-- **Zaštita prije tijela.** Kontrola ide redom metoda i `Origin` (403 `forbidden`), `ductus-protocol` (426 `upgrade_required`), `Content-Type` (415), kolačić sesije (401 `unauthenticated`), a zatim tijelo pod granicom veličine (413 `too_large`) i vremena (408 `timeout`, 400 `bad_request`).
+- **Tijelo greške.** Rute evidencije svaku grešku vraćaju kao `{status: <kod>}`, a ne `{error: <kod>}`, jer tako čita klijent Ductusa. 503 je `{status: "unavailable", stage}` uz zaglavlje `retry-after: 5`. Zaglavlje je samo u vektorima, jer `ErrorSpec` nema polje za zaglavlja. `stage` je kod open uvijek `context`, a kod commit jedan od `context`, `storage`, `repository` ili `signing`.
+- **Zaštita prije tijela.** Kontrole idu ovim redom:
+  - metoda (405 `method_not_allowed`; u ovom repou to daje router);
+  - `Origin` i `Sec-Fetch-Site` (403 `forbidden`);
+  - `ductus-protocol` (426 `upgrade_required`);
+  - `Content-Type` (415);
+  - oblik kolačića sesije (401 `unauthenticated`);
+  - samo kod commita i prije čitanja tijela: živa sesija u bazi (401 `unauthenticated` ili 503 sa `stage: context`), osim kad deklarirana duljina već daje 400 ili 413;
+  - tijelo pod granicom veličine (413 `too_large`) i vremena (408 `timeout`, 400 `bad_request`).
 - **Zatvoreno tijelo.** Svako nepoznato polje daje 422 `invalid`. `start` mora biti boolean, a `segments` ima točno jedan element. Bajtovi su standardni base64 s paddingom.
 - **Tuđi rad.** Tuđi ili nepostojeći rad daje isti 404 `not_found` s istim tijelom. Nastavnik na `open` također dobiva 404.
 - **202 nije potvrda.** `202` dolazi samo pod `ductus-protocol: 2`, uz `retry-after: 2` i `receipt.status = "pending_signature"`. Klijent šalje isti zahtjev dok ne dobije 200 s potpisanom potvrdom. 200 uvijek nosi `receipt.status = "signed"`.
 - **Zaglavlje `ductus-protocol`.** Ugovor ga zasad navodi u opisu rute i u vektorima. Format ugovora (`RequestSpec`) još nema polje za zaglavlja zahtjeva.
+- **Generirani klijent** (`generated/client.ts`) ne pokriva ove dvije rute. Ne šalje `ductus-protocol`, `Origin` ni kolačić, a od greške čita samo kod, pa gubi stanje rada iz 409 i `stage` iz 503. Klijent evidencije ostaje Ductusov `src/client/evidence-ingest.ts` dok `RequestSpec` ne dobije zaglavlja.
+- **`receiptKeys`** može biti prazan popis kad domena nema ključ potvrde. Ruta ga tada šalje uz 200, a klijent rad smatra nedostupnim.

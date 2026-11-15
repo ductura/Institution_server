@@ -77,6 +77,20 @@ describe("input validation: closed bodies", () => {
     ["a fractional base revision", COMMIT, { ...ENVELOPE, baseRevision: 0.5 }, false],
     ["a base revision as text", COMMIT, { ...ENVELOPE, baseRevision: "0" }, false],
     ["an empty transaction id", COMMIT, { ...ENVELOPE, clientTransactionId: "" }, false],
+    ["a blank transaction id", COMMIT, { ...ENVELOPE, clientTransactionId: "   " }, false],
+    ["a control character", COMMIT, { ...ENVELOPE, clientTransactionId: "tx\u0007-1" }, false],
+    [
+      "a transaction id with Croatian letters",
+      COMMIT,
+      { ...ENVELOPE, clientTransactionId: "tx-š-1" },
+      true,
+    ],
+    [
+      "a transaction id of 129",
+      COMMIT,
+      { ...ENVELOPE, clientTransactionId: "x".repeat(129) },
+      false,
+    ],
     ["a missing document", COMMIT, { ...ENVELOPE, document: undefined }, false],
   ])("%s (%s) -> %s", (_, route, value, valid) => {
     const input = JSON.parse(JSON.stringify(value)) as unknown;
@@ -103,7 +117,7 @@ describe("VS-1 path", () => {
   it("another person's document is answered as one that does not exist", () => {
     const foreign = vector(COMMIT, "not-found-foreign-document");
     expect(foreign.request.body).toMatchObject({
-      documentId: "00000000-0000-4000-8000-0000000000d2",
+      documentId: "dokument-tudji-izmisljeni-1",
     });
     expect(foreign.response).toMatchObject({ status: 404, body: { status: "not_found" } });
     expect(Object.keys(foreign.response.body as object)).toEqual(["status"]);

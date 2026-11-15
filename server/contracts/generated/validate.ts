@@ -23,8 +23,9 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }),
   "evidence.commit.post:body": (() => {
-  const local0 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+  const local0 = /^(?=.*\S)[^\u0000-\u001f\u007f-\u009f]+$/;
   const local1 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+  const local2 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -32,15 +33,16 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['clientTransactionId'] === 'string') &&
       value['clientTransactionId'].length <= 128 &&
       value['clientTransactionId'].length >= 1 &&
+      local0.test(value['clientTransactionId']) &&
       (typeof value['baseRevision'] === 'number' && Number.isInteger(value['baseRevision'])) &&
       value['baseRevision'] <= 9007199254740990 &&
       value['baseRevision'] >= 0 &&
       Array.isArray(value['segments']) &&
       value['segments'].length <= 1 &&
       value['segments'].length >= 1 &&
-      ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local0.test(value)))) { return false }; return true; })(value['segments']) &&
+      ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local1.test(value)))) { return false }; return true; })(value['segments']) &&
       (typeof value['document'] === 'string') &&
-      local1.test(value['document']) &&
+      local2.test(value['document']) &&
       Object.getOwnPropertyNames(value).length === 5
     )
   }

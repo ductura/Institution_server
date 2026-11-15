@@ -300,6 +300,7 @@
                   "clientTransactionId": {
                     "minLength": 1,
                     "maxLength": 128,
+                    "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$",
                     "type": "string"
                   },
                   "baseRevision": {
@@ -411,26 +412,31 @@
                                 "receiptId": {
                                   "minLength": 1,
                                   "maxLength": 256,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "evidencePackageId": {
                                   "minLength": 1,
                                   "maxLength": 256,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "documentId": {
                                   "minLength": 1,
                                   "maxLength": 256,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "sessionId": {
                                   "minLength": 1,
                                   "maxLength": 256,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "segmentId": {
                                   "minLength": 1,
                                   "maxLength": 256,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "segmentHash": {
@@ -453,6 +459,7 @@
                                     {
                                       "minLength": 1,
                                       "maxLength": 256,
+                                      "pattern": "\\S",
                                       "type": "string"
                                     },
                                     {
@@ -469,35 +476,32 @@
                                     {
                                       "const": "ductus-evidence-segment-v3",
                                       "type": "string"
-                                    },
-                                    {
-                                      "const": "ductus-evidence-segment-v4",
-                                      "type": "string"
                                     }
                                   ]
                                 },
                                 "evidenceProfileId": {
                                   "minLength": 1,
                                   "maxLength": 120,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "sequenceFrom": {
-                                  "minimum": 0,
+                                  "minimum": 1,
                                   "maximum": 9007199254740991,
                                   "type": "integer"
                                 },
                                 "sequenceTo": {
-                                  "minimum": 0,
+                                  "minimum": 1,
                                   "maximum": 9007199254740991,
                                   "type": "integer"
                                 },
                                 "eventCount": {
-                                  "minimum": 0,
+                                  "minimum": 1,
                                   "maximum": 9007199254740991,
                                   "type": "integer"
                                 },
                                 "payloadBytes": {
-                                  "minimum": 0,
+                                  "minimum": 1,
                                   "maximum": 9007199254740991,
                                   "type": "integer"
                                 },
@@ -513,6 +517,7 @@
                                 "clientTransactionId": {
                                   "minLength": 1,
                                   "maxLength": 128,
+                                  "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$",
                                   "type": "string"
                                 },
                                 "evidenceDomainId": {
@@ -541,50 +546,27 @@
                               ],
                               "properties": {
                                 "algorithm": {
-                                  "anyOf": [
-                                    {
-                                      "const": "Ed25519",
-                                      "type": "string"
-                                    },
-                                    {
-                                      "const": "ECDSA_P256_SHA256",
-                                      "type": "string"
-                                    },
-                                    {
-                                      "const": "RSA_PSS_SHA256",
-                                      "type": "string"
-                                    }
-                                  ]
+                                  "const": "Ed25519",
+                                  "type": "string"
                                 },
                                 "keyId": {
                                   "minLength": 1,
                                   "maxLength": 2048,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "keyVersion": {
                                   "minLength": 1,
                                   "maxLength": 256,
+                                  "pattern": "\\S",
                                   "type": "string"
                                 },
                                 "signatureEncoding": {
-                                  "anyOf": [
-                                    {
-                                      "const": "raw",
-                                      "type": "string"
-                                    },
-                                    {
-                                      "const": "ieee-p1363",
-                                      "type": "string"
-                                    },
-                                    {
-                                      "const": "der",
-                                      "type": "string"
-                                    }
-                                  ]
+                                  "const": "raw",
+                                  "type": "string"
                                 },
                                 "signatureBase64Url": {
-                                  "pattern": "^[A-Za-z0-9_-]+$",
-                                  "maxLength": 4096,
+                                  "pattern": "^[A-Za-z0-9_-]{86}$",
                                   "type": "string"
                                 }
                               }
@@ -1201,6 +1183,7 @@
                     "evidenceProfileId": {
                       "minLength": 1,
                       "maxLength": 120,
+                      "pattern": "\\S",
                       "type": "string"
                     },
                     "currentRevision": {
@@ -1233,7 +1216,6 @@
                       "type": "string"
                     },
                     "receiptKeys": {
-                      "minItems": 1,
                       "type": "array",
                       "items": {
                         "additionalProperties": false,
@@ -1270,11 +1252,13 @@
                           "keyId": {
                             "minLength": 1,
                             "maxLength": 2048,
+                            "pattern": "\\S",
                             "type": "string"
                           },
                           "keyVersion": {
                             "minLength": 1,
                             "maxLength": 256,
+                            "pattern": "\\S",
                             "type": "string"
                           },
                           "encoding": {

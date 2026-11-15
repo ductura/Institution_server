@@ -19,7 +19,15 @@ const Minute = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.
 const UuidV4 = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
 });
-const Text = (max: number) => Type.String({ minLength: 1, maxLength: max });
+/** Non-blank text of at most `max` UTF-16 code units, as the receipt validators measure it. */
+const Text = (max: number) => Type.String({ minLength: 1, maxLength: max, pattern: "\\S" });
+/** isReceiptClientTransactionId: non-blank, at most 128, no control character (Cc). */
+const TransactionId = Type.String({
+  minLength: 1,
+  maxLength: 128,
+  pattern: "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$",
+});
+const Positive = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
 const Algorithm = Type.Union([
   Type.Literal("Ed25519"),
   Type.Literal("ECDSA_P256_SHA256"),
@@ -55,33 +63,30 @@ const SignedReceipt = closed({
     segmentHash: Sha256,
     predecessorSegmentHash: Type.Union([Sha256, Type.Null()]),
     previousReceiptId: Type.Union([Text(256), Type.Null()]),
+    // isEvidenceSegmentSchema: a receipt names v2 or v3 only.
     evidenceSchema: Type.Union([
       Type.Literal("ductus-evidence-segment-v2"),
       Type.Literal("ductus-evidence-segment-v3"),
-      Type.Literal("ductus-evidence-segment-v4"),
     ]),
     evidenceProfileId: Text(120),
-    sequenceFrom: Count,
-    sequenceTo: Count,
-    eventCount: Count,
-    payloadBytes: Count,
+    sequenceFrom: Positive,
+    sequenceTo: Positive,
+    eventCount: Positive,
+    payloadBytes: Positive,
     acceptedAt: Minute,
-    revision: Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
-    clientTransactionId: Text(128),
+    revision: Positive,
+    clientTransactionId: TransactionId,
     evidenceDomainId: UuidV4,
     principalId: UuidV4,
   }),
   payloadDigestSha256: Sha256,
+  // D-92: pure Ed25519, 64 raw bytes in unpadded base64url.
   signature: closed({
-    algorithm: Algorithm,
+    algorithm: Type.Literal("Ed25519"),
     keyId: Text(2048),
     keyVersion: Text(256),
-    signatureEncoding: Type.Union([
-      Type.Literal("raw"),
-      Type.Literal("ieee-p1363"),
-      Type.Literal("der"),
-    ]),
-    signatureBase64Url: Type.String({ pattern: "^[A-Za-z0-9_-]+$", maxLength: 4096 }),
+    signatureEncoding: Type.Literal("raw"),
+    signatureBase64Url: Type.String({ pattern: "^[A-Za-z0-9_-]{86}$" }),
   }),
 });
 
@@ -154,8 +159,9 @@ export const open = defineRoute({
         ...WorkState,
         /** Exact JCS bytes of the snapshot of currentRevision. */
         document: Base64,
-        /** Keys of exactly one evidence domain; a receipt verifies only under these. */
-        receiptKeys: Type.Array(ReceiptKey, { minItems: 1 }),
+        // The receipt keys of the work's evidence domain; the route sends [] when the domain
+        // has none, and the client then treats the work as unavailable (openedWorkFrom).
+        receiptKeys: Type.Array(ReceiptKey),
         submitted: Type.Boolean(),
       }),
     },
@@ -179,7 +185,7 @@ export const commit = defineRoute({
     maxBodyBytes: MAX_COMMIT_BODY_BYTES,
     body: closed({
       documentId: Type.String(),
-      clientTransactionId: Text(128),
+      clientTransactionId: TransactionId,
       baseRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
       segments: Type.Array(Base64, { minItems: 1, maxItems: 1 }),
       document: Base64,

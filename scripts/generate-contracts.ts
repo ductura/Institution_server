@@ -173,29 +173,39 @@ function routeTable(routes: RouteContract[]): string {
   return `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;\n`;
 }
 
+/**
+ * One request schema as a TypeScript check function expression, compiled
+ * ahead of time. Throws for output the cleanup below does not expect.
+ */
+export function compileValidator(schema: TSchema, where: string): string {
+  const raw = TypeCompiler.Code(schema, [], { language: "typescript" }).replace(/^return /, "");
+  // TypeBox types the parameter as any. Every check tests for a plain object
+  // first, so a record type is enough and keeps any out of the output.
+  const code = raw
+    .replace(ANY_PARAMETER, `function check(value: Record<string, unknown>): boolean {`)
+    // An array's items are checked one by one after Array.isArray, so unknown is enough.
+    .replaceAll(ANY_ITEM, "(array: unknown[]) => { for(const value of array)")
+    // TypeBox names a pattern's regex local_N; the naming rule wants camelCase.
+    // Only its declarations and .test( calls: a field or pattern text keeps local_N as it is.
+    .replace(/^(\s*const )local_(\d+) = /gm, "$1local$2 = ")
+    .replace(/\blocal_(\d+)\.test\(/g, "local$1.test(")
+    // Number.isInteger does not narrow unknown; typeof first lets the bounds compile.
+    .replace(
+      /Number\.isInteger\((value\['\w+'\])\)/g,
+      "(typeof $1 === 'number' && Number.isInteger($1))",
+    );
+  if (code === raw || code.includes(": any"))
+    throw new Error(`unexpected validator shape for ${where}`);
+  // A pattern compiles to a `const local_N` regex before the function: keep it in a closure.
+  return code.startsWith("function ") ? `(${code})` : `(() => {\n${code}\n})()`;
+}
+
 function validators(routes: RouteContract[]): string {
   const rows = routes.flatMap((r) =>
     (["params", "query", "body"] as const).flatMap((part) => {
       const schema = r.request[part];
       if (!schema) return [];
-      const raw = TypeCompiler.Code(schema, [], { language: "typescript" }).replace(/^return /, "");
-      // TypeBox types the parameter as any. Every check tests for a plain object
-      // first, so a record type is enough and keeps any out of the output.
-      const code = raw
-        .replace(ANY_PARAMETER, `function check(value: Record<string, unknown>): boolean {`)
-        // An array's items are checked one by one after Array.isArray, so unknown is enough.
-        .replaceAll(ANY_ITEM, "(array: unknown[]) => { for(const value of array)")
-        // TypeBox names a pattern's regex local_N; the naming rule wants camelCase.
-        .replace(/\blocal_(\d+)\b/g, "local$1")
-        // Number.isInteger does not narrow unknown; typeof first lets the bounds compile.
-        .replace(
-          /Number\.isInteger\((value\['\w+'\])\)/g,
-          "(typeof $1 === 'number' && Number.isInteger($1))",
-        );
-      if (code === raw || code.includes(": any"))
-        throw new Error(`unexpected validator shape for ${r.id}:${part}`);
-      // A pattern compiles to a `const local_N` regex before the function: keep it in a closure.
-      const value = code.startsWith("function ") ? `(${code})` : `(() => {\n${code}\n})()`;
+      const value = compileValidator(schema, `${r.id}:${part}`);
       return [`  ${JSON.stringify(`${r.id}:${part}`)}: ${value.replace(/\n/g, "\n  ")},`];
     }),
   );
