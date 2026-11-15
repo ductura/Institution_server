@@ -77,6 +77,15 @@ const LOADER_MODULE_RE = /^(?:node:)?(?:module|process)(?:$|\/)/iu;
 // Names that load a module wherever they appear: a member, a destructured key,
 // an import name or a string key ("getBuiltinModule" in process).
 const LOADER_NAMES = new Set(["getBuiltinModule", "mainModule", "dlopen"]);
+// Globals that lead to a loader, with the members never allowed on them. eval
+// and Function can name any global in a string, so they are not used at all.
+const GLOBAL_BANNED = new Set(["process", "global", "globalThis", "eval", "Function"]);
+const GLOBAL_MEMBERS_BANNED = new Map<string, ReadonlySet<string>>([
+  ["process", new Set([...LOADER_NAMES, "binding"])],
+  ["globalThis", GLOBAL_BANNED],
+  ["global", GLOBAL_BANNED],
+]);
+const NEVER_USED_GLOBALS = new Set(["eval", "Function"]);
 
 /** The area of a repository path, ENTRY for server/*.ts, undefined outside server/. */
 export function areaOf(path: string): string | undefined {
@@ -216,18 +225,35 @@ export const areaBoundary: Rule.RuleModule = {
         if (known && !isTest && typeof value === "string" && LOADER_NAMES.has(value))
           report(node, "loader");
       },
-      MemberExpression(node) {
-        // process.binding, and process[key] with a key the rule cannot read.
+      TemplateLiteral(node) {
+        const [quasi] = node.quasis;
+        if (known && !isTest && node.expressions.length === 0 && quasi !== undefined)
+          if (LOADER_NAMES.has(quasi.value.cooked ?? "")) report(node, "loader");
+      },
+      // The globals that reach a module loader (process, globalThis, global) are
+      // used only as `name.member`, never as a value, an alias or a computed key;
+      // eval and Function, which can name them in a string, not at all.
+      "Program:exit"(program) {
         if (!known || isTest) return;
-        const object = node.object as Loose;
-        const isProcess =
-          (object.type === "Identifier" && object.name === "process") ||
-          (object.type === "MemberExpression" && object.property?.name === "process");
-        if (!isProcess) return;
-        const property = node.property as Loose;
-        const key = node.computed && property.type === "Literal" ? property.value : property.name;
-        if ((node.computed && property.type !== "Literal") || key === "binding")
-          report(node, "loader");
+        const scope = context.sourceCode.getScope(program);
+        // Built-ins (globalThis, eval, Function) resolve to declared globals;
+        // the others (process, global) stay unresolved in `through`.
+        const builtins = [...GLOBAL_BANNED].flatMap(
+          (name) => scope.set.get(name)?.references ?? [],
+        );
+        for (const ref of [...scope.through, ...builtins]) {
+          const id = ref.identifier as Node & { name: string };
+          if (NEVER_USED_GLOBALS.has(id.name)) {
+            report(id, "loader");
+            continue;
+          }
+          const banned = GLOBAL_MEMBERS_BANNED.get(id.name);
+          if (banned === undefined) continue;
+          const parent = id.parent as Loose & { object?: unknown };
+          const member =
+            parent.type === "MemberExpression" && parent.object === id && parent.computed !== true;
+          if (!member || banned.has(parent.property?.name ?? "")) report(id, "loader");
+        }
       },
       TSExternalModuleReference(node: Node & { expression?: unknown }) {
         const parent = (node as { parent?: Kinded }).parent;

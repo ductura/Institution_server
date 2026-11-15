@@ -229,6 +229,7 @@ const ESTREE_NODE_NAMES = [
   "MemberExpression",
   "Identifier",
   "Literal",
+  "TemplateLiteral",
   "TSImportType",
   "TSExternalModuleReference",
 ];

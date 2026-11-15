@@ -181,6 +181,20 @@ const bypasses: Case[] = [
     "../settings/\\n./../index.ts",
   ]),
   ...all("server/domain/forensics/golden-vectors/load.ts-extra.ts", "pure", ["node:fs"]),
+  // review of 83a86cd (FAIL c.6889015219): an alias of process and a template key
+  ...[
+    'const p = process;\nexport const fs = p[`getBuiltinModule`]("fs");\n',
+    'export const fs = process[`getBuiltinModule`]("fs");\n',
+    "export const p = process;\n",
+    "export const f = (q = process): unknown => q;\n",
+    "export const p = globalThis.process;\n",
+    'export const p = globalThis["process"];\n',
+    "const g = globalThis;\nexport const p = g;\n",
+    "export const p = global.process;\n",
+    'export const p = eval("process");\n',
+    'export const p = Function("return process")();\n',
+    'export const p = new Function("return process")();\n',
+  ].map((code) => ({ file: "server/domain/x.ts", code, messageId: "loader" })),
   // laundering through a folder outside server/
   ...all("server/log/x.ts", "outside", ["../../scripts/hop/index.ts", "../../db/x/index.ts"]),
   { file: "server/x.ts", code: imp("../scripts/index.ts"), messageId: "outside" },
@@ -227,6 +241,17 @@ const passing: { file: string; code: string }[] = [
   { file: "server/session/x.test.ts", code: imp("../database/index.ts") },
   { file: "server/contracts/x.test.ts", code: imp("../../scripts/index.ts") + imp("node:module") },
   { file: "server/log/x.ts", code: "export const env = process.env;\n" },
+  {
+    file: "server/log/x.ts",
+    code: [
+      "export const port = process.env.PORT;",
+      "process.on('exit', () => undefined);",
+      "export const c = globalThis.crypto;",
+      "export const ok = typeof globalThis.atob === 'function';",
+      "export const f = (process: string): string => process;",
+      "",
+    ].join("\n"),
+  },
   {
     file: "server/http/x.ts",
     code: imp("../database/index.ts") + imp("../external/keys/index.ts"),
