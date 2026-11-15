@@ -284,6 +284,8 @@ const ESTREE_NODE_NAMES = [
   "PrivateIdentifier",
   "JSXIdentifier",
   "JSXText",
+  "NewExpression",
+  "TemplateLiteral",
 ];
 
 // The naming rule, with extra exact property names (`properties`) and extra

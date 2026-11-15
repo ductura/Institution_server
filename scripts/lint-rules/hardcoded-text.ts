@@ -64,13 +64,27 @@ export const TEXT_TRANSITIONAL: readonly string[] = ["server/app.ts"];
 /** Names that build or decode text from codes, bytes or an encoding. */
 export const BUILDER_NAMES: readonly string[] = [
   ...["fromCharCode", "fromCodePoint", "atob", "TextDecoder", "StringDecoder"],
-  ...["decodeURIComponent", "decodeURI", "unescape"],
+  ...["decodeURIComponent", "decodeURI", "unescape", "TextDecoderStream", "domainToUnicode"],
+  // Locale data of the runtime (Intl, toLocale*) is Croatian text too.
+  ...["Intl", "toLocaleString", "toLocaleDateString", "toLocaleTimeString", "copyBytesFrom"],
 ];
+// Modules whose default or namespace binding may only be read by a static member.
+const NAMESPACE_MODULES = ["node:util", "node:url", "node:buffer", "node:string_decoder"];
+// Encodings that turn text into other bytes (utf8 is the identity for text).
+const ENCODINGS = new Set(
+  ["hex", "base64", "base64url", "latin1", "binary", "ascii", "ucs2", "ucs-2", "utf16le"].concat(
+    "utf-16le",
+  ),
+);
+// Constructors whose `.text()` decodes bytes given to them.
+const BYTE_HOLDERS = ["Response", "Blob", "File"];
 /** Members of String and Buffer that are builders; `from` only with an encoding or array. */
 const STRING_BUILDERS = new Set(["raw", "fromCharCode", "fromCodePoint"]);
-const BUFFER_BUILDERS = new Set(["of"]);
+const BUFFER_BUILDERS = new Set(["of", "copyBytesFrom"]);
 // Names under which the global object is reachable.
 const GLOBAL_HOLDERS = ["globalThis", "global", "window", "self"];
+// Array methods that may take String as a callback (`xs.map(String)`).
+const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex", "flatMap"];
 /**
  * Files that decode input at run time, each with the builders it may use
  * (`Buffer.from` stands for Buffer.from with an encoding). A closed list:
@@ -172,11 +186,15 @@ function escapedCodes(raw: string): number[] {
 /** Whether a text spells a non-ASCII character in an encoded form. */
 export function encodesNonAscii(text: string): boolean {
   if (escapedCodes(text).some((code) => code > 0x7f)) return true;
-  if (/%[89a-fA-F][0-9a-fA-F]/u.test(text)) return true;
+  // A UTF-8 lead byte and a continuation byte, percent-encoded.
+  if (/%[c-fC-F][0-9a-fA-F]%[89abAB][0-9a-fA-F]/u.test(text)) return true;
+  // A data: URL, a punycode label.
+  if (/\bdata:[^,\s]*,/u.test(text) || /(?:^|[./@])xn--/iu.test(text)) return true;
   const entities = text.matchAll(/&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?/gu);
   if ([...entities].some((m) => Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16) > 0x7f))
     return true;
-  return /&[A-Za-z]+(?:acute|caron|grave|uml|cedil|tilde|circ|ring|slash|lig|strok);?/u.test(text);
+  const named = [...text.matchAll(/&([A-Za-z][A-Za-z0-9]*);/gu)].map((m) => m[1] ?? "");
+  return named.some((n) => !["amp", "lt", "gt", "quot", "apos"].includes(n));
 }
 
 /** A repository path of the linted file, with `/` separators, also on Windows. */
@@ -245,7 +263,7 @@ export const noHardcodedText: Rule.RuleModule = {
       // An escape is a builder whatever the character it gives is.
       if (escapedCodes(raw).some((code) => code > 0x7f))
         context.report({ node, messageId: "builder", data: { name: "\\u escape" } });
-      const name = BUILDER_NAMES.find((n) => text.includes(n));
+      const name = BUILDER_NAMES.find((n) => new RegExp(`\\b${n}\\b`, "u").test(text));
       if (name) context.report({ node, messageId: "builder", data: { name } });
     }
 
@@ -285,8 +303,10 @@ export const noHardcodedText: Rule.RuleModule = {
         name === "String"
       )
         return;
-      // `.map(String)`: an argument, not a binding a later member could read.
-      if (parent?.type === "CallExpression" && name === "String" && parent.callee !== node) return;
+      // `.map(String)`: a callback of an array method, nothing that reads its members.
+      const method = parent?.callee?.type === "MemberExpression" ? memberName(parent.callee) : null;
+      if (parent?.type === "CallExpression" && name === "String" && parent.callee !== node)
+        if (method !== null && CALLBACK_METHODS.includes(method)) return;
       if (parent?.type !== "MemberExpression" || parent.object !== node) {
         if (parent?.type !== "TSQualifiedName")
           context.report({ node: node as Node, messageId: "value", data: { name } });
@@ -294,21 +314,33 @@ export const noHardcodedText: Rule.RuleModule = {
       }
       const member = memberName(parent);
       const builders = name === "String" ? STRING_BUILDERS : BUFFER_BUILDERS;
-      if (member === null || builders.has(member)) {
+      // `String.prototype` only as the object of a further static member.
+      const next = parent.parent;
+      const prototypeLeak =
+        member === "prototype" &&
+        !(next?.type === "MemberExpression" && next.object === parent && memberName(next) !== null);
+      if (member === null || builders.has(member) || prototypeLeak) {
         const shown = `${name}.${member ?? "[computed]"}`;
         context.report({ node: parent as Node, messageId: "builder", data: { name: shown } });
         return;
       }
-      if (name !== "Buffer" || member !== "from") return;
+      if (name !== "Buffer" || !["from", "alloc", "concat"].includes(member)) return;
       const call = parent.parent;
       const args = call?.type === "CallExpression" && call.callee === parent ? call.arguments : [];
-      const encoded = (args?.length ?? 0) > 1 || args?.[0]?.type === "ArrayExpression";
+      const bytes = (a?: Loose): boolean =>
+        a?.type === "ArrayExpression" || a?.type === "NewExpression";
+      const encoded =
+        member === "alloc"
+          ? (args?.length ?? 0) > 1
+          : member === "concat"
+            ? (args?.[0] as { elements?: Loose[] } | undefined)?.elements?.some(bytes) === true
+            : (args?.length ?? 0) > 1 || bytes(args?.[0]);
       const called = call?.type === "CallExpression" && call.callee === parent;
       if (!called || (encoded && !allowedUse(node, "Buffer.from")))
         context.report({
           node: parent as Node,
           messageId: "builder",
-          data: { name: "Buffer.from" },
+          data: { name: `Buffer.${member}` },
         });
     }
 
@@ -351,9 +383,60 @@ export const noHardcodedText: Rule.RuleModule = {
           context.report({ node, messageId: "value", data: { name } });
       },
       "Identifier, PrivateIdentifier, JSXIdentifier": checkName,
+      // Bytes written from encoded text (`b.write(x, "hex")`, `b.fill(x, "base64")`).
+      CallExpression(node) {
+        const call = node as unknown as Loose;
+        const method = call.callee?.type === "MemberExpression" ? memberName(call.callee) : null;
+        if (method !== "fill" && method !== "write") return;
+        const encoding = (call.arguments ?? []).find(
+          (a) => a.type === "Literal" && typeof a.value === "string" && ENCODINGS.has(a.value),
+        );
+        if (encoding && !allowed.includes("Buffer.from"))
+          context.report({ node, messageId: "builder", data: { name: String(encoding.value) } });
+      },
+      // `new Response(bytes).text()`: bytes written in the source.
+      NewExpression(node) {
+        const call = node as unknown as Loose;
+        const first = call.arguments?.[0];
+        const holder = call.callee?.type === "Identifier" ? (call.callee.name ?? "") : "";
+        const bytes = first?.type === "ArrayExpression" || first?.type === "NewExpression";
+        if (BYTE_HOLDERS.includes(holder) && bytes)
+          context.report({ node, messageId: "builder", data: { name: holder } });
+      },
+      // The default or namespace binding of a module with decoders.
+      "ImportDefaultSpecifier, ImportNamespaceSpecifier"(node: Node) {
+        const spec = String((node as unknown as Loose).parent?.source?.value ?? "");
+        const name = spec.startsWith("node:") ? spec : `node:${spec}`;
+        if (!NAMESPACE_MODULES.includes(name)) return;
+        for (const variable of context.sourceCode.getDeclaredVariables(node)) {
+          for (const reference of variable.references) {
+            const id = reference.identifier as unknown as Loose;
+            const up = id.parent;
+            const read = up?.type === "MemberExpression" && up.object === id && !up.computed;
+            if (!read)
+              context.report({ node: id as Node, messageId: "value", data: { name: spec } });
+          }
+        }
+      },
+      // A template is also read as one text, its expressions as word breaks.
+      TemplateLiteral(node) {
+        const quasis = (node as unknown as { quasis: { value: { cooked?: string | null } }[] })
+          .quasis;
+        if (quasis.length < 2) return;
+        const text = quasis.map((q) => q.value.cooked ?? "").join(" ");
+        if (quasis.some((q) => textProblem(q.value.cooked ?? ""))) return;
+        const problem = textProblem(text);
+        if (problem)
+          context.report({ node, messageId: problem, data: { text: JSON.stringify(text) } });
+      },
       Literal(node) {
         const literal = node as unknown as Loose;
         if (typeof literal.value === "string") checkText(node, literal.value, literal.raw ?? "");
+        // A regex pattern is text through `.source`: letters as \\u escapes.
+        const pattern = (literal as { regex?: { pattern: string } }).regex?.pattern;
+        const problem = pattern === undefined ? null : textProblem(pattern);
+        if (problem)
+          context.report({ node, messageId: problem, data: { text: JSON.stringify(pattern) } });
       },
       TemplateElement(node) {
         checkText(node, node.value.cooked ?? node.value.raw, node.value.raw);
