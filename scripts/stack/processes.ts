@@ -94,11 +94,7 @@ export async function stopProcess(
   pid: number,
   marker: string,
   graceMs: number,
-  {
-    command = commandLine,
-    kill = (id, signal) => process.kill(-id, signal),
-    wait = sleep,
-  }: StopDeps = {},
+  { command = commandLine, kill = signalGroup, wait = sleep }: StopDeps = {},
 ): Promise<"stopped" | "gone" | "foreign"> {
   if (!Number.isInteger(pid) || pid <= 1) return "foreign";
   const line = command(pid);

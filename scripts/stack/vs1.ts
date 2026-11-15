@@ -27,6 +27,7 @@ const LOCK = join(DIR, "up.lock");
 const PGDATA = join(DIR, "pgdata");
 const SERVER = join(ROOT, "dist", "server.js");
 const HEALTH = "/api/v1/health";
+const SCRIPT = fileURLToPath(import.meta.url);
 // pg_ctl hands -o to /bin/sh, and a Unix socket path has at most 107 bytes.
 const SAFE_PATH = /^\/[A-Za-z0-9._/-]+$/u;
 
@@ -103,8 +104,7 @@ export async function up(config: StackConfig): Promise<void> {
   }
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
   chmodSync(DIR, 0o700);
-  // One `up` at a time: a second one fails here instead of sharing PGDATA.
-  writeFileSync(LOCK, String(process.pid), { flag: "wx", mode: 0o600 });
+  takeLock();
   try {
     const state: stateFile.StackState = {
       env: config.env,
@@ -126,6 +126,24 @@ export async function up(config: StackConfig): Promise<void> {
     rmSync(LOCK, { force: true });
   }
 }
+
+// One `up` at a time: a second one fails here instead of sharing PGDATA. A lock
+// left by an `up` that was killed or interrupted by a restart (its pid no longer
+// runs this script) is taken over.
+function takeLock(): void {
+  try {
+    writeFileSync(LOCK, String(process.pid), { flag: "wx", mode: 0o600 });
+    return;
+  } catch (error) {
+    if (Reflect.get(error as object, "code") !== "EEXIST") throw error;
+  }
+  const owner = Number(readFileSync(LOCK, "utf8"));
+  if (lockOwnerRuns(owner)) throw new Error(`another up (pid ${owner}) is running`);
+  writeFileSync(LOCK, String(process.pid), { mode: 0o600 });
+}
+
+const lockOwnerRuns = (pid: number): boolean =>
+  Number.isInteger(pid) && pid > 1 && (commandLine(pid) ?? "").includes(SCRIPT);
 
 // pg_ctl signals whatever holds the pid in postmaster.pid; a stale file after
 // a reboot may name someone else's process, so the pid must be our postmaster.
@@ -162,6 +180,7 @@ export async function down(): Promise<boolean> {
     free = false;
   }
   if (free) rmSync(STATE, { force: true });
+  if (existsSync(LOCK) && !lockOwnerRuns(Number(readFileSync(LOCK, "utf8")))) rmSync(LOCK);
   return free;
 }
 

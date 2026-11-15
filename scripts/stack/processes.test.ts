@@ -1,5 +1,6 @@
 // DAN-759: `down` signals only the processes the stack started, and only while
 // the recorded id still runs the recorded command.
+import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
@@ -76,6 +77,19 @@ describe("stopProcess", () => {
       "foreign",
     );
     expect(fake.signals).toEqual([]);
+  });
+});
+
+describe("stopProcess with the real signal", () => {
+  it("counts a process group that is already gone as stopped", async () => {
+    // A child that has exited and was reaped: its id names no process group,
+    // so the signal gets ESRCH, as when the server exits right after the check.
+    const gone = spawnSync(process.execPath, ["-e", ""]).pid;
+    let calls = 0;
+    const command = (): string | null => (calls++ < 1 ? "/r/dist/server.js" : null);
+    await expect(
+      stopProcess(gone, "/r/dist/server.js", 1000, { command, wait: noWait }),
+    ).resolves.toBe("stopped");
   });
 });
 

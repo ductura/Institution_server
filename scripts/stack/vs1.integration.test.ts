@@ -2,9 +2,9 @@
 // before it starts anything, and none of it reaches the server build.
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
@@ -70,6 +70,16 @@ describe("pnpm stack:vs1 down without a state", () => {
       await new Promise<void>((resolve) => orphan.close(() => resolve()));
     }
     expect(run(["down"], {}).status).toBe(0);
+  });
+
+  it("removes an up.lock whose owner no longer runs", () => {
+    expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
+    const lock = join(ROOT, ".stack/vs1/up.lock");
+    mkdirSync(dirname(lock), { recursive: true });
+    const gone = spawnSync(process.execPath, ["-e", ""]).pid;
+    writeFileSync(lock, String(gone));
+    expect(run(["down"], {}).status).toBe(0);
+    expect(existsSync(lock)).toBe(false);
   });
 });
 
