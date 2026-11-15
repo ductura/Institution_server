@@ -36,6 +36,17 @@ export const DATABASES: readonly Database[] = Object.freeze([
     migrator: "ductus_logs_migrator",
     service: "postgres-logs",
   }),
+  // S-1F-c a2: the legal texts live next to the main database, in the same
+  // cluster, so the cluster-wide roles of the main database exist there and
+  // only the database's own grants keep them out.
+  Object.freeze({
+    name: "legal",
+    database: "ductus_legal",
+    migrationsDir: "db/legal/migrations",
+    ledger: "db/legal/migrations.sum",
+    migrator: "ductus_legal_migrator",
+    service: "postgres-main",
+  }),
 ]);
 
 /** The database called `name`; anything else is an error, never a default. */
