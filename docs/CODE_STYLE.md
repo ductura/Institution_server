@@ -202,7 +202,7 @@ type AppError = { code: string; messageKey: string };
 type Result<T> = { ok: true; value: T } | { ok: false; error: AppError };
 ```
 
-Provedba: review. Zajednički tipovi `Result` i `AppError` još ne postoje u repou; kad se uvedu, provjerava ih `tsc`.
+Provedba: review i `tsc`. Zajednički tipovi `Result` i `AppError` su u `server/domain/result.ts`. Prvi port koji ih koristi je `server/external/keys`; ostali se usklađuju uz zadatak koji ih mijenja.
 
 Prelazno: `server/app.ts` još vraća `{ error: "..." }` s hrvatskim tekstom u kodu; prepisuje se uz zadatak koji ga mijenja.
 

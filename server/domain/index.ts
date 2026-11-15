@@ -1,3 +1,4 @@
+export type { AppError, Result } from "./result.ts";
 export * from "./json/index.ts";
 export * from "./document/index.ts";
 export * from "./collaboration/index.ts";
