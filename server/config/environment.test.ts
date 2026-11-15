@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   appOrigin,
+  DEFAULT_SHUTDOWN_GRACE_MS,
   environmentProblems,
   listenAddress,
   listenProblems,
   originProblems,
+  shutdownGraceMs,
+  shutdownProblems,
 } from "./environment.ts";
 
 // DAN-299: the startup check. Passwords and hosts below are invented.
@@ -108,5 +111,58 @@ describe("originProblems and appOrigin", () => {
     expect(problems).toEqual(["APP_ORIGIN is not a bare http(s) origin"]);
     expect(problems.join(" ")).not.toContain("invented-secret");
     expect(appOrigin({ APP_ORIGIN: origin })).toBeNull();
+  });
+});
+
+// S-1B-c (DAN-778): the shutdown deadline. The validator is checked over the
+// whole input range, not a sample: every whole number from 0 to 40 000 as
+// written, and each with a sign, a leading zero, a space or a unit around it.
+describe("shutdownProblems and shutdownGraceMs", () => {
+  const PROBLEM = "SHUTDOWN_GRACE_MS is not a whole number from 100 to 30000";
+
+  it("defaults to 8000 ms without the variable", () => {
+    expect(shutdownProblems({})).toEqual([]);
+    expect(shutdownGraceMs({})).toBe(DEFAULT_SHUTDOWN_GRACE_MS);
+    expect(DEFAULT_SHUTDOWN_GRACE_MS).toBe(8_000);
+  });
+
+  it("accepts exactly the plain whole numbers from 100 to 30000", () => {
+    const wrong: string[] = [];
+    for (let n = 0; n <= 40_000; n += 1) {
+      const plain = String(n);
+      const ok = n >= 100 && n <= 30_000;
+      if ((shutdownProblems({ SHUTDOWN_GRACE_MS: plain }).length === 0) !== ok) wrong.push(plain);
+      if (ok && shutdownGraceMs({ SHUTDOWN_GRACE_MS: plain }) !== n) wrong.push(`value ${plain}`);
+      for (const variant of [
+        `0${plain}`,
+        `+${plain}`,
+        `-${plain}`,
+        ` ${plain}`,
+        `${plain} `,
+        `${plain}ms`,
+        `${plain}.0`,
+        `${plain}e0`,
+      ]) {
+        if (shutdownProblems({ SHUTDOWN_GRACE_MS: variant }).length === 0) wrong.push(variant);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it.each([
+    "",
+    "abc",
+    "1e3",
+    "0x3e8",
+    "1_000",
+    "Infinity",
+    "NaN",
+    "１０００",
+    "1000\n",
+    "invented-secret",
+  ])("refuses %j by the variable name only", (value) => {
+    const problems = shutdownProblems({ SHUTDOWN_GRACE_MS: value });
+    expect(problems).toEqual([PROBLEM]);
+    expect(problems.join(" ")).not.toContain("invented-secret");
   });
 });

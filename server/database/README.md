@@ -8,7 +8,7 @@ Područje baze (karta: [docs/server-map.md](../../docs/server-map.md)). Jedino m
 - `log-settings.ts`: prije prve transakcije provjerava da baza ne zapisuje parametre naredbi (token sesije je parametar).
 - `plain-label-check.ts`: jednokratna provjera prije migracije `institution_plain_label_marks` (samo čita, imenuje redak, nikad pohranjeno ime): `DATABASE_URL=… node server/database/plain-label-check.ts`.
 - `migration-lock.ts`: `connectLockClient(url, options)`, veza na kojoj [scripts/db/migrate-locked.ts](../../scripts/db/migrate-locked.ts) drži zaključavanje migracija (`pg_advisory_lock`, D-91 (3)); S-0.13.
-- `index.ts`: javno sučelje: `withActor` (bazen nad `APP_DATABASE_URL`), `openSession` i `backchannelLogout` (mali bazen nad `AUTH_DATABASE_URL`), granice bazena (`APP_*`, `appPoolConfig`, `handleConnectionErrors`) i tvornice nad bazenom pozivatelja za testove.
+- `index.ts`: javno sučelje: `withActor` (bazen nad `APP_DATABASE_URL`), `openSession` i `backchannelLogout` (mali bazen nad `AUTH_DATABASE_URL`), granice bazena (`APP_*`, `appPoolConfig`, `handleConnectionErrors`), `closePools()` koji pri gašenju zatvara otvorene bazene (poslije toga svaki pristup bazi odbija, S-1B-c) i tvornice nad bazenom pozivatelja za testove.
 
 Preneseno iz Ductusa `src/server/db/` (`d52a92c3`, S-0.13 i S-0.17, DAN-726 i DAN-730) bez promjene logike. Testovi uz kod: `with-actor.test.ts`, `log-settings.test.ts`, `plain-label-check.test.ts`, `current-actor.test.ts` i `session-guc-scope.test.ts` (nijedna postavka sesije ne nadživi transakciju); s bazom u `tests/db/` (`with-actor`, `open-session`, `app-database`, `plain-label-check`). `job-queue.ts` (red poslova na pg-bossu) dolazi s workerom i `attempt-fence` (S-M-\*, VS-1b).
 

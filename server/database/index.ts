@@ -26,9 +26,16 @@ export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 
 let appWithActor: WithActor | undefined;
+let appPool: pg.Pool | undefined;
 let authPool: pg.Pool | undefined;
+let poolsClosed = false;
 let authOpenSession: OpenSession | undefined;
 let authBackchannelLogout: BackchannelLogout | undefined;
+
+// After closePools nothing reaches a database, neither a new pool nor an ended one.
+function assertOpen(): void {
+  if (poolsClosed) throw new Error("database pools are closed");
+}
 
 // Limits of the web process pool. Every wait has an end, so a stuck request
 // fails instead of holding a connection or a caller for good.
@@ -124,6 +131,7 @@ function connect(): WithActor {
     throw new Error("APP_DATABASE_URL is not set; database access stays closed");
   }
   const pool = handleConnectionErrors(new pg.Pool(appPoolConfig(connectionString)));
+  appPool = pool;
   // The session token is a bind parameter: no transaction runs on a database
   // that would write it to its log (log-settings.ts).
   return withLogCheck(() => assertNoParameterLogging(pool), createWithActor(pool));
@@ -134,6 +142,7 @@ function connect(): WithActor {
  * The pool is not exported and ESLint keeps the driver inside this directory.
  */
 export const withActor: WithActor = async (token, fn) => {
+  assertOpen();
   appWithActor ??= connect();
   return appWithActor(token, fn);
 };
@@ -162,6 +171,7 @@ function connectAuth(): pg.Pool {
 
 /** Opens a session for a verified login; only the login callback calls it. */
 export const openSession: OpenSession = async (input) => {
+  assertOpen();
   authOpenSession ??= createOpenSession(connectAuth());
   return authOpenSession(input);
 };
@@ -171,6 +181,18 @@ export const openSession: OpenSession = async (input) => {
  * back-channel logout route calls it.
  */
 export const backchannelLogout: BackchannelLogout = async (input) => {
+  assertOpen();
   authBackchannelLogout ??= createBackchannelLogout(connectAuth());
   return authBackchannelLogout(input);
 };
+
+/**
+ * Ends the pools this process opened, on shutdown (S-1B-c, DAN-778), after
+ * every request is done. A pool never opened is not opened now, and no pool
+ * opens afterwards: withActor, openSession and backchannelLogout then refuse.
+ */
+export async function closePools(): Promise<void> {
+  poolsClosed = true;
+  const pools = [appPool, authPool].filter((pool) => pool !== undefined);
+  await Promise.all(pools.map((pool) => pool.end()));
+}

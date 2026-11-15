@@ -11,14 +11,14 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
   - iznimka u rukovatelju: 500 `{"error":"internal"}`, a zapisuje se samo ime greške.
 - `HEALTH_ROUTE` je `GET /api/v1/health`, s tijelom točno `{"status":"ok"}` i `Cache-Control: no-store`. Ne čita bazu, sesiju ni okolinu (prijenos Ductusa `app/api/health/route.ts`).
 - `routesOf` daje rute imenovanih područja (`areas.ts`).
-- `createDatabases` daje registar baza nad `server/database`. Ništa ne otvara, jer se veza otvara pri prvoj upotrebi.
-- `shutdown.ts` (S-1B-c, DAN-778; prijenos Ductusa `src/server/shutdown.ts`): svaki zahtjev uzima ulaznicu koordinatora. Prvi SIGTERM ili SIGINT redom: prestaje primati veze i zatvara prazne keep-alive veze; zahtjev koji stigne nakon signala dobiva 503 `{"error":"unavailable"}` uz `Connection: close`; čeka započete zahtjeve; zatim kuke redom (`FLUSH_LOGS`, pa baze); izlaz 0. Drugi signal ne pokreće ništa novo. Jedan rok od signala (zadano 8000 ms) pokriva sve: nakon njega izlaz 1 i redak `shutdown.deadline` s fazom; kuka koja baci daje izlaz 1 i `shutdown.hook_failed`. U zapisu su samo imena, nikad poruka greške ni zahtjev. Na poslužitelj i ulaz ga spaja dio c2 (S-1B-c); dotad ga nitko ne poziva.
+- `createDatabases` daje registar baza nad `server/database`. Ništa ne otvara, jer se veza otvara pri prvoj upotrebi. `close()` zatvara otvorene bazene pri gašenju; svaka nova baza u registru zatvara se i ondje.
+- `shutdown.ts` (S-1B-c, DAN-778; prijenos Ductusa `src/server/shutdown.ts`): svaki zahtjev uzima ulaznicu koordinatora. Prvi SIGTERM ili SIGINT redom: prestaje primati veze i zatvara prazne keep-alive veze; zahtjev koji stigne nakon signala dobiva 503 `{"error":"unavailable"}` uz `Connection: close`; čeka započete zahtjeve; zatim kuke redom (`FLUSH_LOGS`, pa baze); izlaz 0. Drugi signal ne pokreće ništa novo. Jedan rok od signala (`SHUTDOWN_GRACE_MS`, zadano 8000 ms) pokriva sve: nakon njega izlaz 1 i redak `shutdown.deadline` s fazom; kuka koja baci daje izlaz 1 i `shutdown.hook_failed`. U zapisu su samo imena, nikad poruka greške ni zahtjev.
 - `PIPELINE_STEPS` je jedini popis koraka 2–7 toka zahtjeva (`docs/server-map.md` §3), zamrznut i provjeren testom nad tablicom. `createPipeline` prima jedan sloj po imenu koraka, ne niz, pa se redoslijed ne može zadati ni promijeniti; suvišan, nedostajući ili ne-funkcijski korak baca pri pokretanju. Sloj koji odbije, baci ili vrati išta osim `"next"` zaustavlja zahtjev prije aplikacije (500 `{"error":"internal"}` ako sloj nije sam odgovorio).
 - `createLayers` daje slojeve: koraci 2–5 (IP, IP prava, ograničenje, zapis prometa) prazni su do vala 5; korak 6 su sigurnosna zaglavlja (`security-headers.ts`, prijenos Ductusa); korak 7 je zaštita porijekla (`mutation-request.ts`, prijenos Ductusa).
 - Zaštita porijekla: osim `GET`, `HEAD` i `OPTIONS` svaka metoda mijenja stanje i traži točno jedno zaglavlje `Origin` jednako `APP_ORIGIN` te `Sec-Fetch-Site` koji nedostaje ili je točno jednom `same-origin`. Inače 403 `{"error":"origin_missing" | "origin_mismatch" | "cross_site"}` (kodovi ugovora). Bez `APP_ORIGIN` svaka takva metoda dobiva 403. Tijelo zahtjeva se ne čita.
 - `refuse` je jedini način na koji sloj odbija: tijelo ugovora i sigurnosna zaglavlja, i za korake prije koraka 6.
 
-Spajanje gašenja na poslužitelj donosi dio c2 od S-1B-c, a čitanje tijela s granicom (`readBodyWithLimit`) DAN-777 a2.
+Čitanje tijela s granicom (`readBodyWithLimit`) DAN-777 a2.
 
 ## Tko ga zove
 
