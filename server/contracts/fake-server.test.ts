@@ -99,6 +99,15 @@ describe("fake server answers with the vectors", () => {
     expect(answer).toEqual(expected(named(route, first)));
   });
 
+  it("reads the caller's header names whatever their case, the pick among them", () => {
+    const logout = requestOf(named("auth.backchannel-logout.post", "sessions-closed"), false);
+    const headers = { "Content-Type": "application/x-www-form-urlencoded" };
+    expect(answerFake({ ...logout, headers }).status).toBe(200);
+    const unavailable = named("auth.backchannel-logout.post", "unavailable");
+    const picked = { ...headers, "X-Ductura-Fake-Vector": "unavailable" };
+    expect(parsed(answerFake({ ...logout, headers: picked }))).toEqual(expected(unavailable));
+  });
+
   it("matches JSON bodies whatever the key order and headers whatever their case", () => {
     const v = named("profile.interface-locale.post", "saved");
     const req = requestOf(v);
@@ -129,6 +138,17 @@ describe("a request without a vector answers 501", () => {
   it.each([
     ["a query no vector has", get("/api/v1/health?x=1")],
     ["a repeated query field", get("/api/v1/health?x=1&x=2")],
+    ["a query field named __proto__", get("/api/v1/health?__proto__=x")],
+    ["a repeated query field named __proto__", get("/api/v1/health?__proto__=x&__proto__=y")],
+    [
+      "a form field named __proto__ next to a vector's fields",
+      {
+        method: "POST",
+        url: "/api/v1/auth/backchannel-logout",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new TextEncoder().encode("logout_token=izmisljeni.logout.token&__proto__=x"),
+      },
+    ],
     ["a body no vector has", post('{"locale":"fr"}')],
     ["a body that is not JSON", post("{")],
     ["a body that is not UTF-8", { ...post(""), body: new Uint8Array([0xff, 0xfe]) }],

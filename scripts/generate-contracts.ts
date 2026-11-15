@@ -377,7 +377,7 @@ export function answerFake(req: FakeRequest): FakeAnswer {
 
 function matches(route: Matcher, v: FakeVector, url: URL, req: FakeRequest): boolean {
   const found = route.pattern.exec(url.pathname) ?? [];
-  const params: Record<string, string> = {};
+  const params = dictionary();
   try {
     route.names.forEach((name, i) => (params[name] = decodeURIComponent(found[i + 1] ?? "")));
   } catch {
@@ -405,9 +405,14 @@ function sameBody(type: string | null, expected: FakeVector["request"], body: Ui
   }
 }
 
+/** An object without a prototype, so a field named __proto__ is a field like any other. */
+function dictionary(): Record<string, string> {
+  return Object.create(null) as Record<string, string>;
+}
+
 /** Query or form fields as an object; a repeated name matches no vector. */
 function fields(search: URLSearchParams): Record<string, string> | null {
-  const out: Record<string, string> = {};
+  const out = dictionary();
   for (const [name, value] of search) {
     if (Object.hasOwn(out, name)) return null;
     out[name] = value;
@@ -415,9 +420,15 @@ function fields(search: URLSearchParams): Record<string, string> | null {
   return out;
 }
 
+/** A header by name, whatever the case of the name the caller used. */
 function header(headers: FakeRequest["headers"], name: string): string | undefined {
-  const value = headers[name.toLowerCase()];
-  return typeof value === "string" ? value : value?.join(", ");
+  const wanted = name.toLowerCase();
+  const values = Object.entries(headers).flatMap(([key, value]) =>
+    key.toLowerCase() !== wanted || value === undefined
+      ? []
+      : [typeof value === "string" ? value : value.join(", ")],
+  );
+  return values.length === 0 ? undefined : values.join(", ");
 }
 
 /** Equal JSON values, whatever the order of object keys. */
