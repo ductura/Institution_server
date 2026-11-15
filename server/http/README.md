@@ -17,8 +17,7 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 - `createLayers` daje slojeve: koraci 2–5 (IP, IP prava, ograničenje, zapis prometa) prazni su do vala 5; korak 6 su sigurnosna zaglavlja (`security-headers.ts`, prijenos Ductusa); korak 7 je zaštita porijekla (`mutation-request.ts`, prijenos Ductusa).
 - Zaštita porijekla: osim `GET`, `HEAD` i `OPTIONS` svaka metoda mijenja stanje i traži točno jedno zaglavlje `Origin` jednako `APP_ORIGIN` te `Sec-Fetch-Site` koji nedostaje ili je točno jednom `same-origin`. Inače 403 `{"error":"origin_missing" | "origin_mismatch" | "cross_site"}` (kodovi ugovora). Bez `APP_ORIGIN` svaka takva metoda dobiva 403. Tijelo zahtjeva se ne čita.
 - `refuse` je jedini način na koji sloj odbija: tijelo ugovora i sigurnosna zaglavlja, i za korake prije koraka 6.
-
-Čitanje tijela s granicom (`readBodyWithLimit`) DAN-777 a2.
+- `readBodyWithLimit` (DAN-777, dio a2; prijenos Ductusa) čita tijelo mijenjajuće rute kao sirove bajtove do tvrde granice, prije bilo kakvog parsiranja; ništa ne dekodira. Deklarirani `Content-Length` iznad granice odbija se bez čitanja (413), neispravan je 400, tijelo bez deklarirane duljine prekida se na prvom komadu preko granice (413), prekinuto tijelo je `body_stream_error` (400), a rok `timeoutMs` daje 408. Svaki komad se kopira u jedan međuspremnik do granice, pa memorija ne raste s brojem komada. Drugi čitač istog zahtjeva dobiva `body_stream_error`. Pri odbijanju čitanje staje, a `refuse()` zatvara vezu. Pipeline čeka da odgovor dobije otvoren socket, pa zahtjev poslan iza odbijanja na istoj vezi (pipelining) ne ulazi ni u slojeve ni u aplikaciju. `declaredLengthRefusal` je isto pravilo samo iz zaglavlja, za rutu koja radi nešto prije tijela.
 
 ## Tko ga zove
 
@@ -34,6 +33,7 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 - `createLayers`, `createPipeline`, `PIPELINE_STEPS`, `App`, `Layer`, `Layers`, `Step` (`pipeline.ts`);
 - `createShutdownCoordinator`, `installShutdown`, `FLUSH_LOGS`, `SHUTDOWN_GRACE_MS`, `ShutdownCoordinator`, `ShutdownHook` (`shutdown.ts`);
 - `createRouter`, `Route`, `Handler`, `Router` (`router.ts`);
+- `readBodyWithLimit`, `declaredLengthRefusal`, `LimitedBodyResult` (`mutation-request.ts`);
 - `HEALTH_ROUTE` (`health.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);
 - `createDatabases`, `Databases` (`databases.ts`).

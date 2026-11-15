@@ -34,6 +34,30 @@ export type App = (request: IncomingMessage, response: ServerResponse) => Promis
 const answered = (response: ServerResponse): boolean =>
   response.headersSent || response.writableEnded;
 
+/**
+ * Node hands over a pipelined request at once, while the answer to the one
+ * before it is still pending; its response gets the socket only after that.
+ * Waiting for the socket means a request queued behind a refusal that closes
+ * the connection never runs (adversarial pass on DAN-777 a2): false when the
+ * connection closed or is closing first.
+ */
+function attached(request: IncomingMessage, response: ServerResponse): Promise<boolean> {
+  // A socket a refusal already ended (Connection: close) is no answer either.
+  const open = (): boolean => response.socket !== null && response.socket.writable;
+  if (response.socket !== null) return Promise.resolve(open());
+  return new Promise((resolve) => {
+    const settle = (value: boolean) => (): void => {
+      response.off("socket", onSocket);
+      request.off("close", onClose);
+      resolve(value && open());
+    };
+    const onSocket = settle(true);
+    const onClose = settle(false);
+    response.once("socket", onSocket);
+    request.once("close", onClose);
+  });
+}
+
 /** Steps 2 to 5 are empty until wave 5 fills them; they read nothing. */
 const pass: Layer = async () => "next";
 
@@ -66,6 +90,7 @@ export function createPipeline(layers: Layers, app: App): App {
   });
 
   return async (request, response) => {
+    if (!(await attached(request, response))) return;
     for (const layer of ordered) {
       let outcome: unknown;
       try {
