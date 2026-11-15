@@ -30,6 +30,7 @@ function setup(
   status = 200,
   heads = [HEAD, HEAD],
   bases = [BASE, BASE],
+  { baseRefs = ["main"], changed }: { baseRefs?: string[]; changed?: number } = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), "floor-"));
   const eventPath = join(dir, "event.json");
@@ -51,7 +52,21 @@ function setup(
     const sha = heads[Math.min(pullReads, heads.length - 1)];
     const base = bases[Math.min(pullReads, bases.length - 1)];
     pullReads += 1;
-    return Promise.resolve(Response.json({ number: 7, head: { sha }, base: { sha: base } }));
+    const listed = compares[`${base}...${sha}`];
+    const count = Array.isArray(listed)
+      ? listed.length
+      : Array.isArray(listed?.files)
+        ? listed.files.length
+        : 1;
+    return Promise.resolve(
+      Response.json({
+        number: 7,
+        head: { sha },
+        base: { sha: base, ref: baseRefs[Math.min(pullReads - 1, baseRefs.length - 1)] },
+        // GitHub never reports zero files for an open PR.
+        ["changed_files"]: changed ?? Math.max(count, 1),
+      }),
+    );
   };
   // GitHub's own environment names, which the naming rule would reject as keys.
   const env: Record<string, string> = Object.fromEntries([
@@ -68,7 +83,7 @@ const at = (head: string, list: unknown[]) => ({ [`${BASE}...${head}`]: list });
 const files = (...names: string[]) => names.map((filename) => ({ filename }));
 // REST and event payloads in GitHub's snake_case wire names.
 const wire = (json: string): unknown => JSON.parse(json);
-const pr = wire('{"pull_request":{"number":7}}');
+const pr = wire('{"pull_request":{"number":7},"repository":{"default_branch":"main"}}');
 
 describe("pullNumber", () => {
   it("reads a pull request or a comment on one, nothing else", () => {
@@ -161,10 +176,17 @@ describe("pullRequestFloor", () => {
       { status: "ahead", commits: [{ sha: HEAD }], files: [] },
       { status: "ahead", commits: [{ sha: HEAD }] },
       { status: "ahead", commits: [{ sha: HEAD }], files: [null] },
+      { status: "ahead", commits: [null], files: files("README.md") },
+      { status: "ahead", commits: [{ sha: HEAD }, null], files: files("README.md") },
       {
         status: "ahead",
         commits: [{ sha: HEAD }],
         files: wire('[{"filename":"README.md","previous_filename":7}]'),
+      },
+      {
+        status: "ahead",
+        commits: [{ sha: HEAD }],
+        files: wire('[{"filename":"README.md","previous_filename":""}]'),
       },
     ]) {
       const run = setup(pr, { [`${BASE}...${HEAD}`]: bad });
@@ -224,6 +246,46 @@ describe("pullRequestFloor", () => {
         badRepo.fetchImpl,
       ),
     ).toEqual({ risk: "critical", headSha: "" });
+  });
+
+  it("gives critical when the counts of files differ", async () => {
+    const fewer = setup(pr, at(HEAD, files("README.md")), 200, [HEAD, HEAD], [BASE, BASE], {
+      changed: 2,
+    });
+    expect(await pullRequestFloor(fewer.env, fewer.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: HEAD,
+    });
+  });
+
+  it("gives critical unless the pull request is into the default branch", async () => {
+    const side = setup(pr, at(HEAD, files("README.md")), 200, [HEAD, HEAD], [BASE, BASE], {
+      baseRefs: ["release"],
+    });
+    expect(await pullRequestFloor(side.env, side.fetchImpl)).toEqual({
+      risk: "critical",
+      headSha: HEAD,
+    });
+    const retargeted = setup(pr, at(HEAD, files("README.md")), 200, [HEAD, HEAD], [BASE, BASE], {
+      baseRefs: ["main", "release"],
+    });
+    expect((await pullRequestFloor(retargeted.env, retargeted.fetchImpl)).risk).toBe("critical");
+    const noDefault = setup(wire('{"pull_request":{"number":7}}'), at(HEAD, files("README.md")));
+    expect((await pullRequestFloor(noDefault.env, noDefault.fetchImpl)).risk).toBe("critical");
+  });
+
+  it("accepts a diverged comparison that ends at the head", async () => {
+    const diverged = setup(pr, {
+      [`${BASE}...${HEAD}`]: {
+        status: "diverged",
+        commits: [{ sha: HEAD }],
+        files: files("README.md"),
+      },
+    });
+    expect(await pullRequestFloor(diverged.env, diverged.fetchImpl)).toEqual({
+      risk: "low",
+      headSha: HEAD,
+    });
   });
 
   it("gives critical when the list may be cut", async () => {

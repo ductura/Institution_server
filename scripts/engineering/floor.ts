@@ -28,6 +28,21 @@ export function pullNumber(event: unknown): number | null {
   return typeof number === "number" && Number.isSafeInteger(number) && number > 0 ? number : null;
 }
 
+/** The repository's default branch from the event, else an error. */
+function defaultBranch(event: unknown): string {
+  const repository =
+    typeof event === "object" && event !== null
+      ? (event as Record<string, unknown>)["repository"]
+      : undefined;
+  const branch =
+    typeof repository === "object" && repository !== null
+      ? (repository as Record<string, unknown>)["default_branch"]
+      : undefined;
+  if (typeof branch !== "string" || branch === "")
+    throw new Error("An event without the default branch.");
+  return branch;
+}
+
 function repoApi(env: Env): string {
   const repository = env["GITHUB_REPOSITORY"] ?? "";
   if (!/^[\w.-]+\/[\w.-]+$/.test(repository))
@@ -54,13 +69,17 @@ async function getJson(env: Env, url: string, fetchImpl: Fetch): Promise<unknown
 
 const SHA_RE = /^[0-9a-f]{40}$/;
 
-type Refs = { base: string; head: string };
+type Refs = { base: string; baseRef: string; head: string; changedFiles: number };
 
-/** The PR's base and head SHAs from one read; both full SHAs, else an error. */
+/**
+ * The PR's base and head SHAs, base branch and changed file count from one
+ * read; full SHAs, a branch name and a count, else an error.
+ */
 async function pullRefs(env: Env, number: number, fetchImpl: Fetch): Promise<Refs> {
   const pull = (await getJson(env, pullApi(env, number), fetchImpl)) as {
     head?: { sha?: unknown };
-    base?: { sha?: unknown };
+    base?: { sha?: unknown; ref?: unknown };
+    ["changed_files"]?: unknown;
   } | null;
   const head = pull?.head?.sha;
   if (typeof head !== "string" || !SHA_RE.test(head))
@@ -68,7 +87,13 @@ async function pullRefs(env: Env, number: number, fetchImpl: Fetch): Promise<Ref
   const base = pull?.base?.sha;
   if (typeof base !== "string" || !SHA_RE.test(base))
     throw new Error("A pull request without a full base SHA.");
-  return { base, head };
+  const baseRef = pull?.base?.ref;
+  if (typeof baseRef !== "string" || baseRef === "")
+    throw new Error("A pull request without a base branch.");
+  const changedFiles = pull?.["changed_files"];
+  if (typeof changedFiles !== "number" || !Number.isSafeInteger(changedFiles) || changedFiles < 1)
+    throw new Error("A pull request without a changed file count.");
+  return { base, baseRef, head, changedFiles };
 }
 
 /**
@@ -100,6 +125,8 @@ async function listFiles(env: Env, refs: Refs, fetchImpl: Fetch): Promise<string
     throw new Error("Expected a non-empty array of files.");
   if (list.length >= FILE_LIST_CAP)
     throw new Error(`${FILE_LIST_CAP} or more files; GitHub may have cut the list.`);
+  if (list.length !== refs.changedFiles)
+    throw new Error("The comparison and the pull request count different files.");
   const files: { filename: string; previousFilename?: string }[] = [];
   for (const item of list as unknown[]) {
     if (typeof item !== "object" || item === null) throw new Error("A file that is not an object.");
@@ -119,8 +146,9 @@ export type Floor = { risk: Risk; headSha: string };
 /**
  * Floor of the event's PR and the head SHA it was computed for. The files come
  * from the compare of the base and head SHAs of one read, so they belong to
- * the returned head by construction. The PR is read again afterwards; a base
- * or head that moved in between gives `critical` for the first head, which
+ * the returned head by construction; the PR must be into the default branch
+ * and the count of files must match the PR's own. The PR is read again
+ * afterwards; a base or head that moved in between gives `critical` for the first head, which
  * the shared check then sees as stale. Any error gives `critical` (fails
  * closed), with the head if it is known.
  */
@@ -132,9 +160,13 @@ export async function pullRequestFloor(env: Env, fetchImpl: Fetch = fetch): Prom
     if (!number) return { risk: "critical", headSha: "" };
     const refs = await pullRefs(env, number, fetchImpl);
     sha = refs.head;
+    // A floor is for a diff against the default branch; a PR into any other
+    // branch, or one retargeted mid-run, gets critical.
+    if (refs.baseRef !== defaultBranch(event))
+      throw new Error("The pull request is not into the default branch.");
     const { risk } = minimumRisk(await listFiles(env, refs, fetchImpl));
     const again = await pullRefs(env, number, fetchImpl);
-    if (again.head !== refs.head || again.base !== refs.base)
+    if (again.head !== refs.head || again.base !== refs.base || again.baseRef !== refs.baseRef)
       throw new Error("The base or head moved while the files were read.");
     return { risk, headSha: sha };
   } catch (error) {
