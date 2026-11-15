@@ -9,7 +9,10 @@ import { join } from "node:path";
  * does not write (S-1L.2, DAN-780), so the document is their only source.
  */
 export function readmeHeadings(root: string): string[] {
-  const doc = readFileSync(join(root, "docs", "CODE_STYLE.md"), "utf8").split("\n");
+  // Lines end in LF or CRLF (a Windows checkout with core.autocrlf).
+  const doc = readFileSync(join(root, "docs", "CODE_STYLE.md"), "utf8")
+    .split(/\r?\n/u)
+    .map((line) => line.trimEnd());
   const section = doc.findIndex((line) => line.startsWith("## 10. "));
   const open = doc.findIndex((line, i) => i > section && line === "```md");
   const close = doc.findIndex((line, i) => i > open && line === "```");
@@ -33,6 +36,8 @@ export function checkReadmeTemplate(
 ): string[] {
   const path = join(root, "server", key, "README.md");
   if (!existsSync(path)) return [];
+  // An empty template would check nothing, so it is a problem itself.
+  if (headings.length === 0) return [`server/${key}/README.md: no template headings to check`];
   const lines = readFileSync(path, "utf8")
     .split("\n")
     .map((line) => line.trimEnd());

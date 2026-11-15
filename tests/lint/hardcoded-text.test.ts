@@ -162,6 +162,10 @@ tester.run("no-hardcoded-text", rule, {
       "sentence",
     ),
     bad('export const e = (on: boolean) => ["Prijava", on ? "x" : "je", "obavezna."];', "sentence"),
+    bad(
+      'export const e = (on: boolean) => ["Prijava ", on ? "" : "je", " obavezna."].join("");',
+      "sentence",
+    ),
     // Names and regex sources.
     bad("export const o = { nijePronađeno: 0 };", "letter"),
     bad("export function pronađeno(): void {}", "letter"),

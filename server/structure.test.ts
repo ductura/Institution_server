@@ -98,6 +98,24 @@ describe("checkAreaFiles and checkReadmeTemplate on a fixture", () => {
     ]);
   });
 
+  it("reads the template headings from a CRLF checkout (review FAIL c.6894724569)", () => {
+    const r = fixture({});
+    const doc = readFileSync(join(ROOT, "docs", "CODE_STYLE.md"), "utf8").replace(
+      /\r?\n/gu,
+      "\r\n",
+    );
+    mkdirSync(join(r, "docs"), { recursive: true });
+    writeFileSync(join(r, "docs", "CODE_STYLE.md"), doc);
+    expect(readmeHeadings(r)).toEqual(HEADINGS);
+  });
+
+  it("fails a README check that has no headings to check", () => {
+    const r = fixture({ "index.ts": "export {};\n", "README.md": TEMPLATE });
+    expect(checkReadmeTemplate(r, "invented", [])).toEqual([
+      "server/invented/README.md: no template headings to check",
+    ]);
+  });
+
   it("does not take a heading of a lower level", () => {
     const r = fixture({
       "index.ts": "export {};\n",
