@@ -32,5 +32,13 @@
     "duplicate_key": "Isti ključ u katalogu tekstova napisan je dvaput.",
     "stale_same_in_both": "Putanja na popisu SAME_IN_BOTH više nema jednak tekst u oba jezika.",
     "stale_exception": "Iznimka rječnika zabranjenih izraza više ne vrijedi."
+  },
+  "app": {
+    "unauthenticated": "Prijava je obavezna.",
+    "not_found": "Nije pronađeno.",
+    "document_not_found": "Dokument ne postoji.",
+    "read_forbidden": "Nemate pristup ovom dokumentu.",
+    "write_forbidden": "Nemate pravo mijenjati ovaj dokument.",
+    "method_not_allowed": "Metoda nije podržana."
   }
 }

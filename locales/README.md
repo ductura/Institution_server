@@ -29,3 +29,27 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - Iznimke su zatvoren popis `EXCEPTIONS`; danas samo doslovni „Risk:” u `hr.json` `gate.risk_invalid` i `gate.risk_below_floor` (ime retka u opisu PR-a). Zastarjela stavka `EXCEPTIONS` ili `SAME_IN_BOTH` ruši skener.
 
 Tekstovi sučelja moraju poštovati rječnik zabranjenih izraza (Ductus `docs/PRODUCT.md` §5).
+
+## Tekst u kodu servera (S-1L.2, DAN-780)
+
+Lint pravilo `local/no-hardcoded-text` (`scripts/lint-rules/hardcoded-text.ts`) ruši tekst sučelja napisan u `server/**`. Kod vraća `{ code, messageKey }` (`docs/CODE_STYLE.md` §8), a tekst je ovdje.
+
+- Pravilo čita svaki string literal i predložak, i kad je složen od dijelova koje vidi: predložak, spajanje s `+`, `String.raw`, niz stringova (spojen s „” i s razmakom), `String.fromCharCode` i `String.fromCodePoint` s brojevima te oblik dekodiran iz postotnog zapisa i base64.
+- Ruši tekst s ijednim slovom ili dijakritičkim znakom izvan ASCII-ja (hrvatska slova, i kao `\u` escape, rastavljena, homoglifi, puna širina) i rečenicu bez dijakritika: barem dvije riječi, od kojih je jedna hrvatska funkcijska riječ s popisa `WORDS` („je”, „nije”, „za” ...).
+- Dopušten je tehnički string u jednom komadu bez razmaka: ključ (`auth.signIn`), kod greške (`NOT_FOUND`), ime zaglavlja (`content-type`) i vrijednost na žici (`nije_ukljuceno`). Engleske poruke programskih pogrešaka pravilo ne razlikuje od teksta i ne ruši ih; njih, tekst složen u izvođenju i hrvatsku rečenicu bez riječi s popisa provjerava review.
+- Iznimke su samo putanje, zatvoreni popis `TEXT_EXEMPT`: testovi (`server/**/*.test.ts`) i fixture `server/log/invented.fixture.ts`. Kod servera ne smije uvesti datoteku s tog popisa.
+- Testovi: `tests/lint/hardcoded-text.test.ts` (RuleTester nad fixtureima i provjera konfiguracije repozitorija).
+- S ovim zadatkom su tekstovi kostura `server/app.ts` prešli u `hr.json` pod `app`; naslovi predloška README-a čitaju se iz `docs/CODE_STYLE.md` §10, a odjeljci karte servera po broju.
+
+### Datoteke za izvlačenje pri prijenosu
+
+Tekst iz koda koji se prenosi iz Ductusa prelazi u `locales/` u istom PR-u prijenosa; bez toga lint ne prolazi. Datoteke koje zadatak prijenosa pregledava (popis orkestratora za DAN-780 i inventar S-0.2):
+
+| Datoteka u Ductusu                            | Zadatak prijenosa |
+| --------------------------------------------- | ----------------- |
+| `src/server/support/problem-report-route.ts`  | S-M-1             |
+| `src/server/institution/student-workspace.ts` | S-M-3             |
+| `src/server/projection/process-summary.ts`    | S-M-8             |
+| ostale datoteke ruta iz inventara S-0.2       | S-M-1 … S-M-10    |
+
+Stanje na Ductus `d52a92c3`: pravilo pokrenuto nad `src/server`, `src/application` i `app/api` (bez testova) ne nalazi nijedan tekst. Tri datoteke iz tablice vraćaju kodove (`{ error: "invalid_input" }`, `{ kind: "unauthorized" }`), a tekst tih kodova je u Ductusovom katalogu i klijentu; PR prijenosa uz kod prenosi i taj tekst u `locales/` ako ga sučelje prikazuje. Popis se dopunjuje kad zadatak prijenosa nađe novu datoteku.
