@@ -92,6 +92,8 @@ const ENV_NAMES = [
   // server/config, server/database), and a variable that check must not ask for.
   "APP_DATABASE_URL",
   "DUCTUS_AUTH_PROVIDER",
+  // The origin a state-changing request must carry (S-1B-b, server/config).
+  "APP_ORIGIN",
   // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.
   "OIDC_ISSUER",
   "OIDC_CLIENT_ID",
@@ -99,6 +101,9 @@ const ENV_NAMES = [
   "OIDC_REDIRECT_URI",
   "OIDC_CLOCK_TOLERANCE_SECONDS",
   "OIDC_ID_TOKEN_ALG",
+  // Where the entry point listens (S-1B-a, server/config).
+  "PORT",
+  "HOST",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
