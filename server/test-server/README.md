@@ -4,7 +4,7 @@ Područje iz [karte servera](../../docs/server-map.md). Mapa je za sada prazna (
 
 ## Što radi
 
-Server sastavljen s lažnim zamjenama (lažni AAI OIDC iz `test-support/`, PGlite, lažna baza zapisa) za testove servera i klijenata.
+Server sastavljen s lažnim zamjenama (lažni AAI OIDC iz `@ductura/test-fakes`, PGlite, lažna baza zapisa) za testove servera i klijenata.
 
 ## Tko ga zove
 

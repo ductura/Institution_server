@@ -36,6 +36,7 @@
     "prepare": "lefthook install"
   },
   "devDependencies": {
+    "@ductura/test-fakes": "workspace:*",
     "@fast-check/vitest": "0.5.0",
     "@smithy/signature-v4": "5.7.4",
     "@types/node": "^24.19.2",

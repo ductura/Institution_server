@@ -1,6 +1,6 @@
 # server/external/srce-auth
 
-OIDC klijent prema AAI@EduHr (Srce), karta: [docs/server-map.md](../../../docs/server-map.md). Studenti se prijavljuju isključivo kroz AAI@EduHr (D-09); lažni OIDC pružatelj (`test-support/fake-oidc/`) smije se odabrati samo uz `NODE_ENV` `development` ili `test`, a svaka druga vrijednost (i nepostavljena) znači produkciju i `loadAuthConfig` baca grešku. Cijela mapa ima floor `critical`.
+OIDC klijent prema AAI@EduHr (Srce), karta: [docs/server-map.md](../../../docs/server-map.md). Studenti se prijavljuju isključivo kroz AAI@EduHr (D-09); lažni OIDC pružatelj (`packages/test-fakes/oidc/`) smije se odabrati samo uz `NODE_ENV` `development` ili `test`, a svaka druga vrijednost (i nepostavljena) znači produkciju i `loadAuthConfig` baca grešku. Cijela mapa ima floor `critical`.
 
 Preneseno iz Ductusa `src/server/auth` (`d52a92c3`, S-0.18, DAN-731) bez promjene logike; promijenjeni su samo uvozi i `interface` u `type` (pravilo 4 u [docs/CODE_STYLE.md](../../../docs/CODE_STYLE.md)).
 

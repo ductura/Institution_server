@@ -2,11 +2,11 @@ import { defineConfig } from "vitest/config";
 
 // Four projects: unit, property and integration told apart by file suffix,
 // database by its folder (tests/db). Tests live only in server/,
-// test-support/, scripts/, infra/, db/ (and lint rule tests in tests/) with a .test.ts suffix; other
+// packages/, test-support/, scripts/, infra/, db/ (and lint rule tests in tests/) with a .test.ts suffix; other
 // files belong to no project and do not run. There is no passWithNoTests, but
 // vitest fails on an empty project only when that project runs alone, so
 // `pnpm test` and CI run the projects one by one.
-const DIRS = "{server,test-support,tests,scripts,infra,db}";
+const DIRS = "{server,packages,test-support,tests,scripts,infra,db}";
 const PROPERTY = `${DIRS}/**/*.property.test.ts`;
 const INTEGRATION = `${DIRS}/**/*.integration.test.ts`;
 // Integration tests that need the migrated PostgreSQL of the CI job `database`

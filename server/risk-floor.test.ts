@@ -108,6 +108,10 @@ describe("risk floor", () => {
       "scripts/generate-contracts.ts",
       "scripts/engineeringx/a.ts",
       "package.json",
+      // U9 (DAN-741): the test fakes keep the floor they had in test-support/.
+      "packages/test-fakes/oidc/x.ts",
+      "packages/test-fakes/package.json",
+      "pnpm-workspace.yaml",
     ]) {
       expect(minimumRisk([file]).risk, file).toBe("standard");
       expect(declared("standard", [file]).ok, file).toBe(true);

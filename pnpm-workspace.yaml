@@ -1,0 +1,4 @@
+# U9 (DAN-741): the shared test fakes live in packages/test-fakes. The root
+# depends on them only as a devDependency (packages/test-fakes/boundary.test.ts).
+packages:
+  - packages/*
