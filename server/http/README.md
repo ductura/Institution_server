@@ -12,8 +12,9 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 - `HEALTH_ROUTE` je `GET /api/v1/health`, s tijelom točno `{"status":"ok"}` i `Cache-Control: no-store`. Ne čita bazu, sesiju ni okolinu (prijenos Ductusa `app/api/health/route.ts`).
 - `routesOf` daje rute imenovanih područja (`areas.ts`).
 - `createDatabases` daje registar baza nad `server/database`. Ništa ne otvara, jer se veza otvara pri prvoj upotrebi.
+- `shutdown.ts` (S-1B-c, DAN-778; prijenos Ductusa `src/server/shutdown.ts`): svaki zahtjev uzima ulaznicu koordinatora. Prvi SIGTERM ili SIGINT redom: prestaje primati veze i zatvara prazne keep-alive veze; zahtjev koji stigne nakon signala dobiva 503 `{"error":"unavailable"}` uz `Connection: close`; čeka započete zahtjeve; zatim kuke redom (`FLUSH_LOGS`, pa baze); izlaz 0. Drugi signal ne pokreće ništa novo. Jedan rok od signala (zadano 8000 ms) pokriva sve: nakon njega izlaz 1 i redak `shutdown.deadline` s fazom; kuka koja baci daje izlaz 1 i `shutdown.hook_failed`. U zapisu su samo imena, nikad poruka greške ni zahtjev. Na poslužitelj i ulaz ga spaja dio c2 (S-1B-c); dotad ga nitko ne poziva.
 
-Slojeve (koraci 2–7 toka zahtjeva) puni S-1B-b, a gašenje S-1B-c.
+Slojeve (koraci 2–7 toka zahtjeva) puni S-1B-b, a spajanje gašenja dio c2 od S-1B-c.
 
 ## Tko ga zove
 
@@ -26,6 +27,7 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 ## Što izvozi
 
 - `startServer`, `Layer`, `Running`, `StartOptions` (`start.ts`);
+- `createShutdownCoordinator`, `installShutdown`, `FLUSH_LOGS`, `SHUTDOWN_GRACE_MS`, `ShutdownCoordinator`, `ShutdownHook` (`shutdown.ts`);
 - `createRouter`, `Route`, `Handler`, `Router` (`router.ts`);
 - `HEALTH_ROUTE` (`health.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);

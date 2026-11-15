@@ -5,3 +5,11 @@ export { createDatabases, type Databases } from "./databases.ts";
 export { HEALTH_ROUTE } from "./health.ts";
 export { createRouter, routePath, type Handler, type Route, type Router } from "./router.ts";
 export { startServer, type Layer, type Running, type StartOptions } from "./start.ts";
+export {
+  createShutdownCoordinator,
+  FLUSH_LOGS,
+  installShutdown,
+  SHUTDOWN_GRACE_MS,
+  type ShutdownCoordinator,
+  type ShutdownHook,
+} from "./shutdown.ts";
