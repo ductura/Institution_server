@@ -29,7 +29,7 @@ type Started = {
   exit: Promise<number | null>;
 };
 
-let dir: string;
+let dir: string | undefined;
 let outfile: string;
 const children: ChildProcess[] = [];
 
@@ -77,7 +77,8 @@ beforeAll(async () => {
 
 afterAll(() => {
   for (const child of children) if (child.exitCode === null) child.kill("SIGKILL");
-  rmSync(dir, { recursive: true, force: true });
+  // A failed build must surface as itself, not as a TypeError here.
+  if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
 });
 
 describe("dist/server.js", () => {

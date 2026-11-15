@@ -1,6 +1,7 @@
 // Builds the one entry point server/server.ts into one file, dist/server.js
 // (S-1B-a, DAN-775). Dependencies are bundled, so the file runs with node and
 // nothing else; pg-native stays out because pg loads it only on request.
+import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { build } from "esbuild";
@@ -27,6 +28,7 @@ export async function buildServer(root: string, outfile: string = OUTFILE): Prom
   });
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// argv[1] keeps a symlinked path, import.meta.url is the real one.
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await buildServer(fileURLToPath(new URL("../..", import.meta.url)));
 }
