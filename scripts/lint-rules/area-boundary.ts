@@ -70,6 +70,9 @@ const PGLITE_ALLOWED_RE = /^(?:server\/database|tests\/db|packages\/test-fakes\/
 const ALIAS_RE = /^(?:#|@ductura\/server(?:$|\/))/iu;
 // A URL scheme other than node: (data:, file:, http:) loads code past the path checks.
 const SCHEME_RE = /^(?!node:)[a-z][a-z0-9+.-]*:/iu;
+// An absolute path ("/app/server/x", "C:\\x", "\\\\host") names a file past the
+// relative checks, in every form: import, import(), require and createRequire.
+const ABSOLUTE_RE = /^(?:[/\\]|[a-z]:[/\\])/iu;
 
 /** The area of a repository path, ENTRY for server/*.ts, undefined outside server/. */
 export function areaOf(path: string): string | undefined {
@@ -113,6 +116,7 @@ export const areaBoundary: Rule.RuleModule = {
       alias: "Import server code by a relative path, not by a package alias.",
       outside: "Server code imports nothing outside server/ by path; use a package.",
       scheme: "Import by path or package name, not by a URL scheme.",
+      absolute: "Import server code by a relative path, not an absolute one.",
     },
   },
   create(context) {
@@ -184,6 +188,7 @@ export const areaBoundary: Rule.RuleModule = {
       if (/^\.\.?(?:[/\\]|$)/u.test(specifier.trim()))
         return checkRelative(node, specifier, typeOnly);
       if (ALIAS_RE.test(specifier.trim())) return report(node, "alias");
+      if (forms.some((text) => ABSOLUTE_RE.test(text))) return report(node, "absolute");
       if (forms.some((text) => SCHEME_RE.test(text))) return report(node, "scheme");
       if (pure && PURE_PACKAGES[fromArea ?? ""]?.test(specifier) !== true) report(node, "pure");
       else if (isRoutes) report(node, "routes");

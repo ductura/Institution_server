@@ -170,6 +170,18 @@ const bypasses: Case[] = [
   },
   ...all("server/settings/routes.ts", "edge", ["../contracts/index.ts"]),
   ...all("server/traffic/routes.ts", "edge", ["../contracts/index.ts"]),
+  // absolute paths in every form (review of 5e8554c, c.6890841145)
+  ...forms("/app/server/database/index.ts").map((code) => ({
+    file: "server/log/x.ts",
+    code,
+    messageId: "absolute",
+  })),
+  ...all("server/log/x.ts", "absolute", [
+    "//app/server/database/index.ts",
+    "\\\\app\\server\\database\\index.ts",
+    "C:/app/server/database/index.ts",
+    " /app/server/database/index.ts",
+  ]),
   // laundering through a folder outside server/
   ...all("server/log/x.ts", "outside", ["../../scripts/hop/index.ts", "../../db/x/index.ts"]),
   { file: "server/x.ts", code: imp("../scripts/index.ts"), messageId: "outside" },
