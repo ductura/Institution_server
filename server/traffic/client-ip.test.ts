@@ -51,6 +51,11 @@ describe("parseTrustedProxies", () => {
     ["/0 for IPv6", "::/0"],
     ["a prefix too long", "192.0.2.0/33"],
     ["an IPv6 prefix too long", "2001:db8::/129"],
+    ["IPv4 broader than /8", "0.0.0.0/1"],
+    ["IPv4 /7", "192.0.0.0/7"],
+    ["IPv6 broader than /16", "8000::/1"],
+    ["IPv6 /15", "2000::/15"],
+    ["a mapped range broader than /8", "::ffff:0:0/97"],
     ["host bits", "192.0.2.5/24"],
     ["IPv6 host bits", "2001:db8::1/32"],
     ["a mapped range shorter than /96", "::ffff:0:0/95"],
@@ -63,6 +68,10 @@ describe("parseTrustedProxies", () => {
     ["a leading zero octet", "192.0.02.1"],
   ])("refuses %s", (_name, text) => {
     expect(parseTrustedProxies(text)).toBeNull();
+  });
+
+  it("takes the broadest allowed ranges", () => {
+    expect(parseTrustedProxies("192.0.0.0/8, 2001::/16, ::ffff:192.0.0.0/104")).toHaveLength(3);
   });
 
   it(`refuses more than ${MAX_TRUSTED_PROXIES} entries`, () => {
@@ -117,6 +126,19 @@ describe("resolveClientIp", () => {
   it("does not let client garbage left of an untrusted address reach a proxy", () => {
     expect(resolveClientIp(PROXY, `garbage, ${CLIENT}`, PROXIES)).toBe(CLIENT);
     expect(resolveClientIp(PROXY, `${"x".repeat(8000)}, ${CLIENT}`, PROXIES)).toBe(CLIENT);
+  });
+
+  it("refuses an entry longer than any address, padding aside", () => {
+    expect(resolveClientIp(PROXY, `${" ".repeat(500)}${CLIENT}\t\t`, PROXIES)).toBe(CLIENT);
+    expect(resolveClientIp(PROXY, `[2001:db8:2::1]:443${"0".repeat(40)}`, PROXIES)).toBe(PROXY);
+  });
+
+  it("trims a long run of spaces in linear time (adversarial pass on DAN-790)", () => {
+    // The quadratic trim took about 300 ms here; linear work is well under 1 ms.
+    const entry = `1${" ".repeat(16_000)}1`;
+    const started = performance.now();
+    for (let i = 0; i < 10; i += 1) expect(resolveClientIp(PROXY, entry, PROXIES)).toBe(PROXY);
+    expect(performance.now() - started).toBeLessThan(200);
   });
 
   it(`walks at most ${MAX_FORWARDED_HOPS} entries`, () => {

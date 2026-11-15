@@ -18,6 +18,10 @@ export const NO_TRUSTED_PROXIES: TrustedProxies = Object.freeze([]);
 /** Entries of X-Forwarded-For walked at most; past it the nearest trusted hop wins. */
 export const MAX_FORWARDED_HOPS = 32;
 export const MAX_TRUSTED_PROXIES = 64;
+/** The longest valid entry, "[" + 45 + "]:65535"; anything longer is refused unread. */
+const MAX_ENTRY_LENGTH = 53;
+/** A trusted range may not be broader than this (adversarial pass on DAN-790). */
+const MIN_PREFIX = { 4: 8n, 6: 16n } as const;
 
 const BITS = { 4: 32n, 6: 128n } as const;
 const OCTET = "(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)";
@@ -75,9 +79,21 @@ function parseIp(text: string): Ip | null {
 
 const validPort = (port: string): boolean => PORT_RE.test(port) && Number(port) <= 65_535;
 
+const blank = (c: string | undefined): boolean => c === " " || c === "\t";
+
+/** Strips spaces and tabs around an entry in linear time (a regex was quadratic). */
+function trimOws(raw: string): string {
+  let start = 0;
+  let end = raw.length;
+  while (start < end && blank(raw[start])) start += 1;
+  while (end > start && blank(raw[end - 1])) end -= 1;
+  return raw.slice(start, end);
+}
+
 /** One X-Forwarded-For entry: ip, IPv4:port, [IPv6] or [IPv6]:port. */
 function parseEntry(raw: string): Ip | null {
-  const entry = raw.replace(/^[ \t]+|[ \t]+$/gu, "");
+  const entry = trimOws(raw);
+  if (entry.length > MAX_ENTRY_LENGTH) return null;
   if (entry.startsWith("[")) {
     const close = entry.indexOf("]");
     const rest = entry.slice(close + 1);
@@ -127,7 +143,7 @@ function parseRange(entry: string): Range | null {
     const text = entry.slice(slash + 1);
     if (!PREFIX_RE.test(text)) return null;
     prefix = BigInt(text) - (mapped ? 96n : 0n);
-    if (prefix < 1n || prefix > BITS[ip.v]) return null;
+    if (prefix < MIN_PREFIX[ip.v] || prefix > BITS[ip.v]) return null;
   }
   const all = (1n << BITS[ip.v]) - 1n;
   const mask = all ^ ((1n << (BITS[ip.v] - prefix)) - 1n);
@@ -137,8 +153,9 @@ function parseRange(entry: string): Range | null {
 /**
  * TRUSTED_PROXIES: addresses and CIDR ranges separated by commas. Unset or
  * blank is the empty list; null means the value is unusable (the server
- * refuses to start): a bad entry, an empty entry, /0, host bits set, or more
- * than MAX_TRUSTED_PROXIES entries.
+ * refuses to start): a bad entry, an empty entry, a range broader than /8
+ * (IPv4) or /16 (IPv6), host bits set, or more than MAX_TRUSTED_PROXIES
+ * entries.
  */
 export function parseTrustedProxies(text: string | undefined): TrustedProxies | null {
   if (text === undefined || text.trim() === "") return NO_TRUSTED_PROXIES;
