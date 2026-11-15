@@ -229,13 +229,15 @@ describe("registry close", () => {
     expect(made.map((fake) => fake.end.mock.calls.length)).toEqual([1, 1]);
   });
 
-  it("gives a second close, also one during the first, the same outcome", async () => {
+  // QA FAIL c.6897906870: the contract says the same promise, not only the same outcome.
+  it("gives a second close, also one during the first, the same promise", async () => {
     const { registry, made } = setup();
     registry.pool("main");
     const first = registry.close();
     const second = registry.close();
-    await expect(Promise.all([first, second])).resolves.toEqual([undefined, undefined]);
-    await expect(registry.close()).resolves.toBeUndefined();
+    expect(second).toBe(first);
+    await expect(first).resolves.toBeUndefined();
+    expect(registry.close()).toBe(first);
     expect(made[0]?.end).toHaveBeenCalledTimes(1);
   });
 

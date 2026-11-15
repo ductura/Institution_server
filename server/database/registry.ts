@@ -213,7 +213,7 @@ export function createRegistry<P extends Pool = pg.Pool>(
       ) as HealthReport;
     },
     // A second call, also one made while the first is running, gets the same promise.
-    async close() {
+    close() {
       closed = true;
       closing ??= (async () => {
         const open = [...pools.values()];
