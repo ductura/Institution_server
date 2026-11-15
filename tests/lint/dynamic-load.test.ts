@@ -198,6 +198,116 @@ const failing: Case[] = [
     'import * as c from "node:crypto";\nconst { setEngine } = c;\nexport { setEngine };\n',
     'export { setEngine } from "node:crypto";\n',
   ]),
+  // DAN-773 (contract Ductus#1836 c.6894826454): a forbidden key fails as a
+  // name, whatever the syntactic form around it. Every form of the three
+  // review FAILs on ductura/server#56 (c.6894474949, c.6894641035,
+  // c.6894762609) and of the task description.
+  ...["setEngine", "constructor"].flatMap((name) =>
+    at(LOG, "key", [
+      // Declarations.
+      `export function ${name}(): void {}\n`,
+      `export async function* ${name}(): AsyncGenerator<never> {}\n`,
+      `export const ${name} = 1;\n`,
+      `export let ${name} = 1;\n`,
+      `export var ${name} = 1;\n`,
+      `export class ${name} {}\n`,
+      `export abstract class ${name} {}\n`,
+      `export declare function ${name}(): void;\n`,
+      `export type ${name} = number;\n`,
+      `export interface ${name} {\n  x: number;\n}\n`,
+      `function ${name}(): void {}\nexport { ${name} as e };\n`,
+      `export const f = function ${name}(): void {};\n`,
+      `export const c = class ${name} {};\n`,
+      `export function f(${name}: number): number {\n  return 0;\n}\n`,
+      `export function f<${name}>(): void {}\n`,
+      `export const f = (${name} = 1): number => 0;\n`,
+      `export function f(): void {\n  ${name}: for (;;) break ${name};\n}\n`,
+      `export function f(): void {\n  try {\n    void 0;\n  } catch (${name}) {\n    void 0;\n  }\n}\n`,
+      // Destructuring: nested, defaults, rest.
+      `export const { ${name} } = { ${name}: 1 };\n`,
+      `export const { a: { ${name} } } = { a: { b: 1 } } as never;\n`,
+      `export const { a: { b: ${name} = 1 } } = { a: {} } as never;\n`,
+      `export const { a = 1, ...${name} } = {} as never;\n`,
+      `export const [${name} = 1] = [] as never;\n`,
+      `export const [, ...${name}] = [] as never;\n`,
+      `export const [[${name}]] = [[1]];\n`,
+      `export function f({ ${name} = 1 }: { ${name}?: number }): number {\n  return 0;\n}\n`,
+      // export default with a name and without, export =, export import.
+      `export default function ${name}(): void {}\n`,
+      `export default class ${name} {}\n`,
+      `const ${name} = 1;\nexport default ${name};\n`,
+      `export default (function ${name}(): void {});\n`,
+      `export default (class ${name} {});\n`,
+      `export default { ${name}: 1 };\n`,
+      `export default { ${name}() {} };\n`,
+      `export default { get ${name}() {\n  return 1;\n} };\n`,
+      `export = { ${name}: 1 };\n`,
+      `export = function ${name}(): void {};\n`,
+      `namespace n {\n  export const a = 1;\n}\nexport import ${name} = n.a;\n`,
+      `namespace n {\n  export const a = 1;\n}\nimport ${name} = n.a;\nexport { ${name} as e };\n`,
+      // Enum and namespace.
+      `export enum E {\n  ${name},\n}\n`,
+      `export enum ${name} {\n  A,\n}\n`,
+      `export const enum E {\n  ${name} = 1,\n}\n`,
+      `export namespace ${name} {\n  export const a = 1;\n}\n`,
+      `export namespace n.${name} {\n  export const a = 1;\n}\n`,
+      `export declare namespace n {\n  const ${name}: number;\n}\n`,
+      `export declare module m {\n  export const ${name}: number;\n}\n`,
+      // Spread in an object, extends, parentheses, await, conditional.
+      `export = { ...{ ${name}: 1 } };\n`,
+      `export default { ...{ ${name}: 1 } };\n`,
+      `export const o = { ...{ a: { ${name}: 1 } } };\n`,
+      `const ${name} = class {};\nexport default class extends ${name} {}\n`,
+      `const ${name} = class {};\nexport default (class extends ${name} {});\n`,
+      `const ${name} = class {};\nexport class X extends ${name} {}\n`,
+      `const ${name} = class {};\nexport class X implements ${name} {}\n`,
+      `export default ((((function ${name}(): void {}))));\n`,
+      `export default await (function ${name}(): void {});\n`,
+      `export default (Math.random() > 0.5 ? function ${name}(): void {} : function engine(): void {});\n`,
+      `export default (0, function ${name}(): void {});\n`,
+      `export default (function e(): void {} as unknown as { ${name}: 1 });\n`,
+      `export default [function ${name}(): void {}];\n`,
+      `export default (() => function ${name}(): void {})();\n`,
+      // Members and keys of every kind.
+      `export const o = { ${name}: 1 };\n`,
+      `const ${name} = 1;\nexport const o = { ${name} };\n`,
+      `export const o = { ${name}() {} };\n`,
+      `export const o = { set ${name}(v: number) {\n  void v;\n} };\n`,
+      `export const v = Math.${name};\n`,
+      `export const v = Math?.${name};\n`,
+      `export class X {\n  static ${name}(): void {}\n}\n`,
+      `export class X {\n  get ${name}(): number {\n    return 1;\n  }\n}\n`,
+      `export type T = { ${name}: number };\n`,
+      `export type T = { ${name}(): void };\n`,
+      `export interface I {\n  ${name}: number;\n}\n`,
+      `export type T = Math["abs"] extends infer ${name} ? ${name} : never;\n`,
+      `export type T = typeof Math.${name};\n`,
+      `export type T = { [${name} in "a"]: 1 };\n`,
+      `export const x = { "a": 1 } satisfies { [${name}: string]: number };\n`,
+      `export function f(this: { ${name}: 1 }): void {}\n`,
+    ]),
+  ),
+  // Private names (a private #constructor is a parse error).
+  ...at(LOG, "key", [
+    "export class X {\n  #setEngine = 1;\n}\n",
+    "export class X {\n  #setEngine(): void {}\n  f(): boolean {\n    return #setEngine in this;\n  }\n}\n",
+    "export class X {\n  static #setEngine = 1;\n  g = X.#setEngine;\n}\n",
+    "export class X {\n  setEngine(): void {}\n}\n",
+    "export class X {\n  setEngine?: number;\n  declare setEngine2: number;\n}\n",
+  ]),
+  // The exception is only the key of a class constructor: a method, a
+  // property or a member named constructor is not one.
+  ...at(LOG, "key", [
+    "export const o = { constructor: 1 };\n",
+    "export const o = { constructor() {} };\n",
+    "export class X {\n  static constructor(): void {}\n}\n",
+    "export class X {\n  get constructor(): number {\n    return 1;\n  }\n}\n",
+    "export class X {\n  constructor() {\n    void this.constructor;\n  }\n}\n",
+    "export class X {\n  constructor(constructor: number) {\n    void constructor;\n  }\n}\n",
+    "export class X {\n  constructor(private setEngine: number) {}\n}\n",
+    "export class X {\n  constructor() {\n    const setEngine = 1;\n    void setEngine;\n  }\n}\n",
+    "export class X {\n  constructor(a = Math.setEngine) {\n    void a;\n  }\n}\n",
+  ]),
   // The literal is allowed only in the file that holds it as data.
   ...at("server/domain/document/edit-step2.ts", "key", [
     'export const keys = new Set(["__proto__", "constructor", "prototype"]);\n',
@@ -252,8 +362,17 @@ const passing: Case[] = [
     'import { readFile } from "node:fs/promises";\nexport const r = readFile;\n',
     'import { Value } from "@sinclair/typebox/value";\nexport const v = Value;\n',
     'import { Type } from "@sinclair/typebox";\nexport const t = Type;\n',
+    // The key of a class constructor, with and without TS parameter
+    // properties, overloads and a superclass; ordinary names.
     "export class X {\n  constructor() {}\n}\n",
-    "export const o = { constructor: 1 };\n",
+    "export class X {\n  constructor(private readonly a: number, public b = 1) {}\n}\n",
+    "export class X {\n  constructor();\n  constructor(a?: number) {\n    void a;\n  }\n}\n",
+    "class B {}\nexport class X extends B {\n  constructor() {\n    super();\n  }\n}\n",
+    "export abstract class X {\n  protected constructor(protected a: number) {}\n}\n",
+    "export default class {\n  constructor() {}\n}\n",
+    "export const C = class {\n  constructor(public engine: string) {}\n};\n",
+    "export function construct(engine: number, setEngines: number): number {\n  return engine + setEngines;\n}\n",
+    "export const o = { constructed: 1, setEngineering: 2, Constructor: 3, SetEngine: 4 };\n",
   ]),
 ];
 
@@ -264,6 +383,12 @@ describe("local/no-dynamic-load (DAN-770)", () => {
 
   it.each(passing)("$file passes: $code", async ({ file, code }) => {
     expect(await ids(file, code)).toEqual([]);
+  });
+
+  // A fixture that does not parse would pass or fail for the wrong reason.
+  it.each([...failing, ...passing])("$file parses: $code", async ({ file, code }) => {
+    const [result] = await eslint.lintText(code, { filePath: file });
+    expect(result?.messages.filter((m) => m.fatal === true)).toEqual([]);
   });
 
   it("does not lint test files, and production code cannot import one", async () => {

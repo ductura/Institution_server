@@ -10,13 +10,17 @@
 // and tests/lint/dynamic-load.test.ts checks both sets cover all of server/.
 //
 // The keys of FORBIDDEN_KEYS (the Function constructor, a native engine
-// loader) fail as a member, a destructured or imported name, and inside any
-// string literal or template piece, whatever its parent, so Reflect.get(fn,
-// "constructor") fails too. What the rule cannot see: a key built at run time
-// ("constr" + "uctor", fn[k] with k from a join, a lookup by descriptor value)
-// and the internals of dependencies. Both need a runtime guard, not lint:
-// DAN-772 (--disallow-code-generation-from-strings). Names of direct export
-// declarations (`export function setEngine`) are not checked; DAN-773.
+// loader) fail at the level of a name, not of a syntactic form (DAN-773,
+// contract Ductus#1836 c.6894826454): every Identifier, PrivateIdentifier and
+// JSXIdentifier with that name fails wherever it stands (a binding, a member,
+// a key, an export, an enum member, a namespace, a label, a type), and so does
+// any string literal or template piece that contains one, whatever its parent,
+// so Reflect.get(fn, "constructor") fails too. The one exception is the key
+// `constructor` of a class constructor (MethodDefinition, kind "constructor").
+// What the rule cannot see: a key built at run time ("constr" + "uctor", fn[k]
+// with k from a join, a lookup by descriptor value) and the internals of
+// dependencies. Both need a runtime guard, not lint: DAN-772
+// (--disallow-code-generation-from-strings).
 import { readFileSync } from "node:fs";
 import { posix } from "node:path";
 import type { Rule, Scope } from "eslint";
@@ -140,21 +144,6 @@ export function runtimeDependencies(root: string): readonly string[] {
   return names;
 }
 
-// The text of a string literal or of a template without interpolation (a
-// key as written; nothing is folded).
-function staticText(node: Loose | undefined): string | undefined {
-  if (node?.type === "Literal" && typeof node.value === "string") return node.value;
-  if (node?.type === "TemplateLiteral" && node.expressions?.length === 0)
-    return node.quasis?.[0]?.value.cooked ?? undefined;
-  return undefined;
-}
-
-// The name of a non-computed key or member, or the text of a static computed one.
-function keyName(key: Loose | undefined, computed: boolean | undefined): string | undefined {
-  if (!computed) return key?.type === "Identifier" ? key.name : staticText(key);
-  return staticText(key);
-}
-
 // A binding only declared for the type checker (`declare const require`,
 // `declare global { var process }`) is still the real global at run time.
 function isAmbient(variable: Scope.Variable): boolean {
@@ -229,9 +218,20 @@ export const noDynamicLoad: Rule.RuleModule = {
       context.report({ node: node as Node, messageId: "global", data: { name } });
     }
 
-    function checkKey(node: Node, key: string | undefined): void {
-      if (key !== undefined && FORBIDDEN_KEYS.includes(key))
-        context.report({ node, messageId: "key", data: { key } });
+    // A name equal to a forbidden key, except the key of a class constructor.
+    function checkName(node: Node): void {
+      const name = (node as unknown as Loose).name;
+      if (name === undefined || !FORBIDDEN_KEYS.includes(name)) return;
+      const parent = (node as unknown as Loose).parent;
+      if (
+        name === "constructor" &&
+        parent?.type === "MethodDefinition" &&
+        parent.kind === "constructor" &&
+        parent.key === (node as unknown) &&
+        parent.computed !== true
+      )
+        return;
+      context.report({ node, messageId: "key", data: { key: name } });
     }
 
     // The one data declaration of KEY_LITERAL_ALLOWED: the literal is a direct
@@ -308,30 +308,10 @@ export const noDynamicLoad: Rule.RuleModule = {
         checkSource(node, node.source as Loose, (node as Loose).importKind),
       ExportNamedDeclaration: (node) =>
         checkSource(node, node.source as Loose | null, (node as Loose).exportKind),
-      ExportAllDeclaration(node) {
-        checkSource(node, node.source as Loose, (node as Loose).exportKind);
-        // `export * as constructor from "…"`: the exported name, as for a specifier.
-        checkKey(node, keyName((node as Loose).exported, false));
-      },
-      MemberExpression(node) {
-        if (!node.computed) checkKey(node, keyName(node.property as Loose, false));
-      },
-      Property(node) {
-        if ((node as Loose).parent?.type === "ObjectPattern" && !node.computed)
-          checkKey(node, keyName(node.key as Loose, false));
-      },
-      // Both names of a specifier, as imported or exported and as bound
-      // (`import { setEngine as s }`, `export { createHash as setEngine }`).
-      ImportSpecifier(node) {
-        checkKey(node, keyName(node.imported as Loose, false));
-        checkKey(node, keyName(node.local as Loose, false));
-      },
-      ImportDefaultSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
-      ImportNamespaceSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
-      ExportSpecifier(node) {
-        checkKey(node, keyName(node.local as Loose, false));
-        checkKey(node, keyName(node.exported as Loose, false));
-      },
+      ExportAllDeclaration: (node) =>
+        checkSource(node, node.source as Loose, (node as Loose).exportKind),
+      // Every name, wherever it stands (DAN-773).
+      "Identifier, PrivateIdentifier, JSXIdentifier": checkName,
       Literal(node) {
         const literal = node as unknown as Loose;
         if (typeof literal.value === "string")
