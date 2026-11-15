@@ -26,6 +26,10 @@ export type FakeService = {
   readonly fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 };
 
+function abortReason(signal: AbortSignal): unknown {
+  return signal.reason ?? new DOMException("This operation was aborted", "AbortError");
+}
+
 export function createFakeService(options: FakeServiceOptions): FakeService {
   const { mode } = options;
   if (!(FAKE_SERVICE_MODES as readonly string[]).includes(mode))
@@ -47,6 +51,8 @@ export function createFakeService(options: FakeServiceOptions): FakeService {
     async fetch(input, init) {
       const request = new Request(input, init);
       requests.push(request);
+      // As Node's fetch: an already aborted signal rejects in every mode.
+      if (request.signal.aborted) throw abortReason(request.signal);
       if (mode === "down")
         throw new TypeError("fetch failed", { cause: new Error("connect ECONNREFUSED") });
       if (mode === "slow") await clock.sleep(delayMs, request.signal);

@@ -46,6 +46,16 @@ describe("fake outside services", () => {
     await expect(pending).rejects.toMatchObject({ name: "AbortError" });
   });
 
+  it.each(["ok", "slow", "down"] as const)(
+    "%s rejects an already aborted signal, as Node's fetch does",
+    async (mode) => {
+      const service = createFakeService({ mode });
+      await expect(service.fetch(URL_OK, { signal: AbortSignal.abort() })).rejects.toMatchObject({
+        name: "AbortError",
+      });
+    },
+  );
+
   it("down fails as a network error, as Node's fetch does", async () => {
     const service = createFakeService({ mode: "down" });
     await expect(service.fetch(URL_OK)).rejects.toThrow(new TypeError("fetch failed"));

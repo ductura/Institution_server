@@ -17,17 +17,21 @@ const NAME = "@ductura/test-fakes";
 
 type ListNode = { readonly dependencies?: Readonly<Record<string, ListNode>> };
 
-/** Every package name in a `pnpm list --json` dependency tree. */
+/**
+ * Every package name in a `pnpm list --json` dependency tree. Every subtree is
+ * walked, even under a name already seen: two versions of one package can
+ * depend on different packages (review c.6887461155). Parsed JSON has no
+ * cycles, so the walk ends; only the result is deduplicated.
+ */
 export function closureNames(tree: readonly ListNode[]): Set<string> {
   const names = new Set<string>();
-  const walk = (node: ListNode): void => {
+  const stack: ListNode[] = [...tree];
+  for (let node = stack.pop(); node !== undefined; node = stack.pop()) {
     for (const [name, child] of Object.entries(node.dependencies ?? {})) {
-      if (names.has(name)) continue;
       names.add(name);
-      walk(child);
+      stack.push(child);
     }
-  };
-  for (const node of tree) walk(node);
+  }
   return names;
 }
 
@@ -119,6 +123,19 @@ describe("@ductura/test-fakes stays out of production", () => {
       { dependencies: { pg: { dependencies: { [NAME]: { dependencies: { x: {} } } } } } },
     ];
     expect([...closureNames(tree)].sort()).toEqual([NAME, "pg", "x"].sort());
+  });
+
+  it("closureNames walks a repeated name with a different subtree", () => {
+    // a -> shared@1, b -> shared@2 -> oidc-provider: the second shared counts.
+    const tree: ListNode[] = [
+      {
+        dependencies: {
+          a: { dependencies: { shared: {} } },
+          b: { dependencies: { shared: { dependencies: { "oidc-provider": {} } } } },
+        },
+      },
+    ];
+    expect(closureNames(tree)).toContain("oidc-provider");
   });
 
   it("no production file under server/ loads it", () => {
