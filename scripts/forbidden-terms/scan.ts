@@ -4,20 +4,18 @@
  */
 import { readFileSync, readdirSync, type Dirent } from "node:fs";
 import path from "node:path";
-import { isDeepStrictEqual, types } from "node:util";
-import vm from "node:vm";
 
 import ts from "typescript";
 
 import { shownText, unreadableCharacters } from "./characters.ts";
 import { findForbiddenTerms, foldText, type ForbiddenTerm } from "./terms.ts";
 
-/** `table` is the export of a `.ts` catalogue that holds it; `functions` are the only exports that may be functions. */
-type Catalogue = Readonly<{ lang: "hr" | "en"; table?: string; functions?: readonly string[] }>;
+/** `table` is the export of a `.ts` catalogue that holds it. */
+type Catalogue = Readonly<{ lang: "hr" | "en"; table?: string }>;
 
 /** Every catalogue under locales/, by file name. */
 export const CATALOGUES: Readonly<Record<string, Catalogue>> = {
-  "hr.ts": { lang: "hr", table: "messagesHr", functions: ["textOf"] },
+  "hr.ts": { lang: "hr", table: "messagesHr" },
   "en.ts": { lang: "en", table: "messagesEn" },
   "hr.json": { lang: "hr" },
 };
@@ -28,6 +26,7 @@ export const NOT_CATALOGUES: Readonly<Record<string, string>> = {
   "parity.ts": "compares the keys of hr and en, holds no text",
   "source.ts": "keeps the Ductus source texts (SOURCE_TEXT_CHANGES) as a record, not as interface",
   "test-leaves.ts": "test helper, holds no text",
+  "text-of.ts": "reads a text from a table by key, holds no text",
   "README.md": "documentation",
   ".gitkeep": "empty file that keeps the folder in git",
 };
@@ -203,47 +202,118 @@ function readCatalogue(dir: string, file: string, catalogue: Catalogue): Map<str
       fail("DUPLICATE_KEY", file, `${tokens} strings for ${keys} keys and ${leaves.size} texts`);
     return leaves;
   }
-  const [module, copy] = evaluate(full, raw);
-  if (!Object.hasOwn(module, catalogue.table)) fail("UNKNOWN_EXPORT", file, catalogue.table);
-  const table = module[catalogue.table];
-  for (const [name, value] of Object.entries(module)) {
+  const exports = readSource(file, raw);
+  if (!exports.has(catalogue.table)) fail("UNKNOWN_EXPORT", file, catalogue.table);
+  const table = exports.get(catalogue.table);
+  for (const [name, value] of exports) {
     if (name !== catalogue.table && value === table) continue;
-    if (typeof value === "function") {
-      if (!catalogue.functions?.includes(name)) fail("UNKNOWN_EXPORT", file, name);
-      continue;
-    }
     walk(file, value, name === catalogue.table ? "" : name, leaves);
-    // #44 c.6892510145: the export must equal its JSON copy made in its own realm, which drops every shape JSON has not.
-    if (!isDeepStrictEqual(value, copy(value))) fail("NOT_TEXT", file, `${name}: not plain JSON`);
   }
   return leaves;
 }
 
-type Copy = (value: unknown) => unknown;
-type CjsSetUp = [object, object, { exports: Record<string, unknown> }, Copy];
-
-/** A `.ts` catalogue's exports, read as scripts/locales/source-digest.ts reads one; no runtime imports. */
-function evaluate(full: string, raw: string): [Record<string, unknown>, Copy] {
-  const { outputText } = ts.transpileModule(raw, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2023 },
-  });
-  // Its own context, whose prototypes are frozen and whose JSON copy is taken before the catalogue runs.
-  const context = vm.createContext(Object.create(null) as object);
-  const intrinsics = "Object.freeze(Object.prototype), Object.freeze(Array.prototype)";
-  const copy = "((p, s) => (value) => p(s(value)))(JSON.parse, JSON.stringify)";
-  const setUp = `module = { exports: {} }; exports = module.exports; [${intrinsics}, module, ${copy}]`;
-  const [object, array, module, roundTrip] = vm.runInContext(setUp, context) as CjsSetUp;
-  OBJECTS.add(object);
-  ARRAYS.add(array);
-  vm.runInContext(outputText, context, { filename: full });
-  return [module.exports, roundTrip];
+/** Strips what only TypeScript sees: `as`, `satisfies`, `<T>`, `!` and parentheses. */
+function unwrap(node: ts.Expression): ts.Expression {
+  while (
+    ts.isParenthesizedExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isTypeAssertionExpression(node) ||
+    ts.isNonNullExpression(node)
+  )
+    node = node.expression;
+  return node;
 }
 
-/** Object.prototype and Array.prototype of this realm (JSON) and of each catalogue's context, compared with ===. */
-const [OBJECTS, ARRAYS] = [
-  new Set<unknown>([Object.prototype]),
-  new Set<unknown>([Array.prototype]),
-];
+/**
+ * The exports of a `.ts` catalogue, read from its syntax tree (DAN-774); no line of it runs, so no getter,
+ * Proxy, prototype or call can show the app other text than the scan reads. A catalogue is type-only imports,
+ * types, and `const` declarations whose values are strings, templates of strings, object and array literals
+ * and earlier constants; anything else is an input error.
+ */
+function readSource(file: string, raw: string): Map<string, unknown> {
+  const options = { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2023 };
+  const { diagnostics } = ts.transpileModule(raw, {
+    reportDiagnostics: true,
+    compilerOptions: options,
+  });
+  if (diagnostics !== undefined && diagnostics.length > 0)
+    fail("UNREADABLE_FILE", file, "the catalogue does not parse");
+  const source = ts.createSourceFile(file, raw, ts.ScriptTarget.ES2023, true, ts.ScriptKind.TS);
+  const line = (node: ts.Node): string =>
+    `line ${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}`;
+  const consts = new Map<string, unknown>();
+  const exports = new Map<string, unknown>();
+
+  const valueOf = (expression: ts.Expression): unknown => {
+    const node = unwrap(expression);
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+    if (ts.isIdentifier(node) && consts.has(node.text)) return consts.get(node.text);
+    if (ts.isTemplateExpression(node)) {
+      let text = node.head.text;
+      for (const span of node.templateSpans) {
+        const part = valueOf(span.expression);
+        if (typeof part !== "string") fail("NOT_TEXT", file, `${line(span)}: not a text`);
+        text += `${part as string}${span.literal.text}`;
+      }
+      return text;
+    }
+    if (ts.isArrayLiteralExpression(node)) {
+      return node.elements.map((element) =>
+        ts.isOmittedExpression(element) || ts.isSpreadElement(element)
+          ? fail("NOT_TEXT", file, `${line(node)}: not a dense array literal`)
+          : valueOf(element),
+      );
+    }
+    if (ts.isObjectLiteralExpression(node)) {
+      // Built with no prototype, so no key, `__proto__` included, can reach one.
+      const object = Object.create(null) as Record<string, unknown>;
+      for (const property of node.properties) {
+        const { name } = property;
+        const key = name && (ts.isIdentifier(name) || ts.isStringLiteral(name)) ? name.text : "";
+        // A `__proto__: x` literal sets the prototype instead of a key.
+        if (!ts.isPropertyAssignment(property) || key === "" || key === "__proto__")
+          return fail("NOT_TEXT", file, `${line(property)}: not a key with a value`);
+        if (Object.hasOwn(object, key)) fail("DUPLICATE_KEY", file, `${line(property)}: ${key}`);
+        object[key] = valueOf(property.initializer);
+      }
+      return object;
+    }
+    return fail("NOT_TEXT", file, `${line(node)}: ${ts.SyntaxKind[node.kind]}`);
+  };
+
+  for (const statement of source.statements) {
+    if (ts.isTypeAliasDeclaration(statement) || ts.isInterfaceDeclaration(statement)) continue;
+    if (ts.isImportDeclaration(statement) && statement.importClause?.isTypeOnly === true) continue;
+    const modifiers = ts.canHaveModifiers(statement) ? (ts.getModifiers(statement) ?? []) : [];
+    const exported = modifiers.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+    const flags = ts.isVariableStatement(statement) ? statement.declarationList.flags : 0;
+    const data =
+      ts.isVariableStatement(statement) &&
+      (flags & ts.NodeFlags.BlockScoped) === ts.NodeFlags.Const &&
+      modifiers.every((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+    if (!data) {
+      const name = ts.isFunctionDeclaration(statement) ? (statement.name?.text ?? "") : "";
+      const exporting =
+        exported || ts.isExportDeclaration(statement) || ts.isExportAssignment(statement);
+      fail(
+        exporting ? "UNKNOWN_EXPORT" : "UNREADABLE_FILE",
+        file,
+        `${line(statement)}: not data ${name}`,
+      );
+    }
+    for (const declaration of (statement as ts.VariableStatement).declarationList.declarations) {
+      const { name, initializer } = declaration;
+      if (!ts.isIdentifier(name) || initializer === undefined)
+        return fail("NOT_TEXT", file, `${line(declaration)}: not a named constant`);
+      if (consts.has(name.text)) fail("DUPLICATE_KEY", file, `${line(declaration)}: ${name.text}`);
+      const value = valueOf(initializer);
+      consts.set(name.text, value);
+      if (exported) exports.set(name.text, value);
+    }
+  }
+  return exports;
+}
 
 /** Puts every text under `node` into `leaves` and returns the number of keys it went through. */
 function walk(file: string, node: unknown, at: string, leaves: Map<string, string>): number {
@@ -252,24 +322,17 @@ function walk(file: string, node: unknown, at: string, leaves: Map<string, strin
     leaves.set(at, node);
     return 0;
   }
-  // #44 c.6892192874: prototype exactly Object.prototype or Array.prototype (=== OBJECTS, ARRAYS), own enumerable
-  // data properties only, an array dense with no named key; a Proxy is refused before any introspection.
-  const object = typeof node === "object" && node !== null && !types.isProxy(node);
-  const proto: unknown = object ? Object.getPrototypeOf(node) : undefined;
-  const array = object && Array.isArray(node) && ARRAYS.has(proto);
-  if (!(array || OBJECTS.has(proto)))
-    return fail("NOT_TEXT", file, `${at || "(root)"}: ${typeof node}`);
-  const [own, count] = [Reflect.ownKeys(node as object), (node as unknown[]).length];
-  if (array && !own.every((key, i) => key === (i < count ? String(i) : "length")))
-    fail("NOT_TEXT", file, `${at}: not a dense array`);
+  // Only JSON.parse output and the values readSource builds come here: strings, dense arrays, plain objects.
+  if (typeof node !== "object" || node === null)
+    return fail("NOT_TEXT", file, `${at || "(root)"}: ${node === null ? "null" : typeof node}`);
+  const array = Array.isArray(node);
+  const entries = array
+    ? node.map((value, i) => [String(i), value] as const)
+    : Object.entries(node);
   let keys = 0;
-  for (const key of own) {
-    if (typeof key === "symbol") return fail("NOT_TEXT", file, `${at}: symbol key`);
-    if (array && key === "length") continue;
-    const property = Object.getOwnPropertyDescriptor(node, key)!;
-    if (!("value" in property) || !property.enumerable) fail("NOT_TEXT", file, `${at}.${key}`);
+  for (const [key, value] of entries) {
     keys += array ? 0 : 1;
-    keys += walk(file, property.value, at ? `${at}.${key}` : key, leaves);
+    keys += walk(file, value, at ? `${at}.${key}` : key, leaves);
   }
   return keys;
 }
