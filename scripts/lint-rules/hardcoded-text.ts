@@ -154,7 +154,10 @@ export function encodesNonAscii(text: string): boolean {
   // A UTF-8 lead byte and a continuation byte, percent-encoded.
   if (/%[c-fC-F][0-9a-fA-F]%[89abAB][0-9a-fA-F]/u.test(text)) return true;
   // A data: URL, a punycode label.
-  if (/\bdata:[^,\s]*,/iu.test(text) || /(?:^|[./@])xn--/iu.test(text)) return true;
+  // A URL parser drops tab and line ends anywhere in a URL (WHATWG URL,
+  // review FAIL c.6896957758 on #64), so they are dropped before these checks.
+  const url = text.replace(/[\t\n\r]/gu, "");
+  if (/\bdata:[^,\s]*,/iu.test(url) || /(?:^|[./@])xn--/iu.test(url)) return true;
   const entities = text.matchAll(/&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?/gu);
   if ([...entities].some((m) => isLetterCode(Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16))))
     return true;
