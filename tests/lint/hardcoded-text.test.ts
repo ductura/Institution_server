@@ -65,6 +65,13 @@ const passing: string[] = [
   "export const s = (xs: number[]) => xs.map((x) => String(x));",
   "export const s = (xs: number[]) => xs.map(String);",
   "export const p = String.prototype.trim;",
+  // Buffer used plainly passes (review FAIL on #77: coverage kept from main).
+  "export const b = Buffer.alloc(4);",
+  "export const b = (x: Uint8Array) => Buffer.from(x).byteLength;",
+  "export const b = (xs: Buffer[]) => Buffer.concat(xs);",
+  "export const b = (x: Buffer): Buffer => x;",
+  "export type B = typeof Buffer;",
+  'export const d = (b: Uint8Array) => Buffer.from(b).toString("hex");',
   // DAN-793: a wrapper does not change an allowed use of String.
   "export const s = (x: unknown) => String!(x);",
   "export const s = (x: unknown) => (String as StringConstructor)(x);",
