@@ -261,6 +261,8 @@ const ESTREE_NODE_NAMES = [
   "MemberExpression",
   "Property",
   "ImportSpecifier",
+  "ImportDefaultSpecifier",
+  "ImportNamespaceSpecifier",
   "ExportSpecifier",
   "Literal",
   "TemplateElement",

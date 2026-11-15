@@ -170,6 +170,14 @@ const failing: Case[] = [
     "export const F = Object.getPrototypeOf(async function () {}).constructor;\n",
     'export const F = Reflect.get(Object.getPrototypeOf(() => 0), "constructor");\n',
     'export const F = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(() => 0), "constructor");\n',
+    // Review FAIL c.6892504452: a forbidden key as an exported or bound name.
+    'export { createHash as setEngine } from "node:crypto";\n',
+    'export * as constructor from "node:crypto";\n',
+    'export * as setEngine from "node:crypto";\n',
+    'import { createHash } from "node:crypto";\nexport { createHash as constructor };\n',
+    'import { createHash as setEngine } from "node:crypto";\nexport const h = setEngine;\n',
+    'import * as setEngine from "node:crypto";\nexport const h = setEngine;\n',
+    'import setEngine from "node:crypto";\nexport const h = setEngine;\n',
     // Decision c.6892342579: any literal or template piece containing the key.
     'export const s = "xconstructorx";\n',
     "export const f = (x: string): string => `a${x}constructor`;\n",

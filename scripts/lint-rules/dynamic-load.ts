@@ -39,6 +39,7 @@ type Loose = {
   exportKind?: string;
   moduleReference?: Loose;
   imported?: Loose;
+  exported?: Loose;
   callee?: Loose;
   arguments?: unknown[];
   id?: Loose;
@@ -299,8 +300,11 @@ export const noDynamicLoad: Rule.RuleModule = {
         checkSource(node, node.source as Loose, (node as Loose).importKind),
       ExportNamedDeclaration: (node) =>
         checkSource(node, node.source as Loose | null, (node as Loose).exportKind),
-      ExportAllDeclaration: (node) =>
-        checkSource(node, node.source as Loose, (node as Loose).exportKind),
+      ExportAllDeclaration(node) {
+        checkSource(node, node.source as Loose, (node as Loose).exportKind);
+        // `export * as constructor from "…"`: the exported name, as for a specifier.
+        checkKey(node, keyName((node as Loose).exported, false));
+      },
       MemberExpression(node) {
         if (!node.computed) checkKey(node, keyName(node.property as Loose, false));
       },
@@ -308,8 +312,18 @@ export const noDynamicLoad: Rule.RuleModule = {
         if ((node as Loose).parent?.type === "ObjectPattern" && !node.computed)
           checkKey(node, keyName(node.key as Loose, false));
       },
-      ImportSpecifier: (node) => checkKey(node, keyName(node.imported as Loose, false)),
-      ExportSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
+      // Both names of a specifier, as imported or exported and as bound
+      // (`import { setEngine as s }`, `export { createHash as setEngine }`).
+      ImportSpecifier(node) {
+        checkKey(node, keyName(node.imported as Loose, false));
+        checkKey(node, keyName(node.local as Loose, false));
+      },
+      ImportDefaultSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
+      ImportNamespaceSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
+      ExportSpecifier(node) {
+        checkKey(node, keyName(node.local as Loose, false));
+        checkKey(node, keyName(node.exported as Loose, false));
+      },
       Literal(node) {
         const literal = node as unknown as Loose;
         if (typeof literal.value === "string")
