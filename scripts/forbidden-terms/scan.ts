@@ -2,7 +2,7 @@
  * The scan of every interface text in locales/** (S-1L.1, DAN-768, PR-b2; Ductus#1836 c.6890523605, c.6890541239).
  * Every file is on a closed list; every leaf is read and checked, or the scan fails with an input error.
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, type Dirent } from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual, types } from "node:util";
 import vm from "node:vm";
@@ -109,16 +109,20 @@ export function scanLocales(root: string): ScanResult {
 }
 
 function scan(dir: string): ScanReport {
-  for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
+  let entries: Dirent[] = [];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true, recursive: true });
+  } catch {
+    fail("UNREADABLE_FILE", "locales", "the folder cannot be listed");
+  }
+  for (const entry of entries) {
     const name = path.relative(dir, path.join(entry.parentPath, entry.name));
     const listed = Object.hasOwn(CATALOGUES, name) || Object.hasOwn(NOT_CATALOGUES, name);
-    if (!entry.isFile() || !(listed || /^[^/\\]+\.test\.ts$/.test(name))) {
+    if (!entry.isFile() || !(listed || /^[^/\\]+\.test\.ts$/.test(name)))
       fail("UNLISTED_FILE", name, "not a file on CATALOGUES or NOT_CATALOGUES");
-    }
   }
   const texts = new Map<string, Map<string, string>>();
   for (const [file, catalogue] of Object.entries(CATALOGUES)) {
-    // #44 c.6892510145: whatever a catalogue throws while it is read is an input error, never thrown on.
     try {
       texts.set(file, readCatalogue(dir, file, catalogue));
     } catch (error) {
@@ -151,9 +155,8 @@ function scan(dir: string): ScanReport {
       const characters = unreadableCharacters(text);
       if (characters.length > 0) add(file, leafPath, text, `characters: ${characters.join(" ")}`);
       // A combining mark left after NFKC (d + U+0335, s + U+0306) can draw a Croatian letter too.
-      if (lang === "en" && /[čćđšž]|\p{M}/iu.test(text.normalize("NFKC"))) {
+      if (lang === "en" && /[čćđšž]|\p{M}/iu.test(text.normalize("NFKC")))
         add(file, leafPath, text, "Croatian letter in English text");
-      }
     }
   }
   const gone = EXCEPTIONS.find((exception) => !texts.get(exception.file)?.has(exception.path));
@@ -196,9 +199,8 @@ function readCatalogue(dir: string, file: string, catalogue: Catalogue): Map<str
     const keys = walk(file, JSON.parse(raw) as unknown, "", leaves);
     // JSON.parse keeps the last of two equal keys, so an earlier text would go unread.
     const tokens = raw.match(/"(?:[^"\\]|\\.)*"/g)?.length ?? 0;
-    if (tokens !== keys + leaves.size) {
+    if (tokens !== keys + leaves.size)
       fail("DUPLICATE_KEY", file, `${tokens} strings for ${keys} keys and ${leaves.size} texts`);
-    }
     return leaves;
   }
   const [module, copy] = evaluate(full, raw);
@@ -258,9 +260,8 @@ function walk(file: string, node: unknown, at: string, leaves: Map<string, strin
   if (!(array || OBJECTS.has(proto)))
     return fail("NOT_TEXT", file, `${at || "(root)"}: ${typeof node}`);
   const [own, count] = [Reflect.ownKeys(node as object), (node as unknown[]).length];
-  if (array && !own.every((key, i) => key === (i < count ? String(i) : "length"))) {
+  if (array && !own.every((key, i) => key === (i < count ? String(i) : "length")))
     fail("NOT_TEXT", file, `${at}: not a dense array`);
-  }
   let keys = 0;
   for (const key of own) {
     if (typeof key === "symbol") return fail("NOT_TEXT", file, `${at}: symbol key`);

@@ -111,6 +111,13 @@ describe("invariant 1: every leaf is read", () => {
     },
   );
 
+  // Review FAIL c.6892705617, point 2: a folder that cannot be listed is an input error in the result.
+  it("fails with the result, not a throw, when locales/ is not there", () => {
+    const root = copy();
+    rmSync(path.join(root, "locales"), { recursive: true });
+    expect(errorCode(root)).toBe("UNREADABLE_FILE locales");
+  });
+
   it("fails on a listed catalogue that is gone", () => {
     const root = copy();
     rmSync(path.join(root, "locales", "en.ts"));
