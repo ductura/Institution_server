@@ -5,7 +5,7 @@ Testno pomagalo: OIDC pružatelj s izmišljenim računima u obliku koji izdaje A
 ## Pokretanje
 
 ```bash
-pnpm exec tsx test-support/fake-oidc/server.ts   # http://localhost:8080
+pnpm exec tsx packages/test-fakes/oidc/server.ts   # http://localhost:8080
 ```
 
 | Varijabla                                  | Značenje                                                                                                                      |

@@ -317,7 +317,7 @@ export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
   });
 }
 
-// Run directly (`tsx test-support/fake-oidc/server.ts`): the guard and the
+// Run directly (`tsx packages/test-fakes/oidc/server.ts`): the guard and the
 // address checks run before the server listens.
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { port, options } = fakeOidcConfigFromEnv(process.env);
