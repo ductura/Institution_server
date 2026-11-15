@@ -1,13 +1,13 @@
 /**
  * Interface text, English (D-70): the second table of `./hr.ts`, with the
- * same keys, lists and placeholders (`parity.test.ts`) and nothing else.
+ * same keys, lists and placeholders (parity check: S-1L.1 PR-a2) and nothing else.
  * Ported from Ductus `src/lib/i18n/messages.en.ts` at d52a92c3 with no text
  * changed (`source.test.ts`).
  *
  * Croatian stays the default interface language. Words from the forbidden
  * vocabulary in Ductus docs/PRODUCT.md §5, English column and the D-276 list,
- * never appear here, not even in a negation; `messages-en.test.ts` checks the
- * table as `messages.test.ts` checks the Croatian one.
+ * never appear here, not even in a negation; the dictionary tests for both
+ * tables follow in S-1L.1 PR-a3.
  */
 import type { Messages } from "./hr.ts";
 

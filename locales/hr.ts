@@ -8,7 +8,7 @@
  * second table of the same shape and nothing else.
  *
  * Words from the forbidden vocabulary in Ductus docs/PRODUCT.md §5 never
- * appear here; `messages.test.ts` checks that.
+ * appear here; the dictionary tests that check that follow in S-1L.1 PR-a3.
  */
 
 /** The product name on screen (D-124): one value, read through `app.name`. */
