@@ -31,6 +31,11 @@ export type ShutdownCoordinator = {
   active(): number;
   /** A ticket for a request that starts now, or null once stop() was called. */
   begin(): Ticket | null;
+  /**
+   * A ticket for output already owed, such as the 503 to a request that came
+   * while draining: issued until the drain ended, null after (c3 contract).
+   */
+  hold(): Ticket | null;
   /** Idempotent: every call returns the same promise. */
   stop(): Promise<StopResult>;
 };
@@ -64,23 +69,25 @@ export function createShutdownCoordinator(
     if (count === 0) finish({ outcome: "drained" });
   };
 
+  const issue = (): Ticket => {
+    count += 1;
+    let open = true;
+    return {
+      release() {
+        if (!open) return;
+        open = false;
+        count -= 1;
+        drainedIfIdle();
+      },
+    };
+  };
+
   return {
     graceMs,
     state: () => current,
     active: () => count,
-    begin() {
-      if (current !== "running") return null;
-      count += 1;
-      let open = true;
-      return {
-        release() {
-          if (!open) return;
-          open = false;
-          count -= 1;
-          drainedIfIdle();
-        },
-      };
-    },
+    begin: () => (current === "running" ? issue() : null),
+    hold: () => (current === "stopped" ? null : issue()),
     stop() {
       if (stopping) return stopping;
       current = "draining";

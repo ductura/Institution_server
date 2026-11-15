@@ -339,3 +339,113 @@ describe("shutdown in the middle of a slow request", () => {
     20_000,
   );
 });
+
+// DAN-778 c3, contract Ductus#1836 c.6895155382 (point 5 and 6): every request
+// parsed while draining gets its 503; only the last one on a connection closes it.
+// T1 to T3 (the FAILs on #53) are the pipelined tests above.
+describe("requests parsed while draining", () => {
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  /** Status and Connection header of each response, in order. */
+  const heads = (raw: string): string[] =>
+    raw
+      .split(/(?=HTTP\/1\.1 \d{3})/u)
+      .filter((part) => part.startsWith("HTTP/1.1"))
+      .map((part) => {
+        const status = part.slice(9, 12);
+        const connection = /\r\nconnection: ([^\r]+)/iu.exec(part)?.[1]?.toLowerCase() ?? "-";
+        return `${status} ${connection}`;
+      });
+  const POST = "POST /api/v1/health HTTP/1.1\r\nHost: localhost\r\nContent-Length: 10\r\n\r\n";
+
+  it("T4: two requests in one write behind a running one get 503 each, the last closes", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["600"]);
+    const conn = await open(server.port);
+    conn.socket.write(GET("/api/v1/health?slow"));
+    await sleep(100);
+    server.child.kill("SIGTERM");
+    await sleep(100);
+    conn.socket.write(GET("/api/v1/health") + GET("/api/v1/health"));
+    await conn.closed;
+    expect(heads(conn.text())).toEqual(["200 keep-alive", "503 keep-alive", "503 close"]);
+    expect(conn.text().match(/\{"error":"unavailable"\}/gu)).toHaveLength(2);
+    expect(conn.text().match(/retry-after: 1/giu)).toHaveLength(2);
+    expect(await server.exit).toBe(0);
+    expect(server.err()).toBe("");
+  }, 20_000);
+
+  it("T5: two requests in separate writes behind a running one get 503 each", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["800"]);
+    const conn = await open(server.port);
+    conn.socket.write(GET("/api/v1/health?slow"));
+    await sleep(100);
+    server.child.kill("SIGTERM");
+    await sleep(100);
+    conn.socket.write(GET("/api/v1/health"));
+    await sleep(100);
+    conn.socket.write(GET("/api/v1/health"));
+    await conn.closed;
+    expect(heads(conn.text())).toEqual(["200 keep-alive", "503 keep-alive", "503 close"]);
+    expect(await server.exit).toBe(0);
+  }, 20_000);
+
+  it("T6: a connection never served gets 503 for each request sent after the signal", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["600"]);
+    const busy = await open(server.port);
+    busy.socket.write(GET("/api/v1/health?slow"));
+    const fresh = await open(server.port);
+    await sleep(100);
+    server.child.kill("SIGTERM");
+    await sleep(100);
+    fresh.socket.write(GET("/api/v1/health") + GET("/api/v1/health"));
+    await fresh.closed;
+    expect(heads(fresh.text())).toEqual(["503 keep-alive", "503 close"]);
+    await busy.closed;
+    expect(statusOf(busy.text())).toBe("HTTP/1.1 200 OK");
+    expect(await server.exit).toBe(0);
+  }, 20_000);
+
+  it("T7: a request whose headers end after the signal gets 503 and the connection closes", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["600"]);
+    const busy = await open(server.port);
+    busy.socket.write(GET("/api/v1/health?slow"));
+    const half = await open(server.port);
+    half.socket.write("GET /api/v1/health HTTP/1.1\r\nHo");
+    await sleep(100);
+    server.child.kill("SIGTERM");
+    await sleep(100);
+    half.socket.write("st: localhost\r\n\r\n");
+    await half.closed;
+    expect(heads(half.text())).toEqual(["503 close"]);
+    expect(await server.exit).toBe(0);
+  }, 20_000);
+
+  it("T8: a flood of pipelined requests gets at most 16 answers, then the connection closes", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "8000" }, ["400"]);
+    const conn = await open(server.port);
+    conn.socket.write(GET("/api/v1/health?slow"));
+    await sleep(100);
+    const signalled = Date.now();
+    server.child.kill("SIGTERM");
+    await sleep(100);
+    conn.socket.write(GET("/api/v1/health").repeat(100));
+    await conn.closed;
+    const answers = heads(conn.text());
+    expect(answers[0]).toBe("200 keep-alive");
+    expect(answers.slice(1)).toEqual([...Array(15).fill("503 keep-alive"), "503 close"]);
+    expect(await server.exit).toBe(0);
+    expect(Date.now() - signalled).toBeLessThan(4_000);
+  }, 20_000);
+
+  it("T9: a refused request with a body closes the connection; nothing after it is read", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["600"]);
+    const conn = await open(server.port);
+    conn.socket.write(GET("/api/v1/health?slow"));
+    await sleep(100);
+    server.child.kill("SIGTERM");
+    await sleep(100);
+    conn.socket.write(POST + "0123456789" + GET("/api/v1/health"));
+    await conn.closed;
+    expect(heads(conn.text())).toEqual(["200 keep-alive", "503 close"]);
+    expect(await server.exit).toBe(0);
+  }, 20_000);
+});
