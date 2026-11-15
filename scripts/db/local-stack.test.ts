@@ -14,16 +14,20 @@ const { scripts } = JSON.parse(
 };
 const compose = readFileSync(new URL("../../compose.yaml", import.meta.url), "utf8");
 
-test("pnpm db:migrate applies migrations only through the locked runner", () => {
+// S-1F-c (DAN-779): the main chain moved, unchanged, to db:migrate:main;
+// scripts/db/databases.test.ts holds db:migrate to the list of databases.
+test("pnpm db:migrate:main applies migrations only through the locked runner", () => {
   assert.match(
-    scripts["db:migrate"] ?? "",
+    scripts["db:migrate:main"] ?? "",
     /node scripts\/db\/migrate-locked\.ts --url "[^"]+role=ductus_migrator"/,
   );
-  assert.doesNotMatch(scripts["db:migrate"] ?? "", /\bdbmate\b[^&]*\sup\b/);
+  for (const name of ["db:migrate", "db:migrate:main", "db:migrate:logs"]) {
+    assert.doesNotMatch(scripts[name] ?? "", /\bdbmate\b[^&]*\sup\b/);
+  }
 });
 
-test("pnpm db:migrate provisions in the Ductus order: migrator, migrations, app, worker and auth logins", () => {
-  const steps = (scripts["db:migrate"] ?? "").split(" && ");
+test("pnpm db:migrate:main provisions in the Ductus order: migrator, migrations, app, worker and auth logins", () => {
+  const steps = (scripts["db:migrate:main"] ?? "").split(" && ");
   assert.deepEqual(
     steps.map((step) => (step.split(" ")[0] === "pnpm" ? step : "migrate-locked")),
     [
@@ -44,10 +48,10 @@ test("pnpm db:migrate provisions in the Ductus order: migrator, migrations, app,
   );
 });
 
-test("pnpm db:up starts only the main database service, then migrates", () => {
+test("pnpm db:up starts the main and the logs database services, then migrates", () => {
   assert.equal(
     scripts["db:up"],
-    "docker compose up -d --build --wait postgres-main && pnpm db:migrate",
+    "docker compose up -d --build --wait postgres-main postgres-logs && pnpm db:migrate",
   );
 });
 
@@ -58,5 +62,9 @@ test("compose binds every port to 127.0.0.1 and uses only local-only passwords",
   const passwords = [...compose.matchAll(/PASSWORD: (\S+)$/gm)].map((match) => match[1] ?? "");
   assert.ok(passwords.length > 0);
   for (const password of passwords) assert.match(password, /-local-only$/);
-  assert.match(scripts["db:migrate"] ?? "", /ductus:ductus-local-only@127\.0\.0\.1:54329\//);
+  assert.match(scripts["db:migrate:main"] ?? "", /ductus:ductus-local-only@127\.0\.0\.1:54329\//);
+  assert.match(
+    scripts["db:migrate:logs"] ?? "",
+    /ductus:ductus-logs-local-only@127\.0\.0\.1:54330\/ductus_logs\?/,
+  );
 });

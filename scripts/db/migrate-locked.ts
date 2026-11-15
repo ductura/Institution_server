@@ -11,10 +11,13 @@
 // Ported from Ductus scripts/db/migrate-locked.mjs and its migrate-locked.d.mts
 // at d52a92c3 (S-0.13, DAN-726); only the paths and the types changed.
 //
-//   node scripts/db/migrate-locked.ts --url <postgres-url>
+//   node scripts/db/migrate-locked.ts [--database <name>] --url <postgres-url>
 //
 // The URL is never printed. dbmate gets `up --strict` (D-91 (2)) and reads the
-// migrations from db/main/migrations (its default is db/migrations).
+// migrations from db/main/migrations (its default is db/migrations). S-1F-c
+// (DAN-779): --database picks another database of scripts/db/databases.ts
+// (default main), and the URL must name that database and its migrator
+// (`role=`), so one database's migrations never run in another.
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import type { EventEmitter } from "node:events";
 import path from "node:path";
@@ -24,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import { resolveBinary } from "dbmate";
 
 import { connectLockClient } from "../../server/database/index.ts";
+import { databaseNamed, type Database } from "./databases.ts";
 
 /** The one lock key of the Ductus migration runner (a fixed bigint). */
 export const LOCK_KEY = "4207120261031";
@@ -59,13 +63,13 @@ export function dbmateBinary(): string {
 }
 
 /** The dbmate argv, program first: always `up --strict`, schema dump off, waiting for the server. */
-export function dbmateArgs(url: string): string[] {
+export function dbmateArgs(url: string, migrationsDir: string = MIGRATIONS_DIR): string[] {
   return [
     dbmateBinary(),
     "--url",
     url,
     "--migrations-dir",
-    MIGRATIONS_DIR,
+    migrationsDir,
     "--no-dump-schema",
     "--wait",
     "up",
@@ -73,9 +77,35 @@ export function dbmateArgs(url: string): string[] {
   ];
 }
 
+/**
+ * The error for a URL that does not name `database` and run as its migrator,
+ * or null. The message never contains the URL.
+ */
+export function urlMismatch(url: string, database: Database): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return "the URL is not a valid URL";
+  }
+  const name = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
+  if (name !== database.database) {
+    return `the URL does not name the database ${database.database} of --database ${database.name}`;
+  }
+  const roles = parsed.searchParams.getAll("role");
+  if (roles.length !== 1 || roles[0] !== database.migrator) {
+    return `the URL must run as ${database.migrator} (one role=${database.migrator})`;
+  }
+  return null;
+}
+
 /** Starts dbmate as the runner's direct child, so a signal sent to the child reaches dbmate. */
-export function startDbmate(url: string, options: SpawnOptions = {}): ChildProcess {
-  const [file, ...args] = dbmateArgs(url);
+export function startDbmate(
+  url: string,
+  options: SpawnOptions = {},
+  migrationsDir: string = MIGRATIONS_DIR,
+): ChildProcess {
+  const [file, ...args] = dbmateArgs(url, migrationsDir);
   return spawn(file as string, args, {
     cwd: ROOT,
     stdio: "inherit",
@@ -230,12 +260,29 @@ export async function runLocked({
   return code === 0 ? 0 : code || 1;
 }
 
+/** The database and URL of the argv, or an error message. */
+export function parseArgs(argv: string[]): { database: Database; url: string } | string {
+  const usage = "usage: migrate-locked.ts [--database <name>] --url <postgres-url>";
+  let rest = argv;
+  let database: Database;
+  try {
+    database = databaseNamed(rest[0] === "--database" ? (rest[1] ?? "") : "main");
+  } catch (error) {
+    return (error as Error).message;
+  }
+  if (rest[0] === "--database") rest = rest.slice(2);
+  if (rest.length !== 2 || rest[0] !== "--url" || !rest[1]) return usage;
+  const mismatch = urlMismatch(rest[1], database);
+  return mismatch ?? { database, url: rest[1] };
+}
+
 async function main(argv: string[]): Promise<number> {
-  if (argv.length !== 2 || argv[0] !== "--url" || !argv[1]) {
-    console.error("usage: migrate-locked.ts --url <postgres-url>");
+  const parsed = parseArgs(argv);
+  if (typeof parsed === "string") {
+    console.error(parsed);
     return 1;
   }
-  const url = argv[1];
+  const { database, url } = parsed;
   const controller = new AbortController();
   let child: ChildProcess | null = null;
   // Before dbmate starts, a signal cancels the run (the runner must not start
@@ -250,7 +297,7 @@ async function main(argv: string[]): Promise<number> {
     connect: () => connectLockClient(url, { signal: controller.signal }),
     signal: controller.signal,
     start: () => {
-      child = startDbmate(url);
+      child = startDbmate(url, {}, database.migrationsDir);
       return child;
     },
   });
