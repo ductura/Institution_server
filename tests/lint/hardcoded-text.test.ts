@@ -59,16 +59,11 @@ const passing: string[] = [
   'export const t = "a\\tb\\u0041\\x41\\u{7e}";',
   "export const u = (n: number) => `\\\\u${n}`;",
   '// Prijava je obavezna, đ\nexport const r = /[\\u010d\\u0111]/u;\nexport const d = "d";',
-  // String and Buffer used plainly.
+  // String used plainly. Buffer builders are DAN-784 (c.6899577620).
   "export const s = (x: unknown) => String(x);",
   "export const s = (x: unknown) => new String(x);",
   "export const s = (xs: number[]) => xs.map(String);",
   "export const p = String.prototype.trim;",
-  "export const b = Buffer.alloc(4);",
-  "export const b = (x: Uint8Array) => Buffer.from(x).byteLength;",
-  "export const b = (xs: Buffer[]) => Buffer.concat(xs);",
-  "export const b = (x: Buffer): Buffer => x;",
-  "export type B = typeof Buffer;",
   // A schema library's String is not the global.
   "const Type = { String: () => 1 };\nexport const t = Type.String();",
   "export const raw = (x: { raw: string }) => x.raw;",
@@ -77,15 +72,11 @@ const passing: string[] = [
   "export const q = \"name like '%admin%'\";",
   'export const q = "?page=1&ordering=desc&filtering=on";',
   'export const h = "a &amp; b &lt; c";',
-  'export const d = (b: Uint8Array) => Buffer.from(b).toString("hex");',
   "export const r = (x: Uint8Array) => new Response(x);",
   'import { fileURLToPath } from "node:url";\nexport const f = fileURLToPath;',
   'import * as util from "node:util";\nexport const f = util.inspect;',
   "export const t = (a: string, b: string) => `${a}: ${b}`;",
   "export const r = /^[a-z]+$/u;",
-  // Codex review on #65: "hex" as data, not as an encoding.
-  'export const f = ["", ""].fill("hex");',
-  'export const w = (s: { write(x: string): void }) => s.write("hex");',
 ];
 
 const failing: [messageId: string, code: string][] = [
@@ -149,29 +140,6 @@ const failing: [messageId: string, code: string][] = [
   ["builder", "export const e = (x: string) => decodeURI(x);"],
   ["builder", "export const e = (x: string) => unescape(x);"],
   ["builder", 'export const e = Reflect.get(globalThis, "atob");'],
-  // (2) Buffer: an encoding, an array, of, alias, computed member.
-  ["builder", 'export const e = Buffer.from("xIxhag==", "base64").toString();'],
-  ["builder", 'export const e = Buffer.from("c48d", "hex").toString();'],
-  ["builder", "export const e = (x: string) => Buffer.from(x, 'latin1');"],
-  ["builder", "export const e = Buffer.from([0xc4, 0x8d]).toString();"],
-  ["builder", "export const e = Buffer.of(0xc4, 0x8d).toString();"],
-  ["builder", 'export const e = Buffer["from"]("xIxhag==", "base64");'],
-  ["builder", "export const e = (k: 'from') => Buffer[k];"],
-  ["builder", "export const f = Buffer.from;"],
-  ["value", "const B = Buffer;\nexport const e = B.from([0xc4]);"],
-  ["value", "export const e = globalThis.Buffer;"],
-  // Codex review on #65: Buffer imported from node:buffer, also renamed.
-  ["builder", 'import { Buffer } from "node:buffer";\nexport const e = Buffer.from([196, 141]);'],
-  ["builder", 'import { Buffer as B } from "buffer";\nexport const e = B.of(196, 141);'],
-  ["value", 'import { Buffer as B } from "node:buffer";\nexport const e = [B];'],
-  // Review FAIL c.6899532807: Buffer reached through a namespace import.
-  [
-    "builder",
-    'import * as buffer from "node:buffer";\nexport const e = buffer.Buffer.from([196, 141]).toString();',
-  ],
-  ["builder", 'import * as b from "node:buffer";\nexport const e = b.Buffer.of(196, 141);'],
-  ["value", 'import * as b from "node:buffer";\nexport const B = b.Buffer;'],
-  ["value", "export const e = Reflect.get(Buffer, 'from');"],
   // Adversarial review of the contract (w780b): static forms it found.
   // Encoded forms (escapes as text, %, entities, data:, punycode) are DAN-784.
   ["letter", "export const e = /čekaj/u.source;"],
@@ -180,12 +148,6 @@ const failing: [messageId: string, code: string][] = [
   ["value", 'export const e = Reflect.get(String, "x");'],
   ["value", "export const e = ((f: unknown) => f)(String);"],
   ["builder", "export const e = Reflect.get(String.prototype, 1);"],
-  ["builder", 'export const e = Buffer.alloc(2, "c48d", "hex").toString();'],
-  ["builder", 'export const e = (b: Buffer) => b.fill("c48d", "hex");'],
-  ["builder", 'export const e = (b: Buffer) => b.write("c48d", "hex");'],
-  ["builder", "export const e = Buffer.from(new Uint8Array([196, 141])).toString();"],
-  ["builder", "export const e = Buffer.concat([new Uint8Array([196, 141])]).toString();"],
-  ["builder", "export const e = Buffer.copyBytesFrom(new Uint8Array([196, 141]));"],
   ["builder", "export const e = new TextDecoderStream();"],
   ["builder", "export const e = new Response(new Uint8Array([196, 141])).text();"],
   ["builder", "export const e = new Blob([new Uint8Array([196, 141])]).text();"],
@@ -248,26 +210,11 @@ describe("DECODER_ALLOWED", () => {
     expect(await ids("export const e = String.fromCharCode(1);", file)).toContain("builder");
   });
 
-  it("allows Buffer.from with an encoding only in listed files", async () => {
-    const code = 'export const e = (x: string) => Buffer.from(x, "hex");';
-    expect(await ids(code, "server/domain/forensics/golden-vectors/load.ts")).toEqual([]);
-    expect(await ids(code, "server/domain/forensics/other.ts")).toContain("builder");
-    // Review FAIL c.6898809748: the exception is Buffer.from only.
-    const keys = "server/external/keys/ed25519-signature-encoding.ts";
-    for (const other of [
-      'export const e = Buffer.alloc(2, "c48d", "hex").toString();',
-      "export const e = Buffer.concat([new Uint8Array([196, 141])]).toString();",
-      'export const e = (b: Buffer) => b.fill("c48d", "hex");',
-      'export const e = (b: Buffer) => b.write("c48d", "hex");',
-    ])
-      expect(await ids(other, keys), other).toContain("builder");
-  });
-
   it("lists files that exist and use each listed builder", () => {
     for (const [file, names] of Object.entries(DECODER_ALLOWED)) {
       const source = readFileSync(path.join(ROOT, file), "utf8");
       for (const name of names) {
-        expect(BUILDER_NAMES.includes(name) || name === "Buffer.from", name).toBe(true);
+        expect(BUILDER_NAMES.includes(name), name).toBe(true);
         expect(source.includes(name), `${file}: ${name}`).toBe(true);
       }
     }

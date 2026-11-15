@@ -13,11 +13,12 @@
 // 2. Text builders are not allowed, whatever their arguments: `\u`, `\x` and
 //    `\u{}` escapes that give a non-ASCII character; the names in BUILDER_NAMES
 //    wherever they stand (a reference, a member, a key, an import, a
-//    destructuring) and in any string that contains them; `String` and
-//    `Buffer` as values other than `String(x)`, `new String(x)` and a static
-//    member read (so an alias, `globalThis.String`, a computed member or
-//    `Reflect.get(String, …)` fail); `String.raw`; `Buffer.from` with a second
-//    argument or an array; `Buffer.of`.
+//    destructuring) and in any string that contains them; `String` as a value
+//    other than `String(x)`, `new String(x)` and a static member read (so an
+//    alias, `globalThis.String`, a computed member or `Reflect.get(String, …)`
+//    fail); `String.raw`. Buffer builders (`Buffer.from`, `alloc`, `concat`,
+//    `fill`, `write` and every way to reach Buffer) are DAN-784 (orchestrator
+//    cut on #65, c.6899577620).
 // 3. Exceptions: tests and fixtures (TEXT_EXEMPT), the transitional
 //    TEXT_TRANSITIONAL, and DECODER_ALLOWED, the closed list of files that
 //    decode input at run time (a request body, a path segment, a signature).
@@ -66,28 +67,20 @@ export const BUILDER_NAMES: readonly string[] = [
   ...["fromCharCode", "fromCodePoint", "atob", "TextDecoder", "StringDecoder"],
   ...["decodeURIComponent", "decodeURI", "unescape", "TextDecoderStream", "domainToUnicode"],
   // Locale data of the runtime (Intl, toLocale*) is Croatian text too.
-  ...["Intl", "toLocaleString", "toLocaleDateString", "toLocaleTimeString", "copyBytesFrom"],
+  ...["Intl", "toLocaleString", "toLocaleDateString", "toLocaleTimeString"],
 ];
 // Modules whose default or namespace binding may only be read by a static member.
-const NAMESPACE_MODULES = ["node:util", "node:url", "node:buffer", "node:string_decoder"];
-// Encodings that turn text into other bytes (utf8 is the identity for text).
-const ENCODINGS = new Set(
-  ["hex", "base64", "base64url", "latin1", "binary", "ascii", "ucs2", "ucs-2", "utf16le"].concat(
-    "utf-16le",
-  ),
-);
+const NAMESPACE_MODULES = ["node:util", "node:url", "node:string_decoder"];
 // Constructors whose `.text()` decodes bytes given to them.
 const BYTE_HOLDERS = ["Response", "Blob", "File"];
-/** Members of String and Buffer that are builders; `from` only with an encoding or array. */
+/** Members of String that are builders. */
 const STRING_BUILDERS = new Set(["raw", "fromCharCode", "fromCodePoint"]);
-const BUFFER_BUILDERS = new Set(["of", "copyBytesFrom"]);
 // Names under which the global object is reachable.
 const GLOBAL_HOLDERS = ["globalThis", "global", "window", "self"];
 // Array methods that may take String as a callback (`xs.map(String)`).
 const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex", "flatMap"];
 /**
- * Files that decode input at run time, each with the builders it may use
- * (`Buffer.from` stands for Buffer.from with an encoding). A closed list:
+ * Files that decode input at run time, each with the builders it may use. A closed list:
  * tests/lint/hardcoded-text.test.ts checks each entry is used. Contract
  * Ductus#1836 c.6896182732.
  */
@@ -100,17 +93,12 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/docs-links.ts": ["decodeURI"],
   "server/domain/document/snapshot.ts": ["TextDecoder"],
   // Storage answers and checksums.
-  "server/external/storage/s3-evidence-payload-store.ts": ["TextDecoder", "Buffer.from"],
+  "server/external/storage/s3-evidence-payload-store.ts": ["TextDecoder"],
   // Evidence formats: UTF-8 payloads and base64url signatures.
   "server/domain/forensics/evidence-chain-v2.ts": ["TextDecoder"],
   "server/domain/forensics/evidence-timing-v1.ts": ["TextDecoder"],
   "server/domain/forensics/evidence-receipt-verifier.ts": ["atob"],
   "server/domain/forensics/submission-receipt-verifier-v2.ts": ["atob"],
-  "server/domain/forensics/golden-vectors/load.ts": ["Buffer.from"],
-  // Keys and tokens: base64url and hex encodings of bytes.
-  "server/external/keys/ed25519-signature-encoding.ts": ["Buffer.from"],
-  "server/external/keys/persistent-development-ed25519-signer.ts": ["Buffer.from"],
-  "server/external/srce-auth/logout-token.ts": ["Buffer.from"],
   // The contract fake server reads request bodies and paths (test code, U8).
   "server/contracts/generated/fake-server/index.ts": ["TextDecoder", "decodeURIComponent"],
 };
@@ -278,9 +266,8 @@ export const noHardcodedText: Rule.RuleModule = {
     // literal first argument (that would be text in another form).
     function allowedUse(node: Loose, name: string): boolean {
       if (!allowed.includes(name)) return false;
-      // The argument of `new TextDecoder(…)` is an encoding name, and
-      // Buffer.from takes binary constants and an encoding name as literals.
-      if (name === "TextDecoder" || name === "Buffer.from") return true;
+      // The argument of `new TextDecoder(…)` is an encoding name.
+      if (name === "TextDecoder") return true;
       let call = node.parent;
       if (call?.type === "MemberExpression" && call.object === node) call = call.parent;
       const isCall = call?.type === "CallExpression" || call?.type === "NewExpression";
@@ -300,7 +287,7 @@ export const noHardcodedText: Rule.RuleModule = {
       if (!allowedUse(target, name)) context.report({ node, messageId: "builder", data: { name } });
     }
 
-    // A value use of String or Buffer: a call, `new`, or a static member read.
+    // A value use of String: a call, `new`, or a static member read.
     function checkValue(node: Loose, name: string): void {
       for (let up = node.parent; up; up = up.parent) if (up.type === "TSTypeQuery") return;
       const parent = node.parent;
@@ -320,38 +307,16 @@ export const noHardcodedText: Rule.RuleModule = {
         return;
       }
       const member = memberName(parent);
-      const builders = name === "String" ? STRING_BUILDERS : BUFFER_BUILDERS;
       // `String.prototype` only as the object of a further static member.
       const next = parent.parent;
       const prototypeLeak =
         member === "prototype" &&
         !(next?.type === "MemberExpression" && next.object === parent && memberName(next) !== null);
-      if (member === null || builders.has(member) || prototypeLeak) {
+      if (member === null || STRING_BUILDERS.has(member) || prototypeLeak) {
         const shown = `${name}.${member ?? "[computed]"}`;
         context.report({ node: parent as Node, messageId: "builder", data: { name: shown } });
         return;
       }
-      if (name !== "Buffer" || !["from", "alloc", "concat"].includes(member)) return;
-      const call = parent.parent;
-      const args = call?.type === "CallExpression" && call.callee === parent ? call.arguments : [];
-      const bytes = (a?: Loose): boolean =>
-        a?.type === "ArrayExpression" || a?.type === "NewExpression";
-      const encoded =
-        member === "alloc"
-          ? (args?.length ?? 0) > 1
-          : member === "concat"
-            ? (args?.[0] as { elements?: Loose[] } | undefined)?.elements?.some(bytes) === true
-            : (args?.length ?? 0) > 1 || bytes(args?.[0]);
-      const called = call?.type === "CallExpression" && call.callee === parent;
-      // DECODER_ALLOWED names only Buffer.from; alloc and concat have no
-      // exception (review FAIL c.6898809748 on #65).
-      const excepted = member === "from" && allowedUse(node, "Buffer.from");
-      if (!called || (encoded && !excepted))
-        context.report({
-          node: parent as Node,
-          messageId: "builder",
-          data: { name: `Buffer.${member}` },
-        });
     }
 
     function checkSource(node: Node, source: Loose | null | undefined): void {
@@ -366,7 +331,7 @@ export const noHardcodedText: Rule.RuleModule = {
         const manager = context.sourceCode.scopeManager;
         const globalScope = manager?.globalScope;
         if (!manager || !globalScope) return;
-        const values = ["String", "Buffer"];
+        const values = ["String"];
         for (const reference of globalScope.through) {
           const id = reference.identifier as unknown as Loose;
           const typeOnly = (reference as { isValueReference?: boolean }).isValueReference === false;
@@ -389,28 +354,10 @@ export const noHardcodedText: Rule.RuleModule = {
         const member = node as unknown as Loose;
         const name = memberName(member);
         const holder = member.object?.type === "Identifier" ? (member.object.name ?? "") : "";
-        if ((name === "String" || name === "Buffer") && GLOBAL_HOLDERS.includes(holder))
+        if (name === "String" && GLOBAL_HOLDERS.includes(holder))
           context.report({ node, messageId: "value", data: { name } });
-        // Any other `x.Buffer` (a namespace import of node:buffer, review FAIL
-        // c.6899532807 on #65) gets the same checks as the global Buffer.
-        else if (name === "Buffer") checkValue(member, "Buffer");
       },
       "Identifier, PrivateIdentifier, JSXIdentifier": checkName,
-      // Bytes written from encoded text (`b.write(x, "hex")`, `b.fill(x, "base64")`).
-      CallExpression(node) {
-        const call = node as unknown as Loose;
-        const method = call.callee?.type === "MemberExpression" ? memberName(call.callee) : null;
-        if (method !== "fill" && method !== "write") return;
-        // The data is the first argument; an encoding comes after it.
-        const encoding = (call.arguments ?? [])
-          .slice(1)
-          .find(
-            (a) => a.type === "Literal" && typeof a.value === "string" && ENCODINGS.has(a.value),
-          );
-        // No exception: DECODER_ALLOWED names Buffer.from, not fill or write.
-        if (encoding)
-          context.report({ node, messageId: "builder", data: { name: String(encoding.value) } });
-      },
       // `new Response(bytes).text()`: bytes written in the source.
       NewExpression(node) {
         const call = node as unknown as Loose;
@@ -434,17 +381,6 @@ export const noHardcodedText: Rule.RuleModule = {
               context.report({ node: id as Node, messageId: "value", data: { name: spec } });
           }
         }
-      },
-      // `import { Buffer as B } from "node:buffer"` is the same Buffer.
-      ImportSpecifier(node: Node) {
-        const specifier = node as unknown as Loose & { imported?: Loose };
-        const spec = String(specifier.parent?.source?.value ?? "");
-        const imported = specifier.imported?.name ?? specifier.imported?.value;
-        if (!["node:buffer", "buffer"].includes(spec) || imported !== "Buffer") return;
-        for (const variable of context.sourceCode.getDeclaredVariables(node))
-          for (const reference of variable.references)
-            if ((reference as { isValueReference?: boolean }).isValueReference !== false)
-              checkValue(reference.identifier as unknown as Loose, "Buffer");
       },
       // A template is also read as one text, its expressions as word breaks.
       TemplateLiteral(node) {
