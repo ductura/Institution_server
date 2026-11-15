@@ -164,6 +164,13 @@ const failing: [messageId: string, code: string][] = [
   ["builder", 'import { Buffer } from "node:buffer";\nexport const e = Buffer.from([196, 141]);'],
   ["builder", 'import { Buffer as B } from "buffer";\nexport const e = B.of(196, 141);'],
   ["value", 'import { Buffer as B } from "node:buffer";\nexport const e = [B];'],
+  // Review FAIL c.6899532807: Buffer reached through a namespace import.
+  [
+    "builder",
+    'import * as buffer from "node:buffer";\nexport const e = buffer.Buffer.from([196, 141]).toString();',
+  ],
+  ["builder", 'import * as b from "node:buffer";\nexport const e = b.Buffer.of(196, 141);'],
+  ["value", 'import * as b from "node:buffer";\nexport const B = b.Buffer;'],
   ["value", "export const e = Reflect.get(Buffer, 'from');"],
   // Adversarial review of the contract (w780b): static forms it found.
   // Encoded forms (escapes as text, %, entities, data:, punycode) are DAN-784.

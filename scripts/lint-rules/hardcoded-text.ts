@@ -391,6 +391,9 @@ export const noHardcodedText: Rule.RuleModule = {
         const holder = member.object?.type === "Identifier" ? (member.object.name ?? "") : "";
         if ((name === "String" || name === "Buffer") && GLOBAL_HOLDERS.includes(holder))
           context.report({ node, messageId: "value", data: { name } });
+        // Any other `x.Buffer` (a namespace import of node:buffer, review FAIL
+        // c.6899532807 on #65) gets the same checks as the global Buffer.
+        else if (name === "Buffer") checkValue(member, "Buffer");
       },
       "Identifier, PrivateIdentifier, JSXIdentifier": checkName,
       // Bytes written from encoded text (`b.write(x, "hex")`, `b.fill(x, "base64")`).
