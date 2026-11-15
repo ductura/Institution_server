@@ -207,17 +207,30 @@ function memberName(node: Loose | undefined, fold: (n: Loose) => string[] | null
  */
 function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[] | null {
   const seen = new Set<Loose>();
-  function items(node: Loose): string[] | null {
-    // The elements of an array, spread arrays and strings flattened, first alternative each.
-    const out: string[] = [];
+  // Each node is folded once per file: a const shared by later ones
+  // (`const n2 = n1 + n1`) would otherwise be folded again on every path.
+  const done = new Map<Loose, string[] | null>();
+  /**
+   * The elements of an array as lists of items, one list per combination of
+   * the elements' alternatives (a ternary in an element gives two), at most
+   * MAX_ALTERNATIVES; spread arrays and strings are flattened.
+   */
+  function items(node: Loose): string[][] | null {
+    let combos: string[][] = [[]];
+    const add = (choices: string[][]): void => {
+      combos = combos
+        .flatMap((c) => choices.map((choice) => [...c, ...choice]))
+        .slice(0, MAX_ALTERNATIVES);
+    };
     for (const e of node.elements ?? []) {
       if (e?.type === "SpreadElement") {
         const arg = e.argument as Loose;
-        const inner = arg.type === "ArrayExpression" ? items(arg) : fold(arg)?.[0]?.split("");
-        out.push(...(inner ?? [HOLE]));
-      } else out.push(fold(e)?.[0] ?? HOLE);
+        const inner =
+          arg.type === "ArrayExpression" ? items(arg) : fold(arg)?.map((t) => t.split(""));
+        add(inner ?? [[HOLE]]);
+      } else add((fold(e) ?? [HOLE]).map((t) => [t]));
     }
-    return out.some((i) => i !== HOLE) ? out : null;
+    return combos.some((c) => c.some((i) => i !== HOLE)) ? combos : null;
   }
   function call(node: Loose): string[] | null {
     const callee = node.callee;
@@ -230,10 +243,14 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
     const object = callee?.object;
     if (!name || !object) return null;
     if (name === "join" && object.type === "ArrayExpression") {
-      const list = items(object);
-      if (!list) return null;
+      const combos = items(object);
+      if (!combos) return null;
       const seps = args[0] ? (fold(args[0]) ?? [HOLE]) : [","];
-      return [...seps.map((sep) => list.join(sep)), list.join(""), list.join(" ")];
+      return combos.flatMap((list) => [
+        ...seps.map((sep) => list.join(sep)),
+        list.join(""),
+        list.join(" "),
+      ]);
     }
     const base = fold(object);
     if (!base) return null;
@@ -243,9 +260,12 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
   }
   function fold(node: Loose | undefined | null): string[] | null {
     if (!node || seen.has(node)) return null;
+    if (done.has(node)) return done.get(node) ?? null;
     seen.add(node);
     try {
-      return foldNode(node);
+      const result = foldNode(node);
+      done.set(node, result);
+      return result;
     } finally {
       seen.delete(node);
     }
@@ -280,11 +300,11 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
       case "SequenceExpression":
         return fold(node.expressions?.at(-1));
       case "ArrayExpression": {
-        const list = items(node);
+        const combos = items(node);
         // Joined as words; a multi-part machine token (`ne_radi`, `NOT_FOUND`)
         // is one value of a list, not a word of a sentence.
         const word = (i: string): string => (/[._-]|^[A-Z0-9]+$/u.test(i) && isToken(i) ? HOLE : i);
-        return list ? [list.join(""), list.map(word).join(" ")] : null;
+        return combos ? combos.flatMap((list) => [list.join(""), list.map(word).join(" ")]) : null;
       }
       case "CallExpression":
         return call(node);

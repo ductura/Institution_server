@@ -156,6 +156,12 @@ tester.run("no-hardcoded-text", rule, {
       "sentence",
     ),
     bad('export const e = "Prijava je obavezna.".trim().toUpperCase();', "sentence"),
+    // Codex review on #51: every alternative of an array element is joined.
+    bad(
+      'export const e = (on: boolean) => ["Prijava", on ? "x" : "je", "obavezna."].join(" ");',
+      "sentence",
+    ),
+    bad('export const e = (on: boolean) => ["Prijava", on ? "x" : "je", "obavezna."];', "sentence"),
     // Names and regex sources.
     bad("export const o = { nijePronađeno: 0 };", "letter"),
     bad("export function pronađeno(): void {}", "letter"),
@@ -174,6 +180,30 @@ tester.run("no-hardcoded-text", rule, {
     bad('export const e = atob("UHJpamF2YSBqZSBvYmF2ZXpuYS4K");', "sentence"),
     bad('export const e = decodeURIComponent("%50rijava%20je%20obavezna%");', "sentence"),
   ],
+});
+
+describe("folding cost", () => {
+  it("folds a chain of shared constants in linear time (Codex review on #51)", async () => {
+    const lines = ["const n0 = 1;"];
+    for (let i = 1; i <= 40; i++) lines.push(`const n${i} = n${i - 1} + n${i - 1};`);
+    lines.push("export const last = n40;");
+    const eslint = new ESLint({
+      cwd: ROOT,
+      overrideConfigFile: true,
+      overrideConfig: [
+        {
+          files: ["**/*.ts"],
+          languageOptions: { parser: tseslint.parser },
+          plugins: { local: localPlugin },
+          rules: { [RULE]: "error" },
+        },
+      ],
+    });
+    const started = performance.now();
+    const [result] = await eslint.lintText(lines.join("\n"), { filePath: file });
+    expect(result?.messages).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(5000);
+  }, 20000);
 });
 
 describe("textProblem", () => {
