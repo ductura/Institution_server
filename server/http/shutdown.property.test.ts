@@ -40,6 +40,7 @@ function manualClock(): Clock & { advance(ms: number): void } {
     clearTimeout(handle) {
       timers.delete(handle as number);
     },
+    now: () => now,
     advance(ms) {
       now += ms;
       for (const [id, timer] of [...timers].sort((a, b) => a[1].at - b[1].at)) {

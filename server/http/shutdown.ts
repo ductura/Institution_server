@@ -20,6 +20,8 @@ export type Ticket = { release(): void };
 export type Clock = {
   setTimeout(fn: () => void, ms: number): unknown;
   clearTimeout(handle: unknown): void;
+  /** Milliseconds on a monotonic scale; read when a timer may be overdue. */
+  now(): number;
 };
 
 export type ShutdownCoordinator = {
@@ -36,6 +38,7 @@ export type ShutdownCoordinator = {
 const realClock: Clock = {
   setTimeout: (fn, ms) => setTimeout(fn, ms),
   clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  now: () => performance.now(),
 };
 
 export function createShutdownCoordinator(
@@ -118,7 +121,10 @@ export const FLUSH_LOGS: ShutdownHook = {
   run: async () => {
     await Promise.all(
       [process.stdout, process.stderr].map(
-        (stream) => new Promise<void>((resolve) => stream.write("", () => resolve())),
+        (stream) =>
+          new Promise<void>((resolve, reject) =>
+            stream.write("", (error) => (error ? reject(error) : resolve())),
+          ),
       ),
     );
   },
@@ -149,6 +155,10 @@ export function installShutdown(
   let phase: "requests" | "hooks" = "requests";
   let hook: string | undefined;
   let timer: unknown;
+  let startedAt = 0;
+  // A step that blocked the event loop past the deadline returns before the
+  // overdue timer can run, so the deadline is also checked by the clock.
+  const overdue = () => clock.now() - startedAt >= coordinator.graceMs;
 
   const end = (code: 0 | 1) => {
     if (ended) return;
@@ -165,6 +175,7 @@ export function installShutdown(
   const run = async () => {
     const result = await coordinator.stop();
     if (result.outcome === "deadline") return expire(result.unfinished);
+    if (overdue()) return expire(coordinator.active());
     phase = "hooks";
     let failed = false;
     for (const next of hooks) {
@@ -176,6 +187,7 @@ export function installShutdown(
         failed = true;
         log("shutdown.hook_failed", { hook: next.name, error: errorName(error) });
       }
+      if (overdue()) return expire(coordinator.active());
     }
     hook = undefined;
     end(failed ? 1 : 0);
@@ -183,6 +195,7 @@ export function installShutdown(
   const onSignal = () => {
     if (signalled) return;
     signalled = true;
+    startedAt = clock.now();
     timer = clock.setTimeout(() => expire(coordinator.active()), coordinator.graceMs);
     void run().catch((error: unknown) => {
       log("shutdown.failed", { error: errorName(error) });
