@@ -76,6 +76,17 @@ const SEQUENCES = `SELECT pg_catalog.format('%I.%I', schemaname, sequencename) A
   COALESCE(last_value, start_value)::text AS value, (last_value IS NOT NULL) AS called
   FROM pg_catalog.pg_sequences`;
 
+type Sequence = { name: string; value: string; called: boolean };
+
+// One baseline per database while any handle to it is open, so a second
+// handle never takes the sequences the first one moved as its baseline
+// (Codex review c.4579724007).
+const baselines = new Map<string, { sequences: Sequence[]; handles: number }>();
+
+// The savepoint around every call: rolling back to it proves the call left
+// the test's own transaction in place (Codex review c.4579724002).
+const CALL = "ductura_test_call";
+
 /** The migrated database of `target`, one transaction per test. */
 export async function openPostgresDatabase(target: Database): Promise<TestDatabase> {
   const client = new pg.Client({
@@ -84,27 +95,49 @@ export async function openPostgresDatabase(target: Database): Promise<TestDataba
   });
   await client.connect();
   let xid = "";
-  let sequences: { name: string; value: string; called: boolean }[] = [];
+  let baseline: { sequences: Sequence[]; handles: number } | undefined;
+  const txid = async (): Promise<string> =>
+    (await client.query<{ x: string }>("SELECT pg_catalog.txid_current()::text AS x")).rows[0]
+      ?.x as string;
   const begin = async (): Promise<void> => {
     await client.query("BEGIN");
-    xid = (await client.query<{ x: string }>("SELECT pg_catalog.txid_current()::text AS x")).rows[0]
-      ?.x as string;
+    xid = await txid();
   };
   // Back to the session the test got: no prepared statement, advisory lock,
   // temporary object or setting, and every sequence where it was.
   const rollback = async (): Promise<void> => {
     await client.query("ROLLBACK");
     await client.query("DISCARD ALL");
-    for (const { name, value, called } of sequences)
+    for (const { name, value, called } of baseline?.sequences ?? [])
       await client.query("SELECT pg_catalog.setval($1::regclass, $2::bigint, $3)", [
         name,
         value,
         called,
       ]);
   };
-  // A COMMIT or ROLLBACK inside the test's SQL ends the transaction: checked
-  // after every call, failed ones too, since a commit may precede the error.
+  // The test's SQL ended its transaction: the database is marked for good.
+  // DISCARD ALL first, so a role the test set after its COMMIT cannot stop
+  // the marker (Codex review c.4579724004).
+  const committed = async (): Promise<never> => {
+    let marker: unknown = null;
+    try {
+      await client.query("ROLLBACK");
+      await client.query("DISCARD ALL");
+      await client.query(`CREATE TABLE IF NOT EXISTS ${DIRTY} ()`);
+    } catch (error) {
+      marker = error;
+    }
+    if (marker !== null)
+      throw new Error("the test ended its own transaction, and the database could not be marked", {
+        cause: marker,
+      });
+    throw new Error("the test ended its own transaction; its changes may be committed");
+  };
+  // Every call runs after SAVEPOINT; afterwards the transaction must be the
+  // same one. A failed call is rolled back to the savepoint, which exists only
+  // in the test's own transaction, so a COMMIT; BEGIN; <error> is caught too.
   const run = async <T>(sql: string, params?: unknown[]): Promise<pg.QueryResult> => {
+    await client.query(`SAVEPOINT ${CALL}`);
     let failure: unknown = null;
     let result: pg.QueryResult | null = null;
     try {
@@ -112,19 +145,21 @@ export async function openPostgresDatabase(target: Database): Promise<TestDataba
     } catch (error) {
       failure = error;
     }
-    let same = true;
+    if (failure !== null) {
+      try {
+        await client.query(`ROLLBACK TO SAVEPOINT ${CALL}`);
+      } catch {
+        return committed();
+      }
+    }
+    let now: string;
     try {
-      const now = await client.query<{ x: string }>("SELECT pg_catalog.txid_current()::text AS x");
-      same = now.rows[0]?.x === xid;
-    } catch (error) {
-      // 25P02: the test's transaction is aborted, but it is still ours.
-      if ((error as { code?: string }).code !== "25P02") throw error;
+      now = await txid();
+    } catch {
+      return committed();
     }
-    if (!same) {
-      await client.query("ROLLBACK");
-      await client.query(`CREATE TABLE IF NOT EXISTS ${DIRTY} ()`);
-      throw new Error("the test ended its own transaction; its changes may be committed");
-    }
+    if (now !== xid) return committed();
+    await client.query(`RELEASE SAVEPOINT ${CALL}`).catch(() => committed());
     if (failure !== null) throw failure;
     return result as pg.QueryResult<T & pg.QueryResultRow>;
   };
@@ -145,13 +180,18 @@ export async function openPostgresDatabase(target: Database): Promise<TestDataba
       checked.set(`${target.name}\0${target.migrationsDir}`, check);
     }
     await check;
-    sequences = (await client.query<{ name: string; value: string; called: boolean }>(SEQUENCES))
-      .rows;
+    baseline = baselines.get(target.name);
+    if (baseline === undefined) {
+      baseline = { sequences: (await client.query<Sequence>(SEQUENCES)).rows, handles: 0 };
+      baselines.set(target.name, baseline);
+    }
+    baseline.handles += 1;
     await begin();
   } catch (error) {
     await client.end();
     throw error;
   }
+  const opened = baseline;
   return {
     name: target.name,
     engine: "postgres",
@@ -170,6 +210,8 @@ export async function openPostgresDatabase(target: Database): Promise<TestDataba
         await rollback();
       } finally {
         await client.end();
+        opened.handles -= 1;
+        if (opened.handles === 0) baselines.delete(target.name);
       }
     },
   };

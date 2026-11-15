@@ -63,6 +63,20 @@ describe("createTestDatabase on real PostgreSQL", () => {
     const b = track(await createTestDatabase("main", { authority: true }));
     expect((await b.query("SELECT pg_try_advisory_lock(785785) AS l")).rows).toEqual([{ l: true }]);
   });
+
+  it("overlapping handles share one sequence baseline, in any closing order", async () => {
+    const seq =
+      "SELECT last_value::text AS v, is_called AS c FROM collaboration.revision_request_seq";
+    const first = await createTestDatabase("main", { authority: true });
+    const before = (await first.query(seq)).rows;
+    await first.exec("SELECT nextval('collaboration.revision_request_seq')");
+    const second = await createTestDatabase("main", { authority: true });
+    await second.exec("SELECT nextval('collaboration.revision_request_seq')");
+    await first.close();
+    await second.close();
+    const after = track(await createTestDatabase("main", { authority: true }));
+    expect((await after.query(seq)).rows).toEqual(before);
+  });
 });
 
 // Detection on a throwaway database of the local cluster: a test that ends
@@ -106,6 +120,10 @@ describe("a test that ends its own transaction", () => {
     "COMMIT AND CHAIN",
     "COMMIT; SELECT 1/0",
     "ROLLBACK; CREATE TABLE public.escaped (v int)",
+    // Codex review c.4579724002 and c.4579724004.
+    "CREATE TABLE public.escaped (v int); COMMIT; BEGIN; SELECT 1/0",
+    "CREATE TABLE public.escaped (v int); COMMIT; SET ROLE ductus_app",
+    "CREATE TABLE public.escaped (v int); COMMIT; SET SESSION AUTHORIZATION ductus_app",
   ])("fails (%s), and the database is refused from then on", async (end) => {
     await fresh();
     const db = track(await openTestDatabase("probe", "postgres", {}, [probe]));
@@ -115,12 +133,21 @@ describe("a test that ends its own transaction", () => {
     );
   });
 
-  it("an aborted transaction is still the test's own", async () => {
+  it("a failed call is undone and the test's transaction goes on", async () => {
     await fresh();
     const db = track(await openTestDatabase("probe", "postgres", {}, [probe]));
-    await expect(db.exec("SELECT 1/0")).rejects.toThrow(/division by zero/u);
+    await db.exec("CREATE TABLE public.kept (v int)");
+    await expect(db.exec("INSERT INTO public.kept VALUES (1); SELECT 1/0")).rejects.toThrow(
+      /division by zero/u,
+    );
+    expect((await db.query("SELECT count(*)::int AS n FROM public.kept")).rows).toEqual([{ n: 0 }]);
     await db.reset();
-    expect((await db.query("SELECT 1 AS v")).rows).toEqual([{ v: 1 }]);
+    expect((await db.query("SELECT to_regclass('public.kept')::text AS t")).rows).toEqual([
+      { t: null },
+    ]);
+    // Nothing was committed, so the database is not marked.
+    const again = track(await openTestDatabase("probe", "postgres", {}, [probe]));
+    expect(again.engine).toBe("postgres");
   });
 
   it("refuses settings sent at connection (PGOPTIONS)", async () => {

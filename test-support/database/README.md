@@ -32,6 +32,8 @@ Unit test (`create-test-database.test.ts`) drži globove projekata, skripte i to
 - URL dolazi iz `compose.yaml`: objavljeni port i javni lokalni `POSTGRES_USER` i `POSTGRES_PASSWORD` servisa iz unosa (iste vrijednosti koristi CI). Prolazi samo `127.0.0.1` na lokalnom portu.
 - Prije prvog testa provjerava da `schema_migrations` sadrži točno verzije iz mape migracija i da veza nema postavki s klijenta (`PGOPTIONS`).
 - `reset()` i `close()`: `ROLLBACK`, `DISCARD ALL` (pripremljene naredbe, savjetodavna zaključavanja, privremeni objekti, postavke) i vraćanje svih sekvenci na vrijednost s otvaranja.
+- Svaki poziv ide iza `SAVEPOINT`. Poziv koji padne vraća se na tu točku, pa transakcija testa ide dalje bez stanja iz neuspjelog poziva. Točka postoji samo u transakciji testa, pa se otkriva i `COMMIT; BEGIN; <greška>`.
+- Više otvorenih ručki iste baze dijeli jedno ishodište sekvenci, pa redoslijed zatvaranja ne mijenja što sljedeći test vidi.
 - Ako SQL testa sam završi transakciju (`COMMIT`, `ROLLBACK`, `COMMIT AND CHAIN`, i kad nakon njih slijedi greška), test pada, a baza dobiva tablicu `public.ductura_test_committed`. Od tada je svako otvaranje odbija, u svakom procesu, dok se baza ne migrira ispočetka.
 - Granice:
   - Test koji treba commit ili drugu prijavu ostaje u `tests/db` (projekt `database`).
