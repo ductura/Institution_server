@@ -5,7 +5,7 @@
 // check is passed in so the package keeps importing nothing but TypeBox.
 import { Type, type TSchema } from "@sinclair/typebox";
 
-import { closed, errorBody, type RouteContract } from "./schema/index.ts";
+import { closed, errorBody, type ErrorSpec, type RouteContract } from "./schema/index.ts";
 
 const Headers = Type.Record(Type.String(), Type.String());
 
@@ -69,13 +69,17 @@ export type SchemaCheck = (schema: TSchema, value: unknown) => boolean;
  * Every problem with a set of vector files (file name without .json -> content),
  * or an empty list. Each route needs a file, a vector for each success status
  * and one for each error code; every answer must match the route's schemas.
+ * A shared error (SHARED_ERRORS, e.g. 500 internal) may be a vector of any
+ * route and needs one vector in at least one file.
  */
 export function checkVectors(
   routes: readonly RouteContract[],
   files: Readonly<Record<string, unknown>>,
   check: SchemaCheck,
+  shared: readonly ErrorSpec[] = [],
 ): string[] {
   const problems: string[] = [];
+  const seen = new Set<string>();
   const ids = new Set(routes.map((r) => r.id));
   for (const name of Object.keys(files).sort()) {
     if (!ids.has(name)) problems.push(`${name}.json: no route with this id`);
@@ -97,7 +101,8 @@ export function checkVectors(
     for (const vector of file.vectors) {
       if (names.has(vector.name)) at(`duplicate vector ${vector.name}`);
       names.add(vector.name);
-      for (const text of checkVector(route, vector, check)) at(`${vector.name}: ${text}`);
+      if (vector.kind === "error") seen.add(String(vector.code));
+      for (const text of checkVector(route, vector, check, shared)) at(`${vector.name}: ${text}`);
     }
     for (const spec of route.responses) {
       if (!file.vectors.some((v) => v.kind === "success" && v.response.status === spec.status))
@@ -108,10 +113,19 @@ export function checkVectors(
         at(`no error vector for ${spec.status} ${spec.code}`);
     }
   }
+  for (const spec of shared) {
+    if (!seen.has(spec.code))
+      problems.push(`no vector for shared error ${spec.status} ${spec.code}`);
+  }
   return problems;
 }
 
-function checkVector(route: RouteContract, vector: Vector, check: SchemaCheck): string[] {
+function checkVector(
+  route: RouteContract,
+  vector: Vector,
+  check: SchemaCheck,
+  shared: readonly ErrorSpec[],
+): string[] {
   const problems: string[] = [];
   const { request, response } = vector;
   if (request.body !== undefined && request.rawBody !== undefined)
@@ -135,7 +149,7 @@ function checkVector(route: RouteContract, vector: Vector, check: SchemaCheck): 
     }
     return problems;
   }
-  const spec = route.errors.find((e) => e.code === vector.code);
+  const spec = [...route.errors, ...shared].find((e) => e.code === vector.code);
   if (!spec) return [...problems, `code ${String(vector.code)} is not a contract error`];
   if (spec.status !== response.status)
     problems.push(`status ${response.status}, contract says ${spec.status}`);

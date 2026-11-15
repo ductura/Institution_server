@@ -88,3 +88,6 @@ export type Operations = {
 };
 
 export type OperationId = keyof Operations;
+
+/** Codes any route may answer besides its own (SHARED_ERRORS, e.g. 500 internal). */
+export type SharedErrorCode = "internal";

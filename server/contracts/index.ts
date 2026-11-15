@@ -2,6 +2,7 @@ import {
   authRoutes,
   evidenceRoutes,
   FALLBACK,
+  INTERNAL,
   platformRoutes,
   profileRoutes,
 } from "./routes/index.ts";
@@ -10,7 +11,8 @@ import type { RouteContract } from "./schema/index.ts";
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION } from "./version.ts";
 
-export { FALLBACK };
+export { FALLBACK, INTERNAL };
+export { SHARED_ERRORS } from "./routes/index.ts";
 export { MAX_COMMIT_BODY_BYTES } from "./routes/index.ts";
 export { checkInventory } from "./check.ts";
 export { INVENTORY, INVENTORY_SOURCE, PENDING } from "./inventory.ts";
