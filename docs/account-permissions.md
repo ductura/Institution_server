@@ -1,6 +1,6 @@
 # Vrste računa i tablica prava
 
-Tablica prava v2 kao podatak (S-1J.1-a, DAN-788). Kod je u [`server/roles/permissions.ts`](../server/roles/permissions.ts) i [`server/roles/account-kinds.ts`](../server/roles/account-kinds.ts). Test `server/roles/account-permissions-doc.test.ts` parsira tablicu niže i uspoređuje je s kodom u oba smjera: višak ili manjak retka ili stupca, prazna ćelija, nepoznata vrijednost i svaka razlika u ćeliji ruše test. Tko mijenja jedno, mijenja i drugo u istom PR-u.
+Tablica prava v2 kao podatak (S-1J.1-a, DAN-788). Kod je u [`server/roles/permissions.ts`](../server/roles/permissions.ts) i [`server/roles/account-kinds.ts`](../server/roles/account-kinds.ts). Test `server/roles/account-permissions-doc.test.ts` parsira tablicu niže i uspoređuje je s kodom u oba smjera: višak ili manjak retka ili stupca, prazna ćelija, nepoznata vrijednost, svaka razlika u ćeliji te prazan ili uvučen redak između oznaka ruše test. Tko mijenja jedno, mijenja i drugo u istom PR-u.
 
 ## Izvori
 
@@ -56,14 +56,14 @@ Opseg je gornja granica. Server uz njega uvijek provjerava odnos ili ustanovu ci
 | `manage_ip_rules`                     | `none`  | `none`     | `none`                    | `all`     | `all`            | v2 „IP pravila”                                |
 | `export_logs`                         | `none`  | `none`     | `none`                    | `all`     | `all`            | v2 „Preuzimanje zapisa (CSV, JSON)”            |
 | `backup_and_restore`                  | `none`  | `none`     | `none`                    | `all`     | `all`            | v2 „Backup i vraćanje”                         |
+| `edit_general_legal_texts`            | `none`  | `none`     | `none`                    | `all`     | `none`           | D-301, PRODUCT §3                              |
+| `edit_institution_legal_addendum`     | `none`  | `none`     | `own_institution`         | `none`    | `none`           | D-301, PRODUCT §3                              |
 | `delete_draft`                        | `own`   | `none`     | `none`                    | `none`    | `none`           | D-299 nacrt                                    |
 | `request_submitted_work_deletion`     | `own`   | `none`     | `none`                    | `none`    | `none`           | D-299 predani rad                              |
 | `approve_submitted_work_deletion`     | `none`  | `none`     | `own_institution`         | `none`    | `none`           | D-299 predani rad                              |
 | `request_personal_data_erasure`       | `own`   | `none`     | `none`                    | `none`    | `none`           | D-299 osobni podaci                            |
 | `execute_personal_data_erasure`       | `none`  | `none`     | `own_institution`         | `none`    | `none`           | D-299 osobni podaci                            |
 | `archive_course`                      | `none`  | `none`     | `own_institution`         | `none`    | `none`           | D-299 brisanje kolegija                        |
-| `edit_general_legal_texts`            | `none`  | `none`     | `none`                    | `all`     | `none`           | D-301, PRODUCT §3                              |
-| `edit_institution_legal_addendum`     | `none`  | `none`     | `own_institution`         | `none`    | `none`           | D-301, PRODUCT §3                              |
 
 <!-- permissions-table:end -->
 
@@ -71,6 +71,7 @@ Opseg je gornja granica. Server uz njega uvijek provjerava odnos ili ustanovu ci
 
 - **C-23:** nijedna vrsta računa sama ne dobiva sadržaj rada. Radnje sa sadržajem (`read_own_work`, `read_students_work`) primaju samo `none`, `own` ili `relation`; tip `CellFor` ne dopušta drugo, a test to ponavlja.
 - **Brisanje:** `app_admin` i `network_engineer` imaju `none` na svakoj radnji brisanja (D-299).
+- **Razred radnje:** svaka radnja je u točno jednom popisu (`CONTENT_ACTIONS`, `DELETION_ACTIONS`, `OTHER_ACTIONS`), a popis svih radnji s razredom je zakucan u testu. Nova radnja zato mijenja i test, pa review vidi njezin razred. Imena su samo mala slova ASCII i podvlaka.
 - **Bez praznine:** svaka ćelija ima točno jednu vrijednost iz popisa opsega.
 
 ## Izvan tablice

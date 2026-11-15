@@ -10,14 +10,15 @@ describe("server/roles public interface", () => {
       "CONTENT_ACTIONS",
       "CONTENT_SCOPES",
       "DELETION_ACTIONS",
-      "LOGIN_METHODS",
-      "PERMISSIONS",
+      "LOGIN_ROWS",
+      "OTHER_ACTIONS",
       "PERMISSION_ROWS",
       "ROLES_ROUTES",
       "ROLES_SCHEMAS",
       "SCOPES",
       "isAccountKind",
       "isAction",
+      "loginOf",
       "scopeOf",
     ]);
     expect(area.ROLES_ROUTES).toEqual([]);

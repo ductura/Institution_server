@@ -21,8 +21,8 @@ Samo `http`.
 - `ROLES_ROUTES`: popis ruta, za sada prazan (`routes.ts`);
 - `ROLES_SCHEMAS`: sheme, za sada prazne (`schemas.ts`);
 - `RolesService`: tip servisa bez članova (`service.ts`);
-- `ACCOUNT_KINDS`, `AccountKind`, `LOGIN_METHODS`, `isAccountKind`: pet vrsta računa i način prijave (`account-kinds.ts`);
-- `ACTIONS`, `SCOPES`, `PERMISSION_ROWS` (retci tablice), `PERMISSIONS` (pretraga), `scopeOf` i tipovi `PermissionRow`, `KindCells`, `CellFor`: tablica prava v2; `CONTENT_ACTIONS`, `CONTENT_SCOPES` i `DELETION_ACTIONS` za pravila C-23 i brisanja (`permissions.ts`).
+- `ACCOUNT_KINDS`, `AccountKind`, `LOGIN_ROWS`, `loginOf`, `isAccountKind`: pet vrsta računa i način prijave (`account-kinds.ts`);
+- `ACTIONS`, `SCOPES`, `PERMISSION_ROWS` (retci tablice), `scopeOf` (jedini put do ćelije) i tipovi `PermissionRow`, `KindCells`, `CellFor`: tablica prava v2; `CONTENT_ACTIONS`, `OTHER_ACTIONS`, `DELETION_ACTIONS` (svaka radnja je u točno jednom popisu) i `CONTENT_SCOPES` za pravila C-23 i brisanja (`permissions.ts`).
 
 ## Što ne smije uvoziti
 

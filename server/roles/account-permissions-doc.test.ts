@@ -25,12 +25,14 @@ function compareDoc(markdown: string): string[] {
   const ends = markdown.split(END).length - 1;
   if (starts !== 1 || ends !== 1) return [`expected one start and one end marker`];
   const body = markdown.slice(markdown.indexOf(START) + START.length, markdown.indexOf(END));
-  const lines = body.split("\n").filter((line) => line.trim() !== "");
+  // One table: only blank lines around it, every line inside starts with "|"
+  // at column 0, so no row can hide in a code block or a second paragraph.
+  const lines = body.replace(/^\n+|\n+$/g, "").split("\n");
   const problems: string[] = [];
   for (const line of lines) {
-    if (!line.trim().startsWith("|")) problems.push(`not a table row: ${line}`);
+    if (!line.startsWith("|")) problems.push(`not a table row: ${JSON.stringify(line)}`);
   }
-  const rows = lines.filter((line) => line.trim().startsWith("|")).map(splitRow);
+  const rows = lines.filter((line) => line.startsWith("|")).map(splitRow);
   const [header, separator, ...data] = rows;
   if (JSON.stringify(header) !== JSON.stringify(HEADER)) {
     problems.push(`header ${JSON.stringify(header)} is not ${JSON.stringify(HEADER)}`);
@@ -76,7 +78,7 @@ function rowOf(action: string): string {
 }
 
 describe("docs/account-permissions.md", () => {
-  it("has the same table as PERMISSIONS", () => {
+  it("has the same table as the code", () => {
     expect(compareDoc(DOC)).toEqual([]);
   });
 
@@ -122,6 +124,10 @@ describe("docs/account-permissions.md", () => {
   });
 
   it("fails on a row hidden outside the table syntax", () => {
-    expect(compareDoc(DOC.replace(END, `- \`export_logs\`: all\n${END}`))).toHaveLength(1);
+    expect(compareDoc(DOC.replace(END, `- \`export_logs\`: all\n${END}`))).toContain(
+      'not a table row: "- `export_logs`: all"',
+    );
+    const indented = `\n    ${rowOf("export_logs")}\n`;
+    expect(compareDoc(DOC.replace(END, `${indented}\n${END}`)).length).toBeGreaterThan(0);
   });
 });

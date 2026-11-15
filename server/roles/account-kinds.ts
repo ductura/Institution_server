@@ -3,17 +3,17 @@
 // separate account is still open, so it is not listed here.
 
 /** Account kinds, in the column order of docs/account-permissions.md. */
-export const ACCOUNT_KINDS = [
+export const ACCOUNT_KINDS = Object.freeze([
   "student",
   "teacher",
   "institution_admin",
   "app_admin",
   "network_engineer",
-] as const;
+] as const);
 
 export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 
-export const LOGIN_METHODS_KNOWN = ["aai_eduhr", "fido2"] as const;
+export const LOGIN_METHODS_KNOWN = Object.freeze(["aai_eduhr", "fido2"] as const);
 
 export type LoginMethod = (typeof LOGIN_METHODS_KNOWN)[number];
 
@@ -35,10 +35,16 @@ export type EveryKindHasALogin = AssertTrue<
   [Exclude<AccountKind, (typeof LOGIN_ROWS)[number][0]>] extends [never] ? true : false
 >;
 
-/** How each kind signs in (D-297, D-09, D-16); the owner decides the app admin method later. */
-export const LOGIN_METHODS: ReadonlyMap<AccountKind, Login> = new Map<AccountKind, Login>(
-  LOGIN_ROWS,
-);
+// How each kind signs in (D-297, D-09, D-16). Not exported; read it through loginOf.
+const LOGIN_METHODS: ReadonlyMap<AccountKind, Login> = new Map<AccountKind, Login>(LOGIN_ROWS);
+
+/** Login rows, for tests; one row per kind in the order of ACCOUNT_KINDS. */
+export { LOGIN_ROWS };
+
+/** Login of `kind`; `not_built` for an unknown value, so nothing signs in by mistake. */
+export function loginOf(kind: unknown): Login {
+  return (isAccountKind(kind) ? LOGIN_METHODS.get(kind) : undefined) ?? "not_built";
+}
 
 /** True for a value that is one of the five account kinds. */
 export function isAccountKind(value: unknown): value is AccountKind {

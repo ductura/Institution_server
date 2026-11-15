@@ -10,38 +10,31 @@ import type { AccountKind } from "./account-kinds.ts";
  * `own_institution`, `own_institution_summary`: the account's institution, the
  * second as summarised logs only. `all`: every institution.
  */
-export const SCOPES = [
+export const SCOPES = Object.freeze([
   "none",
   "own",
   "relation",
   "own_institution",
   "own_institution_summary",
   "all",
-] as const;
+] as const);
 
 export type Scope = (typeof SCOPES)[number];
 
 /** Scopes allowed on work content: access comes only from a relation (C-23). */
-export const CONTENT_SCOPES = ["none", "own", "relation"] as const satisfies readonly Scope[];
+export const CONTENT_SCOPES = Object.freeze([
+  "none",
+  "own",
+  "relation",
+] as const satisfies readonly Scope[]);
 
 export type ContentScope = (typeof CONTENT_SCOPES)[number];
 
-/** Actions that reach the content of a student's work. */
-export const CONTENT_ACTIONS = ["read_own_work", "read_students_work"] as const;
+/** Actions that reach the content of a student's work (C-23). */
+export const CONTENT_ACTIONS = Object.freeze(["read_own_work", "read_students_work"] as const);
 
-/** Actions that delete or archive works, courses or personal data (D-299). */
-export const DELETION_ACTIONS = [
-  "delete_draft",
-  "request_submitted_work_deletion",
-  "approve_submitted_work_deletion",
-  "request_personal_data_erasure",
-  "execute_personal_data_erasure",
-  "archive_course",
-] as const;
-
-/** Every action, in the row order of docs/account-permissions.md. */
-export const ACTIONS = [
-  ...CONTENT_ACTIONS,
+/** Actions that neither reach work content nor delete anything. */
+export const OTHER_ACTIONS = Object.freeze([
   "manage_courses_and_members",
   "assign_student_teacher_roles",
   "assign_admin_network_engineer_roles",
@@ -55,10 +48,29 @@ export const ACTIONS = [
   "manage_ip_rules",
   "export_logs",
   "backup_and_restore",
-  ...DELETION_ACTIONS,
   "edit_general_legal_texts",
   "edit_institution_legal_addendum",
-] as const;
+] as const);
+
+/** Actions that delete or archive works, courses or personal data (D-299). */
+export const DELETION_ACTIONS = Object.freeze([
+  "delete_draft",
+  "request_submitted_work_deletion",
+  "approve_submitted_work_deletion",
+  "request_personal_data_erasure",
+  "execute_personal_data_erasure",
+  "archive_course",
+] as const);
+
+/**
+ * Every action, in the row order of docs/account-permissions.md. A new action
+ * goes into exactly one of the three lists, so its class shows in the diff.
+ */
+export const ACTIONS = Object.freeze([
+  ...CONTENT_ACTIONS,
+  ...OTHER_ACTIONS,
+  ...DELETION_ACTIONS,
+] as const);
 
 export type Action = (typeof ACTIONS)[number];
 
@@ -96,14 +108,14 @@ export const PERMISSION_ROWS = [
   ["manage_ip_rules", ["none", "none", "none", "all", "all"]],
   ["export_logs", ["none", "none", "none", "all", "all"]],
   ["backup_and_restore", ["none", "none", "none", "all", "all"]],
+  ["edit_general_legal_texts", ["none", "none", "none", "all", "none"]],
+  ["edit_institution_legal_addendum", ["none", "none", "own_institution", "none", "none"]],
   ["delete_draft", ["own", "none", "none", "none", "none"]],
   ["request_submitted_work_deletion", ["own", "none", "none", "none", "none"]],
   ["approve_submitted_work_deletion", ["none", "none", "own_institution", "none", "none"]],
   ["request_personal_data_erasure", ["own", "none", "none", "none", "none"]],
   ["execute_personal_data_erasure", ["none", "none", "own_institution", "none", "none"]],
   ["archive_course", ["none", "none", "own_institution", "none", "none"]],
-  ["edit_general_legal_texts", ["none", "none", "none", "all", "none"]],
-  ["edit_institution_legal_addendum", ["none", "none", "own_institution", "none", "none"]],
 ] as const satisfies readonly PermissionRow[];
 
 type AssertTrue<T extends true> = T;
@@ -113,8 +125,9 @@ export type EveryActionHasARow = AssertTrue<
   [Exclude<Action, (typeof PERMISSION_ROWS)[number][0]>] extends [never] ? true : false
 >;
 
-/** Lookup built from PERMISSION_ROWS: action → kind → scope. */
-export const PERMISSIONS: ReadonlyMap<Action, ReadonlyMap<AccountKind, Scope>> = new Map(
+// Lookup built from PERMISSION_ROWS: action → kind → scope. Not exported, so
+// no caller can change a cell at run time; read it through scopeOf.
+const PERMISSIONS: ReadonlyMap<Action, ReadonlyMap<AccountKind, Scope>> = new Map(
   PERMISSION_ROWS.map(([action, row]) => [
     action,
     new Map(ACCOUNT_KINDS.map((kind, index) => [kind, row[index] ?? "none"])),
