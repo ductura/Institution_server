@@ -23,6 +23,8 @@
     "contracts:breaking": "tsx scripts/check-breaking.ts",
     "release:stage": "node scripts/release/check.ts --stage-only",
     "release:check": "node scripts/release/check.ts",
+    "release:tag": "node scripts/release/tag.ts",
+    "release:tarball": "node scripts/release/tarball.ts",
     "db:up": "docker compose up -d --build --wait postgres-main && pnpm db:migrate",
     "db:up:native": "node scripts/db/native-db.ts up",
     "db:provision": "docker compose exec -T postgres-main psql -U ductus -d ductus -v ON_ERROR_STOP=1 -q < db/main/local/migrator.sql",
@@ -54,7 +56,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.72.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "yaml": "2.9.1"
   },
   "dependencies": {
     "@aws-sdk/client-kms": "3.1155.0",
