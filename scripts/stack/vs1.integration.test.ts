@@ -101,6 +101,29 @@ describe("pnpm stack:vs1 down without a state", () => {
   });
 });
 
+describe("down with a state that names an extra port (QA c.6900731697)", () => {
+  it("never connects to it, and checks only the stack's three ports", async () => {
+    // A listener on a free port stands in for 3000: down must not report it.
+    const other = createServer();
+    await new Promise<void>((resolve) => other.listen(0, "127.0.0.1", resolve));
+    const { port } = other.address() as { port: number };
+    let connections = 0;
+    other.on("connection", () => (connections += 1));
+    mkdirSync(STACK, { recursive: true });
+    const ports = { postgres: 54397, server: 4197, oidc: 4297, web: port };
+    writeFileSync(STATE, JSON.stringify({ ports, processes: {} }));
+    try {
+      const result = run(["down"], {});
+      expect(result.stderr).toMatch(/state\.json is unreadable/u);
+      expect(result.stderr).not.toMatch(new RegExp(`port ${port}`, "u"));
+      expect(result.status).toBe(0);
+      expect(connections).toBe(0);
+    } finally {
+      await new Promise<void>((resolve) => other.close(() => resolve()));
+    }
+  });
+});
+
 describe("down with the state of a failed up", () => {
   it("stops a process known only from memory, as the rollback of up passes it", async () => {
     const args = ["-e", "setTimeout(() => {}, 60000)"];

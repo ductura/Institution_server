@@ -263,7 +263,9 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
     console.error("postmaster.pid is not ours; left alone");
   let free = true;
   // Without a state the configured (or default) ports are checked, so an orphan still shows.
-  for (const [name, port] of Object.entries(state?.ports ?? stackPorts(process.env))) {
+  const ports = state?.ports ?? stackPorts(process.env);
+  for (const name of ["postgres", "server", "oidc"] as const) {
+    const port = ports[name];
     if (await portFree(port)) continue;
     console.error(`port ${port} (${name}) still answers`);
     free = false;

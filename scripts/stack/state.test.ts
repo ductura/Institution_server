@@ -83,6 +83,11 @@ describe("state", () => {
     // DAN-787: a port of another stack is never ours, so status and down never ask it.
     ['{"ports": {"postgres": 54360, "server": 3000, "oidc": 4180}, "processes": {}}'],
     ['{"ports": {"postgres": 3004, "server": 4100, "oidc": 4180}, "processes": {}}'],
+    // QA c.6900731697: an extra key would be a port down probes.
+    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "web": 3000}, "processes": {}}'],
+    [
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {"web": {"pid": 2, "marker": "x"}}}',
+    ],
   ])("calls the JSON %s unreadable, not a state", (text) => {
     const file = join(dir, "shape.json");
     writeFileSync(file, text);

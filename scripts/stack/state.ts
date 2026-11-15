@@ -91,7 +91,11 @@ export function isStackState(value: unknown): value is StackState {
       (isObject(entry) && Number.isInteger(entry.pid) && typeof entry.marker === "string")
     );
   });
-  return portsOk && processesOk;
+  // Exactly the known keys: down and status may only ever touch these ports.
+  const keysOk =
+    Object.keys(ports).sort().join() === "oidc,postgres,server" &&
+    Object.keys(processes).every((name) => (PROCESSES as readonly string[]).includes(name));
+  return keysOk && portsOk && processesOk;
 }
 
 /** The state; null when there is none, "unreadable" when the file is not a whole state. */
