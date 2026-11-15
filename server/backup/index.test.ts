@@ -1,0 +1,16 @@
+import { describe, expect, expectTypeOf, it } from "vitest";
+import * as area from "./index.ts";
+import type { BackupService } from "./index.ts";
+
+describe("server/backup public interface", () => {
+  it("exports only the empty routes and schemas", () => {
+    expect(Object.keys(area).sort()).toEqual(["BACKUP_ROUTES", "BACKUP_SCHEMAS"]);
+    expect(area.BACKUP_ROUTES).toEqual([]);
+    expect(area.BACKUP_SCHEMAS).toEqual({});
+  });
+
+  it("has a service type without members", () => {
+    expectTypeOf<keyof BackupService>().toEqualTypeOf<string>();
+    expectTypeOf<BackupService[string]>().toEqualTypeOf<never>();
+  });
+});

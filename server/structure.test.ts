@@ -18,6 +18,11 @@ const TEMPLATE_AREAS = [
   "settings",
   "external/email",
   "test-server",
+  "roles",
+  "legal",
+  "backup",
+  "deletion",
+  "downloads",
 ];
 
 const TEMPLATE = README_HEADINGS.map((h) => `${h}\n\nTekst.\n`).join("\n");
