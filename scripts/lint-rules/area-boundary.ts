@@ -132,10 +132,15 @@ export const areaBoundary: Rule.RuleModule = {
 
     // The message for an import of area `to` at `target`, or undefined when it is allowed.
     function crossProblem(target: string, to: string, typeOnly: boolean): string | undefined {
+      const row = fromArea === ENTRY ? ENTRY_IMPORTS : (AREA_IMPORTS[fromArea ?? ""] ?? []);
       if (isRoutes) {
-        if (!ROUTES_IMPORTS.includes(to) || (to === "http" && !typeOnly)) return "routes";
+        // routes.ts narrows the area's row, never widens it: only http (as a type)
+        // is added, and not in domain or contracts, which import nothing (rule 2).
+        if (!ROUTES_IMPORTS.includes(to)) return "routes";
+        if (to === "http" ? fromArea === undefined || fromArea in PURE_PACKAGES : !row.includes(to))
+          return "edge";
+        if (to === "http" && !typeOnly) return "routes";
       } else {
-        const row = fromArea === ENTRY ? ENTRY_IMPORTS : (AREA_IMPORTS[fromArea ?? ""] ?? []);
         if (!row.includes(to)) return "edge";
         const adapter = to === "database" || to.startsWith("external/");
         if (adapter && !typeOnly && !isTest && fromArea !== "http" && fromArea !== ENTRY)

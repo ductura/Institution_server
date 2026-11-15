@@ -156,6 +156,20 @@ const bypasses: Case[] = [
   ]),
   // the load.ts exemption is exact (review c.6888904929, point 1)
   ...all("server/domain/forensics/golden-vectors/load.ts-extra.ts", "pure", ["node:fs"]),
+  // routes.ts narrows the row of its area (review of 68b5fe5, c.6889953775)
+  {
+    file: "server/domain/routes.ts",
+    code: 'export { API_VERSION } from "../contracts/index.ts";\n',
+    messageId: "edge",
+  },
+  ...all("server/contracts/routes.ts", "edge", ["../http/index.ts"]),
+  {
+    file: "server/domain/routes.ts",
+    code: 'import type { Route } from "../http/index.ts";\n',
+    messageId: "edge",
+  },
+  ...all("server/settings/routes.ts", "edge", ["../contracts/index.ts"]),
+  ...all("server/traffic/routes.ts", "edge", ["../contracts/index.ts"]),
   // laundering through a folder outside server/
   ...all("server/log/x.ts", "outside", ["../../scripts/hop/index.ts", "../../db/x/index.ts"]),
   { file: "server/x.ts", code: imp("../scripts/index.ts"), messageId: "outside" },
