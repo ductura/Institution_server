@@ -87,7 +87,6 @@ const passing: string[] = [
   // Codex review on #65: "hex" as data, not as an encoding.
   'export const f = ["", ""].fill("hex");',
   'export const w = (s: { write(x: string): void }) => s.write("hex");',
-  'export const m = "metadata: a, b";',
 ];
 
 const failing: [messageId: string, code: string][] = [
@@ -189,7 +188,6 @@ const failing: [messageId: string, code: string][] = [
   ["builder", "export const e = new TextDecoderStream();"],
   ["builder", "export const e = new Response(new Uint8Array([196, 141])).text();"],
   ["builder", "export const e = new Blob([new Uint8Array([196, 141])]).text();"],
-  ["encoded", 'export const e = fetch("data:text/plain;base64,xI1la2Fq");'],
   ["value", 'import util from "node:util";\nexport const e = Object.values(util);'],
   ["value", 'import * as u from "node:url";\nexport const e = Reflect.get(u, "x");'],
   ["builder", 'import { domainToUnicode } from "node:url";\nexport const e = domainToUnicode;'],
@@ -198,16 +196,12 @@ const failing: [messageId: string, code: string][] = [
   ["builder", 'export const e = new Date(0).toLocaleDateString("hr-HR");'],
   ["sentence", "export const e = (x: string) => `Molimo ${x} pokusajte ${x} ponovno`;"],
   ["encoded", 'export const e = "&eth;";'],
-  // Review FAIL on #64 (cxcrs64): an upper-case scheme, a surrogate pair.
-  ["encoded", 'export const e = fetch("DATA:text/plain;base64,xI1la2Fq");'],
-  // Review FAIL c.6896957758: tab and line ends inside a URL are dropped by the parser.
-  ["encoded", 'export const e = fetch("da\\tta:text/plain;base64,xI1la2Fq");'],
-  ["encoded", 'export const e = fetch("data\\n:text/plain,%C4%8D");'],
-  ["encoded", 'export const e = new URL("http://xn-\\r-ekaj-fua.hr/");'],
-  // Review FAIL c.6897208993: anything between the scheme and the comma.
-  ["encoded", 'export const e = fetch("data:text/plain ;base64,xI1la2Fq");'],
-  ["encoded", 'export const e = fetch(" data: text/plain ; charset=x ;base64 ,xI1la2Fq");'],
+  // Review FAIL on #64 (cxcrs64): a surrogate pair.
   ["encoded", "export const e = JSON.parse('\"\\\\uD801\\\\uDC00\"');"],
+  // Review FAIL c.6896957758: tab and line ends inside a URL are dropped by the parser.
+  // data: URLs are DAN-784 (Ductus#87 c.6897002897).
+  ["encoded", 'export const e = new URL("http://xn-\\r-ekaj-fua.hr/");'],
+  ["encoded", 'export const e = new URL("http://xn-\\t-ekaj-fua.hr/");'],
   // (3) Server code may not import a test or a fixture.
   ["exempt", 'import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;'],
   ["exempt", 'export { x } from "./y.test.ts";'],

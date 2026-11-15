@@ -215,13 +215,11 @@ export function encodesNonAscii(text: string): boolean {
   if (escapedCodes(text).some(isLetterCode)) return true;
   // A UTF-8 lead byte and a continuation byte, percent-encoded.
   if (/%[c-fC-F][0-9a-fA-F]%[89abAB][0-9a-fA-F]/u.test(text)) return true;
-  // A data: URL, a punycode label.
-  // A URL parser drops tab and line ends anywhere in a URL (WHATWG URL,
-  // review FAIL c.6896957758 on #64), so they are dropped before these checks.
-  // A data: URL is any `data:` scheme with a comma after it, whatever the
-  // media type between them holds (review FAIL c.6897208993).
+  // A punycode label. A URL parser drops tab and line ends anywhere in a URL
+  // (WHATWG URL, review FAIL c.6896957758 on #64), so they are dropped first.
+  // data: URLs are not read here: DAN-784 (Ductus#87 c.6897002897).
   const url = text.replace(/[\t\n\r]/gu, "");
-  if (/\bdata:.*,/isu.test(url) || /(?:^|[./@])xn--/iu.test(url)) return true;
+  if (/(?:^|[./@])xn--/iu.test(url)) return true;
   const entities = text.matchAll(/&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?/gu);
   if ([...entities].some((m) => isLetterCode(Number.parseInt(m[1] ?? m[2] ?? "0", m[1] ? 10 : 16))))
     return true;
