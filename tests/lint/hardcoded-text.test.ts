@@ -87,6 +87,7 @@ const passing: string[] = [
   // Codex review on #65: "hex" as data, not as an encoding.
   'export const f = ["", ""].fill("hex");',
   'export const w = (s: { write(x: string): void }) => s.write("hex");',
+  'export const m = "metadata: a, b";',
 ];
 
 const failing: [messageId: string, code: string][] = [
@@ -203,6 +204,9 @@ const failing: [messageId: string, code: string][] = [
   ["encoded", 'export const e = fetch("da\\tta:text/plain;base64,xI1la2Fq");'],
   ["encoded", 'export const e = fetch("data\\n:text/plain,%C4%8D");'],
   ["encoded", 'export const e = new URL("http://xn-\\r-ekaj-fua.hr/");'],
+  // Review FAIL c.6897208993: anything between the scheme and the comma.
+  ["encoded", 'export const e = fetch("data:text/plain ;base64,xI1la2Fq");'],
+  ["encoded", 'export const e = fetch(" data: text/plain ; charset=x ;base64 ,xI1la2Fq");'],
   ["encoded", "export const e = JSON.parse('\"\\\\uD801\\\\uDC00\"');"],
   // (3) Server code may not import a test or a fixture.
   ["exempt", 'import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;'],
