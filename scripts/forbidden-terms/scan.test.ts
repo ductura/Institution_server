@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { scanLocales, type ScanReport } from "./scan.ts";
+import { SCAN_ERROR_CODES, scanLocales, type ScanReport } from "./scan.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const cp = (...codes: number[]): string => String.fromCodePoint(...codes);
@@ -76,13 +76,29 @@ describe("scanLocales on locales/", () => {
   it("reads every text and finds nothing", () => {
     const scan = report(REPO_ROOT);
     expect(found(scan)).toEqual([]);
-    expect(scan.read).toEqual({ "hr.ts": 1375, "en.ts": 1375, "hr.json": 20 });
+    expect(scan.read).toEqual({ "hr.ts": 1375, "en.ts": 1375, "hr.json": 28 });
+  });
+});
+
+describe("scan errors", () => {
+  // docs/CODE_STYLE.md §8: every error carries a messageKey with Croatian text in locales/.
+  it("have a text in hr.json for every code", () => {
+    const texts = JSON.parse(readFileSync(path.join(REPO_ROOT, "locales", "hr.json"), "utf8")) as {
+      forbiddenTerms: Record<string, string>;
+    };
+    expect(Object.keys(texts.forbiddenTerms).sort()).toEqual(
+      SCAN_ERROR_CODES.map((code) => code.toLowerCase()).sort(),
+    );
+    const root = copy();
+    rmSync(path.join(root, "locales", "en.ts"));
+    const result = scanLocales(root);
+    expect(result.ok ? "" : result.error.messageKey).toBe("forbiddenTerms.catalogue_missing");
   });
 });
 
 describe("invariant 1: every leaf is read", () => {
   it("reads the same numbers from a copy", () => {
-    expect(report(copy()).read).toEqual({ "hr.ts": 1375, "en.ts": 1375, "hr.json": 20 });
+    expect(report(copy()).read).toEqual({ "hr.ts": 1375, "en.ts": 1375, "hr.json": 28 });
   });
 
   it.each(["de.ts", "x.json", "notes.txt", "sub/hr.ts", "hr.test.json"])(
@@ -158,6 +174,18 @@ describe("invariant 1: every leaf is read", () => {
   ])("fails on %s", (_, from, to) => {
     const root = copy();
     edit(root, "en.ts", from, to);
+    expect(errorCode(root)).toBe("NOT_TEXT en.ts");
+  });
+
+  it("fails on an array whose prototype holds text", () => {
+    const root = copy();
+    probe(root, "en.ts", []);
+    edit(
+      root,
+      "en.ts",
+      "export const probe = [];",
+      'export const probe = Object.setPrototypeOf([], { note: "Suspicious edit" });',
+    );
     expect(errorCode(root)).toBe("NOT_TEXT en.ts");
   });
 

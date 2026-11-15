@@ -69,25 +69,27 @@ export const EXCEPTIONS: readonly Exception[] = [
 /** `text` writes characters a log cannot show by their escape (`shownText`). */
 export type Finding = Readonly<{ file: string; path: string; text: string; reason: string }>;
 
-export type ScanError = {
-  readonly code:
-    | "UNLISTED_FILE"
-    | "CATALOGUE_MISSING"
-    | "UNREADABLE_FILE"
-    | "UNKNOWN_EXPORT"
-    | "NOT_TEXT"
-    | "DUPLICATE_KEY"
-    | "STALE_SAME_IN_BOTH"
-    | "STALE_EXCEPTION";
-  readonly file: string;
-  readonly detail: string;
-};
+export const SCAN_ERROR_CODES = [
+  "UNLISTED_FILE",
+  "CATALOGUE_MISSING",
+  "UNREADABLE_FILE",
+  "UNKNOWN_EXPORT",
+  "NOT_TEXT",
+  "DUPLICATE_KEY",
+  "STALE_SAME_IN_BOTH",
+  "STALE_EXCEPTION",
+] as const;
 
-export type ScanReport = {
-  readonly findings: readonly Finding[];
-  /** Leaves read, by catalogue file. */
-  readonly read: Readonly<Record<string, number>>;
-};
+/** `messageKey` is `forbiddenTerms.<code in lower case>` in locales/hr.json (docs/CODE_STYLE.md §8). */
+export type ScanError = Readonly<{
+  code: (typeof SCAN_ERROR_CODES)[number];
+  messageKey: string;
+  file: string;
+  detail: string;
+}>;
+
+/** `read` is the number of leaves read, by catalogue file. */
+export type ScanReport = Readonly<{ findings: readonly Finding[]; read: Record<string, number> }>;
 
 export type ScanResult = { ok: true; value: ScanReport } | { ok: false; error: ScanError };
 
@@ -98,7 +100,8 @@ class InputError extends Error {
 }
 
 const fail = (code: ScanError["code"], file: string, detail: string): never => {
-  throw new InputError({ code, file, detail: shownText(detail) });
+  const messageKey = `forbiddenTerms.${code.toLowerCase()}`;
+  throw new InputError({ code, messageKey, file, detail: shownText(detail) });
 };
 
 /** Scans `<root>/locales`; an input the scan cannot read in full is an error, never a smaller report. */
@@ -239,8 +242,9 @@ function evaluate(file: string, full: string, raw: string): Record<string, unkno
   return module.exports;
 }
 
-/** The own keys of `Object.prototype` of any realm: an object whose prototype has other keys could hide inherited text. */
-const OBJECT = Object.getOwnPropertyNames(Object.prototype).sort().join();
+/** The own keys of an object, sorted: a prototype with other keys than `Object.prototype` or `Array.prototype` of any realm could hide inherited text. */
+const names = (of: unknown): string => (of ? Object.getOwnPropertyNames(of).sort().join() : "");
+const [OBJECT, ARRAY] = [names(Object.prototype), names(Array.prototype)];
 
 /** Puts every text under `node` into `leaves` and returns the number of keys it went through. */
 function walk(file: string, node: unknown, at: string, leaves: Map<string, string>): number {
@@ -251,10 +255,10 @@ function walk(file: string, node: unknown, at: string, leaves: Map<string, strin
   }
   // A plain object or an array of any realm (a catalogue runs in its own context); not a Map or a class instance.
   const proto: unknown = typeof node === "object" && node ? Object.getPrototypeOf(node) : undefined;
-  const object =
-    proto === null || (proto && Object.getOwnPropertyNames(proto).sort().join() === OBJECT);
-  const plain =
-    Array.isArray(node) || (object && Object.prototype.toString.call(node) === "[object Object]");
+  const object = proto === null || names(proto) === OBJECT;
+  const array =
+    Array.isArray(node) && names(proto) === ARRAY && names(Object.getPrototypeOf(proto)) === OBJECT;
+  const plain = array || (object && Object.prototype.toString.call(node) === "[object Object]");
   if (!plain || types.isProxy(node)) {
     return fail("NOT_TEXT", file, `${at || "(root)"}: ${typeof node}`);
   }
