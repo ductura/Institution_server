@@ -8,13 +8,14 @@
 import {
   chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
   realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir, userInfo } from "node:os";
+import { userInfo } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -47,7 +48,8 @@ const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/u, ""
 let dirError: Error | undefined;
 const DIR = ((): string => {
   try {
-    return stackDir(ROOT, process.env, tmpdir(), realpathSync);
+    // A fixed temp root: os.tmpdir() follows TMPDIR, which the caller sets.
+    return stackDir(ROOT, process.env, "/tmp", realpathSync);
   } catch (error) {
     dirError = error as Error;
     return resolve(ROOT, ".stack", "vs1");
@@ -78,6 +80,21 @@ function ourPostmaster(): number | null {
   const lines = readFileSync(join(PGDATA, "postmaster.pid"), "utf8").split("\n");
   const [pid, port] = [Number(lines[0]), Number(lines[3])];
   return isStackPostmaster(commandLine(pid) ?? "", PGDATA, DIR, port) ? pid : null;
+}
+
+/** Before mkdir and chmod: an existing stack directory is this user's own, not a link. */
+function ownDirectory(): void {
+  checkDir();
+  let stat;
+  try {
+    stat = lstatSync(DIR);
+  } catch (error) {
+    if (Reflect.get(error as object, "code") === "ENOENT") return;
+    throw error;
+  }
+  if (!stat.isDirectory() || stat.uid !== process.getuid?.()) {
+    throw new Error(`${DIR} is not a directory of this user (or is a link)`);
+  }
 }
 
 /** Run under the lock: refuses to start over a stack that runs, or a busy port. */
@@ -145,18 +162,21 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   // loopback, sending the browser and logout tokens only to this stack's server.
   // The server is not given its issuer (that needs its own decision).
   const issuer = `http://127.0.0.1:${config.ports.oidc}`;
-  const oidcPid = await startDetached(process.execPath, [OIDC], {
+  // The stack directory in argv makes each marker this stack's own: down of
+  // another stack from the same checkout never matches it.
+  const tag = `--vs1-stack=${DIR}`;
+  const oidcPid = await startDetached(process.execPath, [OIDC, tag], {
     cwd: ROOT,
     log: join(DIR, "oidc.log"),
     env: oidcEnv(config),
   });
-  state.processes.oidc = { pid: oidcPid, marker: `${process.execPath} ${OIDC}` };
+  state.processes.oidc = { pid: oidcPid, marker: `${process.execPath} ${OIDC} ${tag}` };
   stateFile.writeState(STATE, state);
   const discovery = `${issuer}/.well-known/openid-configuration`;
   if (!(await serverReady(discovery, oidcPid, config.ports.oidc, 30_000))) {
     throw new Error(`the fake OIDC provider is not ready on port ${config.ports.oidc}`);
   }
-  const argv = [...SERVER_NODE_FLAGS, SERVER];
+  const argv = [...SERVER_NODE_FLAGS, SERVER, tag];
   const pid = await startDetached(process.execPath, argv, {
     cwd: ROOT,
     log: join(DIR, "server.log"),
@@ -185,7 +205,7 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
 }
 
 export async function up(config: StackConfig): Promise<void> {
-  checkDir();
+  ownDirectory();
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
   chmodSync(DIR, 0o700);
   // One up at a time: O_EXCL. A lock left by an interrupted up is never taken over.
@@ -255,7 +275,8 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
 /** GET `url` once, only when `pid` itself listens on `port`; the status or a reason. */
 async function probe(url: string, pid: number, port: number, get: typeof fetch): Promise<string> {
   if (!listensOn(pid, port)) return `not listening on ${port}`;
-  return get(url, { signal: AbortSignal.timeout(2000) }).then(
+  // No redirect is followed: a Location may name any port, 3000-3004 among them.
+  return get(url, { redirect: "manual", signal: AbortSignal.timeout(2000) }).then(
     (r) => String(r.status),
     () => "no answer",
   );
@@ -312,7 +333,8 @@ export async function status(get: typeof fetch = fetch): Promise<boolean> {
     lines.push(`  ${name.padEnd(10)} :${port} ${line}`);
   }
   lines.push(`  lock       ${lock}`);
-  console.log(lines.join("\n"));
+  // The state is data: control characters (ANSI escapes, line breaks) never reach the terminal.
+  console.log(lines.map((line) => line.replace(/[\u0000-\u001f\u007f]/gu, "?")).join("\n"));
   return ok;
 }
 

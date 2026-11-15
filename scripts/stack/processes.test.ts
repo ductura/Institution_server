@@ -235,6 +235,16 @@ describe("waitHealthy deadline (DAN-787)", () => {
     expect(clock).toBeLessThanOrEqual(5000);
     expect(calls).toBeLessThanOrEqual(5);
   });
+
+  it("follows no redirect", async () => {
+    const seen: (string | undefined)[] = [];
+    const get = (async (_: string, init?: RequestInit) => {
+      seen.push(init?.redirect);
+      return new Response(null, { status: 200 });
+    }) as typeof fetch;
+    expect(await waitHealthy("http://127.0.0.1:1/", 1000, get, noWait)).toBe(true);
+    expect(seen).toEqual(["manual"]);
+  });
 });
 
 describe("portFree", () => {

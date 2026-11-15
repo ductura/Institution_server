@@ -37,9 +37,10 @@ export async function waitHealthy(
 ): Promise<boolean> {
   const deadline = now() + timeoutMs;
   for (let left = timeoutMs; left > 0; left = deadline - now()) {
+    // No redirect is followed: readiness is the answer of the port itself.
     const signal = AbortSignal.timeout(Math.min(1000, left));
     if (
-      await get(url, { signal }).then(
+      await get(url, { redirect: "manual", signal }).then(
         (r) => r.status === 200,
         () => false,
       )

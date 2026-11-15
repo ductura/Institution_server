@@ -9,7 +9,7 @@ pnpm stack:vs1 down                  # gasi što je up pokrenuo, provjerava da s
 pnpm stack:vs1 status                # samo čita: stanje, procesi, health; izlaz 0 kad sve radi
 ```
 
-Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli stog; integracijski testovi tako koriste privremeni direktorij i nikad ne diraju lokalni `.stack/vs1`. Dopuštena je samo apsolutna staza od slova, znamenki, `.`, `_`, `-` i `/` unutar `.stack/` checkouta ili privremenog direktorija sustava, bez `.` i `..` i bez simboličke veze koja vodi van; inače `up`, `down` i `status` odbijaju prije ikakvog čitanja ili pisanja.
+Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli stog; integracijski testovi tako koriste privremeni direktorij i nikad ne diraju lokalni `.stack/vs1`. Dopuštena je samo apsolutna staza od slova, znamenki, `.`, `_`, `-` i `/` unutar `.stack/` checkouta ili `/tmp` (fiksno, ne iz `TMPDIR`), bez `.` i `..` i bez simboličke veze koja vodi van; inače `up`, `down` i `status` odbijaju prije ikakvog čitanja ili pisanja.
 
 - `pgdata/`: vlastiti PostgreSQL klaster (`initdb` i `pg_ctl` iz `PATH`). Sluša samo na `127.0.0.1`, a socket je u `.stack/vs1/` (0700). Provizija i migracije su iste kao `pnpm db:up:native` (`scripts/db/native-db.ts`). Lozinka prijave `ductus` je u `pg-password` (0600). `initdb` ne radi kao root, pa stog odbija root.
 - `server.log`, `oidc.log`, `postgres.log`: izlaz procesa.
@@ -17,6 +17,7 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli
 
 ## up
 
+- Prije `mkdir` i `chmod` postojeći direktorij stoga mora biti direktorij ovog korisnika, a ne simbolička veza.
 - `up` uzima `up.lock` s O_EXCL. Ako lock postoji, `up` odbija bez ikakve promjene. Zaostali lock (prekinut `up`) **nikad se ne preuzima automatski**: pokreni `pnpm stack:vs1 down`, zatim ga obriši ručno.
 - Tek pod lockom `up` provjerava:
   - da nema stanja ni PostgreSQL-a ovog stoga;
@@ -30,6 +31,7 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli
 
 ## down
 
+- Server i lažni OIDC u naredbenom retku nose `--vs1-stack=<direktorij>`, pa `down` drugog stoga iz istog checkouta nikad ne pogađa njihov marker.
 - Server pa lažni OIDC dobivaju SIGTERM, a nakon 10 s SIGKILL. Signal ide samo PID-u iz `state.json`, i to tek nakon nove provjere da je naredbeni redak točno onaj zapisani (`ps -ww`).
 - PostgreSQL gasi `pg_ctl stop`, ali samo ako PID iz `postmaster.pid` pripada ovom klasteru.
 - Ako `state.json` nedostaje ili nema potrebnu strukturu, `down` i dalje gasi PostgreSQL i provjerava portove iz `VS1_*` ili zadane.
@@ -39,7 +41,7 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli
 
 - Ne uzima lock, ne stvara direktorij, ništa ne piše i ne poziva `git` (`git status` može osvježiti `.git/index`).
 - Ispisuje stanje: repoe, verzije, odgovara li `dist/server.js` zapisanom SHA-256, PostgreSQL, server, lažni OIDC i lock.
-- `GET` na health i discovery šalje samo procesu čiji je naredbeni redak točno zapisani i koji sam sluša na portu. Stanje s portom 3000–3004 je nečitljivo, pa takav port nikad ne pita.
+- `GET` na health i discovery šalje samo procesu čiji je naredbeni redak točno zapisani i koji sam sluša na portu. Preusmjeravanje se ne slijedi (ni u `up`). Stanje s portom 3000–3004 je nečitljivo, pa takav port nikad ne pita. `state.json` se čita samo kao obična datoteka do 64 KiB; kontrolni znakovi iz njega ne idu na terminal.
 - Izlaz 0 samo kad sva tri procesa rade i oba odgovora su 200; inače 1, i kad stog ne radi.
 
 ## Portovi

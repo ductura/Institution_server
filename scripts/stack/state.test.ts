@@ -1,5 +1,14 @@
 // DAN-759: the state file names the repository SHA and the package versions.
-import { chmodSync, existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -84,6 +93,22 @@ describe("state", () => {
     const file = join(dir, "broken.json");
     writeFileSync(file, '{"env": "ci", "ports": {');
     expect(readState(file)).toBe("unreadable");
+  });
+});
+
+describe("readState of what is not a regular file (DAN-787)", () => {
+  it("calls a FIFO unreadable instead of blocking on it", () => {
+    const fifo = join(dir, "fifo.json");
+    expect(spawnSync("mkfifo", [fifo]).status).toBe(0);
+    expect(readState(fifo)).toBe("unreadable");
+  });
+
+  it("calls a link and an oversized file unreadable", () => {
+    const big = join(dir, "big.json");
+    writeFileSync(big, " ".repeat(70_000));
+    expect(readState(big)).toBe("unreadable");
+    symlinkSync(big, join(dir, "link.json"));
+    expect(readState(join(dir, "link.json"))).toBe("unreadable");
   });
 });
 

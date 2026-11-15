@@ -2,7 +2,7 @@
 // package versions, build hash) and what `down` may stop (pid and exact command line).
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, renameSync, writeFileSync } from "node:fs";
+import { lstatSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { FORBIDDEN_PORTS, type Ports, type StackEnv } from "./config.ts";
@@ -98,6 +98,9 @@ export function isStackState(value: unknown): value is StackState {
 export function readState(file: string): StackState | null | "unreadable" {
   let text: string;
   try {
+    // Only a regular file of bounded size: a FIFO would block, a link may lead out.
+    const stat = lstatSync(file);
+    if (!stat.isFile() || stat.size > 65_536) return "unreadable";
     text = readFileSync(file, "utf8");
   } catch (error) {
     if (Reflect.get(error as object, "code") === "ENOENT") return null;

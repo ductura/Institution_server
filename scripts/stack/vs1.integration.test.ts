@@ -1,7 +1,7 @@
 // DAN-759, D-09: run as a script, the stack refuses a production-like setting
 // before it starts anything, and none of it reaches the server build.
 import { spawnSync } from "node:child_process";
-import { createServer } from "node:http";
+import { createServer, type Server } from "node:http";
 import {
   existsSync,
   mkdirSync,
@@ -9,9 +9,9 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,7 +22,8 @@ import { commandLine, portFree, type StackState, startDetached } from "./index.t
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts/stack/vs1.ts");
-const dir = mkdtempSync(join(tmpdir(), "ductura-vs1-"));
+// /tmp: the one temp root the stack accepts (TMPDIR is the caller's).
+const dir = mkdtempSync(join("/tmp", "ductura-vs1-"));
 // A stack directory of its own, never the developer's .stack/vs1 (its pgdata
 // survives down on purpose); set before vs1.ts is loaded, and for the script.
 const STACK = join(dir, "stack");
@@ -300,7 +301,69 @@ describe("pnpm stack:vs1 status", () => {
   }, 30_000);
 });
 
+describe("status after the adversarial pass", () => {
+  const listen = (server: Server): Promise<number> =>
+    new Promise((resolve) =>
+      server.listen(0, "127.0.0.1", () => resolve((server.address() as { port: number }).port)),
+    );
+
+  it("follows no redirect: only the recorded port is asked", async () => {
+    let sinkHits = 0;
+    const sink = createServer((_, res) => (sinkHits++, res.end("ok")));
+    const sinkPort = await listen(sink);
+    const redirect = createServer((_, res) => {
+      res.writeHead(302, { location: `http://127.0.0.1:${sinkPort}/` }).end();
+    });
+    const port = await listen(redirect);
+    // This test process listens on the port, so it is "the server" of the state.
+    const self = { pid: process.pid, marker: commandLine(process.pid) ?? "" };
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({ server: self }, port)));
+    try {
+      expect(await status()).toBe(false);
+      expect(sinkHits).toBe(0);
+    } finally {
+      rmSync(STATE, { force: true });
+      await new Promise((resolve) => redirect.close(resolve));
+      await new Promise((resolve) => sink.close(resolve));
+    }
+  });
+
+  it("prints no control character from the state", () => {
+    mkdirSync(STACK, { recursive: true });
+    const state = { ...stateWith({}), startedAt: "\u001b[31m\nFAKE line" };
+    writeFileSync(STATE, JSON.stringify(state));
+    try {
+      const result = run(["status"], {});
+      expect(result.stdout).not.toContain("\u001b");
+      expect(result.stdout).not.toMatch(/^FAKE/mu);
+    } finally {
+      rmSync(STATE, { force: true });
+    }
+  });
+});
+
+describe("up refuses before it changes anything", () => {
+  it("leaves the target of a linked stack directory alone", () => {
+    const target = join(dir, "target");
+    mkdirSync(target, { mode: 0o755 });
+    symlinkSync(target, join(dir, "linked"));
+    const result = run(["up", "--env", "ci"], { VS1_STACK_DIR: join(dir, "linked") });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/not a directory of this user \(or is a link\)/u);
+    expect(statSync(target).mode & 0o777).toBe(0o755);
+    expect(existsSync(join(target, "up.lock"))).toBe(false);
+  });
+});
+
 describe("a stack directory outside .stack/ and the temp dir", () => {
+  it("is refused even when TMPDIR names it", () => {
+    const tmp = Object.fromEntries([["TMPDIR", "/etc"]]);
+    const result = run(["status"], { ...tmp, VS1_STACK_DIR: "/etc/ductura-vs1" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/stack directory/u);
+  });
+
   it.each([["up", "--env", "ci"], ["down"], ["status"]])(
     "stops %s before it reads or writes",
     (...args) => {
