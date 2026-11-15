@@ -309,6 +309,162 @@ export const probe = Object.create(proto);
   });
 });
 
+// DAN-774: a `.ts` catalogue is read from its syntax tree as data; no line of it runs.
+describe("invariant 1b: a .ts catalogue is data, read without running it", () => {
+  /** Appends `source` to en.ts of a new copy and returns the scan's error code. */
+  const withSource = (source: string): string => {
+    const root = copy();
+    const file = path.join(root, "locales", "en.ts");
+    writeFileSync(file, `${readFileSync(file, "utf8")}\n${source}\n`);
+    return errorCode(root);
+  };
+
+  // Review FAIL c.6892705617, point 1: a `length` getter that replaces itself with a clean text.
+  it("fails on a getter that replaces itself, as in the fourth FAIL on #44", () => {
+    const getter = [
+      "export const probe = {",
+      "  get length() {",
+      '    Object.defineProperty(probe, "length", { value: "Ready", enumerable: true });',
+      '    return "Suspicious edit";',
+      "  },",
+      "};",
+    ].join("\n");
+    expect(withSource(getter)).toBe("NOT_TEXT en.ts");
+  });
+
+  // Had the scan run the getter, the throw would give UNREADABLE_FILE (or escape the result).
+  it.each([
+    [
+      "on a table key",
+      'export const probe = { get a(): string { throw new Error("getter ran"); } };',
+    ],
+    [
+      "on length",
+      'export const probe = { get length(): number { throw new Error("getter ran"); } };',
+    ],
+    [
+      "as a setter",
+      'export const probe = { set a(_: string) { throw new Error("setter ran"); } };',
+    ],
+  ])("refuses a getter %s before it runs", (_, source) => {
+    expect(withSource(source)).toBe("NOT_TEXT en.ts");
+  });
+
+  it.each([
+    [
+      "__proto__ as a string key",
+      'export const probe = { "__proto__": { note: "Suspicious edit" } };',
+    ],
+    [
+      "__proto__ written with an escape",
+      'export const probe = { __proto\\u005f_: { note: "Suspicious edit" } };',
+    ],
+    ["a computed key", 'export const probe = { ["a"]: "Suspicious edit" };'],
+    [
+      "a spread into an object",
+      'const extra = { a: "Suspicious edit" };\nexport const probe = { ...extra };',
+    ],
+    [
+      "a spread into an array",
+      'const extra = ["Suspicious edit"];\nexport const probe = [...extra];',
+    ],
+    ["a method", 'export const probe = { a() { return "Suspicious edit"; } };'],
+    [
+      "a toJSON method",
+      'export const probe = { a: "Ready", toJSON() { return { a: "Ready" }; } };',
+    ],
+    ["a shorthand key", 'const a = "Ready";\nexport const probe = { a };'],
+    ["a numeric key", 'export const probe = { 0: "Ready" };'],
+    ["a call", 'export const probe = [String("Suspicious edit")];'],
+    ["a tagged template", "export const probe = [String.raw`Suspicious edit`];"],
+    ["a concatenation", 'export const probe = ["Suspicious " + "edit"];'],
+    ["a template with a number", "export const probe = [`Edit ${1}`];"],
+    [
+      "a template with an object",
+      'const part = { a: "x" };\nexport const probe = [`Edit ${part}`];',
+    ],
+    [
+      "a constant used before it is declared",
+      'export const probe = [later];\nconst later = "Ready";',
+    ],
+    ["a name that is not a constant of the file", "export const probe = [undefined];"],
+    ["a destructured constant", 'export const { probe } = { probe: ["Ready"] };'],
+  ])("fails on %s", (_, source) => {
+    expect(withSource(source)).toBe("NOT_TEXT en.ts");
+  });
+
+  it.each([
+    ["a statement that changes the table", 'Object.assign(en.app, { name: "Suspicious edit" });'],
+    ["a function that is not exported", 'function probe() { return "Suspicious edit"; }'],
+    ["a side-effect import", 'import "./hr.ts";'],
+    ["a block", '{ const a = "Suspicious edit"; }'],
+    ["a let that is not exported", 'let probe = ["Ready"];'],
+  ])("fails on %s", (_, source) => {
+    expect(withSource(source)).toBe("UNREADABLE_FILE en.ts");
+  });
+
+  it.each([
+    ["a re-export under another name", "export { en as probe };"],
+    ["a default export", "export default en;"],
+    ["an exported let", 'export let probe = ["Ready"];'],
+    ["an exported var", 'export var probe = ["Ready"];'],
+    ["an exported class", 'export class Probe { a = "Suspicious edit"; }'],
+  ])("fails on %s", (_, source) => {
+    expect(withSource(source)).toBe("UNKNOWN_EXPORT en.ts");
+  });
+
+  it("fails on a key or a constant written twice", () => {
+    expect(withSource('export const probe = { a: "Ready", a: "Suspicious edit" };')).toBe(
+      "DUPLICATE_KEY en.ts",
+    );
+    expect(withSource('const a = "Ready";\nconst a = "Suspicious edit";')).toBe(
+      "DUPLICATE_KEY en.ts",
+    );
+  });
+
+  it("fails on a catalogue that does not parse", () => {
+    expect(withSource("export const probe = {")).toBe("UNREADABLE_FILE en.ts");
+  });
+
+  it("reads texts built from templates and earlier constants", () => {
+    const root = copy();
+    const file = path.join(root, "locales", "hr.ts");
+    const source =
+      'const WORD = "Sumnjivo";\nexport const probe = { a: `${WORD} pisanje`, b: [WORD] };';
+    writeFileSync(file, `${readFileSync(file, "utf8")}\n${source}\n`);
+    const scan = report(root);
+    expect(scan.read["hr.ts"]).toBe(1377);
+    expect(flagged(scan, "hr.ts")).toEqual(["probe.a", "probe.b.0"]);
+  });
+
+  it("fails on hr.ts that exports textOf again", () => {
+    const root = copy();
+    const file = path.join(root, "locales", "hr.ts");
+    const textOf = 'export function textOf(): string {\n  return "Sumnjivo";\n}';
+    writeFileSync(file, `${readFileSync(file, "utf8")}\n${textOf}\n`);
+    expect(errorCode(root)).toBe("UNKNOWN_EXPORT hr.ts");
+  });
+
+  // Adversarial pass on DAN-774: forms that keep or add runtime code.
+  it.each([
+    [
+      "an import that is type-only per name, which still loads hr.ts",
+      'import { type Messages as M } from "./hr.ts";',
+    ],
+    ["an enum", 'enum Probe { A = "Suspicious edit" }'],
+    ["a namespace", 'namespace Probe { export const a = "Suspicious edit"; }'],
+    ["an ambient constant", "declare const probe: string;"],
+    ["an import alias", "import Probe = globalThis.String;"],
+    ["a using declaration", "using probe = null;"],
+  ])("fails on %s", (_, source) => {
+    expect(withSource(source)).toBe("UNREADABLE_FILE en.ts");
+  });
+
+  it("fails on a re-export of another module", () => {
+    expect(withSource('export * from "./hr.ts";')).toBe("UNKNOWN_EXPORT en.ts");
+  });
+});
+
 describe("invariant 2: a forbidden term in any catalogue", () => {
   it("is found with its file and path in hr, en and hr.json", () => {
     const root = copy();

@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import { messagesEn } from "./en.ts";
-import { messagesHr, textOf, type MessageKey } from "./hr.ts";
+import { messagesHr, type MessageKey } from "./hr.ts";
 import {
   digestOf,
   SOURCE_DIGESTS,
@@ -15,6 +15,7 @@ import {
   textPairs,
   withSourceTexts,
 } from "./source.ts";
+import { textOf } from "./text-of.ts";
 
 /** The table with the recorded changes put back; it gives the source digest. */
 const sourceOf = <T>(table: T, language: "hr" | "en"): T => withSourceTexts(table, language);
