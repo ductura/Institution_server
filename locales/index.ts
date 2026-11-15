@@ -1,4 +1,5 @@
-export { messagesHr, textOf, type MessageKey, type Messages } from "./hr.ts";
+export { messagesHr, type MessageKey, type Messages } from "./hr.ts";
+export { textOf } from "./text-of.ts";
 export { messagesEn } from "./en.ts";
 export {
   catalogueGaps,

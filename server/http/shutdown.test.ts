@@ -151,6 +151,38 @@ describe("shutdown coordinator", () => {
     before!.release();
     expect(await stopping).toEqual({ outcome: "drained" });
   });
+
+  // c3 contract (Ductus#1836 c.6895155382): a 503 owed while draining holds the drain.
+  it("hold(): while draining it holds stop() until released", async () => {
+    const shutdown = createShutdownCoordinator({ clock: manualClock() });
+    const request = shutdown.begin()!;
+    const stopping = shutdown.stop();
+    const owed = shutdown.hold();
+    expect(owed).not.toBeNull();
+    request.release();
+    expect(await settled(stopping)).toBe("pending");
+    expect(shutdown.active()).toBe(1);
+    owed!.release();
+    owed!.release();
+    expect(await stopping).toEqual({ outcome: "drained" });
+  });
+
+  it("hold(): null once stopped, and an unreleased hold expires with the deadline", async () => {
+    const clock = manualClock();
+    const shutdown = createShutdownCoordinator({ clock });
+    const stopping = shutdown.stop();
+    expect(await stopping).toEqual({ outcome: "drained" });
+    expect(shutdown.hold()).toBeNull();
+
+    const other = createShutdownCoordinator({ clock });
+    other.begin();
+    const draining = other.stop();
+    other.hold();
+    clock.advance(SHUTDOWN_GRACE_MS);
+    expect(await draining).toEqual({ outcome: "deadline", unfinished: 2 });
+    expect(other.hold()).toBeNull();
+    expect(other.begin()).toBeNull();
+  });
 });
 
 describe("installShutdown", () => {

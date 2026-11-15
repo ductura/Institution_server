@@ -60,8 +60,6 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
  */
 export const PENDING: readonly string[] = [
   "app/api/comments/[action]/route.ts",
-  "app/api/evidence/commit/route.ts",
-  "app/api/evidence/open/route.ts",
   "app/api/evidence/replay/route.ts",
   "app/api/institution/assignments/[assignmentId]/acknowledgment/route.ts",
   "app/api/institution/assignments/[assignmentId]/students/[studentId]/work-language/route.ts",
