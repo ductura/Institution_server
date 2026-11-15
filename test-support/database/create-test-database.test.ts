@@ -10,13 +10,16 @@ import {
   engineFrom,
   openTestDatabase,
   pgliteAllowedIn,
-  POSTGRES_NOT_YET,
   testDatabaseNamed,
 } from "./create-test-database.ts";
+import { PARITY_EXCEPTIONS } from "./exceptions.ts";
+import { compareFingerprints } from "./parity.ts";
+import { adminUrl } from "./postgres.ts";
 
 // S-1F-e (DAN-785). Nothing here opens a database.
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const COMPOSE = readFileSync(join(ROOT, "compose.yaml"), "utf8");
 
 /** An invented entry whose files do not exist: opening it would fail. */
 const PROBE: Database = {
@@ -67,15 +70,12 @@ describe("a test of authority", () => {
     ["a\\.x\\b.pg.integration.test.ts", false],
     ["a/b.integration.test.ts", true],
     ["a/b.test.ts", true],
+    ["/r/test-support/database/migration-parity.pg.integration.test.ts", true],
+    ["/r/x/migration-parity.pg.integration.test.ts", false],
+    ["/r/test-support/database/zz-migration-parity.pg.integration.test.ts", false],
     [undefined, true],
   ] as const)("PGlite from %j: %s", (path, allowed) => {
     expect(pgliteAllowedIn(path)).toBe(allowed);
-  });
-
-  it("the postgres engine is not here yet (DAN-785 b)", async () => {
-    await expect(openTestDatabase("main", "postgres", { authority: true })).rejects.toThrow(
-      POSTGRES_NOT_YET,
-    );
   });
 
   it("an unknown name is refused first, on either engine", async () => {
@@ -98,15 +98,33 @@ const project = (name: string): string => {
 };
 
 describe("vitest.config.ts", () => {
-  it("keeps *.pg.integration.test.ts out of the PGlite projects", () => {
+  it("runs *.pg.integration.test.ts only in integration-pg, on postgres", () => {
     expect(CONFIG).toContain("const PG = `${DIRS}/**/*.pg.integration.test.ts`;");
+    expect(project("integration-pg")).toMatch(/^name: "integration-pg",\n\s+include: \[PG\],/u);
+    expect(project("integration-pg")).toContain('env: { DUCTURA_TEST_DATABASE: "postgres" }');
+    expect(project("integration-pg")).toContain('setupFiles: ["tests/db/setup.ts"]');
     expect(project("integration")).toMatch(/exclude: \[DATABASE, PG\],/u);
     expect(project("integration")).toContain('env: { DUCTURA_TEST_DATABASE: "pglite" }');
     expect(project("database")).toMatch(/exclude: \[PG\],/u);
     expect(project("unit")).toMatch(/exclude: \[PROPERTY, INTEGRATION\],/u);
-    // No project runs the postgres engine or includes the PG glob yet (DAN-785 b).
-    expect(CONFIG).not.toMatch(/DUCTURA_TEST_DATABASE: "postgres"/u);
-    expect(CONFIG).not.toMatch(/include: \[[^\]]*\bPG\b/u);
+    // Only integration-pg names postgres; the PG glob is included nowhere else.
+    expect(CONFIG.match(/DUCTURA_TEST_DATABASE: "postgres"/gu)).toHaveLength(1);
+    expect(CONFIG.match(/include: \[[^\]]*\bPG\b/gu)).toHaveLength(1);
+  });
+
+  it("package.json runs integration-pg from test:database, which CI runs", () => {
+    const scripts = (
+      JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
+        scripts: Record<string, string>;
+      }
+    ).scripts;
+    expect(scripts["test:integration:pg"]).toBe("vitest run --project integration-pg");
+    expect(scripts["test:database"]).toBe(
+      "vitest run --project database && pnpm test:integration:pg",
+    );
+    expect(readFileSync(join(ROOT, ".github/workflows/ci.yml"), "utf8")).toMatch(
+      /run: pnpm test:database\n/u,
+    );
   });
 });
 
@@ -133,10 +151,68 @@ describe("tests of authority", () => {
   ])
     walk(join(ROOT, dir));
 
-  it("none names PGlite or the test fakes, in any spelling", () => {
+  it("exist, and none names PGlite or the test fakes, in any spelling", () => {
+    expect(files.length).toBeGreaterThan(0);
     const naming = files.filter((file) =>
       /pglite|test-fakes/iu.test(readFileSync(join(ROOT, file), "utf8")),
     );
-    expect(naming).toEqual([]);
+    // The parity test compares both engines on purpose and asks for no authority.
+    expect(naming).toEqual(["test-support/database/migration-parity.pg.integration.test.ts"]);
+  });
+});
+
+describe("adminUrl", () => {
+  it("takes the local superuser and port of the entry's compose service", () => {
+    const url = (name: string) => new URL(adminUrl(testDatabaseNamed(name, DATABASES), COMPOSE));
+    expect([url("main").port, url("main").pathname]).toEqual(["54329", "/ductus"]);
+    expect([url("logs").port, url("logs").pathname]).toEqual(["54330", "/ductus_logs"]);
+    expect([url("legal").port, url("legal").pathname]).toEqual(["54329", "/ductus_legal"]);
+  });
+
+  it.each([
+    ["a public port", 'services:\n  postgres-main:\n    ports: ["0.0.0.0:54329:5432"]\n'],
+    [
+      "a foreign port",
+      'services:\n  postgres-main:\n    ports: ["127.0.0.1:6543:5432"]\n    environment: { POSTGRES_USER: u, POSTGRES_PASSWORD: p }\n',
+    ],
+    ["no superuser", 'services:\n  postgres-main:\n    ports: ["127.0.0.1:54329:5432"]\n'],
+    ["no service", "services: {}\n"],
+  ])("refuses %s", (_case, compose) => {
+    expect(() => adminUrl(PROBE, compose)).toThrow(/probe|postgres-main/u);
+  });
+});
+
+describe("compareFingerprints", () => {
+  const entry = { database: "main", only: "pglite", line: "b", reason: "x" } as const;
+
+  it("lists lines one engine lacks and exceptions that no longer differ", () => {
+    expect(compareFingerprints("main", ["a", "b"], ["a", "c"], [])).toEqual({
+      unexplained: ["pglite only: b", "postgres only: c"],
+      stale: [],
+    });
+    expect(compareFingerprints("main", ["a", "b"], ["a"], [entry])).toEqual({
+      unexplained: [],
+      stale: [],
+    });
+    expect(compareFingerprints("main", ["a"], ["a"], [entry])).toEqual({
+      unexplained: [],
+      stale: [entry],
+    });
+    // An exception of another database or the other engine explains nothing.
+    expect(compareFingerprints("logs", ["a", "b"], ["a"], [entry]).unexplained).toEqual([
+      "pglite only: b",
+    ]);
+    expect(compareFingerprints("main", ["a"], ["a", "b"], [entry]).unexplained).toEqual([
+      "postgres only: b",
+    ]);
+  });
+
+  it("every exception names a database, an engine, a line and a reason", () => {
+    for (const exception of PARITY_EXCEPTIONS) {
+      expect(DATABASES.map((d) => d.name)).toContain(exception.database);
+      expect(["pglite", "postgres"]).toContain(exception.only);
+      expect(exception.line).not.toBe("");
+      expect(exception.reason.length).toBeGreaterThan(10);
+    }
   });
 });

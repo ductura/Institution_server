@@ -445,7 +445,8 @@ export default defineConfig(
   {
     // The database tests check the database directly. The session-GUC guard
     // (server/database/session-guc-scope.test.ts) is inside server/database.
-    files: ["server/database/**", "tests/db/**"],
+    // test-support/database (S-1F-e) opens the migrated test databases.
+    files: ["server/database/**", "tests/db/**", "test-support/database/**"],
     rules: {
       "no-restricted-imports": "off",
       "database-boundary/no-restricted-dynamic-imports": "off",
