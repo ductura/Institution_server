@@ -22,7 +22,7 @@
 // String.fromCodePoint (also with spread, `.apply` and `.call`), `.source`
 // of a regex literal, the percent, base64 and hex decoded forms of a text, and
 // what atob, Buffer.from (with an encoding) and decodeURIComponent give for a
-// folded text. A folded text is cut at MAX_LENGTH characters.
+// folded text. A folded text longer than MAX_LENGTH characters is unknown.
 // A text is reported once, at the outermost node.
 //
 // What lint cannot see, left to review: text built at run time (`+=` in a
@@ -107,11 +107,13 @@ const INVISIBLE = /(?![\t\n\r])[\p{Cf}\p{Cc}]/gu;
 const HOLE = " ";
 // At most this many alternative texts per node (a ternary has two).
 const MAX_ALTERNATIVES = 32;
-// Folded texts are cut at this length, so a chain that doubles a text
+// Folded texts longer than this are unknown, so a chain that doubles a text
 // (`const a1 = a0 + a0` ... `a40`) cannot build gigabytes during lint (review
 // FAIL c.6895754450). A sentence starts long before this point.
 const MAX_LENGTH = 4096;
-const clip = (text: string): string => text.slice(0, MAX_LENGTH);
+// A longer text is unknown: it stands as a word break and is not reported
+// (orchestrator ruling c.6895834779).
+const clip = (text: string): string => (text.length > MAX_LENGTH ? HOLE : text);
 // One machine token with no space: a lowercase snake, kebab or dotted name
 // (a wire value such as `nije_ukljuceno`, a header `content-type`), an
 // UPPER_SNAKE error code, or a key with camelCase segments (`auth.signIn`).
@@ -191,11 +193,12 @@ function decodings(text: string): string[] {
       );
     }
   }
-  if (/^[A-Za-z0-9+/_-]{8,}={0,2}$/u.test(text)) {
+  // Short literals too (ruling c.6895834779); only readable results count.
+  if (/^[A-Za-z0-9+/_-]{2,}={0,2}$/u.test(text)) {
     const decoded = Buffer.from(text, "base64").toString("utf8");
     if (readable(decoded)) out.push(decoded);
   }
-  if (/^(?:[0-9a-f]{2}){4,}$/iu.test(text)) {
+  if (/^(?:[0-9a-f]{2})+$/iu.test(text)) {
     const decoded = Buffer.from(text, "hex").toString("utf8");
     if (readable(decoded)) out.push(decoded);
   }

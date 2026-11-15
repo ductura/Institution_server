@@ -183,6 +183,10 @@ tester.run("no-hardcoded-text", rule, {
       "letter",
     ),
     bad("const D = 273;\nexport const MESSAGE = String.fromCharCode(D);", "letter"),
+    // Ruling c.6895834779: short base64 and hex literals are decoded like long ones.
+    bad('export const e = "xIxhag==";', "letter"),
+    bad('export const e = "c48d";', "letter"),
+    bad('export const e = Buffer.from("c48d", "hex").toString();', "letter"),
     // Names and regex sources.
     bad("export const o = { nijePronađeno: 0 };", "letter"),
     bad("export function pronađeno(): void {}", "letter"),
