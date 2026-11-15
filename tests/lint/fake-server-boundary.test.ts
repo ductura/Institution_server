@@ -131,6 +131,7 @@ describe("fake server import boundary (eslint.config.ts)", () => {
     "@ductura/test-fakes",
     "@ductura/test-fakes/oidc",
     "@ductura/test-fakes/fake-server",
+    "@ductura/test-fakes/pglite",
     "@Ductura/Test-Fakes/clock",
     "@ductura/test-fakes/oidc/server.ts",
     "../packages/test-fakes/index.ts",

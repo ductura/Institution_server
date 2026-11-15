@@ -88,6 +88,14 @@ export function loadedFiles(
 const reachesFakes = (files: readonly string[]): string[] =>
   files.filter((path) => /^packages\/test-fakes\//iu.test(path));
 
+// U9-b: PGlite is a dependency of the package only. A production file that
+// names it directly is caught here even when pnpm leaves it unresolvable.
+const PGLITE = "@electric-sql/pglite";
+const namesPglite = (code: string): boolean =>
+  ts
+    .preProcessFile(code, true, true)
+    .importedFiles.some(({ fileName }) => fileName === PGLITE || fileName.startsWith(`${PGLITE}/`));
+
 describe("@ductura/test-fakes stays out of production", () => {
   it("is only a devDependency of the root, and private", () => {
     const root = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as {
@@ -116,6 +124,7 @@ describe("@ductura/test-fakes stays out of production", () => {
     expect(names.size).toBeGreaterThan(0);
     expect(names).not.toContain(NAME);
     expect(names).not.toContain("oidc-provider");
+    expect(names).not.toContain(PGLITE);
   });
 
   it("closureNames finds the package at any depth (the check can fail)", () => {
@@ -151,9 +160,24 @@ describe("@ductura/test-fakes stays out of production", () => {
     `export { createFakeClock } from "${NAME}/clock";\n`,
     `export const load = () => import("${NAME}/oidc");\n`,
     `export * from "../packages/test-fakes/index.ts";\n`,
+    `export { createPgliteDatabase } from "${NAME}/pglite";\n`,
+    `export const load = () => import("../packages/test-fakes/pglite/database.ts");\n`,
   ])("the walk sees a production file that loads it: %s", (code) => {
     const probe = join(REPO_ROOT, "server", "boundary-probe.ts");
     expect(reachesFakes(loadedFiles([probe], { [probe]: code }))).not.toEqual([]);
+  });
+
+  it("no production file under server/ names PGlite", () => {
+    const named = productionRoots().filter((path) => namesPglite(readFileSync(path, "utf8")));
+    expect(named).toEqual([]);
+  });
+
+  it.each([
+    `import { PGlite } from "${PGLITE}";\nexport const x = PGlite;\n`,
+    `export const load = () => import("${PGLITE}/contrib/pgcrypto");\n`,
+    `const { PGlite } = require("${PGLITE}");\n`,
+  ])("the PGlite check sees %s", (code) => {
+    expect(namesPglite(code)).toBe(true);
   });
 
   it("the old fake OIDC folder under test-support is gone and nothing names it", () => {

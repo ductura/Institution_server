@@ -10,9 +10,11 @@
     "./fake-server": "./fake-server/index.ts",
     "./clock": "./clock/index.ts",
     "./services": "./services/index.ts",
-    "./fido2": "./fido2/index.ts"
+    "./fido2": "./fido2/index.ts",
+    "./pglite": "./pglite/index.ts"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.3.14",
     "oidc-provider": "9.12.2"
   }
 }

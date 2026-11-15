@@ -6,4 +6,5 @@ export * from "./clock/index.ts";
 export * from "./fake-server/index.ts";
 export * from "./fido2/index.ts";
 export * from "./oidc/index.ts";
+export * from "./pglite/index.ts";
 export * from "./services/index.ts";

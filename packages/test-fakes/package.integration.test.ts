@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const TSX = fileURLToPath(new URL("../../node_modules/.bin/tsx", import.meta.url));
 const NAME = "@ductura/test-fakes";
-const ENTRIES = ["", "/oidc", "/fake-server", "/clock", "/services", "/fido2"];
+const ENTRIES = ["", "/oidc", "/fake-server", "/clock", "/services", "/fido2", "/pglite"];
 
 function load(specifier: string, nodeEnv: string | undefined) {
   const env: Record<string, string> = { PATH: process.env.PATH ?? "" };
@@ -20,7 +20,7 @@ function load(specifier: string, nodeEnv: string | undefined) {
 }
 
 describe("@ductura/test-fakes as a package", () => {
-  it("exports exactly the root and the five modules", () => {
+  it("exports exactly the root and the six modules", () => {
     const own = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as {
       exports: Record<string, string>;
     };
@@ -50,6 +50,8 @@ describe("@ductura/test-fakes as a package", () => {
     `${NAME}/oidc/guard.ts`,
     `${NAME}/guard`,
     `${NAME}/clock/clock.ts`,
+    `${NAME}/pglite/log.ts`,
+    `${NAME}/pglite/log-schema.sql`,
     `${NAME}/package.json`,
     `${NAME}/boundary.test.ts`,
   ])(
