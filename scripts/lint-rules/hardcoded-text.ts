@@ -389,14 +389,22 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
 }
 
 /** One code of String.fromCharCode: a number, `+n`, `-n` or a numeric string. */
+/**
+ * One argument of String.fromCharCode or fromCodePoint as the number the
+ * call receives: a number, a numeric string, `+n` or `-n` (the sign is kept,
+ * review FAIL c.6896095434), or a `const` name of one. The call itself then
+ * converts it as JavaScript does (fromCharCode takes it modulo 2^16).
+ */
 function code(node: Loose | undefined | null, resolve: Resolve, depth = 0): number | null {
   if (!node || depth > 8) return null;
   if (node.type === "Identifier") return code(resolve(node), resolve, depth + 1);
-  if (node.type === "UnaryExpression" && (node.operator === "+" || node.operator === "-"))
-    return code(node.argument as Loose, resolve, depth + 1);
+  if (node.type === "UnaryExpression" && (node.operator === "+" || node.operator === "-")) {
+    const n = code(node.argument as Loose, resolve, depth + 1);
+    return n === null ? null : node.operator === "-" ? -n : n;
+  }
   if (node.type !== "Literal") return null;
   const n = typeof node.value === "string" ? Number(node.value) : node.value;
-  return typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : null;
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
 }
 
 /**

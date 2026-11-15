@@ -183,6 +183,10 @@ tester.run("no-hardcoded-text", rule, {
       "letter",
     ),
     bad("const D = 273;\nexport const MESSAGE = String.fromCharCode(D);", "letter"),
+    // Review FAIL c.6896095434: the sign of a char code is kept (-65339 is U+00C5).
+    bad("export const MESSAGE = String.fromCharCode(-65339);", "letter"),
+    bad("const C = -65339;\nexport const MESSAGE = String.fromCharCode(C);", "letter"),
+    bad("export const MESSAGE = String.fromCharCode(-(-273));", "letter"),
     // Ruling c.6895834779: short base64 and hex literals are decoded like long ones.
     bad('export const e = "xIxhag==";', "letter"),
     bad('export const e = "c48d";', "letter"),
