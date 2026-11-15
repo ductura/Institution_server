@@ -1489,13 +1489,13 @@ const en = {
       "The record stays linked to you on this device, and you continue it when you sign in again. Anyone who signs in on this device after you does not see your work.",
     // 3d-2c, P3 and P4 (a): a copy kept outside the work stays on sign-out.
     logoutCopy: {
-      one: "This device keeps {n} copy of text that is not in the work.",
-      few: "This device keeps {n} copies of text that are not in the work.",
-      many: "This device keeps {n} copies of text that are not in the work.",
+      one: "This device keeps {n} version of text that is not in the work.",
+      few: "This device keeps {n} versions of text that are not in the work.",
+      many: "This device keeps {n} versions of text that are not in the work.",
     },
     logoutCopyKept:
-      "Signing out does not delete the copy. It stays linked to you on this device, and you see it again when you sign in.",
-    copyTitle: "Copy of the text",
+      "Signing out does not delete the version. It stays linked to you on this device, and you see it again when you sign in.",
+    copyTitle: "Version of the text",
     // F-154 (owner decision 1.3): text written after the submission stays on
     // sign-out (D-118) and goes only on the author's second click.
     afterSubmissionTitle: "Changes after the submission",
@@ -1506,13 +1506,13 @@ const en = {
     afterSubmissionKeep: "Keep the changes",
     afterSubmissionDiscardFailed:
       "The changes were not deleted and stay on this device. Try again.",
-    copyNewestOnly: "The actions apply to the newest copy.",
+    copyNewestOnly: "The actions apply to the newest version.",
     copyRestore: "Return the text to the work",
-    copyDiscard: "Discard the copy",
-    copyDiscardAsk: "A discarded copy cannot be restored. Discard it?",
-    copyDiscardConfirm: "Yes, discard the copy",
-    copyKeep: "Keep the copy",
-    copyDiscardFailed: "The copy was not discarded and stays on this device. Try again.",
+    copyDiscard: "Discard the version",
+    copyDiscardAsk: "A discarded version cannot be restored. Discard it?",
+    copyDiscardConfirm: "Yes, discard the version",
+    copyKeep: "Keep the version",
+    copyDiscardFailed: "The version was not discarded and stays on this device. Try again.",
     // #1330, #1444: ended here; nothing calls the server again.
     logoutDevice:
       "Sign-out on this device is complete. The server is not responding right now, so the sign-in there ends at the next sign-in or when it expires.",

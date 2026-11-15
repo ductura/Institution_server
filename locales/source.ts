@@ -44,6 +44,7 @@ export const SOURCE_KEY_RENAMES: readonly (readonly [source: string, port: strin
 
 const CHANGE_DECISION =
   "https://github.com/danielrisavi77-create/Ductus/issues/1836#issuecomment-6889314023";
+const NOUN_FINDING = "https://github.com/ductura/server/pull/38#issuecomment-6889516654";
 
 /** A text the port changed on purpose: its path in the port, the source text and the new one. */
 export type TextChange = {
@@ -57,9 +58,11 @@ export type TextChange = {
 /**
  * Texts changed in the port, a recorded deviation from the source: PRODUCT §5
  * allows the root "kopir-" / "copy" only in "Kopiraj navod", "kopiranje
- * navoda", "Kopirano u međuspremnik" and "Copy citation" (D-59), so these four
- * actions now say "međuspremnik" / "clipboard" (orchestrator decision, `decision`).
- * The digest in `SOURCE_DIGESTS` stays the one of the Ductus source.
+ * navoda", "Kopirano u međuspremnik" and "Copy citation" (D-59). Four actions
+ * now say "međuspremnik" / "clipboard" in both languages (orchestrator
+ * decision), and the English noun "copy" of the sign-out texts became
+ * "version" (review finding; Croatian "kopija" is not the root "kopir-" and
+ * stays). Each entry links its reason in `decision`. The digest in `SOURCE_DIGESTS` stays the one of the Ductus source.
  */
 export const SOURCE_TEXT_CHANGES: readonly TextChange[] = [
   {
@@ -123,6 +126,84 @@ export const SOURCE_TEXT_CHANGES: readonly TextChange[] = [
       "This explanation was not sent, and the requests cannot be loaded right now. Copy it if you want to keep it.",
     port: "This explanation was not sent, and the requests cannot be loaded right now. Put it on the clipboard if you want to keep it.",
     decision: CHANGE_DECISION,
+  },
+  {
+    language: "en",
+    path: "auth.logoutCopy.one",
+    source: "This device keeps {n} copy of text that is not in the work.",
+    port: "This device keeps {n} version of text that is not in the work.",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.logoutCopy.few",
+    source: "This device keeps {n} copies of text that are not in the work.",
+    port: "This device keeps {n} versions of text that are not in the work.",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.logoutCopy.many",
+    source: "This device keeps {n} copies of text that are not in the work.",
+    port: "This device keeps {n} versions of text that are not in the work.",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.logoutCopyKept",
+    source:
+      "Signing out does not delete the copy. It stays linked to you on this device, and you see it again when you sign in.",
+    port: "Signing out does not delete the version. It stays linked to you on this device, and you see it again when you sign in.",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.copyTitle",
+    source: "Copy of the text",
+    port: "Version of the text",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.copyNewestOnly",
+    source: "The actions apply to the newest copy.",
+    port: "The actions apply to the newest version.",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.copyDiscard",
+    source: "Discard the copy",
+    port: "Discard the version",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.copyDiscardAsk",
+    source: "A discarded copy cannot be restored. Discard it?",
+    port: "A discarded version cannot be restored. Discard it?",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.copyDiscardConfirm",
+    source: "Yes, discard the copy",
+    port: "Yes, discard the version",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.copyKeep",
+    source: "Keep the copy",
+    port: "Keep the version",
+    decision: NOUN_FINDING,
+  },
+  {
+    language: "en",
+    path: "auth.copyDiscardFailed",
+    source: "The copy was not discarded and stays on this device. Try again.",
+    port: "The version was not discarded and stays on this device. Try again.",
+    decision: NOUN_FINDING,
   },
 ];
 

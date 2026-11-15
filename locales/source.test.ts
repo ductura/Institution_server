@@ -1,5 +1,5 @@
 // S-1L.1 (DAN-768): the port changed no text but the recorded ones
-// (SOURCE_TEXT_CHANGES, Ductus#1836 c.6889314023). With those put back, every
+// (SOURCE_TEXT_CHANGES: Ductus#1836 c.6889314023, ductura/server#38 c.6889516654). With those put back, every
 // text, taken back to its path in the Ductus table, gives the digest recorded
 // from the source (locales/source.ts; scripts/locales/source-digest.ts recomputes it).
 import { describe, expect, it } from "vitest";
@@ -15,6 +15,9 @@ import {
   textPairs,
   withSourceTexts,
 } from "./source.ts";
+
+/** The table with the recorded changes put back; it gives the source digest. */
+const sourceOf = <T>(table: T, language: "hr" | "en"): T => withSourceTexts(table, language);
 
 const TABLES = [
   ["hr", messagesHr],
@@ -36,7 +39,8 @@ describe("port from Ductus", () => {
   );
 
   it.each(TABLES)("%s gives a different digest when one character changes", (language, table) => {
-    const copy = structuredClone(table) as unknown as { app: Record<string, string> };
+    const copy = sourceOf(table, language) as unknown as { app: Record<string, string> };
+    expect(digestOf(copy, sourcePath)).toEqual(SOURCE_DIGESTS[language]);
     copy.app["tagline"] = `${copy.app["tagline"] ?? ""} `;
     expect(digestOf(copy, sourcePath).sha256).not.toBe(SOURCE_DIGESTS[language].sha256);
   });
@@ -44,14 +48,16 @@ describe("port from Ductus", () => {
   it.each(TABLES)(
     "%s gives a different digest when a text moves to another key",
     (language, table) => {
-      const copy = structuredClone(table) as unknown as { app: Record<string, string> };
+      const copy = sourceOf(table, language) as unknown as { app: Record<string, string> };
+      expect(digestOf(copy, sourcePath)).toEqual(SOURCE_DIGESTS[language]);
       [copy.app["name"], copy.app["tagline"]] = [copy.app["tagline"] ?? "", copy.app["name"] ?? ""];
       expect(digestOf(copy, sourcePath).sha256).not.toBe(SOURCE_DIGESTS[language].sha256);
     },
   );
 
   it("gives a different digest when a list becomes an object", () => {
-    const copy = structuredClone(messagesHr);
+    const copy = sourceOf(messagesHr, "hr");
+    expect(digestOf(copy, sourcePath)).toEqual(SOURCE_DIGESTS.hr);
     const dialog = copy.teacherRoles.confirmDialog as unknown as Record<string, unknown>;
     expect(Array.isArray(dialog["points"])).toBe(true);
     dialog["points"] = { ...(dialog["points"] as string[]) };
@@ -59,7 +65,9 @@ describe("port from Ductus", () => {
   });
 
   it("gives a different digest without the key renames", () => {
-    expect(digestOf(messagesHr).sha256).not.toBe(SOURCE_DIGESTS.hr.sha256);
+    const source = sourceOf(messagesHr, "hr");
+    expect(digestOf(source, sourcePath)).toEqual(SOURCE_DIGESTS.hr);
+    expect(digestOf(source).sha256).not.toBe(SOURCE_DIGESTS.hr.sha256);
   });
 });
 
@@ -81,30 +89,55 @@ describe("text changes", () => {
     },
   );
 
-  it("are the four texts of the decision, in both languages", () => {
-    const paths = [
+  it("are the four texts of the decision in both languages and the English noun copy", () => {
+    const decision =
+      "https://github.com/danielrisavi77-create/Ductus/issues/1836#issuecomment-6889314023";
+    const finding = "https://github.com/ductura/server/pull/38#issuecomment-6889516654";
+    const paths = (language: "hr" | "en", reason: string) =>
+      SOURCE_TEXT_CHANGES.filter((c) => c.language === language && c.decision === reason)
+        .map((c) => c.path)
+        .sort();
+    const decided = [
       "revisions.keptHint",
       "revisions.keptUnloadedHint",
       "workspace.earlierDraftCopy",
       "workspace.earlierDraftExplain",
     ];
-    for (const language of ["hr", "en"] as const)
-      expect(
-        SOURCE_TEXT_CHANGES.filter((change) => change.language === language)
-          .map((change) => change.path)
-          .sort(),
-      ).toEqual(paths);
-    for (const change of SOURCE_TEXT_CHANGES)
-      expect(change.decision).toBe(
-        "https://github.com/danielrisavi77-create/Ductus/issues/1836#issuecomment-6889314023",
-      );
+    expect(paths("hr", decision)).toEqual(decided);
+    expect(paths("en", decision)).toEqual(decided);
+    expect(paths("hr", finding)).toEqual([]);
+    expect(paths("en", finding)).toEqual(
+      [
+        "auth.copyDiscard",
+        "auth.copyDiscardAsk",
+        "auth.copyDiscardConfirm",
+        "auth.copyDiscardFailed",
+        "auth.copyKeep",
+        "auth.copyNewestOnly",
+        "auth.copyTitle",
+        "auth.logoutCopy.few",
+        "auth.logoutCopy.many",
+        "auth.logoutCopy.one",
+        "auth.logoutCopyKept",
+      ].sort(),
+    );
+    expect(SOURCE_TEXT_CHANGES).toHaveLength(decided.length * 2 + 11);
   });
 
   it("remove the root kopir- / copy from every changed text", () => {
     for (const change of SOURCE_TEXT_CHANGES) {
-      expect(change.source, change.path).toMatch(/kopir|cop(y|ied|ying)/iu);
-      expect(change.port, change.path).not.toMatch(/kopir|cop(y|ied|ying)/iu);
+      expect(change.source, change.path).toMatch(/kopir|cop(y|i)/iu);
+      expect(change.port, change.path).not.toMatch(/kopir|cop(y|i)/iu);
     }
+  });
+
+  it("leave no root kopir- or copy in a text outside the allowed actions (PRODUCT §5, D-59)", () => {
+    const allowed = /Kopiraj navod|kopiranj\p{L}* navoda|Kopirano u međuspremnik|Copy citation/giu;
+    for (const [language, table] of TABLES)
+      for (const [path, text] of textPairs(table))
+        expect(text.replace(allowed, ""), `${language} ${path.join(".")}`).not.toMatch(
+          /kopir|cop(y|i)/iu,
+        );
   });
 
   it("refuse a recorded change whose new text is not in the table", () => {
