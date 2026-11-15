@@ -19,7 +19,6 @@ describe("parseArgs", () => {
     [["up", "--env", "local"], { command: "up", env: "local" }],
     [["up", "--env", "ci"], { command: "up", env: "ci" }],
     [["down"], { command: "down", env: "local" }],
-    [["status"], { command: "status", env: "local" }],
   ])("accepts %j", (argv, expected) => {
     expect(parseArgs(argv)).toEqual(expected);
   });
@@ -37,6 +36,7 @@ describe("parseArgs", () => {
     [["up", "--production"]],
     [["down", "--env", "ci"]],
     [["start"]],
+    [["status"]],
     [[]],
   ])("refuses %j", (argv) => {
     expect(() => parseArgs(argv)).toThrow();

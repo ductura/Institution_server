@@ -1,51 +1,40 @@
-// DAN-759: what the VS-1 stack may run with, decided before any process starts.
-// D-09: the stack starts the fake OIDC provider, so it runs only as `local` or
-// `ci`, named on the command line alone, and only under a NODE_ENV the fake
-// provider itself accepts. Nothing else (a variable, a file) can name another.
-// The allow list is that of packages/test-fakes/oidc/guard.ts, which tools may
-// not import (local/no-fake-server-import); config.test.ts keeps them equal.
+// DAN-759, D-09: the stack will start the fake OIDC provider (DAN-759 b), so it
+// runs only as `local` or `ci`, named on the command line alone, and only under
+// a NODE_ENV the provider's guard accepts (packages/test-fakes/oidc/guard.ts,
+// which tools may not import; config.test.ts keeps the lists equal).
 export const ALLOWED_NODE_ENV: ReadonlySet<string> = new Set(["", "development", "test"]);
-
 export const STACK_ENVS = ["local", "ci"] as const;
 export type StackEnv = (typeof STACK_ENVS)[number];
-export const COMMANDS = ["up", "down", "status"] as const;
-export type Command = (typeof COMMANDS)[number];
-
+export type Command = "up" | "down";
 // Ports 3000 to 3004 belong to other stacks on the same machine; never ours.
 export const FORBIDDEN_PORTS: readonly number[] = [3000, 3001, 3002, 3003, 3004];
 export const DEFAULT_PORTS = { postgres: 54360, server: 4100, oidc: 4180 } as const;
 export type Ports = { postgres: number; server: number; oidc: number };
-
-// The same-origin pieces VS-1 adds later: the preloader at `/` and the web
-// app at `/app/`. Only the place to attach a built artifact; nothing is
-// cloned or served until a follow-up fills `artifact`.
-export type Slot = { readonly path: string; readonly artifact: string | null };
-export const SLOTS: Readonly<Record<"preloader" | "web", Slot>> = Object.freeze({
+export type StackConfig = { env: StackEnv; ports: Ports };
+// Same origin: preloader at `/`, web at `/app/`; slots only, filled later.
+export const SLOTS = Object.freeze({
   preloader: Object.freeze({ path: "/", artifact: null }),
   web: Object.freeze({ path: "/app/", artifact: null }),
 });
-
-export type StackConfig = { env: StackEnv; ports: Ports };
 type Env = Readonly<Record<string, string | undefined>>;
-
-const USAGE = "usage: vs1.ts up [--env local|ci] | down | status";
 
 /** The command and environment from argv; anything unknown or repeated is refused. */
 export function parseArgs(argv: readonly string[]): { command: Command; env: StackEnv } {
-  const [command, ...rest] = argv;
-  if (!COMMANDS.includes(command as Command)) throw new Error(USAGE);
-  if (rest.length === 0) return { command: command as Command, env: "local" };
-  const [flag, value, ...extra] = rest;
-  if (command !== "up" || flag !== "--env" || extra.length > 0) throw new Error(USAGE);
-  if (!STACK_ENVS.includes(value as StackEnv)) {
-    throw new Error(`the VS-1 stack runs only as local or ci, not ${JSON.stringify(value)}`);
+  const [command, flag, value, ...extra] = argv;
+  if (command === "down" && flag === undefined) return { command, env: "local" };
+  if (command !== "up" || extra.length > 0)
+    throw new Error("usage: vs1.ts up [--env local|ci] | down");
+  if (flag === undefined) return { command, env: "local" };
+  if (flag !== "--env" || !STACK_ENVS.includes(value as StackEnv)) {
+    throw new Error(
+      `the VS-1 stack runs only as local or ci (--env), not ${JSON.stringify(value)}`,
+    );
   }
   return { command, env: value as StackEnv };
 }
 
 function port(env: Env, name: string, fallback: number): number {
-  const value = env[name];
-  if (value === undefined) return fallback;
+  const value = env[name] ?? String(fallback);
   const parsed = /^\d{4,5}$/u.test(value) ? Number(value) : Number.NaN;
   if (!(parsed >= 1024 && parsed <= 65_535)) throw new Error(`${name} is not a port 1024-65535`);
   return parsed;

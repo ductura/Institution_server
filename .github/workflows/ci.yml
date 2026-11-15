@@ -261,7 +261,6 @@ jobs:
         run: |
           pnpm build
           PATH="$PGBIN:$PATH" pnpm stack:vs1 up --env ci
-          pnpm stack:vs1 status
           curl -fsS http://127.0.0.1:4100/api/v1/health
           # Health reads no database: check that the server's own login reaches it.
           "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'

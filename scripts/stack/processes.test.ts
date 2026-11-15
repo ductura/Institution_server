@@ -125,9 +125,7 @@ describe("waitHealthy", () => {
     const statuses = [503, 503, 200];
     const get = (async () =>
       new Response(null, { status: statuses.shift() ?? 500 })) as typeof fetch;
-    expect(await waitHealthy("http://127.0.0.1:1/api/v1/health", 5000, { get, wait: noWait })).toBe(
-      true,
-    );
+    expect(await waitHealthy("http://127.0.0.1:1/api/v1/health", 5000, get, noWait)).toBe(true);
     expect(statuses).toEqual([]);
   });
 
@@ -135,9 +133,7 @@ describe("waitHealthy", () => {
     const get = (async () => {
       throw new Error("ECONNREFUSED");
     }) as typeof fetch;
-    expect(await waitHealthy("http://127.0.0.1:1/api/v1/health", 1000, { get, wait: noWait })).toBe(
-      false,
-    );
+    expect(await waitHealthy("http://127.0.0.1:1/api/v1/health", 1000, get, noWait)).toBe(false);
   });
 });
 

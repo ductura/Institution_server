@@ -1,21 +1,15 @@
 export {
   ALLOWED_NODE_ENV,
-  COMMANDS,
   DEFAULT_PORTS,
-  FORBIDDEN_PORTS,
   parseArgs,
   SLOTS,
-  STACK_ENVS,
   stackConfig,
   stackPorts,
 } from "./config.ts";
-export type { Command, Ports, Slot, StackConfig, StackEnv } from "./config.ts";
-export { clearStaleLock, sameProcess, takeLock } from "./lock.ts";
-export type { OwnerRuns } from "./lock.ts";
+export type { Command, Ports, StackConfig, StackEnv } from "./config.ts";
 export { commandLine, portFree, startDetached, stopProcess, waitHealthy } from "./processes.ts";
 export type { StopDeps, Wait } from "./processes.ts";
 export {
-  isStackState,
   packageVersions,
   readState,
   repoRevision,

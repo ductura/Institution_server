@@ -11,7 +11,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { buildServer } from "../build/index.ts";
 import { commandLine, portFree, type StackState, startDetached } from "./index.ts";
-import { down, preflight } from "./vs1.ts";
+import { down, LOCK, up } from "./vs1.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts/stack/vs1.ts");
@@ -82,16 +82,6 @@ describe("pnpm stack:vs1 down without a state", () => {
     expect(result.status).toBe(0);
     expect(existsSync(STATE)).toBe(false);
   });
-
-  it("removes an up.lock whose owner no longer runs", () => {
-    expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
-    const lock = join(ROOT, ".stack/vs1/up.lock");
-    mkdirSync(dirname(lock), { recursive: true });
-    const gone = spawnSync(process.execPath, ["-e", ""]).pid;
-    writeFileSync(lock, String(gone));
-    expect(run(["down"], {}).status).toBe(0);
-    expect(existsSync(lock)).toBe(false);
-  });
 });
 
 describe("down with the state of a failed up", () => {
@@ -120,17 +110,33 @@ describe("down with the state of a failed up", () => {
   }, 30_000);
 });
 
-describe("preflight, run under the lock", () => {
-  it("refuses when another up already wrote its state", async () => {
+describe("up while another up holds the lock", () => {
+  it("refuses with the manual recovery, and touches neither the state nor the cluster", async () => {
     expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
-    mkdirSync(dirname(STATE), { recursive: true });
-    writeFileSync(STATE, "{}");
+    mkdirSync(dirname(LOCK), { recursive: true });
+    writeFileSync(LOCK, "");
     try {
       await expect(
-        preflight({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } }),
-      ).rejects.toThrow(/stack is up/u);
+        up({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } }),
+      ).rejects.toThrow(/up\.lock exists.*pnpm stack:vs1 down, then delete the lock by hand/u);
+      expect(existsSync(LOCK)).toBe(true);
+      expect(existsSync(STATE)).toBe(false);
+      for (const port of [54397, 4197, 4297]) expect(await portFree(port)).toBe(true);
     } finally {
-      rmSync(STATE, { force: true });
+      rmSync(LOCK, { force: true });
+    }
+  });
+
+  it("refuses through the script as well, and leaves the lock", () => {
+    mkdirSync(dirname(LOCK), { recursive: true });
+    writeFileSync(LOCK, "");
+    try {
+      const result = run(["up", "--env", "ci"], {});
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/up\.lock exists/u);
+      expect(existsSync(LOCK)).toBe(true);
+    } finally {
+      rmSync(LOCK, { force: true });
     }
   });
 });

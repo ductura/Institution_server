@@ -1,43 +1,71 @@
 # scripts/stack
 
-Minimalni lokalni stog za VS-1 (DAN-759), jednom naredbom. **Samo lokalno i u CI-ju** (D-09): stog će pokretati lažni OIDC pružatelj. Ovaj korak ga još ne pokreće (rez iz ugovora: proces lažnog OIDC-a je `DAN-759 b`), ali blokada iz odjeljka niže već vrijedi.
+Minimalni lokalni stog za VS-1 (DAN-759), jednom naredbom. **Samo lokalno i u CI-ju** (D-09): stog će pokretati lažni OIDC pružatelj. Ovaj korak ga još ne pokreće, ali blokada iz odjeljka niže već vrijedi.
 
 ```bash
 pnpm build
 pnpm stack:vs1 up [--env local|ci]   # PostgreSQL i server iz dist/server.js
-pnpm stack:vs1 status                # datoteka stanja i health servera
 pnpm stack:vs1 down                  # gasi što je up pokrenuo, provjerava da su portovi slobodni
 ```
 
-Sve je u `.stack/vs1/` (u `.gitignore`):
+Sve je u `.stack/vs1/` (0700, u `.gitignore`):
 
-- `pgdata/`: vlastiti PostgreSQL klaster (`initdb` i `pg_ctl` iz `PATH`), sluša samo na `127.0.0.1`, socket u `.stack/vs1/`. Provizija i migracije su iste kao `pnpm db:up:native` (`scripts/db/native-db.ts`); lozinka prijave `ductus` je u `pg-password` (0600). `initdb` ne radi kao root, pa stog odbija root.
+- `pgdata/`: vlastiti PostgreSQL klaster (`initdb` i `pg_ctl` iz `PATH`). Sluša samo na `127.0.0.1`, a socket je u `.stack/vs1/` (0700). Provizija i migracije su iste kao `pnpm db:up:native` (`scripts/db/native-db.ts`). Lozinka prijave `ductus` je u `pg-password` (0600). `initdb` ne radi kao root, pa stog odbija root.
 - `server.log`, `postgres.log`: izlaz procesa.
-- `state.json`: SHA repoa i oznaka promijenjenog stabla, verzije `@ductura/server`, `@ductura/contracts`, `@ductura/test-fakes`, `oidc-provider`, `pg` i Nodea, SHA-256 `dist/server.js`, okruženje, portovi i PID-ovi.
+- `state.json`: SHA repoa i oznaka promijenjenog stabla, verzije `@ductura/server`, `@ductura/contracts`, `@ductura/test-fakes`, `oidc-provider`, `pg` i Nodea, SHA-256 `dist/server.js`, okruženje, portovi te PID i naredbeni redak servera.
 
-`up` čeka `GET /api/v1/health` = 200; ako bilo koji korak ne uspije, gasi što je već pokrenuo (i PID koji nije stigao u `state.json`) i izlazi s 1. Istodobno smije raditi samo jedan `up` (`lock.ts`: `up.lock` nastaje s O_EXCL i bilježi PID i cijeli naredbeni redak vlasnika, pa se živi vlasnik prepoznaje kako god je pokrenut; zaostali lock čiji vlasnik više ne radi preuzima samo nositelj `up.lock.takeover`, pa ga dva procesa ne mogu preuzeti istodobno). Provjere stanja, PostgreSQL-a stoga i portova rade se tek pod lockom, pa `up` koji je čekao ne pokreće ništa preko stoga koji je drugi upravo podigao. Putanja repoa smije imati samo slova, znamenke, `.`, `_`, `-` i `/`, jer `pg_ctl` predaje `-o` ljusci, a socket ima najviše 107 bajtova.
+## up
 
-`down` šalje SIGTERM (nakon 10 s SIGKILL) samo PID-u iz `state.json`, i samo dok je naredbeni redak procesa točno onaj s kojim je pokrenut (`ps -ww`, neovisno o `COLUMNS`). PostgreSQL gasi `pg_ctl stop` samo ako PID iz `postmaster.pid` pripada našem klasteru (`-D .stack/vs1/pgdata`). Ako `state.json` nedostaje ili je oštećen, `down` i dalje gasi PostgreSQL i provjerava portove iz `VS1_*` ili zadane. Tuđi procesi i stogovi se ne diraju. Docker se ne koristi.
+- `up` uzima `up.lock` s O_EXCL. Ako lock postoji, `up` odbija bez ikakve promjene. Zaostali lock (prekinut `up`) **nikad se ne preuzima automatski**: pokreni `pnpm stack:vs1 down`, zatim ga obriši ručno.
+- Tek pod lockom `up` provjerava:
+  - da nema stanja ni PostgreSQL-a ovog stoga;
+  - da nije pokrenut kao root;
+  - da postoji `dist/server.js`;
+  - da je putanja sigurna: samo slova, znamenke, `.`, `_`, `-` i `/`, jer `pg_ctl` predaje `-o` ljusci, a socket ima najviše 107 bajtova;
+  - da su portovi slobodni.
+- Zatim čeka da `GET /api/v1/health` vrati 200.
+- Ako neki korak ne uspije, gasi samo ono što je taj poziv pokrenuo, uz PID servera iz memorije, i izlazi s 1.
 
-| Varijabla           | Zadano | Značenje                                         |
-| ------------------- | ------ | ------------------------------------------------ |
-| `VS1_POSTGRES_PORT` | 54360  | PostgreSQL                                       |
-| `VS1_SERVER_PORT`   | 4100   | server                                           |
-| `VS1_OIDC_PORT`     | 4180   | lažni OIDC pružatelj (rezerviran za `DAN-759 b`) |
+## down
 
-Portovi 3000–3004 se odbijaju; zauzet port zaustavlja `up`.
+- Server dobiva SIGTERM, a nakon 10 s SIGKILL. Signal ide samo PID-u iz `state.json`, i to tek nakon nove provjere da je naredbeni redak točno onaj zapisani (`ps -ww`).
+- PostgreSQL gasi `pg_ctl stop`, ali samo ako PID iz `postmaster.pid` pripada ovom klasteru.
+- Ako `state.json` nedostaje ili nema potrebnu strukturu, `down` i dalje gasi PostgreSQL i provjerava portove iz `VS1_*` ili zadane.
+- Tuđi procesi i stogovi se ne diraju. Docker se ne koristi.
+
+## Portovi
+
+| Varijabla           | Zadano | Značenje                                       |
+| ------------------- | ------ | ---------------------------------------------- |
+| `VS1_POSTGRES_PORT` | 54360  | PostgreSQL                                     |
+| `VS1_SERVER_PORT`   | 4100   | server                                         |
+| `VS1_OIDC_PORT`     | 4180   | lažni OIDC pružatelj (rezerviran za `DAN-787`) |
+
+Portovi 3000–3004 se odbijaju.
 
 ## Blokada lažnog OIDC-a (D-09)
 
-1. Okruženje dolazi samo iz argumenta: `local` (zadano) ili `ci`. Bilo što drugo, ponovljena ili nepoznata zastavica zaustavlja prije ijednog procesa (`config.ts`).
-2. `NODE_ENV` pozivatelja mora biti prazan, `development` ili `test` (isti popis kao `assertFakeOidcAllowed`, test ih drži jednakima), za `local` i `ci` jednako.
-3. Procesi dobivaju zadanu okolinu, ne pozivateljevu. Pružatelj sam odbija produkcijski `NODE_ENV` i adrese izvan ovog računala (`packages/test-fakes/oidc`); pokreće ga `DAN-759 b` s `NODE_ENV=test`.
+1. Okruženje dolazi samo iz argumenta: `local` (zadano) ili `ci`. Bilo što drugo, odnosno ponovljena ili nepoznata zastavica, zaustavlja prije ijednog procesa (`config.ts`).
+2. `NODE_ENV` pozivatelja mora biti prazan, `development` ili `test`. To je isti popis kao u `assertFakeOidcAllowed`, a test ih drži jednakima.
+3. Procesi dobivaju zadanu okolinu, ne pozivateljevu.
 4. Ništa iz `scripts/stack` ni `@ductura/test-fakes` ne ulazi u `dist/server.js` (test).
 
-## Preloader i web
+## Izdvojeno u DAN-787
 
-Isti origin: preloader na `/`, web na `/app/`. Ovdje su samo mjesta za priključak (`SLOTS` u `config.ts`, artefakt `null`); `up` ispisuje „not attached”. Popunjava ih nastavak, bez kloniranja drugih repoa.
+- proces lažnog OIDC-a;
+- naredba `status`;
+- automatski oporavak zaostalog locka;
+- preloader (`/`) i web (`/app/`). Ovdje su samo mjesta za priključak (`SLOTS` u `config.ts`).
 
 ## Testovi
 
-`config.test.ts` (okruženja, `NODE_ENV`, portovi), `processes.test.ts` (gašenje samo vlastitih procesa, bez SIGKILL-a preuzetom PID-u, čekanje healtha, slobodan port), `lock.test.ts` (jedan `up`, isključivo preuzimanje zaostalog locka), `state.test.ts` (SHA, verzije, datoteka 0600, oštećeno stanje), `vs1.integration.test.ts` (skripta odbija bez pokretanja ičega; `down` bez stanja ili sa stanjem iz memorije; izgradnja servera ne sadrži stog ni lažni pružatelj). Cijeli stog na pravom PostgreSQL-u pokreće CI, posao „PostgreSQL i pgTAP”, korak „Stog VS-1”.
+- `config.test.ts`: okruženja, `NODE_ENV` i portovi.
+- `processes.test.ts`: gašenje samo vlastitih procesa, bez SIGKILL-a preuzetom PID-u, čekanje healtha i slobodan port.
+- `state.test.ts`: SHA, verzije, datoteka 0600 i oštećeno stanje.
+- `vs1.integration.test.ts`:
+  - skripta odbija bez pokretanja ičega;
+  - dok lock postoji, `up` odbija i ne dira stanje ni klaster;
+  - `down` radi bez stanja ili sa stanjem iz memorije;
+  - izgradnja servera ne sadrži stog ni lažni pružatelj.
+
+Cijeli stog na pravom PostgreSQL-u pokreće CI, u poslu „PostgreSQL i pgTAP”, korak „Stog VS-1”.

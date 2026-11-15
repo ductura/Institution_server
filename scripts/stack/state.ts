@@ -1,6 +1,5 @@
-// DAN-759: the state file of the VS-1 stack (.stack/vs1/state.json). It names
-// what runs (repository SHA, package versions, build hash) and what `down`
-// may stop (process ids with the command line each must still have).
+// DAN-759: .stack/vs1/state.json names what runs (repository SHA, package
+// versions, build hash) and what `down` may stop (pid and exact command line).
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
@@ -21,13 +20,6 @@ export type StackState = {
 };
 
 // The packages whose installed version decides what the stack runs.
-export const VERSIONED = [
-  "@ductura/server",
-  "@ductura/contracts",
-  "@ductura/test-fakes",
-  "oidc-provider",
-  "pg",
-];
 const MANIFEST: Readonly<Record<string, string>> = {
   "@ductura/server": "package.json",
   "@ductura/contracts": "packages/contracts/package.json",
@@ -35,16 +27,15 @@ const MANIFEST: Readonly<Record<string, string>> = {
   "oidc-provider": "node_modules/oidc-provider/package.json",
   pg: "node_modules/pg/package.json",
 };
+export const VERSIONED: readonly string[] = Object.keys(MANIFEST);
 
 /** Installed versions by package name, plus node; a missing manifest is an error. */
 export function packageVersions(root: string): Record<string, string> {
   const versions: Record<string, string> = { node: process.version };
-  for (const name of VERSIONED) {
-    const manifest = JSON.parse(readFileSync(join(root, MANIFEST[name] as string), "utf8")) as {
-      version?: unknown;
-    };
-    if (typeof manifest.version !== "string") throw new Error(`${name} has no version`);
-    versions[name] = manifest.version;
+  for (const [name, file] of Object.entries(MANIFEST)) {
+    const { version } = JSON.parse(readFileSync(join(root, file), "utf8")) as { version?: unknown };
+    if (typeof version !== "string") throw new Error(`${name} has no version`);
+    versions[name] = version;
   }
   return versions;
 }
@@ -67,19 +58,20 @@ export function writeState(file: string, state: StackState): void {
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-const isPort = (value: unknown): boolean =>
-  Number.isInteger(value) && (value as number) > 0 && (value as number) <= 65_535;
 
-/** True when `value` has the parts `down` and `status` read: ports and processes. */
+/** True when `value` has the ports and processes that `down` reads. */
 export function isStackState(value: unknown): value is StackState {
   if (!isObject(value) || !isObject(value.ports) || !isObject(value.processes)) return false;
   const { ports, processes } = value;
-  if (!["postgres", "server", "oidc"].every((name) => isPort(ports[name]))) return false;
+  const portsOk = ["postgres", "server", "oidc"].every((name) => {
+    const port = ports[name];
+    return Number.isInteger(port) && (port as number) > 0 && (port as number) <= 65_535;
+  });
   const server = processes.server;
-  return (
+  const serverOk =
     server === undefined ||
-    (isObject(server) && Number.isInteger(server.pid) && typeof server.marker === "string")
-  );
+    (isObject(server) && Number.isInteger(server.pid) && typeof server.marker === "string");
+  return portsOk && serverOk;
 }
 
 /** The state; null when there is none, "unreadable" when the file is not a whole state. */
@@ -88,7 +80,7 @@ export function readState(file: string): StackState | null | "unreadable" {
   try {
     text = readFileSync(file, "utf8");
   } catch (error) {
-    if (error instanceof Error && Reflect.get(error, "code") === "ENOENT") return null;
+    if (Reflect.get(error as object, "code") === "ENOENT") return null;
     throw error;
   }
   try {
