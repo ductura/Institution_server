@@ -94,8 +94,9 @@ jobs:
           [[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]
           [ "$(find release -type f | wc -l)" -eq 1 ]
           printf '%s  %s\n' "$SHA256" "release/$FILE" | sha256sum --check --strict -
+      # "./": npm reads a bare release/x.tgz as the GitHub shorthand owner/repo (DAN-742).
       - name: Objava
         env:
           FILE: ${{ needs.verify.outputs.file }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm publish --ignore-scripts "release/$FILE"
+        run: npm publish --ignore-scripts "./release/$FILE"

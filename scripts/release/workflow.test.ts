@@ -84,7 +84,7 @@ const PUBLISH_JOB = {
         ["FILE", FILE],
         ["NODE_AUTH_TOKEN", TOKEN],
       ]),
-      run: 'npm publish --ignore-scripts "release/$FILE"',
+      run: 'npm publish --ignore-scripts "./release/$FILE"',
     },
   ],
 };
@@ -139,6 +139,12 @@ export function publishErrors(text: string): string[] {
       errors.push(`not pinned: ${uses}`);
   // 5f: publish is exactly PUBLISH_JOB.
   if (!same(jobs.publish, PUBLISH_JOB)) errors.push("publish is not the expected job");
+  // DAN-742: npm reads a bare "dir/file.tgz" as the GitHub shorthand owner/repo
+  // and tries git over ssh, so every tarball npm publish gets starts with "./".
+  for (const [path, value] of strings(jobs.publish, "jobs.publish"))
+    for (const [, spec = ""] of value.matchAll(/npm publish(?: --[a-z-]+)* "?([^"\s]+)/gu))
+      if (!spec.startsWith("./"))
+        errors.push(`npm publish of a non-local path at ${path}: ${spec}`);
   // 5g and verify: known actions with exact inputs, no cache, no credentials
   // kept, no condition, shell or env that changes a step; the checks in order.
   const inputs: Readonly<Record<string, unknown>> = {
@@ -177,7 +183,7 @@ describe("publish.yml", () => {
     return PUBLISH.replace(from, to);
   };
   const tags = '    tags: ["contracts-v*.*.*", "test-fakes-v*.*.*"]\n';
-  const publishStep = '        run: npm publish --ignore-scripts "release/$FILE"\n';
+  const publishStep = '        run: npm publish --ignore-scripts "./release/$FILE"\n';
   const sha = "      - name: Provjera sha256\n";
   const tagStep = "        run: pnpm release:tag\n";
 
@@ -276,6 +282,8 @@ describe("publish.yml", () => {
     ["5f a shell without -e", sha, `${sha}        shell: bash {0}\n`],
     ["5f if: always() on publish", "    needs: verify\n", "    needs: verify\n    if: always()\n"],
     ["5f without --ignore-scripts", "npm publish --ignore-scripts", "npm publish"],
+    // DAN-742: the first publish failed on this; npm took it for owner/repo.
+    ["5f a tarball npm reads as a GitHub shorthand", '"./release/$FILE"', '"release/$FILE"'],
     ["5f without the sha256 check", "sha256sum --check --strict -", "cat"],
     ["5f publish without verify", "    needs: verify\n", ""],
     ["5f publish without the environment", "    environment: packages\n", ""],
@@ -306,6 +314,15 @@ describe("publish.yml", () => {
   ])("refuses %s", (_, from, to) => {
     expect(publishErrors(replace(from, to))).not.toEqual([]);
   });
+
+  it.each(['"release/$FILE"', "release/$FILE", '"$FILE"'])(
+    "names npm publish of %s as a non-local path (DAN-742)",
+    (spec) => {
+      expect(publishErrors(replace('"./release/$FILE"', spec))).toContain(
+        `npm publish of a non-local path at jobs.publish.steps.3.run: ${spec.replaceAll('"', "")}`,
+      );
+    },
+  );
 });
 
 describe("ci.yml", () => {
