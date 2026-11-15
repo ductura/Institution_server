@@ -166,6 +166,13 @@ tester.run("no-hardcoded-text", rule, {
       'export const e = (on: boolean) => ["Prijava ", on ? "" : "je", " obavezna."].join("");',
       "sentence",
     ),
+    // Review FAIL c.6894940324: `.join` on a const array, a regex source in a concatenation.
+    bad(
+      'const WORDS = ["Prijava", "obavezna."];\nexport const message = WORDS.join(" je ");',
+      "sentence",
+    ),
+    bad('export const message = "Prijava " + /je/.source + " obavezna.";', "sentence"),
+    bad("export const message = `Prijava ${/je/.source} obavezna.`;", "sentence"),
     // Names and regex sources.
     bad("export const o = { nijePronađeno: 0 };", "letter"),
     bad("export function pronađeno(): void {}", "letter"),

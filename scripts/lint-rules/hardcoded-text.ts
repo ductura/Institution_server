@@ -232,6 +232,16 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
     }
     return combos.some((c) => c.some((i) => i !== HOLE)) ? combos : null;
   }
+  /** The array literal a node stands for: itself, behind a wrapper or a `const` name. */
+  function arrayOf(node: Loose | undefined | null): Loose | null {
+    for (let depth = 0; node && depth < 8; depth++) {
+      if (node.type === "ArrayExpression") return node;
+      if (node.type === "Identifier") node = resolve(node);
+      else if (WRAPPERS.has(node.type)) node = node.expression;
+      else return null;
+    }
+    return null;
+  }
   function call(node: Loose): string[] | null {
     const callee = node.callee;
     const args = node.arguments ?? [];
@@ -242,8 +252,9 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
     const name = memberName(callee, fold);
     const object = callee?.object;
     if (!name || !object) return null;
-    if (name === "join" && object.type === "ArrayExpression") {
-      const combos = items(object);
+    const array = arrayOf(object);
+    if (name === "join" && array) {
+      const combos = items(array);
       if (!combos) return null;
       const seps = args[0] ? (fold(args[0]) ?? [HOLE]) : [","];
       return combos.flatMap((list) => [
@@ -308,6 +319,12 @@ function makeFold(resolve: Resolve): (node: Loose | undefined | null) => string[
       }
       case "CallExpression":
         return call(node);
+      case "MemberExpression": {
+        // `.source` of a regex literal is the text of its pattern.
+        const regex = node.object?.regex as { pattern?: string } | undefined;
+        if (!regex?.pattern || memberName(node, fold) !== "source") return null;
+        return [regex.pattern.replace(/\\(.)/gu, "$1")];
+      }
       case "Identifier": {
         const init = resolve(node);
         return init ? fold(init) : null;
@@ -437,13 +454,6 @@ export const noHardcodedText: Rule.RuleModule = {
       const id = (node as unknown as Loose).name ?? "";
       if (NON_ASCII_LETTER.test(id)) report(node, "letter", id);
     }
-    function regexSource(node: Node): void {
-      const loose = node as unknown as Loose;
-      const regex = loose.object?.regex as { pattern?: string } | undefined;
-      if (!regex?.pattern || memberName(loose, fold) !== "source") return;
-      const problem = textProblem(regex.pattern.replace(/\\(.)/gu, "$1"));
-      if (problem) report(node, problem, regex.pattern);
-    }
     function source(node: Node): void {
       const spec = fold((node as unknown as Loose).source)?.[0];
       if (!spec?.startsWith(".")) return;
@@ -476,7 +486,7 @@ export const noHardcodedText: Rule.RuleModule = {
         check(node);
       },
       MemberExpression(node) {
-        regexSource(node);
+        check(node);
       },
       Identifier(node) {
         name(node);
