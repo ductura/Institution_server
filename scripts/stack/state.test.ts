@@ -53,6 +53,23 @@ describe("state", () => {
     expect(existsSync(`${file}.tmp`)).toBe(false);
   });
 
+  it.each([
+    ["{}"],
+    ["[]"],
+    ["null"],
+    ["42"],
+    ['{"ports": {}, "processes": {}}'],
+    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": null}'],
+    ['{"ports": {"postgres": 54360, "server": "4100", "oidc": 4180}, "processes": {}}'],
+    [
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {"server": {"pid": "1"}}}',
+    ],
+  ])("calls the JSON %s unreadable, not a state", (text) => {
+    const file = join(dir, "shape.json");
+    writeFileSync(file, text);
+    expect(readState(file)).toBe("unreadable");
+  });
+
   it("calls a truncated file unreadable instead of throwing", () => {
     const file = join(dir, "broken.json");
     writeFileSync(file, '{"env": "ci", "ports": {');

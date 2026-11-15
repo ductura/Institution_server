@@ -39,6 +39,14 @@ describe("stopProcess", () => {
     expect(fake.signals).toEqual(["4242:SIGTERM", "4242:SIGKILL"]);
   });
 
+  it("does not SIGKILL an id that another process took during the last wait", async () => {
+    const fake = fakeProcess(["/r/dist/server.js", "/r/dist/server.js", "sleep 600"]);
+    expect(await stopProcess(4242, "/r/dist/server.js", 100, { ...fake, wait: noWait })).toBe(
+      "stopped",
+    );
+    expect(fake.signals).toEqual(["4242:SIGTERM"]);
+  });
+
   it("treats a defunct process as stopped", async () => {
     const fake = fakeProcess(["/r/dist/server.js", "[node] <defunct>"]);
     expect(await stopProcess(4242, "/r/dist/server.js", 1000, { ...fake, wait: noWait })).toBe(

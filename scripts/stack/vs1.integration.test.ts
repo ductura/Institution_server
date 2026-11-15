@@ -72,6 +72,16 @@ describe("pnpm stack:vs1 down without a state", () => {
     expect(run(["down"], {}).status).toBe(0);
   });
 
+  it("goes on to PostgreSQL and the ports when state.json holds {}", () => {
+    expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
+    mkdirSync(dirname(STATE), { recursive: true });
+    writeFileSync(STATE, "{}");
+    const result = run(["down"], {});
+    expect(result.stderr).toMatch(/state\.json is unreadable/u);
+    expect(result.status).toBe(0);
+    expect(existsSync(STATE)).toBe(false);
+  });
+
   it("removes an up.lock whose owner no longer runs", () => {
     expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
     const lock = join(ROOT, ".stack/vs1/up.lock");

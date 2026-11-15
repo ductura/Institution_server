@@ -65,7 +65,24 @@ export function writeState(file: string, state: StackState): void {
   renameSync(`${file}.tmp`, file);
 }
 
-/** The state; null when there is none, "unreadable" when the file is not valid JSON. */
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+const isPort = (value: unknown): boolean =>
+  Number.isInteger(value) && (value as number) > 0 && (value as number) <= 65_535;
+
+/** True when `value` has the parts `down` and `status` read: ports and processes. */
+export function isStackState(value: unknown): value is StackState {
+  if (!isObject(value) || !isObject(value.ports) || !isObject(value.processes)) return false;
+  const { ports, processes } = value;
+  if (!["postgres", "server", "oidc"].every((name) => isPort(ports[name]))) return false;
+  const server = processes.server;
+  return (
+    server === undefined ||
+    (isObject(server) && Number.isInteger(server.pid) && typeof server.marker === "string")
+  );
+}
+
+/** The state; null when there is none, "unreadable" when the file is not a whole state. */
 export function readState(file: string): StackState | null | "unreadable" {
   let text: string;
   try {
@@ -75,7 +92,8 @@ export function readState(file: string): StackState | null | "unreadable" {
     throw error;
   }
   try {
-    return JSON.parse(text) as StackState;
+    const parsed: unknown = JSON.parse(text);
+    return isStackState(parsed) ? parsed : "unreadable";
   } catch {
     return "unreadable";
   }

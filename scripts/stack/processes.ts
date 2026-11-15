@@ -107,6 +107,8 @@ export async function stopProcess(
     if (!alive()) return "stopped";
     await wait(100);
   }
+  // Checked again: the id may have been freed and reused during the last wait.
+  if (!alive()) return "stopped";
   kill(pid, "SIGKILL");
   for (let tries = 0; tries < 20 && alive(); tries += 1) await wait(100);
   return "stopped";
