@@ -149,6 +149,8 @@ describe("stackDir (DAN-787)", () => {
     ["a quote", "/TMP/t/st'ack"],
     ["a prefix only", "/TMP/tx/stack"],
     ["the checkout root", "/ROOT"],
+    ["a trailing slash", "/TMP/t/stack/"],
+    ["a double slash", "/TMP/t//stack"],
   ])("refuses %s before anything is created", (_, value) => {
     const path = value.replace("/TMP", tmp).replace("/ROOT", root);
     expect(() => dir(path)).toThrow(/stack directory/u);

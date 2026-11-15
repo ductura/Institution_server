@@ -92,7 +92,14 @@ export function stackDir(
   const ok = (path: string): boolean => roots.some((base) => inside(path, base));
   const parts = value.split("/");
   const where = "the stack directory (VS1_STACK_DIR or .stack/vs1)";
-  if (!SAFE_PATH.test(value) || parts.includes("..") || parts.includes(".") || !ok(value)) {
+  if (
+    !SAFE_PATH.test(value) ||
+    parts.includes("..") ||
+    parts.includes(".") ||
+    // An empty segment (a trailing / or //): lstat of "link/" follows the link.
+    parts.slice(1).includes("") ||
+    !ok(value)
+  ) {
     throw new Error(
       `${where} must be an absolute path of letters, digits, . _ - and / in .stack/ or the temp dir`,
     );

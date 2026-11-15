@@ -354,6 +354,17 @@ describe("up refuses before it changes anything", () => {
     expect(statSync(target).mode & 0o777).toBe(0o755);
     expect(existsSync(join(target, "up.lock"))).toBe(false);
   });
+
+  it("leaves the target alone when the linked path ends in / (QA c.6900522385)", () => {
+    const target = join(dir, "target-slash");
+    mkdirSync(target, { mode: 0o755 });
+    symlinkSync(target, join(dir, "linked-slash"));
+    const result = run(["up", "--env", "ci"], { VS1_STACK_DIR: `${join(dir, "linked-slash")}/` });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/stack directory/u);
+    expect(statSync(target).mode & 0o777).toBe(0o755);
+    expect(existsSync(join(target, "up.lock"))).toBe(false);
+  });
 });
 
 describe("a stack directory outside .stack/ and the temp dir", () => {
