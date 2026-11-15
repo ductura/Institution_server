@@ -22,5 +22,15 @@
     "key_permissions": "Datoteku razvojnog ključa za potpisivanje smije čitati samo njezin vlasnik.",
     "key_malformed": "Datoteka razvojnog ključa za potpisivanje nije ispravna.",
     "key_unreadable": "Datoteku razvojnog ključa za potpisivanje nije moguće pročitati."
+  },
+  "forbiddenTerms": {
+    "unlisted_file": "U mapi locales/ je datoteka koju skener zabranjenih izraza nema na popisu.",
+    "catalogue_missing": "Katalog tekstova s popisa skenera zabranjenih izraza ne postoji.",
+    "unreadable_file": "Skener zabranjenih izraza ne može pročitati katalog tekstova.",
+    "unknown_export": "Katalog tekstova ima izvoz koji skener zabranjenih izraza ne poznaje.",
+    "not_text": "U katalogu tekstova je vrijednost koja nije običan tekst.",
+    "duplicate_key": "Isti ključ u katalogu tekstova napisan je dvaput.",
+    "stale_same_in_both": "Putanja na popisu SAME_IN_BOTH više nema jednak tekst u oba jezika.",
+    "stale_exception": "Iznimka rječnika zabranjenih izraza više ne vrijedi."
   }
 }
