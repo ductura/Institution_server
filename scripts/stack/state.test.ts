@@ -1,5 +1,5 @@
 // DAN-759: the state file names the repository SHA and the package versions.
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,5 +50,12 @@ describe("state", () => {
     writeState(file, state);
     expect(readState(file)).toEqual(state);
     expect(statSync(file).mode & 0o777).toBe(0o600);
+    expect(existsSync(`${file}.tmp`)).toBe(false);
+  });
+
+  it("calls a truncated file unreadable instead of throwing", () => {
+    const file = join(dir, "broken.json");
+    writeFileSync(file, '{"env": "ci", "ports": {');
+    expect(readState(file)).toBe("unreadable");
   });
 });

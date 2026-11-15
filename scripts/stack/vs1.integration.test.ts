@@ -1,6 +1,7 @@
 // DAN-759, D-09: run as a script, the stack refuses a production-like setting
 // before it starts anything, and none of it reaches the server build.
 import { spawnSync } from "node:child_process";
+import { createServer } from "node:http";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -50,6 +51,25 @@ describe("pnpm stack:vs1 refuses before it starts anything", () => {
     expect(result.stderr).toMatch(message);
     for (const port of Object.values(PORTS)) expect(await portFree(Number(port))).toBe(true);
     expect(existsSync(STATE)).toBe(hadState);
+  });
+});
+
+describe("pnpm stack:vs1 down without a state", () => {
+  it("still reports something answering on a port of the stack", async () => {
+    // A running local stack would be stopped by this test: fail instead.
+    expect(existsSync(STATE), "stop the local VS-1 stack before the tests").toBe(false);
+    const orphan = createServer();
+    await new Promise<void>((resolve) =>
+      orphan.listen(Number(PORTS.VS1_SERVER_PORT), "127.0.0.1", resolve),
+    );
+    try {
+      const result = run(["down"], {});
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/port 4197 \(server\) still answers/u);
+    } finally {
+      await new Promise<void>((resolve) => orphan.close(() => resolve()));
+    }
+    expect(run(["down"], {}).status).toBe(0);
   });
 });
 

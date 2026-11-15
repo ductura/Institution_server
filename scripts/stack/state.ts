@@ -3,7 +3,7 @@
 // may stop (process ids with the command line each must still have).
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Ports, StackEnv } from "./config.ts";
@@ -59,16 +59,24 @@ export function repoRevision(root: string): { sha: string; dirty: boolean } {
 export const sha256File = (file: string): string =>
   createHash("sha256").update(readFileSync(file)).digest("hex");
 
+/** Writes the whole file or nothing (temporary file, then rename). */
 export function writeState(file: string, state: StackState): void {
-  writeFileSync(file, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
+  writeFileSync(`${file}.tmp`, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
+  renameSync(`${file}.tmp`, file);
 }
 
-/** The state, or null when the stack was never started or is down. */
-export function readState(file: string): StackState | null {
+/** The state; null when there is none, "unreadable" when the file is not valid JSON. */
+export function readState(file: string): StackState | null | "unreadable" {
+  let text: string;
   try {
-    return JSON.parse(readFileSync(file, "utf8")) as StackState;
+    text = readFileSync(file, "utf8");
   } catch (error) {
     if (error instanceof Error && Reflect.get(error, "code") === "ENOENT") return null;
     throw error;
+  }
+  try {
+    return JSON.parse(text) as StackState;
+  } catch {
+    return "unreadable";
   }
 }

@@ -57,10 +57,14 @@ export function portFree(port: number): Promise<boolean> {
   });
 }
 
-/** The command line of `pid`, or null when no such process exists. */
+/** The whole command line of `pid` (never cut to COLUMNS), or null when no such process exists. */
 export function commandLine(pid: number): string | null {
+  const env = { PATH: process.env.PATH ?? "" };
   try {
-    return execFileSync("ps", ["-o", "command=", "-p", String(pid)], { encoding: "utf8" }).trim();
+    return execFileSync("ps", ["-ww", "-o", "command=", "-p", String(pid)], {
+      encoding: "utf8",
+      env,
+    }).trim();
   } catch {
     return null;
   }
@@ -72,8 +76,17 @@ export type StopDeps = {
   wait?: Wait;
 };
 
+// A group that exits between the check and the signal is already stopped.
+function signalGroup(pid: number, signal: NodeJS.Signals): void {
+  try {
+    process.kill(-pid, signal);
+  } catch (error) {
+    if (Reflect.get(error as object, "code") !== "ESRCH") throw error;
+  }
+}
+
 /**
- * Stops the process group of `pid` if its command line holds `marker`:
+ * Stops the process group of `pid` if its command line is exactly `marker`:
  * SIGTERM, then SIGKILL after `graceMs`. "gone" when it had already exited,
  * "foreign" when the id now belongs to something else (left alone).
  */
@@ -90,9 +103,9 @@ export async function stopProcess(
   if (!Number.isInteger(pid) || pid <= 1) return "foreign";
   const line = command(pid);
   if (line === null) return "gone";
-  if (!line.includes(marker)) return "foreign";
-  // An exited child not yet reaped shows as <defunct>, without the marker.
-  const alive = (): boolean => command(pid)?.includes(marker) === true;
+  if (line !== marker) return "foreign";
+  // An exited child not yet reaped shows as <defunct>, not as the marker.
+  const alive = (): boolean => command(pid) === marker;
   kill(pid, "SIGTERM");
   for (let left = graceMs; left > 0; left -= 100) {
     if (!alive()) return "stopped";

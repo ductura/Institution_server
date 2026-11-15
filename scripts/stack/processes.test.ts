@@ -5,7 +5,7 @@ import type { AddressInfo } from "node:net";
 
 import { describe, expect, it } from "vitest";
 
-import { portFree, stopProcess, waitHealthy } from "./index.ts";
+import { commandLine, portFree, stopProcess, waitHealthy } from "./index.ts";
 
 const noWait = async (): Promise<void> => {};
 
@@ -25,7 +25,7 @@ function fakeProcess(lines: (string | null)[]): {
 
 describe("stopProcess", () => {
   it("sends SIGTERM to a process that still runs the marker", async () => {
-    const fake = fakeProcess(["node /r/dist/server.js", "node /r/dist/server.js", null]);
+    const fake = fakeProcess(["/r/dist/server.js", "/r/dist/server.js", null]);
     expect(await stopProcess(4242, "/r/dist/server.js", 1000, { ...fake, wait: noWait })).toBe(
       "stopped",
     );
@@ -33,17 +33,25 @@ describe("stopProcess", () => {
   });
 
   it("sends SIGKILL after the grace period", async () => {
-    const fake = fakeProcess(["node /r/dist/server.js"]);
+    const fake = fakeProcess(["/r/dist/server.js"]);
     await stopProcess(4242, "/r/dist/server.js", 300, { ...fake, wait: noWait });
     expect(fake.signals).toEqual(["4242:SIGTERM", "4242:SIGKILL"]);
   });
 
   it("treats a defunct process as stopped", async () => {
-    const fake = fakeProcess(["node /r/dist/server.js", "[node] <defunct>"]);
+    const fake = fakeProcess(["/r/dist/server.js", "[node] <defunct>"]);
     expect(await stopProcess(4242, "/r/dist/server.js", 1000, { ...fake, wait: noWait })).toBe(
       "stopped",
     );
     expect(fake.signals).toEqual(["4242:SIGTERM"]);
+  });
+
+  it("leaves a process that only mentions the marker alone", async () => {
+    const fake = fakeProcess(["tail -f /r/dist/server.js"]);
+    expect(await stopProcess(4242, "/r/dist/server.js", 1000, { ...fake, wait: noWait })).toBe(
+      "foreign",
+    );
+    expect(fake.signals).toEqual([]);
   });
 
   it("leaves a reused id alone", async () => {
@@ -63,11 +71,30 @@ describe("stopProcess", () => {
   });
 
   it.each([0, 1, -5, 1.5, Number.NaN])("never signals the id %s", async (pid) => {
-    const fake = fakeProcess(["node /r/dist/server.js"]);
+    const fake = fakeProcess(["/r/dist/server.js"]);
     expect(await stopProcess(pid, "/r/dist/server.js", 1000, { ...fake, wait: noWait })).toBe(
       "foreign",
     );
     expect(fake.signals).toEqual([]);
+  });
+});
+
+describe("commandLine", () => {
+  it("reads the whole command line, whatever COLUMNS says", () => {
+    const saved = process.env.COLUMNS;
+    process.env.COLUMNS = "20";
+    try {
+      const line = commandLine(process.pid) ?? "";
+      expect(line.length).toBeGreaterThan(20);
+      expect(line.startsWith(process.execPath)).toBe(true);
+    } finally {
+      if (saved === undefined) delete process.env.COLUMNS;
+      else process.env.COLUMNS = saved;
+    }
+  });
+
+  it("is null for a process that does not exist", () => {
+    expect(commandLine(2 ** 22 + 7)).toBeNull();
   });
 });
 
