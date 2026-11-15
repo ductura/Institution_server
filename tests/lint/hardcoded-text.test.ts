@@ -197,6 +197,9 @@ const failing: [messageId: string, code: string][] = [
   ["builder", 'export const e = new Date(0).toLocaleDateString("hr-HR");'],
   ["sentence", "export const e = (x: string) => `Molimo ${x} pokusajte ${x} ponovno`;"],
   ["encoded", 'export const e = "&eth;";'],
+  // Review FAIL on #64 (cxcrs64): an upper-case scheme, a surrogate pair.
+  ["encoded", 'export const e = fetch("DATA:text/plain;base64,xI1la2Fq");'],
+  ["encoded", "export const e = JSON.parse('\"\\\\uD801\\\\uDC00\"');"],
   // (3) Server code may not import a test or a fixture.
   ["exempt", 'import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;'],
   ["exempt", 'export { x } from "./y.test.ts";'],
