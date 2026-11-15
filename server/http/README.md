@@ -8,7 +8,9 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 - `createRouter` traži rutu po metodi i putanji iz ugovora (`server/contracts`), s točnim podudaranjem i bez upita. Odbijanja imaju oblik ugovora:
   - nepoznata putanja: 404 `{"error":"not_found"}` (`FALLBACK`);
   - druga metoda: 405 `{"error":"method_not_allowed"}` uz `Allow`;
-  - iznimka u rukovatelju: 500 `{"error":"internal"}`, a zapisuje se samo ime greške.
+  - iznimka u rukovatelju: 500 `{"error":"internal"}` (`INTERNAL` iz ugovora, DAN-776), a zapisuje se samo ime greške iz zatvorenog popisa (`errorName`).
+  - Sve odgovore 500 šalje `answerInternal` (`security-headers.ts`). Prije prvog bajta briše sva zaglavlja i statusnu liniju koje je postavio rukovatelj ili sloj, ponovno postavlja sigurnosna zaglavlja i zatvara vezu. Nakon početka odgovora prekida samo nedovršen odgovor, a dovršeni pušta do kraja. Nikad ne baca iznimku.
+  - `sendJson` (`json.ts`) serijalizira tijelo prije `writeHead`, pa tijelo koje se ne može serijalizirati daje 500 `internal`, a ne prekinutu vezu.
 - `HEALTH_ROUTE` je `GET /api/v1/health`, s tijelom točno `{"status":"ok"}` i `Cache-Control: no-store`. Ne čita bazu, sesiju ni okolinu (prijenos Ductusa `app/api/health/route.ts`).
 - `routesOf` daje rute imenovanih područja (`areas.ts`).
 - `createDatabases` daje registar baza nad `server/database`. Ništa ne otvara, jer se veza otvara pri prvoj upotrebi. `close()` zatvara otvorene bazene pri gašenju; svaka nova baza u registru zatvara se i ondje.

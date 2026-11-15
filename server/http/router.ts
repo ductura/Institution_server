@@ -1,38 +1,34 @@
 // Router of /api/v1 (docs/server-map.md §3, step 8). A route is its contract
 // from server/contracts plus a handler; the method and path come from the
 // contract only. Refusals use the error words of the contract: FALLBACK
-// (404 not_found), INTERNAL (500 internal) and the 405 of the fake server (U8). Later steps (session,
-// schema from the contract) attach here with S-1B-b and U4.
+// (404 not_found), INTERNAL (500 internal) and the 405 of the fake server
+// (U8). Later steps (session, schema from the contract) attach here with
+// S-1B-b and U4.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { FALLBACK, INTERNAL, type RouteContract } from "../contracts/index.ts";
+import { FALLBACK, type RouteContract } from "../contracts/index.ts";
+
+import { sendJson } from "./json.ts";
+import { answerInternal } from "./security-headers.ts";
 
 export type Handler = (request: IncomingMessage, response: ServerResponse) => Promise<void>;
 export type Route = { readonly contract: RouteContract; readonly handle: Handler };
 export type Router = (request: IncomingMessage, response: ServerResponse) => Promise<void>;
 
-const NO_STORE = "no-store";
+export { sendJson } from "./json.ts";
 
-/** A JSON answer; the only way this folder writes a body. */
-export function sendJson(
-  response: ServerResponse,
-  status: number,
-  body: unknown,
-  headers: Readonly<Record<string, string>> = {},
-): void {
-  // Serialized before the head: a body that cannot be (BigInt, a cycle, a
-  // throwing toJSON) throws while a 500 internal can still be sent instead.
-  const text = JSON.stringify(body);
-  response.writeHead(status, {
-    "content-type": "application/json; charset=utf-8",
-    "cache-control": NO_STORE,
-    ...headers,
-  });
-  response.end(text);
-}
-
-/** The body of the 500 answer, exactly the contract's: one closed word, nothing else. */
-export const INTERNAL_BODY = { error: INTERNAL.error.code } as const;
+// The names errorName passes on; any other name (a subclass, a name set from
+// data) is logged as "Error", so nothing from a request reaches the log.
+const BUILT_IN_NAMES: ReadonlySet<string> = new Set([
+  "Error",
+  "AggregateError",
+  "EvalError",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "TypeError",
+  "URIError",
+]);
 
 /**
  * The name of a thrown value for the log, never its message. Reading it never
@@ -42,7 +38,7 @@ export function errorName(error: unknown): string {
   try {
     if (!(error instanceof Error)) return error === null ? "null" : typeof error;
     const name: unknown = error.name;
-    return typeof name === "string" && /^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(name) ? name : "Error";
+    return typeof name === "string" && BUILT_IN_NAMES.has(name) ? name : "Error";
   } catch {
     return "unreadable";
   }
@@ -89,8 +85,7 @@ export function createRouter(routes: readonly Route[]): Router {
     } catch (error) {
       // Only the name of the error: never its message, the request or a token.
       console.error("route failed", route.contract.id, errorName(error));
-      if (!response.headersSent) sendJson(response, INTERNAL.error.status, INTERNAL_BODY);
-      else response.destroy();
+      answerInternal(response);
     }
   };
 }

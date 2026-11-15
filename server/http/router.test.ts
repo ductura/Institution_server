@@ -11,6 +11,7 @@ import { createRouter, errorName, type Route, routePath, sendJson } from "./rout
 
 type Answer = {
   status?: number;
+  statusMessage?: string;
   headers?: Record<string, string>;
   body?: string;
   destroyed?: boolean;
@@ -23,15 +24,24 @@ function call(
   url: string,
 ): Promise<Answer> {
   const answer: Answer = {};
+  const set = new Map<string, string>();
   const response = {
     headersSent: false,
+    writableEnded: false,
+    statusMessage: "",
+    setHeader: (name: string, value: string) => set.set(name.toLowerCase(), value),
+    hasHeader: (name: string) => set.has(name.toLowerCase()),
+    removeHeader: (name: string) => set.delete(name.toLowerCase()),
+    getHeaderNames: () => [...set.keys()],
     writeHead(status: number, headers: Record<string, string>) {
       answer.status = status;
-      answer.headers = headers;
+      answer.statusMessage = this.statusMessage;
+      answer.headers = { ...Object.fromEntries(set), ...headers };
       this.headersSent = true;
     },
-    end(body: string) {
-      answer.body = body;
+    end(body?: string) {
+      if (body !== undefined) answer.body = body;
+      this.writableEnded = true;
     },
     destroy() {
       answer.destroyed = true;
@@ -218,6 +228,50 @@ describe("createRouter on a failing handler (DAN-776)", () => {
     },
   );
 
+  it("drops the headers and status line a failed handler set, keeps the security headers", async () => {
+    quiet();
+    const answer = await call(
+      failingWith(async (_request, response) => {
+        response.statusMessage = `db ${CANARY} down`;
+        response.setHeader("x-debug", CANARY);
+        response.setHeader("set-cookie", `s=${CANARY}`);
+        response.setHeader("content-encoding", "gzip");
+        response.setHeader("content-length", "3");
+        response.setHeader("X-Frame-Options", CANARY);
+        throw leaky();
+      }),
+      "GET",
+      "/api/v1/ready",
+    );
+    expect([answer.status, answer.statusMessage, answer.body]).toEqual([
+      500,
+      "Internal Server Error",
+      '{"error":"internal"}',
+    ]);
+    expect(JSON.stringify(answer.headers)).not.toContain(CANARY);
+    expect(answer.headers).not.toHaveProperty("content-encoding");
+    expect(answer.headers).not.toHaveProperty("content-length");
+    expect(answer.headers?.["x-frame-options"]).toBe("DENY");
+    expect(answer.headers?.connection).toBe("close");
+  });
+
+  it("a failure after a finished answer leaves it to complete", async () => {
+    quiet();
+    const answer = await call(
+      failingWith(async (_request, response) => {
+        sendJson(response, 200, { status: "ready" });
+        throw leaky();
+      }),
+      "GET",
+      "/api/v1/ready",
+    );
+    expect([answer.status, answer.body, answer.destroyed]).toEqual([
+      200,
+      '{"status":"ready"}',
+      undefined,
+    ]);
+  });
+
   it("a failure after the head was sent writes nothing more and cuts the connection", async () => {
     quiet();
     const answer = await call(
@@ -246,6 +300,8 @@ describe("errorName", () => {
     [null, "null"],
     [undefined, "undefined"],
     [{ name: CANARY }, "object"],
+    [Object.assign(new Error(CANARY), { name: "MadeUpCanary9z" }), "Error"],
+    [new (class MadeUpCanaryError extends Error {})(CANARY), "Error"],
   ])("%#: a closed word, never the message", (error, name) => {
     // Hostile values come as factories, so the runner never formats them.
     const made = name === "unreadable" ? (error as () => unknown)() : error;

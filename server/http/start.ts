@@ -4,12 +4,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { Server as NetServer, type Socket } from "node:net";
 
-import { INTERNAL } from "../contracts/index.ts";
-
 import type { Databases } from "./databases.ts";
 import { createPipeline, type Layers } from "./pipeline.ts";
 import { createRouter, errorName, type Route, sendJson } from "./router.ts";
-import { applySecurityHeaders, refuse } from "./security-headers.ts";
+import { answerInternal, applySecurityHeaders, refuse } from "./security-headers.ts";
 import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
 
 export type StartOptions = {
@@ -170,8 +168,7 @@ export async function startServer(options: StartOptions): Promise<Running> {
     void handle(request, response)
       .catch((error: unknown) => {
         console.error("request failed", errorName(error));
-        if (!response.headersSent) refuse(response, INTERNAL.error.status, INTERNAL.error.code);
-        else response.destroy();
+        answerInternal(response);
       })
       .finally(done);
   });
