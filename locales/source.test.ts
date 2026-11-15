@@ -32,6 +32,14 @@ describe("port from Ductus", () => {
     },
   );
 
+  it("gives a different digest when a list becomes an object", () => {
+    const copy = structuredClone(messagesHr);
+    const dialog = copy.teacherRoles.confirmDialog as unknown as Record<string, unknown>;
+    expect(Array.isArray(dialog["points"])).toBe(true);
+    dialog["points"] = { ...(dialog["points"] as string[]) };
+    expect(digestOf(copy, sourcePath).sha256).not.toBe(SOURCE_DIGESTS.hr.sha256);
+  });
+
   it("gives a different digest without the key renames", () => {
     expect(digestOf(messagesHr).sha256).not.toBe(SOURCE_DIGESTS.hr.sha256);
   });
@@ -73,6 +81,8 @@ describe("message keys", () => {
 
   it("refuse a key with no text at run time", () => {
     expect(() => textOf(messagesHr, "app.missing" as MessageKey)).toThrow(/no text at app.missing/);
+    for (const key of ["constructor.name", "app.toString", "app.name.length", "app.name.0"])
+      expect(() => textOf(messagesHr, key as MessageKey), key).toThrow(/no text at/);
   });
 
   it("do not compile with a key the Croatian table lacks", () => {

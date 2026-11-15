@@ -20,11 +20,11 @@ export const SOURCE = {
 export const SOURCE_DIGESTS = {
   hr: {
     texts: 1375,
-    sha256: "8430991d9c9677fef09be92d195d03d58dd2e3af1cebc475ed93e09f5880cf9c",
+    sha256: "49de20cbd6810ed5c12ab1cba7b2e9195dc3241d18b3493cb7f49140a1ea22cc",
   },
   en: {
     texts: 1375,
-    sha256: "b8d6022efe12157957b0c20a93660b54c816567a3e8feac1c63c7c9b366b17f6",
+    sha256: "1b7dcb2b66aa994a45a12b090b5a39a89698cc08d620dc9cddfbeec30cf56a39",
   },
 } as const;
 
@@ -41,13 +41,16 @@ export const SOURCE_KEY_RENAMES: readonly (readonly [source: string, port: strin
   ["statusPage.states.nije_ukljuceno", "statusPage.states.notEnabled"],
 ];
 
-type TextPair = readonly [path: readonly string[], text: string];
+/** A key of an object, or the index (a number) of a list, so the two differ in a digest. */
+type Segment = string | number;
+type TextPair = readonly [path: readonly Segment[], text: string];
 
 /** Every text of a table with its path as segments. */
 export function textPairs(table: unknown): TextPair[] {
   const pairs: TextPair[] = [];
-  const walk = (node: unknown, path: readonly string[]): void => {
+  const walk = (node: unknown, path: readonly Segment[]): void => {
     if (typeof node === "string") pairs.push([path, node]);
+    else if (Array.isArray(node)) node.forEach((value, at) => walk(value, [...path, at]));
     else if (typeof node === "object" && node !== null)
       for (const [key, value] of Object.entries(node)) walk(value, [...path, key]);
   };
@@ -56,7 +59,7 @@ export function textPairs(table: unknown): TextPair[] {
 }
 
 /** The path a ported text had in the source table. */
-export function sourcePath(path: readonly string[]): string[] {
+export function sourcePath(path: readonly Segment[]): Segment[] {
   for (const [source, port] of SOURCE_KEY_RENAMES) {
     const segments = port.split(".");
     if (segments.every((segment, at) => path[at] === segment))
@@ -68,7 +71,7 @@ export function sourcePath(path: readonly string[]): string[] {
 /** SHA-256 of all (path, text) pairs of a table, paths taken through `toPath`. */
 export function digestOf(
   table: unknown,
-  toPath: (path: readonly string[]) => readonly string[] = (path) => path,
+  toPath: (path: readonly Segment[]) => readonly Segment[] = (path) => path,
 ): { texts: number; sha256: string } {
   const pairs = textPairs(table).map(([path, text]) => [toPath(path), text] as const);
   const ordered = [...pairs].sort((a, b) => {

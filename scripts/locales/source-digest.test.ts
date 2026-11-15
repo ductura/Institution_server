@@ -28,9 +28,10 @@ function asSource(table: unknown, change?: (text: string) => string): Record<str
   const root: Record<string, unknown> = {};
   for (const [path, text] of textPairs(table)) {
     const segments = sourcePath(path);
-    let node = root;
-    for (const segment of segments.slice(0, -1))
-      node = (node[segment] ??= {}) as Record<string, unknown>;
+    let node: Record<string | number, unknown> = root;
+    // A number segment is a list index, so its parent is a list (the digest tells them apart).
+    for (const [at, segment] of segments.slice(0, -1).entries())
+      node = (node[segment] ??= typeof segments[at + 1] === "number" ? [] : {}) as typeof node;
     node[segments.at(-1) ?? ""] = change && path.join(".") === "app.tagline" ? change(text) : text;
   }
   return root;
