@@ -10,6 +10,7 @@ import {
   createFromSource,
   createPgliteDatabase,
   MAIN_SOURCE,
+  reopen,
   upSection,
   type PgliteDatabase,
 } from "./database.ts";
@@ -43,6 +44,17 @@ function copy(edit: (dir: string, ledger: string) => void) {
 async function rewriteLedger(ledger: string, dir: string): Promise<void> {
   const { readMigrations, renderLedger } = await import("../../../scripts/db/index.ts");
   writeFileSync(ledger, renderLedger(readMigrations(dir)));
+}
+
+/** A database with ductus_migrator as the session user and an empty ledger table. */
+async function migratorDatabase(): Promise<PGlite> {
+  const db = new PGlite();
+  await db.exec(`CREATE ROLE ductus_migrator NOLOGIN NOSUPERUSER NOBYPASSRLS;
+    CREATE ROLE app_group NOLOGIN NOBYPASSRLS;
+    GRANT CREATE ON SCHEMA public TO ductus_migrator;
+    CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY);
+    GRANT INSERT, SELECT ON public.schema_migrations TO ductus_migrator;`);
+  return reopen(db, "ductus_migrator");
 }
 
 describe("createPgliteDatabase", () => {
@@ -117,12 +129,8 @@ describe("migration source", () => {
   }, 60_000);
 
   it("leaves nothing of the failed migration and stops before the next", async () => {
-    const db = new PGlite();
+    const db = await migratorDatabase();
     try {
-      await db.exec(`CREATE ROLE ductus_migrator NOLOGIN NOSUPERUSER NOBYPASSRLS;
-        GRANT CREATE ON SCHEMA public TO ductus_migrator;
-        CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY);
-        GRANT INSERT ON public.schema_migrations TO ductus_migrator;`);
       const migration = (version: string, up: string) => ({
         name: `${version}_m.sql`,
         version,
@@ -171,23 +179,41 @@ describe("migration source", () => {
     );
   });
 
-  it.each([
-    ["COMMIT", "CREATE TABLE public.c1 (v int); COMMIT;", /ends its own transaction/u],
-    ["RESET ROLE", "RESET ROLE; CREATE TABLE public.r1 (v int);", /ran as the superuser/u],
-    ["RESET ROLE", "RESET ROLE; CREATE ROLE evil SUPERUSER;", /ran as the superuser/u],
-  ])("refuses a migration that leaves the migrator role (%s)", async (_what, up, message) => {
+  it("runs with ductus_migrator as the session user, so RESET ROLE stays there", async () => {
+    const db = await migratorDatabase();
+    try {
+      await applyMigrations(db, [
+        { name: "1_m.sql", version: "1", up: "RESET ROLE; CREATE TABLE public.r1 (v int);" },
+      ]);
+      const owner = await db.query(
+        "SELECT pg_catalog.pg_get_userbyid(relowner) AS owner FROM pg_catalog.pg_class WHERE relname = 'r1'",
+      );
+      expect(owner.rows).toEqual([{ owner: "ductus_migrator" }]);
+      for (const [version, up, message] of [
+        ["2", "CREATE TABLE public.c1 (v int); COMMIT;", /ends its own transaction/u],
+        ["3", "RESET ROLE; ALTER ROLE app_group BYPASSRLS;", /permission denied/u],
+        ["4", "RESET ROLE; CREATE ROLE evil SUPERUSER;", /permission denied/u],
+        ["5", "SET ROLE postgres;", /permission denied/u],
+      ] as const) {
+        await expect(
+          applyMigrations(db, [{ name: `${version}_m.sql`, version, up }]),
+        ).rejects.toThrow(message);
+      }
+      const state = await db.query(
+        `SELECT (SELECT array_agg(version) FROM public.schema_migrations) AS versions,
+                (SELECT rolbypassrls FROM pg_catalog.pg_roles WHERE rolname = 'app_group') AS bypass,
+                (SELECT count(*)::int FROM pg_catalog.pg_roles WHERE rolname = 'evil') AS evil`,
+      );
+      expect(state.rows).toEqual([{ versions: ["1"], bypass: false, evil: 0 }]);
+    } finally {
+      await db.close();
+    }
+  });
+
+  it("refuses to run migrations as the superuser", async () => {
     const db = new PGlite();
     try {
-      await db.exec(`CREATE ROLE ductus_migrator NOLOGIN NOSUPERUSER NOBYPASSRLS;
-        GRANT CREATE ON SCHEMA public TO ductus_migrator;
-        CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY);
-        GRANT INSERT ON public.schema_migrations TO ductus_migrator;`);
-      await applyMigrations(db, [{ name: "1_m.sql", version: "1", up: "SELECT 1; RESET ROLE;" }]);
-      await expect(applyMigrations(db, [{ name: "2_m.sql", version: "2", up }])).rejects.toThrow(
-        message,
-      );
-      const applied = await db.query("SELECT version FROM public.schema_migrations");
-      expect(applied.rows).toEqual([{ version: "1" }]);
+      await expect(applyMigrations(db, [])).rejects.toThrow(/session user/u);
     } finally {
       await db.close();
     }

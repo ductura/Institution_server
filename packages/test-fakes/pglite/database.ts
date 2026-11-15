@@ -63,39 +63,38 @@ export function loadMigrations(source: MigrationSource): Migration[] {
   });
 }
 
-// Objects owned by the bootstrap superuser, and superusers: a migration adds
-// none, as the role it runs as cannot.
-const SUPERUSER_FOOTPRINT = `SELECT
-  (SELECT count(*) FROM pg_catalog.pg_class WHERE relowner = 10)
-  + (SELECT count(*) FROM pg_catalog.pg_proc WHERE proowner = 10)
-  + (SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspowner = 10)
-  + (SELECT count(*) FROM pg_catalog.pg_type WHERE typowner = 10)
-  + (SELECT count(*) FROM pg_catalog.pg_roles WHERE rolsuper) AS n`;
+export const MIGRATOR = "ductus_migrator";
 
-const footprint = async (db: PGlite): Promise<string> =>
-  String((await db.query<{ n: string | number }>(SUPERUSER_FOOTPRINT)).rows[0]?.n);
+/** The same database, reopened in memory with `username` as its session user. */
+export async function reopen(db: PGlite, username?: string): Promise<PGlite> {
+  const dump = await db.dumpDataDir("none");
+  await db.close();
+  const next = new PGlite(
+    username === undefined ? { loadDataDir: dump } : { loadDataDir: dump, username },
+  );
+  await next.waitReady;
+  return next;
+}
 
 /**
- * Applies each migration in its own transaction as ductus_migrator, as dbmate
- * with `role=`. There the role is the connection's, so RESET ROLE returns to
- * it; here SET LOCAL ends at RESET ROLE or COMMIT and the rest would run as the
- * superuser. So a COMMIT inside a migration, or anything it leaves owned by
- * the superuser, is refused.
+ * Applies each migration in its own transaction. As with dbmate and `role=`,
+ * ductus_migrator must be the session's own role, so that RESET ROLE inside a
+ * migration returns to it and nothing runs as the superuser; a COMMIT inside a
+ * migration would break the all-or-nothing file, so it is refused.
  */
 export async function applyMigrations(db: PGlite, migrations: readonly Migration[]): Promise<void> {
+  const session = await db.query<{ u: string }>("SELECT session_user AS u");
+  if (session.rows[0]?.u !== MIGRATOR)
+    throw new Error(`migrations run with ${MIGRATOR} as the session user`);
   for (const migration of migrations) {
-    const before = await footprint(db);
-    await db.exec(
-      "BEGIN; SET LOCAL ROLE ductus_migrator; SET LOCAL ductura.fake_migration = 'on';",
-    );
+    await db.exec("BEGIN; SET LOCAL ductura.fake_migration = 'on';");
     try {
       await db.exec(migration.up);
       const inside = await db.query<{ on: string | null }>(
         "SELECT current_setting('ductura.fake_migration', true) AS on",
       );
       if (inside.rows[0]?.on !== "on") throw new Error("ends its own transaction");
-      if ((await footprint(db)) !== before) throw new Error("ran as the superuser");
-      await db.exec("SET LOCAL ROLE ductus_migrator");
+      await db.exec("RESET ROLE");
       await db.query("INSERT INTO public.schema_migrations (version) VALUES ($1)", [
         migration.version,
       ]);
@@ -112,22 +111,25 @@ export type PgliteDatabase = { readonly db: PGlite; close(): Promise<void> };
 /** A new in-memory main database with the local roles and every migration of `source`. */
 export async function createFromSource(source: MigrationSource): Promise<PgliteDatabase> {
   const migrations = loadMigrations(source);
-  const db = new PGlite();
+  let db = new PGlite();
   try {
     await db.waitReady;
     // The parts of `pnpm db:migrate` (package.json) the main database needs
     // here; the worker and auth login roles are not provisioned.
     await db.exec(readFileSync(join(LOCAL, "migrator.sql"), "utf8"));
     await db.exec(
-      "SET ROLE ductus_migrator; CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY); RESET ROLE;",
+      `SET ROLE ${MIGRATOR}; CREATE TABLE public.schema_migrations (version varchar(128) PRIMARY KEY); RESET ROLE;`,
     );
+    db = await reopen(db, MIGRATOR);
     await applyMigrations(db, migrations);
+    db = await reopen(db);
     await db.exec(readFileSync(join(LOCAL, "app-login.sql"), "utf8"));
   } catch (error) {
-    await db.close();
+    if (!db.closed) await db.close();
     throw error;
   }
-  return { db, close: () => db.close() };
+  const result = db;
+  return { db: result, close: () => result.close() };
 }
 
 export type PgliteDatabaseOptions = { readonly database: "main" };
