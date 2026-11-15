@@ -315,6 +315,25 @@ describe("readBodyWithLimit (#155 items 10 and 12, HTTP part)", () => {
     expect(await readBodyWithLimit(request, LIMIT)).toMatchObject({ reason: "body_stream_error" });
   });
 
+  // Adversarial pass on 74ced6c: two readers both got the bytes.
+  it("gives a second, concurrent reader nothing", async () => {
+    const request = bytes("abc");
+    const [first, second] = await Promise.all([
+      readBodyWithLimit(request, LIMIT),
+      readBodyWithLimit(request, LIMIT),
+    ]);
+    expect(first.ok && Buffer.from(first.bytes).toString()).toBe("abc");
+    expect(second).toMatchObject({ reason: "body_stream_error" });
+  });
+
+  // Adversarial pass on 74ced6c: a request paused before the call never flowed.
+  it("reads a request that was paused before the call", async () => {
+    const request = bytes("{}");
+    request.pause();
+    const result = await readBodyWithLimit(request, LIMIT, 1_000);
+    expect(result.ok && Buffer.from(result.bytes).toString()).toBe("{}");
+  });
+
   it("stops a slow body at the route's absolute read deadline", async () => {
     const slow = new Readable({ read() {} });
     const request = Object.assign(slow, { headers: {} }) as unknown as IncomingMessage;
@@ -336,7 +355,8 @@ describe("readBodyWithLimit (#155 items 10 and 12, HTTP part)", () => {
     for (const limit of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
       await expect(readBodyWithLimit(bytes(""), limit), String(limit)).rejects.toThrow(/maxBytes/u);
     }
-    for (const timeout of [0, -1, 1.5, Number.NaN]) {
+    // Adversarial pass on 74ced6c: setTimeout fires at once above 2^31-1.
+    for (const timeout of [0, -1, 1.5, Number.NaN, 2_147_483_648, 3_000_000_000]) {
       await expect(readBodyWithLimit(bytes(""), 10, timeout), String(timeout)).rejects.toThrow(
         /timeoutMs/u,
       );

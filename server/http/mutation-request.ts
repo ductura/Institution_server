@@ -88,6 +88,7 @@ export type LimitedBodyResult =
       reason: "content_length_invalid" | "content_length_mismatch" | "body_stream_error";
     };
 
+// Stricter than RFC 9112 on purpose, as in Ductus: no leading zeros.
 const DECIMAL = /^(?:0|[1-9][0-9]{0,15})$/u;
 
 /**
@@ -121,6 +122,12 @@ const refusedBody = {
  * no partial bytes leave this function. There is no default time limit: a
  * route that accepts a streamed body passes timeoutMs, an absolute deadline.
  */
+// setTimeout fires at once above this (TimeoutOverflowWarning).
+const MAX_TIMEOUT_MS = 2_147_483_647;
+const INITIAL_CAPACITY = 16 * 1024;
+// One reader per request: a second call, even a concurrent one, gets nothing.
+const read = new WeakSet<IncomingMessage>();
+
 export async function readBodyWithLimit(
   request: IncomingMessage,
   maxBytes: number,
@@ -129,9 +136,14 @@ export async function readBodyWithLimit(
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
     throw new Error("maxBytes must be a non-negative safe integer");
   }
-  if (timeoutMs !== undefined && (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1)) {
-    throw new Error("timeoutMs must be a positive safe integer");
+  if (
+    timeoutMs !== undefined &&
+    (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > MAX_TIMEOUT_MS)
+  ) {
+    throw new Error("timeoutMs must be a positive integer of at most 2^31-1");
   }
+  if (read.has(request)) return refusedBody.stream;
+  read.add(request);
   // A late error of a request this function stopped reading must not crash.
   request.on("error", () => undefined);
   const refusal = declaredLengthRefusal(request, maxBytes);
@@ -146,7 +158,10 @@ export async function readBodyWithLimit(
   const declared = header === undefined ? null : Number(header);
 
   return new Promise((resolve) => {
-    const chunks: Buffer[] = [];
+    // Each chunk is copied into one buffer and dropped: a kept chunk would
+    // keep its whole socket read buffer alive, so many tiny chunks would cost
+    // far more memory than maxBytes (adversarial pass on 74ced6c).
+    let buffer = Buffer.alloc(declared ?? Math.min(INITIAL_CAPACITY, maxBytes));
     let size = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const finish = (result: LimitedBodyResult): void => {
@@ -156,17 +171,28 @@ export async function readBodyWithLimit(
       resolve(result);
     };
     const onData = (chunk: Buffer): void => {
-      size += chunk.byteLength;
-      if (size > maxBytes) finish(refusedBody.large);
-      else chunks.push(chunk);
+      const next = size + chunk.byteLength;
+      if (next > maxBytes) {
+        finish(refusedBody.large);
+        return;
+      }
+      if (next > buffer.byteLength) {
+        const grown = Buffer.alloc(Math.min(maxBytes, Math.max(next, buffer.byteLength * 2)));
+        buffer.copy(grown, 0, 0, size);
+        buffer = grown;
+      }
+      chunk.copy(buffer, size);
+      size = next;
     };
     const onEnd = (): void => {
       if (declared !== null && declared !== size) finish(refusedBody.mismatch);
-      else finish({ ok: true, bytes: new Uint8Array(Buffer.concat(chunks, size)) });
+      else finish({ ok: true, bytes: new Uint8Array(buffer.subarray(0, size)) });
     };
     // "close" before "end" is a body the client never finished.
     const onFail = (): void => finish(refusedBody.stream);
     if (timeoutMs !== undefined) timer = setTimeout(() => finish(refusedBody.timeout), timeoutMs);
     request.on("data", onData).on("end", onEnd).on("error", onFail).on("close", onFail);
+    // A request someone paused earlier would otherwise never flow.
+    request.resume();
   });
 }

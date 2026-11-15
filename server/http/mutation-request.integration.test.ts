@@ -2,7 +2,9 @@
 // body is not read to its end, the refusal closes the connection, and a
 // client that goes away leaves body_stream_error. Raw sockets, so the test
 // controls exactly which body bytes are sent. Origins are invented.
+import { spawnSync } from "node:child_process";
 import { connect, type Socket } from "node:net";
+import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -21,6 +23,7 @@ const contract = ROUTES.find((route) => route.id === "profile.interface-locale.p
 if (contract === undefined) throw new Error("no contract");
 
 const results: LimitedBodyResult[] = [];
+let calls = 0;
 
 function open(port: number, lines: string[]): Socket {
   const socket = connect(port, "127.0.0.1");
@@ -51,6 +54,7 @@ describe("readBodyWithLimit on a real server", () => {
         {
           contract,
           handle: async (request, response) => {
+            calls += 1;
             const result = await readBodyWithLimit(request, LIMIT, 300);
             results.push(result);
             if (result.ok) sendJson(response, 200, { size: result.bytes.byteLength });
@@ -107,4 +111,85 @@ describe("readBodyWithLimit on a real server", () => {
     }
     expect(results).toEqual([{ ok: false, status: 400, reason: "body_stream_error" }]);
   });
+});
+
+// Adversarial pass on 74ced6c: a pipelined request behind a refused body ran
+// although its connection was closing and nobody got its answer.
+describe("a pipelined request behind a refusal", () => {
+  let server: Running;
+  beforeAll(async () => {
+    server = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      databases: createDatabases(),
+      routes: [
+        {
+          contract,
+          handle: async (request, response) => {
+            calls += 1;
+            const result = await readBodyWithLimit(request, LIMIT, 300);
+            if (result.ok) sendJson(response, 200, { size: result.bytes.byteLength });
+            else refuse(response, result.status, result.reason);
+          },
+        },
+      ],
+    });
+  });
+  afterAll(async () => server.close());
+
+  it.each([
+    ["a declared length over the limit", `Content-Length: 20\r\n\r\n${"x".repeat(20)}`],
+    ["a malformed length", "Content-Length: 01\r\n\r\nx"],
+  ])("never runs after %s", async (_, first) => {
+    calls = 0;
+    const socket = connect(server.port, "127.0.0.1");
+    const head = (rest: string) =>
+      `POST ${PATH} HTTP/1.1\r\nHost: 127.0.0.1\r\nOrigin: ${ORIGIN}\r\n${rest}`;
+    socket.write(head(first) + head("Content-Length: 2\r\n\r\nZZ"));
+    const text = await answer(socket);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(text.match(/HTTP\/1\.1 /gu)).toHaveLength(1);
+    expect(calls).toBe(1);
+  });
+});
+
+// Adversarial pass on 74ced6c: each kept chunk held its whole read buffer, so
+// one-byte chunks cost far more memory than the limit. A child process with
+// --expose-gc measures what stays alive while the body is being read.
+describe("memory while reading", () => {
+  it("keeps about the limit alive, not every chunk's parent buffer", () => {
+    const module = fileURLToPath(new URL("./mutation-request.ts", import.meta.url));
+    const probe = `
+      import { Readable } from "node:stream";
+      import { readBodyWithLimit } from ${JSON.stringify(module)};
+      const N = 2000;
+      let sent = 0;
+      let alive = 0;
+      const body = new Readable({
+        highWaterMark: 1,
+        read() {
+          if (sent === N) {
+            globalThis.gc();
+            alive = process.memoryUsage().arrayBuffers;
+            this.push(null);
+            return;
+          }
+          sent += 1;
+          this.push(Buffer.alloc(64 * 1024).subarray(0, 1));
+        },
+      });
+      body.headers = {};
+      const result = await readBodyWithLimit(body, N);
+      console.log(JSON.stringify({ alive, size: result.ok ? result.bytes.byteLength : -1 }));
+    `;
+    const run = spawnSync(process.execPath, ["--expose-gc", "--input-type=module", "-e", probe], {
+      encoding: "utf8",
+      timeout: 20_000,
+    });
+    const { alive, size } = JSON.parse(run.stdout) as { alive: number; size: number };
+    expect(size).toBe(2000);
+    // Kept chunks: 2000 x 64 KiB = 125 MiB.
+    expect(alive).toBeLessThan(16 * 1024 * 1024);
+  }, 30_000);
 });

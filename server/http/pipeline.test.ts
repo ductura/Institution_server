@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs";
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
+import { Duplex } from "node:stream";
 
 import { describe, expect, it } from "vitest";
 
@@ -21,7 +22,11 @@ function exchange(method = "GET"): { request: IncomingMessage; response: ServerR
   const request = new IncomingMessage(new Socket());
   request.method = method;
   request.url = "/api/v1/health";
-  return { request, response: new ServerResponse(request) };
+  const response = new ServerResponse(request);
+  // A socket that discards what is written.
+  const sink = new Duplex({ read() {}, write: (_chunk, _encoding, done) => done() });
+  response.assignSocket(sink as unknown as Socket);
+  return { request, response };
 }
 
 type Spy = { calls: string[]; layers: Layers; app: App };
@@ -180,6 +185,39 @@ describe("createPipeline", () => {
     const response = await run(spy);
     expect(spy.calls).toEqual(["clientIp", "ipRules", "rateLimit", "trafficRecord"]);
     expect(response.destroyed).toBe(true);
+  });
+});
+
+// Adversarial pass on DAN-777 a2: Node hands over a pipelined request before
+// the answer to the one before it; a request queued behind a refusal that
+// closes the connection ran with no one to answer.
+describe("a request whose response has no socket yet", () => {
+  function queued() {
+    const request = new IncomingMessage(new Socket());
+    request.method = "GET";
+    return { request, response: new ServerResponse(request) };
+  }
+
+  it("waits for the socket before the first layer", async () => {
+    const spy = spies();
+    const { request, response } = queued();
+    const done = createPipeline(spy.layers, spy.app)(request, response);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(spy.calls).toEqual([]);
+    response.assignSocket(
+      new Duplex({ read() {}, write: (_c, _e, next) => next() }) as unknown as Socket,
+    );
+    await done;
+    expect(spy.calls).toEqual([...PIPELINE_STEPS, "app"]);
+  });
+
+  it("never runs when the connection closes first", async () => {
+    const spy = spies();
+    const { request, response } = queued();
+    const done = createPipeline(spy.layers, spy.app)(request, response);
+    request.emit("close");
+    await done;
+    expect(spy.calls).toEqual([]);
   });
 });
 
