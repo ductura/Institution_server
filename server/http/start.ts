@@ -5,6 +5,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 
 import type { Databases } from "./databases.ts";
 import { createRouter, type Route, sendJson } from "./router.ts";
+import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
 
 /**
  * One step before the router (docs/server-map.md §3, steps 2 to 7). "done"
@@ -23,12 +24,30 @@ export type StartOptions = {
   readonly routes: readonly Route[];
   /** Handed to the services of the areas when they get routes (S-M); nothing reads it yet. */
   readonly databases: Databases;
+  /** Issues a ticket per request; after stop() a request gets 503 (S-1B-c). */
+  readonly shutdown?: ShutdownCoordinator;
 };
-export type Running = { readonly port: number; close(): Promise<void> };
+export type Running = Listener & { readonly port: number; close(): Promise<void> };
+
+// The refusal while shutting down: the contract's word and format, and the
+// connection is not kept for another request.
+const UNAVAILABLE = { connection: "close", "retry-after": "1" };
 
 export async function startServer(options: StartOptions): Promise<Running> {
   const route = createRouter(options.routes);
+  const shutdown = options.shutdown ?? createShutdownCoordinator();
   const server = createServer((request, response) => {
+    const ticket = shutdown.begin();
+    if (ticket === null) {
+      sendJson(response, 503, { error: "unavailable" }, UNAVAILABLE);
+      return;
+    }
+    response.once("close", () => {
+      ticket.release();
+      // A kept-alive connection whose last request ended while draining is
+      // idle now and closes, so it cannot carry a new request.
+      if (shutdown.state() !== "running") setImmediate(() => server.closeIdleConnections());
+    });
     void (async () => {
       for (const layer of options.layers) {
         if ((await layer(request, response)) === "done") return;
@@ -52,6 +71,11 @@ export async function startServer(options: StartOptions): Promise<Running> {
   const port = typeof address === "object" && address !== null ? address.port : options.port;
   return {
     port,
+    stopAccepting: () => {
+      server.close();
+      server.closeIdleConnections();
+    },
+    closeAllConnections: () => server.closeAllConnections(),
     close: () =>
       new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),

@@ -96,6 +96,8 @@ const ENV_NAMES = [
   // Where the entry point listens (S-1B-a, server/config).
   "PORT",
   "HOST",
+  // The shutdown deadline (S-1B-c, DAN-778, server/config).
+  "SHUTDOWN_GRACE_MS",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported

@@ -52,3 +52,29 @@ export function listenAddress(env: Env = process.env): { host: string; port: num
     port: env.PORT === undefined ? DEFAULT_PORT : Number(env.PORT),
   };
 }
+
+// Shutdown deadline (S-1B-c, DAN-778): optional, in milliseconds. The default
+// stays under the 10 s a container stop waits before SIGKILL; the variable
+// exists so a test does not wait that long. The whole value must be digits.
+export const DEFAULT_SHUTDOWN_GRACE_MS = 8_000;
+export const SHUTDOWN_GRACE_MIN_MS = 100;
+export const SHUTDOWN_GRACE_MAX_MS = 30_000;
+const GRACE_RE = /^[1-9]\d{0,5}$/u;
+
+/** The problem of SHUTDOWN_GRACE_MS, by variable name only; empty when usable. */
+export function shutdownProblems(env: Env = process.env): string[] {
+  const value = env.SHUTDOWN_GRACE_MS;
+  if (value === undefined) return [];
+  const ms = GRACE_RE.test(value) ? Number(value) : Number.NaN;
+  return ms >= SHUTDOWN_GRACE_MIN_MS && ms <= SHUTDOWN_GRACE_MAX_MS
+    ? []
+    : [
+        `SHUTDOWN_GRACE_MS is not a whole number from ${SHUTDOWN_GRACE_MIN_MS} to ${SHUTDOWN_GRACE_MAX_MS}`,
+      ];
+}
+
+/** The shutdown deadline; call only when shutdownProblems is empty. */
+export function shutdownGraceMs(env: Env = process.env): number {
+  const value = env.SHUTDOWN_GRACE_MS;
+  return value === undefined ? DEFAULT_SHUTDOWN_GRACE_MS : Number(value);
+}
