@@ -40,6 +40,12 @@ const failing: Case[] = [
     rule: "database-boundary/no-restricted-dynamic-imports",
     messageId: "restrictedPg",
   },
+  // the contract fake server outside test code (U8; tests/lint/fake-server-boundary.test.ts)
+  {
+    file: AT,
+    code: imp("../contracts/generated/fake-server/index.ts"),
+    rule: "local/no-fake-server-import",
+  },
   // import-boundary: leaving the folder other than through <folder>/index.ts
   ...["./sub/c.ts", "../c.ts", "../sib/c.ts", "./x/../../y/z.ts", "./sub/INDEX.ts"].map((spec) => ({
     file: AT,

@@ -215,9 +215,7 @@ const ESTREE_NODE_NAMES = [
 
 // The naming rule, with extra exact property names (`properties`) and extra
 // exact destructured names (`destructured`) for the folders of one block.
-// Any import of the generated fake server folder, however the path reaches it.
-const FAKE_SERVER_SPECIFIER = String.raw`(?:^|[\\/])generated[\\/]fake-server(?:$|[\\/])`;
-// Test code, which may use the fake server.
+// Test code, which may use the contract fake server (local/no-fake-server-import).
 const TEST_ONLY_FILES = ["**/*.test.ts", "server/test-server/**", "test-support/**"];
 
 function namingConvention(properties: string[], destructured: string[]): Linter.RuleEntry {
@@ -319,28 +317,6 @@ export default defineConfig(
     },
   },
   {
-    // The fake server from the contracts (U8) answers with made-up vectors and
-    // never reaches production code: only tests, server/test-server and
-    // test-support may import it. server/contracts/fake-server.test.ts also
-    // walks the import graph of the production entry point.
-    files: ["**/*.ts"],
-    ignores: TEST_ONLY_FILES,
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            { regex: PG_SPECIFIER, message: "Database access goes through server/database only." },
-            {
-              regex: FAKE_SERVER_SPECIFIER,
-              message: "The contract fake server is for tests only.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
     // The database tests check the database directly. The session-GUC guard
     // (server/database/session-guc-scope.test.ts) is inside server/database.
     files: ["server/database/**", "tests/db/**"],
@@ -348,6 +324,16 @@ export default defineConfig(
       "no-restricted-imports": "off",
       "database-boundary/no-restricted-dynamic-imports": "off",
     },
+  },
+  {
+    // The fake server from the contracts (U8) answers with made-up vectors and
+    // never reaches production code. Its own rule, so the database exception
+    // to no-restricted-imports below or above cannot switch it off.
+    // server/contracts/fake-server.test.ts also walks the import graph of the
+    // production entry point.
+    files: ["**/*.ts"],
+    ignores: TEST_ONLY_FILES,
+    rules: { "local/no-fake-server-import": "error" },
   },
   // Last on purpose: switches off every rule that could fight Prettier, also in
   // blocks above. tests/format/format.test.ts checks the resolved config.
