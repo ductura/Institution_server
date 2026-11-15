@@ -32,6 +32,7 @@ jobs:
       pull-requests: read
     outputs:
       risk: ${{ steps.floor.outputs.risk }}
+      head-sha: ${{ steps.floor.outputs.head-sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -40,7 +41,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-      - name: Risk floor of the changed paths
+      - name: Risk floor of the changed paths and the head it is for
         id: floor
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -53,8 +54,9 @@ jobs:
       issues: read
       pull-requests: read
       statuses: write
-    uses: ductura/.github/.github/workflows/engineering-gate.yml@c039e7ce0dea969415789d9efcf9111d4ac5df1d # gate-v1
+    uses: ductura/.github/.github/workflows/engineering-gate.yml@f5ade4fccb89431eb513a167b79ee519e9307a84 # main nakon .github#14
     with:
-      gate-sha: c039e7ce0dea969415789d9efcf9111d4ac5df1d
+      gate-sha: f5ade4fccb89431eb513a167b79ee519e9307a84
       owner-login: danielrisavi77-create
       minimum-risk: ${{ needs.floor.outputs.risk }}
+      floor-sha: ${{ needs.floor.outputs.head-sha }}
