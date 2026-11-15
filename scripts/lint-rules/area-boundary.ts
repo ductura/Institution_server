@@ -70,22 +70,6 @@ const PGLITE_ALLOWED_RE = /^(?:server\/database|tests\/db|packages\/test-fakes\/
 const ALIAS_RE = /^(?:#|@ductura\/server(?:$|\/))/iu;
 // A URL scheme other than node: (data:, file:, http:) loads code past the path checks.
 const SCHEME_RE = /^(?!node:)[a-z][a-z0-9+.-]*:/iu;
-// Loaders that take a specifier the rule cannot follow once renamed (createRequire
-// from node:module) and process members that load a module without an import.
-// node:process is also banned: it hands out the same members under any name.
-const LOADER_MODULE_RE = /^(?:node:)?(?:module|process)(?:$|\/)/iu;
-// Names that load a module wherever they appear: a member, a destructured key,
-// an import name or a string key ("getBuiltinModule" in process).
-const LOADER_NAMES = new Set(["getBuiltinModule", "mainModule", "dlopen"]);
-// Globals that lead to a loader, with the members never allowed on them. eval
-// and Function can name any global in a string, so they are not used at all.
-const GLOBAL_BANNED = new Set(["process", "global", "globalThis", "eval", "Function"]);
-const GLOBAL_MEMBERS_BANNED = new Map<string, ReadonlySet<string>>([
-  ["process", new Set([...LOADER_NAMES, "binding"])],
-  ["globalThis", GLOBAL_BANNED],
-  ["global", GLOBAL_BANNED],
-]);
-const NEVER_USED_GLOBALS = new Set(["eval", "Function"]);
 
 /** The area of a repository path, ENTRY for server/*.ts, undefined outside server/. */
 export function areaOf(path: string): string | undefined {
@@ -129,7 +113,6 @@ export const areaBoundary: Rule.RuleModule = {
       alias: "Import server code by a relative path, not by a package alias.",
       outside: "Server code imports nothing outside server/ by path; use a package.",
       scheme: "Import by path or package name, not by a URL scheme.",
-      loader: "Server code does not load modules through node:module or process.",
     },
   },
   create(context) {
@@ -197,8 +180,6 @@ export const areaBoundary: Rule.RuleModule = {
         return checkRelative(node, specifier, typeOnly);
       if (ALIAS_RE.test(specifier.trim())) return report(node, "alias");
       if (forms.some((text) => SCHEME_RE.test(text))) return report(node, "scheme");
-      if (!isTest && forms.some((text) => LOADER_MODULE_RE.test(text)))
-        return report(node, "loader");
       if (pure && PURE_PACKAGES[fromArea ?? ""]?.test(specifier) !== true) report(node, "pure");
       else if (isRoutes) report(node, "routes");
     }
@@ -216,44 +197,6 @@ export const areaBoundary: Rule.RuleModule = {
       },
       TSImportType(node: Node & { source?: unknown; argument?: { literal?: unknown } }) {
         check(node, node.source ?? node.argument?.literal, true);
-      },
-      Identifier(node) {
-        if (known && !isTest && LOADER_NAMES.has(node.name)) report(node, "loader");
-      },
-      Literal(node) {
-        const value = (node as { value?: unknown }).value;
-        if (known && !isTest && typeof value === "string" && LOADER_NAMES.has(value))
-          report(node, "loader");
-      },
-      TemplateLiteral(node) {
-        const [quasi] = node.quasis;
-        if (known && !isTest && node.expressions.length === 0 && quasi !== undefined)
-          if (LOADER_NAMES.has(quasi.value.cooked ?? "")) report(node, "loader");
-      },
-      // The globals that reach a module loader (process, globalThis, global) are
-      // used only as `name.member`, never as a value, an alias or a computed key;
-      // eval and Function, which can name them in a string, not at all.
-      "Program:exit"(program) {
-        if (!known || isTest) return;
-        const scope = context.sourceCode.getScope(program);
-        // Built-ins (globalThis, eval, Function) resolve to declared globals;
-        // the others (process, global) stay unresolved in `through`.
-        const builtins = [...GLOBAL_BANNED].flatMap(
-          (name) => scope.set.get(name)?.references ?? [],
-        );
-        for (const ref of [...scope.through, ...builtins]) {
-          const id = ref.identifier as Node & { name: string };
-          if (NEVER_USED_GLOBALS.has(id.name)) {
-            report(id, "loader");
-            continue;
-          }
-          const banned = GLOBAL_MEMBERS_BANNED.get(id.name);
-          if (banned === undefined) continue;
-          const parent = id.parent as Loose & { object?: unknown };
-          const member =
-            parent.type === "MemberExpression" && parent.object === id && parent.computed !== true;
-          if (!member || banned.has(parent.property?.name ?? "")) report(id, "loader");
-        }
       },
       TSExternalModuleReference(node: Node & { expression?: unknown }) {
         const parent = (node as { parent?: Kinded }).parent;

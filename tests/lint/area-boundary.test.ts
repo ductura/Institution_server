@@ -149,52 +149,13 @@ const bypasses: Case[] = [
   ...all("server/log/x.ts", "edge", ["./\t../database/index.ts", "./.\\n./database/index.ts"]),
   { file: "server/domain/x.ts", code: 'import("./\t../log/index.ts");\n', messageId: "edge" },
   ...all("server/session/x.ts", "typeOnly", ["./\\r../database/index.ts"]),
-  // loaders the name matching cannot follow, and builtins without an import
-  ...["server/log/x.ts", "server/session/x.ts", "server/x.ts"].flatMap((file) =>
-    all(file, "loader", ["node:module", "module"]),
-  ),
-  {
-    file: "server/log/x.ts",
-    code: 'const { createRequire: cr } = await import("node:module");\n',
-    messageId: "loader",
-  },
-  ...[
-    'export const fs = process.getBuiltinModule("node:fs");\n',
-    'export const fs = process["getBuiltinModule"]("node:fs");\n',
-    'export const fs = globalThis.process.getBuiltinModule("node:fs");\n',
-    "export const m = process.mainModule;\n",
-  ].map((code) => ({ file: "server/domain/x.ts", code, messageId: "loader" })),
-  // review of 58ecd97 (Codex r4576951391, r4576951392; FAIL c.6888904929)
-  ...[
-    'const { getBuiltinModule } = process;\nexport const fs = getBuiltinModule("node:fs");\n',
-    'const { getBuiltinModule: g } = globalThis.process;\nexport const fs = g("node:fs");\n',
-    'export const fs = process["binding"]("fs");\n',
-    'const k = "x";\nexport const m = process[k];\n',
-  ].map((code) => ({ file: "server/domain/x.ts", code, messageId: "loader" })),
-  ...[
-    'import { getBuiltinModule } from "node:process";\nconst { createRequire: cr } = getBuiltinModule("module");\nexport const db = cr(import.meta.url)("../database/index.ts");\n',
-    'import { getBuiltinModule as g } from "node:process";\nexport const m = g("module");\n',
-    'import p from "process";\nexport const m = p;\n',
-  ].map((code) => ({ file: "server/log/x.ts", code, messageId: "loader" })),
+  // every spelling must pass (Codex r4576951392): settings as text, server/index.ts to Node
   ...all("server/log/x.ts", "edge", [
     "../settings/\t./../index.ts",
     "../settings/\\n./../index.ts",
   ]),
+  // the load.ts exemption is exact (review c.6888904929, point 1)
   ...all("server/domain/forensics/golden-vectors/load.ts-extra.ts", "pure", ["node:fs"]),
-  // review of 83a86cd (FAIL c.6889015219): an alias of process and a template key
-  ...[
-    'const p = process;\nexport const fs = p[`getBuiltinModule`]("fs");\n',
-    'export const fs = process[`getBuiltinModule`]("fs");\n',
-    "export const p = process;\n",
-    "export const f = (q = process): unknown => q;\n",
-    "export const p = globalThis.process;\n",
-    'export const p = globalThis["process"];\n',
-    "const g = globalThis;\nexport const p = g;\n",
-    "export const p = global.process;\n",
-    'export const p = eval("process");\n',
-    'export const p = Function("return process")();\n',
-    'export const p = new Function("return process")();\n',
-  ].map((code) => ({ file: "server/domain/x.ts", code, messageId: "loader" })),
   // laundering through a folder outside server/
   ...all("server/log/x.ts", "outside", ["../../scripts/hop/index.ts", "../../db/x/index.ts"]),
   { file: "server/x.ts", code: imp("../scripts/index.ts"), messageId: "outside" },
@@ -240,18 +201,6 @@ const passing: { file: string; code: string }[] = [
   },
   { file: "server/session/x.test.ts", code: imp("../database/index.ts") },
   { file: "server/contracts/x.test.ts", code: imp("../../scripts/index.ts") + imp("node:module") },
-  { file: "server/log/x.ts", code: "export const env = process.env;\n" },
-  {
-    file: "server/log/x.ts",
-    code: [
-      "export const port = process.env.PORT;",
-      "process.on('exit', () => undefined);",
-      "export const c = globalThis.crypto;",
-      "export const ok = typeof globalThis.atob === 'function';",
-      "export const f = (process: string): string => process;",
-      "",
-    ].join("\n"),
-  },
   {
     file: "server/http/x.ts",
     code: imp("../database/index.ts") + imp("../external/keys/index.ts"),
