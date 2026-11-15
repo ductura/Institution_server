@@ -2,7 +2,15 @@
 // before it starts anything, and none of it reaches the server build.
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,7 +29,7 @@ const STACK = join(dir, "stack");
 const STATE = join(STACK, "state.json");
 const PGDATA = join(STACK, "pgdata");
 process.env.VS1_STACK_DIR = STACK;
-const { down, LOCK, up } = await import("./vs1.ts");
+const { down, LOCK, oidcEnv, status, up } = await import("./vs1.ts");
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 // Ports no other test uses, so "nothing listens" means the stack started nothing.
@@ -30,13 +38,13 @@ const PORTS = { VS1_POSTGRES_PORT: "54397", VS1_SERVER_PORT: "4197", VS1_OIDC_PO
 function run(
   args: string[],
   env: Record<string, string>,
-): { status: number | null; stderr: string } {
+): { status: number | null; stderr: string; stdout: string } {
   const result = spawnSync(process.execPath, [SCRIPT, ...args], {
     cwd: dir,
     encoding: "utf8",
     env: { PATH: process.env.PATH ?? "", HOME: dir, VS1_STACK_DIR: STACK, ...PORTS, ...env },
   });
-  return { status: result.status, stderr: result.stderr };
+  return { status: result.status, stderr: result.stderr, stdout: result.stdout };
 }
 
 describe("the tests' own stack directory", () => {
@@ -105,7 +113,7 @@ describe("down with the state of a failed up", () => {
     const state: StackState = {
       env: "ci",
       startedAt: new Date().toISOString(),
-      repo: { sha: "0".repeat(40), dirty: false },
+      repos: { server: { sha: "0".repeat(40), dirty: false }, preloader: null, web: null },
       versions: {},
       serverBuildSha256: "",
       ports: { postgres: 54397, server: 4197, oidc: 4297 },
@@ -177,4 +185,172 @@ describe("the server build", () => {
     const bundle = readFileSync(outfile, "utf8");
     expect(bundle).not.toMatch(/scripts\/stack|test-fakes|demo prijava/u);
   }, 60_000);
+});
+
+// DAN-787: status only reads; the fake provider gets a fixed environment.
+const sleeper = async (log: string): Promise<{ pid: number; marker: string }> => {
+  const args = ["-e", "setTimeout(() => {}, 60000)"];
+  const pid = await startDetached(process.execPath, args, {
+    cwd: dir,
+    env: { PATH: process.env.PATH ?? "" },
+    log: join(dir, log),
+  });
+  return { pid, marker: [process.execPath, ...args].join(" ") };
+};
+
+function stateWith(processes: StackState["processes"], server = 4197): StackState {
+  return {
+    env: "ci",
+    startedAt: "2026-01-01T00:00:00.000Z",
+    repos: { server: { sha: "a".repeat(40), dirty: false }, preloader: null, web: null },
+    versions: { node: "v24.0.0", postgres: "17.2" },
+    serverBuildSha256: "0".repeat(64),
+    ports: { postgres: 54397, server, oidc: 4297 },
+    processes,
+    pgdata: PGDATA,
+  };
+}
+
+/** Bytes and mtime of each file, to show a command left them as they were. */
+const snapshot = (files: string[]): string[] =>
+  files.map((file) =>
+    existsSync(file) ? `${statSync(file).mtimeMs}:${readFileSync(file, "hex")}` : "absent",
+  );
+
+describe("pnpm stack:vs1 status", () => {
+  it("says not running and exits 1 without creating the stack directory", () => {
+    const fresh = join(dir, "never-created");
+    const result = run(["status"], { VS1_STACK_DIR: fresh });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toMatch(/not running/u);
+    expect(existsSync(fresh)).toBe(false);
+  });
+
+  it("calls a broken state unreadable, exits 1 and leaves it and the lock as they were", () => {
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, "{}");
+    writeFileSync(LOCK, "held");
+    const before = snapshot([STATE, LOCK]);
+    try {
+      const result = run(["status"], {});
+      expect(result.status).toBe(1);
+      expect(result.stdout).toMatch(/state\.json is unreadable/u);
+      expect(result.stdout).toMatch(/up\.lock present, not touched/u);
+      expect(snapshot([STATE, LOCK])).toEqual(before);
+    } finally {
+      rmSync(STATE, { force: true });
+      rmSync(LOCK, { force: true });
+    }
+  });
+
+  it("asks nothing on a port 3000-3004 a state names", async () => {
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({}, 3000)));
+    const asked: string[] = [];
+    const get = (async (url: string) => {
+      asked.push(url);
+      return new Response(null, { status: 200 });
+    }) as typeof fetch;
+    try {
+      expect(await status(get)).toBe(false);
+      expect(asked).toEqual([]);
+    } finally {
+      rmSync(STATE, { force: true });
+    }
+  });
+
+  it("names a pid that is not ours, asks it nothing and changes nothing", async () => {
+    const foreign = await sleeper("status-foreign.log");
+    mkdirSync(STACK, { recursive: true });
+    const state = stateWith({ server: { pid: foreign.pid, marker: "/elsewhere/dist/server.js" } });
+    writeFileSync(STATE, JSON.stringify(state));
+    const before = snapshot([STATE, LOCK]);
+    const asked: string[] = [];
+    const get = (async (url: string) => (asked.push(url), new Response())) as typeof fetch;
+    try {
+      expect(await status(get)).toBe(false);
+      expect(asked).toEqual([]);
+      expect(snapshot([STATE, LOCK])).toEqual(before);
+      expect(commandLine(foreign.pid)).toBe(foreign.marker);
+      const result = run(["status"], {});
+      expect(result.status).toBe(1);
+      expect(result.stdout).toMatch(new RegExp(`pid ${foreign.pid} not ours or gone`, "u"));
+      expect(result.stdout).toMatch(/preloader: not attached; web: not attached/u);
+      expect(result.stdout).toMatch(/postgres 17\.2/u);
+    } finally {
+      process.kill(-foreign.pid, "SIGKILL");
+      rmSync(STATE, { force: true });
+    }
+  }, 30_000);
+
+  it("asks a process of the stack only when that very pid listens on its port", async () => {
+    // Ours by marker, but listening nowhere: no request goes out.
+    const ours = await sleeper("status-ours.log");
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({ server: ours, oidc: ours })));
+    const asked: string[] = [];
+    const get = (async (url: string) => (asked.push(url), new Response())) as typeof fetch;
+    try {
+      expect(await status(get)).toBe(false);
+      expect(asked).toEqual([]);
+    } finally {
+      process.kill(-ours.pid, "SIGKILL");
+      rmSync(STATE, { force: true });
+    }
+  }, 30_000);
+});
+
+describe("a stack directory outside .stack/ and the temp dir", () => {
+  it.each([["up", "--env", "ci"], ["down"], ["status"]])(
+    "stops %s before it reads or writes",
+    (...args) => {
+      const result = run(args, { VS1_STACK_DIR: "/etc/ductura-vs1" });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/stack directory/u);
+      expect(existsSync("/etc/ductura-vs1")).toBe(false);
+    },
+  );
+});
+
+describe("the fake OIDC provider of the stack (D-09)", () => {
+  it("gets NODE_ENV=test, loopback addresses of this stack, and nothing of the caller", () => {
+    process.env.DUCTURA_PROBE_SECRET = "x";
+    try {
+      const env = oidcEnv({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } });
+      expect(Object.keys(env).sort()).toEqual(
+        [
+          "BACKCHANNEL_LOGOUT_URI",
+          "HOME",
+          "ISSUER",
+          "NODE_ENV",
+          "PATH",
+          "PORT",
+          "POST_LOGOUT_REDIRECT_URI",
+          "REDIRECT_URI",
+        ].sort(),
+      );
+      expect(env.NODE_ENV).toBe("test");
+      expect(env.ISSUER).toBe("http://127.0.0.1:4297");
+      for (const key of ["REDIRECT_URI", "POST_LOGOUT_REDIRECT_URI", "BACKCHANNEL_LOGOUT_URI"])
+        expect(env[key]).toMatch(/^http:\/\/127\.0\.0\.1:4197\//u);
+      expect(JSON.stringify(env)).not.toMatch(/:300[0-4]/u);
+    } finally {
+      delete process.env.DUCTURA_PROBE_SECRET;
+    }
+  });
+
+  it("is stopped by down only while it runs the recorded command", async () => {
+    const oidc = await sleeper("oidc.log");
+    const foreign = await sleeper("foreign-oidc.log");
+    try {
+      const state = stateWith({ oidc });
+      expect(await down(state)).toBe(true);
+      expect(commandLine(oidc.pid)).toBeNull();
+      const wrong = stateWith({ oidc: { pid: foreign.pid, marker: "node elsewhere.ts" } });
+      expect(await down(wrong)).toBe(true);
+      expect(commandLine(foreign.pid)).toBe(foreign.marker);
+    } finally {
+      process.kill(-foreign.pid, "SIGKILL");
+    }
+  }, 30_000);
 });

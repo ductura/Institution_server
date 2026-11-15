@@ -1,21 +1,38 @@
-// DAN-759: the minimal local stack of VS-1.
-//   pnpm stack:vs1 up [--env local|ci]   PostgreSQL and the server from dist/server.js
+// DAN-759, DAN-787: the minimal local stack of VS-1.
+//   pnpm stack:vs1 up [--env local|ci]   PostgreSQL, the fake OIDC provider, the server
 //   pnpm stack:vs1 down                  stop what `up` started, check the ports are free
+//   pnpm stack:vs1 status                read only: the state, the processes, health
 // Everything lives in .stack/vs1 (0700): its own PostgreSQL cluster (loopback,
 // own socket), logs and state.json. Provisioning and migrations are those of
-// `pnpm db:up:native`. Docker is never used. The fake OIDC process and `status`
-// are DAN-787; the preloader and web are slots in config.ts.
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { userInfo } from "node:os";
+// `pnpm db:up:native`. Docker is never used. The preloader and web are slots in config.ts.
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir, userInfo } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { SERVER_NODE_FLAGS } from "../build/index.ts";
 import { fileStore, spawnRun, up as provision } from "../db/index.ts";
-import { parseArgs, SLOTS, type StackConfig, stackConfig, stackPorts } from "./config.ts";
+import {
+  parseArgs,
+  SAFE_PATH,
+  SLOTS,
+  type StackConfig,
+  stackConfig,
+  stackDir,
+  stackPorts,
+} from "./config.ts";
 import {
   commandLine,
   isStackPostmaster,
+  listensOn,
   portFree,
   postgresOptions,
   startDetached,
@@ -24,15 +41,26 @@ import {
 } from "./processes.ts";
 import * as stateFile from "./state.ts";
 
-const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-// VS1_STACK_DIR moves the whole stack (tests use a temporary one).
-const DIR = resolve(process.env.VS1_STACK_DIR ?? join(ROOT, ".stack", "vs1"));
+const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/u, "");
+// VS1_STACK_DIR moves the whole stack (tests use a temporary one); a path
+// outside .stack/ or the temp dir stops every command before it reads or writes.
+let dirError: Error | undefined;
+const DIR = ((): string => {
+  try {
+    return stackDir(ROOT, process.env, tmpdir(), realpathSync);
+  } catch (error) {
+    dirError = error as Error;
+    return resolve(ROOT, ".stack", "vs1");
+  }
+})();
+const checkDir = (): void => {
+  if (dirError !== undefined) throw dirError;
+};
 const STATE = join(DIR, "state.json");
 export const LOCK = join(DIR, "up.lock");
 const PGDATA = join(DIR, "pgdata");
 const SERVER = join(ROOT, "dist", "server.js");
-// pg_ctl hands -o to /bin/sh, and a Unix socket path has at most 107 bytes.
-const SAFE_PATH = /^\/[A-Za-z0-9._/-]+$/u;
+const OIDC = join(ROOT, "packages", "test-fakes", "oidc", "server.ts");
 // Children get a fixed environment, never the caller's.
 const base = (): Record<string, string> => ({
   PATH: process.env.PATH ?? "",
@@ -69,6 +97,20 @@ async function preflight(config: StackConfig): Promise<void> {
   }
 }
 
+/** The whole environment of the fake provider; nothing of the caller's. */
+export function oidcEnv({ ports }: StackConfig): Record<string, string> {
+  const app = `http://127.0.0.1:${ports.server}`;
+  return {
+    ...base(),
+    NODE_ENV: "test",
+    PORT: String(ports.oidc),
+    ISSUER: `http://127.0.0.1:${ports.oidc}`,
+    REDIRECT_URI: `${app}/api/v1/auth/callback`,
+    POST_LOGOUT_REDIRECT_URI: `${app}/`,
+    BACKCHANNEL_LOGOUT_URI: `${app}/api/v1/auth/backchannel-logout`,
+  };
+}
+
 async function start(config: StackConfig, state: stateFile.StackState): Promise<void> {
   const { postgres, server } = config.ports;
   const init = [
@@ -99,6 +141,21 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
     store: fileStore(join(DIR, "pg-password")),
   });
   const origin = `http://127.0.0.1:${server}`;
+  // D-09: the fake provider runs with NODE_ENV=test from a fixed list, on
+  // loopback, sending the browser and logout tokens only to this stack's server.
+  // The server is not given its issuer (that needs its own decision).
+  const issuer = `http://127.0.0.1:${config.ports.oidc}`;
+  const oidcPid = await startDetached(process.execPath, [OIDC], {
+    cwd: ROOT,
+    log: join(DIR, "oidc.log"),
+    env: oidcEnv(config),
+  });
+  state.processes.oidc = { pid: oidcPid, marker: `${process.execPath} ${OIDC}` };
+  stateFile.writeState(STATE, state);
+  const discovery = `${issuer}/.well-known/openid-configuration`;
+  if (!(await serverReady(discovery, oidcPid, config.ports.oidc, 30_000))) {
+    throw new Error(`the fake OIDC provider is not ready on port ${config.ports.oidc}`);
+  }
   const argv = [...SERVER_NODE_FLAGS, SERVER];
   const pid = await startDetached(process.execPath, argv, {
     cwd: ROOT,
@@ -120,12 +177,15 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   if (!(await serverReady(`${origin}/api/v1/health`, pid, server, 30_000))) {
     throw new Error(`the server is not healthy, or port ${server} is answered by another process`);
   }
-  console.log(`VS-1 stack up (${config.env}): server ${origin}, PostgreSQL :${postgres}`);
+  console.log(
+    `VS-1 stack up (${config.env}): server ${origin}, fake OIDC ${issuer}, PostgreSQL :${postgres}`,
+  );
   for (const [name, slot] of Object.entries(SLOTS))
     console.log(`  ${name} at ${slot.path}: not attached`);
 }
 
 export async function up(config: StackConfig): Promise<void> {
+  checkDir();
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
   chmodSync(DIR, 0o700);
   // One up at a time: O_EXCL. A lock left by an interrupted up is never taken over.
@@ -142,8 +202,11 @@ export async function up(config: StackConfig): Promise<void> {
     const state: stateFile.StackState = {
       env: config.env,
       startedAt: new Date().toISOString(),
-      repo: stateFile.repoRevision(ROOT),
-      versions: stateFile.packageVersions(ROOT),
+      repos: { server: stateFile.repoRevision(ROOT), preloader: null, web: null },
+      versions: {
+        ...stateFile.packageVersions(ROOT),
+        postgres: stateFile.postgresVersion(process.env.PATH ?? ""),
+      },
       serverBuildSha256: stateFile.sha256File(SERVER),
       ports: config.ports,
       processes: {},
@@ -163,15 +226,15 @@ export async function up(config: StackConfig): Promise<void> {
 
 /** Stops what the stack started; false when a port of the stack still answers. */
 export async function down(given?: stateFile.StackState): Promise<boolean> {
+  checkDir();
   const read = given ?? stateFile.readState(STATE);
   if (read === "unreadable") console.error("state.json is unreadable; stopping PostgreSQL only");
   const state = read === "unreadable" ? null : read;
-  const server = state?.processes.server;
-  if (
-    server !== undefined &&
-    (await stopProcess(server.pid, server.marker, 10_000)) === "foreign"
-  ) {
-    console.error(`server: pid ${server.pid} is not ours; left alone`);
+  for (const name of ["server", "oidc"] as const) {
+    const entry = state?.processes[name];
+    if (entry === undefined) continue;
+    if ((await stopProcess(entry.pid, entry.marker, 10_000)) === "foreign")
+      console.error(`${name}: pid ${entry.pid} is not ours; left alone`);
   }
   // pg_ctl signals whatever holds the pid in postmaster.pid; it must be ours.
   if (ourPostmaster() !== null)
@@ -189,11 +252,75 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
   return free;
 }
 
+/** GET `url` once, only when `pid` itself listens on `port`; the status or a reason. */
+async function probe(url: string, pid: number, port: number, get: typeof fetch): Promise<string> {
+  if (!listensOn(pid, port)) return `not listening on ${port}`;
+  return get(url, { signal: AbortSignal.timeout(2000) }).then(
+    (r) => String(r.status),
+    () => "no answer",
+  );
+}
+
+/**
+ * Reads the state and asks the processes it names; true when PostgreSQL, the
+ * fake provider and the server are this stack's and both answer 200. Takes no
+ * lock, creates and writes nothing, runs no git.
+ */
+export async function status(get: typeof fetch = fetch): Promise<boolean> {
+  checkDir();
+  const lock = existsSync(LOCK) ? "up.lock present, not touched" : "none";
+  const read = stateFile.readState(STATE);
+  if (read === null || read === "unreadable") {
+    console.log(`VS-1 stack: ${read === null ? "not running" : "state.json is unreadable"}`);
+    console.log(`  lock       ${lock}`);
+    return false;
+  }
+  const { repos, ports, processes } = read;
+  const rev = (r: stateFile.Revision | null | undefined): string =>
+    r ? `${r.sha} (${r.dirty ? "dirty" : "clean"})` : "not attached";
+  const build = !existsSync(SERVER)
+    ? "dist/server.js is missing"
+    : stateFile.sha256File(SERVER) === read.serverBuildSha256
+      ? "dist/server.js matches the recorded sha256"
+      : "dist/server.js differs from the recorded sha256";
+  const postmaster = ourPostmaster();
+  let ok = postmaster !== null;
+  const lines = [
+    `VS-1 stack (${read.env}), started ${read.startedAt}`,
+    `  repos      server ${rev(repos?.server)}; preloader: ${rev(repos?.preloader)}; web: ${rev(repos?.web)}`,
+    `  versions   ${Object.entries(read.versions ?? {})
+      .map(([k, v]) => `${k} ${v}`)
+      .join(", ")}`,
+    `  build      ${build}`,
+    `  postgres   :${ports.postgres} ${postmaster === null ? "not running" : `pid ${postmaster} running`}`,
+  ];
+  const paths = { oidc: "/.well-known/openid-configuration", server: "/api/v1/health" };
+  for (const name of ["server", "oidc"] as const) {
+    const entry = processes[name];
+    const port = ports[name];
+    let line = "not started";
+    if (entry !== undefined) {
+      const ours = commandLine(entry.pid) === entry.marker;
+      const answer = ours
+        ? await probe(`http://127.0.0.1:${port}${paths[name]}`, entry.pid, port, get)
+        : "";
+      line = ours
+        ? `pid ${entry.pid} running, answers ${answer}`
+        : `pid ${entry.pid} not ours or gone`;
+      ok &&= answer === "200";
+    } else ok = false;
+    lines.push(`  ${name.padEnd(10)} :${port} ${line}`);
+  }
+  lines.push(`  lock       ${lock}`);
+  console.log(lines.join("\n"));
+  return ok;
+}
+
 async function main(): Promise<void> {
   try {
     const { command, env } = parseArgs(process.argv.slice(2));
     if (command === "up") await up(stackConfig(env, process.env));
-    else if (!(await down())) process.exitCode = 1;
+    else if (!(await (command === "down" ? down() : status()))) process.exitCode = 1;
   } catch (error) {
     console.error(`VS-1 stack: ${error instanceof Error ? error.message : "unknown error"}`);
     process.exitCode = 1;

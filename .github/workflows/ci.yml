@@ -261,6 +261,8 @@ jobs:
         run: |
           pnpm build
           PATH="$PGBIN:$PATH" pnpm stack:vs1 up --env ci
+          # DAN-787: read only; 0 only when PostgreSQL, fake OIDC and the server run and answer.
+          PATH="$PGBIN:$PATH" pnpm stack:vs1 status
           curl -fsS http://127.0.0.1:4100/api/v1/health
           # Health reads no database: check that the server's own login reaches it.
           "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'
@@ -270,10 +272,10 @@ jobs:
         if: always() && steps.vs1-up.outcome != 'skipped'
         run: |
           PATH="$PGBIN:$PATH" pnpm stack:vs1 down
-          for port in 54360 4100; do
+          for port in 54360 4100 4180; do
             if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "port $port still answers" >&2; exit 1; fi
           done
-          if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata)"; then
+          if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata|packages/test-fakes/oidc/server.ts)"; then
             echo "a process of the stack is still running" >&2; exit 1
           fi
 

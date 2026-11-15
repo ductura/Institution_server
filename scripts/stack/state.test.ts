@@ -1,5 +1,5 @@
 // DAN-759: the state file names the repository SHA and the package versions.
-import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import {
   packageVersions,
+  postgresVersion,
   readState,
   repoRevision,
   type StackState,
@@ -40,11 +41,14 @@ describe("state", () => {
     const state: StackState = {
       env: "ci",
       startedAt: "2026-01-01T00:00:00.000Z",
-      repo: { sha: "0".repeat(40), dirty: false },
+      repos: { server: { sha: "0".repeat(40), dirty: false }, preloader: null, web: null },
       versions: { node: "v24.0.0" },
       serverBuildSha256: "a".repeat(64),
       ports: { postgres: 54360, server: 4100, oidc: 4180 },
-      processes: { server: { pid: 1234, marker: "/r/dist/server.js" } },
+      processes: {
+        server: { pid: 1234, marker: "/r/dist/server.js" },
+        oidc: { pid: 1235, marker: "/r/node /r/packages/test-fakes/oidc/server.ts" },
+      },
       pgdata: "/r/.stack/vs1/pgdata",
     };
     writeState(file, state);
@@ -64,6 +68,12 @@ describe("state", () => {
     [
       '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {"server": {"pid": "1"}}}',
     ],
+    [
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {"oidc": {"pid": 1}}}',
+    ],
+    // DAN-787: a port of another stack is never ours, so status and down never ask it.
+    ['{"ports": {"postgres": 54360, "server": 3000, "oidc": 4180}, "processes": {}}'],
+    ['{"ports": {"postgres": 3004, "server": 4100, "oidc": 4180}, "processes": {}}'],
   ])("calls the JSON %s unreadable, not a state", (text) => {
     const file = join(dir, "shape.json");
     writeFileSync(file, text);
@@ -74,5 +84,22 @@ describe("state", () => {
     const file = join(dir, "broken.json");
     writeFileSync(file, '{"env": "ci", "ports": {');
     expect(readState(file)).toBe("unreadable");
+  });
+});
+
+describe("postgresVersion (DAN-787)", () => {
+  function fakePostgres(output: string): string {
+    const bin = mkdtempSync(join(dir, "bin-"));
+    writeFileSync(join(bin, "postgres"), `#!/bin/sh\necho '${output}'\n`);
+    chmodSync(join(bin, "postgres"), 0o755);
+    return bin;
+  }
+
+  it("reads the version the postgres on PATH names", () => {
+    expect(postgresVersion(fakePostgres("postgres (PostgreSQL) 17.2"))).toBe("17.2");
+  });
+
+  it("refuses an answer without a version", () => {
+    expect(() => postgresVersion(fakePostgres("something else"))).toThrow(/no version/u);
   });
 });
