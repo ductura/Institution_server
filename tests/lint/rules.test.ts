@@ -53,6 +53,9 @@ const failing: Case[] = [
   // no-dynamic-load: loader globals and modules off the allow-list (S-1A-c;
   // tests/lint/dynamic-load.test.ts)
   { file: AT, code: "export const m = process.argv;\n", rule: "local/no-dynamic-load" },
+  // no-hardcoded-text: interface text in server code (S-1L.2;
+  // tests/lint/hardcoded-text.test.ts)
+  { file: AT, code: 'export const m = "Prijava je obavezna.";\n', rule: "local/no-hardcoded-text" },
   // import-boundary: leaving the folder other than through <folder>/index.ts
   ...["./sub/c.ts", "../c.ts", "../sib/c.ts", "./x/../../y/z.ts", "./sub/INDEX.ts"].map((spec) => ({
     file: AT,
