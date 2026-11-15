@@ -4,7 +4,8 @@
 import type { ServerResponse } from "node:http";
 
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { TObject, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
@@ -253,8 +254,12 @@ function sources(dir: string): string[] {
 }
 
 describe("server code", () => {
-  const root = new URL("../../", import.meta.url).pathname;
-  const files = sources(join(root, "server")).map((path) => relative(root, path));
+  // fileURLToPath: a URL's pathname keeps %20 and gives /D:/ on Windows;
+  // relative() uses \ there, so the paths are compared with /.
+  const root = fileURLToPath(new URL("../../", import.meta.url));
+  const files = sources(join(root, "server")).map((path) =>
+    relative(root, path).split(sep).join("/"),
+  );
 
   it("writes JSON with writeJson only in the two writers", () => {
     const using = files.filter((file) =>
