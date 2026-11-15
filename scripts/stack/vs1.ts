@@ -63,6 +63,13 @@ export const LOCK = join(DIR, "up.lock");
 const PGDATA = join(DIR, "pgdata");
 const SERVER = join(ROOT, "dist", "server.js");
 const OIDC = join(ROOT, "packages", "test-fakes", "oidc", "server.ts");
+// The stack directory in argv makes each marker this stack's own. down and
+// status compare it with this DIR, never with what state.json says, so a
+// state copied from another stack never names that stack's processes.
+const TAG = `--vs1-stack=${DIR}`;
+const TAILS = { server: ` ${SERVER} ${TAG}`, oidc: ` ${OIDC} ${TAG}` } as const;
+const ofThisStack = (name: keyof typeof TAILS, marker: string): boolean =>
+  marker.endsWith(TAILS[name]);
 // Children get a fixed environment, never the caller's.
 const base = (): Record<string, string> => ({
   PATH: process.env.PATH ?? "",
@@ -162,9 +169,7 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   // loopback, sending the browser and logout tokens only to this stack's server.
   // The server is not given its issuer (that needs its own decision).
   const issuer = `http://127.0.0.1:${config.ports.oidc}`;
-  // The stack directory in argv makes each marker this stack's own: down of
-  // another stack from the same checkout never matches it.
-  const tag = `--vs1-stack=${DIR}`;
+  const tag = TAG;
   const oidcPid = await startDetached(process.execPath, [OIDC, tag], {
     cwd: ROOT,
     log: join(DIR, "oidc.log"),
@@ -253,6 +258,10 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
   for (const name of ["server", "oidc"] as const) {
     const entry = state?.processes[name];
     if (entry === undefined) continue;
+    if (!ofThisStack(name, entry.marker)) {
+      console.error(`${name}: pid ${entry.pid} is not of this stack directory; left alone`);
+      continue;
+    }
     if ((await stopProcess(entry.pid, entry.marker, 10_000)) === "foreign")
       console.error(`${name}: pid ${entry.pid} is not ours; left alone`);
   }
@@ -323,7 +332,7 @@ export async function status(get: typeof fetch = fetch): Promise<boolean> {
     const port = ports[name];
     let line = "not started";
     if (entry !== undefined) {
-      const ours = commandLine(entry.pid) === entry.marker;
+      const ours = ofThisStack(name, entry.marker) && commandLine(entry.pid) === entry.marker;
       const answer = ours
         ? await probe(`http://127.0.0.1:${port}${paths[name]}`, entry.pid, port, get)
         : "";

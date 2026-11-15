@@ -29,6 +29,11 @@ const dir = mkdtempSync(join("/tmp", "ductura-vs1-"));
 const STACK = join(dir, "stack");
 const STATE = join(STACK, "state.json");
 const PGDATA = join(STACK, "pgdata");
+// What down and status require at the end of a marker: the script and this stack's directory.
+const TAIL = {
+  server: [join(ROOT, "dist/server.js"), `--vs1-stack=${STACK}`],
+  oidc: [join(ROOT, "packages/test-fakes/oidc/server.ts"), `--vs1-stack=${STACK}`],
+};
 process.env.VS1_STACK_DIR = STACK;
 const { down, LOCK, oidcEnv, status, up } = await import("./vs1.ts");
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -126,7 +131,7 @@ describe("down with a state that names an extra port (QA c.6900731697)", () => {
 
 describe("down with the state of a failed up", () => {
   it("stops a process known only from memory, as the rollback of up passes it", async () => {
-    const args = ["-e", "setTimeout(() => {}, 60000)"];
+    const args = ["-e", "setTimeout(() => {}, 60000)", "--", ...TAIL.server];
     const pid = await startDetached(process.execPath, args, {
       cwd: dir,
       env: { PATH: process.env.PATH ?? "" },
@@ -212,8 +217,12 @@ describe("the server build", () => {
 });
 
 // DAN-787: status only reads; the fake provider gets a fixed environment.
-const sleeper = async (log: string): Promise<{ pid: number; marker: string }> => {
-  const args = ["-e", "setTimeout(() => {}, 60000)"];
+const sleeper = async (
+  log: string,
+  tail: string[] = TAIL.oidc,
+  code = "setTimeout(() => {}, 60000)",
+): Promise<{ pid: number; marker: string }> => {
+  const args = ["-e", code, "--", ...tail];
   const pid = await startDetached(process.execPath, args, {
     cwd: dir,
     env: { PATH: process.env.PATH ?? "" },
@@ -284,7 +293,7 @@ describe("pnpm stack:vs1 status", () => {
   });
 
   it("names a pid that is not ours, asks it nothing and changes nothing", async () => {
-    const foreign = await sleeper("status-foreign.log");
+    const foreign = await sleeper("status-foreign.log", TAIL.server);
     mkdirSync(STACK, { recursive: true });
     const state = stateWith({ server: { pid: foreign.pid, marker: "/elsewhere/dist/server.js" } });
     writeFileSync(STATE, JSON.stringify(state));
@@ -309,7 +318,7 @@ describe("pnpm stack:vs1 status", () => {
 
   it("asks a process of the stack only when that very pid listens on its port", async () => {
     // Ours by marker, but listening nowhere: no request goes out.
-    const ours = await sleeper("status-ours.log");
+    const ours = await sleeper("status-ours.log", TAIL.server);
     mkdirSync(STACK, { recursive: true });
     writeFileSync(STATE, JSON.stringify(stateWith({ server: ours, oidc: ours })));
     const asked: string[] = [];
@@ -334,23 +343,27 @@ describe("status after the adversarial pass", () => {
     let sinkHits = 0;
     const sink = createServer((_, res) => (sinkHits++, res.end("ok")));
     const sinkPort = await listen(sink);
-    const redirect = createServer((_, res) => {
-      res.writeHead(302, { location: `http://127.0.0.1:${sinkPort}/` }).end();
-    });
-    const port = await listen(redirect);
-    // This test process listens on the port, so it is "the server" of the state.
-    const self = { pid: process.pid, marker: commandLine(process.pid) ?? "" };
+    // A process of this stack (by marker) that answers 302 to the sink.
+    const port = 4196;
+    const code = `require("node:http").createServer((q, r) => r.writeHead(302, { location: "http://127.0.0.1:${sinkPort}/" }).end()).listen(${port}, "127.0.0.1")`;
+    const server = await sleeper("redirect.log", TAIL.server, code);
+    for (let i = 0; i < 50 && (await portFree(port)); i += 1)
+      await new Promise((resolve) => setTimeout(resolve, 100));
     mkdirSync(STACK, { recursive: true });
-    writeFileSync(STATE, JSON.stringify(stateWith({ server: self }, port)));
+    writeFileSync(STATE, JSON.stringify(stateWith({ server }, port)));
     try {
-      expect(await status()).toBe(false);
+      const result = run(["status"], {});
+      expect(result.stdout).toMatch(
+        new RegExp(`server +:${port} pid ${server.pid} running, answers 302`, "u"),
+      );
+      expect(result.status).toBe(1);
       expect(sinkHits).toBe(0);
     } finally {
+      process.kill(-server.pid, "SIGKILL");
       rmSync(STATE, { force: true });
-      await new Promise((resolve) => redirect.close(resolve));
       await new Promise((resolve) => sink.close(resolve));
     }
-  });
+  }, 30_000);
 
   it("prints no control character from the state", () => {
     mkdirSync(STACK, { recursive: true });
@@ -448,6 +461,34 @@ describe("the fake OIDC provider of the stack (D-09)", () => {
       expect(commandLine(foreign.pid)).toBe(foreign.marker);
     } finally {
       process.kill(-foreign.pid, "SIGKILL");
+    }
+  }, 30_000);
+});
+
+describe("a state copied from another stack (review c.6900962987)", () => {
+  it("names processes that down and status of this directory leave alone", async () => {
+    // Stack A in another directory: its exact marker, copied into this stack's state.
+    const other = join(dir, "stack-a");
+    const a = await sleeper("stack-a.log", [TAIL.oidc[0] as string, `--vs1-stack=${other}`]);
+    const aServer = await sleeper("stack-a-server.log", [
+      TAIL.server[0] as string,
+      `--vs1-stack=${other}`,
+    ]);
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({ oidc: a, server: aServer })));
+    try {
+      const shown = run(["status"], {});
+      expect(shown.status).toBe(1);
+      expect(shown.stdout).toMatch(new RegExp(`pid ${a.pid} not ours or gone`, "u"));
+      const result = run(["down"], {});
+      expect(result.stderr).toMatch(/oidc: pid \d+ is not of this stack directory; left alone/u);
+      expect(result.stderr).toMatch(/server: pid \d+ is not of this stack directory; left alone/u);
+      expect(commandLine(a.pid)).toBe(a.marker);
+      expect(commandLine(aServer.pid)).toBe(aServer.marker);
+    } finally {
+      process.kill(-a.pid, "SIGKILL");
+      process.kill(-aServer.pid, "SIGKILL");
+      rmSync(STATE, { force: true });
     }
   }, 30_000);
 });
