@@ -11,7 +11,15 @@ import path from "node:path";
 
 import { test } from "vitest";
 
-import { checkBase, checkLedger, DIR, LEDGER, readMigrations, renderLedger } from "./index.ts";
+import {
+  checkBase,
+  checkLedger,
+  DATABASES,
+  DIR,
+  LEDGER,
+  readMigrations,
+  renderLedger,
+} from "./index.ts";
 
 const script = path.resolve("scripts/db/migrations-ledger.ts");
 const A = "20261001000000_a.sql";
@@ -127,7 +135,9 @@ function repo(): Repo {
   git("config", "user.email", "ci@example.test");
   git("config", "user.name", "CI");
   git("config", "commit.gpgsign", "false");
-  mkdirSync(path.join(dir, "db", "main", "migrations"), { recursive: true });
+  // S-1F-c (DAN-779): every database of scripts/db/databases.ts has its directory.
+  for (const { migrationsDir } of DATABASES)
+    mkdirSync(path.join(dir, migrationsDir), { recursive: true });
   const put = (name: string, text: string): void =>
     writeFileSync(path.join(dir, "db", "main", "migrations", name), text);
   const cli = (...args: string[]): ReturnType<typeof spawnSync> =>
@@ -195,4 +205,62 @@ test("CI checks the ledger against the PR base and the previous main head", () =
   assert.match(checks, /PR_BASE: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
   assert.match(checks, /PUSH_BEFORE: \$\{\{ github\.event\.before \}\}/);
   assert.match(checks, /node scripts\/db\/migrations-ledger\.ts --base "\$base"/);
+});
+
+// S-1F-c (DAN-779): the logs database has its own ledger, held to the same rules.
+test("CLI: the logs ledger is checked too, and a migrations directory off the list fails", () => {
+  const r = repo();
+  const logs = (name: string, text: string): void =>
+    writeFileSync(path.join(r.dir, "db", "logs", "migrations", name), text);
+  try {
+    r.put(A, "a\n");
+    logs(A, "logs a\n");
+    assert.equal(r.cli("--write").status, 0);
+    assert.match(
+      readFileSync(path.join(r.dir, "db", "logs", "migrations.sum"), "utf8"),
+      new RegExp(`^[0-9a-f]{64}  ${A}\n$`),
+    );
+    const base = r.commit();
+    assert.equal(r.cli("--base", base).status, 0);
+
+    logs(B, "logs b\n");
+    const unlisted = r.cli("--base", base);
+    assert.equal(unlisted.status, 1, "a logs migration without a ledger line fails");
+    assert.match(String(unlisted.stderr), /not in db\/logs\/migrations\.sum/);
+    rmSync(path.join(r.dir, "db", "logs", "migrations", B));
+
+    logs(A, "logs a changed\n");
+    r.cli("--write");
+    const edited = r.cli("--base", base);
+    assert.equal(edited.status, 1, "an edited logs base migration fails with the ledger rewritten");
+    assert.match(String(edited.stderr), /changed/);
+    logs(A, "logs a\n");
+    r.cli("--write");
+    assert.equal(r.cli("--base", base).status, 0);
+
+    mkdirSync(path.join(r.dir, "db", "other", "migrations"), { recursive: true });
+    const other = r.cli();
+    assert.equal(other.status, 1);
+    assert.match(String(other.stderr), /db\/other\/migrations is not a database/);
+    assert.equal(r.cli("--write").status, 1, "--write does not cover an unlisted directory");
+    rmSync(path.join(r.dir, "db", "other"), { recursive: true });
+
+    rmSync(path.join(r.dir, "db", "logs", "migrations"), { recursive: true });
+    assert.equal(r.cli().status, 1, "a listed database without its directory fails");
+  } finally {
+    rmSync(r.dir, { recursive: true, force: true });
+  }
+});
+
+test("every committed ledger matches its directory and stays LF", () => {
+  for (const { migrationsDir, ledger } of DATABASES) {
+    const migrations = readMigrations(migrationsDir);
+    assert.ok(migrations.size > 0, `${migrationsDir} has migrations`);
+    assert.deepEqual(checkLedger(migrations, readFileSync(ledger, "utf8"), ledger), []);
+    const paths = [...migrations.keys()].map((name) => `${migrationsDir}/${name}`);
+    const output = execFileSync("git", ["check-attr", "eol", "--", ...paths, ledger], {
+      encoding: "utf8",
+    });
+    for (const line of output.trimEnd().split("\n")) assert.match(line, /: eol: lf$/);
+  }
 });

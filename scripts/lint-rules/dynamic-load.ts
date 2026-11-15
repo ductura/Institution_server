@@ -67,6 +67,8 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
   "server/index.ts": { process: ["env"] },
   // The entry point reads the environment and sets the exit code (S-1B-a, DAN-775).
   "server/server.ts": { process: ["env", "exitCode"] },
+  // The logs hook waits for stdout and stderr to drain (S-1B-c, DAN-778).
+  "server/http/shutdown.ts": { process: ["stdout", "stderr"] },
   "server/config/environment.ts": { process: ["env"] },
   "server/database/index.ts": { process: ["env"] },
   "server/database/plain-label-check.ts": {
