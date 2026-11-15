@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { ROUTES } from "../contracts/index.ts";
 import { HEALTH_ROUTE } from "./health.ts";
-import { createRouter, type Route } from "./router.ts";
+import { createRouter, type Route, routePath } from "./router.ts";
 
 type Answer = {
   status?: number;
@@ -70,6 +70,30 @@ describe("createRouter", () => {
     const answer = await call(router, method, url);
     expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([status, body]);
     if (status === 405) expect(answer.headers?.allow).toBe("GET");
+  });
+
+  // QA (adversarial pass on 8366c2e): a target WHATWG URL rejects threw before
+  // the handler and answered 500; a target it rewrites reached health.
+  it.each([
+    "http://[::1",
+    "http://",
+    "*",
+    "//evil.invalid/api/v1/health",
+    "/api\\v1\\health",
+    "/api/v2/../v1/health",
+    "/api/v1/./health",
+    "/api/v1/health/.",
+    "api/v1/health",
+  ])("answers 404 to the target %j without rewriting it", async (url) => {
+    const answer = await call(router, "GET", url);
+    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([404, { error: "not_found" }]);
+  });
+
+  it("chooses by the path as sent, without the query", () => {
+    expect(routePath("/api/v1/health?a=1?b")).toBe("/api/v1/health");
+    expect(routePath("/api/v1/%2e%2e/health")).toBe("/api/v1/%2e%2e/health");
+    expect(routePath("/a..b/c.")).toBe("/a..b/c.");
+    expect(routePath(undefined)).toBeUndefined();
   });
 
   it("answers 500 when a handler throws, without the error message", async () => {

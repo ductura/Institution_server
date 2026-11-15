@@ -44,7 +44,9 @@ function areasWithRoutes(root: string): string[] {
 function namedAreas(entry: string): string[] {
   const list = /const AREAS[^=]*=\s*\[([^\]]*)\]/u.exec(entry)?.[1];
   if (list === undefined) throw new Error("server.ts has no AREAS list");
-  return [...list.matchAll(/"([^"]+)"/gu)].map((m) => m[1] ?? "").sort();
+  // A commented-out name is not mounted, so it does not count.
+  const code = list.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/gu, "");
+  return [...code.matchAll(/["']([^"']+)["']/gu)].map((m) => m[1] ?? "").sort();
 }
 
 /** What is wrong between the folders on disk, the entry and the http registry. */
@@ -52,6 +54,7 @@ function entryProblems(root: string, entry: string, registry: readonly string[])
   const onDisk = areasWithRoutes(root).filter((key) => !OWN_ENTRY.has(key));
   const named = namedAreas(entry);
   return [
+    ...named.filter((k, i) => named.indexOf(k) !== i).map((k) => `${k} named twice in AREAS`),
     ...onDisk.filter((k) => !named.includes(k)).map((k) => `server/${k} has routes, not in AREAS`),
     ...named.filter((k) => !onDisk.includes(k)).map((k) => `${k} in AREAS has no routes.ts`),
     ...onDisk.filter((k) => !registry.includes(k)).map((k) => `server/${k} not in http AREA_NAMES`),
@@ -70,7 +73,9 @@ describe("server/server.ts", () => {
   });
 
   it("imports only http, config and settings, so no database connection of its own", () => {
-    const imports = [...ENTRY_TEXT.matchAll(/^\s*(?:import|export)\b[^;]*?from\s+"([^"]+)"/gmu)];
+    const imports = [
+      ...ENTRY_TEXT.matchAll(/^\s*(?:import|export)\b[^;]*?["']([^"']+)["']\s*;/gmu),
+    ];
     expect(imports.length).toBeGreaterThan(0);
     expect(imports.map((m) => m[1]).filter((spec) => !ENTRY_IMPORTS.has(spec ?? ""))).toEqual([]);
     expect(ENTRY_TEXT).not.toMatch(/\bimport\s*\(|\brequire\s*\(|\bpg\b|Pool\b/u);
@@ -123,6 +128,25 @@ describe("entryProblems over a fixture tree", () => {
     const root = tree(folders);
     try {
       expect(entryProblems(root, entry(named), registry)).toEqual([problem]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // QA on 8366c2e: a commented-out name is not mounted; a name twice is a slip.
+  it.each([
+    ["a commented-out name", ['"roles"', '// "legal",'], "server/legal has routes, not in AREAS"],
+    [
+      "a block-commented name",
+      ['"roles"', '/* "legal" */'],
+      "server/legal has routes, not in AREAS",
+    ],
+    ["a name twice", ['"roles"', '"legal"', '"legal"'], "legal named twice in AREAS"],
+  ])("fails on %s", (_, items, problem) => {
+    const root = tree(["roles", "legal"]);
+    try {
+      const text = `const AREAS: readonly AreaWithRoutes[] = [\n${items.join("\n")}\n];\n`;
+      expect(entryProblems(root, text, ["roles", "legal"])).toEqual([problem]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

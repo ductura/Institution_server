@@ -28,6 +28,18 @@ export function sendJson(
   response.end(JSON.stringify(body));
 }
 
+// An origin-form path as sent: "/" then no "//", backslash or dot segment. Nothing is
+// decoded or rewritten (as WHATWG URL would), so the router and any layer that
+// reads request.url see the same path. The Host header never selects a route.
+const BAD_PATH_RE = /\/\/|\\|(?:^|\/)\.{1,2}(?:\/|$)/u;
+
+/** The path a route is chosen by, without the query; undefined when it is not one. */
+export function routePath(target: string | undefined): string | undefined {
+  const path = (target ?? "").split("?", 1)[0] ?? "";
+  if (!path.startsWith("/") || BAD_PATH_RE.test(path)) return undefined;
+  return path;
+}
+
 /** Builds the router; two routes on one method and path are a programming error. */
 export function createRouter(routes: readonly Route[]): Router {
   const byPath = new Map<string, Map<string, Route>>();
@@ -40,10 +52,8 @@ export function createRouter(routes: readonly Route[]): Router {
   }
 
   return async (request, response) => {
-    // Only the path counts: the query never selects a route. The base is a
-    // placeholder, the Host header is never trusted for routing.
-    const path = new URL(request.url ?? "/", "http://route.invalid").pathname;
-    const methods = byPath.get(path);
+    const path = routePath(request.url);
+    const methods = path === undefined ? undefined : byPath.get(path);
     if (methods === undefined) {
       sendJson(response, FALLBACK.error.status, { error: FALLBACK.error.code });
       return;

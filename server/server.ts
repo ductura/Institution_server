@@ -52,7 +52,10 @@ async function main(): Promise<void> {
     layers: LAYERS,
     routes: [HEALTH_ROUTE, ...routesOf(AREAS)],
   }).catch((error: unknown) => {
-    console.error(`listen failed: ${(error as { code?: string }).code ?? "unknown"}`);
+    // A system error has a code (EADDRINUSE, EACCES); anything else is a
+    // programming error of the route table, whose message names no value.
+    const { code, message } = error as { code?: string; message?: string };
+    console.error(code === undefined ? `startup failed: ${message}` : `listen failed: ${code}`);
     process.exitCode = 1;
     return undefined;
   });
