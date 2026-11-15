@@ -171,6 +171,12 @@ const failing: Case[] = [
     'export const F = Reflect.get(Object.getPrototypeOf(() => 0), "constructor");\n',
     'export const F = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(() => 0), "constructor");\n',
     'export const F = (() => 1)["constr" + "uctor"];\n',
+    // Review FAIL c.6892337734: a forbidden literal inside a non-static `+`.
+    'export function load(suffix = ""): unknown {\n  return Reflect.get(() => 0, "constructor" + suffix);\n}\n',
+    'export const f = (s: string): unknown => Reflect.get(() => 0, s + "constructor");\n',
+    "export const f = (s: string): unknown => (() => 0)[`constructor${s}`];\n",
+    'export const f = (s: string): unknown => Reflect.get(() => 0, "constr" + "uctor" + s);\n',
+    'export const f = (s: string): unknown => Reflect.get(() => 0, s + ("set" + "Engine"));\n',
     'export const F = (() => 1)[`constr${"uct"}or`];\n',
     'const k = "constructor";\nexport const F = Reflect.get(() => 1, k);\n',
     'import { setEngine } from "node:crypto";\nexport const s = setEngine;\n',

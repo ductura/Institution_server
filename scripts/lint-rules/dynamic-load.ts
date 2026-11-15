@@ -274,13 +274,26 @@ export const noDynamicLoad: Rule.RuleModule = {
       );
     }
 
-    // A static string anywhere, reported once at the outermost `+`, except an
+    // A static string anywhere, reported once at the outermost static `+`, except an
     // element of the data declaration of KEY_LITERAL_ALLOWED.
     function checkString(node: Node): void {
       const loose = node as unknown as Loose;
-      if (loose.parent?.type === "BinaryExpression" && loose.parent.operator === "+") return;
+      // Left to the parent only when the parent `+` folds to a static string;
+      // in `"constructor" + suffix` the literal itself is checked.
+      const parent = loose.parent;
+      if (
+        parent?.type === "BinaryExpression" &&
+        parent.operator === "+" &&
+        staticText(parent) !== undefined
+      )
+        return;
       const text = staticText(loose);
-      if (text === undefined) return;
+      if (text === undefined) {
+        // A template with a dynamic part: each static piece is still checked.
+        for (const quasi of loose.type === "TemplateLiteral" ? (loose.quasis ?? []) : [])
+          checkKey(node, quasi.value.cooked ?? undefined);
+        return;
+      }
       if (KEY_LITERAL_ALLOWED[file]?.keys.includes(text) === true && isDataElement(loose)) return;
       checkKey(node, text);
     }
