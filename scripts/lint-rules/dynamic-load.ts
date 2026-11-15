@@ -15,8 +15,11 @@
 // "constructor") fails too. What the rule cannot see: a key built at run time
 // ("constr" + "uctor", fn[k] with k from a join, a lookup by descriptor value)
 // and the internals of dependencies. Both need a runtime guard, not lint:
-// DAN-772 (--disallow-code-generation-from-strings). Names of direct export
-// declarations (`export function setEngine`) are not checked; DAN-773.
+// DAN-772 (--disallow-code-generation-from-strings). Every name an export
+// statement exposes is a key of the module namespace, so exportedNames()
+// collects them all in one place (declarations at any pattern depth,
+// specifiers, `export * as`, `export default`, `export =`, `export as
+// namespace`; DAN-773) and each is checked against the same list.
 import { readFileSync } from "node:fs";
 import { posix } from "node:path";
 import type { Rule, Scope } from "eslint";
@@ -41,11 +44,25 @@ type Loose = {
   exportKind?: string;
   moduleReference?: Loose;
   imported?: Loose;
+  local?: Loose;
   exported?: Loose;
   callee?: Loose;
   arguments?: unknown[];
-  id?: Loose;
+  id?: Loose | null;
   init?: unknown;
+  left?: Loose;
+  right?: Loose;
+  argument?: Loose;
+  declaration?: Loose | null;
+  expression?: Loose;
+  declarations?: Loose[];
+  specifiers?: Loose[];
+  properties?: Loose[];
+  elements?: (Loose | null)[];
+  consequent?: Loose;
+  alternate?: Loose;
+  static?: boolean;
+  body?: Loose | Loose[];
 };
 
 /** Globals that can load a module or run a string as code. */
@@ -171,6 +188,130 @@ function inTypeQuery(node: Loose): boolean {
   return false;
 }
 
+// Every identifier a binding pattern declares, through nested object and
+// array patterns, default values and rest elements (`export const { a: [b =
+// 1, ...c], ...d } = …`). Keys of an object pattern are checked as Property.
+function patternNames(pattern: Loose | null | undefined): Loose[] {
+  switch (pattern?.type) {
+    case "Identifier":
+      return [pattern];
+    case "ObjectPattern":
+      return (pattern.properties ?? []).flatMap((property) =>
+        patternNames(property.type === "RestElement" ? property : (property.value as Loose)),
+      );
+    case "ArrayPattern":
+      return (pattern.elements ?? []).flatMap(patternNames);
+    case "AssignmentPattern":
+      return patternNames(pattern.left);
+    case "RestElement":
+      return patternNames(pattern.argument);
+    default:
+      return [];
+  }
+}
+
+// Each segment of a declared name (`namespace A.B` declares A and A.B).
+function qualifiedNames(id: Loose | null | undefined): Loose[] {
+  if (id?.type === "TSQualifiedName")
+    return [...qualifiedNames(id.left), ...qualifiedNames(id.right)];
+  return id ? [id] : [];
+}
+
+// The names a declaration binds: every variable of every declarator, or the
+// id of a function, class, enum, interface, type, namespace or
+// `import x = …` (an anonymous default declaration binds none).
+function declaredNames(declaration: Loose | null | undefined): Loose[] {
+  if (!declaration) return [];
+  if (declaration.type === "VariableDeclaration")
+    return (declaration.declarations ?? []).flatMap((declarator) => patternNames(declarator.id));
+  return qualifiedNames(declaration.id);
+}
+
+// The expression a type-only wrapper holds (`x as T`, `x satisfies T`,
+// `<T>x`, `x!`, `f<T>`); the wrapper is erased and the value is the same.
+const TYPE_WRAPPERS = new Set([
+  "TSAsExpression",
+  "TSSatisfiesExpression",
+  "TSTypeAssertion",
+  "TSNonNullExpression",
+  "TSInstantiationExpression",
+]);
+function unwrapped(node: Loose | null | undefined): Loose | null | undefined {
+  let value = node;
+  while (value && TYPE_WRAPPERS.has(value.type)) value = value.expression;
+  return value;
+}
+
+// The keys `export = <expression>` gives module.exports, as far as the
+// syntax shows them: a name, an object's non-computed keys, a class's name
+// and static members, a function's name; through type wrappers, the last
+// expression of a sequence and every branch of a condition or `||`/`&&`/`??`.
+// A value from elsewhere (`export = o`) is data flow, outside lint.
+function assignedNames(node: Loose | null | undefined): Loose[] {
+  const value = unwrapped(node);
+  switch (value?.type) {
+    case "Identifier":
+      return [value];
+    case "ObjectExpression":
+      return (value.properties ?? []).flatMap((property) =>
+        property.type === "Property" && !property.computed && property.key ? [property.key] : [],
+      );
+    case "ClassExpression": {
+      const members = (value.body as Loose | undefined)?.body;
+      return [
+        ...qualifiedNames(value.id),
+        ...(Array.isArray(members) ? members : []).flatMap((member) =>
+          member.static === true && !member.computed && member.key ? [member.key] : [],
+        ),
+      ];
+    }
+    case "SequenceExpression":
+      return assignedNames((value.expressions as Loose[] | undefined)?.at(-1));
+    case "ConditionalExpression":
+      return [...assignedNames(value.consequent), ...assignedNames(value.alternate)];
+    case "LogicalExpression":
+      return [...assignedNames(value.left), ...assignedNames(value.right)];
+    default:
+      return declaredNames(value);
+  }
+}
+
+/**
+ * Every name an export statement exposes or binds, in any form the parser
+ * accepts (DAN-773): both names of each specifier, the names of an exported
+ * declaration, the name of `export * as`, a named or identifier `export
+ * default`, `export =` of a name or of an object's keys, `export as
+ * namespace`. One list, so that no form needs a check of its own.
+ */
+export function exportedNames(node: Loose): Loose[] {
+  switch (node.type) {
+    case "ExportNamedDeclaration":
+      return [
+        ...declaredNames(node.declaration),
+        ...(node.specifiers ?? []).flatMap((specifier) => [
+          specifier.local as Loose,
+          specifier.exported as Loose,
+        ]),
+      ];
+    case "ExportDefaultDeclaration": {
+      // The namespace key is `default`; a forbidden binding behind it fails
+      // the same way through any wrapper or sequence.
+      let value = unwrapped(node.declaration);
+      while (value?.type === "SequenceExpression")
+        value = unwrapped((value.expressions as Loose[] | undefined)?.at(-1));
+      return value?.type === "Identifier" ? [value] : declaredNames(value);
+    }
+    case "ExportAllDeclaration":
+      return node.exported ? [node.exported] : [];
+    case "TSExportAssignment":
+      return assignedNames(node.expression);
+    case "TSNamespaceExportDeclaration":
+      return node.id ? [node.id] : [];
+    default:
+      return [];
+  }
+}
+
 export const noDynamicLoad: Rule.RuleModule = {
   meta: {
     type: "problem",
@@ -228,6 +369,12 @@ export const noDynamicLoad: Rule.RuleModule = {
     function checkKey(node: Node, key: string | undefined): void {
       if (key !== undefined && FORBIDDEN_KEYS.includes(key))
         context.report({ node, messageId: "key", data: { key } });
+    }
+
+    // The one check of exported names: every form goes through exportedNames().
+    function checkExportedNames(node: Node): void {
+      for (const name of exportedNames(node as unknown as Loose))
+        checkKey(name as unknown as Node, keyName(name, false));
     }
 
     // The one data declaration of KEY_LITERAL_ALLOWED: the literal is a direct
@@ -302,13 +449,16 @@ export const noDynamicLoad: Rule.RuleModule = {
       },
       ImportDeclaration: (node) =>
         checkSource(node, node.source as Loose, (node as Loose).importKind),
-      ExportNamedDeclaration: (node) =>
-        checkSource(node, node.source as Loose | null, (node as Loose).exportKind),
+      ExportNamedDeclaration(node) {
+        checkSource(node, node.source as Loose | null, (node as Loose).exportKind);
+        checkExportedNames(node);
+      },
       ExportAllDeclaration(node) {
         checkSource(node, node.source as Loose, (node as Loose).exportKind);
-        // `export * as constructor from "…"`: the exported name, as for a specifier.
-        checkKey(node, keyName((node as Loose).exported, false));
+        checkExportedNames(node);
       },
+      "ExportDefaultDeclaration, TSExportAssignment, TSNamespaceExportDeclaration":
+        checkExportedNames,
       MemberExpression(node) {
         if (!node.computed) checkKey(node, keyName(node.property as Loose, false));
       },
@@ -316,18 +466,14 @@ export const noDynamicLoad: Rule.RuleModule = {
         if ((node as Loose).parent?.type === "ObjectPattern" && !node.computed)
           checkKey(node, keyName(node.key as Loose, false));
       },
-      // Both names of a specifier, as imported or exported and as bound
-      // (`import { setEngine as s }`, `export { createHash as setEngine }`).
+      // Both names of an import specifier, as imported and as bound
+      // (`import { setEngine as s }`); export specifiers are in exportedNames().
       ImportSpecifier(node) {
         checkKey(node, keyName(node.imported as Loose, false));
         checkKey(node, keyName(node.local as Loose, false));
       },
       ImportDefaultSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
       ImportNamespaceSpecifier: (node) => checkKey(node, keyName(node.local as Loose, false)),
-      ExportSpecifier(node) {
-        checkKey(node, keyName(node.local as Loose, false));
-        checkKey(node, keyName(node.exported as Loose, false));
-      },
       Literal(node) {
         const literal = node as unknown as Loose;
         if (typeof literal.value === "string")

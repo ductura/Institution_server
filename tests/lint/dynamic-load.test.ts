@@ -45,6 +45,71 @@ const importForms = (spec: string): string[] => [
   `export * from "${spec}";\n`,
 ];
 
+// DAN-773: every form of export that exposes or binds `name`, including
+// nested destructuring, default values and rest elements.
+const FORBIDDEN_KEY_NAMES = ["constructor", "setEngine"];
+const exportForms = (name: string): string[] => [
+  `export function ${name}(): void {}\n`,
+  `export async function ${name}(): Promise<void> {}\n`,
+  `export function* ${name}(): Generator<number> {}\n`,
+  `export declare function ${name}(): void;\n`,
+  `export const ${name} = 1;\n`,
+  `export let ${name} = 1;\n`,
+  `export var ${name} = 1;\n`,
+  `export declare const ${name}: number;\n`,
+  `export const a = 1,\n  ${name} = 2;\n`,
+  `export class ${name} {}\n`,
+  `export abstract class ${name} {}\n`,
+  `export const { ${name} } = { ${name}: 1 };\n`,
+  `export const { a: ${name} } = { a: 1 };\n`,
+  `export const { a: { b: ${name} } } = { a: { b: 1 } };\n`,
+  `export const { ${name} = 1 } = {} as { ${name}?: number };\n`,
+  `export const { a: ${name} = 1 } = {} as { a?: number };\n`,
+  `export const { ...${name} } = { a: 1 };\n`,
+  `export const [${name}] = [1];\n`,
+  `export const [, ${name}] = [1, 2];\n`,
+  `export const [[${name}]] = [[1]];\n`,
+  `export const [${name} = 1] = [] as number[];\n`,
+  `export const [...${name}] = [1];\n`,
+  `export const [{ a: [${name}] }] = [{ a: [1] }];\n`,
+  `export let { a: [, ...${name}] } = { a: [1, 2] };\n`,
+  `export default function ${name}(): void {}\n`,
+  `export default class ${name} {}\n`,
+  `const ${name} = 1;\nexport default ${name};\n`,
+  `export enum ${name} {\n  A,\n}\n`,
+  `export const enum ${name} {\n  A,\n}\n`,
+  `export declare enum ${name} {\n  A,\n}\n`,
+  `export namespace ${name} {\n  export const a = 1;\n}\n`,
+  `export namespace A.${name} {\n  export const a = 1;\n}\n`,
+  `export namespace N {\n  export const ${name} = 1;\n}\n`,
+  `export interface ${name} {\n  a: number;\n}\n`,
+  `export type ${name} = number;\n`,
+  `namespace N {\n  export const a = 1;\n}\nexport import ${name} = N.a;\n`,
+  `const ${name} = 1;\nexport = ${name};\n`,
+  `const a = 1;\nexport = { ${name}: a };\n`,
+  `const ${name} = 1;\nexport = { ${name} };\n`,
+  `export = class ${name} {};\n`,
+  `export as namespace ${name};\nexport const a = 1;\n`,
+  // Attack pass on this PR: type wrappers, sequences, conditions, static members.
+  `export = { ${name}: 1 } as const;\n`,
+  `export = { ${name}: 1 } satisfies object;\n`,
+  `export = <object>{ ${name}: 1 };\n`,
+  `export = ({ ${name}: 1 })!;\n`,
+  `export = (0, { ${name}: 1 });\n`,
+  `export = Math.random() > 0.5 ? { ${name}: 1 } : {};\n`,
+  `export = undefined ?? { ${name}: 1 };\n`,
+  `export = (class ${name} {}) as unknown;\n`,
+  `export = class {\n  static ${name}(): void {}\n};\n`,
+  `export = class {\n  static get ${name}(): number {\n    return 1;\n  }\n};\n`,
+  `const ${name} = 1;\nexport = ${name} as number;\n`,
+  `const ${name} = 1;\nexport default ${name} as number;\n`,
+  `const ${name} = 1;\nexport default ${name} satisfies number;\n`,
+  `const ${name}: number | undefined = 1;\nexport default ${name}!;\n`,
+  `const ${name} = 1;\nexport default <number>${name};\n`,
+  `const ${name} = 1;\nexport default (0, ${name});\n`,
+  `function ${name}<T>(x: T): T {\n  return x;\n}\nexport default ${name}<string>;\n`,
+];
+
 const failing: Case[] = [
   // FAIL c.6888904929: process under another name, destructured loaders.
   {
@@ -198,6 +263,10 @@ const failing: Case[] = [
     'import * as c from "node:crypto";\nconst { setEngine } = c;\nexport { setEngine };\n',
     'export { setEngine } from "node:crypto";\n',
   ]),
+  // DAN-773: a forbidden key as an exported name, in every form of export.
+  ...FORBIDDEN_KEY_NAMES.flatMap((key) => at(LOG, "key", exportForms(key))),
+  // A static field (the parser rejects one named `constructor`).
+  ...at(LOG, "key", ["export = class {\n  static setEngine = 1;\n};\n"]),
   // The literal is allowed only in the file that holds it as data.
   ...at("server/domain/document/edit-step2.ts", "key", [
     'export const keys = new Set(["__proto__", "constructor", "prototype"]);\n',
@@ -254,6 +323,9 @@ const passing: Case[] = [
     'import { Type } from "@sinclair/typebox";\nexport const t = Type;\n',
     "export class X {\n  constructor() {}\n}\n",
     "export const o = { constructor: 1 };\n",
+    // DAN-773: ordinary names pass in every form of export.
+    ...exportForms("engine"),
+    "export = class {\n  static engine = 1;\n  constructor() {}\n};\n",
   ]),
 ];
 
