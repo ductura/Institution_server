@@ -18,7 +18,9 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 - Zaštita porijekla: osim `GET`, `HEAD` i `OPTIONS` svaka metoda mijenja stanje i traži točno jedno zaglavlje `Origin` jednako `APP_ORIGIN` te `Sec-Fetch-Site` koji nedostaje ili je točno jednom `same-origin`. Inače 403 `{"error":"origin_missing" | "origin_mismatch" | "cross_site"}` (kodovi ugovora). Bez `APP_ORIGIN` svaka takva metoda dobiva 403. Tijelo zahtjeva se ne čita.
 - `refuse` je jedini način na koji sloj odbija: tijelo ugovora i sigurnosna zaglavlja, i za korake prije koraka 6.
 
-Gašenje donosi S-1B-c, a čitanje tijela s granicom (`readBodyWithLimit`) DAN-777 a2.
+- `readBodyWithLimit` (DAN-777, dio a2; prijenos Ductusa) čita tijelo mijenjajuće rute kao sirove bajtove do tvrde granice, prije bilo kakvog parsiranja; ništa ne dekodira. Deklarirani `Content-Length` iznad granice odbija se bez čitanja (413), neispravan je 400, tijelo bez deklarirane duljine prekida se na prvom komadu preko granice (413), prekinuto tijelo je `body_stream_error` (400), a rok `timeoutMs` daje 408. Pri odbijanju čitanje staje, a `refuse()` zatvara vezu, pa se ostatak ne čita. `declaredLengthRefusal` je isto pravilo samo iz zaglavlja, za rutu koja radi nešto prije tijela.
+
+Gašenje donosi S-1B-c.
 
 ## Tko ga zove
 
@@ -33,6 +35,7 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 - `startServer`, `Running`, `StartOptions` (`start.ts`);
 - `createLayers`, `createPipeline`, `PIPELINE_STEPS`, `App`, `Layer`, `Layers`, `Step` (`pipeline.ts`);
 - `createRouter`, `Route`, `Handler`, `Router` (`router.ts`);
+- `readBodyWithLimit`, `declaredLengthRefusal`, `LimitedBodyResult` (`mutation-request.ts`);
 - `HEALTH_ROUTE` (`health.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);
 - `createDatabases`, `Databases` (`databases.ts`).

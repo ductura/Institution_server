@@ -1,0 +1,110 @@
+// readBodyWithLimit on a real node:http server (DAN-777, part a2): a refused
+// body is not read to its end, the refusal closes the connection, and a
+// client that goes away leaves body_stream_error. Raw sockets, so the test
+// controls exactly which body bytes are sent. Origins are invented.
+import { connect, type Socket } from "node:net";
+
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { ROUTES } from "../contracts/index.ts";
+import { createDatabases } from "./databases.ts";
+import { type LimitedBodyResult, readBodyWithLimit } from "./mutation-request.ts";
+import { createLayers } from "./pipeline.ts";
+import { sendJson } from "./router.ts";
+import { refuse } from "./security-headers.ts";
+import { type Running, startServer } from "./start.ts";
+
+const ORIGIN = "https://ductura.invalid";
+const PATH = "/api/v1/profile/interface-locale";
+const LIMIT = 16;
+const contract = ROUTES.find((route) => route.id === "profile.interface-locale.post");
+if (contract === undefined) throw new Error("no contract");
+
+const results: LimitedBodyResult[] = [];
+
+function open(port: number, lines: string[]): Socket {
+  const socket = connect(port, "127.0.0.1");
+  const head = [`POST ${PATH} HTTP/1.1`, "Host: 127.0.0.1", `Origin: ${ORIGIN}`, ...lines];
+  socket.write(`${head.join("\r\n")}\r\n\r\n`);
+  return socket;
+}
+
+/** Everything the server sends until it closes the connection. */
+function answer(socket: Socket): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let text = "";
+    socket.on("data", (chunk: Buffer) => (text += chunk.toString("latin1")));
+    socket.on("error", reject);
+    socket.on("close", () => resolve(text));
+  });
+}
+
+describe("readBodyWithLimit on a real server", () => {
+  let server: Running;
+  beforeAll(async () => {
+    server = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      databases: createDatabases(),
+      routes: [
+        {
+          contract,
+          handle: async (request, response) => {
+            const result = await readBodyWithLimit(request, LIMIT, 300);
+            results.push(result);
+            if (result.ok) sendJson(response, 200, { size: result.bytes.byteLength });
+            else refuse(response, result.status, result.reason);
+          },
+        },
+      ],
+    });
+  });
+  afterAll(async () => server.close());
+
+  it("reads a body of exactly the limit", async () => {
+    const socket = open(server.port, ["Content-Length: 16", "Connection: close"]);
+    socket.write("x".repeat(LIMIT));
+    const text = await answer(socket);
+    expect(text).toMatch(/^HTTP\/1\.1 200 /u);
+    expect(text).toContain('{"size":16}');
+  });
+
+  it("refuses a declared 100 MB body at once and closes without reading it", async () => {
+    const socket = open(server.port, ["Content-Length: 100000000"]);
+    const started = Date.now();
+    const text = await answer(socket);
+    expect(text).toMatch(/^HTTP\/1\.1 413 /u);
+    expect(text).toContain('{"error":"body_too_large"}');
+    expect(text).toContain("Connection: close");
+    expect(Date.now() - started).toBeLessThan(2_000);
+  });
+
+  it("cuts a chunked body at the first chunk past the limit and closes", async () => {
+    const socket = open(server.port, ["Transfer-Encoding: chunked"]);
+    socket.write("a\r\n0123456789\r\n");
+    socket.write("a\r\n0123456789\r\n");
+    const text = await answer(socket);
+    expect(text).toMatch(/^HTTP\/1\.1 413 /u);
+    expect(text).toContain("Connection: close");
+  });
+
+  it("answers 408 to a body that stops arriving", async () => {
+    const socket = open(server.port, ["Content-Length: 10"]);
+    socket.write("01234");
+    const text = await answer(socket);
+    expect(text).toMatch(/^HTTP\/1\.1 408 /u);
+    expect(text).toContain('{"error":"body_timeout"}');
+  });
+
+  it("gives body_stream_error when the client goes away mid-body", async () => {
+    results.length = 0;
+    const socket = open(server.port, ["Content-Length: 10"]);
+    socket.write("01234", () => socket.destroy());
+    const deadline = Date.now() + 2_000;
+    while (results.length === 0 && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(results).toEqual([{ ok: false, status: 400, reason: "body_stream_error" }]);
+  });
+});

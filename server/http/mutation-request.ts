@@ -5,8 +5,7 @@
 // method (the router answers 405); every method but GET, HEAD and OPTIONS is
 // state-changing, an unknown name included; a header sent twice is refused
 // instead of being read joined by a comma; no configured origin refuses every
-// such request. The body is never read here. readBodyWithLimit follows in
-// part a2 (DAN-777).
+// such request. The check never reads the body.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { refuse } from "./security-headers.ts";
@@ -69,4 +68,105 @@ export function originLayer(
     refuse(response, check.status, check.reason);
     return "done";
   };
+}
+
+// Reading a state-changing body (docs/server-map.md §3, step 9): port of
+// readBodyWithLimit and declaredLengthRefusal from Ductus
+// src/server/http/mutation-request.ts at d52a92c3 (PR #213), on
+// IncomingMessage instead of a Web Request. The body is read as raw bytes
+// with a hard byte limit before anything parses it, and never decoded here.
+// Ductus cancels the stream on a refusal; here reading stops (pause) and the
+// refusal closes the connection (refuse()), so the rest is never read.
+
+export type LimitedBodyResult =
+  | { ok: true; bytes: Uint8Array }
+  | { ok: false; status: 413; reason: "body_too_large" }
+  | { ok: false; status: 408; reason: "body_timeout" }
+  | {
+      ok: false;
+      status: 400;
+      reason: "content_length_invalid" | "content_length_mismatch" | "body_stream_error";
+    };
+
+const DECIMAL = /^(?:0|[1-9][0-9]{0,15})$/u;
+
+/**
+ * What readBodyWithLimit refuses from the declared Content-Length alone,
+ * before a byte is read: a malformed length is 400, a length over maxBytes is
+ * 413, anything else (no header included) is null.
+ */
+export function declaredLengthRefusal(
+  request: IncomingMessage,
+  maxBytes: number,
+): 400 | 413 | null {
+  const header = request.headers["content-length"];
+  if (header === undefined) return null;
+  if (!DECIMAL.test(header)) return 400;
+  return Number(header) > maxBytes ? 413 : null;
+}
+
+const refusedBody = {
+  invalid: { ok: false, status: 400, reason: "content_length_invalid" },
+  mismatch: { ok: false, status: 400, reason: "content_length_mismatch" },
+  stream: { ok: false, status: 400, reason: "body_stream_error" },
+  large: { ok: false, status: 413, reason: "body_too_large" },
+  timeout: { ok: false, status: 408, reason: "body_timeout" },
+} as const satisfies Record<string, LimitedBodyResult>;
+
+/**
+ * Reads the body as raw bytes, at most maxBytes. A declared Content-Length
+ * over the limit is refused without reading; an undeclared (chunked) body is
+ * cut off at the first chunk past the limit. A body that fails mid-read
+ * (client gone) or was already read is body_stream_error, never a throw, and
+ * no partial bytes leave this function. There is no default time limit: a
+ * route that accepts a streamed body passes timeoutMs, an absolute deadline.
+ */
+export async function readBodyWithLimit(
+  request: IncomingMessage,
+  maxBytes: number,
+  timeoutMs?: number,
+): Promise<LimitedBodyResult> {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+    throw new Error("maxBytes must be a non-negative safe integer");
+  }
+  if (timeoutMs !== undefined && (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1)) {
+    throw new Error("timeoutMs must be a positive safe integer");
+  }
+  // A late error of a request this function stopped reading must not crash.
+  request.on("error", () => undefined);
+  const refusal = declaredLengthRefusal(request, maxBytes);
+  if (refusal !== null) {
+    request.pause();
+    return refusal === 400 ? refusedBody.invalid : refusedBody.large;
+  }
+  if (request.readableEnded || request.destroyed || request.readableDidRead) {
+    return refusedBody.stream;
+  }
+  const header = request.headers["content-length"];
+  const declared = header === undefined ? null : Number(header);
+
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (result: LimitedBodyResult): void => {
+      if (timer !== undefined) clearTimeout(timer);
+      request.off("data", onData).off("end", onEnd).off("error", onFail).off("close", onFail);
+      if (!result.ok) request.pause();
+      resolve(result);
+    };
+    const onData = (chunk: Buffer): void => {
+      size += chunk.byteLength;
+      if (size > maxBytes) finish(refusedBody.large);
+      else chunks.push(chunk);
+    };
+    const onEnd = (): void => {
+      if (declared !== null && declared !== size) finish(refusedBody.mismatch);
+      else finish({ ok: true, bytes: new Uint8Array(Buffer.concat(chunks, size)) });
+    };
+    // "close" before "end" is a body the client never finished.
+    const onFail = (): void => finish(refusedBody.stream);
+    if (timeoutMs !== undefined) timer = setTimeout(() => finish(refusedBody.timeout), timeoutMs);
+    request.on("data", onData).on("end", onEnd).on("error", onFail).on("close", onFail);
+  });
 }
