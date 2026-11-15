@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   type Clock,
   createShutdownCoordinator,
+  FLUSH_LOGS,
   installShutdown,
   SHUTDOWN_GRACE_MS,
   type ShutdownHook,
@@ -15,7 +16,11 @@ import {
 // (DAN-587): K1 to K8 for the coordinator, then the order of the shutdown
 // (contract c.6893332476, I1 to I8). The clock is a manual one, so the
 // deadline is exact.
-function manualClock(): Clock & { advance(ms: number): void; pending(): number } {
+function manualClock(): Clock & {
+  advance(ms: number): void;
+  pending(): number;
+  block(ms: number): void;
+} {
   let now = 0;
   let next = 0;
   const timers = new Map<number, { at: number; fn: () => void }>();
@@ -28,6 +33,7 @@ function manualClock(): Clock & { advance(ms: number): void; pending(): number }
     clearTimeout(handle) {
       timers.delete(handle as number);
     },
+    now: () => now,
     advance(ms) {
       now += ms;
       for (const [id, timer] of [...timers].sort((a, b) => a[1].at - b[1].at)) {
@@ -37,6 +43,10 @@ function manualClock(): Clock & { advance(ms: number): void; pending(): number }
       }
     },
     pending: () => timers.size,
+    // Time passes while the event loop is blocked: no timer runs.
+    block(ms) {
+      now += ms;
+    },
   };
 }
 
@@ -301,6 +311,38 @@ describe("installShutdown", () => {
     expect(ctx.exit.mock.calls).toEqual([[1]]);
   });
 
+  // Codex review on 0be127e: a hook that blocks the event loop past the
+  // deadline returns before the overdue timer runs; that is still a deadline.
+  it("I3/I4: a hook that blocks the event loop past the deadline exits 1, not 0", async () => {
+    const calls: string[] = [];
+    let ctx!: ReturnType<typeof setup>;
+    const blocking: ShutdownHook = {
+      name: "logs",
+      run: () => ctx.clock.block(SHUTDOWN_GRACE_MS + 1),
+    };
+    ctx = setup([blocking, recording(calls, "databases")]);
+    ctx.target.emit("SIGTERM");
+    await vi.waitFor(() => expect(ctx.exit).toHaveBeenCalled());
+    expect(ctx.exit.mock.calls).toEqual([[1]]);
+    expect(ctx.log.mock.calls).toEqual([
+      ["shutdown.deadline", { phase: "hooks", hook: "logs", requests: 0 }],
+    ]);
+    expect(calls).toEqual([]);
+  });
+
+  it("I3: a request released after the event loop was blocked past the deadline exits 1", async () => {
+    const calls: string[] = [];
+    const ctx = setup([recording(calls, "logs")]);
+    const request = ctx.coordinator.begin()!;
+    ctx.target.emit("SIGTERM");
+    ctx.clock.block(SHUTDOWN_GRACE_MS);
+    request.release();
+    await vi.waitFor(() => expect(ctx.exit).toHaveBeenCalled());
+    expect(ctx.exit.mock.calls).toEqual([[1]]);
+    expect(ctx.log.mock.calls).toEqual([["shutdown.deadline", { phase: "requests", requests: 0 }]]);
+    expect(calls).toEqual([]);
+  });
+
   it("nothing happens before a signal", async () => {
     const calls: string[] = [];
     const ctx = setup([recording(calls, "logs")]);
@@ -309,5 +351,24 @@ describe("installShutdown", () => {
     expect(ctx.exit).not.toHaveBeenCalled();
     expect(ctx.listener.stopAccepting).not.toHaveBeenCalled();
     expect(ctx.coordinator.state()).toBe("running");
+  });
+});
+
+// Codex review on 0be127e: a failed write while flushing is a failed hook.
+describe("FLUSH_LOGS", () => {
+  it("resolves once stdout and stderr took every line", async () => {
+    await expect(FLUSH_LOGS.run()).resolves.toBeUndefined();
+  });
+
+  it.each(["stdout", "stderr"] as const)("rejects when a write to %s fails", async (name) => {
+    const failure = Object.assign(new Error("invented"), { code: "EPIPE" });
+    vi.spyOn(process[name], "write").mockImplementation(((
+      _chunk: unknown,
+      callback?: (error?: Error | null) => void,
+    ) => {
+      callback?.(failure);
+      return false;
+    }) as typeof process.stdout.write);
+    await expect(FLUSH_LOGS.run()).rejects.toBe(failure);
   });
 });
