@@ -230,6 +230,15 @@ export const probe = Object.create(proto);
       'export const probe = Object.defineProperty({}, "a", { value: "Suspicious edit", enumerable: false });',
     ],
     ["an array with a hole", 'export const probe = ["Predano", , "Predano"];'],
+    // Review FAIL c.6892496799: a hole hidden by a named key, and a revoked Proxy.
+    [
+      "an array with a hole and a named key",
+      'export const probe = Object.assign(new Array<string>(1), { label: "Ready" });',
+    ],
+    [
+      "a revoked Proxy",
+      "const revocable = Proxy.revocable({}, {});\nrevocable.revoke();\nexport const probe = revocable.proxy;",
+    ],
     ["a getter on an export", 'export const probe = { get a() { return "Suspicious edit"; } };'],
   ])("fails on %s", (_, source) => {
     const root = copy();

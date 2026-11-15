@@ -1,7 +1,6 @@
 /**
- * The scan of every interface text in locales/** (S-1L.1, DAN-768, PR-b2; contract Ductus#1836
- * c.6890523605, confirmed in c.6890541239). Every file is on a closed list and every leaf is read
- * and checked; a leaf the scan cannot read is an input error, never skipped.
+ * The scan of every interface text in locales/** (S-1L.1, DAN-768, PR-b2; Ductus#1836 c.6890523605, c.6890541239).
+ * Every file is on a closed list; every leaf is read and checked, or the scan fails with an input error.
  */
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -202,9 +201,7 @@ function readCatalogue(dir: string, file: string, catalogue: Catalogue): Map<str
     return leaves;
   }
   const module = evaluate(file, full, raw);
-  if (!Object.hasOwn(module, catalogue.table)) {
-    fail("UNKNOWN_EXPORT", file, `no export ${catalogue.table}`);
-  }
+  if (!Object.hasOwn(module, catalogue.table)) fail("UNKNOWN_EXPORT", file, catalogue.table);
   const table = module[catalogue.table];
   walk(file, table, "", leaves);
   for (const [name, value] of Object.entries(module)) {
@@ -253,16 +250,19 @@ function walk(file: string, node: unknown, at: string, leaves: Map<string, strin
     leaves.set(at, node);
     return 0;
   }
-  // #44 c.6892192874: the prototype is exactly Object.prototype or Array.prototype (=== OBJECTS, ARRAYS); null, any
-  // other prototype, a Proxy, an accessor, a symbol, a key that is not enumerable and a hole are input errors.
-  const proto: unknown = typeof node === "object" && node ? Object.getPrototypeOf(node) : undefined;
-  const array = Array.isArray(node) && ARRAYS.has(proto);
-  if (!(array || OBJECTS.has(proto)) || types.isProxy(node)) {
+  // #44 c.6892192874: prototype exactly Object.prototype or Array.prototype (=== OBJECTS, ARRAYS), own enumerable
+  // data properties only, an array dense with no named key; a Proxy is refused before any introspection.
+  const object = typeof node === "object" && node !== null && !types.isProxy(node);
+  const proto: unknown = object ? Object.getPrototypeOf(node) : undefined;
+  const array = object && Array.isArray(node) && ARRAYS.has(proto);
+  if (!(array || OBJECTS.has(proto)))
     return fail("NOT_TEXT", file, `${at || "(root)"}: ${typeof node}`);
+  const [own, count] = [Reflect.ownKeys(node as object), (node as unknown[]).length];
+  if (array && !own.every((key, i) => key === (i < count ? String(i) : "length"))) {
+    fail("NOT_TEXT", file, `${at}: not a dense array`);
   }
-  if (array && Object.keys(node).length !== node.length) fail("NOT_TEXT", file, `${at}: hole`);
   let keys = 0;
-  for (const key of Reflect.ownKeys(node as object)) {
+  for (const key of own) {
     if (typeof key === "symbol") return fail("NOT_TEXT", file, `${at}: symbol key`);
     if (array && key === "length") continue;
     const property = Object.getOwnPropertyDescriptor(node, key)!;
