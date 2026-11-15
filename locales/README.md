@@ -16,6 +16,15 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 
 - Zadatak je rezan na tri PR-a (Ductus#1836 c.6888942518). Slijede PR-a2 (`parity.ts` i `parity.test.ts`: isti ključevi, duljine popisa i `{placeholderi}` u `hr` i `en`) i PR-a3 (`messages.test.ts` i `messages-en.test.ts`: rječnik zabranjenih izraza, prijava samo AAI@EduHr, ime „Ductura”).
 - Iz Ductus `messages.test.ts` nije prenesen slučaj „ne ponavlja tekst stanja spremanja iz `@/domain/sync/labels`”: tog modula ovdje nema. Vraća se sa zadatkom koji prenosi sync oznake.
-- `messages-en.test.ts` (PR-a3) do prijenosa skenera (S-1L.1, PR-b) provjerava englesku kolonu rječnika kao popis korijena, a ne s `findForbiddenTerms` kao u Ductusu.
+- `messages-en.test.ts` (PR-a3) i dalje provjerava englesku kolonu rječnika kao popis korijena; uz njega sad radi skener (niže), koji čita oba jezika s `findForbiddenTerms` kao u Ductusu. Test ostaje kao dodatna provjera.
+
+## Skener zabranjenih izraza (S-1L.1 PR-b2, DAN-768)
+
+`scanLocales(root)` u `scripts/forbidden-terms/scan.ts` čita svaki tekst u `locales/`; pokreće ga `scripts/forbidden-terms/scan.test.ts` u `pnpm test` (ugovor Ductus#1836 c.6890523605, potvrda c.6890541239).
+
+- Svaka datoteka u `locales/` mora biti na zatvorenom popisu: katalog (`CATALOGUES`: `hr.ts`, `en.ts`, `hr.json`) ili ne-katalog s razlogom (`NOT_CATALOGUES`, i `*.test.ts`). Nova datoteka ili podmapa ruši skener, pa novu datoteku treba razvrstati u `scan.ts`. `source.ts` je namjerno ne-katalog: čuva izvorne Ductus tekstove kao zapis.
+- Iz `.ts` kataloga čita se vrijednost svakog izvoza (i popisi), ne izvorni kod; funkcija smije biti samo `textOf` u `hr.ts`. List koji nije string i dvaput napisan JSON ključ ruše skener. Test provjerava točan broj pročitanih tekstova (1375, 1375 i 20); kad se tekst doda ili makne, broj se mijenja u testu.
+- Svaki tekst prolazi rječnik obaju jezika (`findForbiddenTerms`) i provjeru znakova (`unreadableCharacters`). U `en` nije dopušteno hrvatsko slovo, ni tekst jednak hrvatskom na istoj putanji, osim putanja na popisu `SAME_IN_BOTH` (imena i riječi iste u oba jezika).
+- Iznimke su zatvoren popis `EXCEPTIONS`; danas samo doslovni „Risk:” u `hr.json` `gate.risk_invalid` i `gate.risk_below_floor` (ime retka u opisu PR-a). Zastarjela stavka `EXCEPTIONS` ili `SAME_IN_BOTH` ruši skener.
 
 Tekstovi sučelja moraju poštovati rječnik zabranjenih izraza (Ductus `docs/PRODUCT.md` §5).

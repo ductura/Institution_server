@@ -359,7 +359,7 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
 ];
 
 /** Format characters (soft hyphen, zero width, bidi controls, BOM) and Hangul fillers. */
-const INVISIBLE = /[\p{Cf}\u115F\u1160\u3164\uFFA0]/gu;
+export const INVISIBLE = /[\p{Cf}\u115F\u1160\u3164\uFFA0]/gu;
 
 /** Folds text for matching; NFKC also turns full width and mathematical letters into the letter. */
 export function foldText(text: string): string {
@@ -369,7 +369,7 @@ export function foldText(text: string): string {
 }
 
 /** The letters and digits of `text` as the patterns expect them; everything between them is left as written. */
-function foldLetters(text: string): string {
+export function foldLetters(text: string): string {
   return text
     .normalize("NFKC")
     .replace(INVISIBLE, "")
