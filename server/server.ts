@@ -20,17 +20,23 @@ import {
   FLUSH_LOGS,
   HEALTH_ROUTE,
   installShutdown,
+  parseTrustedProxies,
   routesOf,
   startServer,
 } from "./http/index.ts";
 
 // 1. Environment. A bad value stops the start before anything listens; the
-//    line names the variable, never its value.
+//    line names the variable, never its value. TRUSTED_PROXIES (addresses and
+//    CIDR ranges) is optional; unset, X-Forwarded-For is never read.
+const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const problems = [
   ...environmentProblems(process.env),
   ...listenProblems(process.env),
   ...shutdownProblems(process.env),
   ...originProblems(process.env),
+  ...(TRUSTED_PROXIES === null
+    ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
+    : []),
 ];
 
 // 2. Databases. Building the registry opens nothing: server/database connects
@@ -38,9 +44,12 @@ const problems = [
 //    database that is down fails only its own calls.
 // 3. Layers, in the order of docs/server-map.md §3, steps 2 to 7: client IP,
 //    IP rules, rate limit, traffic record, security headers, origin check.
-//    The order is fixed in http (PIPELINE_STEPS); steps 2 to 5 are empty
+//    The order is fixed in http (PIPELINE_STEPS); steps 3 to 5 are empty
 //    until wave 5. Without APP_ORIGIN every state-changing request gets 403.
-const LAYERS = createLayers({ expectedOrigin: appOrigin(process.env) });
+const LAYERS = createLayers({
+  expectedOrigin: appOrigin(process.env),
+  trustedProxies: TRUSTED_PROXIES ?? [],
+});
 
 // 4. Areas whose routes are mounted. Every server/<area>/routes.ts is named
 //    here (server/server.test.ts); test-server mounts its own.
