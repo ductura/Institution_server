@@ -920,8 +920,8 @@ export const hr = {
     earlierDraftSummary: "Na ovom uređaju čuva se Vaš raniji tekst koji nije u ovom radu.",
     // Owner (#711, O3 and amendment c): since 3d-2c2b a paste is an evidence step of the work, so the sentence that says so is back.
     earlierDraftExplain:
-      "Tekst ostaje gdje je i ne briše se. Ako ga želite u ovom radu, kopirajte ga i zalijepite; zapis rada tada to bilježi kao lijepljenje.",
-    earlierDraftCopy: "Kopiraj tekst",
+      "Tekst ostaje gdje je i ne briše se. Ako ga želite u ovom radu, stavite ga u međuspremnik i zalijepite; zapis rada tada to bilježi kao lijepljenje.",
+    earlierDraftCopy: "Stavi tekst u međuspremnik",
     // Owner accepted (#711 c.6396392080, b): the contract text "Kopirano u međuspremnik." fails the stem list of messages.test.ts (kopiran).
     earlierDraftCopied: "Tekst je u međuspremniku.",
     // Owner accepted (#711 c.6396392080, a): the contract text "Tekst nije moguće kopirati." is a forbidden term (kopir-, PRODUCT §5).
@@ -1070,10 +1070,10 @@ export const hr = {
       "Odgovor se može poslati kad poslužitelj primi sve izmjene teksta. Ako je uz tekst javljena greška ili sukob, najprije postupite prema toj obavijesti; upisano objašnjenje ostaje ovdje.",
     keptLabel: "Neposlano obrazloženje",
     keptHint:
-      "Ovo obrazloženje nije poslano jer se na zahtjev više ne odgovara. Kopirajte ga ako ga želite sačuvati.",
+      "Ovo obrazloženje nije poslano jer se na zahtjev više ne odgovara. Stavite ga u međuspremnik ako ga želite sačuvati.",
     keptForLabel: "Neposlano obrazloženje za zahtjev za doradu {n}",
     keptUnloadedHint:
-      "Ovo obrazloženje nije poslano, a zahtjevi se trenutačno ne mogu učitati. Kopirajte ga ako ga želite sačuvati.",
+      "Ovo obrazloženje nije poslano, a zahtjevi se trenutačno ne mogu učitati. Stavite ga u međuspremnik ako ga želite sačuvati.",
     errors: {
       signedOut: "Prijava je istekla. Prijavite se ponovno.",
       forbidden: "Ovaj račun ne može odgovoriti na ovaj zahtjev.",

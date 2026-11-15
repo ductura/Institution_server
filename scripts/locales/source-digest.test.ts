@@ -1,6 +1,6 @@
 // The digest script reads a Ductus checkout. These tests build a made-up one in
 // a temporary folder from the ported tables written back under their source
-// keys, so they need no Ductus checkout and no network.
+// keys, with the recorded text changes put back (SOURCE_TEXT_CHANGES), so they need no Ductus checkout and no network.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -14,6 +14,7 @@ import {
   SOURCE_DIGESTS,
   sourcePath,
   textPairs,
+  withSourceTexts,
 } from "../../locales/index.ts";
 
 import { checkSource } from "./source-digest.ts";
@@ -46,7 +47,8 @@ function checkout(change?: (text: string) => string): string {
   ] as const) {
     const file = path.join(root, SOURCE[language].path);
     mkdirSync(path.dirname(file), { recursive: true });
-    const body = JSON.stringify(asSource(table, language === "hr" ? change : undefined));
+    const source = withSourceTexts(table, language);
+    const body = JSON.stringify(asSource(source, language === "hr" ? change : undefined));
     writeFileSync(file, `import type { X } from "./x";\nexport const ${name}: X = ${body};\n`);
   }
   return root;

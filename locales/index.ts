@@ -7,4 +7,7 @@ export {
   SOURCE,
   SOURCE_DIGESTS,
   SOURCE_KEY_RENAMES,
+  SOURCE_TEXT_CHANGES,
+  withSourceTexts,
+  type TextChange,
 } from "./source.ts";

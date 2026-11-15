@@ -1,11 +1,20 @@
-// S-1L.1 (DAN-768): the port changed no text. Every text, taken back to its
-// path in the Ductus table, gives the digest recorded from the source
-// (locales/source.ts; scripts/locales/source-digest.ts recomputes it).
+// S-1L.1 (DAN-768): the port changed no text but the recorded ones
+// (SOURCE_TEXT_CHANGES, Ductus#1836 c.6889314023). With those put back, every
+// text, taken back to its path in the Ductus table, gives the digest recorded
+// from the source (locales/source.ts; scripts/locales/source-digest.ts recomputes it).
 import { describe, expect, it } from "vitest";
 
 import { messagesEn } from "./en.ts";
 import { messagesHr, textOf, type MessageKey } from "./hr.ts";
-import { digestOf, SOURCE_DIGESTS, SOURCE_KEY_RENAMES, sourcePath, textPairs } from "./source.ts";
+import {
+  digestOf,
+  SOURCE_DIGESTS,
+  SOURCE_KEY_RENAMES,
+  SOURCE_TEXT_CHANGES,
+  sourcePath,
+  textPairs,
+  withSourceTexts,
+} from "./source.ts";
 
 const TABLES = [
   ["hr", messagesHr],
@@ -13,9 +22,18 @@ const TABLES = [
 ] as const;
 
 describe("port from Ductus", () => {
-  it.each(TABLES)("%s holds every source text unchanged", (language, table) => {
-    expect(digestOf(table, sourcePath)).toEqual(SOURCE_DIGESTS[language]);
+  it.each(TABLES)("%s holds every other source text unchanged", (language, table) => {
+    expect(digestOf(withSourceTexts(table, language), sourcePath)).toEqual(
+      SOURCE_DIGESTS[language],
+    );
   });
+
+  it.each(TABLES)(
+    "%s does not match the source without the recorded changes",
+    (language, table) => {
+      expect(digestOf(table, sourcePath).sha256).not.toBe(SOURCE_DIGESTS[language].sha256);
+    },
+  );
 
   it.each(TABLES)("%s gives a different digest when one character changes", (language, table) => {
     const copy = structuredClone(table) as unknown as { app: Record<string, string> };
@@ -42,6 +60,64 @@ describe("port from Ductus", () => {
 
   it("gives a different digest without the key renames", () => {
     expect(digestOf(messagesHr).sha256).not.toBe(SOURCE_DIGESTS.hr.sha256);
+  });
+});
+
+describe("text changes", () => {
+  const texts = (table: unknown) =>
+    new Map(textPairs(table).map(([path, text]) => [path.join("."), text]));
+
+  it.each(TABLES)(
+    "%s differs from its source texts exactly in the recorded ones",
+    (language, table) => {
+      const [port, source] = [texts(table), texts(withSourceTexts(table, language))];
+      const changed = [...port].filter(([path, text]) => source.get(path) !== text);
+      const recorded = SOURCE_TEXT_CHANGES.filter((change) => change.language === language);
+      expect(changed.map(([path]) => path).sort()).toEqual(recorded.map((c) => c.path).sort());
+      for (const change of recorded) {
+        expect(port.get(change.path), change.path).toBe(change.port);
+        expect(source.get(change.path), change.path).toBe(change.source);
+      }
+    },
+  );
+
+  it("are the four texts of the decision, in both languages", () => {
+    const paths = [
+      "revisions.keptHint",
+      "revisions.keptUnloadedHint",
+      "workspace.earlierDraftCopy",
+      "workspace.earlierDraftExplain",
+    ];
+    for (const language of ["hr", "en"] as const)
+      expect(
+        SOURCE_TEXT_CHANGES.filter((change) => change.language === language)
+          .map((change) => change.path)
+          .sort(),
+      ).toEqual(paths);
+    for (const change of SOURCE_TEXT_CHANGES)
+      expect(change.decision).toBe(
+        "https://github.com/danielrisavi77-create/Ductus/issues/1836#issuecomment-6889314023",
+      );
+  });
+
+  it("remove the root kopir- / copy from every changed text", () => {
+    for (const change of SOURCE_TEXT_CHANGES) {
+      expect(change.source, change.path).toMatch(/kopir|cop(y|ied|ying)/iu);
+      expect(change.port, change.path).not.toMatch(/kopir|cop(y|ied|ying)/iu);
+    }
+  });
+
+  it("refuse a recorded change whose new text is not in the table", () => {
+    const copy = structuredClone(messagesHr);
+    (copy.workspace as Record<string, unknown>)["earlierDraftCopy"] = "Kopiraj tekst";
+    expect(() => withSourceTexts(copy, "hr")).toThrow(
+      /no recorded text at hr workspace.earlierDraftCopy/,
+    );
+  });
+
+  it("leave the table it is given as it is", () => {
+    withSourceTexts(messagesHr, "hr");
+    expect(messagesHr.workspace.earlierDraftCopy).toBe("Stavi tekst u međuspremnik");
   });
 });
 

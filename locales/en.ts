@@ -936,8 +936,8 @@ const en = {
     earlierDraftSummary: "This device keeps an earlier text of yours that is not in this work.",
     // Owner (#711, O3 and amendment c): since 3d-2c2b a paste is an evidence step of the work, so the sentence that says so is back.
     earlierDraftExplain:
-      "The text stays where it is and is not deleted. If you want it in this work, copy it and paste it in; the record of the work then logs that as a paste.",
-    earlierDraftCopy: "Copy text",
+      "The text stays where it is and is not deleted. If you want it in this work, put it on the clipboard and paste it in; the record of the work then logs that as a paste.",
+    earlierDraftCopy: "Put the text on the clipboard",
     // Owner accepted (#711 c.6396392080, b): the contract text "Kopirano u međuspremnik." fails the stem list of messages.test.ts (kopiran).
     earlierDraftCopied: "The text is on the clipboard.",
     // Owner accepted (#711 c.6396392080, a): the contract text "Tekst nije moguće kopirati." is a forbidden term (kopir-, PRODUCT §5).
@@ -1080,10 +1080,10 @@ const en = {
       "You can answer once the server has received every change to the text. If an error or a conflict is reported with the text, follow that notice first; the explanation you typed stays here.",
     keptLabel: "Unsent explanation",
     keptHint:
-      "This explanation was not sent because the request can no longer be answered. Copy it if you want to keep it.",
+      "This explanation was not sent because the request can no longer be answered. Put it on the clipboard if you want to keep it.",
     keptForLabel: "Unsent explanation for revision request {n}",
     keptUnloadedHint:
-      "This explanation was not sent, and the requests cannot be loaded right now. Copy it if you want to keep it.",
+      "This explanation was not sent, and the requests cannot be loaded right now. Put it on the clipboard if you want to keep it.",
     errors: {
       signedOut: "Your sign-in has expired. Sign in again.",
       forbidden: "This account cannot answer this request.",
