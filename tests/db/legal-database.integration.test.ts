@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
-import { catalogue, connectAs, migrateInRollback } from "./cluster.ts";
+import { catalogue, connectAs, migrateInRollback, upSection } from "./cluster.ts";
 import { checkDatabaseAccess, databasePolicy, type AccessPolicy } from "./database-access.ts";
 import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
@@ -44,6 +44,8 @@ const MAIN_GROUPS = [
   "ductus_evidence",
   "ductus_identity",
   "ductus_auth",
+  "ductus_queue",
+  "ductus_migrator",
 ] as const;
 const ATTRIBUTES = [
   "LOGIN",
@@ -112,6 +114,35 @@ describe("who reaches which database of the main cluster (whole catalogue)", () 
     const result = checkDatabaseAccess(roles, grants, MAIN_POLICY);
     expect(result.errors).toEqual([]);
     expect(result.checked).toBe(roles.length * 3);
+  });
+
+  // Attack run on a2, finding 4: inheriting a main role would be "allowed" by
+  // MAIN_POLICY, so the legal roles are asked directly.
+  it("no legal role can connect to ductus, directly or through a membership", async () => {
+    const { rows } = await main.query(
+      `SELECT r.rolname, pg_catalog.has_database_privilege(r.oid, 'ductus', 'CONNECT') AS connect
+       FROM pg_catalog.pg_roles r WHERE r.rolname = ANY ($1) ORDER BY r.rolname`,
+      [[...LEGAL_ROLES]],
+    );
+    expect(rows).toEqual([...LEGAL_ROLES].sort().map((rolname) => ({ rolname, connect: false })));
+  });
+
+  // Attack run on a2, findings 1 and 2: what the privilege catalogue cannot show.
+  it("nobody administers a legal role or is a member of the migrator, and no role of the cluster is a member of a built-in role", async () => {
+    const { rows: grants } = await main.query(
+      `SELECT m.roleid::regrole::text AS role, m.member::regrole::text AS member, m.admin_option
+       FROM pg_catalog.pg_auth_members m WHERE m.roleid::regrole::text = ANY ($1)`,
+      [[...LEGAL_ROLES]],
+    );
+    expect(
+      grants.filter((row) => row.admin_option || row.role === "ductus_legal_migrator"),
+    ).toEqual([]);
+    const { rows: builtin } = await main.query(
+      `SELECT m.member::regrole::text AS member, m.roleid::regrole::text AS builtin
+       FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles r ON r.oid = m.roleid
+       WHERE r.rolname ~ '^pg_' AND m.member::regrole::text !~ '^pg_'`,
+    );
+    expect(builtin).toEqual([]);
   });
 
   it.each([
@@ -245,6 +276,66 @@ describe("the legal roles migration refuses a wrong cluster", () => {
     );
   });
 
+  // Attack run on a2, finding 1: ductus_migrator (CREATEROLE) holds ADMIN
+  // on a role it made, or is handed it.
+  it.each([
+    [
+      "ADMIN on the app",
+      "GRANT ductus_legal_app TO ductus_migrator WITH ADMIN TRUE, INHERIT FALSE, SET FALSE GRANTED BY ductus",
+    ],
+    [
+      "ADMIN on the migrator",
+      "GRANT ductus_legal_migrator TO ductus_migrator WITH ADMIN TRUE, INHERIT FALSE, SET FALSE GRANTED BY ductus",
+    ],
+    ["a member of the migrator", "GRANT ductus_legal_migrator TO ductus_app"],
+    ["a group role in the app", "GRANT ductus_legal_app TO ductus_worker"],
+  ])("stops on %s", async (_label, step) => {
+    await expect(migrate([step])).rejects.toThrow(/is not allowed: no ADMIN/);
+  });
+
+  it("stops when ductus_migrator made the legal roles itself", async () => {
+    await expect(
+      migrate([
+        `ALTER ROLE ductus_legal_app RENAME TO w779_old_app_${suffix}`,
+        `ALTER ROLE ductus_legal_migrator RENAME TO w779_old_migrator_${suffix}`,
+        "SET LOCAL ROLE ductus_migrator",
+        "CREATE ROLE ductus_legal_migrator NOLOGIN",
+        "CREATE ROLE ductus_legal_app NOLOGIN",
+        "RESET ROLE",
+        "ALTER DATABASE ductus_legal OWNER TO ductus_legal_migrator",
+      ]),
+    ).rejects.toThrow(/is not allowed: no ADMIN/);
+  });
+
+  // Finding 4: the main migrator may put a legal role into a main group.
+  it("stops when ductus_migrator made a legal role a member of a main role", async () => {
+    await expect(
+      migrate([
+        "SET LOCAL ROLE ductus_migrator",
+        "GRANT ductus_app TO ductus_legal_app",
+        "RESET ROLE",
+      ]),
+    ).rejects.toThrow(/is a member of another role/);
+  });
+
+  // Finding 5: a grant made before the migration does not survive it.
+  it("takes back every grant on the database and on public that is not the app's", async () => {
+    const client = await legal.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("GRANT CONNECT, TEMPORARY ON DATABASE ductus_legal TO ductus_app");
+      await client.query("GRANT CREATE, USAGE ON SCHEMA public TO ductus_worker");
+      await client.query("SET LOCAL ROLE ductus_legal_migrator");
+      await client.query(upSection(MIGRATION));
+      await client.query("RESET ROLE");
+      const { roles, grants } = await catalogue(client, ["ductus_legal"], true);
+      expect(checkDatabaseAccess(roles, grants, LEGAL_POLICY).errors).toEqual([]);
+    } finally {
+      await client.query("ROLLBACK");
+      client.release();
+    }
+  });
+
   it("stops when a legal role is missing", async () => {
     await expect(
       migrate([`ALTER ROLE ductus_legal_app RENAME TO w779_gone_${suffix}`]),
@@ -344,11 +435,21 @@ describe("migrating twice and the provisioning files", () => {
     expect(checkDatabaseAccess(roles, grants, LEGAL_POLICY).errors).toEqual([]);
   });
 
-  it("create-database.sql creates the database only where it is missing", () => {
+  it("create-database.sql creates the database only where it is missing, and runs twice", async () => {
     const sql = readFileSync(CREATE, "utf8");
-    expect(sql).toMatch(
-      /SELECT 'CREATE DATABASE ductus_legal'\nWHERE NOT EXISTS \(SELECT 1 FROM pg_catalog\.pg_database WHERE datname = 'ductus_legal'\)\n\\gexec\n$/,
+    expect(sql.trimEnd().endsWith("\\gexec")).toBe(true);
+    // What psql's \gexec runs: each row of the query as a statement.
+    const query = sql.replace(/\\gexec\s*$/, "");
+    for (let run = 0; run < 2; run += 1) {
+      const { rows } = await main.query<Record<string, string>>(query);
+      expect(rows).toEqual([]);
+    }
+    // Where the database is missing, the query yields the one statement.
+    const missing = `w779_missing_${suffix}`;
+    const { rows } = await main.query<Record<string, string>>(
+      query.replaceAll("ductus_legal", missing),
     );
+    expect(rows.map((row) => Object.values(row)[0])).toEqual([`CREATE DATABASE ${missing}`]);
   });
 
   it("the provisioning file refuses any database but ductus_legal, also behind a shadowing function", async () => {

@@ -53,6 +53,19 @@ BEGIN
   IF FOUND THEN
     RAISE EXCEPTION 'role % is a member of another role', role_name;
   END IF;
+  -- Nobody may administer a legal role (in PostgreSQL 16 a CREATEROLE role
+  -- that made one does, ductus_migrator among them), nobody may be a member
+  -- of the migrator, and only logins may join the app: a group role would
+  -- hand the app's rights to all its members.
+  SELECT m.roleid::regrole::text || ' by ' || m.member::regrole::text INTO role_name
+  FROM pg_catalog.pg_auth_members m
+  JOIN pg_catalog.pg_roles r ON r.oid OPERATOR(pg_catalog.=) m.member
+  WHERE m.roleid::regrole::text = ANY (legal_roles)
+    AND (m.admin_option OR m.roleid::regrole::text = 'ductus_legal_migrator' OR NOT r.rolcanlogin)
+  LIMIT 1;
+  IF FOUND THEN
+    RAISE EXCEPTION 'grant of % is not allowed: no ADMIN, no member of the migrator, only logins in the app', role_name;
+  END IF;
 
   EXECUTE pg_catalog.format('ALTER DATABASE %I OWNER TO ductus_legal_migrator', pg_catalog.current_database());
   -- A database migrated before this file ran keeps its ledger.

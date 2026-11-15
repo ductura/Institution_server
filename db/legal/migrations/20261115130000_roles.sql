@@ -40,14 +40,45 @@ BEGIN
   IF FOUND THEN
     RAISE EXCEPTION 'role % is a member of another role', role_name;
   END IF;
+  -- Nobody may administer a legal role (in PostgreSQL 16 a CREATEROLE role
+  -- that made one does, ductus_migrator among them), nobody may be a member
+  -- of the migrator, and only logins may join the app: a group role would
+  -- hand the app's rights to all its members.
+  SELECT m.roleid::regrole::text || ' by ' || m.member::regrole::text INTO role_name
+  FROM pg_catalog.pg_auth_members m
+  JOIN pg_catalog.pg_roles r ON r.oid OPERATOR(pg_catalog.=) m.member
+  WHERE m.roleid::regrole::text = ANY (legal_roles)
+    AND (m.admin_option OR m.roleid::regrole::text = 'ductus_legal_migrator' OR NOT r.rolcanlogin)
+  LIMIT 1;
+  IF FOUND THEN
+    RAISE EXCEPTION 'grant of % is not allowed: no ADMIN, no member of the migrator, only logins in the app', role_name;
+  END IF;
 
   IF (SELECT datdba::regrole::text FROM pg_catalog.pg_database WHERE datname = current_database())
      <> 'ductus_legal_migrator' THEN
     RAISE EXCEPTION 'ductus_legal is not owned by ductus_legal_migrator';
   END IF;
 
-  -- Nobody reaches the database by default, no main role either; the app connects.
+  -- Nobody reaches the database or the public schema by default, no main role
+  -- either: every grant to anyone but the owner is taken back, then the app
+  -- connects. A grant made before this migration (B0.1, a stray hand) does
+  -- not survive it.
   EXECUTE format('REVOKE ALL ON DATABASE %I FROM PUBLIC', current_database());
+  FOR role_name IN
+    SELECT DISTINCT a.grantee::regrole::text
+    FROM pg_catalog.pg_database d, aclexplode(d.datacl) a
+    WHERE d.datname = current_database() AND a.grantee <> 0 AND a.grantee <> d.datdba
+  LOOP
+    EXECUTE format('REVOKE ALL ON DATABASE %I FROM %I', current_database(), role_name);
+  END LOOP;
+  REVOKE ALL ON SCHEMA public FROM PUBLIC;
+  FOR role_name IN
+    SELECT DISTINCT a.grantee::regrole::text
+    FROM pg_catalog.pg_namespace n, aclexplode(n.nspacl) a
+    WHERE n.nspname = 'public' AND a.grantee <> 0 AND a.grantee <> n.nspowner
+  LOOP
+    EXECUTE format('REVOKE ALL ON SCHEMA public FROM %I', role_name);
+  END LOOP;
   EXECUTE format(
     'GRANT CONNECT ON DATABASE %I TO ductus_legal_app',
     current_database()
@@ -57,7 +88,6 @@ $$;
 
 -- Only the migrator (the owner) creates in the public schema; the app may use
 -- it, PUBLIC may not.
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO ductus_legal_app;
 -- Functions the migrator makes are not executable by PUBLIC.
 ALTER DEFAULT PRIVILEGES FOR ROLE ductus_legal_migrator REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
