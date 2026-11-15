@@ -24,20 +24,30 @@ export function startDetached(
   });
 }
 
-/** Polls `url` until it answers 200; false after `timeoutMs`. */
+/**
+ * Polls `url` until it answers 200; false once `timeoutMs` has passed, counted
+ * on the clock, so requests that hang use up the time as well as the pauses.
+ */
 export async function waitHealthy(
   url: string,
   timeoutMs: number,
   get = fetch,
   wait = sleep,
+  now = Date.now,
 ): Promise<boolean> {
-  for (let left = timeoutMs; left > 0; left -= 250) {
-    const ok = await get(url, { signal: AbortSignal.timeout(1000) }).then(
-      (r) => r.status === 200,
-      () => false,
-    );
-    if (ok) return true;
-    await wait(250);
+  const deadline = now() + timeoutMs;
+  for (let left = timeoutMs; left > 0; left = deadline - now()) {
+    // No redirect is followed: readiness is the answer of the port itself.
+    const signal = AbortSignal.timeout(Math.min(1000, left));
+    if (
+      await get(url, { redirect: "manual", signal }).then(
+        (r) => r.status === 200,
+        () => false,
+      )
+    )
+      return true;
+    if (deadline - now() <= 0) break;
+    await wait(Math.min(250, deadline - now()));
   }
   return false;
 }

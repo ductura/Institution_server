@@ -1,6 +1,10 @@
 // DAN-759, D-09: the VS-1 stack starts the fake OIDC provider, so it must
 // refuse every environment but local and ci before anything starts.
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterAll, describe, expect, it } from "vitest";
 
 import { assertFakeOidcAllowed } from "@ductura/test-fakes/oidc";
 
@@ -10,6 +14,7 @@ import {
   parseArgs,
   SLOTS,
   stackConfig,
+  stackDir,
   stackPorts,
 } from "./index.ts";
 
@@ -19,6 +24,7 @@ describe("parseArgs", () => {
     [["up", "--env", "local"], { command: "up", env: "local" }],
     [["up", "--env", "ci"], { command: "up", env: "ci" }],
     [["down"], { command: "down", env: "local" }],
+    [["status"], { command: "status", env: "local" }],
   ])("accepts %j", (argv, expected) => {
     expect(parseArgs(argv)).toEqual(expected);
   });
@@ -36,7 +42,8 @@ describe("parseArgs", () => {
     [["up", "--production"]],
     [["down", "--env", "ci"]],
     [["start"]],
-    [["status"]],
+    [["status", "--env", "ci"]],
+    [["status", "--production"]],
     [[]],
   ])("refuses %j", (argv) => {
     expect(() => parseArgs(argv)).toThrow();
@@ -114,5 +121,49 @@ describe("SLOTS", () => {
       web: { path: "/app/", artifact: null },
     });
     expect(Object.isFrozen(SLOTS.web)).toBe(true);
+  });
+});
+
+describe("stackDir (DAN-787)", () => {
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), "ductura-dir-")));
+  const root = join(tmp, "repo");
+  const outside = join(tmp, "..", `ductura-out-${process.pid}`);
+  mkdirSync(join(tmp, "t"), { recursive: true });
+  afterAll(() => rmSync(tmp, { recursive: true, force: true }));
+  const dir = (value: string | undefined): string =>
+    stackDir(root, { VS1_STACK_DIR: value }, join(tmp, "t"), realpathSync);
+
+  it("is .stack/vs1 of the checkout by default, and a path inside .stack/ or the temp dir", () => {
+    expect(dir(undefined)).toBe(`${root}/.stack/vs1`);
+    expect(dir(`${root}/.stack/other`)).toBe(`${root}/.stack/other`);
+    expect(dir(`${tmp}/t/stack`)).toBe(`${tmp}/t/stack`);
+  });
+
+  it.each([
+    ["relative", "stack"],
+    ["dot-dot", "/TMP/t/../../etc"],
+    ["dot", "/TMP/t/./stack"],
+    ["outside", "/etc/vs1"],
+    ["the temp dir itself", "/TMP/t"],
+    ["a space", "/TMP/t/my stack"],
+    ["a quote", "/TMP/t/st'ack"],
+    ["a prefix only", "/TMP/tx/stack"],
+    ["the checkout root", "/ROOT"],
+    ["a trailing slash", "/TMP/t/stack/"],
+    ["a double slash", "/TMP/t//stack"],
+  ])("refuses %s before anything is created", (_, value) => {
+    const path = value.replace("/TMP", tmp).replace("/ROOT", root);
+    expect(() => dir(path)).toThrow(/stack directory/u);
+  });
+
+  it("refuses a link on the way that leads out, even when the rest does not exist yet", () => {
+    mkdirSync(outside, { recursive: true });
+    try {
+      symlinkSync(outside, join(tmp, "t", "link"));
+      expect(() => dir(join(tmp, "t", "link", "vs1", "deep"))).toThrow(/leads outside/u);
+      expect(() => dir(join(tmp, "t", "link"))).toThrow(/leads outside/u);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
   });
 });

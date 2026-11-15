@@ -1,9 +1,17 @@
 // DAN-759, D-09: run as a script, the stack refuses a production-like setting
 // before it starts anything, and none of it reaches the server build.
 import { spawnSync } from "node:child_process";
-import { createServer } from "node:http";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { createServer, type Server } from "node:http";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,14 +22,20 @@ import { commandLine, portFree, type StackState, startDetached } from "./index.t
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts/stack/vs1.ts");
-const dir = mkdtempSync(join(tmpdir(), "ductura-vs1-"));
+// /tmp: the one temp root the stack accepts (TMPDIR is the caller's).
+const dir = mkdtempSync(join("/tmp", "ductura-vs1-"));
 // A stack directory of its own, never the developer's .stack/vs1 (its pgdata
 // survives down on purpose); set before vs1.ts is loaded, and for the script.
 const STACK = join(dir, "stack");
 const STATE = join(STACK, "state.json");
 const PGDATA = join(STACK, "pgdata");
+// What down and status require at the end of a marker: the script and this stack's directory.
+const TAIL = {
+  server: [join(ROOT, "dist/server.js"), `--vs1-stack=${STACK}`],
+  oidc: [join(ROOT, "packages/test-fakes/oidc/server.ts"), `--vs1-stack=${STACK}`],
+};
 process.env.VS1_STACK_DIR = STACK;
-const { down, LOCK, up } = await import("./vs1.ts");
+const { down, LOCK, oidcEnv, status, up } = await import("./vs1.ts");
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 // Ports no other test uses, so "nothing listens" means the stack started nothing.
@@ -30,13 +44,13 @@ const PORTS = { VS1_POSTGRES_PORT: "54397", VS1_SERVER_PORT: "4197", VS1_OIDC_PO
 function run(
   args: string[],
   env: Record<string, string>,
-): { status: number | null; stderr: string } {
+): { status: number | null; stderr: string; stdout: string } {
   const result = spawnSync(process.execPath, [SCRIPT, ...args], {
     cwd: dir,
     encoding: "utf8",
     env: { PATH: process.env.PATH ?? "", HOME: dir, VS1_STACK_DIR: STACK, ...PORTS, ...env },
   });
-  return { status: result.status, stderr: result.stderr };
+  return { status: result.status, stderr: result.stderr, stdout: result.stdout };
 }
 
 describe("the tests' own stack directory", () => {
@@ -92,9 +106,32 @@ describe("pnpm stack:vs1 down without a state", () => {
   });
 });
 
+describe("down with a state that names an extra port (QA c.6900731697)", () => {
+  it("never connects to it, and checks only the stack's three ports", async () => {
+    // A listener on a free port stands in for 3000: down must not report it.
+    const other = createServer();
+    await new Promise<void>((resolve) => other.listen(0, "127.0.0.1", resolve));
+    const { port } = other.address() as { port: number };
+    let connections = 0;
+    other.on("connection", () => (connections += 1));
+    mkdirSync(STACK, { recursive: true });
+    const ports = { postgres: 54397, server: 4197, oidc: 4297, web: port };
+    writeFileSync(STATE, JSON.stringify({ ports, processes: {} }));
+    try {
+      const result = run(["down"], {});
+      expect(result.stderr).toMatch(/state\.json is unreadable/u);
+      expect(result.stderr).not.toMatch(new RegExp(`port ${port}`, "u"));
+      expect(result.status).toBe(0);
+      expect(connections).toBe(0);
+    } finally {
+      await new Promise<void>((resolve) => other.close(() => resolve()));
+    }
+  });
+});
+
 describe("down with the state of a failed up", () => {
   it("stops a process known only from memory, as the rollback of up passes it", async () => {
-    const args = ["-e", "setTimeout(() => {}, 60000)"];
+    const args = ["-e", "setTimeout(() => {}, 60000)", "--", ...TAIL.server];
     const pid = await startDetached(process.execPath, args, {
       cwd: dir,
       env: { PATH: process.env.PATH ?? "" },
@@ -105,7 +142,7 @@ describe("down with the state of a failed up", () => {
     const state: StackState = {
       env: "ci",
       startedAt: new Date().toISOString(),
-      repo: { sha: "0".repeat(40), dirty: false },
+      repos: { server: { sha: "0".repeat(40), dirty: false }, preloader: null, web: null },
       versions: {},
       serverBuildSha256: "",
       ports: { postgres: 54397, server: 4197, oidc: 4297 },
@@ -177,4 +214,286 @@ describe("the server build", () => {
     const bundle = readFileSync(outfile, "utf8");
     expect(bundle).not.toMatch(/scripts\/stack|test-fakes|demo prijava/u);
   }, 60_000);
+});
+
+// DAN-787: status only reads; the fake provider gets a fixed environment.
+const sleeper = async (
+  log: string,
+  tail: string[] = TAIL.oidc,
+  code = "setTimeout(() => {}, 60000)",
+): Promise<{ pid: number; marker: string }> => {
+  const args = ["-e", code, "--", ...tail];
+  const pid = await startDetached(process.execPath, args, {
+    cwd: dir,
+    env: { PATH: process.env.PATH ?? "" },
+    log: join(dir, log),
+  });
+  return { pid, marker: [process.execPath, ...args].join(" ") };
+};
+
+function stateWith(processes: StackState["processes"], server = 4197): StackState {
+  return {
+    env: "ci",
+    startedAt: "2026-01-01T00:00:00.000Z",
+    repos: { server: { sha: "a".repeat(40), dirty: false }, preloader: null, web: null },
+    versions: { node: "v24.0.0", postgres: "17.2" },
+    serverBuildSha256: "0".repeat(64),
+    ports: { postgres: 54397, server, oidc: 4297 },
+    processes,
+    pgdata: PGDATA,
+  };
+}
+
+/** Bytes and mtime of each file, to show a command left them as they were. */
+const snapshot = (files: string[]): string[] =>
+  files.map((file) =>
+    existsSync(file) ? `${statSync(file).mtimeMs}:${readFileSync(file, "hex")}` : "absent",
+  );
+
+describe("pnpm stack:vs1 status", () => {
+  it("says not running and exits 1 without creating the stack directory", () => {
+    const fresh = join(dir, "never-created");
+    const result = run(["status"], { VS1_STACK_DIR: fresh });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toMatch(/not running/u);
+    expect(existsSync(fresh)).toBe(false);
+  });
+
+  it("calls a broken state unreadable, exits 1 and leaves it and the lock as they were", () => {
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, "{}");
+    writeFileSync(LOCK, "held");
+    const before = snapshot([STATE, LOCK]);
+    try {
+      const result = run(["status"], {});
+      expect(result.status).toBe(1);
+      expect(result.stdout).toMatch(/state\.json is unreadable/u);
+      expect(result.stdout).toMatch(/up\.lock present, not touched/u);
+      expect(snapshot([STATE, LOCK])).toEqual(before);
+    } finally {
+      rmSync(STATE, { force: true });
+      rmSync(LOCK, { force: true });
+    }
+  });
+
+  it("asks nothing on a port 3000-3004 a state names", async () => {
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({}, 3000)));
+    const asked: string[] = [];
+    const get = (async (url: string) => {
+      asked.push(url);
+      return new Response(null, { status: 200 });
+    }) as typeof fetch;
+    try {
+      expect(await status(get)).toBe(false);
+      expect(asked).toEqual([]);
+    } finally {
+      rmSync(STATE, { force: true });
+    }
+  });
+
+  it("names a pid that is not ours, asks it nothing and changes nothing", async () => {
+    const foreign = await sleeper("status-foreign.log", TAIL.server);
+    mkdirSync(STACK, { recursive: true });
+    const state = stateWith({ server: { pid: foreign.pid, marker: "/elsewhere/dist/server.js" } });
+    writeFileSync(STATE, JSON.stringify(state));
+    const before = snapshot([STATE, LOCK]);
+    const asked: string[] = [];
+    const get = (async (url: string) => (asked.push(url), new Response())) as typeof fetch;
+    try {
+      expect(await status(get)).toBe(false);
+      expect(asked).toEqual([]);
+      expect(snapshot([STATE, LOCK])).toEqual(before);
+      expect(commandLine(foreign.pid)).toBe(foreign.marker);
+      const result = run(["status"], {});
+      expect(result.status).toBe(1);
+      expect(result.stdout).toMatch(new RegExp(`pid ${foreign.pid} not ours or gone`, "u"));
+      expect(result.stdout).toMatch(/preloader: not attached; web: not attached/u);
+      expect(result.stdout).toMatch(/postgres 17\.2/u);
+    } finally {
+      process.kill(-foreign.pid, "SIGKILL");
+      rmSync(STATE, { force: true });
+    }
+  }, 30_000);
+
+  it("asks a process of the stack only when that very pid listens on its port", async () => {
+    // Ours by marker, but listening nowhere: no request goes out.
+    const ours = await sleeper("status-ours.log", TAIL.server);
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({ server: ours, oidc: ours })));
+    const asked: string[] = [];
+    const get = (async (url: string) => (asked.push(url), new Response())) as typeof fetch;
+    try {
+      expect(await status(get)).toBe(false);
+      expect(asked).toEqual([]);
+    } finally {
+      process.kill(-ours.pid, "SIGKILL");
+      rmSync(STATE, { force: true });
+    }
+  }, 30_000);
+});
+
+describe("status after the adversarial pass", () => {
+  const listen = (server: Server): Promise<number> =>
+    new Promise((resolve) =>
+      server.listen(0, "127.0.0.1", () => resolve((server.address() as { port: number }).port)),
+    );
+
+  it("follows no redirect: only the recorded port is asked", async () => {
+    let sinkHits = 0;
+    const sink = createServer((_, res) => (sinkHits++, res.end("ok")));
+    const sinkPort = await listen(sink);
+    // A process of this stack (by marker) that answers 302 to the sink.
+    const port = 4196;
+    const code = `require("node:http").createServer((q, r) => r.writeHead(302, { location: "http://127.0.0.1:${sinkPort}/" }).end()).listen(${port}, "127.0.0.1")`;
+    const server = await sleeper("redirect.log", TAIL.server, code);
+    for (let i = 0; i < 50 && (await portFree(port)); i += 1)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({ server }, port)));
+    try {
+      const result = run(["status"], {});
+      expect(result.stdout).toMatch(
+        new RegExp(`server +:${port} pid ${server.pid} running, answers 302`, "u"),
+      );
+      expect(result.status).toBe(1);
+      expect(sinkHits).toBe(0);
+    } finally {
+      process.kill(-server.pid, "SIGKILL");
+      rmSync(STATE, { force: true });
+      await new Promise((resolve) => sink.close(resolve));
+    }
+  }, 30_000);
+
+  it("prints no control character from the state", () => {
+    mkdirSync(STACK, { recursive: true });
+    const state = { ...stateWith({}), startedAt: "\u001b[31m\nFAKE line" };
+    writeFileSync(STATE, JSON.stringify(state));
+    try {
+      const result = run(["status"], {});
+      expect(result.stdout).not.toContain("\u001b");
+      expect(result.stdout).not.toMatch(/^FAKE/mu);
+    } finally {
+      rmSync(STATE, { force: true });
+    }
+  });
+});
+
+describe("up refuses before it changes anything", () => {
+  it("leaves the target of a linked stack directory alone", () => {
+    const target = join(dir, "target");
+    mkdirSync(target, { mode: 0o755 });
+    symlinkSync(target, join(dir, "linked"));
+    const result = run(["up", "--env", "ci"], { VS1_STACK_DIR: join(dir, "linked") });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/not a directory of this user \(or is a link\)/u);
+    expect(statSync(target).mode & 0o777).toBe(0o755);
+    expect(existsSync(join(target, "up.lock"))).toBe(false);
+  });
+
+  it("leaves the target alone when the linked path ends in / (QA c.6900522385)", () => {
+    const target = join(dir, "target-slash");
+    mkdirSync(target, { mode: 0o755 });
+    symlinkSync(target, join(dir, "linked-slash"));
+    const result = run(["up", "--env", "ci"], { VS1_STACK_DIR: `${join(dir, "linked-slash")}/` });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/stack directory/u);
+    expect(statSync(target).mode & 0o777).toBe(0o755);
+    expect(existsSync(join(target, "up.lock"))).toBe(false);
+  });
+});
+
+describe("a stack directory outside .stack/ and the temp dir", () => {
+  it("is refused even when TMPDIR names it", () => {
+    const tmp = Object.fromEntries([["TMPDIR", "/etc"]]);
+    const result = run(["status"], { ...tmp, VS1_STACK_DIR: "/etc/ductura-vs1" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/stack directory/u);
+  });
+
+  it.each([["up", "--env", "ci"], ["down"], ["status"]])(
+    "stops %s before it reads or writes",
+    (...args) => {
+      const result = run(args, { VS1_STACK_DIR: "/etc/ductura-vs1" });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/stack directory/u);
+      expect(existsSync("/etc/ductura-vs1")).toBe(false);
+    },
+  );
+});
+
+describe("the fake OIDC provider of the stack (D-09)", () => {
+  it("gets NODE_ENV=test, loopback addresses of this stack, and nothing of the caller", () => {
+    process.env.DUCTURA_PROBE_SECRET = "x";
+    try {
+      const env = oidcEnv({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } });
+      expect(Object.keys(env).sort()).toEqual(
+        [
+          "BACKCHANNEL_LOGOUT_URI",
+          "HOME",
+          "ISSUER",
+          "NODE_ENV",
+          "PATH",
+          "PORT",
+          "POST_LOGOUT_REDIRECT_URI",
+          "REDIRECT_URI",
+        ].sort(),
+      );
+      expect(env.NODE_ENV).toBe("test");
+      expect(env.ISSUER).toBe("http://127.0.0.1:4297");
+      for (const key of ["REDIRECT_URI", "POST_LOGOUT_REDIRECT_URI", "BACKCHANNEL_LOGOUT_URI"])
+        expect(env[key]).toMatch(/^http:\/\/127\.0\.0\.1:4197\//u);
+      expect(JSON.stringify(env)).not.toMatch(/:300[0-4]/u);
+    } finally {
+      delete process.env.DUCTURA_PROBE_SECRET;
+    }
+  });
+
+  it("is stopped by down only while it runs the recorded command", async () => {
+    const oidc = await sleeper("oidc.log");
+    const foreign = await sleeper("foreign-oidc.log");
+    try {
+      const state = stateWith({ oidc });
+      expect(await down(state)).toBe(true);
+      expect(commandLine(oidc.pid)).toBeNull();
+      // Of this stack directory, but not the command the pid runs.
+      const marker = `${process.execPath} other.js -- ${TAIL.oidc.join(" ")}`;
+      const wrong = stateWith({ oidc: { pid: foreign.pid, marker } });
+      expect(await down(wrong)).toBe(true);
+      expect(commandLine(foreign.pid)).toBe(foreign.marker);
+    } finally {
+      process.kill(-foreign.pid, "SIGKILL");
+    }
+  }, 30_000);
+});
+
+describe("a state copied from another stack (review c.6900962987)", () => {
+  it("names processes that down and status of this directory leave alone", async () => {
+    // Stack A in another directory: its exact marker, copied into this stack's state.
+    const other = join(dir, "stack-a");
+    const a = await sleeper("stack-a.log", [TAIL.oidc[0] as string, `--vs1-stack=${other}`]);
+    const aServer = await sleeper("stack-a-server.log", [
+      TAIL.server[0] as string,
+      `--vs1-stack=${other}`,
+    ]);
+    mkdirSync(STACK, { recursive: true });
+    writeFileSync(STATE, JSON.stringify(stateWith({ oidc: a, server: aServer })));
+    try {
+      const shown = run(["status"], {});
+      expect(shown.status).toBe(1);
+      expect(shown.stdout).toMatch(new RegExp(`pid ${a.pid} not ours or gone`, "u"));
+      const result = run(["down"], {});
+      expect(result.stderr).toMatch(/oidc: pid \d+ is not of this stack directory; left alone/u);
+      expect(result.stderr).toMatch(/server: pid \d+ is not of this stack directory; left alone/u);
+      expect(result.stderr).toMatch(/names processes of another stack directory/u);
+      expect(result.status).toBe(1);
+      expect(existsSync(STATE)).toBe(true);
+      expect(commandLine(a.pid)).toBe(a.marker);
+      expect(commandLine(aServer.pid)).toBe(aServer.marker);
+    } finally {
+      process.kill(-a.pid, "SIGKILL");
+      process.kill(-aServer.pid, "SIGKILL");
+      rmSync(STATE, { force: true });
+    }
+  }, 30_000);
 });

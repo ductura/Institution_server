@@ -114,6 +114,12 @@ const ENV_NAMES = [
   "VS1_OIDC_PORT",
   "VS1_STACK_DIR",
   "HOME",
+  // What the stack hands the fake OIDC provider (DAN-787), names from
+  // packages/test-fakes/oidc/server.ts.
+  "ISSUER",
+  "REDIRECT_URI",
+  "POST_LOGOUT_REDIRECT_URI",
+  "BACKCHANNEL_LOGOUT_URI",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported

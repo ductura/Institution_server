@@ -218,6 +218,35 @@ describe("waitHealthy", () => {
   });
 });
 
+describe("waitHealthy deadline (DAN-787)", () => {
+  it("counts the time requests hang, not only the pauses", async () => {
+    let clock = 0;
+    let calls = 0;
+    // Every request hangs one second on the clock and then fails.
+    const get = (async () => {
+      calls += 1;
+      clock += 1000;
+      throw new Error("timeout");
+    }) as typeof fetch;
+    const wait = async (ms: number): Promise<void> => {
+      clock += ms;
+    };
+    expect(await waitHealthy("http://127.0.0.1:1/", 5000, get, wait, () => clock)).toBe(false);
+    expect(clock).toBeLessThanOrEqual(5000);
+    expect(calls).toBeLessThanOrEqual(5);
+  });
+
+  it("follows no redirect", async () => {
+    const seen: (string | undefined)[] = [];
+    const get = (async (_: string, init?: RequestInit) => {
+      seen.push(init?.redirect);
+      return new Response(null, { status: 200 });
+    }) as typeof fetch;
+    expect(await waitHealthy("http://127.0.0.1:1/", 1000, get, noWait)).toBe(true);
+    expect(seen).toEqual(["manual"]);
+  });
+});
+
 describe("portFree", () => {
   it("tells a listening port from a closed one", async () => {
     const server = createServer();
