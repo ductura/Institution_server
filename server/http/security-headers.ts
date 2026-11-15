@@ -63,8 +63,8 @@ export function refuse(response: ServerResponse, status: number, code: string): 
 
 /**
  * The contract's 500 for a failed request (DAN-776), exactly INTERNAL. Before
- * the head, whatever the failed handler or layer set (headers, status line) is
- * dropped, so nothing of it reaches the client; the security headers are set
+ * the head, whatever the failed handler or layer set (headers, trailers, status line)
+ * is dropped, so nothing of it reaches the client; the security headers are set
  * again and the connection closes. After the head an unfinished answer is cut
  * and a finished one is left to complete. Never throws: a failure here cuts
  * the connection instead of reaching the process as an unhandled rejection.
@@ -76,6 +76,8 @@ export function answerInternal(response: ServerResponse): void {
       return;
     }
     for (const name of response.getHeaderNames()) response.removeHeader(name);
+    // Trailers are kept apart from the headers; adding none clears them.
+    response.addTrailers({});
     response.statusMessage = STATUS_CODES[INTERNAL.error.status] ?? "";
     applySecurityHeaders(response);
     response.setHeader("Connection", "close");

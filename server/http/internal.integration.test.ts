@@ -28,6 +28,10 @@ const handlers: Record<string, Handler> = {
     response.setHeader("content-length", "3");
     throw new Error(CANARY);
   },
+  "/trailers": async (_request, response) => {
+    response.addTrailers({ "x-debug": CANARY });
+    throw new Error(CANARY);
+  },
   "/finished": async (_request, response) => {
     sendJson(response, 200, { status: "x".repeat(BIG) });
     throw new Error(CANARY);
@@ -115,6 +119,14 @@ describe("500 internal on the wire", () => {
     // One answer, framed by itself; the pipelined second request is never read.
     expect(wire.endsWith(CHUNKED)).toBe(true);
     expect(wire.match(/HTTP\/1\.1 /gu)).toHaveLength(1);
+  });
+
+  it("drops the trailers a failed handler added", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const wire = await exchange(get("/api/v1/health?case=trailers"));
+    expect(wire.startsWith("HTTP/1.1 500 Internal Server Error\r\n")).toBe(true);
+    expect(wire).not.toContain(CANARY);
+    expect(wire.endsWith(CHUNKED)).toBe(true);
   });
 
   it("a layer's garbage outcome keeps nothing it set", async () => {

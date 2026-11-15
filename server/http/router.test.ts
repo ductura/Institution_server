@@ -33,6 +33,7 @@ function call(
     hasHeader: (name: string) => set.has(name.toLowerCase()),
     removeHeader: (name: string) => set.delete(name.toLowerCase()),
     getHeaderNames: () => [...set.keys()],
+    addTrailers: () => undefined,
     writeHead(status: number, headers: Record<string, string>) {
       answer.status = status;
       answer.statusMessage = this.statusMessage;
