@@ -3,8 +3,15 @@ import * as area from "./index.ts";
 import type { TrafficService } from "./index.ts";
 
 describe("server/traffic public interface", () => {
-  it("exports only the empty routes and schemas", () => {
-    expect(Object.keys(area).sort()).toEqual(["TRAFFIC_ROUTES", "TRAFFIC_SCHEMAS"]);
+  it("exports the empty routes and schemas and the client IP step", () => {
+    expect(Object.keys(area).sort()).toEqual([
+      "NO_TRUSTED_PROXIES",
+      "TRAFFIC_ROUTES",
+      "TRAFFIC_SCHEMAS",
+      "clientIpLayer",
+      "clientIpOf",
+      "parseTrustedProxies",
+    ]);
     expect(area.TRAFFIC_ROUTES).toEqual([]);
     expect(area.TRAFFIC_SCHEMAS).toEqual({});
   });

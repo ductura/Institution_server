@@ -18,6 +18,7 @@ export {
   type Layers,
   type Step,
 } from "./pipeline.ts";
+export { clientIpOf, parseTrustedProxies, type TrustedProxies } from "../traffic/index.ts";
 export { startServer, type Running, type StartOptions } from "./start.ts";
 export {
   createShutdownCoordinator,

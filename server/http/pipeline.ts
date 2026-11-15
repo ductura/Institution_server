@@ -5,6 +5,7 @@
 // stops the request before the application.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { clientIpLayer, NO_TRUSTED_PROXIES, type TrustedProxies } from "../traffic/index.ts";
 import { originLayer } from "./mutation-request.ts";
 import { errorName } from "./router.ts";
 import { answerInternal, refuse, securityHeadersLayer } from "./security-headers.ts";
@@ -59,12 +60,19 @@ function attached(request: IncomingMessage, response: ServerResponse): Promise<b
   });
 }
 
-/** Steps 2 to 5 are empty until wave 5 fills them; they read nothing. */
+/** Steps 3 to 5 are empty until wave 5 fills them; they read nothing. */
 const pass: Layer = async () => "next";
 
-export function createLayers(options: { readonly expectedOrigin: string | null }): Layers {
+/**
+ * Without trustedProxies (TRUSTED_PROXIES) X-Forwarded-For is never read and
+ * the client IP is the direct peer (S-1C.1, DAN-790).
+ */
+export function createLayers(options: {
+  readonly expectedOrigin: string | null;
+  readonly trustedProxies?: TrustedProxies;
+}): Layers {
   return Object.freeze({
-    clientIp: pass,
+    clientIp: clientIpLayer(options.trustedProxies ?? NO_TRUSTED_PROXIES),
     ipRules: pass,
     rateLimit: pass,
     trafficRecord: pass,
