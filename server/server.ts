@@ -34,7 +34,8 @@ const problems = [
 ];
 
 // 2. Databases. Building the registry opens nothing: server/database connects
-//    on first use. S-1F-a adds the logs and legal databases.
+//    on first use, one pool per database (main, logs, legal; S-1F-a), so a
+//    database that is down fails only its own calls.
 // 3. Layers, in the order of docs/server-map.md §3, steps 2 to 7: client IP,
 //    IP rules, rate limit, traffic record, security headers, origin check.
 //    The order is fixed in http (PIPELINE_STEPS); steps 2 to 5 are empty

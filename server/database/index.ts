@@ -4,6 +4,7 @@ import { createBackchannelLogout, type BackchannelLogout } from "./backchannel-l
 import { createActorReader, type ActorReader } from "./current-actor.ts";
 import { assertNoParameterLogging, withLogCheck } from "./log-settings.ts";
 import { createOpenSession, type OpenSession } from "./open-session.ts";
+import { createRegistry, type HealthReport, type Registry } from "./registry.ts";
 import { createWithActor, type WithActor } from "./with-actor.ts";
 
 export type {
@@ -15,6 +16,8 @@ export type { ActorReader, CurrentActor, CurrentActorWithInstitution } from "./c
 export type { OpenSessionInput, OpenSessionResult } from "./open-session.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
+export type { DatabaseHealth, DatabaseName, HealthReport } from "./registry.ts";
+export { DATABASE_HEALTH_WORDS, handleConnectionErrors } from "./registry.ts";
 // The factories over a pool the caller owns: the tests in tests/db build them
 // over logins of their own, as Ductus tests/integration imported them from the
 // modules of src/server/db. Another folder reaches this folder only through
@@ -24,18 +27,13 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
+// A registry over an environment of the caller's own, for tests/db; in the
+// server only this file makes one (registry-boundary.test.ts).
+export { createRegistry, POOLS, type Registry } from "./registry.ts";
 
 let appWithActor: WithActor | undefined;
-let appPool: pg.Pool | undefined;
-let authPool: pg.Pool | undefined;
-let poolsClosed = false;
 let authOpenSession: OpenSession | undefined;
 let authBackchannelLogout: BackchannelLogout | undefined;
-
-// After closePools nothing reaches a database, neither a new pool nor an ended one.
-function assertOpen(): void {
-  if (poolsClosed) throw new Error("database pools are closed");
-}
 
 // Limits of the web process pool. Every wait has an end, so a stuck request
 // fails instead of holding a connection or a caller for good.
@@ -97,41 +95,20 @@ export function appPoolConfig(connectionString: string): pg.PoolConfig {
   };
 }
 
-/**
- * Keeps a connection that fails from taking the process down. The server may
- * close a connection at any time: the idle-in-transaction limit above, an
- * administrator, a restart. The driver reports that as an `error` event on
- * the client, and an event without a listener is an uncaught exception. The
- * pool listens only while a client is idle, so each client gets a listener
- * for its whole life, borrowed or not.
- *
- * The listener only records. A borrowed client that failed rejects its next
- * statement, so withActor fails and hands it back as broken, and the pool
- * drops it. Only the error code is logged: never a message, a statement, a
- * parameter or a token.
- */
-export function handleConnectionErrors<P extends pg.Pool>(pool: P): P {
-  pool.on("connect", (client) => {
-    client.on("error", (error: Error & { code?: string }) => {
-      console.error("database connection failed", error.code ?? error.name);
-    });
-  });
-  // The pool repeats the failure of an idle client as its own `error` event,
-  // already logged above. Without a listener that event would throw.
-  pool.on("error", () => {});
-  return pool;
-}
+// Every pool of this process comes from one registry (S-1F-a, DAN-783),
+// over process.env as it is at each first use. Each pool is named in its
+// application_name, so an operator sees which pool holds a connection.
+const registry: Registry = createRegistry(process.env, {
+  settings: (connectionString, name) => ({
+    ...appPoolConfig(connectionString),
+    application_name: `ductura-${name}`,
+  }),
+});
 
 // APP_DATABASE_URL is the login of the web process: a member of ductus_app,
 // provisioned per environment (docs/BACKEND.md 3, rule 2). There is no
 // default, so a process without it has no database access at all.
-function connect(): WithActor {
-  const connectionString = process.env.APP_DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("APP_DATABASE_URL is not set; database access stays closed");
-  }
-  const pool = handleConnectionErrors(new pg.Pool(appPoolConfig(connectionString)));
-  appPool = pool;
+function connect(pool: pg.Pool): WithActor {
   // The session token is a bind parameter: no transaction runs on a database
   // that would write it to its log (log-settings.ts).
   return withLogCheck(() => assertNoParameterLogging(pool), createWithActor(pool));
@@ -142,8 +119,9 @@ function connect(): WithActor {
  * The pool is not exported and ESLint keeps the driver inside this directory.
  */
 export const withActor: WithActor = async (token, fn) => {
-  assertOpen();
-  appWithActor ??= connect();
+  // Asked on every call, so that after closePools nothing reaches the pool.
+  const pool = registry.pool("main");
+  appWithActor ??= connect(pool);
   return appWithActor(token, fn);
 };
 
@@ -159,20 +137,11 @@ export const actorReader: ActorReader = createActorReader(withActor);
 // (docs/BACKEND.md 4.3; ductus_auth_local in the local stack). Both are rare
 // and each is one statement, so they share one small pool. Without the
 // variable no session can be opened or closed this way.
-function connectAuth(): pg.Pool {
-  if (authPool) return authPool;
-  const connectionString = process.env.AUTH_DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("AUTH_DATABASE_URL is not set; login stays closed");
-  }
-  authPool = handleConnectionErrors(new pg.Pool({ ...appPoolConfig(connectionString), max: 2 }));
-  return authPool;
-}
 
 /** Opens a session for a verified login; only the login callback calls it. */
 export const openSession: OpenSession = async (input) => {
-  assertOpen();
-  authOpenSession ??= createOpenSession(connectAuth());
+  const pool = registry.pool("auth");
+  authOpenSession ??= createOpenSession(pool);
   return authOpenSession(input);
 };
 
@@ -181,18 +150,26 @@ export const openSession: OpenSession = async (input) => {
  * back-channel logout route calls it.
  */
 export const backchannelLogout: BackchannelLogout = async (input) => {
-  assertOpen();
-  authBackchannelLogout ??= createBackchannelLogout(connectAuth());
+  const pool = registry.pool("auth");
+  authBackchannelLogout ??= createBackchannelLogout(pool);
   return authBackchannelLogout(input);
 };
 
 /**
+ * The state of each database (main, logs, legal), checked apart and at the
+ * same time, in the words of CapabilityStatus; the input of readiness (S-1M-a).
+ * A database without its variable is `nije_konfigurirano` and is not dialled.
+ */
+export function databaseHealth(): Promise<HealthReport> {
+  return registry.health();
+}
+
+/**
  * Ends the pools this process opened, on shutdown (S-1B-c, DAN-778), after
- * every request is done. A pool never opened is not opened now, and no pool
- * opens afterwards: withActor, openSession and backchannelLogout then refuse.
+ * every request is done, all of them even when one fails. A pool never opened
+ * is not opened now, and no pool opens afterwards: withActor, openSession and
+ * backchannelLogout then refuse.
  */
 export async function closePools(): Promise<void> {
-  poolsClosed = true;
-  const pools = [appPool, authPool].filter((pool) => pool !== undefined);
-  await Promise.all(pools.map((pool) => pool.end()));
+  await registry.close();
 }
