@@ -23,36 +23,49 @@
 --     but its owner and the superusers, nor PUBLIC, holds any right on it,
 --     inherited or reachable by SET ROLE
 --     (checked below; 011 holds more in main).
--- A function or operator on the search path that would shadow pg_catalog
--- stops the file before any test (the DO block); everything else runs with
--- the search path pinned to pg_catalog.
+-- The whole file runs with the search path pinned to pg_catalog and pgTAP's
+-- schema; a function or operator beside pgTAP that would shadow pgTAP or
+-- pg_catalog stops the file before any test (the DO block).
 --
 -- The negative controls are made inside the transaction, seen, and dropped;
 -- the file rolls back, so nothing stays.
 BEGIN;
-CREATE EXTENSION IF NOT EXISTS pgtap;
+-- Nothing below resolves through the caller's search path: "$user" or any
+-- schema before pgTAP's could hold a planted is_empty, ok or operator. The
+-- path is pg_catalog, then the schema pgTAP lives in, and nothing else.
+SET LOCAL search_path TO pg_catalog, pg_temp;
+CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA public;
 SET LOCAL lc_messages TO 'C';
-
-SELECT plan(20);
--- pgTAP itself resolves through the search path, so a function or operator
--- planted there (the migrator owns each database and may create in public)
--- could change what it computes: none may exist outside an extension that is
--- an operator or carries the name of a pg_catalog function. This raises
--- rather than asserts, as a planted operator could bend the assertion itself.
+-- pgTAP's schema can also hold objects that are not pgTAP's (the migrator
+-- owns each database and may create in public): a function there that is not
+-- part of an extension and carries the name of a pgTAP or pg_catalog
+-- function, or any such operator, could change what the assertions compute.
+-- This raises rather than asserts, as a planted object could bend the
+-- assertion itself.
 DO $$
 DECLARE
+  tap_schema name;
   planted text;
 BEGIN
+  SELECT n.nspname INTO STRICT tap_schema
+  FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid OPERATOR(pg_catalog.=) e.extnamespace
+  WHERE e.extname OPERATOR(pg_catalog.=) 'pgtap';
+  PERFORM pg_catalog.set_config('search_path', pg_catalog.format('pg_catalog, %I, pg_temp', tap_schema), true);
+
   SELECT pg_catalog.string_agg(x.found, ', ') INTO planted FROM (
     SELECT p.oid::pg_catalog.regprocedure::text AS found FROM pg_catalog.pg_proc p
     WHERE p.pronamespace OPERATOR(pg_catalog.=) ANY (pg_catalog.current_schemas(false)::pg_catalog.regnamespace[])
       AND p.pronamespace OPERATOR(pg_catalog.<>) 'pg_catalog'::pg_catalog.regnamespace
-      AND EXISTS (SELECT 1 FROM pg_catalog.pg_proc q
-                  WHERE q.pronamespace OPERATOR(pg_catalog.=) 'pg_catalog'::pg_catalog.regnamespace
-                    AND q.proname OPERATOR(pg_catalog.=) p.proname)
       AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_depend d
                       WHERE d.classid OPERATOR(pg_catalog.=) 'pg_catalog.pg_proc'::pg_catalog.regclass
                         AND d.objid OPERATOR(pg_catalog.=) p.oid AND d.deptype OPERATOR(pg_catalog.=) 'e')
+      AND EXISTS (SELECT 1 FROM pg_catalog.pg_proc q
+                  WHERE q.proname OPERATOR(pg_catalog.=) p.proname
+                    AND (q.pronamespace OPERATOR(pg_catalog.=) 'pg_catalog'::pg_catalog.regnamespace
+                         OR EXISTS (SELECT 1 FROM pg_catalog.pg_depend d
+                                    WHERE d.classid OPERATOR(pg_catalog.=) 'pg_catalog.pg_proc'::pg_catalog.regclass
+                                      AND d.objid OPERATOR(pg_catalog.=) q.oid
+                                      AND d.deptype OPERATOR(pg_catalog.=) 'e')))
     UNION ALL
     SELECT o.oid::pg_catalog.regoperator::text FROM pg_catalog.pg_operator o
     WHERE o.oprnamespace OPERATOR(pg_catalog.=) ANY (pg_catalog.current_schemas(false)::pg_catalog.regnamespace[])
@@ -62,13 +75,12 @@ BEGIN
                         AND d.objid OPERATOR(pg_catalog.=) o.oid AND d.deptype OPERATOR(pg_catalog.=) 'e')
   ) x;
   IF planted IS NOT NULL THEN
-    RAISE EXCEPTION 'a function or operator on the search path shadows pg_catalog: %', planted;
+    RAISE EXCEPTION 'a function or operator beside pgTAP shadows pgTAP or pg_catalog: %', planted;
   END IF;
 END
 $$;
 
--- The views resolve functions and operators once, here, from pg_catalog only.
-SET LOCAL search_path TO pg_catalog, pg_temp;
+SELECT plan(20);
 
 CREATE TEMP VIEW checked_table AS
   SELECT c.oid, n.nspname || '.' || c.relname AS name, c.relrowsecurity, c.relforcerowsecurity
@@ -137,7 +149,6 @@ CREATE TEMP VIEW ledger_shape AS
     AND NOT (d.classid = 'pg_rewrite'::regclass AND EXISTS (
              SELECT 1 FROM pg_rewrite w JOIN pg_class v ON v.oid = w.ev_class
              WHERE w.oid = d.objid AND v.relpersistence = 't'));
-RESET search_path;
 
 -- 1. The database as migrated.
 SELECT is_empty('SELECT found FROM rls_gap', 'every table has ENABLE and FORCE ROW LEVEL SECURITY');
