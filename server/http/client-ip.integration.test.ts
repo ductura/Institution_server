@@ -76,4 +76,12 @@ describe("client IP on a real server", () => {
     expect(await get(trusting.port, ["X-Forwarded-For: [garbage"])).toBe(200);
     expect(seen).toEqual(["203.0.113.7", "127.0.0.1", "127.0.0.1", "127.0.0.1"]);
   });
+
+  it("drops no header, so a forged XFF before filler never wins (Codex on DAN-790)", async () => {
+    seen.length = 0;
+    const filler = Array.from({ length: 2100 }, () => "a:b");
+    const lines = ["X-Forwarded-For: 203.0.113.66", ...filler, "X-Forwarded-For: 203.0.113.7"];
+    expect(await get(trusting.port, lines)).toBe(200);
+    expect(seen).toEqual(["203.0.113.7"]);
+  });
 });
