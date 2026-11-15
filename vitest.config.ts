@@ -45,6 +45,11 @@ export default defineConfig({
           // F-019: refuses a database URL that is not this machine's.
           setupFiles: ["tests/db/setup.ts"],
           testTimeout: 30_000,
+          // S-1F-c (DAN-779): the files share one cluster, some make
+          // deliberately wrong throwaway roles (with-actor, open-session), and
+          // the logs and legal tests read the whole role catalogue; run in
+          // parallel, one file would see another's roles. One file at a time.
+          fileParallelism: false,
           // As Ductus vitest.config.ts (d52a92c3): withActor of server/database
           // over the local login of db/main/local/app-login.sql (S-0.17).
           // The URL is the public local-only value of that file, no secret.
