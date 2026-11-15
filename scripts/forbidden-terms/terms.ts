@@ -109,13 +109,13 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
   },
   // Every form of the root (#179 A1). §5 delta 1: only the three allowed actions of §5 stay, in exactly those words
   // ("Kopiraj navod", "kopiranje navoda", "Kopirano u međuspremnik", D-59); Ductus also lets every imperative
-  // "kopiraj(te|mo)" and every case of the two nouns through.
+  // "kopiraj(te|mo)" and every case of the two nouns through. Any prefix ("ukopiran", "fotokopirano") is flagged.
   {
     entry: "kopirano",
     instead: PASTED,
     lang: "hr",
     pattern:
-      /(?<![\p{L}\p{N}])(?:(?:is|pre)kopir|kopir(?!aj navod(?![\p{L}\p{N}]))(?!anje navoda(?![\p{L}\p{N}]))(?!ano u meduspremnik(?![\p{L}\p{N}])))/u,
+      /(?:(?<=[\p{L}\p{N}])kopir|(?<![\p{L}\p{N}])kopir(?!aj navod(?![\p{L}\p{N}]))(?!anje navoda(?![\p{L}\p{N}]))(?!ano u meduspremnik(?![\p{L}\p{N}])))/u,
     readsPhrases: true,
   },
   // Every form of the root (#179 A3), "prepiši" in a sync conflict included; not "prepiska" or "prepisci" (correspondence).
@@ -140,7 +140,7 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     instead: GAP,
     lang: "hr",
     pattern:
-      /(?<![\p{L}\p{N}])(?:(?:nedostaj|izgublj)\p{L}* poda[tc]|poda[tc]\p{L}* (?:\p{L}+ ){0,2}(?:nedostaj|izgub)\p{L}*)/u,
+      /(?<![\p{L}\p{N}])(?:(?:nedostaj|izgublj)\p{L}* (?:\p{L}+ )?poda[tc]|poda[tc]\p{L}* (?:\p{L}+ ){0,2}(?:nedostaj|izgub)\p{L}*)/u,
   },
   // The adjective and participle only (#179 A5): the imperative "Sakrij …" stays (owner decision 6).
   {
@@ -267,8 +267,9 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     instead: PASTED,
     lang: "en",
     // §5 delta 2: every word that starts with a form of "copy" (copyright included), except "Copy citation" (D-59).
-    // Ductus lets "Copy", "copies" and "Copied to clipboard" through.
-    pattern: /(?<![\p{L}\p{N}])cop(?:y(?! citation(?![\p{L}\p{N}]))|ie)/u,
+    // Ductus lets "Copy", "copies" and "Copied to clipboard" through. A prefixed form ("recopy", "photocopied") is flagged.
+    pattern:
+      /(?<=[\p{L}\p{N}])cop(?:y|ie)|(?<![\p{L}\p{N}])cop(?:y(?! citation(?![\p{L}\p{N}]))|ie)/u,
     readsPhrases: true,
   },
   // §5 delta 5: "vanished data" (row "nestali podaci"), which Ductus does not have.
@@ -284,7 +285,7 @@ export const FORBIDDEN_TERMS: readonly ForbiddenTerm[] = [
     instead: GAP,
     lang: "en",
     pattern:
-      /(?<![\p{L}\p{N}])(?:(?:missing|lost) data|data (?:\p{L}+ ){0,2}(?:missing|lost))(?![\p{L}\p{N}])/u,
+      /(?<![\p{L}\p{N}])(?:(?:missing|lost) (?:\p{L}+ )?data|data (?:\p{L}+ ){0,2}(?:missing|lost))(?![\p{L}\p{N}])/u,
   },
   { entry: "hidden", instead: GAP, lang: "en", pattern: /(?<![\p{L}\p{N}])(?:hidden|concealed)/u },
   { entry: "plagiarism", instead: NOTHING, lang: "en", pattern: /(?<![\p{L}\p{N}])plagiar/u },

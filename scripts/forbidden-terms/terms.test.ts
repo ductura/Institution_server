@@ -434,6 +434,11 @@ describe("§5 deltas", () => {
     "Kopiranjem navoda",
     "Kopirano u međuspremniku",
     "Kopirana u međuspremnik",
+    "Tekst je ukopiran.",
+    "Odlomak je skopiran.",
+    "Fotokopirano iz knjige.",
+    "Zakopiraj odlomak.",
+    "Nakopirano iz izvora.",
   ])("delta 1 flags %j", (text) => {
     expect(entries(text)).toContain("kopirano");
   });
@@ -456,6 +461,8 @@ describe("§5 deltas", () => {
     "Copy. Citation",
     "Copy citations",
     "Copy\ncitation",
+    "Photocopied passage",
+    "Recopy the text",
   ])("delta 2 flags %j", (text) => {
     expect(entries(text)).toContain("copied");
   });
@@ -481,6 +488,10 @@ describe("§5 deltas", () => {
     ["Izgubljeni podaci mogu se vratiti na ovom uređaju", "nedostajući podaci"],
     ["Podaci su izgubljeni", "nedostajući podaci"],
     ["Podaci nedostaju", "nedostajući podaci"],
+    ["Izgubljeni su podaci.", "nedostajući podaci"],
+    ["Nedostaje nekoliko podataka.", "nedostajući podaci"],
+    ["We lost your data", "missing data"],
+    ["Missing some data", "missing data"],
     ["Lost data can be recovered on this device", "missing data"],
     ["Data was lost", "missing data"],
     ["Some data is missing", "missing data"],
