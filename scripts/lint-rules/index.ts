@@ -30,6 +30,7 @@ export {
 } from "./dynamic-load.ts";
 export {
   isExempt,
+  repoPath,
   STRONG_WORDS,
   TEXT_EXEMPT,
   TEXT_TRANSITIONAL,

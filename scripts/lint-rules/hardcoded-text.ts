@@ -35,7 +35,7 @@
 // written there cannot reach server code. The repository's global lint
 // ignores (`dist/`, `coverage/`) must hold no file under server/; the test
 // checks the tracked files.
-import { posix } from "node:path";
+import { posix, win32 } from "node:path";
 import type { Rule, Scope } from "eslint";
 
 type Node = Rule.Node;
@@ -374,8 +374,20 @@ function charCodes(node: Loose, fold: (n: Loose) => string[] | null): string | n
   }
 }
 
+/**
+ * The repository path of a linted file, with forward slashes. On Windows
+ * both the working directory and the file name use backslashes and a drive
+ * letter in either case, so the relative path is taken with win32 rules
+ * there (review FAIL c.6895202719) and with posix rules elsewhere.
+ */
+export function repoPath(cwd: string, filename: string): string {
+  const windows = /^[A-Za-z]:[\\/]/u.test(cwd) || /^[A-Za-z]:[\\/]/u.test(filename);
+  const rel = windows ? win32.relative(cwd, filename) : posix.relative(cwd, filename);
+  return posix.normalize(rel.replaceAll("\\", "/"));
+}
+
 function relative(context: Rule.RuleContext): string {
-  return posix.normalize(posix.relative(context.cwd, context.filename.replaceAll("\\", "/")));
+  return repoPath(context.cwd, context.filename);
 }
 
 /**

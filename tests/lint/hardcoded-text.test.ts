@@ -2,12 +2,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ESLint, RuleTester } from "eslint";
+import { ESLint, RuleTester, type Rule } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
 import {
   isExempt,
+  repoPath,
   localPlugin,
   TEXT_EXEMPT,
   TEXT_TRANSITIONAL,
@@ -193,6 +194,24 @@ tester.run("no-hardcoded-text", rule, {
   ],
 });
 
+describe("exempt import on a Windows checkout (review FAIL c.6895202719)", () => {
+  it("reports the fixture import when cwd and file name use backslashes", () => {
+    const reports: string[] = [];
+    const context = {
+      cwd: "C:\\repo",
+      filename: "C:\\repo\\server\\log\\leak.ts",
+      report: (r: { messageId?: string }) => reports.push(r.messageId ?? ""),
+      sourceCode: { getScope: () => null },
+    } as unknown as Rule.RuleContext;
+    const visitors = rule.create(context) as Record<string, (node: unknown) => void>;
+    visitors.ExportNamedDeclaration?.({
+      type: "ExportNamedDeclaration",
+      source: { type: "Literal", value: "./invented.fixture.ts" },
+    });
+    expect(reports).toEqual(["exempt"]);
+  });
+});
+
 describe("folding cost", () => {
   it("folds a chain of shared constants in linear time (Codex review on #51)", async () => {
     const lines = ["const n0 = 1;"];
@@ -235,6 +254,15 @@ describe("lint-ignored folders", () => {
       .split("\n")
       .filter((f) => /(?:^|\/)(?:dist|coverage|node_modules)\//u.test(f));
     expect(hidden).toEqual([]);
+  });
+});
+
+describe("repository path of a linted file (review FAIL c.6895202719)", () => {
+  it("is the same on Windows and on posix", () => {
+    expect(repoPath("/repo", "/repo/server/log/leak.ts")).toBe("server/log/leak.ts");
+    expect(repoPath("C:\\repo", "C:\\repo\\server\\log\\leak.ts")).toBe("server/log/leak.ts");
+    expect(repoPath("c:\\Repo", "C:\\repo\\server\\log\\leak.ts")).toBe("server/log/leak.ts");
+    expect(repoPath("C:\\repo", "C:/repo/server/log/leak.ts")).toBe("server/log/leak.ts");
   });
 });
 
