@@ -100,11 +100,20 @@ export function catalogueGaps(reference: unknown, other: unknown): CatalogueGaps
   return gaps;
 }
 
+/** Letters and symbols that render blank: Hangul fillers and the empty Braille pattern. */
+const BLANK_GLYPHS = /[\u115F\u1160\u3164\uFFA0\u2800]/gu;
+
 /**
- * A text a reader cannot see: white space, format characters (zero-width
- * spaces and joiners, soft hyphen) and the filler letters that render blank.
+ * A text a reader can see holds at least one letter, number, punctuation mark
+ * or symbol that is not a blank glyph. White space, format characters
+ * (zero-width spaces and joiners, soft hyphen), combining marks alone
+ * (U+034F, variation selectors) and private-use characters are not seen.
  */
-const INVISIBLE = /^[\s\p{Cf}\u115F\u1160\u3164\uFFA0\u2800]*$/u;
+const VISIBLE = /[\p{L}\p{N}\p{P}\p{S}]/u;
+
+function isInvisible(text: string): boolean {
+  return !VISIBLE.test(text.replace(BLANK_GLYPHS, ""));
+}
 
 /**
  * Texts of a catalogue that hold nothing a reader can see, and sections whose
@@ -112,7 +121,7 @@ const INVISIBLE = /^[\s\p{Cf}\u115F\u1160\u3164\uFFA0\u2800]*$/u;
  * shown as an empty label, and a table where a list stands has no length.
  */
 function unfitTexts(reference: unknown, node: unknown, segments: readonly string[] = []): string[] {
-  if (typeof node === "string") return INVISIBLE.test(node) ? [shownPath(segments)] : [];
+  if (typeof node === "string") return isInvisible(node) ? [shownPath(segments)] : [];
   if (typeof node !== "object" || node === null) return [];
   if (Array.isArray(node) !== Array.isArray(reference)) return [shownPath(segments)];
   return Object.entries(node).flatMap(([key, value]) =>

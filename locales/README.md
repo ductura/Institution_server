@@ -39,7 +39,7 @@ Katalog je potpun (`isCompleteCatalogue`) kad vrijedi sve od ovoga:
 - ima svaki ključ iz `hr` i nijedan drugi, na istoj dubini (ugniježđen ključ koji `hr` nema je višak);
 - svaki popis ima jednako stavki kao u `hr`, a gdje `hr` ima popis, i kandidat ima popis (ne tablicu s ključevima `0`, `1`…);
 - svaki tekst ima iste `{placeholdere}` kao hrvatski;
-- nijedan tekst nije prazan ni nevidljiv (samo razmaci, znakovi nulte širine, meka crtica ili prazna slova-ispune);
+- svaki tekst ima barem jedno vidljivo slovo, broj, interpunkciju ili simbol; razmaci, znakovi nulte širine, meka crtica, samostalni kombinirajući znakovi (npr. U+034F), znakovi privatne uporabe i prazna slova-ispune ne broje se;
 - katalog se može pročitati do kraja (katalog koji baci grešku nije potpun).
 
 Kandidat je samo kod od dva mala slova (ISO 639-1) različit od `hr`; unos `hr`, `HR`, ` hr` ili `hr-HR` se zanemaruje. Zadani jezik ne dolazi iz popisa kandidata, pa ga ni pogrešan unos ne može zamijeniti ni maknuti; popis koji se ne može pročitati ostavlja samo hrvatski. `INTERFACE_CATALOGUES` i `OFFERED_LANGUAGES` su zamrznuti.

@@ -42,6 +42,10 @@ describe("offeredLanguages", () => {
     ],
     ["a text of a soft hyphen only", (t) => (section(t, "app").name = "\u00ad")],
     ["a text of blank filler letters only", (t) => (section(t, "app").name = "\u3164\u2800")],
+    ["a text of a combining grapheme joiner only", (t) => (section(t, "app").name = "\u034f")],
+    ["a text of combining marks only", (t) => (section(t, "app").name = "\u0301\ufe0f\u{e0100}")],
+    ["a text of private-use characters only", (t) => (section(t, "app").name = "\ue000")],
+    ["a text of tag characters only", (t) => (section(t, "app").name = "\u{e0041}\u{e007f}")],
     ["a table where a list stands", (t) => listToTable(t)],
     ["a text that is not a string", (t) => (section(t, "app").name = 7)],
     ["a list one item shorter", (t) => shortenFirstList(t)],
@@ -52,6 +56,21 @@ describe("offeredLanguages", () => {
     const broken = fake(edit);
     expect(isCompleteCatalogue(messagesHr, broken)).toBe(false);
     expect(offeredLanguages(messagesHr, { xx: broken, yy: fake() })).toEqual(["hr", "yy"]);
+  });
+
+  it("offers a language whose texts carry visible characters among invisible ones", () => {
+    expect(
+      isCompleteCatalogue(
+        messagesHr,
+        fake((t) => (section(t, "app").name = "\u200bA")),
+      ),
+    ).toBe(true);
+    expect(
+      isCompleteCatalogue(
+        messagesHr,
+        fake((t) => (section(t, "app").name = "\u3164·")),
+      ),
+    ).toBe(true);
   });
 
   it("does not offer a catalogue that throws while it is read", () => {
