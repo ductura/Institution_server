@@ -262,6 +262,15 @@ describe("DECODER_ALLOWED", () => {
     const code = 'export const e = (x: string) => Buffer.from(x, "hex");';
     expect(await ids(code, "server/domain/forensics/golden-vectors/load.ts")).toEqual([]);
     expect(await ids(code, "server/domain/forensics/other.ts")).toContain("builder");
+    // Review FAIL c.6898809748: the exception is Buffer.from only.
+    const keys = "server/external/keys/ed25519-signature-encoding.ts";
+    for (const other of [
+      'export const e = Buffer.alloc(2, "c48d", "hex").toString();',
+      "export const e = Buffer.concat([new Uint8Array([196, 141])]).toString();",
+      'export const e = (b: Buffer) => b.fill("c48d", "hex");',
+      'export const e = (b: Buffer) => b.write("c48d", "hex");',
+    ])
+      expect(await ids(other, keys), other).toContain("builder");
   });
 
   it("lists files that exist and use each listed builder", () => {

@@ -367,7 +367,10 @@ export const noHardcodedText: Rule.RuleModule = {
             ? (args?.[0] as { elements?: Loose[] } | undefined)?.elements?.some(bytes) === true
             : (args?.length ?? 0) > 1 || bytes(args?.[0]);
       const called = call?.type === "CallExpression" && call.callee === parent;
-      if (!called || (encoded && !allowedUse(node, "Buffer.from")))
+      // DECODER_ALLOWED names only Buffer.from; alloc and concat have no
+      // exception (review FAIL c.6898809748 on #65).
+      const excepted = member === "from" && allowedUse(node, "Buffer.from");
+      if (!called || (encoded && !excepted))
         context.report({
           node: parent as Node,
           messageId: "builder",
@@ -425,7 +428,8 @@ export const noHardcodedText: Rule.RuleModule = {
           .find(
             (a) => a.type === "Literal" && typeof a.value === "string" && ENCODINGS.has(a.value),
           );
-        if (encoding && !allowed.includes("Buffer.from"))
+        // No exception: DECODER_ALLOWED names Buffer.from, not fill or write.
+        if (encoding)
           context.report({ node, messageId: "builder", data: { name: String(encoding.value) } });
       },
       // `new Response(bytes).text()`: bytes written in the source.
