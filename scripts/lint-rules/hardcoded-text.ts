@@ -47,6 +47,7 @@ type Loose = {
   expressions?: Loose[];
   source?: Loose | null;
   tag?: Loose;
+  expression?: Loose;
 };
 
 /** Tests and fixtures, which production code may not import. */
@@ -79,8 +80,35 @@ const BYTE_HOLDERS = ["Response", "Blob", "File"];
 const STRING_BUILDERS = new Set(["raw", "fromCharCode", "fromCodePoint"]);
 // Names under which the global object is reachable.
 const GLOBAL_HOLDERS = ["globalThis", "global", "window", "self"];
-// TypeScript wrappers and an optional chain around an expression.
-const WRAPPERS = /^TS(?:As|Satisfies|NonNull|TypeAssertion)Expression$|^ChainExpression$/u;
+// Nodes that wrap an expression without changing its value: `x!`, `x as T`,
+// `x satisfies T`, `<T>x`, `f<T>` and an optional chain. Parentheses are no
+// node in ESTree, so they are already transparent.
+const WRAPPERS = new Set([
+  ...["TSNonNullExpression", "TSAsExpression", "TSSatisfiesExpression", "TSTypeAssertion"],
+  ...["TSInstantiationExpression", "ChainExpression"],
+]);
+/**
+ * The expression under every wrapper, nested (`(f! as F)!` is `f`). The one
+ * place the rule sees through wrappers, for a callee, an argument, a member
+ * key and the shape around a name (review FAIL c.6900338168 on #65).
+ */
+function unwrap<T extends Loose | undefined>(node: T): T {
+  let n: Loose | undefined = node;
+  while (n && WRAPPERS.has(n.type)) n = n.expression;
+  return n as T;
+}
+// `typeof x` in a type reads no value.
+function inTypeQuery(node: Loose): boolean {
+  for (let up = node.parent; up; up = up.parent) if (up.type === "TSTypeQuery") return true;
+  return false;
+}
+// The outermost wrapper around a node, or the node itself: a parent wraps it
+// exactly when unwrapping both gives the same node.
+function outer(node: Loose): Loose {
+  let n = node;
+  while (n.parent && unwrap(n.parent) === unwrap(node)) n = n.parent;
+  return n;
+}
 // Array methods that may take String as their callback (`xs.map(String)`).
 const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex", "flatMap"];
 /**
@@ -226,8 +254,8 @@ function isAmbient(variable: Scope.Variable): boolean {
 // The static name of a member: `a.b`, `a["b"]` or a template with no
 // expression; null for a computed key the rule does not read.
 function memberName(member: Loose): string | null {
-  const key = member.property;
-  if (!member.computed) return key?.name ?? null;
+  if (!member.computed) return member.property?.name ?? null;
+  const key = unwrap(member.property);
   if (key?.type === "Literal" && typeof key.value === "string") return key.value;
   if (key?.type === "TemplateLiteral" && key.expressions?.length === 0)
     return ((key as { quasis?: { value: { cooked?: string | null } }[] }).quasis?.[0]?.value
@@ -271,9 +299,8 @@ export const noHardcodedText: Rule.RuleModule = {
     // and `+` (review FAIL c.6900113231 on #65: `"%C4%91" as const`). A literal
     // inside a call or member (`x.replaceAll("-", "+")`) is not the argument.
     function literalLeaf(node?: Loose): boolean {
-      const n = node as
+      const n = unwrap(node) as
         | (Loose & {
-            expression?: Loose;
             left?: Loose;
             right?: Loose;
             consequent?: Loose;
@@ -282,13 +309,17 @@ export const noHardcodedText: Rule.RuleModule = {
           })
         | undefined;
       if (!n) return false;
-      if (n.type === "Literal") return n.value !== "";
-      // A template is a literal only when a static piece has text (`${x}` is input).
+      // A non-empty string or a regex; `null` as the `this` of `.call` is no text.
+      if (n.type === "Literal")
+        return (typeof n.value === "string" && n.value !== "") || "regex" in n;
+      // A template is a literal when a static piece has text or an expression
+      // is one (`${x}` is input, `${"%C4%91"}` is not).
       if (n.type === "TemplateLiteral")
-        return ((n.quasis ?? []) as { value: { cooked?: string | null } }[]).some(
-          (q) => (q.value.cooked ?? "") !== "",
+        return (
+          ((n.quasis ?? []) as { value: { cooked?: string | null } }[]).some(
+            (q) => (q.value.cooked ?? "") !== "",
+          ) || (n.expressions ?? []).some(literalLeaf)
         );
-      if (WRAPPERS.test(n.type)) return literalLeaf(n.expression);
       if (n.type === "SequenceExpression") return literalLeaf(n.expressions?.at(-1));
       if (n.type === "ConditionalExpression")
         return literalLeaf(n.consequent) || literalLeaf(n.alternate);
@@ -303,13 +334,16 @@ export const noHardcodedText: Rule.RuleModule = {
       if (!allowed.includes(name)) return false;
       // The argument of `new TextDecoder(…)` is an encoding name.
       if (name === "TextDecoder") return true;
-      let call = node.parent;
-      if (call?.type === "MemberExpression" && call.object === node) call = call.parent;
       // `decodeURIComponent!(…)`, `(decodeURIComponent as F)(…)`: the callee is
       // wrapped (review FAIL c.6900338168 on #65).
-      while (call && WRAPPERS.test(call.type)) call = call.parent;
-      const isCall = call?.type === "CallExpression" || call?.type === "NewExpression";
-      return !(isCall && literalLeaf(call?.arguments?.[0]));
+      let callee = outer(node);
+      if (callee.parent?.type === "MemberExpression" && callee.parent.object === callee)
+        callee = outer(callee.parent);
+      const call = callee.parent;
+      const isCall =
+        (call?.type === "CallExpression" || call?.type === "NewExpression") &&
+        call.callee === callee;
+      return !(isCall && literalLeaf(call.arguments?.[0]));
     }
 
     function checkName(node: Node): void {
@@ -327,37 +361,41 @@ export const noHardcodedText: Rule.RuleModule = {
 
     // A value use of String: a call, `new`, or a static member read.
     function checkValue(node: Loose, name: string): void {
-      for (let up = node.parent; up; up = up.parent) if (up.type === "TSTypeQuery") return;
-      const parent = node.parent;
+      if (inTypeQuery(node)) return;
+      // `String!(x)` and `(String as S).raw` read through the wrapper.
+      const self = outer(node);
+      const parent = self.parent;
       if (
         (parent?.type === "CallExpression" || parent?.type === "NewExpression") &&
-        parent.callee === node &&
+        parent.callee === self &&
         name === "String"
       )
         return;
       // `.map(String)`: only the first argument of an array method, the callback.
       // A `thisArg` and every other argument are values (review FAIL
       // c.6900113231 on #65, orchestrator order c.6900141699).
-      const method = parent?.callee?.type === "MemberExpression" ? memberName(parent.callee) : null;
+      const callee = unwrap(parent?.callee);
+      const method = callee?.type === "MemberExpression" ? memberName(callee) : null;
       if (
         parent?.type === "CallExpression" &&
         name === "String" &&
-        parent.arguments?.[0] === node &&
+        parent.arguments?.[0] === self &&
         method !== null &&
         CALLBACK_METHODS.includes(method)
       )
         return;
-      if (parent?.type !== "MemberExpression" || parent.object !== node) {
+      if (parent?.type !== "MemberExpression" || parent.object !== self) {
         if (parent?.type !== "TSQualifiedName")
           context.report({ node: node as Node, messageId: "value", data: { name } });
         return;
       }
       const member = memberName(parent);
       // `String.prototype` only as the object of a further static member.
-      const next = parent.parent;
+      const read = outer(parent);
+      const next = read.parent;
       const prototypeLeak =
         member === "prototype" &&
-        !(next?.type === "MemberExpression" && next.object === parent && memberName(next) !== null);
+        !(next?.type === "MemberExpression" && next.object === read && memberName(next) !== null);
       if (member === null || STRING_BUILDERS.has(member) || prototypeLeak) {
         const shown = `${name}.${member ?? "[computed]"}`;
         context.report({ node: parent as Node, messageId: "builder", data: { name: shown } });
@@ -399,7 +437,8 @@ export const noHardcodedText: Rule.RuleModule = {
       MemberExpression(node) {
         const member = node as unknown as Loose;
         const name = memberName(member);
-        const holder = member.object?.type === "Identifier" ? (member.object.name ?? "") : "";
+        const object = unwrap(member.object);
+        const holder = object?.type === "Identifier" ? (object.name ?? "") : "";
         if (name === "String" && GLOBAL_HOLDERS.includes(holder))
           context.report({ node, messageId: "value", data: { name } });
       },
@@ -407,8 +446,9 @@ export const noHardcodedText: Rule.RuleModule = {
       // `new Response(bytes).text()`: bytes written in the source.
       NewExpression(node) {
         const call = node as unknown as Loose;
-        const first = call.arguments?.[0];
-        const holder = call.callee?.type === "Identifier" ? (call.callee.name ?? "") : "";
+        const first = unwrap(call.arguments?.[0]);
+        const callee = unwrap(call.callee);
+        const holder = callee?.type === "Identifier" ? (callee.name ?? "") : "";
         const bytes = first?.type === "ArrayExpression" || first?.type === "NewExpression";
         if (BYTE_HOLDERS.includes(holder) && bytes)
           context.report({ node, messageId: "builder", data: { name: holder } });
@@ -421,8 +461,10 @@ export const noHardcodedText: Rule.RuleModule = {
         for (const variable of context.sourceCode.getDeclaredVariables(node)) {
           for (const reference of variable.references) {
             const id = reference.identifier as unknown as Loose;
-            const up = id.parent;
-            const read = up?.type === "MemberExpression" && up.object === id && !up.computed;
+            if (inTypeQuery(id)) continue;
+            const self = outer(id);
+            const up = self.parent;
+            const read = up?.type === "MemberExpression" && up.object === self && !up.computed;
             if (!read)
               context.report({ node: id as Node, messageId: "value", data: { name: spec } });
           }
