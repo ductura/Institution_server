@@ -13,10 +13,10 @@ const { scripts } = JSON.parse(
 ) as { scripts: Record<string, string> };
 const compose = readFileSync(new URL("../../compose.yaml", import.meta.url), "utf8");
 
-test("the databases are main, then logs, with distinct databases, directories, ledgers and migrators", () => {
+test("the databases are main, logs, then legal, with distinct databases, directories, ledgers and migrators", () => {
   assert.deepEqual(
     DATABASES.map((entry) => entry.name),
-    ["main", "logs"],
+    ["main", "logs", "legal"],
   );
   for (const key of ["database", "migrationsDir", "ledger", "migrator"] as const) {
     assert.equal(new Set(DATABASES.map((entry) => entry[key])).size, DATABASES.length, key);
@@ -26,7 +26,8 @@ test("the databases are main, then logs, with distinct databases, directories, l
     assert.equal(entry.ledger, `db/${entry.name}/migrations.sum`);
     assert.match(compose, new RegExp(`^ {2}${entry.service}:$`, "m"));
   }
-  assert.throws(() => databaseNamed("legal"), /unknown database "legal"/);
+  assert.throws(() => databaseNamed("audit"), /unknown database "audit"/);
+  assert.throws(() => databaseNamed("Legal"), /unknown database "Legal"/);
   assert.throws(() => databaseNamed(""), /unknown database/);
 });
 
@@ -52,6 +53,17 @@ test("each db:migrate:<name> migrates its own database as its own migrator throu
   assert.match(
     scripts["db:migrate:logs"] ?? "",
     /^pnpm db:provision:logs && node scripts\/db\/migrate-locked\.ts --database logs /,
+  );
+  assert.match(
+    scripts["db:migrate:legal"] ?? "",
+    /^pnpm db:provision:legal && node scripts\/db\/migrate-locked\.ts --database legal /,
+  );
+  // The legal database is made in the main database, then provisioned in itself.
+  assert.deepEqual(
+    (scripts["db:provision:legal"] ?? "")
+      .split(" && ")
+      .map((step) => step.replace(/^.* -d (\S+) .* < (\S+)$/, "$1 $2")),
+    ["ductus db/legal/local/create-database.sql", "ductus_legal db/legal/local/migrator.sql"],
   );
   assert.match(
     scripts["db:provision:logs"] ?? "",
@@ -91,6 +103,44 @@ test("migrate-locked refuses an unknown database, a URL of another database and 
   }
   // Without --database it is main, and a logs URL is refused.
   assert.match(String(parseArgs(["--url", good])), /does not name the database ductus /);
+});
+
+// S-1F-c a2: the legal and the main database share a cluster, a host and a
+// port, so only the database name and the role tell them apart.
+test("migrate-locked never runs legal migrations in the main database, or main ones in the legal database", () => {
+  const legal =
+    "postgres://u:p@127.0.0.1:54329/ductus_legal?sslmode=disable&role=ductus_legal_migrator";
+  const main = "postgres://u:p@127.0.0.1:54329/ductus?sslmode=disable&role=ductus_migrator";
+  assert.deepEqual(parseArgs(["--database", "legal", "--url", legal]), {
+    database: databaseNamed("legal"),
+    url: legal,
+  });
+  assert.match(
+    String(parseArgs(["--database", "legal", "--url", main])),
+    /does not name the database ductus_legal/,
+  );
+  assert.match(
+    String(
+      parseArgs(["--database", "legal", "--url", legal.replace("/ductus_legal?", "/ductus?")]),
+    ),
+    /does not name the database ductus_legal/,
+  );
+  assert.match(String(parseArgs(["--url", legal])), /does not name the database ductus /);
+  assert.match(
+    String(parseArgs(["--url", main.replace("/ductus?", "/ductus_legal?")])),
+    /does not name the database ductus /,
+  );
+  assert.match(
+    String(
+      parseArgs([
+        "--database",
+        "legal",
+        "--url",
+        legal.replace("ductus_legal_migrator", "ductus_migrator"),
+      ]),
+    ),
+    /must run as ductus_legal_migrator/,
+  );
 });
 
 test("dbmate reads the migrations of the chosen database", () => {
