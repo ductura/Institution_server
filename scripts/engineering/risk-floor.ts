@@ -47,8 +47,10 @@ export const CRITICAL_PATHS: readonly string[] = [
   "server/access.ts",
 ];
 
+// packages/ (U9, DAN-741): the test fakes moved there from test-support/ and
+// keep at least the floor they had.
 const STANDARD_RE =
-  /^(?:(?:server|scripts|db|test-support)\/|(?:package\.json|pnpm-lock\.yaml|tsconfig\.json|vitest\.config\.ts|\.nvmrc)$)/;
+  /^(?:(?:server|scripts|db|test-support|packages)\/|(?:package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|vitest\.config\.ts|\.nvmrc)$)/;
 
 // Files an agent loads as instructions (CLAUDE.md, AGENTS.md, GEMINI.md, Copilot
 // instructions) and agent configuration, at any depth (Ductus F-039).
