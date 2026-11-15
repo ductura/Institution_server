@@ -5,6 +5,10 @@ import { join, sep } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import {
+  hasDashAndUnderscore,
+  MALFORMED_SIGNATURE_SPELLINGS,
+} from "../../../test-support/malformed-signatures/index.ts";
 import type { AppError, Result } from "../../domain/index.ts";
 import {
   DEV_SIGNING_KEY_FILE,
@@ -102,6 +106,28 @@ describe("persistent development signer", () => {
     expect(await s.verify(new TextEncoder().encode("other"), signature)).toEqual(verified(false));
     expect(await s.verify(MESSAGE, { ...signature, keyVersion: "1" })).toEqual(verified(false));
   });
+
+  it.each(MALFORMED_SIGNATURE_SPELLINGS)(
+    "answers a signature with %s as not verified",
+    async (_name, spell) => {
+      const s = signer(file("seed"));
+      // The seed is fixed, so this finds the same signature with both - and _ every run.
+      for (let i = 0; i < 1000; i += 1) {
+        const message = new TextEncoder().encode(`synthetic receipt ${i}`);
+        const signature = await ok(s.sign(message));
+        if (!hasDashAndUnderscore(signature.signatureBase64Url)) continue;
+
+        expect(await s.verify(message, signature)).toEqual(verified(true));
+        const malformed = spell(signature.signatureBase64Url);
+        expect(malformed).not.toBe(signature.signatureBase64Url);
+        expect(await s.verify(message, { ...signature, signatureBase64Url: malformed })).toEqual(
+          verified(false),
+        );
+        return;
+      }
+      throw new Error("no signature with both - and _ in 1000 tries");
+    },
+  );
 
   it("refuses construction in production (T9)", () => {
     expect(() => signer(file("seed"), "production")).toThrow(DevelopmentSigningKeyError);

@@ -6,6 +6,7 @@ import {
 } from "node:crypto";
 
 import type { Result } from "../../domain/index.ts";
+import { decodeEd25519SignatureBase64Url } from "./ed25519-signature-encoding.ts";
 import type {
   PublicVerificationKey,
   SignatureEnvelope,
@@ -78,14 +79,8 @@ export class DevelopmentEd25519SigningKeyProvider implements SigningKeyProvider 
     ) {
       return { ok: true, value: false };
     }
-    return {
-      ok: true,
-      value: nodeVerify(
-        null,
-        Buffer.from(message),
-        this.publicKey,
-        Buffer.from(signature.signatureBase64Url, "base64url"),
-      ),
-    };
+    const bytes = decodeEd25519SignatureBase64Url(signature.signatureBase64Url);
+    if (!bytes) return { ok: true, value: false };
+    return { ok: true, value: nodeVerify(null, Buffer.from(message), this.publicKey, bytes) };
   }
 }

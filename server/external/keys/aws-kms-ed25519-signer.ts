@@ -1,4 +1,5 @@
 import type { AppError, Result } from "../../domain/index.ts";
+import { decodeEd25519SignatureBase64Url } from "./ed25519-signature-encoding.ts";
 import { KmsTransportError } from "./kms-transport-error.ts";
 import {
   kmsTransportError,
@@ -52,15 +53,6 @@ export type AwsKmsEd25519Transport = {
 
 function toBase64Url(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString("base64url");
-}
-
-function fromBase64Url(value: string): Uint8Array | null {
-  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
-  try {
-    return new Uint8Array(Buffer.from(value, "base64url"));
-  } catch {
-    return null;
-  }
 }
 
 function isCompatibleKmsKey(result: AwsKmsEd25519PublicKeyResult): boolean {
@@ -179,8 +171,11 @@ export class AwsKmsEd25519SigningKeyProvider implements SigningKeyProvider {
       return invalid;
     }
 
-    const bytes = fromBase64Url(signature.signatureBase64Url);
-    if (!bytes) return invalid;
+    // Strictly decoded first: a malformed encoding is not verified and never
+    // reaches KMS.
+    const decoded = decodeEd25519SignatureBase64Url(signature.signatureBase64Url);
+    if (!decoded) return invalid;
+    const bytes = new Uint8Array(decoded);
 
     return call(() =>
       this.transport.verify({

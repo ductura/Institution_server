@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { MALFORMED_SIGNATURE_SPELLINGS } from "../../../test-support/malformed-signatures/index.ts";
 import {
   AWS_KMS_ED25519_ALGORITHM,
   AWS_KMS_ED25519_KEY_SPEC,
@@ -11,6 +12,17 @@ import {
 } from "./aws-kms-ed25519-signer.ts";
 import { KmsTransportError, type KmsTransportErrorKind } from "./kms-transport-error.ts";
 
+/**
+ * An invented 64-byte raw signature, the size of an Ed25519 signature. Its
+ * bytes fb ef be and ff ff ff spell "----" and "____" in base64url, so its
+ * + and / spelling differs from it.
+ */
+const SIGNATURE_BYTES = Uint8Array.from(
+  { length: 64 },
+  (_, i) => [0xfb, 0xef, 0xbe, 0xff, 0xff, 0xff, 1, 2, 3][i % 9] ?? 0,
+);
+const SIGNATURE = Buffer.from(SIGNATURE_BYTES).toString("base64url");
+
 class FakeTransport implements AwsKmsEd25519Transport {
   readonly calls: Array<Record<string, unknown>> = [];
   valid = true;
@@ -20,7 +32,7 @@ class FakeTransport implements AwsKmsEd25519Transport {
     return {
       keyId: "arn:aws:kms:eu-central-1:123:key/concrete-v1",
       signingAlgorithm: AWS_KMS_ED25519_ALGORITHM,
-      signature: new Uint8Array([1, 2, 3, 4]),
+      signature: SIGNATURE_BYTES,
     };
   }
 
@@ -52,7 +64,7 @@ const envelope = () => ({
   keyId: "alias/ductus-evidence",
   keyVersion: CONCRETE,
   signatureEncoding: "raw" as const,
-  signatureBase64Url: "AQIDBA",
+  signatureBase64Url: SIGNATURE,
 });
 
 describe("AwsKmsEd25519SigningKeyProvider", () => {
@@ -66,7 +78,7 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
       keyId: "alias/ductus-evidence",
       keyVersion: "arn:aws:kms:eu-central-1:123:key/concrete-v1",
       signatureEncoding: "raw" as const,
-      signatureBase64Url: "AQIDBA",
+      signatureBase64Url: SIGNATURE,
     };
     expect(await signer.sign(message)).toEqual({ ok: true, value: signature });
 
@@ -131,7 +143,7 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
         keyId: "alias/ductus-evidence",
         keyVersion: "arn:aws:kms:eu-central-1:123:key/concrete-v1",
         signatureEncoding: "raw",
-        signatureBase64Url: "AQIDBA",
+        signatureBase64Url: SIGNATURE,
       }),
     ).toEqual({ ok: true, value: false });
   });
@@ -155,7 +167,7 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
         keyId: "alias/ductus-evidence",
         keyVersion: "arn:aws:kms:eu-central-1:123:key/other-key",
         signatureEncoding: "raw",
-        signatureBase64Url: "AQIDBA",
+        signatureBase64Url: SIGNATURE,
       }),
     ).toEqual({ ok: true, value: false });
     expect(transport.calls).toHaveLength(0);
@@ -174,7 +186,7 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
       keyId: "alias/ductus-evidence",
       keyVersion: CONCRETE,
       signatureEncoding: "raw" as const,
-      signatureBase64Url: "AQIDBA",
+      signatureBase64Url: SIGNATURE,
     };
     expect(await signer.verify(message, old)).toEqual({ ok: true, value: true });
 
@@ -254,6 +266,25 @@ describe("AwsKmsEd25519SigningKeyProvider", () => {
     ).resolves.toEqual({ ok: true, value: false });
     expect(transport.calls).toHaveLength(0);
   });
+
+  it.each(MALFORMED_SIGNATURE_SPELLINGS)(
+    "answers a signature with %s as not verified, without calling KMS",
+    async (_name, spell) => {
+      const transport = new FakeTransport();
+      const signer = new AwsKmsEd25519SigningKeyProvider(
+        transport,
+        "alias/ductus-evidence",
+        TRUSTED,
+      );
+      const malformed = spell(SIGNATURE);
+      expect(malformed).not.toBe(SIGNATURE);
+      // The transport would verify anything, so only the encoding check can refuse it.
+      await expect(
+        signer.verify(new Uint8Array([1]), { ...envelope(), signatureBase64Url: malformed }),
+      ).resolves.toEqual({ ok: true, value: false });
+      expect(transport.calls).toHaveLength(0);
+    },
+  );
 
   it("returns an invalid Sign answer as SIGNING_INVALID_RESPONSE", async () => {
     const transport = new FakeTransport();

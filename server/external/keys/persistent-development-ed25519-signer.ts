@@ -11,6 +11,7 @@ import { lstat, open, realpath } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import type { Result } from "../../domain/index.ts";
+import { decodeEd25519SignatureBase64Url } from "./ed25519-signature-encoding.ts";
 import { developmentKeyError } from "./signing-errors.ts";
 import type {
   PublicVerificationKey,
@@ -251,14 +252,8 @@ export class PersistentDevelopmentEd25519SigningKeyProvider implements SigningKe
     ) {
       return { ok: true, value: false };
     }
-    return {
-      ok: true,
-      value: nodeVerify(
-        null,
-        Buffer.from(message),
-        key.value.publicKey,
-        Buffer.from(signature.signatureBase64Url, "base64url"),
-      ),
-    };
+    const bytes = decodeEd25519SignatureBase64Url(signature.signatureBase64Url);
+    if (!bytes) return { ok: true, value: false };
+    return { ok: true, value: nodeVerify(null, Buffer.from(message), key.value.publicKey, bytes) };
   }
 }
