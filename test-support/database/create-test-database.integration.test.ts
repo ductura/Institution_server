@@ -69,9 +69,12 @@ describe("createTestDatabase on PGlite", () => {
       "CREATE DOMAIN public.d AS int CHECK (VALUE > 0);",
       "CREATE VIEW public.v AS SELECT 1 AS x; ALTER VIEW public.v SET (security_barrier);",
     ]) {
-      await db.reset();
+      // Cumulative, one database: each change must still move the fingerprint
+      // on top of the ones before it. Reopening a copy per change kept four
+      // CI cores busy next to load-sensitive tests (#71, mutation-request).
+      const before = await catalogFingerprint(db);
       await db.exec(change);
-      expect(await catalogFingerprint(db), change).not.toEqual(clean);
+      expect(await catalogFingerprint(db), change).not.toEqual(before);
     }
   }, 60_000);
 
