@@ -124,6 +124,14 @@ const exportForms = (name: string): string[] => [
   `const ${name} = 1;\nexport default \`\${${name}}\`;\n`,
   `const ${name} = class {};\nexport default (class extends ${name} {});\n`,
   `export = await { ${name}: 1 };\n`,
+  // Review FAIL c.6894762609: keys copied in by a spread, at any depth, and
+  // the superclass of a class declaration.
+  `export = { ...{ ${name}: 1 } };\n`,
+  `export = Object.assign({}, { ${name}: 1 });\n`,
+  `export = [{ ${name}: 1 }][0];\n`,
+  `export = Object.assign(class {}, class {\n  static ${name}(): void {}\n});\n`,
+  `const ${name} = class {};\nexport default class extends ${name} {}\n`,
+  `const ${name} = class {};\nexport class A extends ${name} {}\n`,
   `function ${name}<T>(x: T): T {\n  return x;\n}\nexport default ${name}<string>;\n`,
 ];
 

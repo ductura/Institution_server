@@ -250,16 +250,16 @@ function isNode(value: unknown): value is Loose {
 }
 
 // Every name an exported value contains, from the whole expression tree, so
-// that no wrapper (`await`, a call, an index, a type assertion) needs a case
-// of its own (review FAILs c.6894474949, c.6894641035): every identifier,
-// the name of every function or class expression, and the computed parts of
-// members and keys. Function and class bodies are not the exported value
-// and are not entered. With `keys` (`export =`, whose value is
-// module.exports) the non-computed keys of an object and the static members
-// of a class also count, through type wrappers, `await`, the last
-// expression of a sequence and the branches of a condition or
-// `||`/`&&`/`??`. A value from elsewhere (`export = o`) is data flow,
-// outside lint.
+// that no wrapper (`await`, a call, an index, a spread, a type assertion)
+// needs a case of its own (review FAILs c.6894474949, c.6894641035,
+// c.6894762609): every identifier, the name and superclass of every
+// function or class, and the computed parts of members and keys. Function
+// and class bodies are not the exported value and are not entered. With
+// `keys` (`export =`, whose value is module.exports) the non-computed keys
+// of every object literal and the static members of every class in the
+// expression count too, at any depth (`export = { ...{ setEngine: 1 } }`,
+// `export = Object.assign({}, { setEngine })`). A value from elsewhere
+// (`export = o`) is data flow, outside lint.
 function valueNames(
   node: Loose | null | undefined,
   keys: boolean,
@@ -267,31 +267,16 @@ function valueNames(
 ): Loose[] {
   const value = unwrapped(node);
   if (!value) return [];
-  const inner = (child: unknown, childKeys = false): Loose[] =>
-    isNode(child) ? valueNames(child, childKeys, visitorKeys) : [];
+  const inner = (child: unknown): Loose[] =>
+    isNode(child) ? valueNames(child, keys, visitorKeys) : [];
   switch (value.type) {
     case "Identifier":
       return [value];
-    case "AwaitExpression":
-      return inner(value.argument, keys);
-    case "SequenceExpression": {
-      const expressions = (value.expressions ?? []).filter(isNode);
-      return expressions.flatMap((expression, index) =>
-        inner(expression, keys && index === expressions.length - 1),
-      );
-    }
-    case "ConditionalExpression":
-      return [
-        ...inner((value as { test?: unknown }).test),
-        ...inner(value.consequent, keys),
-        ...inner(value.alternate, keys),
-      ];
-    case "LogicalExpression":
-      return [...inner(value.left, keys), ...inner(value.right, keys)];
     case "FunctionExpression":
     case "ArrowFunctionExpression":
       return qualifiedNames(value.id);
-    case "ClassExpression": {
+    case "ClassExpression":
+    case "ClassDeclaration": {
       const members = (value.body as Loose | undefined)?.body;
       return [
         ...qualifiedNames(value.id),
@@ -322,7 +307,7 @@ function valueNames(
       const record = value as unknown as Record<string, unknown>;
       return (visitorKeys[value.type] ?? []).flatMap((name) => {
         const child = record[name];
-        return (Array.isArray(child) ? child : [child]).flatMap((item) => inner(item));
+        return (Array.isArray(child) ? child : [child]).flatMap(inner);
       });
     }
   }
@@ -339,7 +324,10 @@ export function exportedNames(node: Loose, visitorKeys: VisitorKeys): Loose[] {
   switch (node.type) {
     case "ExportNamedDeclaration":
       return [
-        ...declaredNames(node.declaration),
+        // A class also carries its superclass, as a class expression does.
+        ...(node.declaration?.type === "ClassDeclaration"
+          ? valueNames(node.declaration, false, visitorKeys)
+          : declaredNames(node.declaration)),
         ...(node.specifiers ?? []).flatMap((specifier) => [
           specifier.local as Loose,
           specifier.exported as Loose,
@@ -349,7 +337,6 @@ export function exportedNames(node: Loose, visitorKeys: VisitorKeys): Loose[] {
       // The namespace key is `default`; a forbidden name inside the
       // exported value fails the same way, whatever wraps it.
       return node.declaration?.type === "FunctionDeclaration" ||
-        node.declaration?.type === "ClassDeclaration" ||
         node.declaration?.type === "TSDeclareFunction" ||
         node.declaration?.type === "TSInterfaceDeclaration"
         ? declaredNames(node.declaration)
