@@ -84,6 +84,9 @@ const passing: string[] = [
   'import * as util from "node:util";\nexport const f = util.inspect;',
   "export const t = (a: string, b: string) => `${a}: ${b}`;",
   "export const r = /^[a-z]+$/u;",
+  // Codex review on #65: "hex" as data, not as an encoding.
+  'export const f = ["", ""].fill("hex");',
+  'export const w = (s: { write(x: string): void }) => s.write("hex");',
 ];
 
 const failing: [messageId: string, code: string][] = [
@@ -164,6 +167,10 @@ const failing: [messageId: string, code: string][] = [
   ["builder", "export const f = Buffer.from;"],
   ["value", "const B = Buffer;\nexport const e = B.from([0xc4]);"],
   ["value", "export const e = globalThis.Buffer;"],
+  // Codex review on #65: Buffer imported from node:buffer, also renamed.
+  ["builder", 'import { Buffer } from "node:buffer";\nexport const e = Buffer.from([196, 141]);'],
+  ["builder", 'import { Buffer as B } from "buffer";\nexport const e = B.of(196, 141);'],
+  ["value", 'import { Buffer as B } from "node:buffer";\nexport const e = [B];'],
   ["value", "export const e = Reflect.get(Buffer, 'from');"],
   // Adversarial review of the contract (w780b): static forms it found.
   ["letter", "export const e = /čekaj/u.source;"],

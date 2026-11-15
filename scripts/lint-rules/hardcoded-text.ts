@@ -388,9 +388,12 @@ export const noHardcodedText: Rule.RuleModule = {
         const call = node as unknown as Loose;
         const method = call.callee?.type === "MemberExpression" ? memberName(call.callee) : null;
         if (method !== "fill" && method !== "write") return;
-        const encoding = (call.arguments ?? []).find(
-          (a) => a.type === "Literal" && typeof a.value === "string" && ENCODINGS.has(a.value),
-        );
+        // The data is the first argument; an encoding comes after it.
+        const encoding = (call.arguments ?? [])
+          .slice(1)
+          .find(
+            (a) => a.type === "Literal" && typeof a.value === "string" && ENCODINGS.has(a.value),
+          );
         if (encoding && !allowed.includes("Buffer.from"))
           context.report({ node, messageId: "builder", data: { name: String(encoding.value) } });
       },
@@ -417,6 +420,17 @@ export const noHardcodedText: Rule.RuleModule = {
               context.report({ node: id as Node, messageId: "value", data: { name: spec } });
           }
         }
+      },
+      // `import { Buffer as B } from "node:buffer"` is the same Buffer.
+      ImportSpecifier(node: Node) {
+        const specifier = node as unknown as Loose & { imported?: Loose };
+        const spec = String(specifier.parent?.source?.value ?? "");
+        const imported = specifier.imported?.name ?? specifier.imported?.value;
+        if (!["node:buffer", "buffer"].includes(spec) || imported !== "Buffer") return;
+        for (const variable of context.sourceCode.getDeclaredVariables(node))
+          for (const reference of variable.references)
+            if ((reference as { isValueReference?: boolean }).isValueReference !== false)
+              checkValue(reference.identifier as unknown as Loose, "Buffer");
       },
       // A template is also read as one text, its expressions as word breaks.
       TemplateLiteral(node) {
