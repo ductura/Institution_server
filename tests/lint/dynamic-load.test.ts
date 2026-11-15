@@ -184,6 +184,14 @@ const failing: Case[] = [
   ...at("server/domain/document/edit-step2.ts", "key", [
     'export const keys = new Set(["__proto__", "constructor", "prototype"]);\n',
   ]),
+  // In that file the literal is allowed only as an array element (Codex P2 on #45).
+  ...at("server/domain/document/edit-step.ts", "key", [
+    `export const fs = (() => 0)["constructor"]("return 1")();\n`,
+    'export const F = Reflect.get(() => 0, "constructor");\n',
+    'const k = "constructor";\nexport const F = Reflect.get(() => 0, k);\n',
+    'const { "constructor": F } = () => 0;\nexport { F };\n',
+    'export const F = (() => 0)["constr" + "uctor"];\n',
+  ]),
 ];
 
 const passing: Case[] = [

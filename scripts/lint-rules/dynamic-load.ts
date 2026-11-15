@@ -97,7 +97,7 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
  * native library.
  */
 export const FORBIDDEN_KEYS: readonly string[] = ["constructor", "setEngine"];
-/** The only files that may hold a forbidden key as a string, as data. */
+/** The only files that may hold a forbidden key as a string, as an array element (data). */
 export const KEY_LITERAL_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   // FORBIDDEN_KEYS of the edit-step validator: keys a payload may not carry.
   "server/domain/document/edit-step.ts": ["constructor"],
@@ -235,13 +235,17 @@ export const noDynamicLoad: Rule.RuleModule = {
         context.report({ node, messageId: "key", data: { key } });
     }
 
-    // A static string anywhere, reported once at the outermost `+`.
+    // A static string anywhere, reported once at the outermost `+`. The data
+    // exemption holds only for an element of an array literal, never for a
+    // key, an argument or a binding (`fn["constructor"]` fails in that file too).
     function checkString(node: Node): void {
       const loose = node as unknown as Loose;
       if (loose.parent?.type === "BinaryExpression" && loose.parent.operator === "+") return;
       const text = staticText(loose);
-      if (text !== undefined && !(KEY_LITERAL_ALLOWED[file] ?? []).includes(text))
-        checkKey(node, text);
+      if (text === undefined) return;
+      const data = loose.parent?.type === "ArrayExpression";
+      if (data && (KEY_LITERAL_ALLOWED[file] ?? []).includes(text)) return;
+      checkKey(node, text);
     }
 
     return {
