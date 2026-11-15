@@ -35,6 +35,10 @@ describe("fake server import boundary (eslint.config.ts)", () => {
     // The database block switches no-restricted-imports off; this rule stays on.
     ["server/database/example.ts", "../contracts/generated/fake-server/index.ts"],
     ["server/http/example.ts", "../contracts/generated/./fake-server/index.ts"],
+    // A relative path that names the folder only once resolved against the importer.
+    ["server/contracts/generated/client.ts", "./fake-server/index.ts"],
+    ["server/contracts/generated/client.ts", "./fake-server"],
+    ["server/contracts/example.ts", "./generated/../generated/fake-server/index.ts"],
     ["server/http/example.ts", "..\\\\contracts\\\\generated\\\\fake-server\\\\index.ts"],
   ])("rejects it in production code %s (%s)", async (filePath, spec) => {
     expect(await restricted(filePath, spec)).toBe(1);
@@ -70,6 +74,8 @@ describe("fake server import boundary (eslint.config.ts)", () => {
   it("leaves other paths alone", async () => {
     expect(await restricted("server/http/example.ts", "../contracts/generated/index.ts")).toBe(0);
     expect(await restricted("server/http/example.ts", "./fake-server-like/index.ts")).toBe(0);
+    // A folder named fake-server elsewhere is not the generated one.
+    expect(await restricted("server/http/example.ts", "./fake-server/index.ts")).toBe(0);
   });
 
   it("keeps the driver boundary in test code", async () => {
