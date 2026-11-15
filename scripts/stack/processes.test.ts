@@ -1,6 +1,6 @@
 // DAN-759: `down` signals only the processes the stack started, and only while
 // the recorded id still runs the recorded command.
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
@@ -9,8 +9,10 @@ import { describe, expect, it } from "vitest";
 import {
   commandLine,
   isStackPostmaster,
+  listensOn,
   portFree,
   postgresOptions,
+  serverReady,
   stopProcess,
   waitHealthy,
 } from "./index.ts";
@@ -159,6 +161,43 @@ describe("isStackPostmaster", () => {
 
   it("refuses our postmaster line for another port", () => {
     expect(isStackPostmaster(ours, pgdata, dir, 54361)).toBe(false);
+  });
+});
+
+describe("listensOn and serverReady", () => {
+  const listen = async (pathOk: boolean): Promise<{ port: number; close: () => Promise<void> }> => {
+    const server = createServer((_, response) => response.writeHead(pathOk ? 200 : 503).end());
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const { port } = server.address() as AddressInfo;
+    return { port, close: () => new Promise((resolve) => server.close(() => resolve())) };
+  };
+
+  it("sees the port this process listens on, and no other", async () => {
+    const own = await listen(true);
+    try {
+      expect(listensOn(process.pid, own.port)).toBe(true);
+      expect(listensOn(process.pid, own.port === 65_535 ? 65_534 : own.port + 1)).toBe(false);
+    } finally {
+      await own.close();
+    }
+    expect(listensOn(process.pid, own.port)).toBe(false);
+  });
+
+  it("is not ready when a foreign process answers 200 on the port and ours does not listen", async () => {
+    // "Foreign": this test process answers health; "ours": a child that never listens.
+    const foreign = await listen(true);
+    const ours = spawn(process.execPath, ["-e", "setTimeout(() => {}, 30000)"], {
+      stdio: "ignore",
+    });
+    try {
+      await new Promise((resolve) => ours.once("spawn", resolve));
+      const url = `http://127.0.0.1:${foreign.port}/api/v1/health`;
+      expect(await serverReady(url, ours.pid as number, foreign.port, 2000)).toBe(false);
+      expect(await serverReady(url, process.pid, foreign.port, 2000)).toBe(true);
+    } finally {
+      ours.kill("SIGKILL");
+      await foreign.close();
+    }
   });
 });
 

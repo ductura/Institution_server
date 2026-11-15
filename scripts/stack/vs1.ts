@@ -20,7 +20,7 @@ import {
   postgresOptions,
   startDetached,
   stopProcess,
-  waitHealthy,
+  serverReady,
 } from "./processes.ts";
 import * as stateFile from "./state.ts";
 
@@ -114,8 +114,11 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   // The exact command line: `down` stops the pid only while it still runs this.
   state.processes.server = { pid, marker: [process.execPath, ...argv].join(" ") };
   stateFile.writeState(STATE, state);
-  if (!(await waitHealthy(`${origin}/api/v1/health`, 30_000)))
-    throw new Error("the server is not healthy");
+  // Ready only when the answer comes from this server, not from another
+  // process on the port; otherwise the rollback stops this one.
+  if (!(await serverReady(`${origin}/api/v1/health`, pid, server, 30_000))) {
+    throw new Error(`the server is not healthy, or port ${server} is answered by another process`);
+  }
   console.log(`VS-1 stack up (${config.env}): server ${origin}, PostgreSQL :${postgres}`);
   for (const [name, slot] of Object.entries(SLOTS))
     console.log(`  ${name} at ${slot.path}: not attached`);

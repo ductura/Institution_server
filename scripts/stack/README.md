@@ -23,7 +23,7 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`):
   - da postoji `dist/server.js`;
   - da je putanja sigurna: samo slova, znamenke, `.`, `_`, `-` i `/`, jer `pg_ctl` predaje `-o` ljusci, a socket ima najviše 107 bajtova;
   - da su portovi slobodni.
-- Zatim čeka da `GET /api/v1/health` vrati 200.
+- Zatim čeka da `GET /api/v1/health` vrati 200 i provjerava da na portu sluša upravo pokrenuti server (`/proc`). Odgovor drugog procesa na istom portu, primjerice servera iz drugog checkouta, ne računa se kao spremnost. Stog zato radi samo na Linuxu (i WSL-u).
 - Ako neki korak ne uspije, gasi samo ono što je taj poziv pokrenuo, uz PID servera iz memorije, i izlazi s 1.
 
 ## down

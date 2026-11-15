@@ -3,7 +3,7 @@
 // while its command line is still exactly the recorded one, so a reused id or
 // another stack's process is never signalled.
 import { execFileSync, spawn } from "node:child_process";
-import { openSync } from "node:fs";
+import { openSync, readdirSync, readFileSync, readlinkSync } from "node:fs";
 import { connect } from "node:net";
 
 export type Wait = (ms: number) => Promise<void>;
@@ -120,4 +120,51 @@ export function isStackPostmaster(
   if (!line.endsWith(args)) return false;
   const binary = line.slice(0, -args.length);
   return binary.startsWith("/") && binary.endsWith("/postgres") && !/\s/u.test(binary);
+}
+
+// The inode of a socket an fd of `pid` holds, or null.
+function socketInode(pid: number, fd: string): string | null {
+  try {
+    return /^socket:\[(\d+)\]$/u.exec(readlinkSync(`/proc/${pid}/fd/${fd}`))?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * True when `pid` itself holds a listening TCP socket on `port` (Linux /proc).
+ * A 200 from the port alone may come from another process, for example the
+ * server of another checkout that took the port first.
+ */
+export function listensOn(pid: number, port: number): boolean {
+  let inodes: Set<string>;
+  try {
+    inodes = new Set(readdirSync(`/proc/${pid}/fd`).map((fd) => socketInode(pid, fd) ?? ""));
+  } catch {
+    return false;
+  }
+  const local = `:${port.toString(16).toUpperCase().padStart(4, "0")}`;
+  return ["tcp", "tcp6"].some((table) => {
+    let rows: string[];
+    try {
+      rows = readFileSync(`/proc/${pid}/net/${table}`, "utf8").split("\n").slice(1);
+    } catch {
+      return false;
+    }
+    // Columns: sl local_address rem_address st ... inode (10th); 0A is LISTEN.
+    return rows.some((row) => {
+      const cols = row.trim().split(/\s+/u);
+      return cols[1]?.endsWith(local) === true && cols[3] === "0A" && inodes.has(cols[9] ?? "");
+    });
+  });
+}
+
+/** Health answers 200 and the answer comes from `pid` itself listening on `port`. */
+export async function serverReady(
+  url: string,
+  pid: number,
+  port: number,
+  timeoutMs: number,
+): Promise<boolean> {
+  return (await waitHealthy(url, timeoutMs)) && listensOn(pid, port);
 }
