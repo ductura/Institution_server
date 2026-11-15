@@ -433,6 +433,8 @@ describe("requests parsed while draining", () => {
     expect(answers[0]).toBe("200 keep-alive");
     expect(answers.slice(1)).toEqual([...Array(15).fill("503 keep-alive"), "503 close"]);
     expect(await server.exit).toBe(0);
+    // Adversarial QA on 9d57162, F2: no MaxListenersExceededWarning on stderr.
+    expect(server.err()).toBe("");
     expect(Date.now() - signalled).toBeLessThan(4_000);
   }, 20_000);
 
@@ -447,5 +449,60 @@ describe("requests parsed while draining", () => {
     await conn.closed;
     expect(heads(conn.text())).toEqual(["200 keep-alive", "503 close"]);
     expect(await server.exit).toBe(0);
+  }, 20_000);
+
+  // Adversarial QA on 9d57162, F3 and F4: an HTTP/1.0 keep-alive request and
+  // Content-Length: 00 are refused without closing the connection.
+  it("an HTTP/1.0 keep-alive request and an empty body of length 00 keep the connection for the next", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["600"]);
+    const conn = await open(server.port);
+    conn.socket.write(GET("/api/v1/health?slow"));
+    await sleep(100);
+    server.child.kill("SIGTERM");
+    await sleep(100);
+    conn.socket.write(
+      "GET /api/v1/health HTTP/1.0\r\nConnection: keep-alive\r\n\r\n" +
+        "POST /api/v1/health HTTP/1.1\r\nHost: localhost\r\nContent-Length: 00\r\n\r\n" +
+        GET("/api/v1/health"),
+    );
+    await conn.closed;
+    expect(heads(conn.text())).toEqual([
+      "200 keep-alive",
+      "503 keep-alive",
+      "503 keep-alive",
+      "503 close",
+    ]);
+    expect(await server.exit).toBe(0);
+  }, 20_000);
+
+  // Adversarial QA on 9d57162, F1: a client that reads late, with requests
+  // still unread in the kernel, gets every body whole and both 503s; the
+  // connection ends with FIN, not a reset that drops what the kernel holds.
+  it("a slow reader with requests sent after the signal gets every body whole, then FIN", async () => {
+    const server = await start(SLOW_ENTRY, { SHUTDOWN_GRACE_MS: "5000" }, ["0"]);
+    const socket = connect(server.port, "127.0.0.1");
+    await new Promise<void>((resolve) => socket.once("connect", resolve));
+    const chunks: Buffer[] = [];
+    let ending = "open";
+    socket.on("data", (chunk: Buffer) => chunks.push(chunk));
+    socket.on("error", (error: NodeJS.ErrnoException) => (ending = error.code ?? "error"));
+    const closed = new Promise<void>((resolve) => socket.once("close", () => resolve()));
+    socket.pause();
+    socket.write(GET("/api/v1/health?big") + GET("/api/v1/health?big"));
+    await sleep(200);
+    server.child.kill("SIGTERM");
+    await sleep(50);
+    socket.write(GET("/api/v1/health"));
+    await sleep(50);
+    socket.write(GET("/api/v1/health"));
+    await sleep(100);
+    socket.resume();
+    await closed;
+    const raw = Buffer.concat(chunks).toString("latin1");
+    expect(ending).toBe("open");
+    expect(heads(raw)).toEqual(["200 keep-alive", "200 keep-alive", "503 keep-alive", "503 close"]);
+    expect(raw.match(/x{5242880}/gu)).toHaveLength(2);
+    expect(await server.exit).toBe(0);
+    expect(server.err()).toBe("");
   }, 20_000);
 });

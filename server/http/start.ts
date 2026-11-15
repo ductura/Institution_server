@@ -26,8 +26,14 @@ export type Running = Listener & { readonly port: number; close(): Promise<void>
 /** Refusals one connection gets while draining; the last of them closes it (c3 contract, 6). */
 const REFUSALS_PER_CONNECTION = 16;
 
+/**
+ * How long a closing connection is still read after its last byte left, so
+ * that a request the client sent meanwhile is read instead of reset.
+ */
+const LINGER_MS = 1_000;
+
 // A request parsed on a connection whose output is not over yet.
-type Exchange = { readonly response: ServerResponse };
+type Exchange = { readonly response: ServerResponse; over?: () => void };
 type Connection = {
   /** Exchanges in the order they were parsed; Node answers them in this order. */
   readonly open: Exchange[];
@@ -73,18 +79,29 @@ export async function startServer(options: StartOptions): Promise<Running> {
       const state = connections.get(socket);
       const at = state?.open.indexOf(exchange) ?? -1;
       if (at >= 0) state?.open.splice(at, 1);
-      release();
-      if (shutdown.state() !== "running") endIfIdle(socket);
+      if (shutdown.state() === "running") return release();
+      endIfIdle(socket);
+      if (socket.destroyed || !socket.writableEnded) return release();
+      // Lingering close: a reset would also drop bytes the kernel still holds
+      // for the client, so the connection is read until the client closes it.
+      const lingered = () => {
+        clearTimeout(timer);
+        socket.off("close", lingered);
+        release();
+      };
+      const timer = setTimeout(lingered, LINGER_MS);
+      socket.once("close", lingered);
+      socket.resume();
     };
     let outputOpen = true;
     const outputOver = () => {
       if (!outputOpen) return;
       outputOpen = false;
-      socket.off("close", outputOver);
       socket.off("finish", outputOver);
       done();
     };
-    socket.once("close", outputOver);
+    // One close listener per connection calls this (the connection handler).
+    exchange.over = outputOver;
     response.once("close", () => {
       if (socket.destroyed || socket.writableLength === 0) return outputOver();
       // Writes leave in order: the callback of an empty write, or the finish
@@ -99,13 +116,14 @@ export async function startServer(options: StartOptions): Promise<Running> {
   const refuseWhileDraining = (request: IncomingMessage, response: ServerResponse) => {
     const socket = request.socket;
     const state = connections.get(socket);
-    if (state === undefined || state.final !== null) return;
+    // After the last answer the connection is only read until it closes.
+    if (state === undefined || state.final !== null || socket.writableEnded) return;
     unmark(state);
     state.refused += 1;
     // Node would read an unread body to reach the next request; closing does not.
     const hasBody =
       request.headers["transfer-encoding"] !== undefined ||
-      (request.headers["content-length"] ?? "0") !== "0";
+      Number(request.headers["content-length"] ?? "0") !== 0;
     const exchange: Exchange = { response };
     state.open.push(exchange);
     if (hasBody || state.refused >= REFUSALS_PER_CONNECTION) state.final = exchange;
@@ -121,12 +139,16 @@ export async function startServer(options: StartOptions): Promise<Running> {
         return;
       }
       applySecurityHeaders(response);
-      sendJson(response, 503, { error: "unavailable" });
+      // With a length an HTTP/1.0 keep-alive request stays open as well.
+      const body = { error: "unavailable" };
+      const length = String(Buffer.byteLength(JSON.stringify(body)));
+      sendJson(response, 503, body, { "content-length": length });
     };
-    queueMicrotask(() => {
-      if (response.socket !== null) send();
-      else response.once("socket", send);
-    });
+    // One turn of the event loop reads what the kernel already holds for
+    // this socket: Node may have resumed reading only now (backpressure).
+    const later = () => setImmediate(() => setImmediate(send));
+    if (response.socket !== null) later();
+    else response.once("socket", later);
   };
 
   const server = createServer((request, response) => {
@@ -153,7 +175,11 @@ export async function startServer(options: StartOptions): Promise<Running> {
   });
   server.on("connection", (socket: Socket) => {
     connections.set(socket, { open: [], served: false, refused: 0, final: null, marked: null });
-    socket.once("close", () => connections.delete(socket));
+    socket.once("close", () => {
+      const state = connections.get(socket);
+      connections.delete(socket);
+      for (const exchange of [...(state?.open ?? [])]) exchange.over?.();
+    });
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -173,6 +199,12 @@ export async function startServer(options: StartOptions): Promise<Running> {
         if (last === undefined || last.headersSent || !last.shouldKeepAlive) continue;
         last.shouldKeepAlive = false;
         state.marked = last;
+      }
+      // Node destroys a socket after a response that closes it, which resets
+      // it when a pipelined request is still unread; without destroySoon it
+      // ends the socket instead (_http_server.js resOnFinish).
+      for (const socket of connections.keys()) {
+        Object.defineProperty(socket, "destroySoon", { value: undefined });
       }
       // Stop listening without http.Server.close, which would also end
       // connections whose last body is still being written (see above).
