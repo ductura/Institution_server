@@ -14,7 +14,9 @@
 // string literal or template piece, whatever its parent, so Reflect.get(fn,
 // "constructor") fails too. What the rule cannot see: a key built at run time
 // ("constr" + "uctor", fn[k] with k from a join, a lookup by descriptor value)
-// and the internals of dependencies. Both need a runtime guard, not lint.
+// and the internals of dependencies. Both need a runtime guard, not lint:
+// DAN-772 (--disallow-code-generation-from-strings). Names of direct export
+// declarations (`export function setEngine`) are not checked; DAN-773.
 import { readFileSync } from "node:fs";
 import { posix } from "node:path";
 import type { Rule, Scope } from "eslint";
