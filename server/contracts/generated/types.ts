@@ -36,11 +36,25 @@ export type Operations = {
     success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "forbidden" | "unavailable";
   };
+  "evidence.commit.post": {
+    params: undefined;
+    query: undefined;
+    body: { "documentId": string; "clientTransactionId": string; "baseRevision": number; "segments": (string)[]; "document": string };
+    success: { status: 200; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "signed"; "signedReceipt": { "payload": { "receiptSchema": "ductus-evidence-receipt-v2"; "receiptId": string; "evidencePackageId": string; "documentId": string; "sessionId": string; "segmentId": string; "segmentHash": string; "predecessorSegmentHash": string | null; "previousReceiptId": string | null; "evidenceSchema": "ductus-evidence-segment-v2" | "ductus-evidence-segment-v3" | "ductus-evidence-segment-v4"; "evidenceProfileId": string; "sequenceFrom": number; "sequenceTo": number; "eventCount": number; "payloadBytes": number; "acceptedAt": string; "revision": number; "clientTransactionId": string; "evidenceDomainId": string; "principalId": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw" | "ieee-p1363" | "der"; "signatureBase64Url": string } } } }; headers: {  } } | { status: 202; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "pending_signature" } }; headers: { "retry-after"?: string } };
+    errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "stale_base" | "chain_conflict" | "not_continuous" | "txid_reused" | "document_mismatch" | "unavailable";
+  };
+  "evidence.open.post": {
+    params: undefined;
+    query: undefined;
+    body: { "assignmentId": string; "start"?: boolean };
+    success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
+    errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
+  };
   "platform.health.get": {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "status": "ok" }; headers: {  } };
+    success: { status: 200; body: { "status": "ok"; "version"?: string }; headers: {  } };
     errorCode: never;
   };
   "platform.ready.get": {

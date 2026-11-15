@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { openapiDocument } from "../../scripts/index.ts";
 import { breakingChanges } from "./breaking.ts";
+import { API_VERSION } from "./version.ts";
 
 type Obj = Record<string, unknown>;
 
@@ -19,9 +20,16 @@ function list(value: unknown, ...keys: string[]): unknown[] {
   return found;
 }
 
+// Versions relative to the published one (API_VERSION), so raising it keeps every case.
+const [MAJOR, MINOR, PATCH] = API_VERSION.split(".").map(Number) as [number, number, number];
+const BASE = `${MAJOR}.${MINOR}.${PATCH}`;
+const PATCH_UP = `${MAJOR}.${MINOR}.${PATCH + 1}`;
+const MINOR_UP = `${MAJOR}.${MINOR + 1}.0`;
+const MINOR_UP_TWICE = `${MAJOR}.${MINOR + 2}.0`;
+
 // Every case starts from the real v1 document, changes one thing and raises the
 // minor version, so only the change itself can be reported.
-function changed(edit: (doc: Obj) => void, version = "1.1.0"): Obj {
+function changed(edit: (doc: Obj) => void, version = MINOR_UP): Obj {
   const doc = structuredClone(openapiDocument()) as Obj;
   node(doc, "info").version = version;
   edit(doc);
@@ -552,7 +560,7 @@ describe("breaking changes, closed by default", () => {
     expect(
       breakingChanges(
         before,
-        changed(() => undefined, "1.2.0"),
+        changed(() => undefined, MINOR_UP_TWICE),
       ),
     ).toEqual([
       `GET ${HEALTH} ${OK}/properties/description: field removed`,
@@ -565,7 +573,7 @@ describe("breaking changes, closed by default", () => {
     const openWithTheme = changed((d) => {
       delete localeBody(d).additionalProperties;
       node(localeBody(d), "properties").theme = str;
-    }, "1.2.0");
+    }, MINOR_UP_TWICE);
     expect(breakingChanges(open, openWithTheme)).toEqual([
       `POST ${LOCALE} ${JSON_BODY}/properties/theme: field added`,
     ]);
@@ -578,7 +586,7 @@ describe("breaking changes, closed by default", () => {
     expect(
       breakingChanges(
         before,
-        changed((d) => (formBody(d).additionalProperties = str), "1.2.0"),
+        changed((d) => (formBody(d).additionalProperties = str), MINOR_UP_TWICE),
       ),
     ).toEqual([`POST ${BACKCHANNEL} ${FORM_BODY}/additionalProperties/maxLength: removed`]);
   });
@@ -590,7 +598,7 @@ describe("breaking changes, closed by default", () => {
     const after = changed((d) => {
       localeBody(d).patternProperties = { "^x": {} };
       node(localeBody(d), "properties").x = str;
-    }, "1.2.0");
+    }, MINOR_UP_TWICE);
     expect(breakingChanges(before, after)).toEqual([
       `POST ${LOCALE} ${JSON_BODY}/properties/x: field added`,
     ]);
@@ -606,7 +614,7 @@ describe("breaking changes, closed by default", () => {
     const after = changed((d) => {
       at(d).not = closed();
       node(at(d), "not", "properties").extra = str;
-    }, "1.2.0");
+    }, MINOR_UP_TWICE);
     expect(breakingChanges(before, after)).toEqual([`${where}/not/properties/extra: field added`]);
   });
 
@@ -619,7 +627,7 @@ describe("breaking changes, closed by default", () => {
     const after = changed((d) => {
       open(d);
       okProps(d, HEALTH).uptime = { type: "number" };
-    }, "1.2.0");
+    }, MINOR_UP_TWICE);
     expect(breakingChanges(before, after)).toEqual([]);
   });
 });
@@ -637,7 +645,7 @@ describe("inherited key names", () => {
       expect(
         breakingChanges(
           before,
-          changed(() => undefined, "1.2.0"),
+          changed(() => undefined, MINOR_UP_TWICE),
         ),
       ).toEqual([`GET ${HEALTH} ${OK}/properties/${key}: field removed`]);
     },
@@ -659,7 +667,7 @@ describe("inherited key names", () => {
         (d) => ownKey(okProps(d, HEALTH), "__proto__", { type: "string", maxLength }),
         version,
       );
-    expect(breakingChanges(withProto(1, "1.1.0"), withProto(2, "1.2.0"))).toEqual([
+    expect(breakingChanges(withProto(1, MINOR_UP), withProto(2, MINOR_UP_TWICE))).toEqual([
       `GET ${HEALTH} ${OK}/properties/__proto__/maxLength: changed`,
     ]);
   });
@@ -674,7 +682,7 @@ describe("inherited key names", () => {
     expect(
       breakingChanges(
         before,
-        changed(() => undefined, "1.2.0"),
+        changed(() => undefined, MINOR_UP_TWICE),
       ),
     ).toEqual([
       `GET ${LOGIN} responses/303/headers/toString: removed`,
@@ -686,20 +694,24 @@ describe("inherited key names", () => {
 });
 
 describe("version field", () => {
+  it("the published version is major 1, as in the file name", () => {
+    expect(MAJOR).toBe(1);
+  });
+
   it.each([
     [
       "changed document, same version",
-      "1.0.0",
-      ["info.version: the document changed but the version did not rise above 1.0.0"],
+      BASE,
+      [`info.version: the document changed but the version did not rise above ${BASE}`],
     ],
-    ["changed document, patch raised", "1.0.1", []],
-    ["changed document, minor raised", "1.1.0", []],
+    ["changed document, patch raised", PATCH_UP, []],
+    ["changed document, minor raised", MINOR_UP, []],
     [
       "version lowered",
       "0.9.0",
       [
         "info.version: major changed from 1 to 0; a new major is a new document",
-        "info.version: lowered from 1.0.0 to 0.9.0",
+        `info.version: lowered from ${BASE} to 0.9.0`,
       ],
     ],
     [
@@ -716,9 +728,9 @@ describe("version field", () => {
     expect(
       breakingChanges(
         openapiDocument(),
-        changed((d) => (op(d, HEALTH).description = "liveness"), "1.0.0"),
+        changed((d) => (op(d, HEALTH).description = "liveness"), BASE),
       ),
-    ).toEqual(["info.version: the document changed but the version did not rise above 1.0.0"]);
+    ).toEqual([`info.version: the document changed but the version did not rise above ${BASE}`]);
   });
 
   it("reads the single-number version of the first published document as 1.0.0", () => {

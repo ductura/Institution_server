@@ -1,0 +1,500 @@
+{
+  "route": "evidence.open.post",
+  "vectors": [
+    {
+      "name": "opened",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "opened",
+          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "evidenceProfileId": "izmisljeni-profil-v2",
+          "currentRevision": 0,
+          "documentHash": "d7fedea7a0d46f8ce79d2bbb58ec94e4f5c9d2f3a1979d0039bc8ab967f138be",
+          "headSegmentHash": null,
+          "lastSequenceTo": 0,
+          "document": "eyJibG9ja3MiOltdLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+          "receiptKeys": [
+            {
+              "algorithm": "Ed25519",
+              "keyId": "izmisljeni-kljuc-0001",
+              "keyVersion": "1",
+              "encoding": "spki-der",
+              "keyBase64Url": "MCowBQYDK2VwAyEAizmisljeniKljucZaVektoreUgovora0001",
+              "evidenceDomainId": "00000000-0000-4000-8000-0000000000e1",
+              "purpose": "receipt",
+              "validFrom": "2026-11-01T00:00:00.000Z",
+              "validTo": null,
+              "revokedAt": null
+            }
+          ],
+          "submitted": false
+        }
+      }
+    },
+    {
+      "name": "started",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+          "start": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "opened",
+          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "evidenceProfileId": "izmisljeni-profil-v2",
+          "currentRevision": 0,
+          "documentHash": "d7fedea7a0d46f8ce79d2bbb58ec94e4f5c9d2f3a1979d0039bc8ab967f138be",
+          "headSegmentHash": null,
+          "lastSequenceTo": 0,
+          "document": "eyJibG9ja3MiOltdLCJzY2hlbWFWZXJzaW9uIjoxfQ==",
+          "receiptKeys": [
+            {
+              "algorithm": "Ed25519",
+              "keyId": "izmisljeni-kljuc-0001",
+              "keyVersion": "1",
+              "encoding": "spki-der",
+              "keyBase64Url": "MCowBQYDK2VwAyEAizmisljeniKljucZaVektoreUgovora0001",
+              "evidenceDomainId": "00000000-0000-4000-8000-0000000000e1",
+              "purpose": "receipt",
+              "validFrom": "2026-11-01T00:00:00.000Z",
+              "validTo": null,
+              "revokedAt": null
+            }
+          ],
+          "submitted": false
+        }
+      }
+    },
+    {
+      "name": "opened-after-commit",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "opened",
+          "documentId": "00000000-0000-4000-8000-0000000000d1",
+          "evidenceProfileId": "izmisljeni-profil-v2",
+          "currentRevision": 1,
+          "documentHash": "3a94e5d825616d7296b42d923f4fa9c2c7f71c09661c45f5bd8da3abb26441c8",
+          "headSegmentHash": "62bf15c21709f493f78994dc6f75d5179dee476e79d2657a0e0d9e0fe67a4725",
+          "lastSequenceTo": 4,
+          "document": "eyJibG9ja3MiOlt7ImlkIjoiYjEiLCJ0ZXh0IjoiSXptaXNsamVuaSBvZGxvbWFrLiJ9XSwic2NoZW1hVmVyc2lvbiI6MX0=",
+          "receiptKeys": [
+            {
+              "algorithm": "Ed25519",
+              "keyId": "izmisljeni-kljuc-0001",
+              "keyVersion": "1",
+              "encoding": "spki-der",
+              "keyBase64Url": "MCowBQYDK2VwAyEAizmisljeniKljucZaVektoreUgovora0001",
+              "evidenceDomainId": "00000000-0000-4000-8000-0000000000e1",
+              "purpose": "receipt",
+              "validFrom": "2026-11-01T00:00:00.000Z",
+              "validTo": null,
+              "revokedAt": null
+            }
+          ],
+          "submitted": false
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://drugo.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "forbidden"
+        }
+      }
+    },
+    {
+      "name": "upgrade-required",
+      "kind": "error",
+      "code": "upgrade_required",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "0"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 426,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "upgrade_required"
+        }
+      }
+    },
+    {
+      "name": "unsupported-media-type",
+      "kind": "error",
+      "code": "unsupported_media_type",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "text/plain",
+          "ductus-protocol": "1"
+        },
+        "rawBody": "{\"assignmentId\": \"00000000-0000-4000-8000-0000000000a1\"}"
+      },
+      "response": {
+        "status": 415,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "unsupported_media_type"
+        }
+      }
+    },
+    {
+      "name": "unauthenticated",
+      "kind": "error",
+      "code": "unauthenticated",
+      "request": {
+        "headers": {
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "unauthenticated"
+        }
+      }
+    },
+    {
+      "name": "too-large",
+      "kind": "error",
+      "code": "too_large",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "rawBody": "{\"assignmentId\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+      },
+      "response": {
+        "status": 413,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "too_large"
+        }
+      }
+    },
+    {
+      "name": "timeout",
+      "kind": "error",
+      "code": "timeout",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1",
+          "content-length": "60"
+        },
+        "rawBody": "{\"assignmentId\""
+      },
+      "response": {
+        "status": 408,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "timeout"
+        }
+      }
+    },
+    {
+      "name": "bad-request",
+      "kind": "error",
+      "code": "bad_request",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1",
+          "content-length": "-1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "bad_request"
+        }
+      }
+    },
+    {
+      "name": "invalid-unknown-field",
+      "kind": "error",
+      "code": "invalid",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+          "role": "teacher"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "invalid"
+        }
+      }
+    },
+    {
+      "name": "invalid-start",
+      "kind": "error",
+      "code": "invalid",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+          "start": "true"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "invalid"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a9"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "not_found"
+        }
+      }
+    },
+    {
+      "name": "not-accepting",
+      "kind": "error",
+      "code": "not_accepting",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a2"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "not_accepting"
+        }
+      }
+    },
+    {
+      "name": "not-started",
+      "kind": "error",
+      "code": "not_started",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a3"
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "not_started"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a4"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store",
+          "retry-after": "5"
+        },
+        "body": {
+          "status": "unavailable",
+          "stage": "context"
+        }
+      }
+    }
+  ]
+}

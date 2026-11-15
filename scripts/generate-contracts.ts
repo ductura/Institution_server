@@ -32,6 +32,7 @@ const HEADER =
 type Schema = TSchema & Record<string, unknown>;
 
 const ANY_PARAMETER = "function check(value: any): boolean {";
+const ANY_ITEM = "(array) => { for(const value: any of array)";
 const sorted = (): RouteContract[] => [...ROUTES].sort((a, b) => (a.id < b.id ? -1 : 1));
 const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 const plain = (schema: TSchema): unknown => JSON.parse(JSON.stringify(schema));
@@ -50,6 +51,8 @@ function ts(schema: Schema): string {
       return "boolean";
     case "null":
       return "null";
+    case "array":
+      return `(${ts(schema.items as Schema)})[]`;
     case "object": {
       const required = new Set((schema.required as string[] | undefined) ?? []);
       const props = Object.entries((schema.properties ?? {}) as Record<string, Schema>);
@@ -178,13 +181,22 @@ function validators(routes: RouteContract[]): string {
       const raw = TypeCompiler.Code(schema, [], { language: "typescript" }).replace(/^return /, "");
       // TypeBox types the parameter as any. Every check tests for a plain object
       // first, so a record type is enough and keeps any out of the output.
-      const code = raw.replace(
-        ANY_PARAMETER,
-        `function check(value: Record<string, unknown>): boolean {`,
-      );
+      const code = raw
+        .replace(ANY_PARAMETER, `function check(value: Record<string, unknown>): boolean {`)
+        // An array's items are checked one by one after Array.isArray, so unknown is enough.
+        .replaceAll(ANY_ITEM, "(array: unknown[]) => { for(const value of array)")
+        // TypeBox names a pattern's regex local_N; the naming rule wants camelCase.
+        .replace(/\blocal_(\d+)\b/g, "local$1")
+        // Number.isInteger does not narrow unknown; typeof first lets the bounds compile.
+        .replace(
+          /Number\.isInteger\((value\['\w+'\])\)/g,
+          "(typeof $1 === 'number' && Number.isInteger($1))",
+        );
       if (code === raw || code.includes(": any"))
         throw new Error(`unexpected validator shape for ${r.id}:${part}`);
-      return [`  ${JSON.stringify(`${r.id}:${part}`)}: (${code.replace(/\n/g, "\n  ")}),`];
+      // A pattern compiles to a `const local_N` regex before the function: keep it in a closure.
+      const value = code.startsWith("function ") ? `(${code})` : `(() => {\n${code}\n})()`;
+      return [`  ${JSON.stringify(`${r.id}:${part}`)}: ${value.replace(/\n/g, "\n  ")},`];
     }),
   );
   return `${HEADER}// Input validators compiled ahead of time from the request schemas.\n\nexport const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>) => boolean>> = {\n${rows.join("\n")}\n};\n\nexport function validateInput(id: string, part: "params" | "query" | "body", value: unknown): boolean {\n  const check = VALIDATORS[\`\${id}:\${part}\`];\n  // Each check tests for a plain object before reading a field.\n  if (check !== undefined) return check(value as Record<string, unknown>);
