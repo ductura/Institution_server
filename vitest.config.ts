@@ -14,6 +14,10 @@ const INTEGRATION = `${DIRS}/**/*.integration.test.ts`;
 // applied through scripts/db/migrate-locked.ts). Ported from Ductus
 // tests/integration at d52a92c3 (S-0.13, DAN-726); `pnpm test:database`.
 const DATABASE = "tests/db/**/*.integration.test.ts";
+// S-1F-e (DAN-785): tests of authority, on real PostgreSQL only
+// (test-support/database). The PGlite projects never include them; their own
+// project comes with DAN-785 b.
+const PG = `${DIRS}/**/*.pg.integration.test.ts`;
 
 export default defineConfig({
   test: {
@@ -33,14 +37,17 @@ export default defineConfig({
         test: {
           name: "integration",
           include: [INTEGRATION],
-          exclude: [DATABASE],
+          exclude: [DATABASE, PG],
           environment: "node",
+          // createTestDatabase (test-support/database) runs on PGlite here.
+          env: { DUCTURA_TEST_DATABASE: "pglite" },
         },
       },
       {
         test: {
           name: "database",
           include: [DATABASE],
+          exclude: [PG],
           environment: "node",
           // F-019: refuses a database URL that is not this machine's.
           setupFiles: ["tests/db/setup.ts"],

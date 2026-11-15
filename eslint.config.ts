@@ -86,6 +86,8 @@ const ENV_NAMES = [
   // server/config, server/database), and a variable that check must not ask for.
   "APP_DATABASE_URL",
   "DUCTUS_AUTH_PROVIDER",
+  // The engine of the test databases, set per vitest project (S-1F-e, test-support/database).
+  "DUCTURA_TEST_DATABASE",
   // The origin a state-changing request must carry (S-1B-b, server/config).
   "APP_ORIGIN",
   // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.

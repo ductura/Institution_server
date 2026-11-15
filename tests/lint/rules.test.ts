@@ -132,6 +132,9 @@ const failing: Case[] = [
     "x.tests.ts",
     "x.integration.ts",
     "x.property.ts",
+    "x.pg.test.ts",
+    "x.pg.property.test.ts",
+    "x.integration.pg.test.ts",
   ].map((name) => ({ file: `server/${name}`, code: SRC, rule: "local/test-file-suffix" })),
   // only .ts
   ...["js", "mjs", "cjs", "jsx", "tsx", "mts", "cts", "TS", "Ts", "Js"].map((ext) => ({
@@ -241,6 +244,7 @@ const passing: Fixture[] = [
     "x.test.ts",
     "x.property.test.ts",
     "x.integration.test.ts",
+    "x.pg.integration.test.ts",
   ].map((name) => ({ file: `server/${name}`, code: SRC })),
   { file: "vitest.config.ts", code: SRC },
   // a name kept as another module wrote it, and the allowed aliases (DAN-757)
