@@ -79,8 +79,6 @@ const BYTE_HOLDERS = ["Response", "Blob", "File"];
 const STRING_BUILDERS = new Set(["raw", "fromCharCode", "fromCodePoint"]);
 // Names under which the global object is reachable.
 const GLOBAL_HOLDERS = ["globalThis", "global", "window", "self"];
-// Array methods that may take String as a callback (`xs.map(String)`).
-const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex", "flatMap"];
 /**
  * Files that decode input at run time, each with the builders it may use. A closed list:
  * tests/lint/hardcoded-text.test.ts checks each entry is used. Contract
@@ -264,6 +262,34 @@ export const noHardcodedText: Rule.RuleModule = {
       if (name) context.report({ node, messageId: "builder", data: { name } });
     }
 
+    // Whether an argument can be a non-empty literal: through TypeScript
+    // wrappers (`as`, `satisfies`, `!`, `<T>`), a sequence, `?:`, `??`/`||`/`&&`
+    // and `+` (review FAIL c.6900113231 on #65: `"%C4%91" as const`). A literal
+    // inside a call or member (`x.replaceAll("-", "+")`) is not the argument.
+    function literalLeaf(node?: Loose): boolean {
+      const n = node as
+        | (Loose & {
+            expression?: Loose;
+            left?: Loose;
+            right?: Loose;
+            consequent?: Loose;
+            alternate?: Loose;
+            quasis?: unknown[];
+          })
+        | undefined;
+      if (!n) return false;
+      if (n.type === "Literal") return n.value !== "";
+      if (n.type === "TemplateLiteral") return true;
+      if (/^TS(?:As|Satisfies|NonNull|TypeAssertion)Expression$|^ChainExpression$/u.test(n.type))
+        return literalLeaf(n.expression);
+      if (n.type === "SequenceExpression") return literalLeaf(n.expressions?.at(-1));
+      if (n.type === "ConditionalExpression")
+        return literalLeaf(n.consequent) || literalLeaf(n.alternate);
+      if (n.type === "LogicalExpression" || n.type === "BinaryExpression")
+        return literalLeaf(n.left) || literalLeaf(n.right);
+      return false;
+    }
+
     // A listed builder in a DECODER_ALLOWED file, unless it is called with a
     // literal first argument (that would be text in another form).
     function allowedUse(node: Loose, name: string): boolean {
@@ -273,7 +299,7 @@ export const noHardcodedText: Rule.RuleModule = {
       let call = node.parent;
       if (call?.type === "MemberExpression" && call.object === node) call = call.parent;
       const isCall = call?.type === "CallExpression" || call?.type === "NewExpression";
-      return !(isCall && /Literal$/u.test(call?.arguments?.[0]?.type ?? ""));
+      return !(isCall && literalLeaf(call?.arguments?.[0]));
     }
 
     function checkName(node: Node): void {
@@ -299,10 +325,8 @@ export const noHardcodedText: Rule.RuleModule = {
         name === "String"
       )
         return;
-      // `.map(String)`: a callback of an array method, nothing that reads its members.
-      const method = parent?.callee?.type === "MemberExpression" ? memberName(parent.callee) : null;
-      if (parent?.type === "CallExpression" && name === "String" && parent.callee !== node)
-        if (method !== null && CALLBACK_METHODS.includes(method)) return;
+      // No argument position is allowed, `.map(String)` included: a callback
+      // and a `thisArg` look the same (review FAIL c.6900113231 on #65).
       if (parent?.type !== "MemberExpression" || parent.object !== node) {
         if (parent?.type !== "TSQualifiedName")
           context.report({ node: node as Node, messageId: "value", data: { name } });

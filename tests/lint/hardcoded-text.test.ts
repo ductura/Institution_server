@@ -62,7 +62,7 @@ const passing: string[] = [
   // String used plainly. Buffer builders are DAN-784 (c.6899577620).
   "export const s = (x: unknown) => String(x);",
   "export const s = (x: unknown) => new String(x);",
-  "export const s = (xs: number[]) => xs.map(String);",
+  "export const s = (xs: number[]) => xs.map((x) => String(x));",
   "export const p = String.prototype.trim;",
   // A schema library's String is not the global.
   "const Type = { String: () => 1 };\nexport const t = Type.String();",
@@ -125,6 +125,12 @@ const failing: [messageId: string, code: string][] = [
   ["value", 'export const e = globalThis["String"];'],
   ["builder", "export const e = String.fromCharCode.apply(null, [0x111]);"],
   ["value", "export const s = [String][0];"],
+  // Review FAIL c.6900113231: String as a callback or as thisArg.
+  ["value", "export const s = (xs: number[]) => xs.map(String);"],
+  [
+    "value",
+    "export const e = [0].map(function (this: StringConstructor) {\n  return this;\n}, String)[0];",
+  ],
   ["value", "declare global {\n  var String: StringConstructor;\n}\nexport const s = String;"],
   // (2) String.raw.
   ["builder", "export const e = String.raw`a`;"],
@@ -205,6 +211,27 @@ describe("DECODER_ALLOWED", () => {
     expect(await ids("export const e = (x: string) => decodeURIComponent(x);", file)).toEqual([]);
     expect(await ids('export const e = decodeURIComponent("%C4%91");', file)).toContain("builder");
     expect(await ids("export const e = decodeURIComponent(`a`);", file)).toContain("builder");
+    // Review FAIL c.6900113231: a literal under a TypeScript wrapper or an operator.
+    for (const code of [
+      'export const e = decodeURIComponent("%C4%91" as const);',
+      'export const e = decodeURIComponent("%C4%91" satisfies string);',
+      'export const e = decodeURIComponent(("%C4%91"));',
+      'export const e = decodeURIComponent((0, "%C4%91"));',
+      'export const e = (b: boolean) => decodeURIComponent(b ? "%C4%91" : "x");',
+      'export const e = (x?: string) => decodeURIComponent(x ?? "%C4%91");',
+      'export const e = decodeURIComponent("%C4" + "%91");',
+    ])
+      expect(await ids(code, file), code).toContain("builder");
+    // Input with an empty fallback or a literal inside a call is still input.
+    expect(
+      await ids('export const e = (x?: string) => decodeURIComponent(x ?? "");', file),
+    ).toEqual([]);
+    expect(
+      await ids(
+        'export const e = (x: string) => decodeURIComponent(x.replaceAll("+", " "));',
+        file,
+      ),
+    ).toEqual([]);
     // Only the listed name: another decoder in the same file fails.
     expect(await ids("export const e = (x: string) => atob(x);", file)).toContain("builder");
     expect(await ids("export const e = String.fromCharCode(1);", file)).toContain("builder");
