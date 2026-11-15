@@ -19,6 +19,7 @@
   },
   "include": [
     "server/**/*.ts",
+    "locales/**/*.ts",
     "scripts/**/*.ts",
     "packages/**/*.ts",
     "test-support/**/*.ts",
