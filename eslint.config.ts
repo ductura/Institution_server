@@ -92,6 +92,8 @@ const ENV_NAMES = [
   // server/config, server/database), and a variable that check must not ask for.
   "APP_DATABASE_URL",
   "DUCTUS_AUTH_PROVIDER",
+  // The engine of the test databases, set per vitest project (S-1F-e, test-support/database).
+  "DUCTURA_TEST_DATABASE",
   // The origin a state-changing request must carry (S-1B-b, server/config).
   "APP_ORIGIN",
   // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.
@@ -106,6 +108,12 @@ const ENV_NAMES = [
   "HOST",
   // The shutdown deadline (S-1B-c, DAN-778, server/config).
   "SHUTDOWN_GRACE_MS",
+  // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
+  "VS1_POSTGRES_PORT",
+  "VS1_SERVER_PORT",
+  "VS1_OIDC_PORT",
+  "VS1_STACK_DIR",
+  "HOME",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
@@ -438,7 +446,8 @@ export default defineConfig(
   {
     // The database tests check the database directly. The session-GUC guard
     // (server/database/session-guc-scope.test.ts) is inside server/database.
-    files: ["server/database/**", "tests/db/**"],
+    // test-support/database (S-1F-e) opens the migrated test databases.
+    files: ["server/database/**", "tests/db/**", "test-support/database/**"],
     rules: {
       "no-restricted-imports": "off",
       "database-boundary/no-restricted-dynamic-imports": "off",

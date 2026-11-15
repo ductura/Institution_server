@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 
-// Four projects: unit, property and integration told apart by file suffix,
-// database by its folder (tests/db). Tests live only in server/,
+// Five projects: unit, property and integration told apart by file suffix,
+// database by its folder (tests/db), integration-pg by *.pg.integration.test.ts. Tests live only in server/,
 // packages/, test-support/, scripts/, infra/, db/, locales/ (and lint rule tests in tests/) with a .test.ts suffix; other
 // files belong to no project and do not run. There is no passWithNoTests, but
 // vitest fails on an empty project only when that project runs alone, so
@@ -14,6 +14,10 @@ const INTEGRATION = `${DIRS}/**/*.integration.test.ts`;
 // applied through scripts/db/migrate-locked.ts). Ported from Ductus
 // tests/integration at d52a92c3 (S-0.13, DAN-726); `pnpm test:database`.
 const DATABASE = "tests/db/**/*.integration.test.ts";
+// S-1F-e (DAN-785): tests of authority, on real PostgreSQL only
+// (test-support/database). The PGlite projects never include them;
+// `pnpm test:integration:pg`, run in CI by `pnpm test:database`.
+const PG = `${DIRS}/**/*.pg.integration.test.ts`;
 
 export default defineConfig({
   test: {
@@ -33,14 +37,17 @@ export default defineConfig({
         test: {
           name: "integration",
           include: [INTEGRATION],
-          exclude: [DATABASE],
+          exclude: [DATABASE, PG],
           environment: "node",
+          // createTestDatabase (test-support/database) runs on PGlite here.
+          env: { DUCTURA_TEST_DATABASE: "pglite" },
         },
       },
       {
         test: {
           name: "database",
           include: [DATABASE],
+          exclude: [PG],
           environment: "node",
           // F-019: refuses a database URL that is not this machine's.
           setupFiles: ["tests/db/setup.ts"],
@@ -58,6 +65,19 @@ export default defineConfig({
               process.env.APP_DATABASE_URL ??
               "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54329/ductus",
           },
+        },
+      },
+      {
+        test: {
+          name: "integration-pg",
+          include: [PG],
+          environment: "node",
+          // F-019: only this machine's database, as the project above.
+          setupFiles: ["tests/db/setup.ts"],
+          testTimeout: 60_000,
+          // One database per name in one cluster: one file at a time.
+          fileParallelism: false,
+          env: { DUCTURA_TEST_DATABASE: "postgres" },
         },
       },
     ],

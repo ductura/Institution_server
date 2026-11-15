@@ -87,6 +87,9 @@ export function loadedFiles(
 
 const reachesFakes = (files: readonly string[]): string[] =>
   files.filter((path) => /^packages\/test-fakes\//iu.test(path));
+// S-1F-e (DAN-785): test-support/ (test databases among it) is test code too.
+const reachesTestSupport = (files: readonly string[]): string[] =>
+  files.filter((path) => /^test-support\//iu.test(path));
 
 // U9-b: PGlite is a dependency of the package only. A production file that
 // names it directly is caught here even when pnpm leaves it unresolvable.
@@ -154,6 +157,20 @@ describe("@ductura/test-fakes stays out of production", () => {
     expect(loaded).toContain("server/app.ts");
     expect(loaded).toContain("server/http/start.ts");
     expect(reachesFakes(loaded)).toEqual([]);
+    expect(reachesTestSupport(loaded)).toEqual([]);
+  });
+
+  it.each([
+    `export { createTestDatabase } from "../test-support/database/index.ts";
+`,
+    `export const load = () => import("../test-support/database/postgres.ts");
+`,
+    `export * from "../test-support/database/exceptions.ts";
+`,
+  ])("the walk sees a production file that loads test-support: %s", (code) => {
+    const probe = join(REPO_ROOT, "server", "boundary-probe.ts");
+    const loaded = loadedFiles([probe], { [probe]: code });
+    expect(reachesTestSupport(loaded)).not.toEqual([]);
   });
 
   it.each([

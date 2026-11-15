@@ -2,7 +2,9 @@ import path from "node:path";
 import type { Rule } from "eslint";
 
 const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const ALLOWED_TEST = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.property|\.integration)?\.test\.ts$/;
+// .pg.integration: a test of authority, real PostgreSQL only (S-1F-e, test-support/database).
+const ALLOWED_TEST =
+  /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.property|\.integration|\.pg\.integration)?\.test\.ts$/;
 const TEST_SEGMENTS = new Set([
   "test",
   "tests",
@@ -43,14 +45,14 @@ export const kebabCaseFilename: Rule.RuleModule = {
   },
 };
 
-/** A file that looks like a test ends in .test.ts, .property.test.ts or .integration.test.ts. */
+/** A test ends in .test.ts, .property.test.ts, .integration.test.ts or .pg.integration.test.ts. */
 export const testFileSuffix: Rule.RuleModule = {
   meta: {
     type: "problem",
     docs: { description: "Tests use only the allowed suffixes" },
     messages: {
       suffix:
-        "Test file '{{name}}' must end in .test.ts, .property.test.ts or .integration.test.ts.",
+        "Test file '{{name}}' must end in .test.ts, .property.test.ts, .integration.test.ts or .pg.integration.test.ts.",
     },
     schema: [],
   },

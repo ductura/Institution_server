@@ -88,7 +88,7 @@ describe("ci.yml", () => {
     const config = readFileSync(resolve(ROOT, "vitest.config.ts"), "utf8");
     expect(config).toContain('const DATABASE = "tests/db/**/*.integration.test.ts";');
     expect(config).toMatch(
-      /name: "integration",\n\s+include: \[INTEGRATION\],\n\s+exclude: \[DATABASE\],/,
+      /name: "integration",\n\s+include: \[INTEGRATION\],\n\s+exclude: \[DATABASE, PG\],/,
     );
     expect(config).toMatch(/name: "database",\n\s+include: \[DATABASE\],/);
   });

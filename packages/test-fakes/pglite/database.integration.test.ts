@@ -91,10 +91,25 @@ describe("createPgliteDatabase", () => {
     expect(seen.rows).toEqual([{ t: null }]);
   }, 60_000);
 
-  it.each(["logs", "legal", "x"])("refuses database %j without migrations", async (database) => {
-    await expect(
-      createPgliteDatabase({ database } as unknown as { database: "main" }),
-    ).rejects.toThrow(/no migrations/u);
+  // S-1F-e (DAN-785): logs and legal have their migrations now; an unknown
+  // name is still refused, never a default.
+  it.each([
+    ["logs", "ductus_logs", "db/logs/migrations"],
+    ["legal", "ductus_legal", "db/legal/migrations"],
+  ])(
+    "migrates %s in a database of its production name",
+    async (database, name, dir) => {
+      const { db } = track(await createPgliteDatabase({ database }));
+      const state = await db.query<{ d: string; n: number }>(
+        "SELECT current_database() AS d, (SELECT count(*)::int FROM public.schema_migrations) AS n",
+      );
+      expect(state.rows).toEqual([{ d: name, n: readdirSync(dir).length }]);
+    },
+    60_000,
+  );
+
+  it.each(["x", "", "MAIN", "constructor"])("refuses unknown database %j", async (database) => {
+    await expect(createPgliteDatabase({ database })).rejects.toThrow(/unknown database/u);
   });
 });
 

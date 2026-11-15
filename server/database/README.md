@@ -14,3 +14,51 @@ Područje baze (karta: [docs/server-map.md](../../docs/server-map.md)). Jedino m
 Preneseno iz Ductusa `src/server/db/` (`d52a92c3`, S-0.13 i S-0.17, DAN-726 i DAN-730) bez promjene logike. Testovi uz kod: `registry.test.ts`, `registry.integration.test.ts` (zaustavljena i zamrznuta baza bez PostgreSQL-a), `registry-boundary.test.ts`, `with-actor.test.ts`, `log-settings.test.ts`, `plain-label-check.test.ts`, `current-actor.test.ts` i `session-guc-scope.test.ts` (nijedna postavka sesije ne nadživi transakciju); s bazom u `tests/db/` (`database-registry` (zaustavljena baza zapisa, iscrpljen bazen, zatvaranje), `with-actor`, `open-session`, `app-database`, `plain-label-check`). `job-queue.ts` (red poslova na pg-bossu) dolazi s workerom i `attempt-fence` (S-M-\*, VS-1b).
 
 Mapa ne uvozi ništa iz drugih područja.
+
+## Baze i veze
+
+Tri baze, svaka sa svojim migracijama i pgTAP testovima u `db/<baza>/`. Web proces do njih dolazi samo kroz registar (`registry.ts`), jedan bazen po vezi; nizovi veza su u varijablama okoline i nikad u repou.
+
+| Veza    | Baza           | Varijabla            | Veza je prijava u grupi               | Bazen | Za što                                                                               |
+| ------- | -------------- | -------------------- | ------------------------------------- | ----- | ------------------------------------------------------------------------------------ |
+| `main`  | `ductus`       | `APP_DATABASE_URL`   | `ductus_app`                          | 10    | sav rad web procesa, samo kroz `withActor`                                           |
+| `auth`  | `ductus`       | `AUTH_DATABASE_URL`  | `ductus_auth`                         | 2     | otvaranje sesije i back-channel odjava (`openSession`, `backchannelLogout`)          |
+| `logs`  | `ductus_logs`  | `LOGS_DATABASE_URL`  | jedna od grupa `ductus_logs_*` (niže) | 4     | zapisi; vlastiti klaster, pa pad ne dira `main`                                      |
+| `legal` | `ductus_legal` | `LEGAL_DATABASE_URL` | `ductus_legal_app`                    | 2     | pravni tekstovi (tablice dolaze sa S-1N-a); isti klaster kao `main`, odvojen pravima |
+
+## Uloge
+
+Nijedna grupna uloga nema `LOGIN`; prijava je običan član jedne grupe i nema prava mimo nje (`db/main/tests/010-roles-and-privileges.sql`). Uloge prave lokalno `db/<baza>/local/*.sql`, u stagingu i produkciji B0.1; migracije ih samo provjeravaju.
+
+- **`main`:** `ductus_migrator` (jedini s DDL-om), vlasnici tablica `ductus_identity`, `ductus_evidence` i `ductus_queue` (NOLOGIN), `ductus_app` (web proces: čita kroz RLS, piše samo kroz funkcije), `ductus_auth` (povratni poziv prijave), `ductus_worker` i `ductus_retention`.
+- **`logs`:** `ductus_logs_migrator` (vlasnik baze), `ductus_logs_writer`, `ductus_logs_reader`, `ductus_logs_retention`.
+- **`legal`:** `ductus_legal_migrator` (vlasnik baze), `ductus_legal_app`.
+
+## `withActor`
+
+`withActor(token, fn)` je jedini put do podataka glavne baze iz web procesa (opis gore, `with-actor.ts`). Identitet dolazi iz tokena sesije u `app.session_token`, a RLS i funkcije ga čitaju iz `app.current_actor()`; pristup nastaje iz odnosa, ne iz uloge (Ustav C-23).
+
+## Migracije
+
+- Svaka baza ima `db/<baza>/migrations/` (dbmate, `-- migrate:up` i `-- migrate:down`) i `db/<baza>/migrations.sum`. Pokreće ih `scripts/db/migrate-locked.ts --database <baza>` kao migrator te baze, pod zaključavanjem (`migration-lock.ts`): lokalno `pnpm db:migrate` (sve tri) ili `pnpm db:migrate:main|logs|legal`.
+- Nova migracija mijenja i `migrations.sum` (`pnpm db:sum`). Migracije se iz agenta nikad ne primjenjuju na produkciju.
+
+## Nova tablica
+
+1. Migracija u `db/<baza>/migrations/` stvara tablicu u aplikacijskoj shemi (nikad u `public`) s vlasnikom NOLOGIN uloge te baze.
+2. U istoj migraciji `ENABLE ROW LEVEL SECURITY` i `FORCE ROW LEVEL SECURITY` i barem jedna politika; politika koja propušta sve retke smije imenovati samo vlasnika, nikad PUBLIC.
+3. Prava: web proces tablicu samo čita kroz RLS; pisanje u evidenciju, predaju i revizijski trag ide samo kroz funkciju (RPC).
+4. **Redak u pgTAP matrici pristupa** (`db/<baza>/tests/`, u `main` po uzoru na `030-institution-access-matrix.sql`): tko čita, tko piše, i da tuđi redak nije vidljiv.
+5. `pnpm db:sum`, zatim pgTAP te baze (niže). `000-rls-everywhere.sql` pada dok tablici nedostaje ENABLE, FORCE ili politika.
+
+## pgTAP po bazi
+
+`db/<baza>/tests/000-rls-everywhere.sql` (S-1F-b) iz kataloga (`pg_class`) traži ENABLE i FORCE RLS i barem jednu politiku na svakoj tablici te baze, u svim shemama. Izostavljene su samo tablice sustava koje je napravio `initdb` (po oidu ispod 16384, ne po imenu sheme, pa se vidi i tablica podmetnuta u `pg_catalog` ili `information_schema`) i privremene tablice. Jedina imenovana iznimka je dbmate dnevnik `public.schema_migrations`, i to samo dok je obična tablica vlasnika baze do koje ne vodi particija, nasljeđivanje, pogled ni pravilo, i dok na njemu nitko osim vlasnika i superkorisnika, ni PUBLIC, nema nijedno pravo (u PostgreSQL-u 17 i `MAINTAIN`). Datoteka sama napravi tablice koje krše pravilo (druga shema, `public`, bez FORCE, `UNLOGGED`, particija, strana tablica, bez politike) i provjeri da ih vidi. Funkcija ili operator na putanji pretrage koji bi zasjenio `pg_catalog` zaustavlja datoteku prije prvog testa, a provjere se rade s putanjom pretrage svedenom na `pg_catalog`.
+
+Pokreće se kao superkorisnik nad migriranom bazom (pgTAP se stvara u transakciji koja se vraća):
+
+- `main`: `pnpm test:db:native` ili `pnpm test:db:main` (cijela `db/main/tests`); u CI-ju korak „pgTAP glavne baze”.
+- `logs`: `pg_prove -h <host> -p <port> -U <superkorisnik> -d ductus_logs db/logs/tests/*.sql`.
+- `legal`: isto nad `ductus_legal` s `db/legal/tests/*.sql`.
+
+pgTAP baza `logs` i `legal` još ne ide u CI; to dolazi sa S-1F-d (nadovezuje se na DAN-759).
