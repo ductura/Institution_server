@@ -21,7 +21,7 @@ Svi primjeri koriste izmišljene podatke (domena `.invalid`), nikad stvarne osob
 | 3   | Bez `any`                                           | planirano S-0.7, do tada review (implicitni `any` hvata `tsc`) |
 | 4   | `type` umjesto `interface`                          | planirano S-0.7, do tada review                                |
 | 5   | Bez `enum`                                          | planirano S-0.7, do tada review                                |
-| 6   | Uvoz samo kroz `index.ts`                           | planirano S-0.7, do tada review                                |
+| 6   | Uvoz samo kroz `index.ts`                           | lint `local/import-boundary` i `local/area-boundary`           |
 | 7   | Testovi uz kod, tri sufiksa                         | review (vitest pokreće samo ta tri sufiksa)                    |
 | 8   | Jedan oblik rezultata i greške                      | review (tipovi kad se uvedu zajednički `Result`/`AppError`)    |
 | 9   | `snake_case` u `camelCase` samo u `server/database` | review                                                         |
@@ -148,9 +148,9 @@ enum Role {
 
 Iz druge mape uvozi se samo javno sučelje mape, tj. njezin `index.ts`. Unutarnje datoteke mape nisu dostupne izvana. Unutar iste mape datoteke se uvoze međusobno izravno. Uvozi imaju sufiks `.ts` (vrijedi `allowImportingTsExtensions`).
 
-Provedba: planirano S-0.7 (`no-restricted-imports`), do tada review.
+Provedba: lint `local/import-boundary` (druga mapa samo kroz njezin `index.ts`) i `local/area-boundary` (drugo područje samo kroz `server/<područje>/index.ts`).
 
-Koja područja smiju uvoziti koja, propisuje tablica dopuštenih uvoza u [Karti servera](server-map.md#2-dopušteni-uvozi) (provodi S-1A-b).
+Koja područja smiju uvoziti koja, propisuje tablica dopuštenih uvoza u [Karti servera](server-map.md#2-dopušteni-uvozi); provodi je lint `local/area-boundary` (S-1A-b), a `server/server-map.test.ts` provjerava da je tablica u pravilu jednaka karti i bez kruga.
 
 Ispravno:
 

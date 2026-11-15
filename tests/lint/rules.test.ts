@@ -46,6 +46,9 @@ const failing: Case[] = [
     code: imp("../contracts/generated/fake-server/index.ts"),
     rule: "local/no-fake-server-import",
   },
+  // area-boundary: areas import each other only as docs/server-map.md §2 allows
+  // (S-1A-b; tests/lint/area-boundary.test.ts)
+  { file: "server/log/b.ts", code: imp("../database/index.ts"), rule: "local/area-boundary" },
   // import-boundary: leaving the folder other than through <folder>/index.ts
   ...["./sub/c.ts", "../c.ts", "../sib/c.ts", "./x/../../y/z.ts", "./sub/INDEX.ts"].map((spec) => ({
     file: AT,

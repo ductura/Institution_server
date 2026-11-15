@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { AREA_IMPORTS } from "../scripts/lint-rules/index.ts";
 import {
   checkFolders,
   listAreaFolders,
@@ -204,5 +205,47 @@ describe("docs/server-map.md", () => {
       const named = callers.filter((c) => keys.includes(c)).sort();
       expect(named, `callers of ${area}`).toEqual(importers(area).sort());
     }
+  });
+});
+
+// S-1A-b (DAN-769): local/area-boundary lets through only the edges of
+// AREA_IMPORTS. The table equals §2 of the map and has no cycle, so no cycle
+// between areas can exist in the code (PLAN §3, rule 5).
+function findCycle(graph: Readonly<Record<string, readonly string[]>>): string[] {
+  const state = new Map<string, "open" | "done">();
+  const visit = (node: string, trail: string[]): string[] => {
+    if (state.get(node) === "done") return [];
+    if (state.get(node) === "open") return [...trail.slice(trail.indexOf(node)), node];
+    state.set(node, "open");
+    for (const next of graph[node] ?? []) {
+      const cycle = visit(next, [...trail, node]);
+      if (cycle.length > 0) return cycle;
+    }
+    state.set(node, "done");
+    return [];
+  };
+  for (const node of Object.keys(graph)) {
+    const cycle = visit(node, []);
+    if (cycle.length > 0) return cycle;
+  }
+  return [];
+}
+
+describe("the import table of local/area-boundary", () => {
+  it("equals docs/server-map.md §2", () => {
+    const { imports } = readImports(MAP);
+    expect(
+      Object.fromEntries(Object.entries(AREA_IMPORTS).map(([a, t]) => [a, [...t].sort()])),
+    ).toEqual(Object.fromEntries([...imports].map(([a, t]) => [a, [...t].sort()])));
+  });
+
+  it("has no cycle", () => {
+    expect(findCycle(AREA_IMPORTS)).toEqual([]);
+  });
+
+  it("finds a cycle when one edge would close it", () => {
+    const log = [...(AREA_IMPORTS["log"] ?? []), "database"];
+    expect(findCycle({ ...AREA_IMPORTS, log })).toEqual(["log", "database", "log"]);
+    expect(findCycle({ a: ["a"] })).toEqual(["a", "a"]);
   });
 });

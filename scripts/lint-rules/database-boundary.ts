@@ -9,7 +9,7 @@ import { posix } from "node:path";
 import type { ESLint, Rule, Scope } from "eslint";
 
 type Node = Rule.Node;
-type Loose = {
+export type Loose = {
   type: string;
   value?: unknown;
   expression?: Loose;
@@ -53,7 +53,7 @@ const isPg = (specifier: string): boolean =>
 // emit time. Only type-only syntax is unwrapped; no remaining runtime
 // expression is evaluated, so variables and interpolated templates give
 // undefined and are not inspected.
-function staticSpecifier(node: Loose | undefined): string | undefined {
+export function staticSpecifier(node: Loose | undefined): string | undefined {
   let source = node;
   while (
     source?.type === "TSAsExpression" ||
@@ -126,7 +126,7 @@ function isRequire(context: Rule.RuleContext, node: Loose): boolean {
 
 // A call that loads or resolves a module: the forms of isRequire, their
 // .resolve, and import.meta.resolve.
-function isLoaderCall(context: Rule.RuleContext, callee: Loose): boolean {
+export function isLoaderCall(context: Rule.RuleContext, callee: Loose): boolean {
   if (isRequire(context, callee)) return true;
   if (callee.type !== "MemberExpression" || callee.computed || callee.property?.name !== "resolve")
     return false;

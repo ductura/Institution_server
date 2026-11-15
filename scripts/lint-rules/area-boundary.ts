@@ -1,0 +1,197 @@
+// Import boundaries between the server areas (docs/PLAN.md §3 "Pravilo
+// granica", S-1A-b, DAN-769; docs/server-map.md §2). One table of allowed
+// imports, AREA_IMPORTS; server/server-map.test.ts checks that it equals the
+// table in docs/server-map.md §2 and has no cycle. Because only edges of that
+// acyclic table pass, no cycle between areas can exist in the code (rule 5).
+// A dynamic import with a computed source is reported by local/import-boundary.
+import { posix } from "node:path";
+import type { Rule } from "eslint";
+
+import { isLoaderCall, type Loose, staticSpecifier } from "./database-boundary.ts";
+
+type Node = Rule.Node;
+
+/** docs/server-map.md §2: the areas each area may import. */
+export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
+  domain: [],
+  contracts: [],
+  settings: [],
+  config: [],
+  log: ["settings"],
+  metrics: ["settings"],
+  database: ["settings", "log", "metrics", "domain"],
+  "external/srce-auth": ["settings", "log", "metrics"],
+  "external/storage": ["settings", "log", "metrics", "domain"],
+  "external/keys": ["settings", "log", "metrics", "domain"],
+  "external/email": ["settings", "log", "metrics"],
+  traffic: ["settings", "log", "metrics"],
+  session: ["settings", "log", "metrics", "domain", "database", "external/srce-auth"],
+  roles: ["settings", "log", "metrics", "domain", "contracts", "database"],
+  legal: ["settings", "log", "metrics", "domain", "contracts", "database", "external/email"],
+  backup: [
+    ...["settings", "log", "metrics", "domain", "contracts", "database"],
+    ...["external/storage", "external/keys"],
+  ],
+  deletion: [
+    ...["settings", "log", "metrics", "domain", "contracts", "database"],
+    ...["external/storage", "external/email"],
+  ],
+  downloads: ["settings", "log", "metrics", "domain", "contracts", "database", "external/storage"],
+  http: [
+    ...["settings", "log", "metrics", "contracts", "traffic", "session", "roles", "legal"],
+    ...["backup", "deletion", "downloads", "database", "external/srce-auth"],
+    ...["external/storage", "external/keys", "external/email"],
+  ],
+  "test-server": ["http", "settings"],
+};
+/** The entry point: files directly in server/ (server.ts; today index.ts and app.ts). */
+export const ENTRY = "(entry)";
+const ENTRY_IMPORTS: readonly string[] = ["http", "settings", "config"];
+/** routes.ts imports only these areas (http only as a type) and its own ./service.ts. */
+const ROUTES_IMPORTS: readonly string[] = ["contracts", "http"];
+// Packages a production file of domain and contracts may import (rule 2). node:crypto
+// in domain is the S-0.19 exception (server/domain/index.test.ts, CODE_PACKAGES).
+const PURE_PACKAGES: Readonly<Record<string, RegExp>> = {
+  domain: /^node:crypto$/u,
+  contracts: /^@sinclair\/typebox(?:$|\/)/u,
+};
+// Code that only tests run: the golden-vector loader and the contract fake
+// server (U8, kept out of production by local/no-fake-server-import).
+const PURE_EXEMPT_RE =
+  /^server\/(?:domain\/forensics\/golden-vectors\/load\.ts|contracts\/generated\/fake-server\/)/u;
+// Rule 4: nobody imports React, Next.js or a .tsx/.jsx module; PGlite only
+// where the database lives (server/database, its tests, the PGlite fake of #35).
+const UI_RE =
+  /^(?:react|react-dom|next)(?:$|\/)|(?:^|\/)node_modules\/(?:\.pnpm\/)?(?:react|react-dom|next)(?:$|[/@+])|\.[jt]sx$/iu;
+const PGLITE_RE =
+  /^@electric-sql\/pglite(?:$|\/)|(?:^|\/)node_modules\/(?:\.pnpm\/)?@electric-sql[/+]pglite/iu;
+const PGLITE_ALLOWED_RE = /^(?:server\/database|tests\/db|packages\/test-fakes\/pglite)\//u;
+// Package self-reference and subpath imports would bypass the relative-path checks.
+const ALIAS_RE = /^(?:#|@ductura\/server(?:$|\/))/iu;
+
+/** The area of a repository path, ENTRY for server/*.ts, undefined outside server/. */
+export function areaOf(path: string): string | undefined {
+  const segments = path.split("/");
+  if (segments[0]?.toLowerCase() !== "server" || segments.length < 2) return undefined;
+  if (segments.length === 2) return ENTRY;
+  const first = segments[1]?.toLowerCase() ?? "";
+  if (first !== "external") return first;
+  return segments.length > 3 ? `external/${segments[2]?.toLowerCase() ?? ""}` : "external";
+}
+
+// The forms a specifier takes for the module it loads: either slash, without
+// a query or fragment, %-escapes decoded; each read as text and normalized.
+function spellings(specifier: string): string[] {
+  const cut = specifier
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/su, "");
+  let decoded = cut;
+  try {
+    decoded = decodeURIComponent(cut);
+  } catch {
+    // An invalid escape loads nothing; the other spelling is still tested.
+  }
+  return [...new Set([specifier.trim(), cut, decoded, posix.normalize(cut)])];
+}
+
+export const areaBoundary: Rule.RuleModule = {
+  meta: {
+    type: "problem",
+    docs: { description: "Server areas import each other only as docs/server-map.md §2 allows" },
+    schema: [],
+    messages: {
+      edge: "Area '{{from}}' may not import '{{to}}' (docs/server-map.md §2).",
+      public: "Import area '{{to}}' only through server/{{to}}/index.ts.",
+      typeOnly: "Area '{{from}}' imports '{{to}}' only with `import type` or `export type`.",
+      pure: "'{{from}}' imports nothing outside itself except its allowed packages (PLAN §3, rule 2).",
+      routes: "routes.ts imports only contracts, http (as a type) and its own ./service.ts.",
+      ui: "Nothing imports React, Next.js or a .tsx/.jsx module (PLAN §3, rule 4).",
+      pglite: "Only server/database imports PGlite (PLAN §3, rule 4).",
+      alias: "Import server code by a relative path, not by a package alias.",
+    },
+  },
+  create(context) {
+    const file = posix.normalize(
+      posix.relative(context.cwd.replace(/\\/g, "/"), context.filename.replace(/\\/g, "/")),
+    );
+    const dir = posix.dirname(file);
+    const fromArea = areaOf(file);
+    const known = fromArea === ENTRY || (fromArea !== undefined && fromArea in AREA_IMPORTS);
+    const isTest = /\.test\.ts$/iu.test(file);
+    const isRoutes = !isTest && fromArea !== ENTRY && posix.basename(file) === "routes.ts";
+    const pure =
+      !isTest && fromArea !== undefined && fromArea in PURE_PACKAGES && !PURE_EXEMPT_RE.test(file);
+
+    function report(node: Node, messageId: string, to = ""): void {
+      context.report({ node, messageId, data: { from: fromArea ?? "", to } });
+    }
+
+    function checkCross(node: Node, target: string, to: string, typeOnly: boolean): void {
+      if (isRoutes) {
+        if (!ROUTES_IMPORTS.includes(to) || (to === "http" && !typeOnly)) report(node, "routes");
+      } else {
+        const row = fromArea === ENTRY ? ENTRY_IMPORTS : (AREA_IMPORTS[fromArea ?? ""] ?? []);
+        if (!row.includes(to)) return report(node, "edge", to);
+        const adapter = to === "database" || to.startsWith("external/");
+        if (adapter && !typeOnly && !isTest && fromArea !== "http" && fromArea !== ENTRY)
+          return report(node, "typeOnly", to);
+      }
+      if (target !== `server/${to}/index.ts`) report(node, "public", to);
+    }
+
+    function checkRelative(node: Node, specifier: string, typeOnly: boolean): void {
+      for (const text of spellings(specifier)) {
+        if (!/^\.\.?(?:\/|$)/u.test(text)) continue;
+        const target = posix.normalize(posix.join(dir, text));
+        const to = target.startsWith("../") ? undefined : areaOf(target);
+        if (to === fromArea) {
+          if (isRoutes && target !== `${dir}/service.ts`) return report(node, "routes");
+          continue;
+        }
+        if (to === undefined) {
+          if (pure) return report(node, "pure");
+          if (isRoutes) return report(node, "routes");
+          continue;
+        }
+        checkCross(node, target, to, typeOnly);
+        return;
+      }
+    }
+
+    function check(node: Node, source: unknown, typeOnly: boolean): void {
+      const specifier = staticSpecifier(source as Loose | undefined);
+      if (specifier === undefined) return;
+      const forms = spellings(specifier);
+      if (forms.some((text) => UI_RE.test(text))) return report(node, "ui");
+      if (forms.some((text) => PGLITE_RE.test(text)) && !PGLITE_ALLOWED_RE.test(file))
+        return report(node, "pglite");
+      if (!known) return;
+      if (/^\.\.?(?:[/\\]|$)/u.test(specifier.trim()))
+        return checkRelative(node, specifier, typeOnly);
+      if (ALIAS_RE.test(specifier.trim())) return report(node, "alias");
+      if (pure && PURE_PACKAGES[fromArea ?? ""]?.test(specifier) !== true) report(node, "pure");
+      else if (isRoutes) report(node, "routes");
+    }
+
+    type Kinded = { source?: unknown; importKind?: string; exportKind?: string };
+    return {
+      ImportDeclaration: (node) => check(node, node.source, (node as Kinded).importKind === "type"),
+      ExportNamedDeclaration: (node) =>
+        node.source && check(node, node.source, (node as Kinded).exportKind === "type"),
+      ExportAllDeclaration: (node) =>
+        check(node, node.source, (node as Kinded).exportKind === "type"),
+      ImportExpression: (node) => check(node, node.source, false),
+      CallExpression(node) {
+        if (isLoaderCall(context, node.callee as Loose)) check(node, node.arguments[0], false);
+      },
+      TSImportType(node: Node & { source?: unknown; argument?: { literal?: unknown } }) {
+        check(node, node.source ?? node.argument?.literal, true);
+      },
+      TSExternalModuleReference(node: Node & { expression?: unknown }) {
+        const parent = (node as { parent?: Kinded }).parent;
+        check(node, node.expression, parent?.importKind === "type");
+      },
+    };
+  },
+};
