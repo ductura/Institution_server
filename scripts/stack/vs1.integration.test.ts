@@ -456,7 +456,9 @@ describe("the fake OIDC provider of the stack (D-09)", () => {
       const state = stateWith({ oidc });
       expect(await down(state)).toBe(true);
       expect(commandLine(oidc.pid)).toBeNull();
-      const wrong = stateWith({ oidc: { pid: foreign.pid, marker: "node elsewhere.ts" } });
+      // Of this stack directory, but not the command the pid runs.
+      const marker = `${process.execPath} other.js -- ${TAIL.oidc.join(" ")}`;
+      const wrong = stateWith({ oidc: { pid: foreign.pid, marker } });
       expect(await down(wrong)).toBe(true);
       expect(commandLine(foreign.pid)).toBe(foreign.marker);
     } finally {
@@ -483,6 +485,9 @@ describe("a state copied from another stack (review c.6900962987)", () => {
       const result = run(["down"], {});
       expect(result.stderr).toMatch(/oidc: pid \d+ is not of this stack directory; left alone/u);
       expect(result.stderr).toMatch(/server: pid \d+ is not of this stack directory; left alone/u);
+      expect(result.stderr).toMatch(/names processes of another stack directory/u);
+      expect(result.status).toBe(1);
+      expect(existsSync(STATE)).toBe(true);
       expect(commandLine(a.pid)).toBe(a.marker);
       expect(commandLine(aServer.pid)).toBe(aServer.marker);
     } finally {

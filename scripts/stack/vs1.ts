@@ -255,11 +255,14 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
   const read = given ?? stateFile.readState(STATE);
   if (read === "unreadable") console.error("state.json is unreadable; stopping PostgreSQL only");
   const state = read === "unreadable" ? null : read;
+  // A process named by a state of another stack directory: never signalled, and down fails.
+  let otherStack = false;
   for (const name of ["server", "oidc"] as const) {
     const entry = state?.processes[name];
     if (entry === undefined) continue;
     if (!ofThisStack(name, entry.marker)) {
       console.error(`${name}: pid ${entry.pid} is not of this stack directory; left alone`);
+      otherStack = true;
       continue;
     }
     if ((await stopProcess(entry.pid, entry.marker, 10_000)) === "foreign")
@@ -278,6 +281,12 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
     if (await portFree(port)) continue;
     console.error(`port ${port} (${name}) still answers`);
     free = false;
+  }
+  if (otherStack) {
+    console.error(
+      "state.json names processes of another stack directory; it is kept, remove it by hand",
+    );
+    return false;
   }
   if (free) rmSync(STATE, { force: true });
   return free;
