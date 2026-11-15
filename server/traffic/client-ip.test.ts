@@ -252,6 +252,41 @@ describe("clientIpLayer", () => {
     expect(clientIpOf(message)).toBe(PROXY);
   });
 
+  it("touches no header unless the peer is a trusted proxy (Codex CLI review)", async () => {
+    const read = async (remote: string, list: TrustedProxies): Promise<string[]> => {
+      const message = request(remote, {});
+      const keys: string[] = [];
+      const headers = new Proxy(
+        { "x-forwarded-for": CLIENT },
+        {
+          get: (target, key, receiver) => {
+            keys.push(String(key));
+            return Reflect.get(target, key, receiver) as unknown;
+          },
+          has: (target, key) => {
+            keys.push(String(key));
+            return Reflect.has(target, key);
+          },
+          ownKeys: (target) => {
+            keys.push("*");
+            return Reflect.ownKeys(target);
+          },
+        },
+      );
+      Object.defineProperty(message, "headers", {
+        get: () => {
+          keys.push("headers");
+          return headers;
+        },
+      });
+      await clientIpLayer(list)(message);
+      return keys;
+    };
+    expect(await read(PROXY, NO_TRUSTED_PROXIES)).toEqual([]);
+    expect(await read(CLIENT, PROXIES)).toEqual([]);
+    expect(await read(PROXY, PROXIES)).toEqual(["headers", "x-forwarded-for"]);
+  });
+
   it("records null without a peer and never throws", async () => {
     const message = request(undefined, { "x-forwarded-for": CLIENT });
     await expect(clientIpLayer(PROXIES)(message)).resolves.toBe("next");

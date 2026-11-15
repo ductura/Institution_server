@@ -177,17 +177,23 @@ function parseRemote(remote: string | undefined): Ip | null {
   return parseIp(zone < 0 ? remote : remote.slice(0, zone));
 }
 
-/** The client IP by the contract's rules; null only when the socket has no address. */
-export function resolveClientIp(
+type Forwarded = string | readonly string[] | undefined;
+
+/**
+ * The client IP by the contract's rules; null only when the socket has no
+ * address. readForwarded is called only once the peer is a trusted proxy, so
+ * the header is never read otherwise (Codex CLI review on DAN-790).
+ */
+function resolve(
   remote: string | undefined,
-  forwarded: string | readonly string[] | undefined,
+  readForwarded: () => Forwarded,
   trusted: TrustedProxies,
 ): string | null {
   const direct = parseRemote(remote);
   if (direct === null) return null;
-  if (trusted.length === 0 || !contains(trusted, direct) || forwarded === undefined) {
-    return format(direct);
-  }
+  if (trusted.length === 0 || !contains(trusted, direct)) return format(direct);
+  const forwarded = readForwarded();
+  if (forwarded === undefined) return format(direct);
   const header = typeof forwarded === "string" ? forwarded : forwarded.join(",");
   let nearest = direct;
   let end = header.length;
@@ -202,6 +208,15 @@ export function resolveClientIp(
   return format(nearest);
 }
 
+/** resolve() for a header value already in hand (tests and property checks). */
+export function resolveClientIp(
+  remote: string | undefined,
+  forwarded: Forwarded,
+  trusted: TrustedProxies,
+): string | null {
+  return resolve(remote, () => forwarded, trusted);
+}
+
 const RESOLVED = new WeakMap<IncomingMessage, string | null>();
 
 /** The client IP the clientIp layer recorded; null before it ran or without an address. */
@@ -214,9 +229,9 @@ export function clientIpLayer(trusted: TrustedProxies) {
   return async (request: IncomingMessage): Promise<"next"> => {
     let ip: string | null = null;
     try {
-      ip = resolveClientIp(
+      ip = resolve(
         request.socket?.remoteAddress,
-        request.headers["x-forwarded-for"],
+        () => request.headers["x-forwarded-for"],
         trusted,
       );
     } catch {
