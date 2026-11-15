@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 import { API_VERSION } from "../../server/contracts/index.ts";
 import {
   compareFiles,
+  exportTargets,
   importErrors,
+  npmCliPath,
   CONTRACTS,
   manifestErrors,
   PACKAGES,
@@ -201,5 +203,58 @@ describe("imports of the packed code", () => {
     ['const m = await import("oidc-provider");', "a/index.js imports undeclared oidc-provider"],
   ])("refuses %s", (code, error) => {
     expect(importErrors({ "a/index.js": code }, FILES, ["dep"])).toEqual([error]);
+  });
+});
+
+describe("export targets", () => {
+  it("names every condition of every subpath, at any depth", () => {
+    const exports = {
+      ".": { types: "./a.d.ts", default: "./a.js" },
+      "./b": { node: { import: "./b.js" }, default: "./c.js" },
+      "./d": "./d.js",
+    };
+    expect(exportTargets(exports)).toEqual([
+      [".", "./a.d.ts"],
+      [".", "./a.js"],
+      ["./b", "./b.js"],
+      ["./b", "./c.js"],
+      ["./d", "./d.js"],
+    ]);
+    expect(exportTargets("./x.js")).toEqual([[".", "./x.js"]]);
+  });
+});
+
+describe("npm CLI", () => {
+  const host = (platform: NodeJS.Platform, execPath: string, npmExecPath?: string) => ({
+    execPath,
+    platform,
+    npmExecPath,
+    exists: (path: string) => path.endsWith("npm-cli.js"),
+  });
+
+  it("runs npm-cli.js next to node.exe on Windows, not npm.cmd", () => {
+    expect(npmCliPath(host("win32", "C:\\Program Files\\nodejs\\node.exe"))).toBe(
+      "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    );
+  });
+
+  it("runs npm-cli.js from ../lib on POSIX", () => {
+    expect(npmCliPath(host("linux", "/opt/node/bin/node"))).toBe(
+      "/opt/node/lib/node_modules/npm/bin/npm-cli.js",
+    );
+  });
+
+  it("prefers npm's own npm_execpath, never pnpm's", () => {
+    const npm = "C:\\npm\\bin\\npm-cli.js";
+    expect(npmCliPath(host("win32", "C:\\nodejs\\node.exe", npm))).toBe(npm);
+    expect(npmCliPath(host("win32", "C:\\nodejs\\node.exe", "C:\\pnpm\\pnpm.cjs"))).toBe(
+      "C:\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    );
+  });
+
+  it("fails when npm is not next to node", () => {
+    expect(() => npmCliPath({ ...host("win32", "C:\\x\\node.exe"), exists: () => false })).toThrow(
+      /npm CLI not found/u,
+    );
   });
 });

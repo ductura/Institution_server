@@ -25,6 +25,15 @@ export function importStaged(entry: string, nodeEnv: string) {
 const GUARD_MESSAGE = "fake OIDC runs only locally and in CI";
 const SPECIFIER = /(?:\bfrom|\bimport)\s*\(?\s*["']([^"']+)["']/gu;
 
+/** [subpath, target] for every string target of `exports`, at any depth of conditions. */
+export function exportTargets(exports: unknown, path = "."): [string, string][] {
+  if (typeof exports === "string") return [[path, exports]];
+  if (typeof exports !== "object" || exports === null) return [];
+  return Object.entries(exports).flatMap(([key, value]) =>
+    exportTargets(value, key.startsWith(".") ? key : path),
+  );
+}
+
 /** Every file under `dir`, as a path relative to it with "/". */
 function filesOnDisk(dir: string): string[] {
   return readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -83,14 +92,25 @@ export function checkStaged(spec: PackageSpec, dir: string): string[] {
     ...scanSecrets(read(paths)).map((finding) => `${finding.kind} in ${finding.path}`),
   ];
   if (spec === TEST_FAKES) {
-    for (const file of Object.values(spec.exports)) {
-      const entry = join(dir, file.replace(/\.ts$/u, ".js"));
+    // What a consumer loads: every target of the published exports, not the
+    // source entries of the spec.
+    const targets = exportTargets(manifest.exports).filter(([, t]) => !t.endsWith(".d.ts"));
+    if (targets.length === 0) errors.push("exports nothing to check against the guard");
+    for (const [path, target] of targets) {
+      const entry = resolve(dir, target);
+      if (relative(dir, entry).startsWith("..")) {
+        errors.push(`export ${path} points outside the package: ${target}`);
+        continue;
+      }
       // Refused by the guard, not by some other error.
       const production = importStaged(entry, "production");
       if (production.status === 0 || !production.stderr.includes(GUARD_MESSAGE))
-        errors.push(`${file} is not refused by the guard with NODE_ENV=production`);
+        errors.push(
+          `export ${path} (${target}) is not refused by the guard with NODE_ENV=production`,
+        );
       const local = importStaged(entry, "test");
-      if (local.status !== 0) errors.push(`${file} does not load in test: ${local.stderr}`);
+      if (local.status !== 0)
+        errors.push(`export ${path} (${target}) does not load in test: ${local.stderr}`);
     }
   }
   return errors.map((error) => `${spec.name}: ${error}`);

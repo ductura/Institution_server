@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { posix, win32 } from "node:path";
 
 import { Type, type Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
@@ -34,12 +36,40 @@ export function parsePackOutput(text: string): PackOutput {
   return value as PackOutput;
 }
 
+type NpmHost = {
+  readonly execPath: string;
+  readonly platform: NodeJS.Platform;
+  readonly npmExecPath: string | undefined;
+  readonly exists: (path: string) => boolean;
+};
+
+/**
+ * The npm CLI script, run by node itself: no shell, so it works where npm is
+ * only `npm.cmd` (Windows). npm sets `npm_execpath`; otherwise npm ships next
+ * to node (Windows) or in ../lib (POSIX).
+ */
+export function npmCliPath(host: NpmHost): string {
+  const path = host.platform === "win32" ? win32 : posix;
+  // Under pnpm, npm_execpath is pnpm itself: only npm's own script counts.
+  if (host.npmExecPath !== undefined && /^npm-cli\.[cm]?js$/u.test(path.basename(host.npmExecPath)))
+    return host.npmExecPath;
+  const bin = path.dirname(host.execPath);
+  const npm = path.join("node_modules", "npm", "bin", "npm-cli.js");
+  const found = path.join(bin, host.platform === "win32" ? "" : path.join("..", "lib"), npm);
+  if (!host.exists(found)) throw new Error(`npm CLI not found next to ${host.execPath}`);
+  return found;
+}
+
 /** What `npm pack` would put in the tarball of the package in `dir`. */
 export function packFiles(dir: string): PackOutput {
-  const run = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
-    cwd: dir,
-    encoding: "utf8",
+  const cli = npmCliPath({
+    execPath: process.execPath,
+    platform: process.platform,
+    npmExecPath: process.env.npm_execpath,
+    exists: existsSync,
   });
+  const args = [cli, "pack", "--dry-run", "--json", "--ignore-scripts"];
+  const run = spawnSync(process.execPath, args, { cwd: dir, encoding: "utf8" });
   if (run.status !== 0) throw new Error(`npm pack failed in ${dir}: ${run.stderr}`);
   return parsePackOutput(run.stdout);
 }

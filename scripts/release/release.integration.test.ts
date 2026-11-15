@@ -60,7 +60,7 @@ describe("staged packages", () => {
     const file = join(dir, "packages/test-fakes/clock/index.js");
     writeFileSync(file, 'throw new Error("unrelated");\n');
     expect(checkStaged(TEST_FAKES, dir)).toContain(
-      "@ductura/test-fakes: packages/test-fakes/clock/index.ts is not refused by the guard with NODE_ENV=production",
+      "@ductura/test-fakes: export ./clock (./packages/test-fakes/clock/index.js) is not refused by the guard with NODE_ENV=production",
     );
   }, 120_000);
 
@@ -100,7 +100,23 @@ describe("staged packages", () => {
     const dir = stage();
     writeFileSync(join(dir, "packages/test-fakes/release.js"), "export const x = 1;\n");
     expect(checkStaged(TEST_FAKES, dir)).toContain(
-      "@ductura/test-fakes: packages/test-fakes/release.ts is not refused by the guard with NODE_ENV=production",
+      "@ductura/test-fakes: export . (./packages/test-fakes/release.js) is not refused by the guard with NODE_ENV=production",
+    );
+  }, 120_000);
+
+  // A listed file without the guard: the manifest accepts the target, so only
+  // importing the real export target catches it.
+  it("refuses an export redirected to a listed file without the guard", () => {
+    const dir = stage();
+    editManifest(dir, (manifest) => {
+      const exports = manifest.exports as Record<string, Record<string, string>>;
+      exports["./clock"] = {
+        types: "./packages/test-fakes/clock/clock.d.ts",
+        default: "./packages/test-fakes/clock/clock.js",
+      };
+    });
+    expect(checkStaged(TEST_FAKES, dir)).toContain(
+      "@ductura/test-fakes: export ./clock (./packages/test-fakes/clock/clock.js) is not refused by the guard with NODE_ENV=production",
     );
   }, 120_000);
 });
