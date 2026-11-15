@@ -1,10 +1,10 @@
 # server/http
 
-Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP poslužitelj, slojevi prije routera, router i registar baza (S-1B-a, DAN-775).
+Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP poslužitelj, slojevi prije routera (S-1B-b, DAN-777), router i registar baza (S-1B-a, DAN-775).
 
 ## Što radi
 
-- `startServer` pokreće `node:http` poslužitelj, redom propušta zahtjev kroz slojeve, zatim kroz router. Vraća stvarni port i `close()`. Greška pri slušanju (npr. `EADDRINUSE`) odbija obećanje s kodom greške.
+- `startServer` pokreće `node:http` poslužitelj i propušta zahtjev kroz slojeve (`createPipeline`), zatim kroz router. Vraća stvarni port i `close()`. Greška pri slušanju (npr. `EADDRINUSE`) odbija obećanje s kodom greške.
 - `createRouter` traži rutu po metodi i putanji iz ugovora (`server/contracts`), s točnim podudaranjem i bez upita. Odbijanja imaju oblik ugovora:
   - nepoznata putanja: 404 `{"error":"not_found"}` (`FALLBACK`);
   - druga metoda: 405 `{"error":"method_not_allowed"}` uz `Allow`;
@@ -13,7 +13,12 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 - `routesOf` daje rute imenovanih područja (`areas.ts`).
 - `createDatabases` daje registar baza nad `server/database`. Ništa ne otvara, jer se veza otvara pri prvoj upotrebi.
 
-Slojeve (koraci 2–7 toka zahtjeva) puni S-1B-b, a gašenje S-1B-c.
+- `PIPELINE_STEPS` je jedini popis koraka 2–7 toka zahtjeva (`docs/server-map.md` §3), zamrznut i provjeren testom nad tablicom. `createPipeline` prima jedan sloj po imenu koraka, ne niz, pa se redoslijed ne može zadati ni promijeniti; suvišan, nedostajući ili ne-funkcijski korak baca pri pokretanju. Sloj koji odbije, baci ili vrati išta osim `"next"` zaustavlja zahtjev prije aplikacije (500 `{"error":"internal"}` ako sloj nije sam odgovorio).
+- `createLayers` daje slojeve: koraci 2–5 (IP, IP prava, ograničenje, zapis prometa) prazni su do vala 5; korak 6 su sigurnosna zaglavlja (`security-headers.ts`, prijenos Ductusa); korak 7 je zaštita porijekla (`mutation-request.ts`, prijenos Ductusa).
+- Zaštita porijekla: osim `GET`, `HEAD` i `OPTIONS` svaka metoda mijenja stanje i traži točno jedno zaglavlje `Origin` jednako `APP_ORIGIN` te `Sec-Fetch-Site` koji nedostaje ili je točno jednom `same-origin`. Inače 403 `{"error":"origin_missing" | "origin_mismatch" | "cross_site"}` (kodovi ugovora). Bez `APP_ORIGIN` svaka takva metoda dobiva 403. Tijelo zahtjeva se ne čita.
+- `refuse` je jedini način na koji sloj odbija: tijelo ugovora i sigurnosna zaglavlja, i za korake prije koraka 6.
+
+Gašenje donosi S-1B-c, a čitanje tijela s granicom (`readBodyWithLimit`) DAN-777 a2.
 
 ## Tko ga zove
 
@@ -25,7 +30,8 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 
 ## Što izvozi
 
-- `startServer`, `Layer`, `Running`, `StartOptions` (`start.ts`);
+- `startServer`, `Running`, `StartOptions` (`start.ts`);
+- `createLayers`, `createPipeline`, `PIPELINE_STEPS`, `App`, `Layer`, `Layers`, `Step` (`pipeline.ts`);
 - `createRouter`, `Route`, `Handler`, `Router` (`router.ts`);
 - `HEALTH_ROUTE` (`health.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);

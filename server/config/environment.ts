@@ -52,3 +52,29 @@ export function listenAddress(env: Env = process.env): { host: string; port: num
     port: env.PORT === undefined ? DEFAULT_PORT : Number(env.PORT),
   };
 }
+
+// The origin of the application's pages (S-1B-b, DAN-777): a state-changing
+// request must carry exactly this Origin (server/http/mutation-request.ts).
+// Optional; without it every state-changing request is refused (403), never
+// allowed. A set value must be a bare http(s) scheme://host[:port].
+function canonicalOrigin(value: string | undefined): string | null {
+  if (value === undefined) return null;
+  try {
+    const url = new URL(value);
+    const web = url.protocol === "https:" || url.protocol === "http:";
+    return web && url.origin === value ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The problem of APP_ORIGIN, by name only; empty when unset or usable. */
+export function originProblems(env: Env = process.env): string[] {
+  if (env.APP_ORIGIN === undefined || canonicalOrigin(env.APP_ORIGIN) !== null) return [];
+  return ["APP_ORIGIN is not a bare http(s) origin"];
+}
+
+/** APP_ORIGIN when it is usable, otherwise null (refuse every mutation). */
+export function appOrigin(env: Env = process.env): string | null {
+  return canonicalOrigin(env.APP_ORIGIN);
+}

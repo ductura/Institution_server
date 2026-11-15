@@ -80,8 +80,15 @@ describe("server/server.ts", () => {
     expect(response.headers.get("content-type")).toMatch(/^application\/json(;|$)/u);
     expect(await response.json()).toEqual(alive?.response.body);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    // Only transport headers besides the two above: no server, version or host.
+    // Only transport headers and the security headers of step 6 (S-1B-b)
+    // besides the two above: no server, version or host.
     const ALLOWED = [
+      "content-security-policy",
+      "permissions-policy",
+      "referrer-policy",
+      "strict-transport-security",
+      "x-content-type-options",
+      "x-frame-options",
       "cache-control",
       "connection",
       "content-length",
@@ -101,12 +108,18 @@ describe("server/server.ts", () => {
   }, 20_000);
 
   it("refuses an unknown path, another method and a trailing slash in the contract format", async () => {
-    const [server, port] = await start();
+    const [server, port] = await start({ APP_ORIGIN: "https://ductura.invalid" });
     const unknown = await fetch(url(port, "/api/v1/nope?x=1"));
     expect([unknown.status, await unknown.json()]).toEqual([404, { error: "not_found" }]);
     const slash = await fetch(url(port, "/api/v1/health/"));
     expect(slash.status).toBe(404);
-    const post = await fetch(url(port, "/api/v1/health"), { method: "POST" });
+    // Step 7 (S-1B-b) comes before the router: a POST without our Origin never reaches it.
+    const foreign = await fetch(url(port, "/api/v1/health"), { method: "POST" });
+    expect([foreign.status, await foreign.json()]).toEqual([403, { error: "origin_missing" }]);
+    const post = await fetch(url(port, "/api/v1/health"), {
+      method: "POST",
+      headers: { origin: "https://ductura.invalid" },
+    });
     expect([post.status, post.headers.get("allow"), await post.json()]).toEqual([
       405,
       "GET",
@@ -128,6 +141,11 @@ describe("server/server.ts", () => {
     ["a word as PORT", { PORT: `abc${CANARY}` }, "PORT is not a port number"],
     ["a PORT above 65535", { PORT: "70000" }, "PORT is not a port number"],
     ["an empty HOST", { HOST: "" }, "HOST is empty or has spaces"],
+    [
+      "an APP_ORIGIN with a path",
+      { APP_ORIGIN: `https://${CANARY}.invalid/x` },
+      "APP_ORIGIN is not a bare http(s) origin",
+    ],
   ])(
     "does not start with %s and names the variable, never the value",
     async (_, env, problem) => {
