@@ -1,12 +1,13 @@
 // The one way server/http writes a JSON body (docs/server-map.md §3).
 import type { ServerResponse } from "node:http";
 
-import { INTERNAL } from "../contracts/index.ts";
-
 const NO_STORE = "no-store";
 
-/** A JSON answer; the only way this folder writes a body. */
-export function sendJson(
+/**
+ * Writes any JSON answer. Only this folder's sendJson and sendProblem call
+ * it: an error body must be a problem (problem.ts).
+ */
+export function writeJson(
   response: ServerResponse,
   status: number,
   body: unknown,
@@ -23,5 +24,19 @@ export function sendJson(
   response.end(text);
 }
 
-/** The body of the 500 answer, exactly the contract's: one closed word, nothing else. */
-export const INTERNAL_BODY = { error: INTERNAL.error.code } as const;
+/**
+ * A JSON answer of a route that is not an error. A status of 400 or more
+ * throws, so a handler cannot answer an error in another shape: the router
+ * turns the throw into 500 internal. Errors go through sendProblem.
+ */
+export function sendJson(
+  response: ServerResponse,
+  status: number,
+  body: unknown,
+  headers: Readonly<Record<string, string>> = {},
+): void {
+  if (!Number.isInteger(status) || status >= 400) {
+    throw new Error("an error answer goes through sendProblem");
+  }
+  writeJson(response, status, body, headers);
+}

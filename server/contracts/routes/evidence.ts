@@ -1,11 +1,12 @@
 import { Type, type TSchema } from "@sinclair/typebox";
 
-import { closed, defineRoute, type ErrorSpec } from "../schema/index.ts";
+import { closed, defineRoute, type ErrorSpec, problemFields } from "../schema/index.ts";
 
 // Port of Ductus src/server/evidence/{open,commit}-route.ts and ingest-http.ts at
 // d52a92c3 (docs/BACKEND.md 4.13). These two routes answer every refusal as
 // {status: <code>}, not {error: <code>}: the browser client of that revision
-// (src/client/evidence-ingest.ts) reads `status`, so the shape is kept.
+// (src/client/evidence-ingest.ts) reads `status`, so the shape is kept, and
+// v1 adds the problem fields but `status` (S-1L.3, DAN-789).
 
 const Sha256 = Type.String({ pattern: "^[0-9a-f]{64}$" });
 const Count = Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER });
@@ -103,7 +104,7 @@ function refusal(status: number, code: string, extra: Record<string, TSchema> = 
     status,
     code,
     key: `errors.${code}`,
-    body: closed({ status: Type.Literal(code), ...extra }),
+    body: closed({ status: Type.Literal(code), ...extra, ...problemFields(code, status, false) }),
   };
 }
 

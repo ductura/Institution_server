@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md"
   },
   "x-fallback": {
@@ -649,6 +649,18 @@
                     "status": {
                       "const": "bad_request",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "bad_request",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bad_request",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -668,6 +680,18 @@
                   "properties": {
                     "status": {
                       "const": "unauthenticated",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthenticated",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthenticated",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -689,6 +713,18 @@
                     "status": {
                       "const": "forbidden",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -709,6 +745,18 @@
                     "status": {
                       "const": "not_found",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.not_found",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -728,6 +776,18 @@
                   "properties": {
                     "status": {
                       "const": "timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.timeout",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -750,6 +810,18 @@
                       "properties": {
                         "status": {
                           "const": "not_accepting",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "not_accepting",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.not_accepting",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -793,6 +865,18 @@
                           "minimum": 0,
                           "maximum": 9007199254740991,
                           "type": "integer"
+                        },
+                        "code": {
+                          "const": "stale_base",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.stale_base",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -835,6 +919,18 @@
                           "minimum": 0,
                           "maximum": 9007199254740991,
                           "type": "integer"
+                        },
+                        "code": {
+                          "const": "chain_conflict",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.chain_conflict",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -877,6 +973,18 @@
                           "minimum": 0,
                           "maximum": 9007199254740991,
                           "type": "integer"
+                        },
+                        "code": {
+                          "const": "not_continuous",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.not_continuous",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -889,6 +997,18 @@
                       "properties": {
                         "status": {
                           "const": "txid_reused",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "txid_reused",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.txid_reused",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -912,6 +1032,18 @@
                     "status": {
                       "const": "too_large",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.too_large",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -931,6 +1063,18 @@
                   "properties": {
                     "status": {
                       "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupported_media_type",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -954,6 +1098,18 @@
                         "status": {
                           "const": "invalid",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalid",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -966,6 +1122,18 @@
                       "properties": {
                         "status": {
                           "const": "document_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "document_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.document_mismatch",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -988,6 +1156,18 @@
                   "properties": {
                     "status": {
                       "const": "upgrade_required",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "upgrade_required",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.upgrade_required",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -1030,6 +1210,18 @@
                           "type": "string"
                         }
                       ]
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -1329,6 +1521,18 @@
                     "status": {
                       "const": "bad_request",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "bad_request",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bad_request",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -1348,6 +1552,18 @@
                   "properties": {
                     "status": {
                       "const": "unauthenticated",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthenticated",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthenticated",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -1369,6 +1585,18 @@
                     "status": {
                       "const": "forbidden",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -1389,6 +1617,18 @@
                     "status": {
                       "const": "not_found",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.not_found",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -1408,6 +1648,18 @@
                   "properties": {
                     "status": {
                       "const": "timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.timeout",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -1431,6 +1683,18 @@
                         "status": {
                           "const": "not_accepting",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "not_accepting",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.not_accepting",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -1443,6 +1707,18 @@
                       "properties": {
                         "status": {
                           "const": "not_started",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "not_started",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.not_started",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -1466,6 +1742,18 @@
                     "status": {
                       "const": "too_large",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.too_large",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -1485,6 +1773,18 @@
                   "properties": {
                     "status": {
                       "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupported_media_type",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -1506,6 +1806,18 @@
                     "status": {
                       "const": "invalid",
                       "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalid",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
                     }
                   }
                 }
@@ -1525,6 +1837,18 @@
                   "properties": {
                     "status": {
                       "const": "upgrade_required",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "upgrade_required",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.upgrade_required",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -1550,6 +1874,18 @@
                     },
                     "stage": {
                       "const": "context",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -1843,6 +2179,18 @@
                               ]
                             }
                           }
+                        },
+                        "code": {
+                          "const": "unavailable",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.unavailable",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -1855,6 +2203,18 @@
                       "properties": {
                         "status": {
                           "const": "draining",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "draining",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.draining",
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -2027,14 +2387,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2047,14 +2423,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2067,14 +2459,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2171,8 +2579,8 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2180,12 +2588,28 @@
                         "error": {
                           "const": "content_length_invalid",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.content_length_invalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2193,12 +2617,28 @@
                         "error": {
                           "const": "content_length_mismatch",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.content_length_mismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2206,18 +2646,50 @@
                         "error": {
                           "const": "body_stream_error",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.body_stream_error",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
                       "properties": {
                         "error": {
                           "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalid_json",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -2232,14 +2704,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2254,8 +2742,8 @@
                 "schema": {
                   "oneOf": [
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2263,12 +2751,28 @@
                         "error": {
                           "const": "origin_missing",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.origin_missing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
@@ -2276,18 +2780,50 @@
                         "error": {
                           "const": "origin_mismatch",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.origin_mismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
                     {
-                      "type": "object",
                       "additionalProperties": false,
+                      "type": "object",
                       "required": [
                         "error"
                       ],
                       "properties": {
                         "error": {
                           "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.cross_site",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -2302,14 +2838,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.body_timeout",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 408,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2322,14 +2874,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.body_too_large",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2342,14 +2910,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupported_media_type",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 415,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2362,14 +2946,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalid_input",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }
@@ -2382,14 +2982,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": false,
+                  "type": "object",
                   "required": [
                     "error"
                   ],
                   "properties": {
                     "error": {
                       "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                       "type": "string"
                     }
                   }

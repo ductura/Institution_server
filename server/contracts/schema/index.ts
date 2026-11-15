@@ -25,8 +25,9 @@ export const API_PREFIX = "/api/v1";
 
 /**
  * An error answer. `code` is the closed word on the wire, `key` the locales key
- * a client shows; neither is ever a sentence. `body` defaults to `{error: code}`;
- * "none" means no body, "html" a page for a browser navigation.
+ * a client shows; neither is ever a sentence. `body` defaults to the problem
+ * body of `errorBody`; "none" means no body, "html" a page for a browser
+ * navigation.
  */
 export type ErrorSpec = {
   readonly status: number;
@@ -72,14 +73,39 @@ export function defineRoute<const R extends RouteContract>(route: R): R {
 }
 
 export function error(status: number, code: string, body?: ErrorSpec["body"]): ErrorSpec {
-  return body === undefined
-    ? { status, code, key: `errors.${code}` }
-    : { status, code, key: `errors.${code}`, body };
+  const key = `errors.${code}`;
+  return { status, code, key, body: body ?? errorBody(code, status) };
 }
 
-/** The default error body: exactly one closed word. */
-export function errorBody(code: string): TObject {
-  return Type.Object({ error: Type.Literal(code) }, { additionalProperties: false });
+/**
+ * A request id: a lowercase UUID v4 the server makes for each request
+ * (server/http/request-id.ts). It never comes from the client.
+ */
+export const REQUEST_ID_PATTERN =
+  "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
+
+/**
+ * The problem fields of an error answer (S-1L.3, DAN-789): the code, the
+ * locales key, the HTTP status and the request id. The server sends all four
+ * on every JSON error; v1 declares them optional because its guard
+ * (breaking.ts) allows only optional new response fields. `status` is left
+ * out where a v1 body already uses that name for the code.
+ */
+export function problemFields(code: string, status: number, withStatus = true) {
+  return {
+    code: Type.Optional(Type.Literal(code)),
+    messageKey: Type.Optional(Type.Literal(`errors.${code}`)),
+    ...(withStatus ? { status: Type.Optional(Type.Literal(status)) } : {}),
+    requestId: Type.Optional(Type.String({ pattern: REQUEST_ID_PATTERN })),
+  };
+}
+
+/** The default error body: the closed word `error` (v1) and the problem fields. */
+export function errorBody(code: string, status: number): TObject {
+  return Type.Object(
+    { error: Type.Literal(code), ...problemFields(code, status) },
+    { additionalProperties: false },
+  );
 }
 
 /** Closed object: no key outside the schema. */

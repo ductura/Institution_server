@@ -69,6 +69,17 @@ function send(port: number, method: string, lines: string[] = [], path = PATH): 
   });
 }
 
+/** The problem body of a 403 of the contract (S-1L.3); the request id is new each time. */
+const problem = (code: string) => ({
+  error: code,
+  code,
+  messageKey: `errors.${code}`,
+  status: 403,
+  requestId: expect.stringMatching(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+  ),
+});
+
 describe("pipeline on a real server", () => {
   let server: Running;
   let refusing: Running;
@@ -123,7 +134,7 @@ describe("pipeline on a real server", () => {
     async (_, lines, code) => {
       handled = 0;
       const answer = await send(server.port, "POST", lines);
-      expect([answer.status, JSON.parse(answer.body), handled]).toEqual([403, { error: code }, 0]);
+      expect([answer.status, JSON.parse(answer.body), handled]).toEqual([403, problem(code), 0]);
       expect(answer.headers).toContain("Connection: close");
       const names = answer.headers.map((line) => line.split(":")[0]?.toLowerCase());
       for (const { key } of SECURITY_HEADERS) {
@@ -139,7 +150,7 @@ describe("pipeline on a real server", () => {
     "refuses %s with a foreign Origin before the router",
     async (method) => {
       const answer = await send(server.port, method, ["Origin: https://evil.invalid"]);
-      expect([answer.status, JSON.parse(answer.body)]).toEqual([403, { error: "origin_mismatch" }]);
+      expect([answer.status, JSON.parse(answer.body)]).toEqual([403, problem("origin_mismatch")]);
     },
   );
 
@@ -199,7 +210,7 @@ describe("pipeline on a real server", () => {
       const answer = await send(closed.port, "POST", [`Origin: ${ORIGIN}`]);
       expect([answer.status, JSON.parse(answer.body), handled]).toEqual([
         403,
-        { error: "origin_mismatch" },
+        problem("origin_mismatch"),
         0,
       ]);
     } finally {

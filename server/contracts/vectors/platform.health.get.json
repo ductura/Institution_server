@@ -22,7 +22,7 @@
         "contentType": "application/json",
         "body": {
           "status": "ok",
-          "version": "1.1.0"
+          "version": "1.2.0"
         }
       }
     },
@@ -35,7 +35,11 @@
         "status": 500,
         "contentType": "application/json",
         "body": {
-          "error": "internal"
+          "error": "internal",
+          "code": "internal",
+          "messageKey": "errors.internal",
+          "status": 500,
+          "requestId": "00000000-0000-4000-8000-000000000000"
         }
       }
     }

@@ -159,10 +159,18 @@ describe("originLayer", () => {
       },
     });
     expect(await originLayer(ORIGIN)(req, response)).toBe("done");
-    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([
+    const sent = JSON.parse(answer.body ?? "") as { requestId: string };
+    expect([answer.status, sent]).toEqual([
       403,
-      { error: "origin_mismatch" },
+      {
+        error: "origin_mismatch",
+        code: "origin_mismatch",
+        messageKey: "errors.origin_mismatch",
+        status: 403,
+        requestId: sent.requestId,
+      },
     ]);
+    expect(answer.headers?.["x-request-id"]).toBe(sent.requestId);
     expect(answer.headers?.["x-frame-options"]).toBe("DENY");
     expect(touched).toEqual([]);
   });

@@ -1,14 +1,14 @@
 // Router of /api/v1 (docs/server-map.md §3, step 8). A route is its contract
 // from server/contracts plus a handler; the method and path come from the
-// contract only. Refusals use the error words of the contract: FALLBACK
-// (404 not_found), INTERNAL (500 internal) and the 405 of the fake server
-// (U8). Later steps (session, schema from the contract) attach here with
+// contract only. Refusals are problem bodies (problem.ts) of the contract:
+// FALLBACK (404 not_found), METHOD_NOT_ALLOWED (405) and INTERNAL (500). Later steps (session, schema from the contract) attach here with
 // S-1B-b and U4.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { FALLBACK, type RouteContract } from "../contracts/index.ts";
+import { FALLBACK, METHOD_NOT_ALLOWED, type RouteContract } from "../contracts/index.ts";
 
-import { sendJson } from "./json.ts";
+import { sendProblem } from "./problem.ts";
+import { requestIdOf } from "./request-id.ts";
 import { answerInternal } from "./security-headers.ts";
 
 export type Handler = (request: IncomingMessage, response: ServerResponse) => Promise<void>;
@@ -71,20 +71,22 @@ export function createRouter(routes: readonly Route[]): Router {
     const path = routePath(request.url);
     const methods = path === undefined ? undefined : byPath.get(path);
     if (methods === undefined) {
-      sendJson(response, FALLBACK.error.status, { error: FALLBACK.error.code });
+      sendProblem(response, FALLBACK.error.status, FALLBACK.error.code);
       return;
     }
     const route = methods.get(request.method ?? "");
     if (route === undefined) {
       const allow = [...methods.keys()].join(", ");
-      sendJson(response, 405, { error: "method_not_allowed" }, { allow });
+      const { status, code } = METHOD_NOT_ALLOWED.error;
+      sendProblem(response, status, code, { allow });
       return;
     }
     try {
       await route.handle(request, response);
     } catch (error) {
       // Only the name of the error: never its message, the request or a token.
-      console.error("route failed", route.contract.id, errorName(error));
+      // The request id ties the line to the answer the caller got.
+      console.error("route failed", route.contract.id, errorName(error), requestIdOf(response));
       answerInternal(response);
     }
   };

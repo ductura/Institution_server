@@ -95,8 +95,14 @@ function exchange(raw: string, quietMs = 300): Promise<string> {
   });
 }
 const get = (path: string) => `GET ${path} HTTP/1.1\r\nHost: localhost\r\n\r\n`;
-const BODY = '{"error":"internal"}';
-const CHUNKED = `\r\n\r\n${BODY.length.toString(16)}\r\n${BODY}\r\n0\r\n\r\n`;
+// The problem body of 500 internal (S-1L.3), with the id the header of the
+// same answer names: an answer without a well-formed X-Request-Id never matches.
+const UUID_V4 = "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
+function chunkedOf(wire: string): string {
+  const id = new RegExp(`\r\nx-request-id: (${UUID_V4})\r\n`, "iu").exec(wire)?.[1] ?? "none";
+  const body = `{"error":"internal","code":"internal","messageKey":"errors.internal","status":500,"requestId":"${id}"}`;
+  return `\r\n\r\n${body.length.toString(16)}\r\n${body}\r\n0\r\n\r\n`;
+}
 
 describe("500 internal on the wire", () => {
   it("a failing 500 itself cuts the connection and never exits the process", async () => {
@@ -117,7 +123,7 @@ describe("500 internal on the wire", () => {
     expect(wire).toMatch(/\r\nconnection: close\r\n/iu);
     expect(wire).not.toMatch(/content-length: 3\r\n/iu);
     // One answer, framed by itself; the pipelined second request is never read.
-    expect(wire.endsWith(CHUNKED)).toBe(true);
+    expect(wire.endsWith(chunkedOf(wire))).toBe(true);
     expect(wire.match(/HTTP\/1\.1 /gu)).toHaveLength(1);
   });
 
@@ -126,7 +132,7 @@ describe("500 internal on the wire", () => {
     const wire = await exchange(get("/api/v1/health?case=trailers"));
     expect(wire.startsWith("HTTP/1.1 500 Internal Server Error\r\n")).toBe(true);
     expect(wire).not.toContain(CANARY);
-    expect(wire.endsWith(CHUNKED)).toBe(true);
+    expect(wire.endsWith(chunkedOf(wire))).toBe(true);
   });
 
   it("a layer's garbage outcome keeps nothing it set", async () => {
@@ -134,7 +140,7 @@ describe("500 internal on the wire", () => {
     const wire = await exchange(get("/api/v1/health?layer=1"));
     expect(wire.startsWith("HTTP/1.1 500 Internal Server Error\r\n")).toBe(true);
     expect(wire).not.toContain(CANARY);
-    expect(wire.endsWith(CHUNKED)).toBe(true);
+    expect(wire.endsWith(chunkedOf(wire))).toBe(true);
   });
 
   it("a throw after a finished answer lets the whole body arrive", async () => {

@@ -52,6 +52,16 @@ function call(
   return router(request, response as unknown as ServerResponse).then(() => answer);
 }
 
+/** The problem body of a contract error (S-1L.3); the request id is new each time. */
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const problem = (status: number, code: string) => ({
+  error: code,
+  code,
+  messageKey: `errors.${code}`,
+  status,
+  requestId: expect.stringMatching(UUID_V4),
+});
+
 const contract = (id: string) => {
   const found = ROUTES.find((route) => route.id === id);
   if (found === undefined) throw new Error(id);
@@ -75,14 +85,16 @@ describe("createRouter", () => {
   });
 
   it.each([
-    ["an unknown path", "GET", "/api/v1/nope", 404, { error: "not_found" }],
-    ["a trailing slash", "GET", "/api/v1/health/", 404, { error: "not_found" }],
-    ["an encoded path", "GET", "/api/v1/%68ealth", 404, { error: "not_found" }],
-    ["another method", "DELETE", "/api/v1/health", 405, { error: "method_not_allowed" }],
-    ["HEAD", "HEAD", "/api/v1/health", 405, { error: "method_not_allowed" }],
+    ["an unknown path", "GET", "/api/v1/nope", 404, problem(404, "not_found")],
+    ["a trailing slash", "GET", "/api/v1/health/", 404, problem(404, "not_found")],
+    ["an encoded path", "GET", "/api/v1/%68ealth", 404, problem(404, "not_found")],
+    ["another method", "DELETE", "/api/v1/health", 405, problem(405, "method_not_allowed")],
+    ["HEAD", "HEAD", "/api/v1/health", 405, problem(405, "method_not_allowed")],
   ])("refuses %s in the contract format", async (_, method, url, status, body) => {
     const answer = await call(router, method, url);
-    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([status, body]);
+    const sent = JSON.parse(answer.body ?? "") as { requestId: string };
+    expect([answer.status, sent]).toEqual([status, body]);
+    expect(answer.headers?.["x-request-id"]).toBe(sent.requestId);
     if (status === 405) expect(answer.headers?.allow).toBe("GET");
   });
 
@@ -100,7 +112,10 @@ describe("createRouter", () => {
     "api/v1/health",
   ])("answers 404 to the target %j without rewriting it", async (url) => {
     const answer = await call(router, "GET", url);
-    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([404, { error: "not_found" }]);
+    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([
+      404,
+      problem(404, "not_found"),
+    ]);
   });
 
   it("chooses by the path as sent, without the query", () => {
@@ -112,7 +127,7 @@ describe("createRouter", () => {
 
   it("answers 500 when a handler throws, without the error message", async () => {
     const answer = await call(router, "GET", "/api/v1/ready");
-    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([500, { error: "internal" }]);
+    expect([answer.status, JSON.parse(answer.body ?? "")]).toEqual([500, problem(500, "internal")]);
     expect(answer.body).not.toContain("invented-canary");
   });
 
@@ -128,6 +143,10 @@ const HEALTH_VECTORS = JSON.parse(
   readFileSync(new URL("../contracts/vectors/platform.health.get.json", import.meta.url), "utf8"),
 ) as VectorFile;
 const INTERNAL_VECTOR = HEALTH_VECTORS.vectors.find((v) => v.name === "internal");
+
+/** The exact text of the 500 body: nothing but the problem fields. */
+const internalText = (requestId: string): string =>
+  `{"error":"internal","code":"internal","messageKey":"errors.internal","status":500,"requestId":"${requestId}"}`;
 
 function leaky(): Error {
   const failure = new RangeError(`${CANARY} message /srv/${CANARY}.ts`, { cause: CANARY });
@@ -190,7 +209,7 @@ describe("createRouter on a failing handler (DAN-776)", () => {
     expect(INTERNAL_VECTOR?.response).toEqual({
       status: 500,
       contentType: "application/json",
-      body: { error: "internal" },
+      body: { ...problem(500, "internal"), requestId: "00000000-0000-4000-8000-000000000000" },
     });
   });
 
@@ -205,9 +224,11 @@ describe("createRouter on a failing handler (DAN-776)", () => {
     const answer = await call(failingWith(fail), "GET", "/api/v1/ready");
     expect(answer.status).toBe(INTERNAL.error.status);
     const body: unknown = JSON.parse(answer.body ?? "");
-    expect(Value.Check(errorBody(INTERNAL.error.code), body)).toBe(true);
-    expect(body).toEqual(INTERNAL_VECTOR?.response.body);
-    expect(answer.body).toBe('{"error":"internal"}');
+    expect(Value.Check(errorBody(INTERNAL.error.code, INTERNAL.error.status), body)).toBe(true);
+    const { requestId } = body as { requestId: string };
+    expect(body).toEqual({ ...(INTERNAL_VECTOR?.response.body as object), requestId });
+    expect(answer.body).toBe(internalText(requestId));
+    expect(answer.headers?.["x-request-id"]).toBe(requestId);
     expect(answer.headers?.["content-type"]).toBe("application/json; charset=utf-8");
     expect(answer.destroyed).toBeUndefined();
     // The log has the route and a closed name, never the canary.
@@ -225,7 +246,8 @@ describe("createRouter on a failing handler (DAN-776)", () => {
         "GET",
         "/api/v1/ready",
       );
-      expect([answer.status, answer.body]).toEqual([500, '{"error":"internal"}']);
+      expect(answer.status).toBe(500);
+      expect(JSON.parse(answer.body ?? "")).toEqual(problem(500, "internal"));
     },
   );
 
@@ -244,11 +266,8 @@ describe("createRouter on a failing handler (DAN-776)", () => {
       "GET",
       "/api/v1/ready",
     );
-    expect([answer.status, answer.statusMessage, answer.body]).toEqual([
-      500,
-      "Internal Server Error",
-      '{"error":"internal"}',
-    ]);
+    expect([answer.status, answer.statusMessage]).toEqual([500, "Internal Server Error"]);
+    expect(JSON.parse(answer.body ?? "")).toEqual(problem(500, "internal"));
     expect(JSON.stringify(answer.headers)).not.toContain(CANARY);
     expect(answer.headers).not.toHaveProperty("content-encoding");
     expect(answer.headers).not.toHaveProperty("content-length");

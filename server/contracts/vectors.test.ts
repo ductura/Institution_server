@@ -6,7 +6,7 @@ import { FormatRegistry, Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
-import { INTERNAL, ROUTES, SHARED_ERRORS, closed, defineRoute, error } from "./index.ts";
+import { INTERNAL, ROUTES, SHARED_ERRORS, closed, defineRoute, error, errorBody } from "./index.ts";
 import { checkVectors, type VectorFile } from "./vectors.ts";
 
 const VECTORS_DIR = fileURLToPath(new URL("./vectors/", import.meta.url));
@@ -43,7 +43,12 @@ describe("contract vectors", () => {
   });
 
   it("500 internal is a shared error with exactly the closed body (DAN-776)", () => {
-    expect(INTERNAL.error).toEqual({ status: 500, code: "internal", key: "errors.internal" });
+    expect(INTERNAL.error).toEqual({
+      status: 500,
+      code: "internal",
+      key: "errors.internal",
+      body: errorBody("internal", 500),
+    });
     expect(SHARED_ERRORS).toEqual([INTERNAL.error]);
     const health = load()["platform.health.get"] as VectorFile;
     expect(health.vectors.find((v) => v.name === "internal")).toEqual({
@@ -51,7 +56,18 @@ describe("contract vectors", () => {
       kind: "error",
       code: "internal",
       request: {},
-      response: { status: 500, contentType: "application/json", body: { error: "internal" } },
+      response: {
+        status: 500,
+        contentType: "application/json",
+        // The problem body (S-1L.3); the server makes a new request id each time.
+        body: {
+          error: "internal",
+          code: "internal",
+          messageKey: "errors.internal",
+          status: 500,
+          requestId: "00000000-0000-4000-8000-000000000000",
+        },
+      },
     });
   });
 });
@@ -109,7 +125,18 @@ describe("checkVectors refuses", () => {
       kind: "error",
       code: "internal",
       request: {},
-      response: { status: 500, contentType: "application/json", body: { error: "internal" } },
+      response: {
+        status: 500,
+        contentType: "application/json",
+        // The problem body (S-1L.3); the server makes a new request id each time.
+        body: {
+          error: "internal",
+          code: "internal",
+          messageKey: "errors.internal",
+          status: 500,
+          requestId: "00000000-0000-4000-8000-000000000000",
+        },
+      },
     } as const;
     const shared = (f: unknown) => checkVectors([route], { [route.id]: f }, check, SHARED_ERRORS);
 

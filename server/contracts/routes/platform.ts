@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error } from "../schema/index.ts";
+import { closed, defineRoute, error, problemFields } from "../schema/index.ts";
 
 const CapabilityStatus = Type.Union([
   Type.Literal("ok"),
@@ -63,12 +63,21 @@ export const ready = defineRoute({
     },
   ],
   errors: [
+    // Readiness keeps the word in `status` (v1), so the problem fields come without it.
     error(
       503,
       "unavailable",
-      closed({ status: Type.Literal("unavailable"), capabilities: Capabilities }),
+      closed({
+        status: Type.Literal("unavailable"),
+        capabilities: Capabilities,
+        ...problemFields("unavailable", 503, false),
+      }),
     ),
-    error(503, "draining", closed({ status: Type.Literal("draining") })),
+    error(
+      503,
+      "draining",
+      closed({ status: Type.Literal("draining"), ...problemFields("draining", 503, false) }),
+    ),
   ],
 });
 
@@ -103,10 +112,16 @@ export const FALLBACK = {
   error: error(404, "not_found"),
 } as const;
 
+/** The answer to a known path with a method it has no route for; `allow` names those. */
+export const METHOD_NOT_ALLOWED = {
+  error: error(405, "method_not_allowed"),
+} as const;
+
 /**
  * The answer of any route whose handler fails before the first byte of its
- * answer (DAN-776). Exactly `{"error":"internal"}`: never the message, name or
- * stack of the error, a request id or anything else from inside the server.
+ * answer (DAN-776). Only the problem body of `internal` (S-1L.3): never the
+ * message, name or stack of the error, SQL or anything else from inside the
+ * server but the request id.
  */
 export const INTERNAL = {
   error: error(500, "internal"),

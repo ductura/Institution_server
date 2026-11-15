@@ -5,4 +5,4 @@
  * breaks existing clients is refused (scripts/check-breaking.ts) and needs a
  * new major, which is a new document and a new path prefix.
  */
-export const API_VERSION = "1.1.0";
+export const API_VERSION = "1.2.0";
