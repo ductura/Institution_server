@@ -199,6 +199,10 @@ const failing: [messageId: string, code: string][] = [
   ["encoded", 'export const e = "&eth;";'],
   // Review FAIL on #64 (cxcrs64): an upper-case scheme, a surrogate pair.
   ["encoded", 'export const e = fetch("DATA:text/plain;base64,xI1la2Fq");'],
+  // Review FAIL c.6896957758: tab and line ends inside a URL are dropped by the parser.
+  ["encoded", 'export const e = fetch("da\\tta:text/plain;base64,xI1la2Fq");'],
+  ["encoded", 'export const e = fetch("data\\n:text/plain,%C4%8D");'],
+  ["encoded", 'export const e = new URL("http://xn-\\r-ekaj-fua.hr/");'],
   ["encoded", "export const e = JSON.parse('\"\\\\uD801\\\\uDC00\"');"],
   // (3) Server code may not import a test or a fixture.
   ["exempt", 'import { CANARY } from "../log/invented.fixture.ts";\nexport const c = CANARY;'],
