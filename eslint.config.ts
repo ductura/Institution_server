@@ -462,7 +462,7 @@ export default defineConfig(
   },
   {
     // Interface text lives in locales/ (S-1L.2, DAN-780). Left out: tests and
-    // fixtures (TEXT_EXEMPT) and two transitional critical-path files
+    // fixtures (TEXT_EXEMPT) and the transitional critical-path skeleton app
     // (TEXT_TRANSITIONAL, a debt with an end).
     files: ["server/**/*.ts"],
     ignores: [...TEXT_EXEMPT, ...TEXT_TRANSITIONAL],

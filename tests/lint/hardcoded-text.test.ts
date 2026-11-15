@@ -294,8 +294,9 @@ describe("repository config", () => {
         },
       ],
     });
-    expect(TEXT_TRANSITIONAL).toEqual(["server/app.ts", "server/index.ts"]);
+    expect(TEXT_TRANSITIONAL).toEqual(["server/app.ts"]);
     for (const f of TEXT_TRANSITIONAL) {
+      expect(existsSync(path.join(ROOT, f)), f).toBe(true);
       const [result] = await only.lintFiles([path.join(ROOT, f)]);
       expect(result?.messages.length ?? 0, f).toBeGreaterThan(0);
       expect(await ruleOn(f), f).toBe(false);
