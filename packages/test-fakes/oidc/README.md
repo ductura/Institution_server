@@ -1,11 +1,11 @@
 # Lažni OIDC pružatelj („Demo prijava”)
 
-Testno pomagalo: OIDC pružatelj s izmišljenim računima u obliku koji izdaje AAI@EduHr. Služi da se prijava može graditi i testirati bez AAI@EduHr. **Samo lokalno i u CI-ju (D-09).** Studenti se prijavljuju isključivo preko AAI@EduHr. Prenesen je iz Ductusa `infra/fake-oidc` (`d52a92c3`, DAN-729), a kasnije prelazi u `@ductura/test-fakes` (U9).
+Testno pomagalo: OIDC pružatelj s izmišljenim računima u obliku koji izdaje AAI@EduHr. Služi da se prijava može graditi i testirati bez AAI@EduHr. **Samo lokalno i u CI-ju (D-09).** Studenti se prijavljuju isključivo preko AAI@EduHr. Prenesen je iz Ductusa `infra/fake-oidc` (`d52a92c3`, DAN-729); od U9 (DAN-741) je modul `@ductura/test-fakes/oidc`.
 
 ## Pokretanje
 
 ```bash
-pnpm exec tsx test-support/fake-oidc/server.ts   # http://localhost:8080
+pnpm exec tsx packages/test-fakes/oidc/server.ts   # http://localhost:8080
 ```
 
 | Varijabla                                  | Značenje                                                                                                                      |
@@ -29,5 +29,7 @@ pnpm exec tsx test-support/fake-oidc/server.ts   # http://localhost:8080
 - Uvozi samo Node, `oidc-provider` (devDependency) i datoteke iz ove mape.
 - Ne uvozi ništa iz `server/`.
 - Proizvodni kod (`server/`) ovo ne uvozi (`docs/server-map.md`). Smiju ga koristiti samo testovi i lokalni rad.
+- Pokretanje kao ulazna točka sluša samo na `127.0.0.1` (ili `::1` za issuer `[::1]`), nikad na svim sučeljima (U9).
+- Učitavanje `index.ts` uz `NODE_ENV` izvan dopuštenih vrijednosti baca grešku (U9).
 
 Svi računi, imena i ustanove su izmišljeni.

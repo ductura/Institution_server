@@ -325,7 +325,7 @@ function reachable(files: Files, entry: string): string[] {
 // eslint.config.ts), in any letter case.
 const testOnly = (paths: string[]): string[] =>
   paths.filter((f) =>
-    /(?:^|\/)generated\/fake-server\/|^(?:test-support|server\/test-server)\/|\.test\.[cm]?[jt]s$/iu.test(
+    /(?:^|\/)generated\/fake-server\/|^(?:test-support|server\/test-server|packages\/test-fakes)\/|\.test\.[cm]?[jt]s$/iu.test(
       f,
     ),
   );

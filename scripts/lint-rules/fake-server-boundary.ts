@@ -15,7 +15,10 @@ const FAKE_SERVER_RE = /(?:^|\/)generated\/fake-server(?:$|[/?#.])/iu;
 // Test code, by its path from the repository root: the folders and suffixes of
 // TEST_ONLY_FILES in eslint.config.ts. It may import the fake server, so a
 // re-export there would carry it into production code.
-const TEST_ONLY_RE = /^(?:test-support|server\/test-server)(?:\/|$)|\.test\.[cm]?[jt]s$/iu;
+const TEST_ONLY_RE =
+  /^(?:test-support|server\/test-server|packages\/test-fakes)(?:\/|$)|\.test\.[cm]?[jt]s$/iu;
+// The test fakes package (U9) by name, with or without a subpath, any case.
+const TEST_FAKES_PACKAGE_RE = /^@ductura\/test-fakes(?:$|[/?#])/iu;
 // `/// <reference path="..." />` and `/// <reference types="..." />`.
 const REFERENCE_RE = /^\/\s*<reference\s+(?:path|types)\s*=\s*["']([^"']*)["']/u;
 
@@ -64,11 +67,13 @@ export function isFakeServer(specifier: string, from: string): boolean {
 
 /**
  * True when a specifier, read from `from` in the repository at `root`, names
- * test code: test-support/, server/test-server/ or a *.test.ts file. Such a
- * module may re-export the fake server, so production code does not load it.
+ * test code: test-support/, server/test-server/, packages/test-fakes/ (also
+ * as the package @ductura/test-fakes) or a *.test.ts file. Such a module may
+ * re-export the fake server, so production code does not load it.
  */
 export function isTestCode(specifier: string, from: string, root: string): boolean {
   return spellings(specifier).some((text) => {
+    if (TEST_FAKES_PACKAGE_RE.test(text)) return true;
     const resolved = target(text, from);
     if (resolved === undefined) return false;
     const path = relative(root, resolved).replace(/\\/g, "/");
@@ -110,8 +115,8 @@ function merged(...sets: Rule.RuleListener[]): Rule.RuleListener {
  * `typeof import(…)` (TSImportType) and a `/// <reference>` comment, by the
  * specifier as written and resolved. It also reports production code that
  * loads test code, through which a re-export would reach the fake server.
- * eslint.config.ts switches the rule off only for test files, server/test-server
- * and test-support; no other block turns it off.
+ * eslint.config.ts switches the rule off only for test files, server/test-server,
+ * test-support and packages/test-fakes; no other block turns it off.
  */
 export const noFakeServerImport: Rule.RuleModule = {
   meta: {

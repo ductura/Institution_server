@@ -1,0 +1,18 @@
+{
+  "name": "@ductura/test-fakes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lažne zamjene za testove Ducture (samo lokalno i u CI-ju, D-09)",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./oidc": "./oidc/index.ts",
+    "./fake-server": "./fake-server/index.ts",
+    "./clock": "./clock/index.ts",
+    "./services": "./services/index.ts",
+    "./fido2": "./fido2/index.ts"
+  },
+  "dependencies": {
+    "oidc-provider": "9.12.2"
+  }
+}

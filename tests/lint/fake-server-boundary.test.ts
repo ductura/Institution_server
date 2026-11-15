@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { ESLint } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -124,6 +124,49 @@ describe("fake server import boundary (eslint.config.ts)", () => {
     expect(await reported("server/index.ts", `export type X = typeof import("${spec}");\n`)).toBe(
       1,
     );
+  });
+
+  // U9 (DAN-741): the test fakes package, by name or by path, is test code.
+  it.each([
+    "@ductura/test-fakes",
+    "@ductura/test-fakes/oidc",
+    "@ductura/test-fakes/fake-server",
+    "@Ductura/Test-Fakes/clock",
+    "@ductura/test-fakes/oidc/server.ts",
+    "../packages/test-fakes/index.ts",
+    "../packages/test-fakes/oidc/index.ts",
+    "../Packages/Test-Fakes/fido2/index.ts",
+    "../packages/./test-fakes/services/index.ts",
+    "..\\\\packages\\\\test-fakes\\\\index.ts",
+    "../packages/test%2Dfakes/index.ts",
+    pathToFileURL(`${REPO_ROOT}packages/test-fakes/index.ts`).href,
+  ])("rejects the test fakes %s in production code", async (spec) => {
+    // One folder below the root, so a relative path reaches packages/.
+    for (const filePath of ["server/index.ts", "server/example.ts", "scripts/example.ts"]) {
+      const code = `import * as fakes from "${spec}";\nexport const x = fakes;\n`;
+      expect(await reported(filePath, code), `${filePath} ${spec}`).toBe(1);
+    }
+    expect(await reported("server/index.ts", `export * from "${spec}";\n`)).toBe(1);
+    expect(
+      await reported("server/index.ts", `export const load = () => import("${spec}");\n`),
+    ).toBe(1);
+    expect(await reported("server/index.ts", `export type X = typeof import("${spec}");\n`)).toBe(
+      1,
+    );
+  });
+
+  it("allows the test fakes in tests and inside the package", async () => {
+    const code = 'import * as fakes from "@ductura/test-fakes";\nexport const x = fakes;\n';
+    expect(await reported("server/session/example.test.ts", code)).toBe(0);
+    expect(await reported("packages/test-fakes/clock/clock.ts", code)).toBe(0);
+    expect(
+      await restricted(
+        "packages/test-fakes/fake-server/index.ts",
+        "../../../server/contracts/generated/fake-server/index.ts",
+      ),
+    ).toBe(0);
+    // A name that only starts like it is another package.
+    expect(await reported("server/index.ts", 'export * from "@ductura/test-fakesx";\n')).toBe(0);
   });
 
   it("allows a production helper and test code inside test code", async () => {

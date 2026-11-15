@@ -40,16 +40,30 @@ export function listenPort(value: string | undefined): number {
   return port;
 }
 
+/**
+ * The loopback address to listen on, never every interface (U9, server#5
+ * review): ::1 for an [::1] issuer, else 127.0.0.1.
+ */
+export function listenHost(issuer: string): string {
+  return new URL(issuer).hostname === "[::1]" ? "::1" : "127.0.0.1";
+}
+
 /** The port and options from the environment; refuses before anything listens. */
-export function fakeOidcConfigFromEnv(env: Env): { port: number; options: FakeOidcOptions } {
+export function fakeOidcConfigFromEnv(env: Env): {
+  port: number;
+  host: string;
+  options: FakeOidcOptions;
+} {
   assertFakeOidcAllowed(env);
   const port = listenPort(env.PORT);
+  // F-019: the issuer and every redirect address are on this machine; any
+  // other value stops the provider here, before it listens.
+  const issuer = loopbackIssuer(env.ISSUER, `http://localhost:${port}`);
   return {
     port,
+    host: listenHost(issuer),
     options: {
-      // F-019: the issuer and every redirect address are on this machine; any
-      // other value stops the provider here, before it listens.
-      issuer: loopbackIssuer(env.ISSUER, `http://localhost:${port}`),
+      issuer,
       // Comma separated; http and https for the app on port 3000 by default
       // (the login E2E runs the app over https).
       redirectUris: redirectUriList(env.REDIRECT_URI, DEFAULT_REDIRECT_URIS),
@@ -317,11 +331,14 @@ export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
   });
 }
 
-// Run directly (`tsx test-support/fake-oidc/server.ts`): the guard and the
+// Run directly (`tsx packages/test-fakes/oidc/server.ts`): the guard and the
 // address checks run before the server listens.
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const { port, options } = fakeOidcConfigFromEnv(process.env);
-  createFakeOidc(options).listen(port, () => {
-    console.log(`fake OIDC (demo prijava, ${options.mode}) on ${options.issuer}`);
+  const { port, host, options } = fakeOidcConfigFromEnv(process.env);
+  const server = createFakeOidc(options);
+  server.listen(port, host, () => {
+    const bound = server.address();
+    const at = typeof bound === "object" && bound !== null ? `${bound.address}:${bound.port}` : "";
+    console.log(`fake OIDC (demo prijava, ${options.mode}) on ${options.issuer}, listening ${at}`);
   });
 }

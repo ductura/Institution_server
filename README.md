@@ -34,7 +34,8 @@ Kod je u TypeScriptu i pokreće se izravno preko `tsx`, bez koraka prevođenja.
 | `server/contracts/` | Ugovor API-ja `/api/v1` (TypeBox): izvor validacije, OpenAPI-ja, tipova, klijenta i lažnog servera                                                    |
 | `locales/`          | Hrvatski tekstovi sučelja i poruka (zasad samo poruke gatea, `locales/hr.json`)                                                                       |
 | `db/`               | Migracije i pgTAP testovi (dimni test okruženja CI-ja `db/tests/`, matrica glavne baze `db/main/tests/`)                                              |
-| `test-support/`     | Zajednička pomagala za testove: lažni OIDC pružatelj (`fake-oidc/`)                                                                                   |
+| `packages/`         | `@ductura/test-fakes`: lažne zamjene za testove (lažni OIDC, lažni server, sat, usluge, FIDO2); samo devDependency                                    |
+| `test-support/`     | Ostala pomagala za testove (`test-idp/`, `fake-kms/`, `malformed-signatures/`)                                                                        |
 | `docs/`             | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 | `scripts/`          | Alati repoa (lokalna lint pravila, gate, CI u `scripts/ci/`)                                                                                          |
 | `tests/`            | Testovi alata repoa (lint, formatiranje)                                                                                                              |
@@ -85,7 +86,7 @@ Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 ## Stanje kostura
 
 - Prijava: **privremena testna zamjena, ne način prijave.** Token je samo ID korisnika (`Authorization: Bearer student-a@primjer.invalid`), pa se svatko može predstaviti kao bilo tko. Smije se pokretati samo u testovima i lokalnom radu, nikad u nekom postavljenom okruženju. To nije AAI@EduHr: studenti se prijavljuju isključivo preko AAI@EduHr (D-09). Zamjenjuju je zadaci prijave (S-1E) sesijom nakon prijave AAI@EduHr.
-- Lažni OIDC pružatelj (`test-support/fake-oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokretanje: `pnpm exec tsx test-support/fake-oidc/server.ts` (zadano `http://localhost:8080`). `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
+- Lažni OIDC pružatelj (`packages/test-fakes/oidc/`, „Demo prijava”): samo lokalno i u CI-ju (D-09), računi su izmišljeni. Pokretanje: `pnpm exec tsx packages/test-fakes/oidc/server.ts` (zadano `http://localhost:8080`). `FAKE_OIDC_MODE` bira način rada: `success` (zadano), `refuse`, `expired`, `unavailable`. S `NODE_ENV` različitim od praznog, `development` i `test` ne pokreće se.
 - Baza: memorijska (`server/store.ts`). Zamjenjuje je prava baza.
 - Pozadinski poslovi: još nisu dodani.
 

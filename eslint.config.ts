@@ -233,7 +233,12 @@ const ESTREE_NODE_NAMES = [
 // The naming rule, with extra exact property names (`properties`) and extra
 // exact destructured names (`destructured`) for the folders of one block.
 // Test code, which may use the contract fake server (local/no-fake-server-import).
-const TEST_ONLY_FILES = ["**/*.test.ts", "server/test-server/**", "test-support/**"];
+const TEST_ONLY_FILES = [
+  "**/*.test.ts",
+  "server/test-server/**",
+  "test-support/**",
+  "packages/test-fakes/**",
+];
 
 function namingConvention(properties: string[], destructured: string[]): Linter.RuleEntry {
   return [
