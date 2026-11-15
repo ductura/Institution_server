@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { buildServer } from "../scripts/build/index.ts";
+import { buildServer, SERVER_NODE_FLAGS } from "../scripts/build/index.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CANARY = "invented-canary-7f3a";
@@ -35,7 +35,7 @@ const children: ChildProcess[] = [];
 
 function run(env: Record<string, string>): Started {
   // No inherited variables: only what the case names (and PATH for node).
-  const child = spawn(process.execPath, [outfile], {
+  const child = spawn(process.execPath, [...SERVER_NODE_FLAGS, outfile], {
     cwd: dir,
     env: { PATH: process.env.PATH ?? "", OIDC_CLIENT_SECRET: CANARY, ...env },
     stdio: ["ignore", "pipe", "pipe"],

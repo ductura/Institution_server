@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
 
+import { SERVER_NODE_FLAGS } from "../scripts/build/index.ts";
+
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SERVER = join(ROOT, "server/server.ts");
 const SLOW_ENTRY = join(ROOT, "test-support/shutdown-entry/shutdown-entry.ts");
@@ -29,7 +31,7 @@ async function start(
   env: Record<string, string> = {},
   args: readonly string[] = [],
 ): Promise<Started> {
-  const child = spawn(process.execPath, [entry, ...args], {
+  const child = spawn(process.execPath, [...SERVER_NODE_FLAGS, entry, ...args], {
     cwd: ROOT,
     env: { PATH: process.env.PATH ?? "", PORT: "0", APP_DATABASE_URL: DATABASE_URL, ...env },
     stdio: ["ignore", "pipe", "pipe"],
@@ -130,7 +132,7 @@ describe("server/server.ts shutdown", () => {
   ])(
     "does not start with SHUTDOWN_GRACE_MS as %s",
     async (_, value) => {
-      const child = spawn(process.execPath, [SERVER], {
+      const child = spawn(process.execPath, [...SERVER_NODE_FLAGS, SERVER], {
         cwd: ROOT,
         env: {
           PATH: process.env.PATH ?? "",
