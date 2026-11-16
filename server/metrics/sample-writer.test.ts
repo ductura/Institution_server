@@ -143,9 +143,12 @@ describe("the query", () => {
     expect(query.mock.calls).toEqual([[METRIC_SAMPLE_INSERT, [JSON.stringify(samples)]]]);
   });
 
-  it("clears the deadline timer once the store answers", async () => {
+  it("clears the deadline timer once the store answers, and the timer never holds the process", async () => {
+    const timeouts = vi.spyOn(globalThis, "setTimeout");
     const { store, collector } = collectorOver(() => Promise.resolve());
     await vi.advanceTimersByTimeAsync(I);
+    const deadline = timeouts.mock.results.at(-1)?.value as NodeJS.Timeout;
+    expect(deadline.hasRef()).toBe(false);
     expect(store.query).toHaveBeenCalledTimes(1);
     // Only the collector's interval is left.
     expect(vi.getTimerCount()).toBe(1);
