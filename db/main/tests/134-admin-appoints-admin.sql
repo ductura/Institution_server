@@ -128,8 +128,13 @@ SELECT is(left(pg_temp.ask_as('ductus_worker', 'iva', 'SELECT institution.admin_
 -- transaction (as 119): the source holds it, before the session is read.
 SELECT ok(
   (SELECT p.prosrc LIKE '%read committed required%' AND p.prosrc LIKE '%25000%'
+          AND strpos(p.prosrc, 'read committed required') > 0
           AND strpos(p.prosrc, 'read committed required') < strpos(p.prosrc, 'require_actor')
-          AND strpos(p.prosrc, 'pg_advisory_xact_lock') < strpos(p.prosrc, 'FOR SHARE')
+          AND strpos(p.prosrc, $l$'institution.institution_admin:' || actor.institution_id::text$l$) > 0
+          AND strpos(p.prosrc, 'pg_advisory_xact_lock') > 0
+          AND regexp_instr(p.prosrc,
+                'PERFORM 1 FROM institution\.institution_role r\s+WHERE r\.institution_id = actor\.institution_id AND r\.user_id = actor\.user_id\s+AND r\.role = ''admin'' AND r\.confirmed_at IS NOT NULL AND r\.revoked_at IS NULL\s+FOR SHARE;\s+IF NOT FOUND') > 0
+          AND strpos(p.prosrc, 'pg_advisory_xact_lock') < regexp_instr(p.prosrc, 'PERFORM 1 FROM institution\.institution_role r')
      FROM pg_proc p WHERE p.oid = 'institution.admin_appoint_admin(uuid)'::regprocedure),
   'the function refuses a level above read committed with 25000 and reads the caller''s office only under the lock');
 
@@ -211,6 +216,13 @@ SELECT is(pg_temp.as_owner($$ UPDATE institution.institution_role SET confirmed_
 SELECT is(pg_temp.ask('iva', 'SELECT institution.admin_appoint_admin({dora})::text'), 'true', 'Iva appoints Dora again');
 SELECT is(pg_temp.admin_rows('dora'), 'true false, false true', 'on a new row; the old one is closed');
 SELECT isnt(pg_temp.office('dora'), pg_temp.id('dora_office'), 'the row in office is not the old one');
+-- The same for a row the operator confirmed (its trail is teacher_role_event).
+INSERT INTO ref VALUES ('iva_office', pg_temp.office('iva')::text);
+SELECT is(pg_temp.as_owner($$ UPDATE institution.institution_role SET confirmed_at = NULL
+  WHERE id = {iva_office} RETURNING 'written' $$), 'written', 'the owner makes Iva''s operator-appointed row pending');
+SELECT is(pg_temp.ask('marko', 'SELECT institution.admin_appoint_admin({iva})::text'), 'true', 'Marko appoints Iva again');
+SELECT is(pg_temp.admin_rows('iva'), 'true false, false true', 'on a new row; the operator''s row is closed');
+SELECT is(pg_temp.event('iva'), 'appointed marko iva fak_a true true', 'with Marko in the row of the new one');
 
 -- 8. No administrator in office without its row of the same statement: a
 -- direct write, by the owner too, is refused at commit; and the trail row

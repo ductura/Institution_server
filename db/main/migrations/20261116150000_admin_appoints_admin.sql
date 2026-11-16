@@ -22,8 +22,9 @@
 --   in the same statement as the role row, with the administrator from the
 --   session. Owner-only, forced RLS, bound to the role row it records. A
 --   trigger refuses a row whose administrator is not one in office at the
---   same institution, or is the person appointed, so the owner cannot write
---   one in anybody's name either.
+--   same institution, or is the person appointed. Known limit: the owner,
+--   which is not a login role, can still write a row in the name of an
+--   administrator who is in office (as with DAN-809's trail).
 -- - institution.check_admin_appointment(): an active confirmed administrator
 --   row is admitted with the operator's 'confirmed' row or with this trail's
 --   'appointed' row of the same statement (same xmin); everything else it
@@ -105,6 +106,11 @@ BEGIN
     RAISE EXCEPTION 'read committed required' USING ERRCODE = '25000';
   END IF;
   SELECT * INTO actor FROM institution.require_actor();
+  -- Only an administrator takes the institution's lock, so no other caller
+  -- can hold up the operator; the office is read again under the lock.
+  IF NOT institution.actor_has_role('admin') THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
   -- The operator procedure's lock first; the statements below then see every
   -- revocation committed before it.
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
