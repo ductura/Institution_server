@@ -3070,7 +3070,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.9.0",
+        "apiVersion": "1.10.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -3086,7 +3086,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.9.0",
+        "apiVersion": "1.10.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -3104,6 +3104,25 @@
         "code": "internal",
         "messageKey": "errors.internal",
         "status": 500,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "platform.health.get",
+    "name": "too-many-requests",
+    "request": {},
+    "response": {
+      "status": 429,
+      "contentType": "application/json",
+      "headers": {
+        "retry-after": "12"
+      },
+      "body": {
+        "error": "too_many_requests",
+        "code": "too_many_requests",
+        "messageKey": "errors.tooManyRequests",
+        "status": 429,
         "requestId": "00000000-0000-4000-8000-000000000000"
       }
     }
@@ -3995,6 +4014,76 @@
             "default": 120,
             "min": 15,
             "max": 120
+          },
+          {
+            "key": "network.rate_limit_login_per_ip",
+            "levels": [
+              "network_security"
+            ],
+            "kind": "integer",
+            "default": 30,
+            "min": 1,
+            "max": 100000
+          },
+          {
+            "key": "network.rate_limit_enroll_per_ip",
+            "levels": [
+              "network_security"
+            ],
+            "kind": "integer",
+            "default": 60,
+            "min": 1,
+            "max": 100000
+          },
+          {
+            "key": "network.rate_limit_enroll_per_account",
+            "levels": [
+              "network_security"
+            ],
+            "kind": "integer",
+            "default": 10,
+            "min": 1,
+            "max": 100000
+          },
+          {
+            "key": "network.rate_limit_save_per_ip",
+            "levels": [
+              "network_security"
+            ],
+            "kind": "integer",
+            "default": 1200,
+            "min": 1,
+            "max": 100000
+          },
+          {
+            "key": "network.rate_limit_save_per_account",
+            "levels": [
+              "network_security"
+            ],
+            "kind": "integer",
+            "default": 120,
+            "min": 1,
+            "max": 100000
+          },
+          {
+            "key": "network.rate_limit_default_per_ip",
+            "levels": [
+              "network_security"
+            ],
+            "kind": "integer",
+            "default": 3000,
+            "min": 1,
+            "max": 100000
+          },
+          {
+            "key": "network.rate_limit_default_per_account",
+            "levels": [
+              "network_security"
+            ],
+            "kind": "integer",
+            "default": 300,
+            "min": 1,
+            "max": 100000
           }
         ]
       }

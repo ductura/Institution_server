@@ -1,4 +1,4 @@
-// Rate limit, step 3 of docs/server-map.md §3 (S-1C.3, DAN-814; contract
+// Rate limit, step 4 of docs/server-map.md §3 (S-1C.3, DAN-814; contract
 // Ductus#1836 c.6908215789, attack plan ductura/server#117). One token bucket
 // per client IP and one per account (the SHA-256 of the raw session cookie;
 // the session is never resolved), each per class of route. A request passes

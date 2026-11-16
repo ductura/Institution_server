@@ -20,6 +20,7 @@ import {
   PENDING,
   ROUTES,
   SERVER_SOURCES,
+  SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   type RouteContract,
   type Vector,
@@ -134,10 +135,33 @@ function openapi(routes: RouteContract[]): unknown {
   const key = v1Key(code);
   return {
     openapi: "3.1.0",
-    info: { title: "Ductura API", version: API_VERSION, "x-inventory-source": INVENTORY_SOURCE },
+    info: {
+      title: "Ductura API",
+      version: API_VERSION,
+      "x-inventory-source": INVENTORY_SOURCE,
+      description: sharedErrorsText(),
+    },
     "x-fallback": { status, code, key, inventory: FALLBACK.inventory },
     paths,
   };
+}
+
+/**
+ * info.description: the answers any route may give besides its own
+ * (SHARED_ERRORS). A new status on an existing route or a new field in info
+ * breaks v1 (breaking.ts), a description does not, so v1 publishes them here,
+ * one line each (review on DAN-814 b).
+ */
+export function sharedErrorsText(): string {
+  const lines = SHARED_ERRORS.map((e) => {
+    const headers = SHARED_ERROR_HEADERS[`${e.status} ${e.code}`] ?? [];
+    const head = headers.length > 0 ? `; header ${headers.join(", ")} in whole seconds` : "";
+    return `- ${e.status} ${e.code}: problem body {error, code, messageKey: "${e.key}", status, requestId}${head}.`;
+  });
+  return [
+    "Shared errors: any route may answer these besides the errors listed under it.",
+    ...lines,
+  ].join("\n");
 }
 
 /**

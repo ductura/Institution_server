@@ -5,7 +5,9 @@ export {
   INTERNAL,
   METHOD_NOT_ALLOWED,
   platformRoutes,
+  SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
+  TOO_MANY_REQUESTS,
 } from "./platform.ts";
 export { profileRoutes } from "./profile.ts";
 export { studentRoutes } from "./student.ts";

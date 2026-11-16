@@ -2,9 +2,10 @@
 // client shows has a code and a message key with a text in locales/ (hr, en).
 // Statuses the server answers use the contract's own error (server/contracts,
 // SERVER_ERRORS), so the key equals the messageKey of the problem body; the
-// ones only a proxy or a later task gives (429, 502, 504, session_expired)
-// have their texts under clientErrors. 429 stays generic even when a route
-// answers it with its own code (ROUTE_429_CODES). Also the one record of an uncaught
+// ones only a proxy or a later task gives (502, 504, session_expired) have
+// their texts under clientErrors. 429 is the shared too_many_requests of the
+// rate limit (DAN-814) even when a route answers it with its own code
+// (ROUTE_429_CODES). Also the one record of an uncaught
 // error (server_error), written by the router, the pipeline and the server.
 import type { LogWriter } from "../log/index.ts";
 
@@ -27,7 +28,7 @@ export const ERROR_CATALOG: readonly CatalogError[] = Object.freeze([
   entry(403, "forbidden", "errors.forbidden"),
   entry(404, "not_found", "errors.notFound"),
   entry(408, "timeout", "errors.timeout"),
-  entry(429, "too_many_requests", "clientErrors.tooManyRequests"),
+  entry(429, "too_many_requests", "errors.tooManyRequests"),
   INTERNAL,
   entry(502, "bad_gateway", "clientErrors.badGateway"),
   entry(503, "unavailable", "errors.unavailable"),

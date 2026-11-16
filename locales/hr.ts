@@ -2014,6 +2014,8 @@ export const hr = {
     preconditionRequired: "Zahtjev ne navodi koju verziju rada mijenja. Učitajte rad ponovno.",
     staleBase: "Rad je u međuvremenu promijenjen. Učitajte zadnju verziju.",
     timeout: "Zahtjev je trajao predugo. Pokušajte ponovno.",
+    tooManyRequests:
+      "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",
     tooLarge: "Zahtjev je prevelik.",
     tooManyReports:
       "Iz Vašeg računa u jednom satu može se poslati najviše pet prijava. Pokušajte ponovno kasnije.",
@@ -2027,8 +2029,6 @@ export const hr = {
   // Texts of the error catalogue that the server's contract does not answer
   // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.
   clientErrors: {
-    tooManyRequests:
-      "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",
     badGateway:
       "Poslužitelj trenutačno ne odgovara ispravno. Pokušajte ponovno za nekoliko sekundi.",
     gatewayTimeout: "Poslužitelj nije odgovorio na vrijeme. Pokušajte ponovno.",

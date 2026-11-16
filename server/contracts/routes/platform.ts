@@ -129,7 +129,27 @@ export const INTERNAL = {
   error: error(500, "internal"),
 } as const;
 
-/** Answers every route may give besides its own errors. */
-export const SHARED_ERRORS = [INTERNAL.error] as const;
+/**
+ * The answer of the rate limit, step 4 of the pipeline, before any route
+ * (S-1C.3, DAN-814; contract Ductus#1836 c.6908215789): the problem body of
+ * `too_many_requests` with Retry-After in whole seconds. A route's own 429
+ * codes (server/http/error-catalog.ts, ROUTE_429_CODES) stay apart.
+ */
+export const TOO_MANY_REQUESTS = {
+  error: error(429, "too_many_requests"),
+  headers: ["retry-after"],
+} as const;
+
+/**
+ * Answers every route may give besides its own errors. A new status on an
+ * existing route breaks v1 (breaking.ts), so openapi/v1.json publishes them
+ * once, in info.description, not under each route (review on DAN-814 b).
+ */
+export const SHARED_ERRORS = [INTERNAL.error, TOO_MANY_REQUESTS.error] as const;
+
+/** Headers a shared error carries, by "status code" (Retry-After on the 429). */
+export const SHARED_ERROR_HEADERS: Readonly<Record<string, readonly string[]>> = {
+  "429 too_many_requests": TOO_MANY_REQUESTS.headers,
+};
 
 export const platformRoutes = [health, ready, status] as const;

@@ -47,8 +47,8 @@ const problems = [
 //    database that is down fails only its own calls.
 // 3. Layers, in the order of docs/server-map.md §3, steps 2 to 7: client IP,
 //    IP rules, rate limit, traffic record, security headers, origin check.
-//    The order is fixed in http (PIPELINE_STEPS); steps 3 to 5 are empty
-//    until wave 5. Without APP_ORIGIN every state-changing request gets 403.
+//    The order is fixed in http (PIPELINE_STEPS); steps 3 and 5 are empty
+//    until wave 5, step 4 limits requests (DAN-814). Without APP_ORIGIN every state-changing request gets 403.
 const LAYERS = createLayers({
   expectedOrigin: appOrigin(process.env),
   trustedProxies: TRUSTED_PROXIES ?? [],

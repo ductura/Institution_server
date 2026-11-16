@@ -9,18 +9,27 @@ import {
   platformRoutes,
   profileRoutes,
   projectionRoutes,
+  SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   settingsRoutes,
   studentRoutes,
   supportRoutes,
   teacherRoutes,
+  TOO_MANY_REQUESTS,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 
-export { FALLBACK, INTERNAL, METHOD_NOT_ALLOWED, SHARED_ERRORS };
+export {
+  FALLBACK,
+  INTERNAL,
+  METHOD_NOT_ALLOWED,
+  SHARED_ERROR_HEADERS,
+  SHARED_ERRORS,
+  TOO_MANY_REQUESTS,
+};
 export { MAX_COMMIT_BODY_BYTES } from "./routes/index.ts";
 export { checkInventory } from "./check.ts";
 export {
