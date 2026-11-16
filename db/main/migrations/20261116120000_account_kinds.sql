@@ -24,8 +24,12 @@
 --   owner, ductus_identity, gives up its own write rights and its only policy
 --   is SELECT, so no SECURITY DEFINER function it owns can write either; and
 --   a trigger refuses every write, TRUNCATE included, by a role that is not a
---   superuser (ZD409). The owner can still undo the first two with DDL; that
---   is not an application role, and 130 fails if a migration does it.
+--   superuser (ZD409). Known limit: the owner, and ductus_migrator through
+--   SET ROLE, can still undo all three with DDL (grant itself the rights back,
+--   add a policy, drop or disable the trigger). Neither is an application
+--   role, no function runs DDL for them, and 130 fails if a migration leaves
+--   any layer changed. Moving the table to an owner nobody can become is for
+--   the step that builds the owner's procedure (V-7).
 -- migrate:up
 
 SET LOCAL ROLE ductus_migrator;

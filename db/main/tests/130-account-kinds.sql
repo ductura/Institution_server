@@ -10,7 +10,7 @@ BEGIN;
 \ir fixtures/institution.inc
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(26);
+SELECT plan(30);
 
 -- The matrix. One row per account kind: the relation and the condition that
 -- picks the kind's rows out of it.
@@ -76,9 +76,6 @@ SELECT is_empty(
         OR c.relowner <> 'ductus_identity'::regrole $$,
   'every kind lives in a table of ductus_identity with ENABLE and FORCE ROW LEVEL SECURITY');
 SELECT is_empty(
-  $$ SELECT kind FROM kind_matrix WHERE pg_temp.try(format('SELECT count(*) FROM %s WHERE %s', relation, condition)) <> 'ok' $$,
-  'the condition of every kind is a valid filter of its table');
-SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
      WHERE c.relnamespace = 'identity'::regnamespace AND c.relname IN ('app_admin', 'network_engineer_appointment')
        AND c.relkind <> 'r' $$,
@@ -130,19 +127,51 @@ SELECT is_empty(
   'nobody but its owner may call the refusal function');
 
 -- 3. No path around the rights: no function but the refusal names either
--- table, and no view, rule or materialised view reads one.
-SELECT is_empty(
-  $$ SELECT p.oid::regprocedure::text FROM pg_proc p
-     WHERE p.pronamespace NOT IN ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
-       AND p.pronamespace <> pg_my_temp_schema()
-       AND (p.prosrc ILIKE '%app\_admin%' OR p.prosrc ILIKE '%network\_engineer\_appointment%')
-       AND p.oid <> 'identity.refuse_app_admin_write()'::regprocedure $$,
+-- table, in its source, in an SQL-standard body (BEGIN ATOMIC) or as a
+-- dependency; no SECURITY DEFINER function runs dynamic SQL, which could name
+-- a table without spelling it; and no view, rule or materialised view reads
+-- one. Each function check has a negative control below.
+CREATE VIEW pg_temp.touching_function AS
+  SELECT p.oid::regprocedure::text AS found FROM pg_proc p
+  WHERE p.pronamespace NOT IN ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
+    AND p.pronamespace <> pg_my_temp_schema()
+    AND p.oid <> 'identity.refuse_app_admin_write()'::regprocedure
+    AND (coalesce(p.prosrc, '') || ' ' || coalesce(pg_get_function_sqlbody(p.oid), '')
+           ~* '(app_admin|network_engineer_appointment)'
+         OR EXISTS (SELECT 1 FROM pg_depend d
+                    WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid
+                      AND d.refobjid IN ('identity.app_admin'::regclass,
+                                         'identity.network_engineer_appointment'::regclass)));
+CREATE VIEW pg_temp.dynamic_definer AS
+  SELECT p.oid::regprocedure::text AS found FROM pg_proc p
+  WHERE p.prosecdef AND p.pronamespace <> pg_my_temp_schema()
+    AND regexp_replace(coalesce(p.prosrc, ''), 'EXECUTE\s+(FUNCTION|PROCEDURE)', '', 'gi') ~* '\mEXECUTE\M';
+SELECT is_empty('SELECT found FROM pg_temp.touching_function',
   'no function in the database reads or writes the new tables');
+SELECT is_empty('SELECT found FROM pg_temp.dynamic_definer',
+  'no SECURITY DEFINER function runs dynamic SQL');
+CREATE FUNCTION identity.test_atomic_write(p_institution uuid, p_user uuid, p_by uuid) RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = ''
+BEGIN ATOMIC
+  INSERT INTO identity.network_engineer_appointment (institution_id, user_id, appointed_by) VALUES (p_institution, p_user, p_by);
+END;
+CREATE FUNCTION identity.test_dynamic_write(p_table text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $f$ BEGIN EXECUTE format('DELETE FROM identity.%I', p_table); END $f$;
+SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
+  ARRAY['identity.test_atomic_write(uuid,uuid,uuid)'],
+  'control: a BEGIN ATOMIC body that writes a new table is found');
+SELECT bag_eq('SELECT found FROM pg_temp.dynamic_definer',
+  ARRAY['identity.test_dynamic_write(text)'],
+  'control: a definer with dynamic SQL is found');
+DROP FUNCTION identity.test_atomic_write(uuid, uuid, uuid);
+DROP FUNCTION identity.test_dynamic_write(text);
 SELECT is_empty(
   $$ SELECT r.ev_class::regclass::text FROM pg_depend d JOIN pg_rewrite r ON r.oid = d.objid
      WHERE d.classid = 'pg_rewrite'::regclass
        AND d.refobjid IN ('identity.app_admin'::regclass, 'identity.network_engineer_appointment'::regclass)
-       AND r.ev_class NOT IN ('identity.app_admin'::regclass, 'identity.network_engineer_appointment'::regclass) $$,
+       AND r.ev_class NOT IN ('identity.app_admin'::regclass, 'identity.network_engineer_appointment'::regclass)
+       AND (SELECT c.relnamespace FROM pg_class c WHERE c.oid = r.ev_class) <> pg_my_temp_schema() $$,
   'no view or rule reads the new tables');
 
 -- 4. Every role but the owner is refused every write, by its rights.
@@ -226,6 +255,26 @@ SELECT is(
   pg_temp.try('UPDATE identity.network_engineer_appointment SET revoked_at = appointed_at - interval ''1 second'''),
   '23505/23503/23503/23514',
   'a second active appointment, an appointer or an engineer of another institution, and an early revocation are refused');
+
+-- 8. Every condition picks out its own kind and no other: by now each kind
+-- has at least one row (fixture, section 5 or 7), and a kind is counted only
+-- in its own table, so a mistyped value or a condition that also matches
+-- another kind's rows fails.
+CREATE FUNCTION pg_temp.matrix_count(p_relation text, p_condition text) RETURNS bigint
+LANGUAGE plpgsql AS $f$
+DECLARE n bigint;
+BEGIN
+  EXECUTE format('SELECT count(*) FROM %s WHERE %s', p_relation, p_condition) INTO n;
+  RETURN n;
+END $f$;
+SELECT is_empty(
+  $$ SELECT kind FROM kind_matrix WHERE pg_temp.matrix_count(relation, condition) = 0 $$,
+  'the condition of every kind selects at least one row of that kind');
+SELECT is_empty(
+  $$ SELECT m.relation FROM kind_matrix m GROUP BY m.relation
+     HAVING count(*) > 1 AND sum(pg_temp.matrix_count(m.relation, m.condition))
+            <> pg_temp.matrix_count(m.relation, 'true') $$,
+  'the kinds that share a table split its rows exactly, so no row is two kinds at once or none');
 
 SELECT * FROM finish();
 ROLLBACK;
