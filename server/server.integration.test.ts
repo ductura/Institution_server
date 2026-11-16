@@ -196,6 +196,46 @@ describe("dist/server.js", () => {
     20_000,
   );
 
+  // S-1E-a (DAN-808), D-09: the entry point mounts the login routes over its
+  // own process environment. A server started with the fake provider and
+  // NODE_ENV production, or without NODE_ENV, refuses sign-in on the neutral
+  // 503 page: no attempt cookie, no variable name, no secret, in the answer
+  // or in its output. Nothing here listens at the issuer: the refusal comes
+  // from the configuration, before any request to a provider.
+  it.each([["production"], [undefined]])(
+    "D-09: mounts the login routes and refuses the fake provider with NODE_ENV %s",
+    async (nodeEnv) => {
+      const [server, port] = await start({
+        ...(nodeEnv === undefined ? {} : { NODE_ENV: nodeEnv }),
+        DUCTUS_AUTH_PROVIDER: "fake-oidc",
+        OIDC_ISSUER: "http://127.0.0.1:9",
+        OIDC_CLIENT_ID: "ductus-local",
+        OIDC_REDIRECT_URI: "http://127.0.0.1:4000/api/v1/auth/callback",
+      });
+      for (const path of ["/api/v1/auth/login", "/api/v1/auth/callback?code=x&state=y"]) {
+        const response = await fetch(url(port, path), { redirect: "manual" });
+        expect(response.status, path).toBe(503);
+        expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+        expect(response.headers.get("cache-control")).toBe("no-store");
+        expect(response.headers.getSetCookie()).toEqual([]);
+        expect(response.headers.get("location")).toBeNull();
+        const body = await response.text();
+        expect(body).toContain('<html lang="hr">');
+        expect(body).not.toMatch(/NODE_ENV|DUCTUS_AUTH_PROVIDER|OIDC_|fake|127\.0\.0\.1/u);
+        expect(body).not.toContain(CANARY);
+      }
+      server.child.kill("SIGTERM");
+      await server.exit;
+      const output = server.stdout.join("") + server.stderr.join("");
+      expect(output).not.toContain(CANARY);
+      expect(output).not.toMatch(/OIDC_|DUCTUS_AUTH_PROVIDER/u);
+      expect(server.stderr.join("")).toBe(
+        "login failed config AuthConfigError\nlogin failed config AuthConfigError\n",
+      );
+    },
+    20_000,
+  );
+
   it("a second process on a taken port exits 1 and the first keeps answering", async () => {
     const [first, port] = await start();
     const second = run({ PORT: String(port), APP_DATABASE_URL: DATABASE_URL });
