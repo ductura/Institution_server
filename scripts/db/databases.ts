@@ -13,6 +13,8 @@ export type Database = {
   migrationsDir: string;
   /** The ledger of that directory (`<sha256>  <file>` per migration). */
   ledger: string;
+  /** The pgTAP tests of the database (`pnpm test:db:<name>`, S-1F-d). */
+  testsDir: string;
   /** The role dbmate runs as (`role=` in the URL): NOLOGIN, owner of the database. */
   migrator: string;
   /** The compose service that holds the database. */
@@ -25,6 +27,7 @@ export const DATABASES: readonly Database[] = Object.freeze([
     database: "ductus",
     migrationsDir: "db/main/migrations",
     ledger: "db/main/migrations.sum",
+    testsDir: "db/main/tests",
     migrator: "ductus_migrator",
     service: "postgres-main",
   }),
@@ -33,6 +36,7 @@ export const DATABASES: readonly Database[] = Object.freeze([
     database: "ductus_logs",
     migrationsDir: "db/logs/migrations",
     ledger: "db/logs/migrations.sum",
+    testsDir: "db/logs/tests",
     migrator: "ductus_logs_migrator",
     service: "postgres-logs",
   }),
@@ -44,6 +48,7 @@ export const DATABASES: readonly Database[] = Object.freeze([
     database: "ductus_legal",
     migrationsDir: "db/legal/migrations",
     ledger: "db/legal/migrations.sum",
+    testsDir: "db/legal/tests",
     migrator: "ductus_legal_migrator",
     service: "postgres-main",
   }),

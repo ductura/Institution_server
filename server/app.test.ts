@@ -43,7 +43,7 @@ describe("transitional server errors (DAN-782)", () => {
   });
 
   it("gives every error a distinct APP_ code and key and an error status", () => {
-    expect(errors).toHaveLength(6);
+    expect(errors).toHaveLength(8);
     for (const { status, body } of errors) {
       expect(body.code).toMatch(/^APP_[A-Z]+(?:_[A-Z]+)*$/u);
       expect(body.messageKey).toMatch(/^app\.[a-z]+(?:_[a-z]+)*$/u);
