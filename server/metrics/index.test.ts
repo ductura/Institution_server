@@ -3,8 +3,14 @@ import * as area from "./index.ts";
 import type { MetricsService } from "./index.ts";
 
 describe("server/metrics public interface", () => {
-  it("exports only the empty routes and schemas", () => {
-    expect(Object.keys(area).sort()).toEqual(["METRICS_ROUTES", "METRICS_SCHEMAS"]);
+  it("exports the empty routes and schemas and the external call pattern (S-1E-c)", () => {
+    expect(Object.keys(area).sort()).toEqual([
+      "EXTERNAL_CALL_OUTCOMES",
+      "EXTERNAL_SERVICES",
+      "METRICS_ROUTES",
+      "METRICS_SCHEMAS",
+      "createExternalCaller",
+    ]);
     expect(area.METRICS_ROUTES).toEqual([]);
     expect(area.METRICS_SCHEMAS).toEqual({});
   });
