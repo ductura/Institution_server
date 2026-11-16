@@ -476,3 +476,41 @@ describe("createEvidenceService().commit with a reserved value", () => {
     expect(queries.map((q) => q.kind)).not.toContain("commit");
   });
 });
+
+// E7, E8: the service hands the committer the signing the route asked for and
+// nothing else; without one it signs inline (protocol 1), so a protocol-1
+// commit never comes back pending.
+describe("createEvidenceService().commit signing", () => {
+  function spying() {
+    const withActor: WithActor = async (_token, fn) => {
+      const tx: ActorTransaction = {
+        async query() {
+          return { rows: [snake(CONTEXT_ROW)] as never[], rowCount: 1 };
+        },
+      };
+      return fn(tx);
+    };
+    const real = createEvidenceCommitter(withActor, refusingSigner);
+    const commit = vi.fn(async () => ({ status: "txid_reused" as const }));
+    const payloads = {
+      putImmutable: vi.fn(async () => ({ status: "stored" as const, storageRef: "memory:ref" })),
+      storageRefFor: vi.fn(async () => ({ status: "ok" as const, storageRef: "memory:ref" })),
+    };
+    const service = createEvidenceService({
+      committer: { readContext: real.readContext, commit },
+      payloads,
+    });
+    return { service, commit };
+  }
+
+  it.each([
+    ["no signing given", undefined, "inline"],
+    ["inline", "inline", "inline"],
+    ["deferred", "deferred", "deferred"],
+  ] as const)("%s reaches the committer as %s", async (_name, signing, expected) => {
+    const { service, commit } = spying();
+    expect(await service.commit("t", REQUEST, signing)).toEqual({ status: "txid_reused" });
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(commit.mock.calls[0]).toEqual(["t", expect.any(Object), expected]);
+  });
+});

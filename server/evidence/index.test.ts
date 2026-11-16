@@ -12,7 +12,9 @@ describe("server/evidence public interface", () => {
     ]);
   });
 
-  it("B2: the limits http reads are the domain's own, one size on client and server", () => {
+  // The contract's own number is held to the domain in
+  // tests/contracts/evidence-domain.test.ts (MAX_COMMIT_BODY_BYTES).
+  it("B2: http reads the domain's limits through this area, unchanged", () => {
     expect(area.MAX_COMMIT_REQUEST_BYTES).toBe(domain.MAX_COMMIT_REQUEST_BYTES);
     expect(area.DUCTUS_PROTOCOL_VERSION).toBe(domain.DUCTUS_PROTOCOL_VERSION);
     expect(area.DUCTUS_ASYNC_COMMIT_PROTOCOL).toBe(domain.DUCTUS_ASYNC_COMMIT_PROTOCOL);

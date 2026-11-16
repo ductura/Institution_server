@@ -11,10 +11,11 @@ import { connect } from "node:net";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ActorReader, CurrentActor } from "../database/index.ts";
-import type {
-  EvidenceCommitRequest,
-  EvidenceCommitRequestOutcome,
-  EvidenceService,
+import {
+  type EvidenceCommitRequest,
+  type EvidenceCommitRequestOutcome,
+  type EvidenceService,
+  MAX_COMMIT_REQUEST_BYTES,
 } from "../evidence/index.ts";
 
 import { createDatabases } from "./databases.ts";
@@ -183,6 +184,18 @@ describe("G. every vector of evidence.commit.post", () => {
       (GOOD_BODY.segments as string[])[0],
     );
     expect(Buffer.from(call!.request.document).toString("base64")).toBe(GOOD_BODY.document);
+    // Buffers of their own, never a view into Node's pool.
+    for (const bytes of [call!.request.segment, call!.request.document]) {
+      expect(bytes.byteOffset).toBe(0);
+      expect(bytes.buffer.byteLength).toBe(bytes.byteLength);
+    }
+  });
+
+  it("E8: protocol 2 asks the service to defer signing; protocol 1 never does", async () => {
+    const pending = vectors.find((v) => v.name === "committed-pending-signature")!;
+    await send(request(pending.request.headers, JSON.stringify(pending.request.body)));
+    await post(JSON.stringify(GOOD_BODY));
+    expect(calls.map((call) => call.signing)).toEqual(["deferred", "inline"]);
   });
 
   it("E8: without async signing, protocol 2 is 426 and the service is never asked", async () => {
@@ -232,6 +245,34 @@ describe("A. the session before the body", () => {
   });
 });
 
+describe("B. the request limit is the domain's", () => {
+  it("B1: a body of exactly MAX_COMMIT_REQUEST_BYTES is read and reaches the service", async () => {
+    const base = JSON.stringify({ ...GOOD_BODY, document: "" });
+    const length = Math.floor((MAX_COMMIT_REQUEST_BYTES - base.length) / 4) * 4;
+    const json = JSON.stringify({ ...GOOD_BODY, document: "A".repeat(length) });
+    const body = json + " ".repeat(MAX_COMMIT_REQUEST_BYTES - json.length);
+    expect(Buffer.byteLength(body)).toBe(MAX_COMMIT_REQUEST_BYTES);
+    const answer = await post(body);
+    expect(answer.status).toBe(404);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("B1: a chunked body one byte over the limit is 413 and never reaches the service", async () => {
+    const size = MAX_COMMIT_REQUEST_BYTES + 1;
+    const lines = Object.entries({
+      host: "127.0.0.1",
+      ...GOOD,
+      "transfer-encoding": "chunked",
+    }).map(([k, v]) => `${k}: ${v}`);
+    const raw =
+      `POST /api/v1/evidence/commit HTTP/1.1\r\n${lines.join("\r\n")}\r\n\r\n` +
+      `${size.toString(16)}\r\n${" ".repeat(size)}\r\n0\r\n\r\n`;
+    const answer = await send(raw);
+    expect(answer.status).toBe(413);
+    expect(calls).toEqual([]);
+  });
+});
+
 describe("C. the closed envelope", () => {
   const segment = (GOOD_BODY.segments as string[])[0]!;
   it.each([
@@ -267,6 +308,17 @@ describe("C. the closed envelope", () => {
   it("an empty document is well-formed base64: the envelope passes it and the service refuses it", async () => {
     await post(envelope({ document: "" }));
     expect(calls[0]?.request.document.byteLength).toBe(0);
+  });
+
+  it("C9: a base64 text of millions of characters is a closed answer, never 500", async () => {
+    // Under the body limit; the grouped pattern of Ductus threw here (V8 backtracking).
+    const valid = await post(envelope({ document: "A".repeat(4_600_000) }));
+    expect(valid.status).toBe(404);
+    expect(calls).toHaveLength(1);
+    const broken = await post(envelope({ document: `${"A".repeat(5_000_000)}-` }));
+    expect(broken.status).toBe(422);
+    expect(JSON.parse(broken.body)).toEqual({ status: "invalid" });
+    expect(calls).toHaveLength(1);
   });
 
   it("C10: of a repeated key the last one counts, as in Ductus", async () => {

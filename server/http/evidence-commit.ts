@@ -36,7 +36,11 @@ export const COMMIT_TIMEOUT_MS = 60_000;
 /** Seconds until a client asks again for a receipt the worker has not signed yet. */
 const PENDING_RETRY_AFTER = "2";
 const KEYS = ["documentId", "clientTransactionId", "baseRevision", "segments", "document"];
-const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+// Linear on purpose: the grouped pattern of Ductus backtracks in V8 and throws
+// on a string of some 4.5 M characters, which the body limit still admits (a
+// 500 instead of a closed answer). The encode-back check below still fixes
+// the padding and the trailing bits.
+const BASE64 = /^[A-Za-z0-9+/]*={0,2}$/;
 
 export type EvidenceCommitOptions = {
   readonly actorReader: ActorReader;
