@@ -5,7 +5,9 @@
  * outcome it measures.
  *
  * - Deadline: it starts before the service runs, and asynchronous work ends
- *   at the latest at `timeoutMs` from the start, retries included. The timer
+ *   at the latest at `timeoutMs` from the start, retries included. An answer
+ *   counts when it arrives by the deadline (`now() - start <= timeoutMs`),
+ *   decided by its own end time and not by the race with the timer. The timer
  *   is armed before any caller code runs; a late answer is dropped and the
  *   attempt's signal is aborted. Synchronous work in an adapter cannot be
  *   interrupted: the event then carries the real duration, which may exceed
@@ -259,22 +261,28 @@ export function createExternalCaller(
     let answered: { value: T } | undefined;
 
     // Armed first, for what is left of the deadline: no caller code has run yet.
+    // When it fires it yields one macrotask before it calls a timeout, so an
+    // attempt that ended by the deadline (its microtasks already queued) is
+    // decided by its own end time, not by the order of the race.
     const expiry = sleep(Math.max(0, deadline - now()), timer.signal).then(
-      (): ExternalCallResult<T> => ({ ok: false, failure: "timeout" }),
+      () =>
+        new Promise<ExternalCallResult<T>>((resolve) =>
+          setImmediate(() => resolve({ ok: false, failure: "timeout" })),
+        ),
       () => new Promise<never>(() => {}),
     );
     const tries = (async (): Promise<ExternalCallResult<T>> => {
       for (;;) {
-        // The deadline is absolute and exclusive: no attempt starts at or
-        // after it, and an answer that arrives at or after it is dropped,
-        // however the timers ran (a live timer fires at the deadline too).
+        // The deadline is absolute. An attempt starts only while time is
+        // left; an answer counts when it arrives by the deadline, inclusive,
+        // and is dropped after it, however the timers ran.
         if (now() >= deadline || work.signal.aborted) return { ok: false, failure: "timeout" };
         if (attempts > 0 && blocked()) return { ok: false, failure: "down" };
         attempts += 1;
         const result = await attempt(run, work.signal);
         const good = result.done && !failed(result.value);
         // Checked after the failed-check too: it is caller code and takes time.
-        if (now() >= deadline) return { ok: false, failure: "timeout" };
+        if (now() > deadline) return { ok: false, failure: "timeout" };
         if (good) return { ok: true, value: result.value };
         answered = result.done ? { value: result.value } : undefined;
         const more = !probe && retry && attempts <= checked.retries;
@@ -287,10 +295,10 @@ export function createExternalCaller(
       }
     })();
     const result = await Promise.race([
-      // A throw in caller code (the failed-check) is a failure, or a timeout from the deadline on.
+      // A throw in caller code (the failed-check) is a failure, or a timeout once past the deadline.
       tries.catch((): ExternalCallResult<T> => ({
         ok: false,
-        failure: now() >= deadline ? "timeout" : "failed",
+        failure: now() > deadline ? "timeout" : "failed",
       })),
       expiry,
     ]);
