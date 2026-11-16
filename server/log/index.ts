@@ -7,6 +7,16 @@ export {
   type LogLevel,
   type LogSink,
 } from "./logger.ts";
+export {
+  createLogWriter,
+  LOG_WRITER_ERROR_CODES,
+  type LogStore,
+  type LogWriteResult,
+  type LogWriter,
+  type LogWriterError,
+  type LogWriterErrorCode,
+  type LogWriterOptions,
+} from "./writer.ts";
 export { isSensitiveKey, redact, redactString, REDACTED, stripUrl } from "./redact.ts";
 export {
   ADMIN_LOG_ACTIONS,

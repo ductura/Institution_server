@@ -15,6 +15,7 @@ export {
   type ServerErrorRecord,
   type ServerErrorSite,
 } from "./error-catalog.ts";
+export { evidenceSession, type EvidenceRefusal, type EvidenceSession } from "./evidence-session.ts";
 export { CHECK_DEADLINE_MS, createHealthRoute, type HealthState } from "./health.ts";
 export {
   declaredLengthRefusal,
