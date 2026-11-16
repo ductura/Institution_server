@@ -298,6 +298,46 @@ describe("createExternalCaller", () => {
       expect(await caller.call("read", () => run((ms) => (time += ms)))).toEqual(expected);
     });
 
+    // Orchestrator c.6918049376 (review c.6917985934, QA c.6917990381): the
+    // end of the attempt is read in the continuation where it ends, and a
+    // timer that wakes early does not call a timeout before the deadline.
+    it("a microtask that moves the clock after an answer at the deadline does not turn it into a timeout", async () => {
+      const { clock, caller } = setup(SHORT);
+      const p = caller.call("read", async () => (clock.advance(10), "bytes"));
+      queueMicrotask(() => clock.advance(1));
+      expect(await p).toEqual({ ok: true, value: "bytes" });
+    });
+
+    it("a timer that wakes 0.2 ms early calls no timeout before the deadline", async () => {
+      const clock = createFakeClock();
+      const events: ExternalCallEvent[] = [];
+      const caller = createExternalCaller("storage", SHORT, {
+        now: () => clock.nowMs(),
+        sleep: (ms, signal) => clock.sleep(Math.max(0, ms - 0.2), signal),
+        onEvent: (event) => events.push(event),
+      });
+      let release: (value: string) => void = () => {};
+      const pending = caller.call("read", () => new Promise<string>((r) => (release = r)));
+      let done = false;
+      void pending.then(() => (done = true));
+      clock.advance(9.8);
+      await flush();
+      expect(done).toBe(false);
+      clock.advance(0.2);
+      release("bytes");
+      expect(await pending).toEqual({ ok: true, value: "bytes" });
+
+      const silent = caller.call("read", () => new Promise<string>(() => {}));
+      let ended = false;
+      void silent.then(() => (ended = true));
+      clock.advance(9.8);
+      await flush();
+      expect(ended).toBe(false);
+      clock.advance(1);
+      await flush();
+      expect(await silent).toEqual({ ok: false, failure: "timeout" });
+    });
+
     it("a failed-check that ends exactly at the deadline keeps its verdict", async () => {
       const { clock, caller } = setup(SHORT);
       expect(

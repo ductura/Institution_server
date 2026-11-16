@@ -208,11 +208,27 @@ export function createExternalCaller(
     }
   };
 
-  async function attempt<T>(run: (s: AbortSignal) => Promise<T>, signal: AbortSignal) {
+  /**
+   * One attempt and its failed-check. `at` is read in the same continuation
+   * where the attempt ends, so no other microtask can move the clock between
+   * the end and the moment the deadline is judged.
+   */
+  async function attempt<T>(
+    run: (s: AbortSignal) => Promise<T>,
+    signal: AbortSignal,
+    failed: (value: T) => boolean,
+  ) {
+    let value: T;
     try {
-      return { done: true as const, value: await run(signal) };
+      value = await run(signal);
     } catch {
-      return { done: false as const };
+      return { kind: "threw" as const, at: now() };
+    }
+    try {
+      const good = !failed(value);
+      return { kind: "answered" as const, value, good, at: now() };
+    } catch {
+      return { kind: "check_threw" as const, at: now() };
     }
   }
 
@@ -264,13 +280,19 @@ export function createExternalCaller(
     // When it fires it yields one macrotask before it calls a timeout, so an
     // attempt that ended by the deadline (its microtasks already queued) is
     // decided by its own end time, not by the order of the race.
-    const expiry = sleep(Math.max(0, deadline - now()), timer.signal).then(
-      () =>
-        new Promise<ExternalCallResult<T>>((resolve) =>
-          setImmediate(() => resolve({ ok: false, failure: "timeout" })),
-        ),
-      () => new Promise<never>(() => {}),
-    );
+    // A timer can wake early (a fractional delay is cut): the clock is asked
+    // again and the rest is slept, rounded up, until the deadline has come.
+    const expiry = (async (): Promise<ExternalCallResult<T>> => {
+      try {
+        for (let left = deadline - now(); left > 0; left = deadline - now())
+          await sleep(Math.ceil(left), timer.signal);
+      } catch {
+        return new Promise<never>(() => {});
+      }
+      return new Promise((resolve) =>
+        setImmediate(() => resolve({ ok: false, failure: "timeout" })),
+      );
+    })();
     const tries = (async (): Promise<ExternalCallResult<T>> => {
       for (;;) {
         // The deadline is absolute. An attempt starts only while time is
@@ -279,12 +301,12 @@ export function createExternalCaller(
         if (now() >= deadline || work.signal.aborted) return { ok: false, failure: "timeout" };
         if (attempts > 0 && blocked()) return { ok: false, failure: "down" };
         attempts += 1;
-        const result = await attempt(run, work.signal);
-        const good = result.done && !failed(result.value);
-        // Checked after the failed-check too: it is caller code and takes time.
-        if (now() > deadline) return { ok: false, failure: "timeout" };
-        if (good) return { ok: true, value: result.value };
-        answered = result.done ? { value: result.value } : undefined;
+        const result = await attempt(run, work.signal, failed);
+        // Judged by the end of the attempt, failed-check included.
+        if (result.at > deadline) return { ok: false, failure: "timeout" };
+        if (result.kind === "check_threw") return { ok: false, failure: "failed" };
+        if (result.kind === "answered" && result.good) return { ok: true, value: result.value };
+        answered = result.kind === "answered" ? { value: result.value } : undefined;
         const more = !probe && retry && attempts <= checked.retries;
         if (more && blocked()) return { ok: false, failure: "down" };
         if (!more || now() + checked.retryDelayMs >= deadline || work.signal.aborted)
