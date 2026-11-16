@@ -1,0 +1,10 @@
+# Build context of infra/web/Dockerfile (BuildKit reads <Dockerfile>.dockerignore).
+# Nothing of this reaches the final stage anyway; it keeps local state, history
+# and any .env out of the build stage too.
+.git
+**/node_modules
+dist
+.stack
+coverage
+# Every name that starts with .env (.env.local, .envrc, .env-secrets), at any depth.
+**/.env*
