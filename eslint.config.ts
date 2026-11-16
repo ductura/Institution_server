@@ -115,6 +115,8 @@ const ENV_NAMES = [
   "HOST",
   // The shutdown deadline (S-1B-c, DAN-778, server/config).
   "SHUTDOWN_GRACE_MS",
+  // The metrics collector interval (S-1K.4-b, DAN-834-4b, server/settings).
+  "METRICS_INTERVAL_MS",
   // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
   "VS1_POSTGRES_PORT",
   "VS1_SERVER_PORT",

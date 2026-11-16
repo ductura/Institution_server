@@ -2,3 +2,10 @@
 export { SETTINGS_ROUTES } from "./routes.ts";
 export { SETTINGS_SCHEMAS } from "./schemas.ts";
 export type { SettingsService } from "./service.ts";
+export {
+  DEFAULT_METRICS_INTERVAL_MS,
+  METRICS_INTERVAL_MAX_MS,
+  METRICS_INTERVAL_MIN_MS,
+  metricsIntervalMs,
+  metricsIntervalProblems,
+} from "./metrics-interval.ts";

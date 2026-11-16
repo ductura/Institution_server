@@ -1,6 +1,11 @@
 // S-1K.4-b part 1 (DAN-834-1): the periodic metrics collector on a fake clock.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  DEFAULT_METRICS_INTERVAL_MS,
+  METRICS_INTERVAL_MAX_MS,
+  METRICS_INTERVAL_MIN_MS,
+} from "../settings/index.ts";
 import { createMetricsCollector, type MetricsCollectorOptions } from "./collector.ts";
 
 const I = 1_000;
@@ -53,7 +58,14 @@ describe("createMetricsCollector input", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it.each([1, 2 ** 31 - 1])("accepts the bound intervalMs %s", (intervalMs) => {
+  // DAN-834-4b: every interval the environment check accepts is one the collector takes.
+  it.each([
+    1,
+    2 ** 31 - 1,
+    METRICS_INTERVAL_MIN_MS,
+    DEFAULT_METRICS_INTERVAL_MS,
+    METRICS_INTERVAL_MAX_MS,
+  ])("accepts the bound intervalMs %s", (intervalMs) => {
     expect(() =>
       createMetricsCollector({ intervalMs, collect: vi.fn(), write: vi.fn() }),
     ).not.toThrow();
