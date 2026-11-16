@@ -6,7 +6,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { clientIpLayer, NO_TRUSTED_PROXIES, type TrustedProxies } from "../traffic/index.ts";
-import { reportServerError } from "./error-catalog.ts";
+import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
 import { originLayer } from "./mutation-request.ts";
 import { requestIdOf } from "./request-id.ts";
 import { answerInternal, refuse, securityHeadersLayer } from "./security-headers.ts";
@@ -87,7 +87,11 @@ export function createLayers(options: {
  * change to the object has no effect. Keys other than exactly the steps, or a
  * layer that is not a function, are a programming error at startup.
  */
-export function createPipeline(layers: Layers, app: App): App {
+export function createPipeline(
+  layers: Layers,
+  app: App,
+  report: ServerErrorReporter = reportServerError,
+): App {
   const keys = Object.keys(layers).sort();
   const steps = [...PIPELINE_STEPS].sort();
   if (keys.length !== steps.length || keys.some((key, i) => key !== steps[i])) {
@@ -106,7 +110,7 @@ export function createPipeline(layers: Layers, app: App): App {
       try {
         outcome = await layer(request, response);
       } catch (error) {
-        reportServerError("layer", error, requestIdOf(response));
+        report("layer", error, requestIdOf(response));
         outcome = undefined;
       }
       // Anything but "next" from a layer that has not answered, or "next" from

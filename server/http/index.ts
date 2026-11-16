@@ -5,6 +5,7 @@ export { createDatabases, type Databases } from "./databases.ts";
 export {
   catalogErrorFor,
   catalogErrorOf,
+  createServerErrorReporter,
   ERROR_CATALOG,
   reportServerError,
   SERVER_ERROR_CLASSES,
@@ -12,6 +13,7 @@ export {
   type CatalogError,
   type ServerErrorClass,
   type ServerErrorRecord,
+  type ServerErrorReporter,
   type ServerErrorSite,
 } from "./error-catalog.ts";
 export { evidenceSession, type EvidenceRefusal, type EvidenceSession } from "./evidence-session.ts";

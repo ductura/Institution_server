@@ -9,6 +9,8 @@ export {
 } from "./logger.ts";
 export {
   createLogWriter,
+  LOG_MAX_PENDING,
+  LOG_WRITE_DEADLINE_MS,
   LOG_WRITER_ERROR_CODES,
   type LogStore,
   type LogWriteResult,

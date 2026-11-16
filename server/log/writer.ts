@@ -26,7 +26,21 @@ export type LogStore = {
   append(kind: string, payload: unknown): unknown;
 };
 
-export const LOG_WRITER_ERROR_CODES = Object.freeze(["LOG_REDACTED", "LOG_STORE_FAILED"] as const);
+export const LOG_WRITER_ERROR_CODES = Object.freeze([
+  "LOG_REDACTED",
+  "LOG_STORE_FAILED",
+  "LOG_STORE_TIMEOUT",
+  "LOG_STORE_BUSY",
+] as const);
+
+/**
+ * How long one write waits for the store (S-1K.3-b, DAN-812). A request never
+ * waits for a write at all; the deadline only bounds how long a record holds
+ * one of the pending places while the log database is slow or hangs.
+ */
+export const LOG_WRITE_DEADLINE_MS = 1_000;
+/** Writes that may wait for the store at once; past it a record goes to the fallback. */
+export const LOG_MAX_PENDING = 64;
 
 export type LogWriterErrorCode = (typeof LOG_WRITER_ERROR_CODES)[number];
 
@@ -47,6 +61,10 @@ export type LogWriterOptions = {
   readonly routes: ReadonlySet<string>;
   /** Where the fixed refusal and failure lines go; the console log by default. */
   readonly fallback?: LogEvent;
+  /** Longest wait for `append`, a positive whole number of ms; LOG_WRITE_DEADLINE_MS by default. */
+  readonly deadlineMs?: number;
+  /** Most appends pending at once, a positive whole number; LOG_MAX_PENDING by default. */
+  readonly maxPending?: number;
 };
 
 const fail = (code: LogWriterErrorCode): LogWriteResult =>
@@ -69,17 +87,66 @@ function withoutRoutes(record: LogRecord): LogRecord {
   return { ...record, fields };
 }
 
-const silent = (fallback: LogEvent, event: string, code: string): void => {
+const silent = (fallback: LogEvent, event: string, code: string, record?: LogRecord): void => {
   try {
-    fallback("error", event, { code });
+    fallback("error", event, record === undefined ? { code } : { code, record });
   } catch {
     // The fallback is the last place a line can go; nothing more to do.
   }
 };
 
+const TIMED_OUT = Symbol("timed out");
+
+/**
+ * `append` raced against `ms`. `done` settles when `append` itself does, never
+ * rejecting, so a place stays taken while a write the deadline gave up on
+ * still holds the store.
+ */
+function appendWithin(
+  store: LogStore,
+  record: LogRecord,
+  ms: number,
+): { readonly outcome: Promise<typeof TIMED_OUT | undefined>; readonly done: Promise<void> } {
+  // A throwing append or a throwing `then` of its result rejects `work`; it
+  // never throws synchronously here.
+  const work = Promise.resolve().then(() => store.append(record.event, record));
+  const done = work.then(
+    () => undefined,
+    () => undefined,
+  );
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<typeof TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(TIMED_OUT), ms);
+    // A hanging log database never keeps the process up.
+    timer.unref?.();
+  });
+  const outcome = Promise.race([work.then(() => undefined), late]).finally(() =>
+    clearTimeout(timer),
+  );
+  return { outcome, done };
+}
+
+function positiveWhole(value: number | undefined, fallback: number, name: string): number {
+  if (value === undefined) return fallback;
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(`${name} must be a positive whole number`);
+  }
+  return value;
+}
+
 export function createLogWriter(options: LogWriterOptions): LogWriter {
   const { store, routes } = options;
   const fallback = options.fallback ?? createLogger();
+  const deadlineMs = positiveWhole(options.deadlineMs, LOG_WRITE_DEADLINE_MS, "deadlineMs");
+  const maxPending = positiveWhole(options.maxPending, LOG_MAX_PENDING, "maxPending");
+  let pending = 0;
+
+  // A record the store did not take is not lost silently: the fallback line
+  // carries it, already checked by the catalog and by redact (DAN-812).
+  const unstored = (code: LogWriterErrorCode, record: LogRecord): LogWriteResult => {
+    silent(fallback, "log_store_failed", code, record);
+    return fail(code);
+  };
 
   return async (input) => {
     const checked = checkEvent(input, { routes });
@@ -97,10 +164,18 @@ export function createLogWriter(options: LogWriterOptions): LogWriter {
         silent(fallback, "log_refused", "LOG_REDACTED");
         return fail("LOG_REDACTED");
       }
-      await store.append(record.event, record);
     } catch {
       silent(fallback, "log_store_failed", "LOG_STORE_FAILED");
       return fail("LOG_STORE_FAILED");
+    }
+    if (pending >= maxPending) return unstored("LOG_STORE_BUSY", record);
+    pending += 1;
+    const { outcome, done } = appendWithin(store, record, deadlineMs);
+    void done.then(() => (pending -= 1));
+    try {
+      if ((await outcome) === TIMED_OUT) return unstored("LOG_STORE_TIMEOUT", record);
+    } catch {
+      return unstored("LOG_STORE_FAILED", record);
     }
     return { ok: true, value: record };
   };

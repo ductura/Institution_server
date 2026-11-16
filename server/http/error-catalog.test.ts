@@ -5,10 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { messagesEn, messagesHr, textOf, type MessageKey } from "../../locales/index.ts";
 import { ERROR_MESSAGE_KEYS, SERVER_ERRORS } from "../contracts/index.ts";
-import { EVENT_CATALOG } from "../log/index.ts";
+import { checkEvent, EVENT_CATALOG, type LogWriter } from "../log/index.ts";
 import {
   catalogErrorFor,
   catalogErrorOf,
+  createServerErrorReporter,
   ERROR_CATALOG,
   reportServerError,
   ROUTE_429_CODES,
@@ -210,5 +211,54 @@ describe("reportServerError", () => {
     expect(fields["area"]?.values).toContain("http");
     for (const errorClass of SERVER_ERROR_CLASSES)
       expect(fields["errorClass"]?.values).toContain(errorClass);
+  });
+});
+
+// S-1K.3-b (DAN-812, plan ductura/server#109, A9 to A12).
+describe("createServerErrorReporter", () => {
+  const REQUEST_ID = "3f2a7c1e-9b4d-4e8a-a1c2-0d5e6f708192";
+
+  it("is reportServerError without a log service (A11)", () => {
+    expect(createServerErrorReporter()).toBe(reportServerError);
+  });
+
+  it("writes error.unexpected that the catalog admits, without awaiting it (A9)", () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const inputs: unknown[] = [];
+    const log: LogWriter = (input) => {
+      inputs.push(input);
+      return new Promise(() => {});
+    };
+    const report = createServerErrorReporter(log);
+    // Returns synchronously although the write never settles.
+    expect(report("route", new RangeError(CANARY), REQUEST_ID, "platform.health.get")).toBe(
+      undefined,
+    );
+    report("layer", new Error(CANARY), REQUEST_ID);
+    report("request", CANARY, REQUEST_ID);
+    expect(inputs).toHaveLength(3);
+    expect(inputs[0]).toMatchObject({
+      event: "error.unexpected",
+      requestId: REQUEST_ID,
+      accountKind: "anonymous",
+      fields: { area: "http", errorClass: "range_error" },
+    });
+    for (const input of inputs) {
+      expect(checkEvent(input, { routes: new Set() }).ok).toBe(true);
+      expect(JSON.stringify(input)).not.toContain(CANARY);
+    }
+    expect(logged).not.toHaveBeenCalled();
+  });
+
+  it("never throws when the writer throws or rejects", async () => {
+    const throwing: LogWriter = () => {
+      throw new Error(CANARY);
+    };
+    const rejecting: LogWriter = () => Promise.reject(new Error(CANARY));
+    for (const log of [throwing, rejecting])
+      expect(() =>
+        createServerErrorReporter(log)("route", new Error("x"), REQUEST_ID),
+      ).not.toThrow();
+    await new Promise((resolve) => setImmediate(resolve));
   });
 });
