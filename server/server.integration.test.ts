@@ -13,6 +13,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { buildServer, SERVER_NODE_FLAGS } from "../scripts/build/index.ts";
 
+import { SERVER_VERSION } from "./config/index.ts";
+
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CANARY = "invented-canary-7f3a";
 const DATABASE_URL = `postgres://app:${CANARY}@db.invalid:5432/ductura`;
@@ -98,10 +100,15 @@ describe("dist/server.js", () => {
     const response = await fetch(url(port, "/api/v1/health"), {
       headers: { cookie: "__Host-session=invented", authorization: "Bearer invented" },
     });
-    const alive = VECTOR.vectors.find((v) => v.name === "alive");
-    expect(response.status).toBe(alive?.response.status);
+    // The main database is .invalid, so the answer is the `degraded` vector
+    // (S-1M-a), with this build's own version in place of the vector's.
+    const degraded = VECTOR.vectors.find((v) => v.name === "degraded");
+    expect(response.status).toBe(degraded?.response.status);
     expect(response.headers.get("content-type")).toMatch(/^application\/json(;|$)/u);
-    expect(await response.json()).toEqual(alive?.response.body);
+    expect(await response.json()).toEqual({
+      ...(degraded?.response.body as object),
+      serverVersion: SERVER_VERSION,
+    });
     expect(response.headers.get("cache-control")).toBe("no-store");
     // Only transport headers and the security headers of step 6 (S-1B-b)
     // besides the two above: no server, version or host.

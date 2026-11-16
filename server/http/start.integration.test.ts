@@ -9,10 +9,16 @@ import { connect } from "node:net";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { createDatabases } from "./databases.ts";
-import { HEALTH_ROUTE } from "./health.ts";
+import { createHealthRoute } from "./health.ts";
 import { createLayers } from "./pipeline.ts";
 import { createShutdownCoordinator } from "./shutdown.ts";
 import { type Running, startServer } from "./start.ts";
+
+// Health with the main database up: these tests are about the pipeline, not the database.
+const HEALTH_ROUTE = createHealthRoute({
+  health: async () => ({ main: "ok", logs: "ok", legal: "ok" }),
+  serverVersion: "0.0.0",
+});
 
 const servers: Running[] = [];
 afterAll(async () => {
