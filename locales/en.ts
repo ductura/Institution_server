@@ -2047,6 +2047,8 @@ const en = {
     unavailable: "The service is not available at the moment. Please try again later.",
     unsupportedMediaType: "The content type of the request is not supported.",
     upgradeRequired: "A newer version of the app is needed. Refresh the page.",
+    versionConflict:
+      "The assignment has changed in the meantime. Load the latest version and try again.",
   },
   // Texts of the error catalogue the server's contract does not answer (S-1M-c, DAN-802); added after the port.
   clientErrors: {
