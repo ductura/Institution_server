@@ -177,11 +177,12 @@ describe("evidence commit context over real PostgreSQL with RLS", () => {
         },
       },
     });
-    const pkg = await admin.query<{ id: string }>(
-      "SELECT id FROM evidence.package WHERE document_id = $1",
+    const pkg = await admin.query<{ id: string; limit: number }>(
+      "SELECT id, max_payload_bytes AS limit FROM evidence.package WHERE document_id = $1",
       [ana.documentId],
     );
     expect(read.status === "ok" && read.context.evidencePackageId).toBe(pkg.rows[0]?.id);
+    expect(read.status === "ok" && read.context.maxPayloadBytes).toBe(pkg.rows[0]?.limit);
   });
 
   it("D9: another student's, an unknown and the teacher's document are the same not_found", async () => {

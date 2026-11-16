@@ -60,6 +60,12 @@ describe("isEvidenceSegmentDescriptorV2", () => {
     expect(check({ institutionId: "x" })).toBe(false);
     expect(check({ documentId: " " })).toBe(false);
     expect(check({ sessionId: "s".repeat(257) })).toBe(false);
+    expect(check({ segmentId: "" })).toBe(false);
+    expect(check({ observedEndedAt: "2026-10-03T06:01:30.000Z" })).toBe(false);
+    expect(check({ segmentHash: ["a".repeat(64)] })).toBe(false);
+    expect(isEvidenceSegmentDescriptorV2(Object.assign(new (class Descriptor {})(), valid()))).toBe(
+      false,
+    );
     expect(isEvidenceSegmentDescriptorV2(null)).toBe(false);
     expect(isEvidenceSegmentDescriptorV2([])).toBe(false);
   });

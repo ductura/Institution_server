@@ -103,6 +103,17 @@ describe("readContext", () => {
     ["a document hash that is no hash", [{ ...row, document_hash: "e" }]],
     ["a head that is no hash", [{ ...row, head_segment_hash: "" }]],
     ["no last sequence", [{ ...row, last_sequence_to: null }]],
+    // Plan of attack #119 F1: counters only as the canonical text of a safe integer.
+    ["a negative last sequence", [{ ...row, last_sequence_to: "-1" }]],
+    ["a last sequence with a leading zero", [{ ...row, last_sequence_to: "01" }]],
+    ["a last sequence above 2^53", [{ ...row, last_sequence_to: "9007199254740992" }]],
+    ["a last sequence that is no number", [{ ...row, last_sequence_to: "x" }]],
+    ["a fractional last sequence", [{ ...row, last_sequence_to: 1.5 }]],
+    ["a revision with a leading zero", [{ ...row, current_revision: "01" }]],
+    ["a revision above 2^53", [{ ...row, current_revision: "9007199254740992" }]],
+    ["a negative limit", [{ ...row, max_payload_bytes: -1 }]],
+    ["a document hash in upper case", [{ ...row, document_hash: "E".repeat(64) }]],
+    ["a head of 63 digits", [{ ...row, head_segment_hash: "b".repeat(63) }]],
   ])("is unavailable for %s", async (_, rows) => {
     const db = database(rows);
     expect(await readerOf(db).readContext("t", "doc-1", "tx-1")).toEqual({
