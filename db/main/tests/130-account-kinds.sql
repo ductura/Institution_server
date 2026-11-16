@@ -130,7 +130,8 @@ SELECT is_empty(
 -- table, in its source, in an SQL-standard body (BEGIN ATOMIC) or as a
 -- dependency, except settings.set_value (DAN-801), which only reads
 -- network_engineer_appointment to know a network engineer, and the two
--- functions of DAN-809 that appoint and revoke one (133); no SECURITY
+-- functions of DAN-809 that appoint and revoke one (133), and
+-- identity.session_state (DAN-827, 135), which reads it like set_value; no SECURITY
 -- DEFINER function runs dynamic SQL, which could name a table without
 -- spelling it; and no view, rule or materialised view reads one. Each
 -- function and table it names is one row, marked "writes" when the source
@@ -157,8 +158,9 @@ CREATE VIEW pg_temp.dynamic_definer AS
 SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
   ARRAY['settings.set_value(text,uuid,text,jsonb,jsonb) network_engineer_appointment reads',
         'identity.appoint_network_engineer(uuid) network_engineer_appointment writes',
-        'identity.revoke_network_engineer(uuid) network_engineer_appointment writes'],
-  'only settings.set_value and, since DAN-809 (133), the appointment and revocation name a new table, and none names app_admin');
+        'identity.revoke_network_engineer(uuid) network_engineer_appointment writes',
+        'identity.session_state(uuid) network_engineer_appointment reads'],
+  'only settings.set_value, since DAN-809 (133) the appointment and revocation, and since DAN-827 (135) session_state, which only reads it, name a new table, and none names app_admin');
 SELECT is_empty('SELECT found FROM pg_temp.dynamic_definer',
   'no SECURITY DEFINER function runs dynamic SQL');
 CREATE FUNCTION identity.test_atomic_write(p_institution uuid, p_user uuid, p_by uuid) RETURNS void
@@ -178,6 +180,7 @@ SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
   ARRAY['settings.set_value(text,uuid,text,jsonb,jsonb) network_engineer_appointment reads',
         'identity.appoint_network_engineer(uuid) network_engineer_appointment writes',
         'identity.revoke_network_engineer(uuid) network_engineer_appointment writes',
+        'identity.session_state(uuid) network_engineer_appointment reads',
         'identity.test_atomic_write(uuid,uuid,uuid) network_engineer_appointment writes',
         'identity.test_plain_read() app_admin reads',
         'identity.test_plain_write() network_engineer_appointment writes'],

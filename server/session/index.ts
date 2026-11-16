@@ -32,6 +32,15 @@ export {
   type SessionPrincipalWithInstitution,
 } from "./principal.ts";
 export { checkSession, type SessionCheck } from "./live-session.ts";
+export {
+  ENDED_REASONS,
+  type EndedReason,
+  INTERRUPTED_REASONS,
+  type InterruptedReason,
+  parseSessionState,
+  SESSION_STATES,
+  type SessionState,
+} from "./state.ts";
 export { DEFAULT_RETURN_TO, safeReturnTo } from "./return-to.ts";
 export {
   clearedSessionCookieOptions,
