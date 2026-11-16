@@ -13,7 +13,7 @@ Workerova strana reda poslova na pg-bossu (DAN-820, VS-1b dio 1; plan napada duc
 - `sweep` je jedna naredba: vraća pokušaje nakon isteka (kod `expired`) i briše što je prošlo rok čuvanja; paketove pozadinske radnje (supervizija, migracija, reindex) ne rade;
 - red s drugim postavkama (rastući razmak ponovnih pokušaja, red mrtvih poslova, heartbeat, particija) odbija se.
 
-Ograda pokušaja (`fence`) je obvezan port: pokušaj koji je još u radu kad bi ga red mogao dati drugome završava proces. Ductus ima zadanu ogradu procesa (`src/server/attempt-fence.ts`, nit iz `node:worker_threads`); ona dolazi s procesom workera (VS-1b dio 2/3), pa do tada red ne otvara nitko bez vlastite ograde.
+Ograda pokušaja (`fence`) je obvezan port (tvornica čiji rezultat ima `arm` i `close`; inače `settings_invalid`): pokušaj koji je još u radu kad bi ga red mogao dati drugome završava proces. Ductus ima zadanu ogradu procesa (`src/server/attempt-fence.ts`, nit iz `node:worker_threads`); ona dolazi s procesom workera (VS-1b dio 2/3), pa do tada red ne otvara nitko bez vlastite ograde.
 
 ## Tko ga zove
 
@@ -31,4 +31,4 @@ Shemu `pgboss` u glavnoj bazi (`pgboss.job`, `pgboss.queue`), samo s pravima red
 
 Kao područje baze: samo `settings`, `log`, `metrics` i `domain` (ovdje samo `domain`, kroz `server/domain/index.ts`), uz `pg` i `pg-boss`.
 
-Testovi: `tests/db/job-queue.integration.test.ts`, 54 testa na pravom PostgreSQL-u (projekt `database`), s istim tvrdnjama kao Ductus (58 na `333e163`). Četiri slučaja koja u dječjem procesu pokreću pravu ogradu procesa dolaze s njom.
+Testovi: `tests/db/job-queue.integration.test.ts`, 65 testova na pravom PostgreSQL-u (projekt `database`): 54 prenesena s istim tvrdnjama kao Ductus (58 na `333e163`) i 11 za obveznu ogradu (izostavljena, nije tvornica ili tvornica ne vrati `arm` i `close`: `settings_invalid` prije veze odnosno prije `start`, red nije stvoren). Četiri slučaja koja u dječjem procesu pokreću pravu ogradu procesa dolaze s njom.

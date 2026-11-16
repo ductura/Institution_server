@@ -155,8 +155,17 @@ function validSettings(s: JobQueueSettings): boolean {
     whole(s.expireSeconds, 1, 3600) &&
     whole(s.deadlineMs, 1, s.expireSeconds * 1000 - 500) &&
     whole(s.deleteAfterSeconds, 1, 365 * DAY) &&
-    whole(s.sweepSeconds, 1, 3600)
+    whole(s.sweepSeconds, 1, 3600) &&
+    // DAN-820: no default fence here, so a queue without one never opens.
+    typeof s.fence === "function"
   );
+}
+
+/** What the fence factory returned is a fence: both of its methods are there. */
+function isFence(value: unknown): value is AttemptFence {
+  if (typeof value !== "object" || value === null) return false;
+  const { arm, close } = value as { arm?: unknown; close?: unknown };
+  return typeof arm === "function" && typeof close === "function";
 }
 
 async function requireWorkerLogin(connectionString: string): Promise<void> {
@@ -263,7 +272,14 @@ export async function openJobQueue(settings: JobQueueSettings): Promise<JobQueue
       monitorVacuum: false,
       reindex: false,
     });
-    fence = settings.fence();
+    const made: unknown = settings.fence();
+    if (!isFence(made)) {
+      // Whatever half of a fence came back is ended before refusing.
+      const close: unknown = (made as { close?: unknown } | null | undefined)?.close;
+      if (typeof close === "function") await Promise.resolve(close.call(made)).catch(() => {});
+      throw new JobQueueError("settings_invalid");
+    }
+    fence = made;
   } catch {
     throw new JobQueueError("settings_invalid");
   }

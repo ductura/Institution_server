@@ -855,6 +855,82 @@ describe("job queue: what it refuses", () => {
     expect(JSON.stringify(outcome)).not.toContain("5c1d");
   });
 
+  // DAN-820 (review c.6915839423): the fence has no default here, so a queue
+  // without one, from JavaScript or a cast, must not open, and no queue is
+  // made. A fence that is not a factory is refused before any connection: with
+  // a login that does not exist the refusal is still settings_invalid, never
+  // queue_unreachable. A factory is called only for a worker login, and what
+  // it returns must have both arm and close.
+  function withFence(
+    def: JobDefinition,
+    connectionString: string,
+    fence: unknown,
+  ): JobQueueSettings {
+    const base: Record<string, unknown> = { ...settings(def, connectionString, {}) };
+    if (fence === undefined) delete base["fence"];
+    else base["fence"] = fence;
+    return base as JobQueueSettings;
+  }
+  async function made(name: string): Promise<number> {
+    return (await admin.query("SELECT 1 FROM pgboss.queue WHERE name = $1", [name])).rows.length;
+  }
+
+  it.each<[string, unknown]>([
+    ["left out", undefined],
+    ["null", null],
+    ["a number", 7],
+    ["a fence instead of its factory", { arm: () => () => {}, close: async () => {} }],
+  ])(
+    "W-14: a fence %s refuses the queue as settings_invalid before connecting, and no queue is made",
+    async (_label, fence) => {
+      const def = definition();
+      for (const login of [role("workerA"), `it_jobq_${RUN}_nobody`]) {
+        expect(await refusal(openJobQueue(withFence(def, url(login), fence)))).toEqual(
+          refused("settings_invalid"),
+        );
+      }
+      expect(await made(def.name)).toBe(0);
+    },
+  );
+
+  it.each<[string, () => unknown]>([
+    ["nothing", () => undefined],
+    ["null", () => null],
+    ["a fence without arm", () => ({ close: async () => {} })],
+    ["a fence without close", () => ({ arm: () => () => {} })],
+    ["a fence whose arm is not a function", () => ({ arm: 1, close: async () => {} })],
+  ])(
+    "W-14: a fence factory that returns %s refuses the queue as settings_invalid, and no queue is made",
+    async (_label, fence) => {
+      const def = definition();
+      expect(await refusal(openJobQueue(withFence(def, url(role("workerA")), fence)))).toEqual(
+        refused("settings_invalid"),
+      );
+      expect(await made(def.name)).toBe(0);
+    },
+  );
+
+  it("W-14: half a fence that came back is closed before the refusal", async () => {
+    let closed = 0;
+    const outcome = await refusal(
+      openJobQueue(
+        withFence(definition(), url(role("workerA")), () => ({
+          close: async () => {
+            closed += 1;
+          },
+        })),
+      ),
+    );
+    expect(outcome).toEqual(refused("settings_invalid"));
+    expect(closed).toBe(1);
+  });
+
+  it("W-14 (control): a factory that returns a fence with arm and close opens the queue", async () => {
+    const def = definition();
+    await expect(open(def, "workerA", { fence: recordingFence })).resolves.toBeDefined();
+    expect(await made(def.name)).toBe(1);
+  });
+
   it("W-14: a deadline exactly half a second before expiry passes the settings check", async () => {
     const outcome = await refusal(
       openJobQueue(
