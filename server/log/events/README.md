@@ -11,6 +11,7 @@ Zatvoren popis vrsta događaja (`EVENT_CATALOG`) i provjera zapisa (`checkEvent`
 - Odbija se: nepoznata vrsta (točan zapis, bez rezanja razmaka i promjene velikih slova; `__proto__` i nasljeđena imena nisu vrste), vrsta računa koja nije na popisu događaja, višak ili manjak ključa ili polja, ugniježđeni objekt, getter, simbolni ključ, Proxy, instanca klase. Greška ima oblik `{ code, messageKey }` (`docs/CODE_STYLE.md` §8; tekst je u `locales/hr.json` pod `logCatalog`) i nikad ne nosi odbijenu vrijednost.
 - Rezultat je nova zamrznuta kopija s provjerenim vrijednostima; katalog je zamrznut do dna, pa ga uvoznik ne može proširiti.
 - Inventar ruta predaje se kao pravi `Set` predložaka u obliku iz `server/contracts`, s parametrima kao `{documentId}`, nikad stvarnih putanja zahtjeva; provjera zove `Set.prototype.has`. Bez inventara nijedna ruta ne prolazi, a neispravne opcije daju `BAD_OPTIONS`. `checkEvent` nikad ne baca.
+- Jedina iznimka za ID osobe: `admin.action` nosi `userId` operatora (UUID računa, bez imena, e-pošte i IP-a), samo za vrste 3–5 (S-1J.4, DAN-841; odluka vlasnika Ductus#2012 c.6917729838). Rok čuvanja i brisanje po roku su zaseban zadatak.
 - Poznata granica: brojčana polja, UUID i verzija mogu nositi nekoliko bajtova proizvoljnih znamenki, ali ne čitljiv tekst.
 - Pozadinski posao bez prijavljene osobe (raspored backupa, brisanje po roku, metrika, upozorenja) bilježi se kao `anonymous`.
 
