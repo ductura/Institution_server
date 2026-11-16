@@ -42,7 +42,15 @@ BEGIN
      OR p_to OPERATOR(pg_catalog.-) p_from OPERATOR(pg_catalog.>) interval '24 hours' THEN
     RAISE EXCEPTION 'operator_log reads a finite window of at most 24 hours' USING ERRCODE = '22023';
   END IF;
+  -- The window is taken first, through log_entry_at, behind a fence: ordered
+  -- by seq outside it, the planner cannot walk log_entry_seq_unique from the
+  -- oldest row and filter by time (ductura/server#169).
   RETURN QUERY
+  WITH w AS MATERIALIZED (
+    SELECT x.seq, x.at, x.kind, x.payload FROM public.log_entry x
+    WHERE x.at OPERATOR(pg_catalog.>=) p_from AND x.at OPERATOR(pg_catalog.<) p_to
+      AND x.seq OPERATOR(pg_catalog.>) p_after_seq
+  ), e AS MATERIALIZED (SELECT w.* FROM w ORDER BY w.seq LIMIT 1000)
   SELECT e.seq, e.at, e.kind,
     CASE WHEN e.payload OPERATOR(pg_catalog.->>) 'requestId' OPERATOR(pg_catalog.~)
               '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
@@ -74,11 +82,8 @@ BEGIN
         AND NOT pg_catalog.lower(f.key)
           OPERATOR(pg_catalog.~) 'token|cookie|secret|password|credential|bearer|authorization|session'
     ), '{}'::jsonb)
-  FROM public.log_entry e
-  WHERE e.at OPERATOR(pg_catalog.>=) p_from AND e.at OPERATOR(pg_catalog.<) p_to
-    AND e.seq OPERATOR(pg_catalog.>) p_after_seq
-  ORDER BY e.seq
-  LIMIT 1000;
+  FROM e
+  ORDER BY e.seq;
 END
 $$;
 

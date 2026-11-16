@@ -200,7 +200,9 @@ SELECT is((SELECT g.x - 'seq' - 'at' FROM pg_temp.got g WHERE g.x->>'kind' = 'te
 
 -- 5. The window is read through log_entry_at, not by a scan of the table or
 -- of another index (K3). enable_seqscan = off shows that the predicate can
--- use the index; the negative control drops it and the check sees the change.
+-- use the index; enable_sort = off makes walking log_entry_seq_unique (no sort
+-- for ORDER BY seq) the cheaper plan, which the read must still not take (#169);
+-- the negative control drops the index and the check sees the change.
 CREATE FUNCTION pg_temp.scans() RETURNS jsonb LANGUAGE sql AS $$
   SELECT jsonb_object_agg(c.relname, pg_stat_get_xact_numscans(c.oid)) FROM pg_class c
   WHERE c.oid = 'public.log_entry'::regclass
@@ -216,6 +218,7 @@ BEGIN
 END
 $$;
 SET LOCAL enable_seqscan = off;
+SET LOCAL enable_sort = off;
 SELECT is(pg_temp.scan_change(),
   '{"log_entry": 0, "log_entry_at": 1, "log_entry_pkey": 0, "log_entry_seq_unique": 0, "log_entry_prev_hash_unique": 0}'::jsonb,
   'a call scans log_entry_at once, and no table and no other index');
@@ -225,6 +228,7 @@ SELECT isnt((pg_temp.scan_change()->>'log_entry_seq_unique')::int + (pg_temp.sca
   'negative control: without log_entry_at the read scans the table or another index');
 ROLLBACK TO SAVEPOINT without_index;
 RESET enable_seqscan;
+RESET enable_sort;
 SELECT is_empty('SELECT * FROM public.log_chain_verify()', 'the chain stays whole');
 
 SELECT * FROM finish();
