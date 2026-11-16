@@ -10,7 +10,22 @@ import { breakingChanges } from "../../server/contracts/index.ts";
 export type Level = "none" | "patch" | "minor" | "major" | "blocked";
 export type Version = readonly [number, number, number];
 /** Staged package: path inside the package → file text. */
-export type Files = ReadonlyMap<string, string>;
+export type Files = ReadonlyMap<string, string | Uint8Array>;
+
+// Files are compared as raw bytes; only what is parsed (.d.ts, JSON) is decoded,
+// strictly and with a BOM kept (orchestrator, 2nd fix round on #92).
+const bytes = (c: string | Uint8Array): Buffer =>
+  typeof c === "string" ? Buffer.from(c, "utf8") : Buffer.from(c);
+const decode = (c: string | Uint8Array): string =>
+  typeof c === "string" ? c : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(c);
+
+/** Every identifier token of `text`: a name that appears here may be shadowed. */
+function identifierTokens(text: string, into: Set<string>): Set<string> {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, text);
+  for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan())
+    if (kind === ts.SyntaxKind.Identifier) into.add(scanner.getTokenValue());
+  return into;
+}
 
 const ORDER: readonly Level[] = ["none", "patch", "minor", "major", "blocked"];
 const max = (a: Level, b: Level): Level => (ORDER.indexOf(a) >= ORDER.indexOf(b) ? a : b);
@@ -246,7 +261,13 @@ function declarations(text: string, path: string): Declarations {
 export type Surface = { readonly level: Change; readonly reasons: string[] };
 
 /** The declaration change from `before` to `after` of one .d.ts. */
-export function declarationChange(before: string, after: string, path: string): Surface {
+export function declarationChange(
+  before: string,
+  after: string,
+  path: string,
+  /** Identifier tokens of every old .d.ts of the package. */
+  used: ReadonlySet<string> = new Set(),
+): Surface {
   const old = declarations(before, path);
   const now = declarations(after, path);
   const [da, fa, db, fb] = [old.nodes, old.file, now.nodes, now.file];
@@ -277,7 +298,9 @@ export function declarationChange(before: string, after: string, path: string): 
         ts.isModuleDeclaration(node) ||
         (ts.isImportDeclaration(node) && node.importClause === undefined) ||
         now.star ||
-        namesOf(node).some((name) => old.names.has(name) || old.identifiers.has(name));
+        namesOf(node).some(
+          (name) => old.names.has(name) || old.identifiers.has(name) || used.has(name),
+        );
       note(key, merges ? "changed" : "optional");
     }
   return { level, reasons };
@@ -326,16 +349,28 @@ function packageLevel(input: LevelInput): LevelResult {
     const a = before.get("openapi/v1.json");
     const b = after.get("openapi/v1.json");
     if (a === undefined || b === undefined) throw new Error("contracts without openapi/v1.json");
-    if (a !== b) api = openapiLevel(a, b, reasons);
+    if (!bytes(a).equals(bytes(b))) api = openapiLevel(decode(a), decode(b), reasons);
     if (api !== "none") raise(api, "openapi/v1.json");
   }
   // A new required member of a generated type (a new route) is backed by the
   // document only when the document grew and the generator stayed the same.
   const backed = api === "minor" && !input.generatorChanged;
+  // A new name that appears anywhere in the old declarations may shadow it.
+  const used = new Set<string>();
+  for (const [path, content] of before)
+    if (path.endsWith(".d.ts")) identifierTokens(decode(content), used);
   for (const path of new Set([...before.keys(), ...after.keys()])) {
-    const a = before.get(path);
-    const b = after.get(path);
-    if (a === b || path === "openapi/v1.json") continue;
+    const rawA = before.get(path);
+    const rawB = after.get(path);
+    if (path === "openapi/v1.json") continue;
+    if (rawA !== undefined && rawB !== undefined && bytes(rawA).equals(bytes(rawB))) continue;
+    const parsed = path === "package.json" || path.endsWith(".d.ts");
+    const a = rawA === undefined || !parsed ? undefined : decode(rawA);
+    const b = rawB === undefined || !parsed ? undefined : decode(rawB);
+    if (!parsed) {
+      raise(rawA === undefined ? "patch" : rawB === undefined ? "major" : "patch", path);
+      continue;
+    }
     if (a === undefined && !path.endsWith(".d.ts")) raise("patch", `${path} added`);
     else if (b === undefined) raise("major", `${path} removed`);
     else if (path === "package.json") {
@@ -368,7 +403,7 @@ function packageLevel(input: LevelInput): LevelResult {
     } else if (path.endsWith(".d.ts")) {
       // A new file is read like a new name in an empty one: an augmentation in it is major.
       if (a === undefined) raise("minor", `${path} added`);
-      const surface = declarationChange(a ?? "", b, path);
+      const surface = declarationChange(a ?? "", b, path, used);
       const required = backed && path.startsWith(GENERATED) ? "minor" : "major";
       const to = { same: "patch", optional: "minor", required, changed: "major" } as const;
       raise(to[surface.level], path);

@@ -404,3 +404,55 @@ describe("releaseLevel refuses a new name that shadows what the file used", () =
     expect(level(fakes(CLOCK), fakes(`${CLOCK}export type Instant = string;\n`))).toBe("minor");
   });
 });
+
+// 2nd fix round on #92 (c.6906398937): raw bytes and names used in any old .d.ts.
+describe("releaseLevel over raw bytes and the whole package", () => {
+  const BOM = Buffer.from([0xef, 0xbb, 0xbf]);
+  const text = (t: string) => Buffer.from(t, "utf8");
+
+  it("is patch when the only change is a BOM in README.md", () => {
+    const before = new Map<string, string | Uint8Array>([
+      ...fakes(BASE_DTS),
+      ["README.md", text("Lažne zamjene\n")],
+    ]);
+    const after = new Map<string, string | Uint8Array>([
+      ...fakes(BASE_DTS),
+      ["README.md", Buffer.concat([BOM, text("Lažne zamjene\n")])],
+    ]);
+    expect(level(before, after)).toBe("patch");
+  });
+
+  it("is patch for a changed file that is not UTF-8 and not parsed", () => {
+    const before = new Map<string, string | Uint8Array>([
+      ...fakes(BASE_DTS),
+      ["data.bin", Buffer.from([0xff, 0x00])],
+    ]);
+    const after = new Map<string, string | Uint8Array>([
+      ...fakes(BASE_DTS),
+      ["data.bin", Buffer.from([0xfe, 0x00])],
+    ]);
+    expect(level(before, after)).toBe("patch");
+  });
+
+  it("is blocked when a declaration file is not UTF-8", () => {
+    const after = new Map<string, string | Uint8Array>([
+      ...fakes(BASE_DTS),
+      ["index.d.ts", Buffer.from([0xff, 0xfe])],
+    ]);
+    expect(level(fakes(BASE_DTS), after)).toBe("blocked");
+  });
+
+  it("is major for a new name used in another old declaration file", () => {
+    const CLOCK = "export interface FakeClock { now(): Date }\n";
+    const before = fakes(BASE_DTS, { "clock.d.ts": CLOCK });
+    const after = fakes(`${BASE_DTS}export type Date = string;\n`, { "clock.d.ts": CLOCK });
+    expect(level(before, after)).toBe("major");
+    const newFile = fakes(BASE_DTS, {
+      "clock.d.ts": CLOCK,
+      "date.d.ts": "export type Date = string;\n",
+    });
+    expect(level(before, newFile)).toBe("major");
+    const fresh = fakes(`${BASE_DTS}export type Instant = string;\n`, { "clock.d.ts": CLOCK });
+    expect(level(before, fresh)).toBe("minor");
+  });
+});
