@@ -51,7 +51,7 @@ Zbrojevi prometa (`traffic-summary.ts`, DAN-836-1, ugovor Ductus#1836):
 - `createTrafficSummary({ now })` daje `observe(zapis)` i `summarize(windowMinutes)` za operatorsku rutu `GET /api/v1/ops/traffic` (DAN-836-2). `observe` čita samo `event`, `fields.route` i `fields.status`, kao vlastita podatkovna svojstva (kao `traffic-tally`), i nikad ne baca. IP, `requestId` i ostala polja ne stižu do zbroja.
 - Broji se samo `traffic.request` sa statusom 100 do 599 i rutom `none` ili predloškom iz kataloga zapisa (`/api/v1` i najviše 10 segmenata). Zapis ide u minutu sata u trenutku `observe`; sat koji baca ili ne daje konačan broj ne broji ništa.
 - `summarize` vraća `{ ok, value: { windowMinutes, total, rows: [{ route, status, count }] } }` za minute `(sada − windowMinutes, sada]`; minuta poslije sata (sat je išao unatrag) ne ulazi. Prozor je cijeli broj minuta od 1 do `MAX_WINDOW_MINUTES` (1440); veći broj daje `TRAFFIC_WINDOW_TOO_LARGE`, sve ostalo `TRAFFIC_WINDOW_INVALID` (tekstovi `trafficSummary.*` u `locales/hr.json`).
-- Čuva se najviše 1440 minuta i ukupno `MAX_ENTRIES` (50 000) parova (minuta, ruta, status); novi par preko toga se ne broji, poznati se broji dalje.
+- Čuva se najviše 1440 minuta, mjereno od najnovije minute koju je sat dao: minute do nje − 1440 se brišu, a zapis u takvoj minuti (sat vraćen 1440 minuta ili više) ne broji se. Ukupno se čuva najviše `MAX_ENTRIES` (50 000) parova (minuta, ruta, status); novi par preko toga se ne broji, poznati se broji dalje.
 
 ## Tko ga zove
 

@@ -66,6 +66,8 @@ export function createTrafficSummary(options: TrafficSummaryOptions): TrafficSum
   /** Minute number to (route, status) counts; the key is "status route". */
   const minutes = new Map<number, Map<string, number>>();
   let entries = 0;
+  /** The newest minute the clock has given; kept minutes lie in (newest − 1440, newest]. */
+  let newest = -Infinity;
 
   /** The current minute; a clock that throws or gives no finite number gives undefined. */
   const minuteNow = (): number | undefined => {
@@ -76,10 +78,11 @@ export function createTrafficSummary(options: TrafficSummaryOptions): TrafficSum
       return undefined;
     }
   };
-  /** Drops minutes at or before current − MAX_WINDOW_MINUTES, relative to this clock reading. */
+  /** Moves newest up to current and drops minutes at or before newest − MAX_WINDOW_MINUTES. */
   const prune = (current: number): void => {
+    newest = Math.max(newest, current);
     for (const [minute, pairs] of minutes) {
-      if (minute > current - MAX_WINDOW_MINUTES) continue;
+      if (minute > newest - MAX_WINDOW_MINUTES) continue;
       entries -= pairs.size;
       minutes.delete(minute);
     }
@@ -97,6 +100,8 @@ export function createTrafficSummary(options: TrafficSummaryOptions): TrafficSum
         const minute = minuteNow();
         if (minute === undefined) return;
         prune(minute);
+        // A clock gone back by 1440 minutes or more would keep a minute past the bound.
+        if (minute <= newest - MAX_WINDOW_MINUTES) return;
         const pairs = minutes.get(minute) ?? new Map<string, number>();
         const key = `${status as number} ${route}`;
         if (!pairs.has(key)) {

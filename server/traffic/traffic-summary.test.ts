@@ -198,6 +198,22 @@ describe("traffic summary: sums", () => {
     expect(summary.summarize(10)).toMatchObject({ value: { total: 2 } });
   });
 
+  it("keeps at most 1440 minutes when the clock goes back past the oldest one", () => {
+    const time = clock();
+    const summary = createTrafficSummary({ now: time.now });
+    for (let minute = 0; minute < MAX_WINDOW_MINUTES; minute += 1) {
+      summary.observe(record("/api/v1/a", 200));
+      time.advance(1);
+    }
+    time.advance(-MAX_WINDOW_MINUTES - 1);
+    summary.observe(record("/api/v1/a", 200));
+    expect(summary.summarize(1)).toMatchObject({ value: { total: 0 } });
+    time.advance(MAX_WINDOW_MINUTES);
+    expect(summary.summarize(MAX_WINDOW_MINUTES)).toMatchObject({
+      value: { total: MAX_WINDOW_MINUTES },
+    });
+  });
+
   it("keeps no IP or request id", () => {
     const summary = createTrafficSummary({ now: clock().now });
     summary.observe(record("/api/v1/a", 200));
