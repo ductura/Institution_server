@@ -11,6 +11,7 @@ import {
   createReadyCheck,
   READY_TIMEOUT_MS,
   type ReadyCapability,
+  type ReadyCheckOptions,
   type ReadyReport,
 } from "./ready.ts";
 
@@ -179,6 +180,82 @@ describe("ready check limits", () => {
     const required = await checkOf([cap({ probe: async () => "nije_konfigurirano" })])();
     expect(required.ready).toBe(false);
     expect(await checkOf([])()).toEqual({ ready: true, capabilities: {}, codes: {} });
+  });
+});
+
+describe("ready check after review on e440952", () => {
+  it("an early answer is timed before a later probe's synchronous work", async () => {
+    const busy = async (): Promise<"ok"> => {
+      clock.advance(80); // stands for work that blocks the event loop
+      return "ok";
+    };
+    const check = checkOf(
+      [
+        cap({ timeoutMs: 50, probe: async () => Promise.resolve("ok" as const) }),
+        cap({ name: "queue", probe: busy }),
+      ],
+      100,
+    );
+    expect(await check()).toEqual({
+      ready: true,
+      capabilities: { database: "ok", queue: "ok" },
+      codes: {},
+    });
+  });
+
+  it("a timer that wakes early is not the limit", async () => {
+    let early = true;
+    const check = createReadyCheck(
+      [cap({ probe: async () => clock.sleep(1_000).then(() => "ok" as const) })],
+      {
+        now: () => clock.nowMs(),
+        sleep: async (ms, signal) => {
+          const wait = early ? ms - 1 : ms;
+          early = false;
+          return clock.sleep(wait, signal);
+        },
+      },
+    );
+    const state = await start(check);
+    clock.advance(999);
+    await settle();
+    expect(state.report).toBeUndefined();
+    clock.advance(1);
+    await settle();
+    expect(state.report?.capabilities).toEqual({ database: "ok" });
+  });
+
+  it("a fractional limit is waited out in whole milliseconds", async () => {
+    const asked: number[] = [];
+    const busy = async (): Promise<"ok"> => {
+      clock.advance(0.25);
+      return "ok";
+    };
+    const check = createReadyCheck([cap({ probe: busy }), cap({ name: "queue", probe: hang })], {
+      totalMs: 100,
+      now: () => clock.nowMs(),
+      sleep: async (ms, signal) => {
+        asked.push(ms);
+        return clock.sleep(ms, signal);
+      },
+    });
+    const state = await start(check);
+    clock.advance(99);
+    await settle();
+    expect(state.report).toBeUndefined();
+    clock.advance(1);
+    await settle();
+    expect(state.report?.codes).toEqual({ queue: "TIMEOUT" });
+    expect(asked.every((ms) => Number.isInteger(ms))).toBe(true);
+  });
+
+  it.each([
+    ["a sparse list", new Array<ReadyCapability>(1), {}],
+    ["totalMs null", [], { totalMs: null }],
+    ["inherited totalMs", [], Object.create({ totalMs: 100 }) as object],
+    ["null options", [], null],
+  ])("refuses %s when made", (_, capabilities, options) => {
+    expect(() => createReadyCheck(capabilities, options as ReadyCheckOptions)).toThrow(RangeError);
   });
 });
 

@@ -115,8 +115,19 @@ export function createReadyCheck(
 ): () => Promise<ReadyReport> {
   if (!Array.isArray(capabilities)) throw new RangeError("capabilities is an array");
   const seen = new Set<string>();
-  const list = Object.freeze(capabilities.map((entry: unknown) => capabilityOf(entry, seen)));
-  const totalMs = limit(options.totalMs ?? READY_TIMEOUT_MS, "totalMs");
+  // Array.from visits holes too, so a sparse list is refused, not skipped.
+  const list = Object.freeze(
+    Array.from(capabilities, (entry: unknown) => capabilityOf(entry, seen)),
+  );
+  const proto: unknown =
+    typeof options === "object" && options !== null ? Object.getPrototypeOf(options) : undefined;
+  if (proto !== Object.prototype && proto !== null)
+    throw new RangeError("options is a plain record");
+  // Only an own data `totalMs` counts; a missing one is the default, any other value is checked.
+  const given = Object.getOwnPropertyDescriptor(options, "totalMs");
+  if (given !== undefined && !("value" in given))
+    throw new RangeError("totalMs is a data property");
+  const totalMs = given === undefined ? READY_TIMEOUT_MS : limit(given.value, "totalMs");
   const now = options.now ?? (() => performance.now());
   const sleep = options.sleep ?? unrefSleep;
 
@@ -129,10 +140,15 @@ export function createReadyCheck(
     // The timer starts before any probe code and has its own signal; its
     // rejection on abort is caught here.
     const timer = new AbortController();
-    const expired: Promise<typeof TIMEOUT> = sleep(limitMs, timer.signal).then(
-      () => TIMEOUT,
-      () => TIMEOUT,
-    );
+    // A timer may wake before the limit (a fractional rest, a coarse
+    // clock): the clock is asked again and the rest waited out in whole ms.
+    const expired: Promise<typeof TIMEOUT> = (async (): Promise<typeof TIMEOUT> => {
+      for (;;) {
+        const rest = limitMs - (now() - start);
+        if (rest <= 0) return TIMEOUT;
+        await sleep(Math.ceil(rest), timer.signal);
+      }
+    })().catch((): typeof TIMEOUT => TIMEOUT);
     const controller = new AbortController();
     let called: Promise<unknown>;
     try {
@@ -168,7 +184,15 @@ export function createReadyCheck(
 
   return async () => {
     const checkStart = now();
-    const outcomes = await Promise.all(list.map(async (capability) => run(capability, checkStart)));
+    // Each probe starts one macrotask after the one before, so every answer
+    // already there (with its microtask chain) is timed before the next
+    // probe's synchronous work; the total limit still runs from checkStart.
+    const runs: Promise<Outcome>[] = [];
+    for (const capability of list) {
+      if (runs.length > 0) await new Promise((go) => setImmediate(go));
+      runs.push(run(capability, checkStart));
+    }
+    const outcomes = await Promise.all(runs);
     const report: ReadyReport = { ready: true, capabilities: {}, codes: {} };
     list.forEach((capability, i) => {
       const { status, code } = outcomes[i] as Outcome;
