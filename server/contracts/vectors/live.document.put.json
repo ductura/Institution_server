@@ -16,19 +16,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -55,19 +56,20 @@
           "if-none-match": "*"
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -94,19 +96,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -133,19 +136,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -172,19 +176,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -212,19 +217,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -254,7 +260,7 @@
           "content-type": "text/plain",
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
-        "rawBody": "{\"schemaVersion\": 1, \"type\": \"doc\", \"content\": [{\"type\": \"paragraph\", \"content\": [{\"type\": \"text\", \"text\": \"Izmi\\u0161ljeni tekst rada.\"}]}]}"
+        "rawBody": "{\"nodes\": [{\"children\": [{\"marks\": [], \"text\": \"Izmi\\u0161ljeni tekst rada.\", \"type\": \"text\"}], \"id\": \"0f1e2d3c-4b5a-4968-8776-655443322110\", \"type\": \"paragraph\"}], \"schemaVersion\": 1}"
       },
       "response": {
         "status": 415,
@@ -283,19 +289,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -325,19 +332,20 @@
           "content-type": "application/json"
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -368,19 +376,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -411,7 +420,7 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\"",
           "content-length": "2097153"
         },
-        "rawBody": "{\"schemaVersion\": 1, \"type\": \"doc\", \"content\": [{\"type\": \"paragraph\", \"content\": [{\"type\": \"text\", \"text\": \"Izmi\\u0161ljeni tekst rada.\"}]}]}"
+        "rawBody": "{\"nodes\": [{\"children\": [{\"marks\": [], \"text\": \"Izmi\\u0161ljeni tekst rada.\", \"type\": \"text\"}], \"id\": \"0f1e2d3c-4b5a-4968-8776-655443322110\", \"type\": \"paragraph\"}], \"schemaVersion\": 1}"
       },
       "response": {
         "status": 413,
@@ -441,7 +450,7 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\"",
           "content-length": "120"
         },
-        "rawBody": "{\"schemaVersion\": 1,"
+        "rawBody": "{\"nodes\": [{\"childre"
       },
       "response": {
         "status": 408,
@@ -472,19 +481,20 @@
           "content-length": "-1"
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {
@@ -546,19 +556,20 @@
           "if-match": "\"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\""
         },
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         }
       },
       "response": {

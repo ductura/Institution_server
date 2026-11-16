@@ -4,6 +4,7 @@
 // same status can also be an error (Ductus#1836 c.6908963345, point 6).
 import { describe, expect, it } from "vitest";
 
+import { ROUTE_TABLE } from "./generated/fake-server/index.ts";
 import { createClient } from "./generated/index.ts";
 
 const answer = (status: number, body: unknown) =>
@@ -41,5 +42,20 @@ describe("a status listed as an answer at 400 or above", () => {
       status: 428,
       code: "precondition_required",
     });
+  });
+  it("a listed status without a JSON body (a proxy page) is not an answer", async () => {
+    const page = (async () =>
+      new Response("<html></html>", {
+        status: 409,
+        headers: { "content-type": "text/html" },
+      })) as unknown as typeof fetch;
+    expect(await put(page)).toEqual({ ok: false, status: 409, code: "unexpected" });
+  });
+});
+
+describe("the published route table keeps its rows (DAN-804: a new field of a row is major)", () => {
+  it("answer statuses live in their own constant, not in ROUTE_TABLE", () => {
+    for (const row of Object.values(ROUTE_TABLE))
+      expect(Object.keys(row).sort()).toEqual(["body", "errors", "headers", "method", "path"]);
   });
 });

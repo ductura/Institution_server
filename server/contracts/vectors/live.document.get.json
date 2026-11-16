@@ -10,30 +10,30 @@
         },
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
-          "ductus-protocol": "1",
-          "sec-fetch-site": "same-origin"
+          "ductus-protocol": "1"
         }
       },
       "response": {
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         },
         "headers": {
-          "etag": "\"a3f1c2d4e5b60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9\""
+          "etag": "\"55e5fb47daa01aa77c1903f34f3d053655c4592780313539f6370c92dac8d3bc\""
         }
       }
     },
@@ -46,30 +46,30 @@
         },
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
-          "ductus-protocol": "1",
-          "sec-fetch-site": "same-origin"
+          "ductus-protocol": "1"
         }
       },
       "response": {
         "status": 200,
         "contentType": "application/json",
         "body": {
-          "schemaVersion": 1,
-          "type": "doc",
-          "content": [
+          "nodes": [
             {
-              "type": "paragraph",
-              "content": [
+              "children": [
                 {
-                  "type": "text",
-                  "text": "Izmišljeni tekst rada."
+                  "marks": [],
+                  "text": "Izmišljeni tekst rada.",
+                  "type": "text"
                 }
-              ]
+              ],
+              "id": "0f1e2d3c-4b5a-4968-8776-655443322110",
+              "type": "paragraph"
             }
-          ]
+          ],
+          "schemaVersion": 1
         },
         "headers": {
-          "etag": "\"a3f1c2d4e5b60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9\"",
+          "etag": "\"55e5fb47daa01aa77c1903f34f3d053655c4592780313539f6370c92dac8d3bc\"",
           "ductus-live-state": "submitted"
         }
       }
@@ -83,8 +83,7 @@
         },
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
-          "ductus-protocol": "1",
-          "sec-fetch-site": "same-origin"
+          "ductus-protocol": "1"
         }
       },
       "response": {
@@ -101,14 +100,13 @@
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
           "ductus-protocol": "1",
-          "sec-fetch-site": "same-origin",
-          "if-none-match": "\"a3f1c2d4e5b60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9\""
+          "if-none-match": "\"55e5fb47daa01aa77c1903f34f3d053655c4592780313539f6370c92dac8d3bc\""
         }
       },
       "response": {
         "status": 304,
         "headers": {
-          "etag": "\"a3f1c2d4e5b60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9\""
+          "etag": "\"55e5fb47daa01aa77c1903f34f3d053655c4592780313539f6370c92dac8d3bc\""
         }
       }
     },
@@ -170,8 +168,7 @@
         },
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
-          "ductus-protocol": "1",
-          "sec-fetch-site": "same-origin"
+          "ductus-protocol": "1"
         }
       },
       "response": {
@@ -196,8 +193,7 @@
         },
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
-          "ductus-protocol": "1",
-          "sec-fetch-site": "same-origin"
+          "ductus-protocol": "1"
         }
       },
       "response": {
@@ -222,8 +218,7 @@
         },
         "headers": {
           "cookie": "__Host-ductus_session=izmisljeni-token-rada-000000000000000000001",
-          "ductus-protocol": "1",
-          "sec-fetch-site": "same-origin"
+          "ductus-protocol": "1"
         }
       },
       "response": {
