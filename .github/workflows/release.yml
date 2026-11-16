@@ -2,10 +2,12 @@ name: Automatsko izdanje
 
 # DAN-804: after every push to main, release:level compares each package staged
 # at its last tag with HEAD (scripts/release/level.ts). A minor or patch gets a
-# tag on this commit and publish.yml is dispatched on that tag (a tag pushed by
-# GITHUB_TOKEN starts no workflow). A major, or anything that cannot be
-# classified, is reported on the merged PR and stops. Only level runs code of
-# this repository, and it only reads; tag and report run only gh.
+# tag on this commit. A major, or anything that cannot be classified, is
+# reported on the merged PR and stops. Only level runs code of this repository,
+# and it only reads; tag runs only git and ssh, report only gh.
+# DAN-866: the tag is pushed with the release deploy key (secret
+# RELEASE_DEPLOY_KEY), which the tag ruleset lets through. That push itself
+# starts publish.yml, once; a tag pushed by GITHUB_TOKEN would start nothing.
 on:
   push:
     branches: [main]
@@ -48,30 +50,55 @@ jobs:
     if: needs.level.outputs.releases != ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: write
-      actions: write
+    # No GITHUB_TOKEN: the deploy key is the only credential of this job.
+    permissions: {}
     steps:
       # Only on the tip of main: a later run covers this commit as well.
-      # POST git/refs never moves a tag; one that exists fails the job.
+      # Every name is checked before the key is loaded and before the network.
+      # A push without force never moves a tag, and --atomic creates all or none.
+      # The key lives only in an ssh-agent of this step: never in a file, a log
+      # or the environment of git and ssh; the trap removes agent and folder.
       - name: Oznaka
         env:
           RELEASES: ${{ needs.level.outputs.releases }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY_KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
+          # Without `shell:` GitHub runs `bash -e {0}`: no pipefail of its own.
+          set -o pipefail
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
-          # Every tag is checked before the first call, so a bad one creates none.
+          [[ "$REPO" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]]
+          # In a variable: an unescaped space in a [[ =~ ]] regex is a syntax error.
+          releases_re='^(contracts-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)|test-fakes-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)|contracts-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*) test-fakes-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$'
+          [[ "$RELEASES" =~ $releases_re ]]
+          refs=()
           for tag in $RELEASES; do
             [[ "$tag" =~ ^(contracts|test-fakes)-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+            refs+=("$SHA:refs/tags/$tag")
           done
-          tip="$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)"
+          [ -n "$DEPLOY_KEY" ]
+          work="$(mktemp -d)"
+          trap '[ -z "${SSH_AGENT_PID:-}" ] || ssh-agent -k > /dev/null; rm -rf "$work"' EXIT
+          eval "$(ssh-agent -s)" > /dev/null
+          printf '%s\n' "$DEPLOY_KEY" | ssh-add -q -
+          unset DEPLOY_KEY
+          # The published ed25519 host key of github.com, pinned.
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$work/known_hosts"
+          export GIT_SSH_COMMAND="ssh -F /dev/null -o BatchMode=yes -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519 -o UserKnownHostsFile=$work/known_hosts"
+          remote="git@github.com:$REPO.git"
+          # A failed read (key refused, network, no main) fails the job; it is
+          # never "main moved on". Only the exact ref counts, not one ending with it.
+          heads="$(git ls-remote --exit-code "$remote" refs/heads/main)"
+          tip=""
+          while IFS=$'\t' read -r sha ref; do
+            [ "$ref" != refs/heads/main ] || tip="$sha"
+          done <<< "$heads"
+          [[ "$tip" =~ ^[0-9a-f]{40}$ ]]
           if [ "$tip" != "$SHA" ]; then echo "::notice::main moved on; a later run releases"; exit 0; fi
-          for tag in $RELEASES; do
-            gh api -X POST "repos/$REPO/git/refs" -f "ref=refs/tags/$tag" -f "sha=$SHA" > /dev/null
-            gh api -X POST "repos/$REPO/actions/workflows/publish.yml/dispatches" -f "ref=$tag"
-          done
+          git init -q "$work/repo"
+          git -C "$work/repo" fetch -q --depth=1 --no-tags "$remote" "$SHA"
+          git -C "$work/repo" push --atomic "$remote" "${refs[@]}"
 
   report:
     name: Izdanje čeka vlasnika
