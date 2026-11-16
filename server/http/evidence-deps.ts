@@ -12,6 +12,7 @@ import { createEvidenceService } from "../evidence/index.ts";
 import {
   type EvidencePayloadLocator,
   type EvidencePayloadStore,
+  type InstitutionEvidencePayloadReader,
   InstitutionRoutedPayloadStore,
   loadEvidenceStorageConfig,
 } from "../external/storage/index.ts";
@@ -22,20 +23,24 @@ import {
 
 import type { Databases } from "./databases.ts";
 import { createEvidenceCommitRoute } from "./evidence-commit.ts";
+import { createEvidenceReplayRoute } from "./evidence-replay.ts";
 import type { Route } from "./router.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;
+/** The storage of every institution: written by commit, read by replay (DAN-818). */
+type Payloads = EvidencePayloadStore & EvidencePayloadLocator & InstitutionEvidencePayloadReader;
 
 export type EvidenceIngestDependencies = {
   readonly signer: Pick<SigningKeyProvider, "sign">;
-  readonly payloads: EvidencePayloadStore & EvidencePayloadLocator;
+  readonly payloads: Payloads;
 };
 
 const notConfigured = { status: "unavailable", reason: "storage_not_configured" } as const;
-/** No storage domain: every write and every name is unavailable, never a default bucket. */
-export const STORAGE_NOT_CONFIGURED: EvidencePayloadStore & EvidencePayloadLocator = Object.freeze({
+/** No storage domain: every write, name and read is unavailable, never a default bucket. */
+export const STORAGE_NOT_CONFIGURED: Payloads = Object.freeze({
   putImmutable: async () => notConfigured,
   storageRefFor: async () => notConfigured,
+  readImmutable: async () => notConfigured,
 });
 
 /** A signer that never signs: the commit answers 503 signing and keeps nothing. */
@@ -52,7 +57,7 @@ function signerOf(env: Env, repositoryRoot: string): Pick<SigningKeyProvider, "s
   }
 }
 
-function payloadsOf(env: Env): EvidencePayloadStore & EvidencePayloadLocator {
+function payloadsOf(env: Env): Payloads {
   // An allowlist, as for the signer (F-020): an unset, empty or misspelt
   // NODE_ENV counts as production. Ductus could read "!== production"
   // because next build fixed NODE_ENV; this server reads it at start. The
@@ -89,5 +94,17 @@ export function createEvidenceCommitRouteFor(
   return createEvidenceCommitRoute({
     actorReader: main.actorReader,
     evidence: createEvidenceService({ committer, payloads: deps.payloads }),
+  });
+}
+
+/** The replay route over the main database and this process's storage (DAN-818). */
+export function createEvidenceReplayRouteFor(
+  main: Databases["main"],
+  deps: Pick<EvidenceIngestDependencies, "payloads">,
+): Route {
+  return createEvidenceReplayRoute({
+    actorReader: main.actorReader,
+    withActor: main.withActor,
+    payloads: deps.payloads,
   });
 }

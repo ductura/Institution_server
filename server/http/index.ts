@@ -20,6 +20,7 @@ export {
 } from "./error-catalog.ts";
 export {
   createEvidenceCommitRouteFor,
+  createEvidenceReplayRouteFor,
   evidenceIngestDependencies,
   type EvidenceIngestDependencies,
   REFUSING_SIGNER,
@@ -37,6 +38,15 @@ export {
   OPEN_TIMEOUT_MS,
   type EvidenceOpenOptions,
 } from "./evidence-open.ts";
+export {
+  createEvidenceReplayRoute,
+  parseReplayRequest,
+  REPLAY_MAX_BYTES,
+  REPLAY_PROTOCOLS,
+  REPLAY_TIMEOUT_MS,
+  replayAnswer,
+  type EvidenceReplayOptions,
+} from "./evidence-replay.ts";
 export {
   parseClosedObject,
   readEvidenceBody,
