@@ -17,6 +17,7 @@ describe("server/roles public interface", () => {
       "ROLES_ROUTES",
       "ROLES_SCHEMAS",
       "SCOPES",
+      "createSettingsService",
       "isAccountKind",
       "isAction",
       "loginOf",
