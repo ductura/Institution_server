@@ -3,7 +3,7 @@ import { appendFileSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { latestTag, nextVersion, releaseLevel, type Files } from "./level.ts";
+import { floorProblem, latestTag, nextVersion, releaseLevel, type Files } from "./level.ts";
 import { ROOT } from "./stage.ts";
 
 // `pnpm release:level` (DAN-804): the first job of release.yml, contents: read.
@@ -41,6 +41,12 @@ function plan(short: Short, io: ReleaseIo): Plan {
     after: io.stagedHead(short),
     generatorChanged: io.generatorChanged(commit),
   });
+  // A version raised alone (no other byte changed) still says something: a
+  // pending major or an unreadable version stops the package (QA #92).
+  if (result.level === "none") {
+    const problem = floorProblem(base, io.floor(short));
+    return problem === null ? result : { level: "blocked", reasons: [problem] };
+  }
   if (result.level !== "minor" && result.level !== "patch") return result;
   const next = nextVersion(base, result.level, io.floor(short));
   if (typeof next === "string") return { level: "blocked", reasons: [...result.reasons, next] };
@@ -63,6 +69,13 @@ export function outputs(plans: ReadonlyMap<Short, Plan>): string {
     p.level === "major" || p.level === "blocked" ? [`${short}:${p.level}`] : [],
   );
   return `releases=${releases.join(" ")}\nstopped=${stopped.join(" ")}\n`;
+}
+
+/** `git diff --quiet`: 0 the same, 1 changed; anything else (128, no git) throws, so blocked. */
+export function diffStatus(status: number | null): boolean {
+  if (status === 0) return false;
+  if (status === 1) return true;
+  throw new Error(`git diff failed (${String(status)})`);
 }
 
 function run(cmd: string, args: string[], cwd = ROOT): string {
@@ -117,9 +130,11 @@ function gitIo(head: string): ReleaseIo {
     stagedHead: (short) => readTree(join(headDir, short)),
     // Any answer but "no difference" counts as changed.
     generatorChanged: (commit) =>
-      spawnSync("git", ["diff", "--quiet", commit, head, "--", "scripts/generate-contracts.ts"], {
-        cwd: ROOT,
-      }).status !== 0,
+      diffStatus(
+        spawnSync("git", ["diff", "--quiet", commit, head, "--", "scripts/generate-contracts.ts"], {
+          cwd: ROOT,
+        }).status,
+      ),
     floor: (short) =>
       String(
         (

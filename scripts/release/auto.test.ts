@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { outputs, planRelease, type Plan, type ReleaseIo, type Short } from "./auto.ts";
+import { diffStatus, outputs, planRelease, type Plan, type ReleaseIo, type Short } from "./auto.ts";
 
 // DAN-804: the plan of release.yml from tags and staged packages. Invented data.
 const SHA = "c".repeat(40);
@@ -90,5 +90,46 @@ describe("planRelease with a staged file that is not UTF-8", () => {
     expect(
       planRelease("contracts", io({ tags: ["contracts-v1.1.0"], stagedHead: notUtf8 })).level,
     ).toBe("blocked");
+  });
+});
+
+// QA #92 (c.6906080709): a failing git diff and a version raised alone.
+describe("QA findings on #92", () => {
+  it("reads git diff --quiet strictly: 0 same, 1 changed, anything else throws", () => {
+    expect(diffStatus(0)).toBe(false);
+    expect(diffStatus(1)).toBe(true);
+    for (const status of [128, 2, null])
+      expect(() => diffStatus(status)).toThrow(/git diff failed/);
+  });
+
+  it("is blocked, not patch, when the generator check fails", () => {
+    const failing = () => diffStatus(128);
+    const plan = planRelease("test-fakes", io({ generatorChanged: failing }));
+    expect(plan.level).toBe("blocked");
+    expect(plan.release).toBeUndefined();
+  });
+
+  it.each([
+    ["a major raised alone", "1.0.0", /major awaits/],
+    ["a pre-release version", "0.3.0-rc.1", /not X\.Y\.Z/],
+    ["an unreadable version", "undefined", /not X\.Y\.Z/],
+  ])("is blocked for %s with no other change", (_, floor, reason) => {
+    const plan = planRelease(
+      "test-fakes",
+      io({ stagedHead: () => staged("1"), floor: () => floor }),
+    );
+    expect(plan.level).toBe("blocked");
+    expect(plan.reasons.join()).toMatch(reason);
+    expect(outputs(new Map([["test-fakes", plan]]))).toBe(
+      "releases=\nstopped=test-fakes:blocked\n",
+    );
+  });
+
+  it("stays none when only the version rose on the same major", () => {
+    const plan = planRelease(
+      "test-fakes",
+      io({ stagedHead: () => staged("1"), floor: () => "0.3.0" }),
+    );
+    expect(plan).toEqual({ level: "none", reasons: [] });
   });
 });
