@@ -207,6 +207,8 @@ const DATABASE_NAMES = [
   "receipt_id",
   "receipt_payload",
   "transaction_known",
+  // Result column of the replay source (replay-source.ts, DAN-818) and its tests.
+  "segment_hashes",
   // The alias of the institution slug in the current-actor statement
   // (current-actor.ts, S-0.18, DAN-731).
   "institution_slug",
