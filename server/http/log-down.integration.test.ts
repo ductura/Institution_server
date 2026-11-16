@@ -32,7 +32,17 @@ const route: Handler = async (request, response) => {
   return HEALTH.handle(request, response);
 };
 const throwingLayer: Layer = async (request) => {
-  if ((request.url ?? "").includes("case=layer")) throw new RangeError(CANARY);
+  const url = request.url ?? "";
+  if (url.includes("case=layer")) throw new RangeError(CANARY);
+  if (url.includes("case=request")) {
+    // The router reads the path outside its handler catch, so this throw
+    // rejects the whole request and only start.ts catches it (A10).
+    Object.defineProperty(request, "url", {
+      get() {
+        throw new SyntaxError(CANARY);
+      },
+    });
+  }
   return "next";
 };
 
@@ -124,7 +134,7 @@ async function ask(mode: Mode, query: string): Promise<Answer> {
   return { status: response.status, headers, body, ms, ...(id === undefined ? {} : { id }) };
 }
 
-const CASES = ["", "?case=throw", "?case=layer"] as const;
+const CASES = ["", "?case=throw", "?case=layer", "?case=request"] as const;
 
 /** What a client compares: status, headers and body, not the timing or the request id. */
 const shapeOf = (answer: Answer) => ({
@@ -142,7 +152,7 @@ describe("the log database slow or down, over real HTTP", () => {
       answers.set(mode, list);
     }
     const reference = answers.get("ok") ?? [];
-    expect(reference.map((answer) => answer.status)).toEqual([200, 500, 500]);
+    expect(reference.map((answer) => answer.status)).toEqual([200, 500, 500, 500]);
     for (const mode of MODES) {
       const list = answers.get(mode) ?? [];
       for (const [i, answer] of list.entries()) {
@@ -155,13 +165,14 @@ describe("the log database slow or down, over real HTTP", () => {
 
     // ok: both uncaught errors are rows of the log database, tied to the answers.
     const okIds = reference.slice(1).map((answer) => answer.id);
-    await vi.waitFor(async () => expect(await fakeDb.entries()).toHaveLength(2));
+    await vi.waitFor(async () => expect(await fakeDb.entries()).toHaveLength(3));
     const rows = await fakeDb.entries();
-    expect(rows.map((row) => row.kind)).toEqual(["error.unexpected", "error.unexpected"]);
+    expect(rows.map((row) => row.kind)).toEqual(Array(3).fill("error.unexpected"));
     expect(rows.map((row) => (row.payload as { requestId: string }).requestId)).toEqual(okIds);
     expect(rows.map((row) => (row.payload as { fields: object }).fields)).toEqual([
       { area: "http", errorClass: "type_error" },
       { area: "http", errorClass: "range_error" },
+      { area: "http", errorClass: "syntax_error" },
     ]);
     expect(setupOf("ok").lines).toEqual([]);
 
@@ -172,7 +183,7 @@ describe("the log database slow or down, over real HTTP", () => {
       ["slow", "LOG_STORE_TIMEOUT"],
     ] as const) {
       const { lines } = setupOf(mode);
-      await vi.waitFor(() => expect(lines).toHaveLength(2), { timeout: DEADLINE_MS * 3 });
+      await vi.waitFor(() => expect(lines).toHaveLength(3), { timeout: DEADLINE_MS * 3 });
       const ids = (answers.get(mode) ?? []).slice(1).map((answer) => answer.id);
       for (const [i, line] of lines.entries()) {
         expect(line).not.toContain(CANARY);

@@ -437,6 +437,45 @@ describe("createLogWriter when the log database is slow or down", () => {
     expect(lines.join("")).not.toContain("kanarinac");
   });
 
+  it("refuses a deadlineMs past what setTimeout keeps, which Node would make 1 ms (A7)", () => {
+    const base = { store: memoryStore(), routes: ROUTES };
+    expect(() => createLogWriter({ ...base, deadlineMs: 2 ** 31 })).toThrow(RangeError);
+    expect(() => createLogWriter({ ...base, deadlineMs: 2 ** 31 - 1 })).not.toThrow();
+  });
+
+  it("puts a record with a route in the fallback without throwing or the canary (A13)", async () => {
+    vi.useFakeTimers();
+    const routes = new Set(INVENTORY);
+    const record = {
+      ...validRecord("traffic.rate_limited"),
+      fields: { route: "/api/v1/evidence/commit", bucket: "per_address" },
+    };
+    const stores: [string, LogStore][] = [
+      ["LOG_STORE_FAILED", { append: () => Promise.reject(new Error(CANARY)) }],
+      ["LOG_STORE_TIMEOUT", hanging()],
+    ];
+    for (const [code, store] of stores) {
+      const { lines, fallback } = capture();
+      const write = createLogWriter({ store, routes, fallback, deadlineMs: 1, maxPending: 1 });
+      const first = write(record);
+      if (code === "LOG_STORE_TIMEOUT") {
+        await expect(write(record)).resolves.toMatchObject({ error: { code: "LOG_STORE_BUSY" } });
+      }
+      await vi.advanceTimersByTimeAsync(1);
+      await expect(first).resolves.toMatchObject({ error: { code } });
+      const fallbackLines = lines.map(parsed);
+      expect(fallbackLines.at(-1)?.fields).toMatchObject({
+        code,
+        record: { event: "traffic.rate_limited", fields: { bucket: "per_address" } },
+      });
+      for (const line of fallbackLines)
+        expect((line.fields.record as { fields: { route: string } }).fields.route).toMatch(
+          /^(\/api\/v1\/evidence\/commit|\[redacted\])$/u,
+        );
+      expect(lines.join("")).not.toContain("kanarinac");
+    }
+  });
+
   it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53])(
     "refuses deadlineMs and maxPending %s at creation (A7)",
     (value) => {

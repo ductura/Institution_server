@@ -100,7 +100,9 @@ const TIMED_OUT = Symbol("timed out");
 /**
  * `append` raced against `ms`. `done` settles when `append` itself does, never
  * rejecting, so a place stays taken while a write the deadline gave up on
- * still holds the store.
+ * still holds the store: maxPending bounds what a hanging log database can
+ * hold, and the store's adapter must settle every append (its own query
+ * timeout) for places to come back.
  */
 function appendWithin(
   store: LogStore,
@@ -126,9 +128,17 @@ function appendWithin(
   return { outcome, done };
 }
 
-function positiveWhole(value: number | undefined, fallback: number, name: string): number {
+/** The longest delay setTimeout keeps; a longer one Node silently makes 1 ms. */
+const MAX_TIMER_MS = 2_147_483_647;
+
+function positiveWhole(
+  value: number | undefined,
+  fallback: number,
+  name: string,
+  max = Number.MAX_SAFE_INTEGER,
+): number {
   if (value === undefined) return fallback;
-  if (!Number.isSafeInteger(value) || value <= 0) {
+  if (!Number.isSafeInteger(value) || value <= 0 || value > max) {
     throw new RangeError(`${name} must be a positive whole number`);
   }
   return value;
@@ -137,7 +147,12 @@ function positiveWhole(value: number | undefined, fallback: number, name: string
 export function createLogWriter(options: LogWriterOptions): LogWriter {
   const { store, routes } = options;
   const fallback = options.fallback ?? createLogger();
-  const deadlineMs = positiveWhole(options.deadlineMs, LOG_WRITE_DEADLINE_MS, "deadlineMs");
+  const deadlineMs = positiveWhole(
+    options.deadlineMs,
+    LOG_WRITE_DEADLINE_MS,
+    "deadlineMs",
+    MAX_TIMER_MS,
+  );
   const maxPending = positiveWhole(options.maxPending, LOG_MAX_PENDING, "maxPending");
   let pending = 0;
 
