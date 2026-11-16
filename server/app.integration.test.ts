@@ -5,7 +5,7 @@ import type { Server } from "node:http";
 
 import { afterAll, beforeAll, expect, it } from "vitest";
 
-import { createApp } from "./app.ts";
+import { APP_ERRORS, createApp } from "./app.ts";
 import { createStore } from "./store.ts";
 
 const A = "student-a@primjer.invalid";
@@ -62,4 +62,31 @@ it("another user cannot change the document", async () => {
   expect(res.status).toBe(403);
   const check = await fetch(`${base}/api/documents/b-1`, as(B));
   expect(((await check.json()) as { content: string }).content).toBe("Tajno");
+});
+
+// DAN-782: every error answers {code, messageKey}, never a sentence.
+it.each([
+  ["no login", "/api/documents/a-1", {}, APP_ERRORS.loginRequired],
+  ["unknown path", "/api/nepoznato/x/y", as(A), APP_ERRORS.notFound],
+  ["unknown document", "/api/documents/nema-1", as(A), APP_ERRORS.documentNotFound],
+  ["someone else's document", "/api/documents/b-1", as(A), APP_ERRORS.documentReadForbidden],
+  [
+    "change of someone else's document",
+    "/api/documents/b-1",
+    { method: "PUT", ...as(A), body: "{}" },
+    APP_ERRORS.documentWriteForbidden,
+  ],
+  [
+    "unsupported method",
+    "/api/documents/a-1",
+    { method: "DELETE", ...as(A) },
+    APP_ERRORS.methodNotAllowed,
+  ],
+] as const)("answers %s with a code and a key", async (_name, route, init, expected) => {
+  const res = await fetch(`${base}${route}`, init);
+  expect(res.status).toBe(expected.status);
+  const raw = await res.text();
+  expect(JSON.parse(raw)).toEqual(expected.body);
+  expect(raw).toMatch(/^[\x20-\x7e]*$/u);
+  expect(raw).not.toMatch(/"error"/u);
 });
