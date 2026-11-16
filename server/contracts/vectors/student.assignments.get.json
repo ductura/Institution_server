@@ -6,7 +6,7 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+          "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
         }
       },
       "response": {
@@ -46,7 +46,7 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+          "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
         }
       },
       "response": {
@@ -80,7 +80,7 @@
       "code": "unavailable",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+          "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
         }
       },
       "response": {

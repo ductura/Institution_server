@@ -9,25 +9,80 @@ import { describe, expect, it } from "vitest";
 import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
 import { AREA_NAMES, routesOf } from "../../server/http/index.ts";
 
-// Every route of DAN-803 (c.6905207008, 27 operations); after that task the
-// list only shrinks, as handlers land.
-const MOST = 27;
+// The operations of DAN-803 (c.6905207008, tables of PR1 to PR6), frozen: the
+// task may add only these to CONTRACT_ONLY, and each of them that has a
+// contract and no handler must be there. After the task the list only shrinks.
+// (`submission.submit.post`: the table's `submission.post` has no name part,
+// which checkRoute refuses.)
+export const DAN_803: readonly string[] = [
+  "student.assignments.get",
+  "support.problem-report.post",
+  ...["live.document.get", "live.document.put", "collaboration.comments.post"],
+  ...["collaboration.revision-requests.post", "projection.process-summary.post"],
+  ...["institution.enrollments.post", "institution.acknowledgment.post"],
+  ...["institution.work-language.post", "institution.student-work-language.post"],
+  "institution.work-work-language.post",
+  ...["teacher.courses.get", "teacher.submissions.get", "teacher.mentorships.get"],
+  ...["teacher.mentorship.get", "teacher.fast-path.post", "institution.courses.post"],
+  ...["institution.course-assignments.post", "institution.enrollment-code.post"],
+  ...["institution.enrollment-code-revocation.post", "institution.student-removal.post"],
+  ...["institution.student-return.post", "institution.assignment-versions.post"],
+  ...["institution.role-confirmation.post", "institution.role-revocation.post"],
+  "submission.submit.post",
+];
+
+const mounted = (): string[] => routesOf(AREA_NAMES).map((route) => route.contract.id);
+
+/** Every problem of a CONTRACT_ONLY list against the routes and the mounted ids. */
+export function contractOnlyProblems(
+  list: readonly string[],
+  routeIds: readonly string[],
+  mountedIds: readonly string[],
+): string[] {
+  const problems: string[] = [];
+  if (new Set(list).size !== list.length) problems.push("duplicate id");
+  for (const id of list) {
+    if (!DAN_803.includes(id)) problems.push(`${id}: not a route of DAN-803`);
+    if (!routeIds.includes(id)) problems.push(`${id}: no contract`);
+    if (mountedIds.includes(id)) problems.push(`${id}: mounted`);
+  }
+  for (const id of DAN_803)
+    if (routeIds.includes(id) && !mountedIds.includes(id) && !list.includes(id))
+      problems.push(`${id}: contract without a handler, not in CONTRACT_ONLY`);
+  return problems;
+}
 
 describe("CONTRACT_ONLY", () => {
-  it("names routes that have a contract, each once", () => {
-    const ids = new Set(ROUTES.map((route) => route.id));
-    expect(CONTRACT_ONLY.filter((id) => !ids.has(id))).toEqual([]);
-    expect(new Set(CONTRACT_ONLY).size).toBe(CONTRACT_ONLY.length);
-    expect(CONTRACT_ONLY.length).toBeLessThanOrEqual(MOST);
+  const ids = ROUTES.map((route) => route.id);
+
+  it("is exactly the DAN-803 routes with a contract and no handler", () => {
+    expect(new Set(DAN_803).size).toBe(27);
+    expect(contractOnlyProblems(CONTRACT_ONLY, ids, mounted())).toEqual([]);
   });
 
-  it("names no route that an area mounts", () => {
-    const mounted = routesOf(AREA_NAMES).map((route) => route.contract.id);
-    expect(CONTRACT_ONLY.filter((id) => mounted.includes(id))).toEqual([]);
+  it("refuses a route outside DAN-803, a route without contract, a duplicate and a mounted one", () => {
+    expect(
+      contractOnlyProblems(
+        [...CONTRACT_ONLY, "auth.login.get", "teacher.courses.get", "student.assignments.get"],
+        [...ids, "teacher.courses.get"],
+        ["student.assignments.get"],
+      ),
+    ).toEqual([
+      "duplicate id",
+      "student.assignments.get: mounted",
+      "auth.login.get: not a route of DAN-803",
+      "student.assignments.get: mounted",
+    ]);
+    expect(contractOnlyProblems(["live.document.get"], ids, [])).toEqual([
+      "live.document.get: no contract",
+      "student.assignments.get: contract without a handler, not in CONTRACT_ONLY",
+    ]);
   });
 
-  it("names no route that health or the evidence routes already had before DAN-803", () => {
-    expect(CONTRACT_ONLY).not.toContain("platform.health.get");
-    expect(CONTRACT_ONLY.every((id) => !id.startsWith("evidence."))).toBe(true);
+  it("refuses a DAN-803 contract left out of the list", () => {
+    expect(contractOnlyProblems([], [...ids, "teacher.courses.get"], [])).toEqual([
+      "student.assignments.get: contract without a handler, not in CONTRACT_ONLY",
+      "teacher.courses.get: contract without a handler, not in CONTRACT_ONLY",
+    ]);
   });
 });

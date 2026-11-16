@@ -16,7 +16,7 @@ const Uuid = Type.String({
 const MyAssignment = closed({
   id: Uuid,
   title: Type.String({ minLength: 1 }),
-  /** Due time, ISO 8601 UTC (Date.toISOString). */
+  /** Due time, ISO 8601 UTC (Date.toISOString); Ductus accepts only UTC years 1000 to 9999 (validInstant). */
   dueAt: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" }),
   /** The current version's notice is not acknowledged yet; the work opens it first. */
   noticeFirst: Type.Boolean(),

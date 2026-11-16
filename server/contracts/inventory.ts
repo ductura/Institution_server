@@ -65,7 +65,7 @@ export const SERVER_SOURCES: Readonly<
 > = {
   "app/api/student/assignments/route.ts": {
     methods: ["GET"],
-    source: "src/components/student/my-assignments-read.ts",
+    source: "danielrisavi77-create/Ductus@078c780:src/components/student/my-assignments-read.ts",
   },
 };
 
