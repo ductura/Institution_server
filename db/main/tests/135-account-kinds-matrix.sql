@@ -210,23 +210,23 @@ INSERT INTO matrix VALUES
 -- account-kinds-matrix:end
 ;
 
--- Every state the probes could change, as one value.
-CREATE FUNCTION pg_temp.print() RETURNS text
-LANGUAGE sql STABLE AS $$
-  SELECT md5(string_agg(r, '|' ORDER BY r)) FROM (
-    SELECT 'r' || row_to_json(x)::text FROM institution.institution_role x UNION ALL
-    SELECT 'n' || row_to_json(x)::text FROM identity.network_engineer_appointment x UNION ALL
-    SELECT 'e' || row_to_json(x)::text FROM audit.network_engineer_event x UNION ALL
-    SELECT 'a' || row_to_json(x)::text FROM audit.institution_admin_event x UNION ALL
-    SELECT 't' || row_to_json(x)::text FROM audit.teacher_role_event x UNION ALL
-    SELECT 'c' || row_to_json(x)::text FROM institution.course x UNION ALL
-    SELECT 'm' || row_to_json(x)::text FROM institution.course_member x UNION ALL
-    SELECT 'k' || row_to_json(x)::text FROM institution.course_enrollment_code x UNION ALL
-    SELECT 'h' || row_to_json(x)::text FROM institution.course_holder x UNION ALL
-    SELECT 'v' || row_to_json(x)::text FROM settings.value x UNION ALL
-    SELECT 's' || row_to_json(x)::text FROM settings.change x UNION ALL
-    SELECT 'p' || row_to_json(x)::text FROM evidence.project x
-  ) AS t (r)
+-- Every table of the database, outside the catalogues and this test's own
+-- temporary tables, with a digest of all its rows: whatever a probe writes, an
+-- audit row of a read included, changes the digest of its table.
+CREATE FUNCTION pg_temp.print() RETURNS TABLE (tbl text, digest text)
+LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  t regclass;
+BEGIN
+  FOR t IN SELECT c.oid::regclass FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relkind IN ('r', 'p') AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+              AND n.nspname NOT LIKE 'pg_temp%' AND n.nspname NOT LIKE 'pg_toast%' LOOP
+    tbl := t::text;
+    EXECUTE format('SELECT md5(coalesce(string_agg(x::text, ''|'' ORDER BY x::text), '''')) FROM %s x', t)
+      INTO digest;
+    RETURN NEXT;
+  END LOOP;
+END
 $$;
 
 -- One probe as ductus_app with the person's session, always rolled back:
@@ -285,7 +285,7 @@ SELECT is_empty(
   'a row is probed exactly when its kind has a person and its action a probe');
 
 -- 2. Each probed row, as the person of its kind.
-CREATE TEMP TABLE before AS SELECT pg_temp.print() AS print;
+CREATE TEMP TABLE before AS SELECT * FROM pg_temp.print();
 CREATE TEMP TABLE answer AS
 SELECT x.kind, x.action, x.outcome, x.n, x.raw, pg_temp.verdict(x.raw, x.success) AS verdict FROM (
   SELECT m.kind, m.action, m.outcome, p.n, p.success, pg_temp.probe(k.name, p.sql) AS raw
@@ -304,7 +304,20 @@ SELECT is_empty(
   $$ SELECT kind, action, n, raw FROM answer WHERE outcome = 'refused' AND verdict <> 'refused' $$,
   'every probe of a refused row is refused');
 
--- 3. The probes left nothing behind.
-SELECT is(pg_temp.print(), (SELECT print FROM before), 'no probe wrote anything');
+-- 3. The probes left nothing behind, in any table.
+CREATE FUNCTION pg_temp.changed() RETURNS SETOF text
+LANGUAGE sql AS $$
+  SELECT tbl FROM (SELECT * FROM pg_temp.print() EXCEPT SELECT * FROM before
+                   UNION SELECT * FROM before EXCEPT SELECT * FROM pg_temp.print()) AS d
+$$;
+SELECT ok(EXISTS (SELECT 1 FROM before WHERE tbl = 'audit.access_log'), 'the print covers the access log');
+SELECT is_empty('SELECT * FROM pg_temp.changed()', 'no probe wrote anything, in any table');
+-- Negative control: Vesna's read kept (not rolled back) writes an access log
+-- row, and the print sees it there and nowhere else.
+SELECT is(pg_temp.ask('vesna', 'SELECT outcome FROM app.read_replay_source({dora_work})'), 'found',
+  'Vesna reads Dora''s work and keeps the read');
+SELECT set_eq('SELECT * FROM pg_temp.changed()', ARRAY['audit.access_log'], 'the kept read changes the access log');
+SELECT ok(EXISTS (SELECT 1 FROM audit.access_log WHERE reader_id = pg_temp.id('vesna')), 'with Vesna as the reader');
+
 SELECT * FROM finish();
 ROLLBACK;
