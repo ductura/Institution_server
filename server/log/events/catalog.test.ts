@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { isSensitiveKey } from "../index.ts";
 import {
   CATALOG_ERROR_CODES,
+  type CatalogErrorCode,
   catalogMessageKey,
   checkEvent,
   EVENT_CATALOG,
@@ -453,15 +454,64 @@ describe("error shape (docs/CODE_STYLE.md §8)", () => {
     if (!result.ok) expect(Object.keys(result.error).sort()).toEqual(["code", "messageKey"]);
   });
 
+  // One input per refusal code, so every code is seen in its full shape.
+  const good = validRecord("traffic.request");
+  const goodFields = validFields("traffic.request");
+  const without = (record: Record<string, unknown>, key: string): Record<string, unknown> => {
+    const copy = { ...record };
+    delete copy[key];
+    return copy;
+  };
+  const REFUSALS = new Map<CatalogErrorCode, () => ReturnType<typeof checkEvent>>([
+    ["NOT_A_PLAIN_OBJECT", () => check([])],
+    ["UNKNOWN_KEY", () => check({ ...good, level: "info" })],
+    ["MISSING_KEY", () => check(without(good, "time"))],
+    ["BAD_TIME", () => check({ ...good, time: "jučer" })],
+    ["UNKNOWN_EVENT", () => check({ ...good, event: "traffic.unknown" })],
+    ["BAD_REQUEST_ID", () => check({ ...good, requestId: "req-1" })],
+    ["UNKNOWN_ACCOUNT_KIND", () => check({ ...good, accountKind: "Student" })],
+    [
+      "ACCOUNT_KIND_NOT_ALLOWED",
+      () => check({ ...validRecord("admin.action"), accountKind: "student" }),
+    ],
+    ["UNKNOWN_FIELD", () => check({ ...good, fields: { ...goodFields, extra: 1 } })],
+    ["MISSING_FIELD", () => check({ ...good, fields: without(goodFields, "status") })],
+    ["BAD_FIELD_VALUE", () => check({ ...good, fields: { ...goodFields, status: 700 } })],
+    ["BAD_OPTIONS", () => checkEvent(good, null as never)],
+  ]);
+
+  it.each(CATALOG_ERROR_CODES)("refuses with the full error shape for %s", (errorCode) => {
+    expect(REFUSALS.size).toBe(CATALOG_ERROR_CODES.length);
+    expect(REFUSALS.get(errorCode)?.()).toStrictEqual({
+      ok: false,
+      error: { code: errorCode, messageKey: `logCatalog.${errorCode.toLowerCase()}` },
+    });
+  });
+
+  /** Message keys of the catalog without a Croatian text in `texts`. */
+  const missingTexts = (texts: Record<string, unknown>): string[] =>
+    CATALOG_ERROR_CODES.map(catalogMessageKey).filter((key) => {
+      const text = texts[key.slice("logCatalog.".length)];
+      return typeof text !== "string" || !/\S/.test(text);
+    });
+
   it("has a Croatian text in locales/hr.json for every message key, and no extra text", () => {
     const keys = CATALOG_ERROR_CODES.map(catalogMessageKey);
     expect(new Set(keys).size).toBe(keys.length);
     for (const errorCode of CATALOG_ERROR_CODES) {
-      const key = catalogMessageKey(errorCode);
       expect(errorCode).toMatch(/^[A-Z_]+$/);
-      expect(key).toBe(`logCatalog.${errorCode.toLowerCase()}`);
-      expect(hr.logCatalog[key.slice("logCatalog.".length)], key).toMatch(/\S/);
+      expect(catalogMessageKey(errorCode)).toBe(`logCatalog.${errorCode.toLowerCase()}`);
     }
+    expect(missingTexts(hr.logCatalog)).toEqual([]);
     expect(Object.keys(hr.logCatalog).length).toBe(keys.length);
+  });
+
+  it("notices a key without text (negative check of the check above)", () => {
+    const withoutOne = without(hr.logCatalog, "unknown_event");
+    expect(missingTexts(withoutOne)).toEqual(["logCatalog.unknown_event"]);
+    expect(missingTexts({ ...hr.logCatalog, ["bad_time"]: "  " })).toEqual(["logCatalog.bad_time"]);
+    expect(missingTexts({ ...hr.logCatalog, ["bad_options"]: 1 })).toEqual([
+      "logCatalog.bad_options",
+    ]);
   });
 });
