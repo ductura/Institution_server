@@ -79,6 +79,19 @@ const hidden: [what: string, literal: string][] = [
   ["base64 with spaces in an attribute", "<a href='data:;base64,xI1 la2Fq'>x</a>"],
   ["base64 in CSS url()", "a { background: url(data:;base64,xI1la2Fq) }"],
   ["base64 before a space", "see data:;base64,xI1la2Fq for more"],
+  // Review FAIL c.6904446769 on #82: a quoted media type parameter inside an
+  // attribute, an encoded upper case flag, and markup left after the body.
+  [
+    "quoted charset in an attribute",
+    "<iframe src='data:text/plain;charset=\\\"utf-8\\\";base64,xI1la2Fq'></iframe>",
+  ],
+  [
+    "quoted charset, double-quoted attribute",
+    "<a href=\\\"data:text/plain;charset='utf-8';base64,xI1la2Fq\\\">x</a>",
+  ],
+  ["encoded upper case flag", "data:;%42ase64,xI1la2Fq"],
+  ["encoded upper case flag, all letters", "data:;%42%41%53%45%36%34,xI1la2Fq"],
+  ["markup after the body", "data:;base64,xI1la2Fq}}]]>"],
   ["zero-padded decimal reference", "data:text/html,%26%2300000269%3Bekaj"],
   ["zero-padded hex reference", "data:text/html,%26%23x000010D%3Bekaj"],
   ["zero-padded JS escape", "data:application/json,%5Cu%7B0000010D%7Dekaj"],

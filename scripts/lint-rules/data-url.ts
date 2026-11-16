@@ -133,14 +133,17 @@ function collect(text: string, depth: number, out: Set<string>): void {
   for (let at = folded.indexOf("data:"); at !== -1; at = folded.indexOf("data:", at + 1)) {
     if (at > 0 && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
     // The URL runs to the end of the text, or, inside markup, CSS or a
-    // sentence, up to the first character that ends it there (Codex P2 on
-    // #82: `<iframe src="data:;base64,…"></iframe>`). A space ends it only in
-    // the last cut, since base64 may hold spaces inside a quoted attribute.
+    // sentence, up to the first character after the comma that ends it there
+    // (Codex P2 on #82: `<iframe src="data:;base64,…"></iframe>`). A quote
+    // before the comma is a media type parameter (`charset="utf-8"`), no end
+    // (review FAIL c.6904446769). A space ends it only in the last cut, since
+    // base64 may hold spaces inside a quoted attribute.
     const url = input.slice(at);
+    const comma = url.indexOf(",");
     const ends = [/["'`<>]/u, /["'`<>)\s]/u];
     const cut = (end: RegExp): string => {
-      const stop = url.search(end);
-      return stop === -1 ? url : url.slice(0, stop);
+      const stop = comma === -1 ? -1 : url.slice(comma + 1).search(end);
+      return stop === -1 ? url : url.slice(0, comma + 1 + stop);
     };
     const urls = new Set([url, ...ends.map(cut)]);
     for (const candidate of urls) {
@@ -167,13 +170,21 @@ function readBody(rest: string, depth: number, out: Set<string>): void {
   if (comma === -1 || comma > end) return;
   const mime = asciiLower(rest.slice(0, comma));
   const body = percentDecode(rest.slice(comma + 1, end));
-  // The base64 flag is also read after percent-decoding the media type.
-  const decodedMime = Buffer.from(percentDecode(mime)).toString("latin1");
+  // The base64 flag is also read after percent-decoding the media type, and
+  // that text goes through the same normalization (`%42ase64` is `;Base64`,
+  // review FAIL c.6904446769).
+  const decodedMime = normalizeUrlInput(Buffer.from(percentDecode(mime)).toString("latin1")).folded;
   const base64 = [mime, decodedMime].some((m) => /;\s*base64\s*$/u.test(m));
   const parts = [body];
   if (base64) {
-    const bytes = forgivingBase64(Buffer.from(body).toString("latin1"));
-    if (bytes) parts.push(bytes);
+    // The whole body, and its longest base64 prefix: text after the URL that
+    // no cut removed (markup, a closing quote) cannot hide the letters.
+    const text = Buffer.from(body).toString("latin1");
+    const prefix = /^[A-Za-z0-9+/_=\t\n\f\r -]*/u.exec(text)?.[0] ?? "";
+    for (const candidate of new Set([text, prefix, prefix.slice(0, -1)])) {
+      const bytes = forgivingBase64(candidate);
+      if (bytes) parts.push(bytes);
+    }
   }
   for (const bytes of parts)
     for (const decoded of bytesToTexts(bytes, decodedMime))
