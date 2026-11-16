@@ -854,6 +854,35 @@ describe("a oneOf with a discriminator", () => {
     expect(breakingChanges(before, after)).toEqual([`${AT}/oneOf/0/properties/n: field added`]);
   });
 
+  // Codex c.4581775140: the same through an allOf, and an allOf alone.
+  it.each([
+    ["a discriminated oneOf inside an allOf", (b: Obj[]) => ({ allOf: [{ oneOf: b }] })],
+    ["an allOf", (b: Obj[]) => ({ allOf: b })],
+    ["an anyOf inside an allOf", (b: Obj[]) => ({ allOf: [{ anyOf: b }] })],
+  ])("%s below unevaluatedProperties stays closed", (_, wrap) => {
+    const open = (code: string): Obj => {
+      const b = branch(code);
+      delete b.additionalProperties;
+      return b;
+    };
+    const doc = (field: boolean, version: string) =>
+      changed((d) => {
+        const branches = [open("a"), open("b")];
+        if (field) node(branches[0], "properties").n = str;
+        responses(d, HEALTH)["409"] = {
+          description: "a, b",
+          content: {
+            [JSON_TYPE]: {
+              schema: { ...wrap(branches), unevaluatedProperties: { type: "number" } },
+            },
+          },
+        };
+      }, version);
+    const found = breakingChanges(doc(false, MINOR_UP), doc(true, MINOR_UP_TWICE));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/\/properties\/n: field added$/u);
+  });
+
   it("a discriminated oneOf under not stays closed", () => {
     const before = changed((d) => (ok(d, HEALTH).not = { oneOf: [branch("a"), branch("b")] }));
     const after = changed((d) => {

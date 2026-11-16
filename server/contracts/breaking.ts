@@ -72,6 +72,9 @@ const POSITIVE = new Set([
   "unevaluatedItems",
   "unevaluatedProperties",
 ]);
+// Keywords whose subschemas apply to the same object; their properties count as
+// evaluated for an unevaluatedProperties next to them.
+const IN_PLACE = new Set(["allOf", "anyOf", "dependentSchemas", "else", "oneOf", "then"]);
 // OpenAPI objects whose keys are names (status codes, media types, headers), not keywords.
 const NAMED = new Set(["callbacks", "content", "encoding", "headers", "links", "responses"]);
 
@@ -145,20 +148,20 @@ function schema(
   positive = true,
 ): void {
   if (!isObj(a) || !isObj(b)) return r.same(where, ptr, a, b);
+  // unevaluatedProperties here also judges every name a subschema in place
+  // (allOf, oneOf ...) declares, so a field new to one of those is never safe,
+  // however deep it is (Codex c.4581775140).
+  const unevaluated = [own(a, "unevaluatedProperties"), own(b, "unevaluatedProperties")].some(
+    (rest) => rest !== undefined && rest !== true,
+  );
   for (const k of keysOf(a, b)) {
     const p = [...ptr, k];
     const va = own(a, k);
     const vb = own(b, k);
-    // unevaluatedProperties beside the oneOf constrains a name the branches do not
-    // declare, so a field new to a branch is never safe there.
     const discriminated =
-      k === "oneOf" &&
-      ![own(a, "unevaluatedProperties"), own(b, "unevaluatedProperties")].some(
-        (rest) => rest !== undefined && rest !== true,
-      ) &&
-      discriminatorOf(va) !== null &&
-      discriminatorOf(va) === discriminatorOf(vb);
-    const pos = positive && (POSITIVE.has(k) || discriminated);
+      k === "oneOf" && discriminatorOf(va) !== null && discriminatorOf(va) === discriminatorOf(vb);
+    const inPlace = IN_PLACE.has(k) && unevaluated;
+    const pos = positive && !inPlace && (POSITIVE.has(k) || discriminated);
     if (k === "properties" && (va === undefined || isObj(va)) && (vb === undefined || isObj(vb))) {
       properties(r, where, p, a, b, dir, pos);
     } else if (va === undefined) r.add(where, p, "added");
