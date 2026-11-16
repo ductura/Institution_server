@@ -105,6 +105,30 @@ jobs:
         run: |
           git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
           pnpm contracts:breaking FETCH_HEAD
+      # DAN-893: the image of the web process (infra/web), built and started as a
+      # deployment would, with an invented database URL on an .invalid host. In
+      # checks, not a job of its own: ci-ok runs from main and refuses an
+      # unknown job. Also on the docs profile, an accepted cost.
+      - name: Slika web procesa (DAN-893)
+        run: |
+          docker build -f infra/web/Dockerfile -t ductura-web:ci .
+          [ "$(docker run --rm --entrypoint find ductura-web:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/server.js " ]
+          [ "$(docker run --rm --entrypoint id ductura-web:ci -u)" != 0 ]
+          docker image inspect ductura-web:ci \
+            | jq -e '[.[0].Config.Env[] | split("=")[0]] - ["PATH", "NODE_VERSION", "YARN_VERSION", "HOST", "PORT"] == []'
+          trap 'docker logs ductura-web' EXIT
+          docker run -d --name ductura-web -p 127.0.0.1:4000:4100 -e PORT=4100 \
+            -e APP_DATABASE_URL=postgres://app@db.invalid:5432/ductura ductura-web:ci
+          for _ in $(seq 60); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' ductura-web)"
+            [ "$status" = starting ] || break
+            sleep 1
+          done
+          [ "$status" = healthy ]
+          curl -fsS "http://127.0.0.1:4000/api/v1/health"
+          # SIGTERM reaches node as PID 1 (exec form) and shuts down cleanly.
+          docker stop ductura-web
+          [ "$(docker inspect -f '{{.State.ExitCode}}' ductura-web)" = 0 ]
 
   database:
     name: PostgreSQL i pgTAP
