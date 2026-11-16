@@ -17,6 +17,7 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   REVISION_ZERO_JCS,
   REVISION_ZERO_SHA256,
+  canonicalizeJcs,
   sha256WebCrypto,
 } from "../domain/index.ts";
 import {
@@ -28,6 +29,7 @@ import {
 import {
   MAX_REPLAY_CHECKPOINT_BYTES,
   MAX_REPLAY_PAGE_SEGMENTS,
+  isReplayDocumentId,
   readReplayPage,
   type ReplayPage,
 } from "./replay.ts";
@@ -639,5 +641,89 @@ describe("readReplayPage pinned to the head of the first page (DAN-537)", () => 
     const whole = sourceOf(found(record.hashes), { [resume]: CHECKPOINT_TEXT });
     expect((await page(whole, store, 1, head)).status).toBe("ok");
     expect(whole.readSource).toHaveBeenCalledTimes(1);
+  });
+});
+
+// DAN-818 (self-attack on #139): the id rule replaces Ductus isDocumentId
+// (src/domain/collaboration/comment.test.ts "mirrors the evidence.document id
+// CHECK"), so its cases are ported here; an id that cannot exist never reaches
+// the database (attack plan #136 B.11).
+describe("isReplayDocumentId (DAN-818)", () => {
+  it("mirrors the evidence.document id CHECK, counting code points", () => {
+    expect(isReplayDocumentId("doc-student-a-1")).toBe(true);
+    expect(isReplayDocumentId("d".repeat(256))).toBe(true);
+    expect(isReplayDocumentId("😀".repeat(256))).toBe(true);
+    for (const value of [
+      "",
+      " doc",
+      "doc ",
+      "a\tb",
+      "a\u0085b",
+      "a\u007fb",
+      "d".repeat(257),
+      "😀".repeat(257),
+      7,
+      null,
+    ]) {
+      expect(isReplayDocumentId(value), JSON.stringify(value)).toBe(false);
+    }
+  });
+
+  it.each(["", "doc ", "a\tb", "a\u0085b", "d".repeat(257)])(
+    "answers the id %j as not found without asking the source",
+    async (documentId) => {
+      const source = sourceOf(found([]));
+      const payloads = { readImmutable: vi.fn() };
+      expect(await readReplayPage({ source, payloads }, documentId, 0, null)).toStrictEqual({
+        status: "not_found",
+      });
+      expect(source.readSource).not.toHaveBeenCalled();
+      expect(payloads.readImmutable).not.toHaveBeenCalled();
+    },
+  );
+});
+
+// B-12 variant A (contract confirmation c.6912344496): the server runs no
+// step, but a stored segment whose removing step carries no valid
+// removedSha256 is no segment, so the page is unavailable, never 200.
+describe("a removing step without a valid removedSha256 (B-12, DAN-818)", () => {
+  it.each([
+    ["no removedSha256", {}],
+    ["an uppercase removedSha256", { removedSha256: "A".repeat(64) }],
+    ["a short removedSha256", { removedSha256: "a".repeat(63) }],
+  ])("%s makes the page unavailable", async (_, extra) => {
+    const final = docHash(1);
+    const text = canonicalizeJcs({
+      evidenceSchema: EVIDENCE_SEGMENT_SCHEMA_V2,
+      canonicalization: EVIDENCE_CANONICALIZATION_V2,
+      hashAlgorithm: EVIDENCE_HASH_ALGORITHM_V2,
+      documentId: DOCUMENT,
+      sessionId: "session-ana",
+      segmentId: "segment-1",
+      sequenceFrom: 1,
+      sequenceTo: 1,
+      observedStartedAt: "2026-10-20T10:00:00.000Z",
+      observedEndedAt: "2026-10-20T10:00:00.000Z",
+      initialDocumentHash: REVISION_ZERO_SHA256,
+      finalDocumentHash: final,
+      predecessorSegmentHash: null,
+      events: [
+        {
+          sequence: 1,
+          source: "editor",
+          // A delete: from..to removes content, so BACKEND 4.1 asks for removedSha256.
+          steps: [{ stepType: "replace", from: 1, to: 3, ...extra }],
+          beforeDocumentHash: REVISION_ZERO_SHA256,
+          afterDocumentHash: final,
+        },
+      ],
+      captureContext: { editorModel: "prosemirror", transactionFormat: EDIT_STEP_FORMAT_V1 },
+      evidenceProfileId: "standard-v1",
+    });
+    const record = { payloads: [text], hashes: [await sha256WebCrypto(text)] };
+    expect(await page(sourceOf(found(record.hashes)), await storeOf(record))).toStrictEqual({
+      status: "unavailable",
+      reason: "invalid_segment",
+    });
   });
 });

@@ -35,7 +35,7 @@ export const MAX_REPLAY_CHECKPOINT_BYTES = 2 * 1024 * 1024;
 /** Segments per page, which also bounds the checkpoint hashes one page asks for. */
 export const MAX_REPLAY_PAGE_SEGMENTS = 256;
 const DOCUMENT_ID_MAX = 256;
-// C0, DEL and C1, like [[:cntrl:]] (Ductus src/domain/collaboration isDocumentId).
+// C0, DEL and C1 (Ductus src/domain/collaboration isDocumentId).
 const CONTROL = /\p{Cc}/u;
 
 export type ReplayReaderDeps = {
@@ -79,7 +79,11 @@ const unavailable = (reason: ReplayUnavailableReason): ReplayReadResult => ({
   reason,
 });
 
-/** A document id that can exist: 1 to 256 code points, trimmed, no control character. */
+/**
+ * A document id that can exist: 1 to 256 code points, trimmed, no control
+ * character. Stricter than or equal to the SQL check of the replay RPCs, so
+ * an id refused here is one the database would answer as not found too.
+ */
 export function isReplayDocumentId(value: unknown): value is string {
   if (typeof value !== "string" || value.trim() !== value) return false;
   const length = [...value].length;

@@ -64,6 +64,9 @@ describe("sourceResult", () => {
     ["an institution that is not a UUID", [{ ...FOUND, institution_id: "ustanova-1" }]],
     ["no institution", [{ ...FOUND, institution_id: null }]],
     ["a package id with a slash", [{ ...FOUND, evidence_package_id: "../paket" }]],
+    ["no package", [{ ...FOUND, evidence_package_id: null }]],
+    ["a package id that is a number", [{ ...FOUND, evidence_package_id: 7 }]],
+    ["no outcome", [{ ...FOUND, outcome: undefined }]],
     ["an uppercase hash", [{ ...FOUND, segment_hashes: [A.toUpperCase()] }]],
     ["hashes that are not a list", [{ ...FOUND, segment_hashes: A }]],
   ])("%s is unavailable, never not_found", (_, rows) => {
