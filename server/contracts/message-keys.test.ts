@@ -19,8 +19,8 @@ import {
   ROUTES,
   SERVER_ERRORS,
   SHARED_ERRORS,
-  v1Error,
 } from "./index.ts";
+import { discriminatorOf } from "./breaking.ts";
 
 const camel = (code: string) =>
   code.replace(/_([a-z])/gu, (_, letter: string) => letter.toUpperCase());
@@ -47,7 +47,7 @@ describe("ERROR_MESSAGE_KEYS", () => {
 
   it("a code without a row cannot be declared", () => {
     expect(() => error(404, "made_up_code")).toThrow(/no message key/u);
-    expect(() => v1Error(400, "__proto__")).toThrow(/no message key/u);
+    expect(() => error(400, "__proto__")).toThrow(/no message key/u);
     expect(() => error(404, "toString")).toThrow(/no message key/u);
   });
 });
@@ -134,40 +134,51 @@ describe("server and script sources", () => {
   });
 });
 
-// Option (c) of DAN-789: a field added under a oneOf breaks v1 (breaking.ts),
-// so no status with several JSON errors carries the problem fields, and a pair
-// of status and code is answered in one shape only.
+// DAN-791 (after option (c) of DAN-789): a status with several JSON errors is
+// a oneOf discriminated by the code in `error` (breaking.ts discriminatorOf),
+// so its errors carry the problem fields like every other error.
 describe("the problem body under a oneOf", () => {
-  it("is never there: those errors keep their v1 body", () => {
+  it("every JSON error of a status with several has the problem fields", () => {
+    let seen = 0;
     for (const route of ROUTES) {
       const json = route.errors.filter((spec) => typeof spec.body === "object");
       for (const spec of json) {
         if (json.filter((other) => other.status === spec.status).length < 2) continue;
+        const props = (spec.body as TObject).properties;
+        // ready and evidence keep the code in `status` (problem.test.ts, CODE_IN_STATUS).
+        if (!("error" in props)) continue;
+        seen += 1;
         const where = `${route.id} ${spec.status} ${spec.code}`;
-        expect(Object.keys((spec.body as TObject).properties), where).not.toContain("messageKey");
+        expect(Object.keys(props).sort(), where).toEqual(
+          ["code", "error", "messageKey", "requestId", "status"].sort(),
+        );
+        expect(props["error"], where).toMatchObject({ const: spec.code });
+        expect((spec.body as TObject).required, where).toEqual(["error"]);
       }
     }
+    expect(seen).toBeGreaterThanOrEqual(7);
   });
 
-  it("an error marked v1 has exactly {error: code}, and its pair is never a problem body", () => {
-    const v1 = SERVER_ERRORS.filter((spec) => spec.v1 === true);
-    expect(v1.map((spec) => `${spec.status} ${spec.code}`).sort()).toEqual([
-      "400 body_stream_error",
-      "400 content_length_invalid",
-      "400 content_length_mismatch",
-      "400 invalid_json",
-      "403 cross_site",
-      "403 origin_mismatch",
-      "403 origin_missing",
-    ]);
-    for (const spec of v1)
-      expect((spec.body as TObject).properties).toEqual({
-        error: expect.objectContaining({ const: spec.code }),
-      });
-    const pairs = new Set(v1.map((spec) => `${spec.status} ${spec.code}`));
-    const problem = SERVER_ERRORS.filter(
-      (spec) => typeof spec.body === "object" && "messageKey" in (spec.body as TObject).properties,
+  it("every oneOf in the published document has a discriminator", () => {
+    const found: string[] = [];
+    const walk = (value: unknown, at: string): void => {
+      if (Array.isArray(value)) return value.forEach((v, i) => walk(v, `${at}/${i}`));
+      if (typeof value !== "object" || value === null) return;
+      for (const [key, v] of Object.entries(value)) {
+        if (key === "oneOf") {
+          const field = discriminatorOf(v);
+          expect(field, at).not.toBeNull();
+          found.push(`${at} ${String(field)}`);
+        }
+        walk(v, `${at}/${key}`);
+      }
+    };
+    walk(openapiDocument(), "");
+    expect(found).toContain(
+      "/paths//api/v1/profile/interface-locale/post/responses/403/content/application/json/schema error",
     );
-    expect(problem.filter((spec) => pairs.has(`${spec.status} ${spec.code}`))).toEqual([]);
+    expect(found).toContain(
+      "/paths//api/v1/profile/interface-locale/post/responses/400/content/application/json/schema error",
+    );
   });
 });

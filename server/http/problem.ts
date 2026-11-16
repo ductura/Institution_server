@@ -3,7 +3,6 @@
 // word `error` (server/contracts, errorBody). Only errors of SERVER_ERRORS are
 // answered; a code or status outside it is a programming error and becomes
 // 500 internal, so no route can answer a key without a text in locales/.
-// An error marked v1 (v1Error, a oneOf in v1) keeps exactly {error: code}.
 // The body never carries an error's message, name, stack or SQL.
 import { type ServerResponse, STATUS_CODES } from "node:http";
 
@@ -32,9 +31,6 @@ const answering = new WeakSet<ServerResponse>();
 export function isProblemAnswer(response: ServerResponse): boolean {
   return answering.has(response);
 }
-
-/** The v1 body of an error marked v1: only the closed word. */
-export type V1ErrorBody = { readonly error: string };
 
 export type Problem = {
   readonly error: string;
@@ -73,9 +69,8 @@ function problemOfSpec(spec: ErrorSpec, requestId: string): Problem {
 }
 
 /**
- * Answers the contract error for this status and code as a problem body, or
- * as {error: code} when it is marked v1; an unknown pair answers 500 internal
- * instead. X-Request-Id carries the request id either way.
+ * Answers the contract error for this status and code as a problem body; an
+ * unknown pair answers 500 internal instead. X-Request-Id carries the request id either way.
  */
 export function sendProblem(
   response: ServerResponse,
@@ -92,9 +87,7 @@ export function sendProblem(
   }
   answering.add(response);
   const requestId = requestIdOf(response);
-  const body: Problem | V1ErrorBody = spec.v1
-    ? { error: spec.code }
-    : problemOfSpec(spec, requestId);
+  const body = problemOfSpec(spec, requestId);
   const extra: Record<string, string> = headers.allow === undefined ? {} : { allow: headers.allow };
   writeJson(response, spec.status, body, extra);
 }
