@@ -6,7 +6,9 @@
 // The body never carries an error's message, name, stack or SQL.
 import { type ServerResponse, STATUS_CODES } from "node:http";
 
-import { type ErrorSpec, INTERNAL, SERVER_ERRORS } from "../contracts/index.ts";
+import { Value } from "@sinclair/typebox/value";
+
+import { type ErrorSpec, INTERNAL, type RouteContract, SERVER_ERRORS } from "../contracts/index.ts";
 
 import { writeJson } from "./json.ts";
 import { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
@@ -90,4 +92,47 @@ export function sendProblem(
   const body = problemOfSpec(spec, requestId);
   const extra: Record<string, string> = headers.allow === undefined ? {} : { allow: headers.allow };
   writeJson(response, spec.status, body, extra);
+}
+
+/**
+ * Answers an error of a route whose contract body is {status, ...} instead of
+ * a problem (the evidence routes, docs/vs1-rute.md, DAN-811). Only an error of
+ * this route's own contract, with a body its schema takes, is answered; any
+ * other status, code or body answers 500 internal. Headers are cleared as by
+ * sendProblem, and a Retry-After set before is dropped too: a 503 must bring
+ * its own (whole seconds) and nothing else may have one.
+ */
+export function sendRouteRefusal(
+  response: ServerResponse,
+  contract: RouteContract,
+  status: number,
+  body: { readonly status: string; readonly [field: string]: unknown },
+  headers: { readonly "retry-after"?: string } = {},
+): void {
+  const spec = contract.errors.find((e) => e.status === status && e.code === body.status);
+  const schema = spec?.body;
+  const retry = headers["retry-after"];
+  if (
+    spec === undefined ||
+    typeof schema !== "object" ||
+    !Value.Check(schema, body) ||
+    (status === 503) !== (retry !== undefined) ||
+    (retry !== undefined && !/^[1-9][0-9]{0,3}$/.test(retry))
+  ) {
+    // A Retry-After set before belongs to no answer of this writer, the 500 included.
+    if (!response.headersSent) response.removeHeader("retry-after");
+    sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
+    return;
+  }
+  if (!response.headersSent) {
+    for (const name of response.getHeaderNames()) {
+      if (!KEPT.has(name) || name === "retry-after") response.removeHeader(name);
+    }
+    response.addTrailers({});
+    response.statusMessage = STATUS_CODES[status] ?? "";
+  }
+  answering.add(response);
+  // The id ties the answer to the server's record, as on a problem body.
+  requestIdOf(response);
+  writeJson(response, status, body, retry === undefined ? {} : { "retry-after": retry });
 }
