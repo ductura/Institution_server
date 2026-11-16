@@ -36,6 +36,14 @@ export type {
   ReplaySource,
   ReplaySourceResult,
 } from "./replay-source.ts";
+export type {
+  SettingsWriteOutcome,
+  SettingsWriter,
+  SettingWriteBound,
+  SettingWriteInput,
+  SettingWriteLevel,
+  SettingWriteValue,
+} from "./settings-writer.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
 export type { DatabaseHealth, DatabaseName, HealthReport } from "./registry.ts";
