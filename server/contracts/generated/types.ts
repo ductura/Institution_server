@@ -113,6 +113,41 @@ export type Operations = {
     success: { status: 200; body: { "courses": ({ "id": string; "name": string; "assignments": ({ "id": string; "title": string; "dueAt": string; "noticeFirst": boolean })[] })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
+  "teacher.courses.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "courses": ({ "id": string; "name": string; "academicYear": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "assignments": ({ "id": string; "title": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "currentVersion": number; "enrolledStudents": number })[] })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "teacher.fast-path.post": {
+    params: undefined;
+    query: undefined;
+    body: { "assignmentId": string };
+    success: { status: 200; body: { "kind": "ok"; "students": ({ "id": string; "givenName": string; "surname": string; "documentId": null; "work": "notice_pending"; "lastChangeAt": null; "record": null } | { "id": string; "givenName": string; "surname": string; "documentId": string; "work": "writing" | "submitted"; "lastChangeAt": string | null; "record": { "pastesWithoutSource": number; "blocks": ({ "kind": "heading" | "paragraph" | "bulletItem" | "quote"; "text": string })[]; "summary": { "summaryFormat": "ductus-process-summary-v1"; "sessions": { "evidenceKind": "observed"; "breakAboveMinutes": number; "count": number; "items": ({ "from": string; "to": string })[] }; "pastes": { "evidenceKind": "observed"; "listedAboveCharacters": number; "listed": ({ "at": { "from": string; "to": string }; "characters": number; "origin": "not_observed" })[]; "smallerCount": number }; "gaps": { "evidenceKind": "observed"; "items": ({ "previousEndedAt": string; "nextStartedAt": string })[] }; "recordState": "complete" | "has_gaps" } } } | { "id": string; "givenName": null; "surname": null; "documentId": null; "work": "notice_pending"; "lastChangeAt": null; "record": null } | { "id": string; "givenName": null; "surname": null; "documentId": string; "work": "writing" | "submitted"; "lastChangeAt": string | null; "record": { "pastesWithoutSource": number; "blocks": ({ "kind": "heading" | "paragraph" | "bulletItem" | "quote"; "text": string })[]; "summary": { "summaryFormat": "ductus-process-summary-v1"; "sessions": { "evidenceKind": "observed"; "breakAboveMinutes": number; "count": number; "items": ({ "from": string; "to": string })[] }; "pastes": { "evidenceKind": "observed"; "listedAboveCharacters": number; "listed": ({ "at": { "from": string; "to": string }; "characters": number; "origin": "not_observed" })[]; "smallerCount": number }; "gaps": { "evidenceKind": "observed"; "items": ({ "previousEndedAt": string; "nextStartedAt": string })[] }; "recordState": "complete" | "has_gaps" } } })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "teacher.mentorship.get": {
+    params: { "mentorshipId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "work": { "mentorshipId": string; "assignmentId": string; "documentId": null; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "not_started" } | { "mentorshipId": string; "assignmentId": string; "documentId": string; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "in_progress" | "submitted" } }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "teacher.mentorships.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "works": ({ "mentorshipId": string; "assignmentId": string; "documentId": null; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "not_started" } | { "mentorshipId": string; "assignmentId": string; "documentId": string; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "in_progress" | "submitted" })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
+  "teacher.submissions.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
 };
 
 export type OperationId = keyof Operations;
