@@ -120,6 +120,13 @@ const failing: Case[] = [
   ...all("server/roles/x.ts", "edge", ["../legal/index.ts", "../index.ts", "../app.ts"]),
   ...all("server/external/keys/x.ts", "edge", ["../storage/index.ts", "../../roles/index.ts"]),
   ...all("server/database/x.ts", "edge", ["../stray/index.ts", "../external/index.ts"]),
+  // DAN-815 b1: evidence reaches neither http, contracts, keys nor another feature area.
+  ...all("server/evidence/x.ts", "edge", [
+    "../http/index.ts",
+    "../contracts/index.ts",
+    "../external/keys/index.ts",
+    "../downloads/index.ts",
+  ]),
   ...all("server/x.ts", "edge", ["./database/index.ts"]),
   // Only http and the entry point create adapters; the others take their types.
   ...[
@@ -197,6 +204,14 @@ const bypasses: Case[] = [
 const passing: { file: string; code: string }[] = [
   { file: DB, code: imp("../domain/index.ts") + imp("./with-actor.ts") + imp("pg") },
   { file: "server/domain/x.ts", code: imp("node:crypto") + imp("./forensics/index.ts") },
+  {
+    file: "server/evidence/x.ts",
+    code:
+      imp("../domain/index.ts") +
+      'import type { EvidenceCommitter } from "../database/index.ts";\n' +
+      'import type { EvidencePayloadStore } from "../external/storage/index.ts";\n',
+  },
+  { file: "server/http/x.ts", code: imp("../evidence/index.ts") },
   { file: "server/domain/forensics/golden-vectors/load.ts", code: imp("node:fs") },
   { file: "server/domain/x.test.ts", code: imp("vitest") + imp("node:fs") },
   {
