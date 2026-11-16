@@ -82,6 +82,16 @@ export {
   sendRouteRefusal,
   type Problem,
 } from "./problem.ts";
+export {
+  createReadyCheck,
+  READY_TIMEOUT_MS,
+  type ReadyCapability,
+  type ReadyCapabilityName,
+  type ReadyCheckOptions,
+  type ReadyProbe,
+  type ReadyReport,
+  type ReadyStatus,
+} from "./ready.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { createRouter, routePath, type Handler, type Route, type Router } from "./router.ts";
 export {
