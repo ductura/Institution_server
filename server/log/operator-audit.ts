@@ -87,8 +87,13 @@ export function createOperatorAudit({ write, now }: OperatorAuditOptions): Opera
     if (!checkEvent(recordOf(who, action, "succeeded", started)).ok) return REFUSED;
 
     const finish = (outcome: "succeeded" | "failed"): void => {
-      // The end time, or the start time when the clock fails meanwhile.
-      const record = recordOf(who, action, outcome, timeOf(now) ?? started);
+      // The end time when the catalog takes it; else the start time, which it
+      // took: a clock that fails meanwhile, or gives a time outside the
+      // catalog's form (a year past 9999 or before 0), never loses the record.
+      const ended = timeOf(now);
+      const late = ended === undefined ? undefined : recordOf(who, action, outcome, ended);
+      const record =
+        late !== undefined && checkEvent(late).ok ? late : recordOf(who, action, outcome, started);
       try {
         Promise.resolve(write(record)).catch(() => undefined);
       } catch {

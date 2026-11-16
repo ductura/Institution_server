@@ -108,6 +108,8 @@ describe("operator audit: refusals run nothing and write nothing", () => {
 
   it.each([
     ["invalid date", () => new Date(Number.NaN)],
+    ["year past 9999", () => new Date("+010000-01-01T00:00:00.000Z")],
+    ["year before 0", () => new Date("-000001-01-01T00:00:00.000Z")],
     [
       "throwing clock",
       () => {
@@ -286,6 +288,8 @@ describe("operator audit: one write attempt with the outcome", () => {
       },
     ],
     ["gives an invalid date", () => new Date(Number.NaN)],
+    ["gives a year past 9999", () => new Date("+010000-01-01T00:00:00.000Z")],
+    ["gives a year before 0", () => new Date("-000001-01-01T00:00:00.000Z")],
   ])("a clock that %s after the start keeps the start time", async (_name, broken) => {
     const clock = createFakeClock("2026-11-16T09:30:00.000Z");
     let calls = 0;
