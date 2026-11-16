@@ -47,9 +47,13 @@ export const ROUTE_429_CODES: readonly string[] = Object.freeze([
 
 /** Every contract error that breaks the rule of ROUTE_429_CODES. */
 export function route429Problems(errors: readonly { status: number; code: string }[]): string[] {
-  return errors
-    .filter((error) => error.status === 429 && !ROUTE_429_CODES.includes(error.code))
-    .map((error) => `429 ${error.code}: not a route 429 code`);
+  return errors.flatMap((error) => {
+    const listed = ROUTE_429_CODES.includes(error.code);
+    if (error.status === 429 && !listed) return [`429 ${error.code}: not a route 429 code`];
+    if (error.status !== 429 && listed)
+      return [`${error.status} ${error.code}: a route 429 code on another status`];
+    return [];
+  });
 }
 
 /** The code that is looked up by name only; by status 401 stays unauthenticated. */
