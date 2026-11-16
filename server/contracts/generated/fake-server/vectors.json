@@ -3485,6 +3485,30 @@
   },
   {
     "route": "support.problem-report.post",
+    "name": "not-canonical",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"syncState\":\"SYNCED\",\"route\":\"/zadaci\",\"description\":\"Izmišljeni opis: gumb za spremanje ne reagira.\",\"category\":\"technical\",\"browser\":{\"family\":\"firefox\",\"major\":140},\"appVersion\":\"1.4.0\"}"
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000000033"
+      }
+    }
+  },
+  {
+    "route": "support.problem-report.post",
     "name": "too-many-reports",
     "request": {
       "headers": {

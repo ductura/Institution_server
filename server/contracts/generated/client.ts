@@ -34,6 +34,22 @@ export type Result<Id extends OperationId> =
   | (Operations[Id]["success"] & { ok: true })
   | { ok: false; status: number; code: Operations[Id]["errorCode"] | SharedErrorCode | "unexpected" };
 
+/**
+ * The RFC 8785 (JCS) text of a JSON value: object keys in UTF-16 code unit
+ * order, no white space, numbers and strings as JSON.stringify writes them.
+ * Routes that read canonical JSON (support.problem-report.post) refuse any
+ * other spelling with 422, so every JSON body is sent this way.
+ */
+export function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item === undefined ? null : item)).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record).sort().filter((key) => record[key] !== undefined);
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
 export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   return async function call<Id extends OperationId>(id: Id, input: Input<Id>): Promise<Result<Id>> {
     const route = ROUTE_TABLE[id];
@@ -44,7 +60,7 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     );
     if (query.size > 0) path += `?${query.toString()}`;
     const init: RequestInit = { method: route.method, redirect: "manual" };
-    if (route.body === "application/json") init.body = JSON.stringify(input.body);
+    if (route.body === "application/json") init.body = canonicalJson(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
     if (route.body !== null) init.headers = { "content-type": route.body };
     const res = await fetchImpl(new URL(path, baseUrl), init);
