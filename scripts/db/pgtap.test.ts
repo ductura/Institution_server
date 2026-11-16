@@ -27,7 +27,11 @@ test("every database has a pgTAP directory with at least one test file, which pg
     ]);
   }
   const extra: Record<string, string[]> = {
-    logs: ["db/logs/tests/010-log-entry.sql", "db/logs/tests/020-log-chain.sql"],
+    logs: [
+      "db/logs/tests/010-log-entry.sql",
+      "db/logs/tests/020-log-chain.sql",
+      "db/logs/tests/030-metric-sample.sql",
+    ],
     legal: [],
   };
   for (const name of ["logs", "legal"]) {
