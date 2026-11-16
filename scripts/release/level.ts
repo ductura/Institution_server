@@ -113,34 +113,23 @@ function keyed(
   return out;
 }
 
-/** Members of a type literal or interface; a new optional property is the only safe change. */
+/**
+ * Members of a type literal or interface, by name. Hard cut (orchestrator,
+ * #92 c.6906398937): no new member of an existing type is proven safe (keyof,
+ * Required, implements, extends, intersections, index signatures), so every
+ * new member is "required": major, except a generated contracts type backed
+ * by a minor rise of the OpenAPI document (a new route or field).
+ */
 function members(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): Change {
   const ma = keyed((a as ts.TypeLiteralNode).members, fa, true);
   const mb = keyed((b as ts.TypeLiteralNode).members, fb, true);
-  // A new optional property is not new to the resulting type next to an index
-  // signature or inside an intersection: it narrows what was there (self-attack #92).
-  let up: ts.Node = b.parent;
-  while (ts.isParenthesizedTypeNode(up)) up = up.parent;
-  const open =
-    ts.isIntersectionTypeNode(up) ||
-    [...(a as ts.TypeLiteralNode).members, ...(b as ts.TypeLiteralNode).members].some((m) =>
-      ts.isIndexSignatureDeclaration(m),
-    );
   let out: Change = "same";
   for (const [key, node] of ma) {
     const other = mb.get(key);
     out = worst(out, other ? compare(node, other, fa, fb) : "changed");
   }
   for (const [key, node] of mb)
-    if (!ma.has(key))
-      out = worst(
-        out,
-        !/#0$/u.test(key)
-          ? "changed"
-          : ts.isPropertySignature(node) && node.questionToken && !open
-            ? "optional"
-            : "required",
-      );
+    if (!ma.has(key)) out = worst(out, !/#0$/u.test(key) ? "changed" : "required");
   // Everything of an interface besides its members (heritage, type parameters).
   const rest = (n: ts.Node) =>
     children(n).filter((c) => !(n as ts.TypeLiteralNode).members.includes(c as ts.TypeElement));
