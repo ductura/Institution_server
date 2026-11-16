@@ -3,7 +3,7 @@ import * as area from "./index.ts";
 import type { TrafficService } from "./index.ts";
 
 describe("server/traffic public interface", () => {
-  it("exports the empty routes and schemas and the client IP, IP rules and rate limit steps and the traffic recorder", () => {
+  it("exports the empty routes and schemas and the client IP, IP rules and rate limit steps the traffic recorder and the traffic tally", () => {
     expect(Object.keys(area).sort()).toEqual([
       "DEFAULT_RATE_LIMITS",
       "MAX_ALLOWED_NETWORKS",
@@ -21,6 +21,7 @@ describe("server/traffic public interface", () => {
       "clientIpOf",
       "createRateLimiter",
       "createTrafficRecorder",
+      "createTrafficTally",
       "isOpsPath",
       "networkAllows",
       "parseAllowedNetworks",
