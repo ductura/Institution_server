@@ -24,7 +24,7 @@
 //    decode input at run time (a request body, a path segment, a signature).
 //    In those files a listed decoder may not take a literal argument.
 //
-// What lint cannot see, left to review and to DAN-782: text built at run time
+// What lint cannot see, left to review: text built at run time
 // from numbers or bytes (`buf.toString()` of a computed array, a lookup through
 // a computed key, `.source` of a regex fed to a decoder), and English sentences.
 import { posix, win32 } from "node:path";
@@ -57,11 +57,12 @@ export const TEXT_EXEMPT: readonly string[] = [
   "server/log/invented.fixture.ts",
 ];
 /**
- * The transitional HTTP server, whose text moves to locales/ in DAN-782
- * (orchestrator decision Ductus#87 c.6896054840). server/index.ts was removed
- * in DAN-775, so it is not on the list.
+ * Files that may still hold interface text for a while. Empty and closed:
+ * server/app.ts moved its text to locales/ in DAN-782 (orchestrator decision
+ * Ductus#87 c.6896054840), and server/index.ts was removed in DAN-775. A new
+ * entry needs an orchestrator decision and fails the lint test.
  */
-export const TEXT_TRANSITIONAL: readonly string[] = ["server/app.ts"];
+export const TEXT_TRANSITIONAL: readonly string[] = [];
 
 /** Names that build or decode text from codes, bytes or an encoding. */
 export const BUILDER_NAMES: readonly string[] = [

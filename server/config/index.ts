@@ -10,3 +10,4 @@ export {
   shutdownGraceMs,
   shutdownProblems,
 } from "./environment.ts";
+export { SERVER_VERSION } from "./version.ts";

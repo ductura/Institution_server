@@ -7,9 +7,15 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { clientIpOf, parseTrustedProxies } from "../traffic/index.ts";
 import { createDatabases } from "./databases.ts";
-import { HEALTH_ROUTE } from "./health.ts";
+import { createHealthRoute } from "./health.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
+
+// Health with the main database up: these tests are about the pipeline, not the database.
+const HEALTH_ROUTE = createHealthRoute({
+  health: async () => ({ main: "ok", logs: "ok", legal: "ok" }),
+  serverVersion: "0.0.0",
+});
 
 const seen: (string | null)[] = [];
 

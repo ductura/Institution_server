@@ -35,6 +35,10 @@ Retke v2 „Ustanove i postavke” i „Brisanje radova” ova tablica rastavlja
 
 Opseg je gornja granica. Server uz njega uvijek provjerava odnos ili ustanovu cilja (S-1J.1-b, S-1J-c).
 
+## Vrste računa u bazi
+
+Gdje je koja vrsta u glavnoj bazi (S-1J.1-b, DAN-798; matrica pristupa je `db/main/tests/130-account-kinds.sql`): student u `institution.course_member` (`role = 'student'`), nastavnik i admin ustanove u `institution.institution_role` (`teacher`, `admin`), mrežni inženjer u `identity.network_engineer_appointment`, admin aplikacije u `identity.app_admin`. Nijedna uloga aplikacije ne piše u te dvije nove tablice; `app_admin` upisuje samo vlasnik izvan aplikacije (V-7).
+
 ## Tablica prava
 
 <!-- permissions-table:start -->

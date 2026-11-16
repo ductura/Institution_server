@@ -5,9 +5,22 @@ import { readFileSync } from "node:fs";
 import { Value } from "@sinclair/typebox/value";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { errorBody, INTERNAL, messageKeyOf, ROUTES, type VectorFile } from "../contracts/index.ts";
-import { HEALTH_ROUTE } from "./health.ts";
+import {
+  API_VERSION,
+  errorBody,
+  INTERNAL,
+  messageKeyOf,
+  MIN_CLIENT_VERSION,
+  ROUTES,
+  type VectorFile,
+} from "../contracts/index.ts";
+import { createHealthRoute } from "./health.ts";
 import { createRouter, errorName, type Route, routePath, sendJson } from "./router.ts";
+
+const HEALTH_ROUTE = createHealthRoute({
+  health: async () => ({ main: "ok", logs: "ok", legal: "ok" }),
+  serverVersion: "0.0.0",
+});
 
 type Answer = {
   status?: number;
@@ -77,10 +90,16 @@ const throwing: Route = {
 describe("createRouter", () => {
   const router = createRouter([HEALTH_ROUTE, throwing]);
 
-  it("answers health with exactly {status: ok} and no-store, whatever the query", async () => {
+  it("answers health with exactly its closed body and no-store, whatever the query", async () => {
     const answer = await call(router, "GET", "/api/v1/health?verbose=1");
     expect(answer.status).toBe(200);
-    expect(JSON.parse(answer.body ?? "")).toEqual({ status: "ok" });
+    expect(JSON.parse(answer.body ?? "")).toEqual({
+      status: "ok",
+      state: "ok",
+      apiVersion: API_VERSION,
+      serverVersion: "0.0.0",
+      minClientVersion: MIN_CLIENT_VERSION,
+    });
     expect(answer.headers?.["cache-control"]).toBe("no-store");
   });
 

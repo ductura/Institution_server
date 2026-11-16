@@ -14,6 +14,8 @@ const Capabilities = closed({
   signing: Type.Optional(CapabilityStatus),
   queue: Type.Optional(CapabilityStatus),
 });
+const SemVer = (description: string) =>
+  Type.String({ pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$", description });
 const ComponentState = Type.Union([
   Type.Literal("radi"),
   Type.Literal("ne_radi"),
@@ -31,16 +33,24 @@ export const health = defineRoute({
   responses: [
     {
       status: 200,
-      description: "alive",
+      // The summary above is the 1.2.0 text; a new summary breaks the guard (U5), so
+      // the answer as it is since 1.3.0 (S-1M-a, DAN-795) is described here.
+      description:
+        "alive. Since 1.3.0 also the state of the main database (`state`, checked with a time limit) and the versions; never an address, a name or an error.",
       body: closed({
+        // The process answers; `state` says whether the main database does.
         status: Type.Literal("ok"),
-        // The API version (API_VERSION) for the preloader; optional until S-1M-a sends it.
-        version: Type.Optional(
-          Type.String({
-            pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
-            description: "API version, major.minor.patch",
+        // Deprecated: never sent since 1.3.0 (apiVersion has it); kept, as removing it breaks v1.
+        version: Type.Optional(SemVer("API version, major.minor.patch")),
+        // Optional in the schema only so that 1.2.0 answers stay valid; the server always sends them.
+        state: Type.Optional(
+          Type.Union([Type.Literal("ok"), Type.Literal("degraded")], {
+            description: "degraded: the main database is not ok or did not answer in time",
           }),
         ),
+        apiVersion: Type.Optional(SemVer("API version (API_VERSION)")),
+        serverVersion: Type.Optional(SemVer("version of the server build")),
+        minClientVersion: Type.Optional(SemVer("oldest client version this server serves")),
       }),
     },
   ],

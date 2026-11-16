@@ -9,6 +9,7 @@ import {
   listenAddress,
   listenProblems,
   originProblems,
+  SERVER_VERSION,
   shutdownGraceMs,
   shutdownProblems,
 } from "./config/index.ts";
@@ -18,7 +19,7 @@ import {
   createLayers,
   createShutdownCoordinator,
   FLUSH_LOGS,
-  HEALTH_ROUTE,
+  createHealthRoute,
   installShutdown,
   parseTrustedProxies,
   routesOf,
@@ -80,7 +81,10 @@ async function main(): Promise<void> {
     databases,
     shutdown,
     layers: LAYERS,
-    routes: [HEALTH_ROUTE, ...routesOf(AREAS)],
+    routes: [
+      createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
+      ...routesOf(AREAS),
+    ],
   }).catch((error: unknown) => {
     // A system error has a code (EADDRINUSE, EACCES); anything else is a
     // programming error of the route table, whose message names no value.
