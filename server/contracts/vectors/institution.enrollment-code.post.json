@@ -1,0 +1,473 @@
+{
+  "route": "institution.enrollment-code.post",
+  "vectors": [
+    {
+      "name": "issued",
+      "kind": "success",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "code": "A1B2-C3D4-E5F6-0789"
+        }
+      }
+    },
+    {
+      "name": "origin-missing",
+      "kind": "error",
+      "code": "origin_missing",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "origin_missing",
+          "code": "origin_missing",
+          "messageKey": "errors.originMissing",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000070"
+        }
+      }
+    },
+    {
+      "name": "origin-mismatch",
+      "kind": "error",
+      "code": "origin_mismatch",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://drugo.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "origin_mismatch",
+          "code": "origin_mismatch",
+          "messageKey": "errors.originMismatch",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000071"
+        }
+      }
+    },
+    {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "cross_site",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "cross-site",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "cross_site",
+          "code": "cross_site",
+          "messageKey": "errors.crossSite",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000072"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000073"
+        }
+      }
+    },
+    {
+      "name": "unsupported-media-type",
+      "kind": "error",
+      "code": "unsupported_media_type",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "text/plain"
+        },
+        "rawBody": "{\"validUntil\":\"2026-12-31T23:59:59.123456+01:00\"}"
+      },
+      "response": {
+        "status": 415,
+        "contentType": "application/json",
+        "body": {
+          "error": "unsupported_media_type",
+          "code": "unsupported_media_type",
+          "messageKey": "errors.unsupportedMediaType",
+          "status": 415,
+          "requestId": "00000000-0000-4000-8000-000000000074"
+        }
+      }
+    },
+    {
+      "name": "body-too-large",
+      "kind": "error",
+      "code": "body_too_large",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "1025"
+        },
+        "rawBody": "{\"validUntil\":\"2026-12-31T23:59:59.123456+01:00\"}"
+      },
+      "response": {
+        "status": 413,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_too_large",
+          "code": "body_too_large",
+          "messageKey": "errors.bodyTooLarge",
+          "status": 413,
+          "requestId": "00000000-0000-4000-8000-000000000075"
+        }
+      }
+    },
+    {
+      "name": "body-timeout",
+      "kind": "error",
+      "code": "body_timeout",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "49"
+        },
+        "rawBody": "{\"validUntil\":\"2026-12-3"
+      },
+      "response": {
+        "status": 408,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_timeout",
+          "code": "body_timeout",
+          "messageKey": "errors.bodyTimeout",
+          "status": 408,
+          "requestId": "00000000-0000-4000-8000-000000000076"
+        }
+      }
+    },
+    {
+      "name": "content-length-invalid",
+      "kind": "error",
+      "code": "content_length_invalid",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "-1"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "content_length_invalid",
+          "code": "content_length_invalid",
+          "messageKey": "errors.contentLengthInvalid",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-000000000077"
+        }
+      }
+    },
+    {
+      "name": "content-length-mismatch",
+      "kind": "error",
+      "code": "content_length_mismatch",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "99"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "content_length_mismatch",
+          "code": "content_length_mismatch",
+          "messageKey": "errors.contentLengthMismatch",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-000000000078"
+        }
+      }
+    },
+    {
+      "name": "body-stream-error",
+      "kind": "error",
+      "code": "body_stream_error",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "content-length": "49"
+        },
+        "rawBody": "{\"val"
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "body_stream_error",
+          "code": "body_stream_error",
+          "messageKey": "errors.bodyStreamError",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-000000000079"
+        }
+      }
+    },
+    {
+      "name": "invalid-json",
+      "kind": "error",
+      "code": "invalid_json",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "rawBody": "{\"validUntil\":\"2026-12-31T23:59:59.123456+01:00\""
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_json",
+          "code": "invalid_json",
+          "messageKey": "errors.invalidJson",
+          "status": 400,
+          "requestId": "00000000-0000-4000-8000-000000000080"
+        }
+      }
+    },
+    {
+      "name": "invalid-input",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-02-30T12:00:00Z"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000090"
+        }
+      }
+    },
+    {
+      "name": "invalid-path-id",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "courseId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000091"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000092"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "courseId": "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-ustanove-00000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "validUntil": "2026-12-31T23:59:59.123456+01:00"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000093"
+        }
+      }
+    }
+  ]
+}
