@@ -41,6 +41,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["origin_mismatch", "errors.originMismatch"],
   ["origin_missing", "errors.originMissing"],
   ["precondition_required", "errors.preconditionRequired"],
+  ["record_changed", "errors.recordChanged"],
   ["refused", "errors.refused"],
   ["stale_base", "errors.staleBase"],
   ["stale_revision", "errors.staleRevision"],

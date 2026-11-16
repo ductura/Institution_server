@@ -120,6 +120,21 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "evidence.replay.post:body": (() => {
+  const local0 = /^[0-9a-f]{64}$/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedHead = (typeof value === 'object' && value !== null ? value['head'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      (typeof value['from'] === 'number' && Number.isInteger(value['from'])) &&
+      value['from'] <= 9007199254740991 &&
+      value['from'] >= 0 &&
+      (value['head'] !== undefined ? ((typeof value['head'] === 'object' && value['head'] !== null && !Array.isArray(value['head'])) && (typeof nestedHead['segmentHash'] === 'string') && local0.test(nestedHead['segmentHash']) && (typeof nestedHead['segmentCount'] === 'number' && Number.isInteger(nestedHead['segmentCount'])) && nestedHead['segmentCount'] <= 9007199254740991 && nestedHead['segmentCount'] >= 1 && Object.getOwnPropertyNames(value['head']).length === 2) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['documentId', 'from', 'head'].includes(key))
+    )
+  }
+  })(),
   "institution.acknowledgment.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

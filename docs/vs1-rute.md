@@ -19,7 +19,7 @@ Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/g
 
 **Napomena o oznaci zadatka.** Ductusov inventar ruta za `evidence/open` i `evidence/commit` piše S-1E-\*. To je Ductusova oznaka. U ovom repou handlere isporučuje S-M-5 kroz uski rez VS-1 (PLAN §5, odluka Ductus#87 c.6880835493). Nesklad ostaje zabilježen dok ga orkestrator ne razriješi u Linearu.
 
-`evidence/replay` (R3) nije dio VS-1. Ostaje u `PENDING` (`server/contracts/inventory.ts`) do svog zadatka (potvrda c.6895833111).
+`evidence/replay` (R3) nije dio VS-1 (potvrda c.6895833111). Ugovor `evidence.replay.post` dodaje DAN-818 (uski rez, korak 4; ugovor Ductus#1836 c.6912301853, potvrda c.6912344496, plan napada ductura/server#136): stranica replaya s provjerenim spremljenim bajtovima segmenata, iste za vlasnika i nastavnika zadatka. Tijelo je `{documentId, from: 0}` ili `{documentId, from, head}`; tuđi rad i stranica iza kraja daju 404, zapis koji više ne završava na `head` daje 409 `record_changed`, a 503 nosi `stage` `context` ili `storage`. Server ne izvodi korake; provjera `removedSha256` (B-12) na serveru je DAN-819. Za razliku od Ductusa ruta traži `ductus-protocol: 1`, kao open i commit.
 
 ## Pravila oblika
 

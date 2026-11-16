@@ -2019,6 +2019,7 @@ export const hr = {
     originMismatch: "Zahtjev ne dolazi s ove stranice.",
     originMissing: "Zahtjev ne navodi stranicu s koje dolazi.",
     preconditionRequired: "Zahtjev ne navodi koju verziju rada mijenja. Učitajte rad ponovno.",
+    recordChanged: "Zapis rada se u međuvremenu promijenio. Učitajte ga ponovno.",
     refused: "Kod ne postoji ili je istekao. Provjerite ga s nastavnikom.",
     staleBase: "Rad je u međuvremenu promijenjen. Učitajte zadnju verziju.",
     staleRevision: "Na poslužitelju je novija verzija teksta. Učitajte je ponovno prije predaje.",

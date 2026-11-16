@@ -40,13 +40,13 @@ function send(route: string, name: string) {
 }
 
 describe("evidence routes in the contract", () => {
-  it("open and commit have contracts; replay stays pending (not in DAN-758)", () => {
+  it("open, commit and replay have contracts (replay: DAN-818, not in DAN-758)", () => {
     const ids = ROUTES.map((r) => r.id);
-    expect(ids).toEqual(expect.arrayContaining([OPEN, COMMIT]));
+    expect(ids).toEqual(expect.arrayContaining([OPEN, COMMIT, "evidence.replay.post"]));
     expect(PENDING).not.toContain("app/api/evidence/open/route.ts");
     expect(PENDING).not.toContain("app/api/evidence/commit/route.ts");
-    expect(PENDING).toContain("app/api/evidence/replay/route.ts");
-    expect(PENDING).toHaveLength(2);
+    expect(PENDING).not.toContain("app/api/evidence/replay/route.ts");
+    expect(PENDING).toHaveLength(1);
   });
 
   it.each(
