@@ -70,7 +70,6 @@ export function createMetricsCollector<T>(options: MetricsCollectorOptions<T>): 
   };
 
   const tick = (): void => {
-    if (stopped) return;
     if (round !== undefined) return skip("busy");
     round = run().finally(() => (round = undefined));
   };
