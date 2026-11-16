@@ -65,7 +65,7 @@ END
 $$;
 
 
-SELECT plan(87);
+SELECT plan(91);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -384,9 +384,31 @@ FROM (VALUES
    'a missing head is found'),
   ('DELETE FROM public.log_entry; UPDATE public.log_chain_head SET seq = 0, hash = decode(repeat(''00'', 32), ''hex'')', '{}'::text[],
    'control: an empty table with the first head verifies'),
+  ('UPDATE public.log_entry SET id = DEFAULT WHERE seq = :base + 2', ARRAY['2 hash'],
+   'a changed id is found at its row'),
   ('SELECT 1', '{}'::text[],
    'control: the chain left as it is verifies')
 ) t (sql, expected, what);
+SELECT is(pg_temp.tampered('DELETE FROM public.log_entry WHERE seq = 1'),
+  ARRAY[(2 - pg_temp.at(0))::text || ' gap', (2 - pg_temp.at(0))::text || ' link'],
+  'the first row of the chain deleted is found at the second');
+SELECT is(pg_temp.tampered('UPDATE public.log_entry SET prev_hash = decode(repeat(''01'', 32), ''hex''),
+    hash = public.log_entry_digest(decode(repeat(''01'', 32), ''hex''), seq, id, at, kind, payload) WHERE seq = 1'),
+  ARRAY[(1 - pg_temp.at(0))::text || ' link', (2 - pg_temp.at(0))::text || ' link'],
+  'a first row that does not follow 32 zero bytes is found, and so is its successor');
+SELECT is(pg_temp.try_as(NULL, $$
+  CREATE FUNCTION pg_temp.step() RETURNS trigger LANGUAGE plpgsql AS $f$
+  BEGIN UPDATE public.log_chain_head SET seq = seq + 1, hash = decode(repeat('ab', 32), 'hex'); RETURN NULL; END $f$;
+  CREATE TEMP TABLE step (x int);
+  CREATE TRIGGER step AFTER INSERT ON pg_temp.step FOR EACH ROW EXECUTE FUNCTION pg_temp.step();
+  INSERT INTO pg_temp.step VALUES (1);
+  DO $d$ BEGIN
+    IF (SELECT count(*) FROM public.log_chain_verify() v WHERE v.problem = 'head') <> 1 THEN
+      RAISE EXCEPTION 'not found' USING ERRCODE = 'P0002';
+    END IF;
+    RAISE EXCEPTION 'found' USING ERRCODE = 'P0001';
+  END $d$ $$),
+  'P0001', 'a head the superuser moves one step from a trigger of its own, without a row, is found (boundary of #125)');
 
 -- 6. Negative controls: a right of the main application role is caught.
 CREATE ROLE ductus_app NOLOGIN;

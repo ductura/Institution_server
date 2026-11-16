@@ -81,8 +81,13 @@ CREATE TRIGGER log_entry_chain BEFORE INSERT ON public.log_entry
   FOR EACH ROW EXECUTE FUNCTION public.log_entry_chain();
 ALTER TABLE public.log_entry ENABLE ALWAYS TRIGGER log_entry_chain;
 
--- The head moves only from the insert trigger (trigger depth 2) and only one
--- step on; it is never added, removed or emptied.
+-- The head moves only from inside a trigger (the insert trigger runs the
+-- UPDATE at trigger depth 2) and only one step on; it is never added, removed
+-- or emptied. Only the owner or a superuser could write another trigger that
+-- moves it a step with another digest (or skip an inserted row with ON
+-- CONFLICT DO NOTHING after forging an id): they can switch these triggers
+-- off anyway, and log_chain_verify() reports such a head (#125, out of scope).
+-- Against the writer, the reader and the retention role it is closed.
 CREATE FUNCTION public.log_chain_head_guard() RETURNS trigger
   LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
