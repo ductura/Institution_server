@@ -106,7 +106,8 @@ export function sendProblem(
  * a problem (the evidence routes, docs/vs1-rute.md, DAN-811). Only an error of
  * this route's own contract, with a body its schema takes, is answered; any
  * other status, code or body answers 500 internal. Headers are cleared as by
- * sendProblem; of `headers`, only Retry-After on a 503 is sent.
+ * sendProblem, and a Retry-After set before is dropped too: a 503 must bring
+ * its own (whole seconds) and nothing else may have one.
  */
 export function sendRouteRefusal(
   response: ServerResponse,
@@ -122,13 +123,16 @@ export function sendRouteRefusal(
     spec === undefined ||
     typeof schema !== "object" ||
     !Value.Check(schema, body) ||
-    (retry !== undefined && (status !== 503 || !/^[1-9][0-9]{0,3}$/.test(retry)))
+    (status === 503) !== (retry !== undefined) ||
+    (retry !== undefined && !/^[1-9][0-9]{0,3}$/.test(retry))
   ) {
     sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
     return;
   }
   if (!response.headersSent) {
-    for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
+    for (const name of response.getHeaderNames()) {
+      if (!KEPT.has(name) || name === "retry-after") response.removeHeader(name);
+    }
     response.addTrailers({});
     response.statusMessage = STATUS_CODES[status] ?? "";
   }

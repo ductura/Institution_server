@@ -214,7 +214,7 @@ describe("A. checks before the body, in order", () => {
     ["a token of 42 characters", replace("Cookie", `__Host-ductus_session=${TOKEN.slice(1)}`)],
     ["two session cookies", replace("Cookie", `${COOKIE}; ${COOKIE}`)],
     ["a cookie without the prefix", replace("Cookie", `ductus_session=${TOKEN}`)],
-  ])("A5: %s is 401 before a body byte and without the database", async (_name, lines) => {
+  ])("A5: %s is 401 at the session step", async (_name, lines) => {
     const answer = await open(lines);
     expectVector(answer, "unauthenticated");
     expect(seen).toEqual([{ ok: false }]);
@@ -304,6 +304,27 @@ describe("F. the {status} writer behind the router's gate", () => {
       503,
       { status: "unavailable", stage: "context" },
       {
+        "retry-after": "abc",
+      },
+    ],
+    [
+      "a Retry-After of 0",
+      503,
+      { status: "unavailable", stage: "context" },
+      { "retry-after": "0" },
+    ],
+    [
+      "a Retry-After of five digits",
+      503,
+      { status: "unavailable", stage: "context" },
+      { "retry-after": "99999" },
+    ],
+    ["a 503 without Retry-After", 503, { status: "unavailable", stage: "context" }, {}],
+    [
+      "a Retry-After with a line break",
+      503,
+      { status: "unavailable", stage: "context" },
+      {
         "retry-after": "5\r\nx: y",
       },
     ],
@@ -312,6 +333,34 @@ describe("F. the {status} writer behind the router's gate", () => {
     const answer = await send(port(), PROBE_PATH, withLength(GOOD, BODY), BODY);
     expect(answer.status).toBe(500);
     expect(JSON.parse(answer.body)).toMatchObject({ code: "internal" });
+  });
+
+  it("F2: a Retry-After the handler set before is dropped from an answer that is not 503", async () => {
+    probe = (response) => {
+      response.setHeader("Retry-After", "120");
+      sendRouteRefusal(response, OPEN, 404, { status: "not_found" });
+    };
+    const answer = await send(port(), PROBE_PATH, withLength(GOOD, BODY), BODY);
+    expect(answer.status).toBe(404);
+    expect(JSON.parse(answer.body)).toEqual({ status: "not_found" });
+    expect(answer.head["retry-after"]).toBeUndefined();
+  });
+
+  it("F2: a 503 carries only its own Retry-After, not one set before", async () => {
+    probe = (response) => {
+      response.setHeader("Retry-After", "120");
+      sendRouteRefusal(
+        response,
+        OPEN,
+        503,
+        { status: "unavailable", stage: "context" },
+        {
+          "retry-after": "5",
+        },
+      );
+    };
+    const answer = await send(port(), PROBE_PATH, withLength(GOOD, BODY), BODY);
+    expect(answer.head["retry-after"]).toBe("5");
   });
 
   it("F3: a raw error head outside the writers is still 500", async () => {

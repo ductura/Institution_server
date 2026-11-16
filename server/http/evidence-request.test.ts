@@ -77,7 +77,9 @@ describe("parseClosedObject", () => {
 
 describe("readEvidenceBody: the session's own refusals keep their headers", () => {
   const TOKEN = "izmisljeni-token-evidencije-000000000000001";
-  function request(): IncomingMessage & { pulled: () => boolean } {
+  function request(
+    change: Record<string, string | undefined> = {},
+  ): IncomingMessage & { pulled: () => boolean } {
     let pulled = false;
     const body = new Readable({
       read() {
@@ -85,11 +87,13 @@ describe("readEvidenceBody: the session's own refusals keep their headers", () =
         this.push(null);
       },
     });
-    const headers = {
+    const all: Record<string, string | undefined> = {
       "ductus-protocol": "1",
       "content-type": "application/json",
       cookie: `__Host-ductus_session=${TOKEN}`,
+      ...change,
     };
+    const headers = Object.fromEntries(Object.entries(all).filter(([, v]) => v !== undefined));
     const distinct = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k, [v]]));
     return Object.assign(body, {
       headers,
@@ -103,6 +107,49 @@ describe("readEvidenceBody: the session's own refusals keep their headers", () =
       currentActorWithInstitution: () => Promise.reject(new Error("not used")),
     }) as ActorReader;
   const limits = { protocols: ["1"], maxBytes: 1024, timeoutMs: 1000, live: true };
+
+  const counted = () => {
+    let calls = 0;
+    const reader = {
+      currentActor: async () => {
+        calls += 1;
+        return {
+          userId: "00000000-0000-4000-8000-0000000000e1",
+          institutionId: "00000000-0000-4000-8000-0000000000e2",
+        };
+      },
+      currentActorWithInstitution: () => Promise.reject(new Error("not used")),
+    } as ActorReader;
+    return { reader, calls: () => calls };
+  };
+
+  it.each([
+    ["no protocol", { "ductus-protocol": undefined }, 426],
+    ["protocol 2", { "ductus-protocol": "2" }, 426],
+    ["no media type", { "content-type": undefined }, 415],
+    ["text/plain", { "content-type": "text/plain" }, 415],
+    ["no cookie", { cookie: undefined }, 401],
+    ["a cookie of the wrong form", { cookie: "__Host-ductus_session=kratko" }, 401],
+  ])(
+    "A1, A2, A5: %s is %s before a single body byte and before the database",
+    async (_name, change, status) => {
+      const r = request(change);
+      const { reader, calls } = counted();
+      const read = await readEvidenceBody(r, reader, limits);
+      expect(read.ok === false && read.answer.status).toBe(status);
+      expect(r.pulled()).toBe(false);
+      expect(calls()).toBe(0);
+    },
+  );
+
+  it("the body is read only after every check passed", async () => {
+    const r = request();
+    const { reader, calls } = counted();
+    const read = await readEvidenceBody(r, reader, limits);
+    expect(read.ok).toBe(true);
+    expect(r.pulled()).toBe(true);
+    expect(calls()).toBe(1);
+  });
 
   it("a database that cannot answer is 503 context with retry-after 5, the body unread", async () => {
     const r = request();
