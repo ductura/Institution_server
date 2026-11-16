@@ -290,3 +290,34 @@ describe("releaseLevel refuses what merges, shadows or hides in tokens", () => {
       expect(level(fakes(BASE_DTS), loads(extra))).toBe("major");
   });
 });
+
+// Second self-attack pass (#92): a new file, a side-effect import and directives.
+describe("releaseLevel reads new files and directives", () => {
+  const OPTIONS = "export interface Options { port: number }\n";
+  const AUG = 'export {};\ndeclare module "./index.js" { interface Options { host: string } }\n';
+
+  it("is major for an augmentation brought in by a new file", () => {
+    const after = fakes(`import "./aug.js";\n${OPTIONS}`, { "aug.d.ts": AUG });
+    expect(level(fakes(OPTIONS), after)).toBe("major");
+    const global = fakes(OPTIONS, { "global.d.ts": "export {};\ndeclare global { var x: 1 }\n" });
+    expect(level(fakes(OPTIONS), global)).toBe("major");
+  });
+
+  it("is major for a new import for side effects alone", () => {
+    expect(level(fakes(OPTIONS), fakes(`import "./aug.js";\n${OPTIONS}`))).toBe("major");
+  });
+
+  it("is minor for a new file of new names", () => {
+    const after = fakes(OPTIONS, { "clock.d.ts": "export declare function tick(): void;\n" });
+    expect(level(fakes(OPTIONS), after)).toBe("minor");
+  });
+
+  it.each([
+    '/// <reference types="node" />\n',
+    '/// <reference lib="dom" />\n',
+    '/// <reference path="./a.d.ts" />\n',
+  ])("is major when a directive %j is added or removed", (directive) => {
+    expect(level(fakes(OPTIONS), fakes(`${directive}${OPTIONS}`))).toBe("major");
+    expect(level(fakes(`${directive}${OPTIONS}`), fakes(OPTIONS))).toBe("major");
+  });
+});
