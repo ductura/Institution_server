@@ -12,7 +12,7 @@ import { ROOT } from "./stage.ts";
 // them through), so it is matched in full before anything uses it, and only
 // the package's short name reaches $GITHUB_OUTPUT.
 
-const TAG = /^(contracts|test-fakes)-v((0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/u;
+const TAG = /^(contracts|test-fakes)-v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/u;
 const SHA = /^[0-9a-f]{40}$/u;
 const SPECS: Readonly<Record<string, PackageSpec>> = {
   contracts: CONTRACTS,
@@ -37,7 +37,7 @@ export function checkTag(input: TagInput): "contracts" | "test-fakes" {
   const match = TAG.exec(name);
   if (match === null) throw new Error("tag: name is not <contracts|test-fakes>-vX.Y.Z");
   if (input.ref !== `refs/tags/${name}`) throw new Error("tag: GITHUB_REF is not this tag");
-  const [, short = "", version = "", major = ""] = match;
+  const [, short = "", version = ""] = match;
   const spec = SPECS[short]!;
   // DAN-804 (b): the tag carries the version; package.json is the floor of its major.
   const floor = parseVersion(input.version(spec));
@@ -46,8 +46,16 @@ export function checkTag(input: TagInput): "contracts" | "test-fakes" {
     throw new Error(
       `tag: version ${version} is below or off the major of ${spec.dir}/package.json`,
     );
-  if (spec === CONTRACTS && input.apiVersion.split(".")[0] !== major)
-    throw new Error(`tag: major ${major} is not the major of API_VERSION ${input.apiVersion}`);
+  // DAN-869: the contracts major follows breaking changes of the TypeScript types,
+  // not of the wire, so it may be above the API major but never below it.
+  if (spec === CONTRACTS) {
+    const api = parseVersion(input.apiVersion);
+    if (api === null) throw new Error(`tag: API_VERSION ${input.apiVersion} is not X.Y.Z`);
+    if (tagged[0] < api[0])
+      throw new Error(
+        `tag: major ${tagged[0]} is below the major of API_VERSION ${input.apiVersion}`,
+      );
+  }
   const sha = input.sha ?? "";
   if (!SHA.test(sha)) throw new Error("tag: GITHUB_SHA is not a full commit SHA");
   if (!input.onMain(sha)) throw new Error("tag: commit is not on main");

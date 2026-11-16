@@ -1,12 +1,19 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { checkTag, CONTRACTS, isAncestorOfMain, type TagInput } from "./index.ts";
-import { releaseVersion } from "./stage.ts";
+import {
+  checkTag,
+  CONTRACTS,
+  isAncestorOfMain,
+  PACKAGES,
+  type PackageSpec,
+  type TagInput,
+} from "./index.ts";
+import { releaseVersion, ROOT } from "./stage.ts";
 
 // U10-b (DAN-742): the tag that publish.yml acts on. Every value is invented.
 const SHA = "a".repeat(40);
@@ -87,10 +94,42 @@ describe("checkTag", () => {
     expect(() => checkTag(input("contracts-v1.2.3", named))).toThrow(/GITHUB_REF/);
   });
 
-  it("refuses contracts whose major is not the major of API_VERSION", () => {
-    expect(() => checkTag(input("contracts-v1.2.3", { apiVersion: "2.0.0" }))).toThrow(/major/);
-    // test-fakes has its own 0.x versions.
+  // DAN-869: the package major follows breaking changes of the TypeScript types,
+  // not of the wire, so it may be above the API major but never below it.
+  it("refuses contracts whose major is below the major of API_VERSION", () => {
+    expect(() => checkTag(input("contracts-v1.2.3", { apiVersion: "2.0.0" }))).toThrow(
+      "tag: major 1 is below the major of API_VERSION 2.0.0",
+    );
+    const zero = { version: () => "0.1.0" };
+    expect(() => checkTag(input("contracts-v0.1.0", zero))).toThrow(/major 0 is below/);
+    // test-fakes has its own versions.
     expect(checkTag(input("test-fakes-v0.1.0", { apiVersion: "2.0.0" }))).toBe("test-fakes");
+  });
+
+  it("accepts contracts on or above the major of API_VERSION", () => {
+    const two = { version: (spec: PackageSpec) => (spec === CONTRACTS ? "2.0.0" : "1.0.0") };
+    expect(checkTag(input("contracts-v2.0.0", two))).toBe("contracts");
+    expect(checkTag(input("contracts-v2.3.1", two))).toBe("contracts");
+    expect(checkTag(input("contracts-v1.2.3", { apiVersion: "1.0.0" }))).toBe("contracts");
+    expect(checkTag(input("test-fakes-v1.0.0", two))).toBe("test-fakes");
+  });
+
+  it.each([
+    "",
+    "undefined",
+    "1",
+    "1.2",
+    "01.0.0",
+    "v1.0.0",
+    "1.0.0-rc.1",
+    "1.0.0+b",
+    "-1.0.0",
+    " 1.0.0",
+    "1.0.0\n",
+  ])("refuses contracts when API_VERSION %j is not X.Y.Z", (apiVersion) => {
+    expect(() => checkTag(input("contracts-v1.2.3", { apiVersion }))).toThrow(
+      /^tag: API_VERSION .* is not X\.Y\.Z$/su,
+    );
   });
 
   it.each([undefined, "", "a".repeat(39), "A".repeat(40), `${"a".repeat(40)} `])(
@@ -109,6 +148,27 @@ describe("checkTag", () => {
     };
     expect(() => checkTag(input("contracts-v1.2.3", { onMain: broken }))).toThrow(/128/);
   });
+});
+
+// DAN-869: the versions in the repo, read as release:tag reads them.
+describe("the repo's own versions", () => {
+  const read = (...path: string[]) =>
+    JSON.parse(readFileSync(join(ROOT, ...path), "utf8")) as {
+      version?: unknown;
+      info?: { version?: unknown };
+    };
+  const real = {
+    version: (spec: PackageSpec) => String(read(spec.dir, "package.json").version),
+    apiVersion: String(read("openapi", "v1.json").info?.version),
+  };
+
+  it.each(PACKAGES.map((spec) => [spec.name, spec] as const))(
+    "%s tags its own package.json version",
+    (_, spec) => {
+      const name = `${spec === CONTRACTS ? "contracts" : "test-fakes"}-v${real.version(spec)}`;
+      expect(checkTag(input(name, real))).toBe(spec === CONTRACTS ? "contracts" : "test-fakes");
+    },
+  );
 });
 
 describe("isAncestorOfMain", () => {
