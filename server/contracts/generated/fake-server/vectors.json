@@ -1643,7 +1643,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.3.0",
+        "apiVersion": "1.5.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -1659,7 +1659,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.3.0",
+        "apiVersion": "1.5.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -2125,6 +2125,98 @@
       "contentType": "application/json",
       "body": {
         "error": "unavailable"
+      }
+    }
+  },
+  {
+    "route": "student.assignments.get",
+    "name": "ready",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "courses": [
+          {
+            "id": "0b9f6c1e-1d2a-4c3b-8e4f-5a6b7c8d9e01",
+            "name": "Izmišljeni kolegij A",
+            "assignments": [
+              {
+                "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e01",
+                "title": "Izmišljeni zadatak 1",
+                "dueAt": "2026-12-01T22:59:00.000Z",
+                "noticeFirst": false
+              },
+              {
+                "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02",
+                "title": "Izmišljeni zadatak 2",
+                "dueAt": "2027-01-15T22:59:00.000Z",
+                "noticeFirst": true
+              }
+            ]
+          },
+          {
+            "id": "0b9f6c1e-1d2a-4c3b-8e4f-5a6b7c8d9e02",
+            "name": "Izmišljeni kolegij B",
+            "assignments": []
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.assignments.get",
+    "name": "ready-empty",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "courses": []
+      }
+    }
+  },
+  {
+    "route": "student.assignments.get",
+    "name": "signed-out",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "student.assignments.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000002"
       }
     }
   }

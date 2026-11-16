@@ -1,22 +1,22 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error, v1Error } from "../schema/index.ts";
+import { closed, defineRoute, error } from "../schema/index.ts";
 
 const Locale = Type.Union([Type.Literal("hr"), Type.Literal("en")]);
 
 // Shared refusals of the mutation guard and body reader (Origin, type, size, time).
-// 403 and 400 have several errors each (a oneOf), so they keep the v1 body.
+// 403 and 400 have several errors each: a oneOf discriminated by the code (DAN-791).
 const MUTATION_ERRORS = [
-  v1Error(403, "origin_missing"),
-  v1Error(403, "origin_mismatch"),
-  v1Error(403, "cross_site"),
+  error(403, "origin_missing"),
+  error(403, "origin_mismatch"),
+  error(403, "cross_site"),
   error(415, "unsupported_media_type"),
   error(413, "body_too_large"),
   error(408, "body_timeout"),
-  v1Error(400, "content_length_invalid"),
-  v1Error(400, "content_length_mismatch"),
-  v1Error(400, "body_stream_error"),
-  v1Error(400, "invalid_json"),
+  error(400, "content_length_invalid"),
+  error(400, "content_length_mismatch"),
+  error(400, "body_stream_error"),
+  error(400, "invalid_json"),
 ] as const;
 
 export const interfaceLocaleGet = defineRoute({

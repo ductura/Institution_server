@@ -20,9 +20,6 @@ import {
   ROUTES,
   SERVER_ERRORS,
   SHARED_ERRORS,
-  error,
-  type RouteContract,
-  v1Error,
 } from "../contracts/index.ts";
 import { sendJson } from "./json.ts";
 import { knownError, problemOf, sendProblem } from "./problem.ts";
@@ -60,9 +57,9 @@ function fakeResponse() {
 // tested in server/contracts/message-keys.test.ts (DAN-789 a).
 
 // Bodies that keep a v1 shape the guard does not let change (PR opis, "Poznate
-// granice"): a page for a browser navigation, no body or the code in `status`
-// are closed lists below, so a new route with another shape fails here;
-// {error: code} under a oneOf (v1Error) is the rule V1_GUARD_CODES further down.
+// granice"): a page for a browser navigation, no body, or the code in `status`.
+// Errors under a oneOf have the problem body since DAN-791. A closed list, so a
+// new route with another shape fails here.
 const HTML = new Set([
   "auth.login.get",
   "auth.callback.get",
@@ -79,29 +76,6 @@ const CODE_IN_STATUS = new Set([
   "evidence.open.post",
   "evidence.commit.post",
 ]);
-// {error: code} under a oneOf is a rule, not a list of routes (DAN-803,
-// Ductus#1836 c.6905799359 N1, decision c.6905867488): problem.ts answers a
-// code in one body on every route, so the seven codes of the mutation guard
-// keep {error: code} wherever they are declared, and only they, and only on a
-// status that has more than one error.
-const V1_GUARD_CODES: ReadonlySet<string> = new Set([
-  ...["origin_missing", "origin_mismatch", "cross_site"],
-  ...["content_length_invalid", "content_length_mismatch", "body_stream_error", "invalid_json"],
-]);
-
-/** Every way the errors of `route` break the v1 rule above. */
-function v1Problems(route: Pick<RouteContract, "id" | "errors">): string[] {
-  const problems: string[] = [];
-  for (const spec of route.errors) {
-    const where = `${route.id} ${spec.status} ${spec.code}`;
-    const guard = V1_GUARD_CODES.has(spec.code);
-    if (spec.v1 === true && !guard) problems.push(`${where}: v1 body outside the guard codes`);
-    if (guard && spec.v1 !== true) problems.push(`${where}: a guard code without its v1 body`);
-    const shared = route.errors.filter((other) => other.status === spec.status).length;
-    if (spec.v1 === true && shared < 2) problems.push(`${where}: v1 body on a status of one error`);
-  }
-  return problems;
-}
 
 function properties(schema: TSchema): Record<string, TSchema> {
   return (schema as TObject).properties;
@@ -122,36 +96,12 @@ describe("every route in the inventory", () => {
       expect(props["status"]).toMatchObject({ const: code });
       return expect(Object.keys(props)).not.toContain("messageKey");
     }
-    if (spec.v1 === true) return expect(Object.keys(props)).toEqual(["error"]);
     expect(props["code"]).toMatchObject({ const: code });
     expect(props["messageKey"]).toMatchObject({ const: spec.key });
     expect(props["status"]).toMatchObject({ const: status });
     expect(props["requestId"]).toMatchObject({ type: "string", pattern: REQUEST_ID_PATTERN });
     // The answer problem.ts gives is valid against the route's own schema.
     expect(Value.Check(spec.body as TSchema, problemOf(status, code, ID))).toBe(true);
-  });
-
-  it.each(ROUTES.map((route) => [route.id, route] as const))(
-    "%s keeps {error: code} only for the guard codes, under a oneOf",
-    (_id, route) => expect(v1Problems(route)).toEqual([]),
-  );
-
-  it("the v1 rule refuses another code, a guard code in the problem body and a lone status", () => {
-    const route = {
-      id: "made-up.route.post",
-      errors: [
-        v1Error(403, "origin_missing"),
-        v1Error(403, "forbidden"),
-        error(400, "invalid_json"),
-        v1Error(400, "content_length_invalid"),
-        v1Error(408, "body_stream_error"),
-      ],
-    };
-    expect(v1Problems(route)).toEqual([
-      "made-up.route.post 403 forbidden: v1 body outside the guard codes",
-      "made-up.route.post 400 invalid_json: a guard code without its v1 body",
-      "made-up.route.post 408 body_stream_error: v1 body on a status of one error",
-    ]);
   });
 
   it("the shared errors, the fallback and 405 have the default problem body", () => {
@@ -202,12 +152,21 @@ describe("problemOf and sendProblem", () => {
     expect(Object.keys(body)).toEqual(["error", "code", "messageKey", "status", "requestId"]);
   });
 
-  it("write {error: code} for an error marked v1, with the request id only in X-Request-Id", () => {
+  // DAN-791: an error under a oneOf (403 of the mutation guard) has the full
+  // problem body too, and its request id is the one in X-Request-Id.
+  it("write the problem body for an error under a oneOf, the id equal to X-Request-Id", () => {
     const { response, answer } = fakeResponse();
     sendProblem(response, 403, "origin_missing");
     expect(answer.status).toBe(403);
-    expect(JSON.parse(answer.body ?? "")).toEqual({ error: "origin_missing" });
-    expect(answer.headers["x-request-id"]).toMatch(UUID_V4);
+    const id = answer.headers["x-request-id"];
+    expect(id).toMatch(UUID_V4);
+    expect(JSON.parse(answer.body ?? "")).toEqual({
+      error: "origin_missing",
+      code: "origin_missing",
+      messageKey: "errors.originMissing",
+      status: 403,
+      requestId: id,
+    });
   });
 
   it("drop what was set before but the security headers, Connection and Retry-After", () => {

@@ -11,6 +11,8 @@ import {
   catalogErrorOf,
   ERROR_CATALOG,
   reportServerError,
+  ROUTE_429_CODES,
+  route429Problems,
   SERVER_ERROR_CLASSES,
   serverErrorClass,
   SESSION_EXPIRED,
@@ -42,14 +44,42 @@ describe("ERROR_CATALOG", () => {
   it("a status the server answers names that status's contract error and key", () => {
     const answered = new Set(SERVER_ERRORS.map((spec) => spec.status));
     for (const error of ERROR_CATALOG) {
-      if (error.code === SESSION_EXPIRED || !answered.has(error.status)) continue;
+      // 429 stays generic: routes answer it with their own codes (ROUTE_429_CODES).
+      if (error.code === SESSION_EXPIRED || error.status === 429 || !answered.has(error.status))
+        continue;
       expect(knownError(error.status, error.code)?.key, error.code).toBe(error.messageKey);
     }
   });
 
+  it("a route answers 429 only with a code of ROUTE_429_CODES", () => {
+    expect(route429Problems(SERVER_ERRORS)).toEqual([]);
+    expect(catalogErrorFor(429)).toMatchObject({ code: "too_many_requests" });
+  });
+
+  it("another 429 code is refused, and a listed code only goes with 429", () => {
+    expect(
+      route429Problems([
+        { status: 429, code: "too_many_reports" },
+        { status: 429, code: "too_many_attempts" },
+        { status: 429, code: "too_many_requests" },
+        { status: 429, code: "slow_down" },
+        { status: 400, code: "slow_down" },
+        { status: 400, code: "too_many_attempts" },
+      ]),
+    ).toEqual([
+      "429 too_many_requests: not a route 429 code",
+      "429 slow_down: not a route 429 code",
+      "400 too_many_attempts: a route 429 code on another status",
+    ]);
+    // The list itself is the decision (c.6905867488); a new code is a new decision.
+    expect(ROUTE_429_CODES).toEqual(["too_many_reports", "too_many_attempts"]);
+    expect(Object.isFrozen(ROUTE_429_CODES)).toBe(true);
+  });
+
   it("a code under clientErrors is not a contract code (yet)", () => {
-    // When the contract gets 429 (S-1C.3) or session_expired (S-1D-d), the
-    // entry moves to that contract error and its text to errors.*.
+    // When the contract gets session_expired (S-1D-d), the entry moves to that
+    // contract error and its text to errors.*. 429 stays here and generic:
+    // routes answer it with their own ROUTE_429_CODES (DAN-803, c.6905867488).
     for (const error of ERROR_CATALOG.filter((e) => e.messageKey.startsWith("clientErrors.")))
       expect(ERROR_MESSAGE_KEYS.has(error.code), error.code).toBe(false);
   });

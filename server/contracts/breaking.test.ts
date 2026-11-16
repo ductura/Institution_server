@@ -739,3 +739,158 @@ describe("version field", () => {
     expect(breakingChanges(before, openapiDocument())).toEqual([]);
   });
 });
+
+// DAN-791: a oneOf whose branches are told apart by a required const field
+// (the code in `error`) cannot have one value match two branches, so a new
+// optional field in a branch is as safe as in an anyOf. Every other oneOf
+// stays closed: a new field there can merge two branches.
+describe("a oneOf with a discriminator", () => {
+  const AT = `GET ${HEALTH} responses/409/content/application~1json/schema`;
+  type Branch = Obj;
+  const branch = (code: unknown, extra: Obj = {}): Branch => ({
+    type: "object",
+    additionalProperties: false,
+    required: ["error"],
+    properties: { error: { type: "string", const: code } },
+    ...extra,
+  });
+  const withOneOf = (branches: () => Branch[], edit: (b: Branch[]) => void, version: string) =>
+    changed((d) => {
+      const oneOf = branches();
+      edit(oneOf);
+      responses(d, HEALTH)["409"] = {
+        description: "a, b",
+        content: { [JSON_TYPE]: { schema: { oneOf } } },
+      };
+    }, version);
+  const addField =
+    (i: number, name = "code") =>
+    (b: Branch[]) =>
+      void (node(b[i], "properties")[name] = { type: "string" });
+  const check = (branches: () => Branch[], edit: (b: Branch[]) => void) =>
+    breakingChanges(
+      withOneOf(branches, () => undefined, MINOR_UP),
+      withOneOf(branches, edit, MINOR_UP_TWICE),
+    );
+
+  it("a new optional field in a branch is safe", () => {
+    expect(check(() => [branch("a"), branch("b"), branch("c")], addField(1))).toEqual([]);
+  });
+
+  it("the same new field in every branch is safe", () => {
+    const all = (b: Branch[]) => b.forEach((_, i) => addField(i)(b));
+    expect(check(() => [branch("a"), branch("b")], all)).toEqual([]);
+  });
+
+  it("merging branches still fails: {b?} added to {a?} lets {b} match both", () => {
+    const loose = (name: string): Branch => ({
+      type: "object",
+      additionalProperties: false,
+      properties: { [name]: { type: "string" } },
+    });
+    expect(check(() => [loose("a"), loose("b")], addField(0, "b"))).toEqual([
+      `${AT}/oneOf/0/properties/b: field added`,
+    ]);
+  });
+
+  it.each([
+    ["two branches share the const", () => [branch("a"), branch("a")]],
+    ["the field is not required in one branch", () => [branch("a"), branch("b", { required: [] })]],
+    [
+      "a branch is not type object",
+      () => {
+        const untyped = branch("b");
+        delete untyped.type;
+        return [branch("a"), untyped];
+      },
+    ],
+    [
+      "a branch has enum, not const",
+      () => [branch("a"), branch("b", { properties: { error: { type: "string", enum: ["b"] } } })],
+    ],
+    ["there is one branch only", () => [branch("a")]],
+  ])("no discriminator when %s: a new field is reported", (_, branches) => {
+    expect(check(branches as () => Branch[], addField(0))).toEqual([
+      `${AT}/oneOf/0/properties/code: field added`,
+    ]);
+  });
+
+  it("a discriminator only in the new document is not enough", () => {
+    const before = withOneOf(
+      () => [branch("a"), branch("b", { required: [] })],
+      () => undefined,
+      MINOR_UP,
+    );
+    const after = withOneOf(() => [branch("a"), branch("b")], addField(0), MINOR_UP_TWICE);
+    expect(breakingChanges(before, after)).toEqual([
+      `${AT}/oneOf/0/properties/code: field added`,
+      `${AT}/oneOf/1/required: changed`,
+    ]);
+  });
+
+  it("a new required field in a branch is reported", () => {
+    const required = (b: Branch[]) => {
+      addField(0)(b);
+      (b[0] as Obj).required = ["error", "code"];
+    };
+    expect(check(() => [branch("a"), branch("b")], required)).toEqual([
+      `${AT}/oneOf/0/properties/code: field added`,
+      `${AT}/oneOf/0/required: changed`,
+    ]);
+  });
+
+  // Self-review of DAN-791: beside unevaluatedProperties an old client checks a
+  // name no branch declares against that schema, so {n: "x"} would be refused.
+  it("a discriminated oneOf beside unevaluatedProperties stays closed", () => {
+    const at = (d: Obj) => node(responses(d, HEALTH), "409", "content", JSON_TYPE, "schema");
+    const before = withOneOf(
+      () => [branch("a"), branch("b")],
+      () => undefined,
+      MINOR_UP,
+    );
+    at(before).unevaluatedProperties = { type: "number" };
+    const after = withOneOf(() => [branch("a"), branch("b")], addField(0, "n"), MINOR_UP_TWICE);
+    at(after).unevaluatedProperties = { type: "number" };
+    expect(breakingChanges(before, after)).toEqual([`${AT}/oneOf/0/properties/n: field added`]);
+  });
+
+  // Codex c.4581775140: the same through an allOf, and an allOf alone.
+  it.each([
+    ["a discriminated oneOf inside an allOf", (b: Obj[]) => ({ allOf: [{ oneOf: b }] })],
+    ["an allOf", (b: Obj[]) => ({ allOf: b })],
+    ["an anyOf inside an allOf", (b: Obj[]) => ({ allOf: [{ anyOf: b }] })],
+  ])("%s below unevaluatedProperties stays closed", (_, wrap) => {
+    const open = (code: string): Obj => {
+      const b = branch(code);
+      delete b.additionalProperties;
+      return b;
+    };
+    const doc = (field: boolean, version: string) =>
+      changed((d) => {
+        const branches = [open("a"), open("b")];
+        if (field) node(branches[0], "properties").n = str;
+        responses(d, HEALTH)["409"] = {
+          description: "a, b",
+          content: {
+            [JSON_TYPE]: {
+              schema: { ...wrap(branches), unevaluatedProperties: { type: "number" } },
+            },
+          },
+        };
+      }, version);
+    const found = breakingChanges(doc(false, MINOR_UP), doc(true, MINOR_UP_TWICE));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/\/properties\/n: field added$/u);
+  });
+
+  it("a discriminated oneOf under not stays closed", () => {
+    const before = changed((d) => (ok(d, HEALTH).not = { oneOf: [branch("a"), branch("b")] }));
+    const after = changed((d) => {
+      ok(d, HEALTH).not = { oneOf: [branch("a"), branch("b")] };
+      node(list(ok(d, HEALTH).not, "oneOf")[0], "properties").code = str;
+    }, MINOR_UP_TWICE);
+    expect(breakingChanges(before, after)).toEqual([
+      `GET ${HEALTH} ${OK}/not/oneOf/0/properties/code: field added`,
+    ]);
+  });
+});

@@ -7,6 +7,7 @@ import {
   platformRoutes,
   profileRoutes,
   SHARED_ERRORS,
+  studentRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
@@ -16,7 +17,13 @@ export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { FALLBACK, INTERNAL, METHOD_NOT_ALLOWED, SHARED_ERRORS };
 export { MAX_COMMIT_BODY_BYTES } from "./routes/index.ts";
 export { checkInventory } from "./check.ts";
-export { INVENTORY, INVENTORY_SOURCE, PENDING } from "./inventory.ts";
+export {
+  CONTRACT_ONLY,
+  INVENTORY,
+  INVENTORY_SOURCE,
+  PENDING,
+  SERVER_SOURCES,
+} from "./inventory.ts";
 export * from "./schema/index.ts";
 export {
   checkVectors,
@@ -33,6 +40,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...authRoutes,
   ...profileRoutes,
   ...evidenceRoutes,
+  ...studentRoutes,
 ];
 
 /**

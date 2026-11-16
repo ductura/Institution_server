@@ -55,6 +55,29 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
 };
 
 /**
+ * Routes born on the server (DAN-803, Ductus#1836 c.6905207008 t. 0.2): Ductus
+ * serves the data from a file that is not a route.ts, so the route has no row
+ * in INVENTORY, which stays a copy of the 38 files. The key is the route.ts it
+ * would be (pathOf gives its path), `source` the Ductus file of its shape.
+ */
+export const SERVER_SOURCES: Readonly<
+  Record<string, { readonly methods: readonly Method[]; readonly source: string }>
+> = {
+  "app/api/student/assignments/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus@078c780:src/components/student/my-assignments-read.ts",
+  },
+};
+
+/**
+ * Routes with a contract and no handler on this server yet ("ugovoreno, nije
+ * implementirano"; DAN-803, c.6905207008 t. 0.1): clients build against the
+ * fake server. This list may only shrink: an id leaves it when its handler is
+ * mounted (tests/contracts/contract-only.test.ts).
+ */
+export const CONTRACT_ONLY: readonly string[] = ["student.assignments.get"];
+
+/**
  * Inventory files whose contracts follow in the next PR (DAN-736, part 2). This
  * list may only shrink: a file moves out of it when its contract lands.
  */

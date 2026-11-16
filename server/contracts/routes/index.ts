@@ -8,3 +8,4 @@ export {
   SHARED_ERRORS,
 } from "./platform.ts";
 export { profileRoutes } from "./profile.ts";
+export { studentRoutes } from "./student.ts";
