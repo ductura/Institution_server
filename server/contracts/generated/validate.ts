@@ -66,6 +66,36 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "settings.values.get:query": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['level'] === 'personal')) || ((value['level'] === 'course')) || ((value['level'] === 'institution')) || ((value['level'] === 'system')) || ((value['level'] === 'network_security'))) &&
+      (value['course'] !== undefined ? ((typeof value['course'] === 'string') && local0.test(value['course'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['level', 'course'].includes(key))
+    )
+  }
+  })(),
+  "settings.values.put:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['level'] === 'personal')) || ((value['level'] === 'course')) || ((value['level'] === 'institution')) || ((value['level'] === 'system')) || ((value['level'] === 'network_security'))) &&
+      (((typeof value['course'] === 'string') && local0.test(value['course'])) || ((value['course'] === null))) &&
+      (typeof value['key'] === 'string') &&
+      value['key'].length <= 64 &&
+      local1.test(value['key']) &&
+      (((((typeof value['value'] === 'boolean')) || ((typeof value['value'] === 'number' && Number.isInteger(value['value']))) || ((typeof value['value'] === 'string') && value['value'].length <= 256))) || ((value['value'] === null))) &&
+      (typeof value['locked'] === 'boolean') &&
+      (((typeof value['min'] === 'number' && Number.isInteger(value['min']))) || ((value['min'] === null))) &&
+      (((typeof value['max'] === 'number' && Number.isInteger(value['max']))) || ((value['max'] === null))) &&
+      Object.getOwnPropertyNames(value).length === 7
+    )
+  }
+  })(),
 };
 
 export function validateInput(id: string, part: "params" | "query" | "body", value: unknown): boolean {

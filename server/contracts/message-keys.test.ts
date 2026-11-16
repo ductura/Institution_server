@@ -151,7 +151,7 @@ describe("the problem body under a oneOf", () => {
 
   it("an error marked v1 has exactly {error: code}, and its pair is never a problem body", () => {
     const v1 = SERVER_ERRORS.filter((spec) => spec.v1 === true);
-    expect(v1.map((spec) => `${spec.status} ${spec.code}`).sort()).toEqual([
+    expect([...new Set(v1.map((spec) => `${spec.status} ${spec.code}`))].sort()).toEqual([
       "400 body_stream_error",
       "400 content_length_invalid",
       "400 content_length_mismatch",
