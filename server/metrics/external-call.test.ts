@@ -481,6 +481,135 @@ describe("createExternalCaller", () => {
     });
   });
 
+  // QA FAIL on 002ed3e0 (c.6915658985): availability is asked again before
+  // every retry, so a parallel call over the same caller that opened the
+  // breaker meanwhile stops the retry from reaching the service.
+  describe("a retry asks again whether the service is down", () => {
+    const QA = { ...POLICY, timeoutMs: 60_000, retries: 2, downAfter: 1, downForMs: 5000 };
+    const counted = () => {
+      const reached = { read: 0, put: 0 };
+      const failing = (op: "read" | "put") => async (): Promise<string> => {
+        reached[op] += 1;
+        throw new TypeError("fetch failed");
+      };
+      return { reached, read: failing("read"), put: failing("put") };
+    };
+
+    it("a parallel failure opens the breaker during the pause: the retry does not go (QA c.6915658985)", async () => {
+      const { clock, events, caller } = setup({ ...QA, retryDelayMs: 100 });
+      const svc = counted();
+      const read = caller.call("read", svc.read, { retry: true });
+      await flush();
+      expect(svc.reached.read).toBe(1);
+      expect(await caller.call("put", svc.put)).toEqual({ ok: false, failure: "failed" });
+      expect(caller.availability()).toBe("down");
+
+      clock.advance(100);
+      expect(await read).toEqual({ ok: false, failure: "down" });
+      expect(svc.reached.read).toBe(1);
+      expect(events.at(-1)).toMatchObject({ operation: "read", outcome: "down", attempts: 1 });
+      // The stale call only reports: the window is the one the put opened.
+      expect(caller.availability()).toBe("down");
+      clock.advance(4899);
+      expect(caller.availability()).toBe("down");
+      clock.advance(1);
+      expect(caller.availability()).toBe("available");
+    });
+
+    it("the breaker opens before the pause: the call ends at once as down", async () => {
+      const { events, caller } = setup({ ...QA, retryDelayMs: 100 });
+      let release: (e: Error) => void = () => {};
+      let reached = 0;
+      const read = caller.call(
+        "read",
+        () => ((reached += 1), new Promise<string>((_, reject) => (release = reject))),
+        { retry: true },
+      );
+      await flush();
+      await caller.call("put", async () => {
+        throw new TypeError("fetch failed");
+      });
+      release(new TypeError("fetch failed"));
+      expect(await read).toEqual({ ok: false, failure: "down" });
+      expect(reached).toBe(1);
+      expect(events.at(-1)).toMatchObject({ outcome: "down", attempts: 1, durationMs: 0 });
+    });
+
+    it("the window ended but no probe ran yet: the retry does not become one", async () => {
+      const { clock, caller } = setup({ ...QA, retryDelayMs: 6000 });
+      const svc = counted();
+      const read = caller.call("read", svc.read, { retry: true });
+      await flush();
+      await caller.call("put", svc.put);
+      clock.advance(6000);
+      expect(await read).toEqual({ ok: false, failure: "down" });
+      expect(svc.reached.read).toBe(1);
+      // The next fresh call is the single probe, alone and without retry.
+      expect(await caller.call("read", svc.read, { retry: true })).toEqual({
+        ok: false,
+        failure: "failed",
+      });
+      expect(svc.reached.read).toBe(2);
+    });
+
+    it("another call is the probe: the retry does not go", async () => {
+      const { clock, caller } = setup({ ...QA, retryDelayMs: 6000 });
+      const svc = counted();
+      const read = caller.call("read", svc.read, { retry: true });
+      await flush();
+      await caller.call("put", svc.put);
+      clock.advance(5000);
+      let release: (v: string) => void = () => {};
+      const probe = caller.call("head", () => new Promise<string>((r) => (release = r)));
+      await flush();
+      expect(caller.availability()).toBe("down");
+      clock.advance(1000);
+      expect(await read).toEqual({ ok: false, failure: "down" });
+      expect(svc.reached.read).toBe(1);
+      release("back");
+      expect(await probe).toEqual({ ok: true, value: "back" });
+      expect(caller.availability()).toBe("available");
+    });
+
+    it("every retry asks, not only the first", async () => {
+      const { clock, caller } = setup({ ...QA, retryDelayMs: 100 });
+      const svc = counted();
+      const read = caller.call("read", svc.read, { retry: true });
+      await flush();
+      clock.advance(100);
+      await flush();
+      expect(svc.reached.read).toBe(2);
+      await caller.call("put", svc.put);
+      clock.advance(100);
+      expect(await read).toEqual({ ok: false, failure: "down" });
+      expect(svc.reached.read).toBe(2);
+    });
+
+    it("the probe closed the breaker again during the pause: the retry goes", async () => {
+      const { clock, caller } = setup({ ...QA, retryDelayMs: 6000 });
+      let reached = 0;
+      const read = caller.call(
+        "read",
+        async () => {
+          reached += 1;
+          if (reached === 1) throw new TypeError("fetch failed");
+          return "back";
+        },
+        { retry: true },
+      );
+      await flush();
+      await caller.call("put", async () => {
+        throw new TypeError("fetch failed");
+      });
+      clock.advance(5000);
+      expect(await caller.call("head", async () => "probe")).toEqual({ ok: true, value: "probe" });
+      clock.advance(1000);
+      expect(await read).toEqual({ ok: true, value: "back" });
+      expect(reached).toBe(2);
+      expect(caller.availability()).toBe("available");
+    });
+  });
+
   it("survives an event sink that throws", async () => {
     const caller = createExternalCaller("keys", POLICY, {
       onEvent: () => {

@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { guardEmail } from "../../server/external/email/index.ts";
-import { guardKeys } from "../../server/external/keys/index.ts";
+import { guardKeys, kmsTransportError } from "../../server/external/keys/index.ts";
 import { guardStorage } from "../../server/external/storage/index.ts";
 import {
   createExternalCaller,
@@ -123,5 +123,71 @@ describe("retry only where the operation is idempotent", () => {
     gate.clock.advance(POLICY.retryDelayMs);
     expect(await read).toEqual({ status: "unavailable", reason: "storage_unavailable" });
     expect(fake.gate.reached()).toBe(3);
+  });
+});
+
+// QA FAIL on 002ed3e0 (c.6915658985): every retry path of the three guards asks
+// again whether the service is down. Email has no retry path: a send goes once.
+describe("a retry does not reach a service that went down during the pause", () => {
+  const QA = { timeoutMs: 60_000, retries: 2, retryDelayMs: 100, downAfter: 1, downForMs: 5000 };
+  const ENVELOPE = {
+    algorithm: "Ed25519",
+    keyId: "k",
+    keyVersion: "v",
+    encoding: "base64url",
+    signature: "AA",
+  } as const;
+
+  function guarded(service: "storage" | "keys") {
+    const holder: { gate?: FakeGate } = {};
+    const caller = createExternalCaller(service, QA, {
+      now: () => holder.gate?.clock.nowMs() ?? 0,
+      sleep: (ms, signal) => (holder.gate as FakeGate).clock.sleep(ms, signal),
+    });
+    if (service === "storage") {
+      const fake = createFakeStorage({ mode: "down" });
+      holder.gate = fake.gate;
+      return { fake, caller, storage: guardStorage(fake, caller) };
+    }
+    const fake = createFakeKeys({ mode: "down" });
+    holder.gate = fake.gate;
+    return { fake, caller, keys: guardKeys(fake, caller) };
+  }
+
+  const paths = [
+    ["storage", "readImmutable"],
+    ["storage", "headImmutable"],
+    ["keys", "verify"],
+    ["keys", "publicVerificationKey"],
+  ] as const;
+
+  it.each(paths)("%s %s", async (service, path) => {
+    const { fake, caller, storage, keys } = guarded(service);
+    const retried = (): Promise<unknown> =>
+      storage
+        ? path === "readImmutable"
+          ? storage.readImmutable(IDS)
+          : storage.headImmutable({ ...IDS, payloadBytes: 2 })
+        : path === "verify"
+          ? keys.verify(new Uint8Array([1]), ENVELOPE as never)
+          : keys.publicVerificationKey();
+    const once = (): Promise<unknown> =>
+      storage
+        ? storage.putImmutable({ ...IDS, canonicalPayload: "{}" })
+        : keys.sign(new Uint8Array([1]));
+
+    const pending = retried();
+    await flush();
+    expect(fake.gate.reached()).toBe(1);
+    await once();
+    expect(fake.gate.reached()).toBe(2);
+    expect(caller.availability()).toBe("down");
+    fake.gate.clock.advance(QA.retryDelayMs);
+    expect(await pending).toEqual(
+      storage
+        ? { status: "unavailable", reason: "storage_down" }
+        : { ok: false, error: kmsTransportError("network") },
+    );
+    expect(fake.gate.reached()).toBe(2);
   });
 });

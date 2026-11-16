@@ -14,7 +14,9 @@
  *   `down` for `downForMs` and calls do not reach it; afterwards one probe goes
  *   alone and without retry, and other calls stay `down` until it ends. A call
  *   that started before the availability changed only reports when it ends:
- *   it neither counts, nor opens, nor closes.
+ *   it neither counts, nor opens, nor closes. Every retry asks again: once a
+ *   parallel call over the same caller moved the service to `down` or to its
+ *   probe, the call ends as `down` without reaching the service.
  * - Event: one `external_call` per call with closed fields only. No message,
  *   argument or answer of the service ever goes into it, so a key, password
  *   or address has nowhere to travel.
@@ -181,7 +183,7 @@ export function createExternalCaller(
     }
     let ok = false;
     try {
-      const result = await guarded(operation, run, options, start, admitted.probe);
+      const result = await guarded(operation, run, options, start, admitted);
       ok = result.ok;
       return result;
     } finally {
@@ -195,8 +197,12 @@ export function createExternalCaller(
     run: (signal: AbortSignal) => Promise<T>,
     options: ExternalCallOptions<T>,
     start: number,
-    probe: boolean,
+    admitted: { epoch: number; probe: boolean },
   ): Promise<ExternalCallResult<T>> {
+    const probe = admitted.probe;
+    // A retry goes only while the breaker is where the call found it, or
+    // closed again; open (expired or not) or probing means `down`.
+    const blocked = (): boolean => admitted.epoch !== epoch && breaker.state !== "closed";
     const deadline = start + policy.timeoutMs;
     const work = new AbortController();
     const timer = new AbortController();
@@ -213,6 +219,7 @@ export function createExternalCaller(
         // The deadline is absolute: no attempt starts at or after it, and an
         // answer that arrives after it is dropped, however the timers ran.
         if (now() >= deadline || work.signal.aborted) return { ok: false, failure: "timeout" };
+        if (attempts > 0 && blocked()) return { ok: false, failure: "down" };
         attempts += 1;
         const result = await attempt(run, work.signal);
         const good = result.done && !options.failed?.(result.value);
@@ -221,6 +228,7 @@ export function createExternalCaller(
         if (good) return { ok: true, value: result.value };
         answered = result.done ? { value: result.value } : undefined;
         const more = !probe && options.retry === true && attempts <= policy.retries;
+        if (more && blocked()) return { ok: false, failure: "down" };
         if (!more || now() + policy.retryDelayMs >= deadline || work.signal.aborted)
           return answered
             ? { ok: false, failure: "failed", answer: answered.value }
