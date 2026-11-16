@@ -1,15 +1,36 @@
 // Readiness outcomes (S-1E-d, DAN-839-3a; port of Ductus src/server/ready.ts at
 // b36c82b): classifyQueue, classifyStorage, signingOutcome and singleFlight.
 // A service answer becomes a word of the ready contract only when it is
-// recognised exactly; anything else throws an Error with an own `code`. These
-// are log-only readiness codes, not AppError (docs/CODE_STYLE.md §8): the core
-// (ready.ts) turns a throw into "nedostupno" and keeps only the code. The real
-// probes (839-3b) use them.
+// recognised exactly; anything else is an expected failure, returned as a
+// Result with an AppError (docs/CODE_STYLE.md §8), never thrown. The real
+// probes (839-3b) hand the code to the core (ready.ts), which reports
+// "nedostupno" with that code and never a message.
 import { SIGNING_ERRORS, type SigningKeyProvider } from "../external/keys/index.ts";
 
-type Answer = "ok" | "nije_konfigurirano";
+// Result and AppError of server/domain, read through the signing port: http
+// may not import domain (scripts/lint-rules/area-boundary.ts).
+type PortResult = Awaited<ReturnType<SigningKeyProvider["publicVerificationKey"]>>;
+type AppError = Extract<PortResult, { ok: false }>["error"];
+type Result<T> = { ok: true; value: T } | { ok: false; error: AppError };
 
-const refusal = (code: string): Error => Object.assign(new Error("readiness refused"), { code });
+export type ReadyAnswer = "ok" | "nije_konfigurirano";
+
+const error = (code: string, messageKey: string): AppError => Object.freeze({ code, messageKey });
+/** The worker queue is not there to take jobs, or its row is not recognised. */
+export const READY_QUEUE_WORKER = error("QUEUE_WORKER", "ready.queue_worker");
+/** A storage domain is not verified, or the states are not recognised. */
+export const READY_STORAGE_DOMAIN = error("STORAGE_DOMAIN", "ready.storage_domain");
+/** The signing port answered with a shape or code it does not have, or threw. */
+export const READY_SIGNING = error("SIGNING", "ready.signing");
+/** Every error the outcomes return besides the signing port's own, for the locale test. */
+export const READY_ERRORS: readonly AppError[] = [
+  READY_QUEUE_WORKER,
+  READY_STORAGE_DOMAIN,
+  READY_SIGNING,
+];
+
+const answer = (value: ReadyAnswer): Result<ReadyAnswer> => ({ ok: true, value });
+const failure = (fault: AppError): Result<ReadyAnswer> => ({ ok: false, error: fault });
 
 /** The own data properties of a plain record, or null for anything else. */
 function plainRecord(value: unknown): Map<PropertyKey, PropertyDescriptor> | null {
@@ -29,23 +50,24 @@ const field = (fields: Map<PropertyKey, PropertyDescriptor> | null, key: string)
   fields?.get(key)?.value;
 
 /** The worker queue row of the catalogue query: only the two exact words pass. */
-export function classifyQueue(row: unknown): Answer {
+export function classifyQueue(row: unknown): Result<ReadyAnswer> {
   let queue: unknown;
   try {
     queue = field(plainRecord(row), "queue");
   } catch {
-    throw refusal("QUEUE_WORKER");
+    return failure(READY_QUEUE_WORKER);
   }
-  if (queue === "ok" || queue === "nije_konfigurirano") return queue;
-  throw refusal("QUEUE_WORKER");
+  return queue === "ok" || queue === "nije_konfigurirano"
+    ? answer(queue)
+    : failure(READY_QUEUE_WORKER);
 }
 
 /**
  * Storage domains as verifyAll reports them: no domain is not configured,
  * every domain verified is ok, and anything else is a fault.
  */
-export function classifyStorage(states: unknown): Answer {
-  if (states === "not_configured") return "nije_konfigurirano";
+export function classifyStorage(states: unknown): Result<ReadyAnswer> {
+  if (states === "not_configured") return answer("nije_konfigurirano");
   let values: unknown[] | null;
   try {
     const fields = plainRecord(states);
@@ -57,34 +79,37 @@ export function classifyStorage(states: unknown): Answer {
   } catch {
     values = null;
   }
-  if (values === null) throw refusal("STORAGE_DOMAIN");
-  if (values.length === 0) return "nije_konfigurirano";
-  if (values.every((state) => state === "verified")) return "ok";
-  throw refusal("STORAGE_DOMAIN");
+  if (values === null) return failure(READY_STORAGE_DOMAIN);
+  if (values.length === 0) return answer("nije_konfigurirano");
+  if (values.every((state) => state === "verified")) return answer("ok");
+  return failure(READY_STORAGE_DOMAIN);
 }
 
-const SIGNING_CODES: ReadonlySet<string> = new Set(SIGNING_ERRORS.map((error) => error.code));
+const SIGNING_BY_CODE: ReadonlyMap<string, AppError> = new Map(
+  SIGNING_ERRORS.map((fault) => [fault.code, fault]),
+);
 const SIGNING_NOT_CONFIGURED = "SIGNING_KEY_NOT_CONFIGURED";
 
 /**
  * Ok when the port gives its public key; a key not configured is
- * "nije_konfigurirano"; another code of the port is thrown as itself, and an
- * unknown shape, code, throw or rejection as SIGNING.
+ * "nije_konfigurirano"; another code of the port is returned as the port's own
+ * AppError (from SIGNING_ERRORS), and an unknown shape, code, throw or
+ * rejection as READY_SIGNING. Never throws.
  */
 export async function signingOutcome(
   publicKey: SigningKeyProvider["publicVerificationKey"],
-): Promise<Answer> {
+): Promise<Result<ReadyAnswer>> {
   let code: unknown;
   try {
     const result = plainRecord(await publicKey());
-    if (field(result, "ok") === true) return "ok";
+    if (field(result, "ok") === true) return answer("ok");
     code =
       field(result, "ok") === false ? field(plainRecord(field(result, "error")), "code") : null;
   } catch {
     code = null;
   }
-  if (code === SIGNING_NOT_CONFIGURED) return "nije_konfigurirano";
-  throw refusal(typeof code === "string" && SIGNING_CODES.has(code) ? code : "SIGNING");
+  if (code === SIGNING_NOT_CONFIGURED) return answer("nije_konfigurirano");
+  return failure((typeof code === "string" && SIGNING_BY_CODE.get(code)) || READY_SIGNING);
 }
 
 /**

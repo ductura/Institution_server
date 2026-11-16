@@ -1,29 +1,37 @@
 // Readiness outcomes (S-1E-d, DAN-839-3a; port of Ductus src/server/ready.ts at
 // b36c82b): a service answer becomes a contract word only when it is recognised
-// exactly; anything else throws a log-only code the core turns into
-// "nedostupno". Contract: Ductus#1836 c.6931237510.
-import { createFakeClock } from "@ductura/test-fakes/clock";
+// exactly; anything else is a returned AppError (docs/CODE_STYLE.md §8), never
+// a throw. Contract: Ductus#1836 c.6931237510.
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it, vi } from "vitest";
 
 import { SIGNING_ERRORS } from "../external/keys/index.ts";
-import { classifyQueue, classifyStorage, signingOutcome, singleFlight } from "./ready-outcomes.ts";
-import { createReadyCheck, type ReadyCapabilityName } from "./ready.ts";
+import {
+  classifyQueue,
+  classifyStorage,
+  READY_ERRORS,
+  READY_SIGNING,
+  READY_STORAGE_DOMAIN,
+  READY_QUEUE_WORKER,
+  signingOutcome,
+  singleFlight,
+} from "./ready-outcomes.ts";
 
 const CANARY = "kms.invalid:443 key 16.4";
-const codeOf = (run: () => unknown): unknown => {
-  try {
-    run();
-  } catch (error) {
-    expect(String((error as Error).message)).not.toContain("invalid");
-    return (error as { code?: unknown }).code;
-  }
-  return "no throw";
-};
-const rejectionCode = (promise: Promise<unknown>): Promise<unknown> =>
-  promise.then(
-    () => "no throw",
-    (error: unknown) => (error as { code?: unknown }).code,
-  );
+const catalogue: unknown = JSON.parse(
+  readFileSync(new URL("../../locales/hr.json", import.meta.url), "utf8"),
+);
+const textAt = (key: string): unknown =>
+  key
+    .split(".")
+    .reduce<unknown>(
+      (node, part) =>
+        node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined,
+      catalogue,
+    );
+const ok = (value: string) => ({ ok: true, value });
+const fails = (error: unknown) => ({ ok: false, error });
 const inherited = (key: string, value: unknown): object =>
   Object.create({ [key]: value }) as object;
 const getter = (key: string, value: unknown): object =>
@@ -58,13 +66,17 @@ describe("classifyQueue", () => {
       queue = "ok";
     })(),
   ])("refuses case %#", (row) => {
-    expect(codeOf(() => classifyQueue(row))).toBe("QUEUE_WORKER");
+    expect(classifyQueue(row)).toEqual(fails(READY_QUEUE_WORKER));
   });
 
   it("queue passes only the two exact words", () => {
-    expect(classifyQueue({ queue: "ok" })).toBe("ok");
-    expect(classifyQueue(JSON.parse('{"queue":"nije_konfigurirano"}'))).toBe("nije_konfigurirano");
-    expect(classifyQueue(Object.assign(Object.create(null) as object, { queue: "ok" }))).toBe("ok");
+    expect(classifyQueue({ queue: "ok" })).toEqual(ok("ok"));
+    expect(classifyQueue(JSON.parse('{"queue":"nije_konfigurirano"}'))).toEqual(
+      ok("nije_konfigurirano"),
+    );
+    expect(classifyQueue(Object.assign(Object.create(null) as object, { queue: "ok" }))).toEqual(
+      ok("ok"),
+    );
   });
 });
 
@@ -88,14 +100,14 @@ describe("classifyStorage", () => {
     inherited("toString", "verified"),
     trap(),
   ])("refuses case %#", (states) => {
-    expect(codeOf(() => classifyStorage(states))).toBe("STORAGE_DOMAIN");
+    expect(classifyStorage(states)).toEqual(fails(READY_STORAGE_DOMAIN));
   });
 
   it("storage is ok only when every domain is verified", () => {
-    expect(classifyStorage("not_configured")).toBe("nije_konfigurirano");
-    expect(classifyStorage({})).toBe("nije_konfigurirano");
-    expect(classifyStorage(Object.create(null))).toBe("nije_konfigurirano");
-    expect(classifyStorage({ a: "verified", b: "verified" })).toBe("ok");
+    expect(classifyStorage("not_configured")).toEqual(ok("nije_konfigurirano"));
+    expect(classifyStorage({})).toEqual(ok("nije_konfigurirano"));
+    expect(classifyStorage(Object.create(null))).toEqual(ok("nije_konfigurirano"));
+    expect(classifyStorage({ a: "verified", b: "verified" })).toEqual(ok("ok"));
   });
 });
 
@@ -116,7 +128,7 @@ describe("signingOutcome", () => {
     { ok: false, error: getter("code", "SIGNING_KEY_NOT_CONFIGURED") },
     trap(),
   ])("refuses case %#", async (result) => {
-    await expect(rejectionCode(signingOutcome(port(result)))).resolves.toBe("SIGNING");
+    await expect(signingOutcome(port(result))).resolves.toEqual(fails(READY_SIGNING));
   });
 
   it("a port that throws or rejects is SIGNING, whatever its code", async () => {
@@ -124,22 +136,23 @@ describe("signingOutcome", () => {
     const throws = () => {
       throw thrown;
     };
-    await expect(rejectionCode(signingOutcome(throws))).resolves.toBe("SIGNING");
-    await expect(rejectionCode(signingOutcome(() => Promise.reject(thrown)))).resolves.toBe(
-      "SIGNING",
+    await expect(signingOutcome(throws)).resolves.toEqual(fails(READY_SIGNING));
+    await expect(signingOutcome(() => Promise.reject(thrown))).resolves.toEqual(
+      fails(READY_SIGNING),
     );
   });
 
   it("signing maps the port result", async () => {
-    await expect(signingOutcome(port({ ok: true, value: {} }))).resolves.toBe("ok");
+    await expect(signingOutcome(port({ ok: true, value: {} }))).resolves.toEqual(ok("ok"));
     const missing = { code: "SIGNING_KEY_NOT_CONFIGURED", messageKey: "x" };
-    await expect(signingOutcome(port({ ok: false, error: missing }))).resolves.toBe(
-      "nije_konfigurirano",
+    await expect(signingOutcome(port({ ok: false, error: missing }))).resolves.toEqual(
+      ok("nije_konfigurirano"),
     );
-    for (const error of SIGNING_ERRORS.filter((e) => e.code !== missing.code))
-      await expect(rejectionCode(signingOutcome(port({ ok: false, error })))).resolves.toBe(
-        error.code,
-      );
+    for (const error of SIGNING_ERRORS.filter((e) => e.code !== missing.code)) {
+      const copy = { code: error.code, messageKey: CANARY };
+      // The port's own AppError comes back, not whatever key the answer carried.
+      await expect(signingOutcome(port({ ok: false, error: copy }))).resolves.toEqual(fails(error));
+    }
   });
 });
 
@@ -186,40 +199,33 @@ describe("singleFlight", () => {
   });
 });
 
-describe("through the readiness core", () => {
-  it("a classifier refusal reaches the report as its code", async () => {
-    const clock = createFakeClock();
-    const failing = (code: string) => {
-      const error = SIGNING_ERRORS.find((e) => e.code === code) ?? { code, messageKey: "x" };
-      return signingOutcome(() => Promise.resolve({ ok: false, error }) as never);
-    };
-    const cases: readonly [
-      ReadyCapabilityName,
-      () => Promise<"ok" | "nije_konfigurirano">,
-      string,
-    ][] = [
-      ["queue", async () => classifyQueue({ queue: "ok\n" }), "QUEUE_WORKER"],
-      ["storage", async () => classifyStorage({ a: "disabled" }), "STORAGE_DOMAIN"],
-      ["signing", () => failing(CANARY), "SIGNING"],
-    ];
-    const signingCodes = SIGNING_ERRORS.map((e) => e.code).filter(
-      (code) => code !== "SIGNING_KEY_NOT_CONFIGURED",
-    );
-    for (const [name, probe, code] of [
-      ...cases,
-      ...signingCodes.map((code) => ["signing", () => failing(code), code] as const),
-    ]) {
-      const check = createReadyCheck([{ name, required: false, timeoutMs: 100, probe }], {
-        now: () => clock.nowMs(),
-        sleep: (ms, signal) => clock.sleep(ms, signal),
-      });
-      const report = await check();
-      expect(report).toEqual({
-        ready: true,
-        capabilities: { [name]: "nedostupno" },
-        codes: { [name]: code },
-      });
-      expect(JSON.stringify(report)).not.toContain("invalid");
+describe("returned errors (docs/CODE_STYLE.md §8)", () => {
+  it("each has a Croatian text and a code the readiness core keeps", () => {
+    for (const { code, messageKey } of [...READY_ERRORS, ...SIGNING_ERRORS]) {
+      const text = textAt(messageKey);
+      expect(typeof text === "string" && text.trim().length > 0, messageKey).toBe(true);
+      // The core's code shape (ready.ts), so 839-3b can report it as given.
+      expect(code).toMatch(/^[A-Z0-9_]{1,32}$/);
     }
+    expect(new Set(READY_ERRORS.map((e) => e.code)).size).toBe(READY_ERRORS.length);
+    expect(Object.keys(textAt("ready") as object).sort()).toEqual(
+      READY_ERRORS.map((e) => e.messageKey.replace("ready.", "")).sort(),
+    );
+  });
+
+  it("no outcome throws, whatever it is given", async () => {
+    const hostile = new Proxy(
+      {},
+      {
+        getPrototypeOf: () => {
+          throw new Error(CANARY);
+        },
+      },
+    );
+    expect(classifyQueue(hostile)).toEqual(fails(READY_QUEUE_WORKER));
+    expect(classifyStorage(hostile)).toEqual(fails(READY_STORAGE_DOMAIN));
+    await expect(signingOutcome(() => Promise.resolve(hostile) as never)).resolves.toEqual(
+      fails(READY_SIGNING),
+    );
   });
 });
