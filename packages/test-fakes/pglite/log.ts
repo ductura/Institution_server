@@ -1,6 +1,7 @@
 import type { PGlite, Transaction } from "@electric-sql/pglite";
 
-import { createPgliteDatabase } from "./database.ts";
+import { databaseNamed } from "../../../scripts/db/index.ts";
+import { migratedDump, openDump, sourceOf } from "./database.ts";
 
 // U9-b (DAN-741), S-1K.2-a (DAN-813): the fake log database is the logs
 // database itself, migrated in PGlite (db/logs/migrations), so it is
@@ -28,8 +29,20 @@ type Row = { id: string | number; at: Date; kind: string; payload: unknown };
 const toEntry = (row: Row): LogEntry => ({ ...row, id: Number(row.id) });
 const COLUMNS = "id, at, kind, payload";
 
+// The logs database is migrated once per process; every call opens its own
+// copy of that dump, so each fake is still a database of its own.
+const LOGS = databaseNamed("logs");
+let dump: Promise<Blob> | undefined;
+function logsDump(): Promise<Blob> {
+  dump ??= migratedDump(sourceOf(LOGS), LOGS).catch((error: unknown) => {
+    dump = undefined;
+    throw error;
+  });
+  return dump;
+}
+
 export async function createFakeLogDatabase(): Promise<FakeLogDatabase> {
-  const { db, close } = await createPgliteDatabase({ database: "logs" });
+  const db = await openDump(await logsDump(), LOGS.database);
   const read = (tx: Transaction, sql: string): Promise<Row[]> =>
     tx.exec("SET LOCAL ROLE ductus_logs_reader").then(async () => (await tx.query<Row>(sql)).rows);
   return {
@@ -56,6 +69,6 @@ export async function createFakeLogDatabase(): Promise<FakeLogDatabase> {
       db.transaction(async (tx) =>
         (await read(tx, `SELECT ${COLUMNS} FROM public.log_entry ORDER BY id`)).map(toEntry),
       ),
-    close,
+    close: () => db.close(),
   };
 }
