@@ -139,7 +139,13 @@ export const EVENT_CATALOG = {
   "session.expired": { actors: SIGNED_IN, fields: { reason: code("idle", "absolute") } },
   "session.revoked": {
     actors: SIGNED_IN,
-    fields: { reason: code("logout", "backchannel_logout", "role_changed", "account_disabled") },
+    // The close reasons of identity.session (server/session/state.ts, DAN-830).
+    fields: {
+      reason: code(
+        ...["logout", "logout_all", "backchannel_logout", "institution_changed"],
+        ...["issuer_removed", "operator", "superseded", "role_changed", "account_disabled"],
+      ),
+    },
   },
   "session.cookie_rejected": {
     actors: ANONYMOUS,
