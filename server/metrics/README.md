@@ -1,6 +1,6 @@
 # server/metrics
 
-Područje iz [karte servera](../../docs/server-map.md). Rute, sheme i servis su za sada prazni (S-1A-a); logika su obrazac poziva vanjske usluge (S-1E-c, DAN-837), sakupljač metrika i upis uzoraka u `metric_sample` (S-1K.4-b, DAN-834).
+Područje iz [karte servera](../../docs/server-map.md). Rute, sheme i servis su za sada prazni (S-1A-a); logika su obrazac poziva vanjske usluge (S-1E-c, DAN-837), sakupljač metrika, upis uzoraka u `metric_sample` i izvor stanja veza na baze (S-1K.4-b, DAN-834).
 
 ## Što radi
 
@@ -11,6 +11,8 @@ Brojači i trajanja za nadzor (zahtjevi, odbijanja, trajanje RPC-a).
 `createMetricsCollector({ intervalMs, collect, write, onSkip })` (`collector.ts`, DAN-834-1) svakih `intervalMs` pokreće jedan krug: `collect`, pa `write` onoga što je dao. Prvi krug je nakon prvog intervala; sakupljač ne čita sat zida, raspored drži samo tajmer, a tajmer ne drži proces živim (`unref`). Dok prethodni krug radi, novi se ne pokreće i javlja se `busy`; greška ili odbijeno obećanje iz `collect` ili `write` preskače krug (`collect_failed`, `write_failed`), a sljedeći krug ide normalno. `onSkip` dobiva samo kod s popisa `METRICS_SKIP_REASONS`, nikad poruku greške, i ni njegova greška ne izlazi iz sakupljača. `stop()` je konačan: gasi tajmer, čeka krug u tijeku i nikad se ne odbija. `intervalMs` je cijeli broj od 1 do 2^31 − 1 ms, a `collect`, `write` i zadani `onSkip` moraju biti funkcije, inače `RangeError` prije tajmera. Sakupljač ne uvozi ništa: izvore (zapis prometa, trajanje, veze na baze) i upis u `metric_sample` predaje sastavljač (DAN-834-2 i 834-3), jer `metrics` smije uvoziti samo `settings`. Sinkroni `collect` ili `write` koji blokira ne može se prekinuti; rok upisa nosi adapter.
 
 `createMetricSampleWriter({ store, deadlineMs })` (`sample-writer.ts`, DAN-834-2) je `write` sakupljača za `metric_sample` u bazi zapisa. Krug je jedna naredba (`METRIC_SAMPLE_INSERT`, `jsonb_to_recordset` nad jednim JSON parametrom), pa se upisuju svi uzorci kruga ili nijedan; prazan krug ne šalje upit, a izostavljene oznake postaju `{}`. Zatvorene popise (metrika, vrijednost 0 … 2^53 − 1, oznake `database` i `service`) drže samo `CHECK` ograničenja tablice (DAN-833); tip ih sužava, a uzorak izvan njih baza odbija. Pad baze, odbijanje, istek roka (`deadlineMs`, zadano `METRICS_WRITE_DEADLINE_MS` = 1000 ms, cijeli broj od 1 do 2^31 − 1, inače `RangeError`) i upit prethodnog kruga koji još čeka odbijaju `write` fiksnom greškom bez poruke baze; sakupljač tada javlja `write_failed` i idući interval radi normalno. Najviše jedan upit čeka bazu, pa baza koja visi ne gomila upite. Odbijanje je signal porta sakupljača (DAN-834-1), ne rezultat za pozivatelja: nitko izvan sakupljača ga ne vidi. `store` je `pg.Pool` ili klijent s prijavom u skupini `ductus_logs_writer` koji stvara sastavljač (DAN-834-3); rok ne prekida upit u bazi, to radi `query_timeout` bazena.
+
+`createConnectionSource(health)` (`connection-source.ts`, DAN-834-4a) je dio `collect` za stanje veza na baze: iz izvješća `health()` registra baza daje uzorke `database_connections` s oznakom `database` redom `main`, `logs`, `legal`, vrijednost `1` za `ok` i `0` za sve ostalo; za bazu s `nije_konfigurirano` nema uzorka. Čita samo vlastita podatkovna svojstva (getter, naslijeđeni ključ i zamka daju `0`), a greška, odbijanje ili ne-objekt iz `health` daju sve tri `0`; obećanje se nikad ne odbija. Uzorak je od samih konstanti, pa niz za spajanje, korisnik ni tekst greške ne mogu ući u njega. `health` mora biti funkcija, inače `RangeError`. Rok nosi `health()` registra (2 s); sastavljač ga predaje u DAN-834-5.
 
 ## Tko ga zove
 
@@ -27,7 +29,8 @@ Metrika u memoriji i njezin izvoz za nadzor; uzorke upisuje u `metric_sample` ba
 - `MetricsService`: tip servisa bez članova (`service.ts`);
 - `createExternalCaller`, `EXTERNAL_SERVICES`, `EXTERNAL_CALL_OUTCOMES` i tipovi obrasca (`external-call.ts`);
 - `createMetricsCollector`, `METRICS_SKIP_REASONS` i tipovi `MetricsCollector`, `MetricsCollectorOptions`, `MetricsSkipReason` (`collector.ts`);
-- `createMetricSampleWriter`, `METRIC_SAMPLE_INSERT`, `METRICS_WRITE_DEADLINE_MS` i tipovi `MetricName`, `MetricSample`, `MetricSampleStore`, `MetricSampleWriterOptions` (`sample-writer.ts`).
+- `createMetricSampleWriter`, `METRIC_SAMPLE_INSERT`, `METRICS_WRITE_DEADLINE_MS` i tipovi `MetricName`, `MetricSample`, `MetricSampleStore`, `MetricSampleWriterOptions` (`sample-writer.ts`);
+- `createConnectionSource` (`connection-source.ts`).
 
 ## Što ne smije uvoziti
 
