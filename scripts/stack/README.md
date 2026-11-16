@@ -98,6 +98,8 @@ Server stoga dobiva `NODE_ENV=development`, `EVIDENCE_STORAGE_DOMAINS`, `EVIDENC
 - `processes.test.ts`: gašenje samo vlastitih procesa, bez SIGKILL-a preuzetom PID-u, čekanje healtha i slobodan port.
 - `state.test.ts`: SHA, verzije (i PostgreSQL), datoteka 0600, oštećeno stanje i portovi 3000–3004.
 - `evidence.test.ts`: sjeme izvan checkouta, `0600` i bez prepisivanja; nove S3 vjerodajnice za svaki `up`; oznaka bucketa; točne varijable servera. Uz produkcijski `NODE_ENV` server ne dobiva ni razvojni potpisnik ni lokalni S3 (503), a nema ni OIDC issuera (D-09).
+- `evidence.integration.test.ts`: adapter pohrane servera, iz okoline koju stog daje serveru, sprema i ponovno nalazi objekt kroz lokalni S3; potpisnik pod development potpisuje sjemenom stoga.
+- `ports.integration.test.ts`: nijedan zadani port nije onaj koji `fetch` odbija („bad port”), a 4190 jest.
 - `local-s3.integration.test.ts`: ugovorni test lokalnog S3 s pravim `S3EvidencePayloadStore` (stored, existing, conflict, čitanje, HEAD, identitet bucketa), odbijeni potpisi, putanje, veze, granica tijela i istodobni zapis, te odbijanje u produkciji (ductura/server#129, S1–S9, P1, P3).
 - `vs1.integration.test.ts`:
   - skripta odbija bez pokretanja ičega;

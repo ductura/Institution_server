@@ -83,6 +83,13 @@ describe("state", () => {
     // DAN-787: a port of another stack is never ours, so status and down never ask it.
     ['{"ports": {"postgres": 54360, "server": 3000, "oidc": 4180, "s3": 4191}, "processes": {}}'],
     ['{"ports": {"postgres": 3004, "server": 4100, "oidc": 4180, "s3": 4191}, "processes": {}}'],
+    // DAN-817: the local S3 port follows the same rules, and must be there.
+    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 3000}, "processes": {}}'],
+    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": "4191"}, "processes": {}}'],
+    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {}}'],
+    [
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4191}, "processes": {"s3": {"pid": 1}}}',
+    ],
     // QA c.6900731697: an extra key would be a port down probes.
     [
       '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4191, "web": 3000}, "processes": {}}',
@@ -133,5 +140,25 @@ describe("postgresVersion (DAN-787)", () => {
 
   it("refuses an answer without a version", () => {
     expect(() => postgresVersion(fakePostgres("something else"))).toThrow(/no version/u);
+  });
+});
+
+describe("a state with the local S3 (DAN-817)", () => {
+  it("is read back whole, its s3 process included, so down can stop it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "vs1-state-s3-"));
+    try {
+      const file = join(dir, "state.json");
+      const text =
+        '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4191}, "processes": {"s3": {"pid": 7, "marker": "/n /r/scripts/stack/local-s3.ts --vs1-stack=/r"}}}';
+      writeFileSync(file, text);
+      const read = readState(file);
+      expect(read).not.toBe("unreadable");
+      expect(read === null || read === "unreadable" ? null : read.processes.s3).toEqual({
+        pid: 7,
+        marker: "/n /r/scripts/stack/local-s3.ts --vs1-stack=/r",
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

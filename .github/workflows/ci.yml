@@ -278,7 +278,7 @@ jobs:
         run: |
           pnpm build
           PATH="$PGBIN:$PATH" pnpm stack:vs1 up --env ci
-          # DAN-787: read only; 0 only when PostgreSQL, fake OIDC and the server run and answer.
+          # DAN-787, DAN-817: read only; 0 only when PostgreSQL, fake OIDC and the server run and answer, and the local S3 listens.
           PATH="$PGBIN:$PATH" pnpm stack:vs1 status
           curl -fsS http://127.0.0.1:4100/api/v1/health
           # Health reads no database: check that the server's own login reaches it.

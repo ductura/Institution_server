@@ -11,12 +11,13 @@ import {
   rmSync,
   statSync,
   symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthConfigError, loadAuthConfig } from "../../server/external/srce-auth/index.ts";
 import { loadEvidenceStorageConfig } from "../../server/external/storage/index.ts";
@@ -149,6 +150,27 @@ describe("an existing seed directory (QA c.6913087963)", () => {
   });
 });
 
+describe("ownership of the seed (self-attack M2, M5)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("refuses a directory of another user and writes nothing in it", () => {
+    const holder = join(dir, "tudji");
+    mkdirSync(holder);
+    vi.spyOn(process, "getuid").mockReturnValue(424_242);
+    expect(() => ensureSeed(join(holder, "signing-seed"), ROOT)).toThrow(/own directory/u);
+    expect(readdirSync(holder)).toEqual([]);
+  });
+
+  it("refuses a seed file of another user", () => {
+    const seed = join(dir, "s", "signing-seed");
+    ensureSeed(seed, ROOT);
+    const own = process.getuid?.() ?? 0;
+    // The directory is checked first (still ours), then the seed (now someone else's).
+    vi.spyOn(process, "getuid").mockReturnValueOnce(own).mockReturnValue(424_242);
+    expect(() => ensureSeed(seed, ROOT)).toThrow(/regular file/u);
+  });
+});
+
 describe("the local S3 credentials (K3, K4)", () => {
   it("are new for every run and fit the storage adapter's rules", () => {
     const one = newS3Credentials();
@@ -169,6 +191,14 @@ describe("the bucket's identity label (S9 on the stack)", () => {
     ensureBucketIdentity(dir, INSTITUTION);
     expect(() => ensureBucketIdentity(dir, OTHER)).toThrow(/another institution/u);
     expect(readFileSync(file, "utf8")).toBe(label);
+  });
+
+  it("refuses a label that is a link, even to the same bytes", () => {
+    const real = join(dir, "pravi.json");
+    writeFileSync(real, JSON.stringify({ institutionId: INSTITUTION, region: "us-east-1" }));
+    mkdirSync(join(dir, "b", S3_BUCKET), { recursive: true });
+    symlinkSync(real, join(dir, "b", S3_BUCKET, IDENTITY_KEY));
+    expect(() => ensureBucketIdentity(join(dir, "b"), INSTITUTION)).toThrow(/another institution/u);
   });
 });
 

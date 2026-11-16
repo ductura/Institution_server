@@ -161,6 +161,26 @@ export function oidcEnv({ ports }: StackConfig): Record<string, string> {
   };
 }
 
+/**
+ * The whole environment of the server; nothing of the caller's. NODE_ENV is
+ * development (from `evidence`) for the development signer and the loopback
+ * S3, so the server gets no OIDC issuer or auth variable at all (D-09).
+ */
+export function serverEnv(
+  config: StackConfig,
+  evidence: Record<string, string>,
+): Record<string, string> {
+  const { postgres, server } = config.ports;
+  return {
+    ...base(),
+    ...evidence,
+    HOST: "127.0.0.1",
+    PORT: String(server),
+    APP_ORIGIN: `http://127.0.0.1:${server}`,
+    APP_DATABASE_URL: `postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:${postgres}/ductus`,
+  };
+}
+
 async function start(config: StackConfig, state: stateFile.StackState): Promise<void> {
   const { postgres, server } = config.ports;
   const init = [
@@ -243,14 +263,10 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   const pid = await startDetached(process.execPath, argv, {
     cwd: ROOT,
     log: join(DIR, "server.log"),
-    env: {
-      ...base(),
-      ...serverEvidenceEnv({ institutionId, seed }, config.ports.s3, credentials),
-      HOST: "127.0.0.1",
-      PORT: String(server),
-      APP_ORIGIN: origin,
-      APP_DATABASE_URL: `postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:${postgres}/ductus`,
-    },
+    env: serverEnv(
+      config,
+      serverEvidenceEnv({ institutionId, seed }, config.ports.s3, credentials),
+    ),
   });
   // The exact command line: `down` stops the pid only while it still runs this.
   state.processes.server = { pid, marker: [process.execPath, ...argv].join(" ") };
