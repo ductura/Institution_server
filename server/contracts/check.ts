@@ -45,18 +45,23 @@ export function checkInventory(
   inventory: Readonly<Record<string, readonly Method[]>>,
   pending: readonly string[],
   fallbackFile: string,
+  serverSources: Readonly<Record<string, { readonly methods: readonly Method[] }>> = {},
 ): string[] {
   const problems = routes.flatMap(checkRoute);
+  const known = (file: string) => Boolean(inventory[file] ?? serverSources[file]);
   const ids = new Set<string>();
   for (const route of routes) {
     if (ids.has(route.id)) problems.push(`${route.id}: duplicate id`);
     ids.add(route.id);
-    if (!inventory[route.inventory])
+    if (!known(route.inventory))
       problems.push(`${route.id}: ${route.inventory} is not in the inventory`);
     if (pending.includes(route.inventory))
       problems.push(`${route.id}: ${route.inventory} is also pending`);
   }
-  for (const [file, methods] of Object.entries(inventory)) {
+  const sources = Object.entries(serverSources).map(([file, s]) => [file, s.methods] as const);
+  for (const [file] of sources)
+    if (inventory[file]) problems.push(`${file}: server source is also in the inventory`);
+  for (const [file, methods] of [...Object.entries(inventory), ...sources]) {
     if (file === fallbackFile || pending.includes(file)) continue;
     const have = routes
       .filter((r) => r.inventory === file)
