@@ -100,6 +100,28 @@ describe("N2: the list of routes is closed", () => {
     ]);
   });
 
+  it("in auth-flow.ts it is sent by finishLogin and endSessions, and they serve these routes alone", () => {
+    const flow = readFileSync("server/http/auth-flow.ts", "utf8");
+    const bodies = new Map(
+      flow
+        .split(/^(?=(?:export )?(?:async )?function )/mu)
+        .map((part) => [/function (\w+)/u.exec(part)?.[1] ?? "", part] as const),
+    );
+    const calling = (pattern: RegExp) =>
+      [...bodies].filter(([, body]) => pattern.test(body)).map(([name]) => name);
+    expect(calling(/\b(?:sessionSetCookie|clearedSessionSetCookie)\(/u)).toEqual([
+      "finishLogin",
+      "endSessions",
+    ]);
+    expect(calling(/\bendSessions\(/u)).toEqual(["logout", "logoutAll", "endSessions"]);
+    const served = [
+      ...readFileSync("server/http/auth.ts", "utf8").matchAll(/route\("([\w.-]+)", (\w+)/gu),
+    ]
+      .filter(([, , fn]) => ["finishLogin", "logout", "logoutAll"].includes(fn!))
+      .map(([, id]) => id);
+    expect(served).toEqual(ROUTES_WITH_COOKIE);
+  });
+
   it("the contract vectors set it on these routes alone", () => {
     const dir = "server/contracts/vectors";
     type Vectors = {
@@ -174,12 +196,13 @@ async function stack(mode: FakeOidcMode, failing: "close" | null = null) {
       closeAllSessions: failing === "close" ? fail : async () => undefined,
     };
   };
+  const routes = createAuthRoutes(env, load);
   app = await startServer({
     host: "127.0.0.1",
     port,
     layers: createLayers({ expectedOrigin: origin }),
     databases: createDatabases(),
-    routes: createAuthRoutes(env, load),
+    routes,
   });
   const jar = new Map<string, string>();
   /** A browser with one cookie jar and manual redirects. */
@@ -213,7 +236,7 @@ async function stack(mode: FakeOidcMode, failing: "close" | null = null) {
     );
     return go(next(await go(resume), resume));
   };
-  return { go, signIn, origin };
+  return { go, signIn, origin, routes };
 }
 
 const sessionCookies = (answer: Response) =>
@@ -233,6 +256,22 @@ describe("N3: a refused request leaves the session cookie alone", () => {
     const answer = await go(`${origin}/api/v1/auth/logout-all`, "POST");
     expect(answer.status).toBe(503);
     expect(sessionCookies(answer)).toEqual([]);
+  });
+});
+
+describe("N4: every other auth route leaves the session cookie alone", () => {
+  it("each route of createAuthRoutes outside the list, with a live session", async () => {
+    const { go, signIn, origin, routes } = await stack("success");
+    expect(sessionCookies(await signIn())).toHaveLength(1);
+    const others = routes.filter((r) => !ROUTES_WITH_COOKIE.includes(r.contract.id));
+    expect(others.map((r) => r.contract.id).sort()).toEqual([
+      "auth.backchannel-logout.post",
+      "auth.login.get",
+    ]);
+    for (const { contract } of others) {
+      const answer = await go(`${origin}${contract.path}`, contract.method);
+      expect([contract.id, sessionCookies(answer)]).toEqual([contract.id, []]);
+    }
   });
 });
 
