@@ -100,7 +100,7 @@ describe("the server environment of the stack", () => {
   const setup = () => {
     const seed = join(dir, "signing-seed");
     ensureSeed(seed);
-    return serverEvidenceEnv({ institutionId: INSTITUTION, seed }, 4190, newS3Credentials());
+    return serverEvidenceEnv({ institutionId: INSTITUTION, seed }, 4191, newS3Credentials());
   };
 
   it("names exactly the evidence variables, under NODE_ENV development", () => {
@@ -118,7 +118,7 @@ describe("the server environment of the stack", () => {
     expect(env.EVIDENCE_STORAGE_DOMAINS).not.toContain(env.EVIDENCE_S3_VS1_KEY_ID);
     const config = loadEvidenceStorageConfig(env);
     expect(config.domains.map((d) => [d.label, d.endpoint, d.bucket])).toEqual([
-      ["local-demo-fakultet", "http://127.0.0.1:4190", S3_BUCKET],
+      ["local-demo-fakultet", "http://127.0.0.1:4191", S3_BUCKET],
     ]);
   });
 

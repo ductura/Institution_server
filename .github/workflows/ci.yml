@@ -289,7 +289,7 @@ jobs:
         if: always() && steps.vs1-up.outcome != 'skipped'
         run: |
           PATH="$PGBIN:$PATH" pnpm stack:vs1 down
-          for port in 54360 4100 4180 4190; do
+          for port in 54360 4100 4180 4191; do
             if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "port $port still answers" >&2; exit 1; fi
           done
           if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata|packages/test-fakes/oidc/server.ts|scripts/stack/local-s3.ts)"; then

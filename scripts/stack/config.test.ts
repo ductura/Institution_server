@@ -11,6 +11,7 @@ import { assertFakeOidcAllowed } from "@ductura/test-fakes/oidc";
 import {
   ALLOWED_NODE_ENV,
   DEFAULT_PORTS,
+  FETCH_BAD_PORTS,
   parseArgs,
   SLOTS,
   stackConfig,
@@ -102,6 +103,34 @@ describe("stackPorts", () => {
   it("refuses one port for two services", () => {
     expect(() => stackPorts({ VS1_SERVER_PORT: "4180" })).toThrow(/differ/u);
     expect(() => stackPorts({ VS1_S3_PORT: "4100" })).toThrow(/differ/u);
+  });
+
+  it.each([
+    ["VS1_S3_PORT", "4190"],
+    ["VS1_S3_PORT", "6000"],
+    ["VS1_SERVER_PORT", "10080"],
+    ["VS1_OIDC_PORT", "5060"],
+  ])("refuses %s=%s, a port fetch refuses", (name, value) => {
+    expect(() => stackPorts({ [name]: value })).toThrow(/bad port/u);
+  });
+
+  it("has default ports fetch accepts", async () => {
+    for (const port of Object.values(DEFAULT_PORTS)) {
+      expect(FETCH_BAD_PORTS).not.toContain(port);
+      // undici's own refusal, never a connection: "bad port" only for the listed ones.
+      const fault = await fetch(`http://127.0.0.1:${port}/`, {
+        signal: AbortSignal.timeout(2000),
+      }).then(
+        () => null,
+        (error: unknown) =>
+          String((error as { cause?: { message?: string } }).cause?.message ?? ""),
+      );
+      expect(fault).not.toBe("bad port");
+    }
+    const refused = await fetch("http://127.0.0.1:4190/").catch(
+      (error: unknown) => (error as { cause?: { message?: string } }).cause?.message,
+    );
+    expect(refused).toBe("bad port");
   });
 
   it.each(["3000", "3004"])("refuses the reserved port %s for the local S3", (value) => {

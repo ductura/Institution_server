@@ -51,9 +51,11 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli
 | `VS1_POSTGRES_PORT` | 54360  | PostgreSQL           |
 | `VS1_SERVER_PORT`   | 4100   | server               |
 | `VS1_OIDC_PORT`     | 4180   | lažni OIDC pružatelj |
-| `VS1_S3_PORT`       | 4190   | lokalni S3           |
+| `VS1_S3_PORT`       | 4191   | lokalni S3           |
 
-Portovi 3000–3004 se odbijaju.
+Portovi 3000–3004 se odbijaju, kao i portovi koje `fetch` odbija (popis „bad ports”, npr. 4190): server do lokalnog S3 dolazi preko `fetch`.
+
+Stanje `state.json` iz starijeg stoga bez porta `s3` čita se kao nečitljivo; tada `down` gasi samo PostgreSQL, a stare procese treba ugasiti ručno.
 
 ## Blokada lažnog OIDC-a (D-09)
 
@@ -74,7 +76,7 @@ Portovi 3000–3004 se odbijaju.
 - Učitava izmišljene ustanove (`db/main/local/seed.sql`).
 - Stvara razvojno sjeme ključa potpisa (32 bajta, `0600`, nikad se ne prepisuje). Sjeme je izvan checkouta, jer ga potpisnik unutar repozitorija odbija. Kad je stog u `.stack/vs1`, sjeme je u `$HOME/.ductura/stack-vs1-<hash direktorija>/signing-seed`; kad je stog izvan repozitorija (testovi u `/tmp`), sjeme je u direktoriju stoga.
 - Javni ključ registrira kao ključ potvrda domene dokaza ustanove `demo-fakultet` (`db/main/local/evidence-signing-key.sql`, preko socketa stoga).
-- Upisuje oznaku identiteta bucketa u `.stack/vs1/s3/` i pokreće lokalni S3 na `VS1_S3_PORT` (zadano 4190).
+- Upisuje oznaku identiteta bucketa u `.stack/vs1/s3/` i pokreće lokalni S3 na `VS1_S3_PORT` (zadano 4191).
 - Za svaki `up` stvara nove S3 vjerodajnice. One su samo u okolini procesa lokalnog S3 i servera, nikad na disku, u `state.json` ni u argv.
 
 Server stoga dobiva `NODE_ENV=development`, `EVIDENCE_STORAGE_DOMAINS`, `EVIDENCE_S3_VS1_KEY_ID`, `EVIDENCE_S3_VS1_SECRET` i `DUCTUS_DEV_SIGNING_KEY_FILE`, a čita ih proizvodnim putem (`server/http/evidence-deps.ts`). Adresu lažnog OIDC-a i dalje ne dobiva. S istim varijablama, a s `NODE_ENV` izvan `development` i `test`, potpisnik odbija potpisivanje i pohrane nema, pa server na `evidence/commit` odgovara 503 (test u `evidence.test.ts`).

@@ -112,7 +112,7 @@ describe("pnpm stack:vs1 down without a state", () => {
 });
 
 describe("down with a state that names an extra port (QA c.6900731697)", () => {
-  it("never connects to it, and checks only the stack's three ports", async () => {
+  it("never connects to it, and checks only the stack's four ports", async () => {
     // A listener on a free port stands in for 3000: down must not report it.
     const other = createServer();
     await new Promise<void>((resolve) => other.listen(0, "127.0.0.1", resolve));
