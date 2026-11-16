@@ -224,6 +224,7 @@ SELECT is(left(pg_temp.as_owner(format($$ INSERT INTO audit.network_engineer_eve
 FROM (VALUES
   (1, '{fak_a}', '{boris_appointment}', '{boris}', 'revoked', '{iva}', '23505:', 'a second row of one kind for one appointment is refused'),
   (2, '{fak_a}', '{boris_appointment}', '{boris}', 'removed', '{iva}', '23514:', 'a kind outside the list is refused'),
+  (7, '{fak_a}', '{boris_appointment}', '{boris}', 'appointed', '{iva}', '23505:', 'a second appointed row for one appointment is refused'),
   -- Vesna's appointment is in force and has no revoked row yet, so these
   -- reach the foreign keys rather than the unique key.
   (3, '{fak_a}', '{vesna_appointment}', '{dora}', 'revoked', '{iva}', '23503:', 'another person for Vesna''s appointment is refused'),
@@ -233,13 +234,30 @@ FROM (VALUES
 ) AS v (n, inst, appointment, engineer, kind, actor, code, why)
 ORDER BY v.n;
 
--- 9. A revoked administrator is refused like any other kind.
+-- 9. A revocation racing an appointment that another administrator committed
+-- after this transaction began: its appointed_at is later than this
+-- transaction's now(). The revocation still succeeds, at that time.
+INSERT INTO identity.network_engineer_appointment (institution_id, user_id, appointed_by, appointed_at)
+VALUES (pg_temp.id('fak_a'), pg_temp.id('marko'), pg_temp.id('iva'), now() + interval '1 second');
+INSERT INTO audit.network_engineer_event (institution_id, appointment_id, engineer_id, kind, actor_id, occurred_at)
+SELECT institution_id, id, user_id, 'appointed', appointed_by, appointed_at
+  FROM identity.network_engineer_appointment WHERE user_id = pg_temp.id('marko');
+SELECT is(pg_temp.ask('iva', 'SELECT identity.revoke_network_engineer({marko})::text'), 'true',
+  'revoking an appointment made after this transaction began succeeds');
+SELECT is(
+  (SELECT a.revoked_at = a.appointed_at AND e.occurred_at = a.revoked_at
+     FROM identity.network_engineer_appointment a
+     JOIN audit.network_engineer_event e ON e.appointment_id = a.id AND e.kind = 'revoked'
+    WHERE a.user_id = pg_temp.id('marko')),
+  true, 'at the appointment''s own time, never before it');
+
+-- 10. A revoked administrator is refused like any other kind.
 SELECT ok(institution.revoke_institution_admin(pg_temp.id('iva'), 'Zahtjev iva-opoziv/2026'), 'the operator revokes Iva as administrator');
 SELECT is(pg_temp.ask('iva', 'SELECT identity.appoint_network_engineer({dora})::text'), 'ZD403: forbidden',
   'a revoked administrator cannot appoint');
 SELECT is(pg_temp.ask('iva', 'SELECT identity.revoke_network_engineer({boris})::text'), 'ZD403: forbidden',
   'nor revoke');
-SELECT is(pg_temp.appointments(), '4 3', 'and nothing changed');
+SELECT is(pg_temp.appointments(), '5 3', 'and nothing changed');
 
 SELECT * FROM finish();
 ROLLBACK;

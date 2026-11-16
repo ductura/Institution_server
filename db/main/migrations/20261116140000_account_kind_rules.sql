@@ -104,7 +104,10 @@ BEGIN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
   WITH revoked AS (
-    UPDATE identity.network_engineer_appointment a SET revoked_at = now()
+    -- now() is the start of this transaction; an appointment another
+    -- administrator committed after that start would break its CHECK
+    -- (revoked_at >= appointed_at), so the revocation is never earlier.
+    UPDATE identity.network_engineer_appointment a SET revoked_at = greatest(now(), a.appointed_at)
      WHERE a.institution_id = actor.institution_id AND a.user_id = p_user_id AND a.revoked_at IS NULL
     RETURNING a.id, a.institution_id, a.user_id, a.revoked_at
   )
