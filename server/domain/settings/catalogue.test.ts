@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   boundOfFields,
   checkSettingWrite,
+  checkWriteOf,
   defaultOf,
   fitsDefinition,
   SETTING_LEVELS,
@@ -65,6 +66,7 @@ describe("SETTINGS_CATALOGUE", () => {
     for (const definition of SETTINGS_CATALOGUE) {
       expect(Object.isFrozen(definition)).toBe(true);
       expect(Object.isFrozen(definition.levels)).toBe(true);
+      if (definition.kind === "enum") expect(Object.isFrozen(definition.values)).toBe(true);
     }
   });
 });
@@ -260,5 +262,41 @@ describe("boundOfFields", () => {
       bound: result.ok ? result.value : undefined,
     };
     expect(checkSettingWrite(write).ok).toBe(false);
+  });
+});
+
+describe("checkWriteOf: kinds the catalogue does not hold yet", () => {
+  const flag = {
+    key: "x.flag",
+    levels: ["institution", "course"],
+    kind: "boolean",
+    default: false,
+  } as const;
+  const choice = {
+    key: "x.choice",
+    levels: ["institution"],
+    kind: "enum",
+    default: "a",
+    values: ["a", "b"],
+  } as const;
+  const code = (definition: Parameters<typeof checkWriteOf>[0], write: SettingWrite) => {
+    const result = checkWriteOf(definition, write);
+    return result.ok ? null : result.error.code;
+  };
+
+  it("takes a lock on a boolean or enum key at a bound level", () => {
+    const write = { level: "institution", key: "x.flag", value: true, bound: { locked: true } };
+    expect(code(flag, write)).toBe(null);
+    expect(code(flag, { ...write, value: null })).toBe(null);
+    expect(code(choice, { ...write, key: "x.choice", value: "b" })).toBe(null);
+  });
+
+  it("refuses a range on a boolean or enum key, and any bound on course", () => {
+    const write = { level: "institution", key: "x.flag", value: true, bound: { min: 0 } };
+    expect(code(flag, write)).toBe("SETTING_INVALID_BOUND");
+    expect(code(choice, { ...write, key: "x.choice", value: "a" })).toBe("SETTING_INVALID_BOUND");
+    expect(code(flag, { ...write, level: "course", bound: { locked: true } })).toBe(
+      "SETTING_INVALID_BOUND",
+    );
   });
 });

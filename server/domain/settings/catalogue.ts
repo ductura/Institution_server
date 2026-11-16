@@ -42,7 +42,11 @@ export type SettingDefinition =
     };
 
 const define = (definition: SettingDefinition): SettingDefinition =>
-  Object.freeze({ ...definition, levels: Object.freeze([...definition.levels]) });
+  Object.freeze({
+    ...definition,
+    levels: Object.freeze([...definition.levels]),
+    ...(definition.kind === "enum" ? { values: Object.freeze([...definition.values]) } : {}),
+  });
 
 /**
  * The catalogue. Adding a key is a minor change of @ductura/contracts (its
@@ -136,6 +140,11 @@ function fitsBound(definition: SettingDefinition, bound: unknown): boolean {
 export function checkSettingWrite(write: SettingWrite): Result<null> {
   const definition = settingOf(write.key);
   if (definition === undefined) return refuse("SETTING_UNKNOWN_KEY");
+  return checkWriteOf(definition, write);
+}
+
+/** checkSettingWrite against a given definition; exported for its tests. */
+export function checkWriteOf(definition: SettingDefinition, write: SettingWrite): Result<null> {
   if (!isLevel(write.level) || !definition.levels.includes(write.level))
     return refuse("SETTING_LEVEL_NOT_ALLOWED");
   if (write.value !== null && !fitsDefinition(definition, write.value))

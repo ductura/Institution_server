@@ -2825,10 +2825,10 @@
         "content-type": "application/json"
       },
       "body": {
-        "level": "course",
-        "course": "0b9f6c1e-1d2a-4c3b-8e4f-5a6b7c8d9e01",
-        "key": "notifications.email",
-        "value": false,
+        "level": "network_security",
+        "course": null,
+        "key": "network.session_idle_minutes",
+        "value": 60,
         "locked": false,
         "min": null,
         "max": null

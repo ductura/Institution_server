@@ -123,7 +123,7 @@ export const settingsValuesPut = defineRoute({
   inventory: "app/api/settings/values/route.ts",
   access: "signed_in",
   summary:
-    "Sets the caller's value and bound of one key at one level (the bound as locked, min and max); no value and no bound remove the row and the level above holds again. course is a course id for the course level and null for every other. A level or course that is not the caller's gives 404, the same as a course that does not exist. A key outside the catalogue, a level the catalogue does not allow for it, a value of the wrong kind or out of its limits and a bound of a wrong shape give 422; crossing a higher bound gives 409. Every change is kept with its author, time, old and new value.",
+    "Sets the caller's value and bound of one key at one level (the bound as locked, min and max); no value and no bound remove the row and the level above holds again. course is a course id for the course level and null for every other. A level or course that is not the caller's gives 404, the same as a course that does not exist. A key outside the catalogue, a level the catalogue does not allow for it, a value of the wrong kind or out of its limits and a bound of a wrong shape give 422; crossing a higher bound gives 409. A refusal of the catalogue (422) comes before the level check (404), as in settings.set_value. 409 needs a key a lower level holds under a higher bound; the first catalogue has none, so its vector shows the shape only. Every change is kept with its author, time, old and new value.",
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
