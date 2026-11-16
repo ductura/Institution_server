@@ -77,5 +77,10 @@
     "openid-client": "6.8.8",
     "pg": "8.23.1",
     "pg-boss": "12.38.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@typescript-eslint/typescript-estree>minimatch": "^11.0.1"
+    }
   }
 }
