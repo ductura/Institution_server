@@ -2003,6 +2003,7 @@ const en = {
     bodyStreamError: "Sending the request stopped before the end. Please try again.",
     bodyTimeout: "Sending the request took too long. Please try again.",
     bodyTooLarge: "The request is too large.",
+    boundCrossed: "The value is outside the limit set at a higher level.",
     chainConflict:
       "The record of the work on the server differs from the one on this device. Load the work again.",
     contentLengthInvalid: "The length of the request is not stated correctly.",
@@ -2035,6 +2036,14 @@ const en = {
     unavailable: "The service is not available at the moment. Please try again later.",
     unsupportedMediaType: "The content type of the request is not supported.",
     upgradeRequired: "A newer version of the app is needed. Refresh the page.",
+  },
+  // Texts of the error catalogue the server's contract does not answer (S-1M-c, DAN-802); added after the port.
+  clientErrors: {
+    tooManyRequests: "Too many requests were sent in a short time. Wait a moment and try again.",
+    badGateway:
+      "The server is not answering correctly at the moment. Please try again in a few seconds.",
+    gatewayTimeout: "The server did not answer in time. Please try again.",
+    sessionExpired: "Your sign-in has expired. Please sign in again.",
   },
 } as const satisfies Messages;
 

@@ -74,6 +74,53 @@ const SCHEME_RE = /^(?!node:)[a-z][a-z0-9+.-]*:/iu;
 // relative checks, in every form: import, import(), require and createRequire.
 const ABSOLUTE_RE = /^(?:[/\\]|[a-z]:[/\\])/iu;
 
+/**
+ * The only import by path out of server/ (S-1E-a, DAN-808; decision on
+ * Ductus#1836 c.6906402529): the neutral login failure page shows interface
+ * text from locales/. The key is the exact repository path of the file, the
+ * specifier is matched as written (no other spelling of the same path), and
+ * the import must be a value import of exactly the named `messagesHr`.
+ */
+export const LOCALE_IMPORT_ALLOWED: Readonly<
+  Record<string, { readonly specifier: string; readonly name: string }>
+> = Object.freeze({
+  "server/http/auth-flow.ts": Object.freeze({
+    specifier: "../../locales/index.ts",
+    name: "messagesHr",
+  }),
+});
+
+type ImportShape = {
+  type: string;
+  importKind?: string;
+  source?: { value?: unknown };
+  specifiers?: {
+    type: string;
+    importKind?: string;
+    imported?: { type: string; name?: string; value?: unknown };
+  }[];
+};
+
+/** True only for `import { messagesHr [as x] } from "<exact specifier>"` in the listed file. */
+export function isAllowedLocaleImport(file: string, node: unknown): boolean {
+  if (!Object.hasOwn(LOCALE_IMPORT_ALLOWED, file)) return false;
+  const allowed = LOCALE_IMPORT_ALLOWED[file];
+  const decl = node as ImportShape;
+  if (allowed === undefined || decl.type !== "ImportDeclaration") return false;
+  if (decl.importKind === "type" || decl.source?.value !== allowed.specifier) return false;
+  const specifiers = decl.specifiers ?? [];
+  return (
+    specifiers.length === 1 &&
+    specifiers.every(
+      (spec) =>
+        spec.type === "ImportSpecifier" &&
+        spec.importKind !== "type" &&
+        spec.imported?.type === "Identifier" &&
+        spec.imported.name === allowed.name,
+    )
+  );
+}
+
 /** The area of a repository path, ENTRY for server/*.ts, undefined outside server/. */
 export function areaOf(path: string): string | undefined {
   const segments = path.split("/");
@@ -165,6 +212,7 @@ export const areaBoundary: Rule.RuleModule = {
           continue;
         }
         if (to === undefined) {
+          if (!isTest && isAllowedLocaleImport(file, node)) continue;
           if (pure) return report(node, "pure");
           if (isRoutes) return report(node, "routes");
           if (!isTest) return report(node, "outside");
