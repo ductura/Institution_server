@@ -14,7 +14,7 @@ Samo `http`.
 
 ## Koje podatke dira
 
-Članstva i uloge u glavnoj bazi.
+Članstva i uloge u glavnoj bazi. Gdje je koja od pet vrsta računa piše u [docs/account-permissions.md](../../docs/account-permissions.md#vrste-računa-u-bazi); `server/roles/account-kinds-db.test.ts` provjerava da svaka vrsta ima redak u pgTAP matrici `db/main/tests/130-account-kinds.sql`.
 
 ## Što izvozi
 
