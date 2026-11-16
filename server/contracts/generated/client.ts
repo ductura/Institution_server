@@ -19,6 +19,11 @@ export const ROUTE_TABLE = {
   "settings.values.get": { method: "GET", path: "/api/v1/settings/values", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
   "settings.values.put": { method: "PUT", path: "/api/v1/settings/values", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"409":["bound_crossed"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "student.assignments.get": { method: "GET", path: "/api/v1/student/assignments", body: null, headers: [], errors: {"401":["unauthorized"],"503":["unavailable"]} },
+  "teacher.courses.get": { method: "GET", path: "/api/v1/teacher/courses", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
+  "teacher.fast-path.post": { method: "POST", path: "/api/v1/teacher/fast-path", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
+  "teacher.mentorship.get": { method: "GET", path: "/api/v1/teacher/mentorships/{mentorshipId}", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
+  "teacher.mentorships.get": { method: "GET", path: "/api/v1/teacher/mentorships", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
+  "teacher.submissions.get": { method: "GET", path: "/api/v1/teacher/assignments/{assignmentId}/submissions", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
 } as const;
 
 export const SHARED_ERRORS = {"500":["internal"]} as const;

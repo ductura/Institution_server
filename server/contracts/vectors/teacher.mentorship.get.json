@@ -1,0 +1,156 @@
+{
+  "route": "teacher.mentorship.get",
+  "vectors": [
+    {
+      "name": "work",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        },
+        "params": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "work": {
+            "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901",
+            "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+            "documentId": "izmisljeni-rad-0003",
+            "student": {
+              "givenName": "Izmišljena",
+              "familyName": "Studentica"
+            },
+            "title": "Izmišljeni diplomski rad",
+            "workType": "master_thesis",
+            "workState": "in_progress"
+          }
+        }
+      }
+    },
+    {
+      "name": "work-without-name",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        },
+        "params": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2902"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "work": {
+            "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2902",
+            "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c03",
+            "documentId": null,
+            "student": null,
+            "title": "Izmišljeni završni rad",
+            "workType": "bachelor_thesis",
+            "workState": "not_started"
+          }
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+          "sec-fetch-site": "cross-site"
+        },
+        "params": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000003"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        },
+        "params": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000000004"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        },
+        "params": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000005"
+        }
+      }
+    }
+  ]
+}
