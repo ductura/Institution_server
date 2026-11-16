@@ -6,5 +6,5 @@
 dist
 .stack
 coverage
-**/.env
-**/.env.*
+# Every name that starts with .env (.env.local, .envrc, .env-secrets), at any depth.
+**/.env*

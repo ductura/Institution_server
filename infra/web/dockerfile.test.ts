@@ -2,7 +2,7 @@
 // (.github/workflows/ci.yml, job checks) cannot see without building. Each rule
 // is checked on the real Dockerfile and on mutations of it that must fail.
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { matchesGlob, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SERVER_NODE_FLAGS } from "../../scripts/build/index.ts";
 import { ROUTES } from "../../server/contracts/index.ts";
@@ -151,10 +151,23 @@ describe("infra/web/Dockerfile", () => {
 
   it("the build context leaves out local state and every .env", () => {
     const lines = IGNORE.split("\n").filter((line) => line !== "" && !line.startsWith("#"));
-    expect(lines).toEqual(
-      expect.arrayContaining([".git", "**/node_modules", "dist", ".stack", "**/.env", "**/.env.*"]),
-    );
+    expect(lines).toEqual(expect.arrayContaining([".git", "**/node_modules", "dist", ".stack"]));
     expect(lines.some((line) => line.startsWith("!"))).toBe(false);
+    // QA of ecdf88c: every name that starts with .env, at any depth, not only .env and .env.*.
+    const ignored = (path: string): boolean => lines.some((line) => matchesGlob(path, line));
+    for (const path of [
+      ".env",
+      ".envrc",
+      ".env-secrets",
+      ".env.local",
+      "server/.env",
+      "a/b/.envrc",
+    ]) {
+      expect(ignored(path), path).toBe(true);
+    }
+    for (const path of ["server/config/environment.ts", "package.json", "server/server.ts"]) {
+      expect(ignored(path), path).toBe(false);
+    }
   });
 
   it("CI builds the image and smoke tests it in the job checks, which ci-ok requires", () => {
