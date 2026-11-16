@@ -121,6 +121,14 @@ const ENV_NAMES = [
   "VS1_OIDC_PORT",
   "VS1_STACK_DIR",
   "HOME",
+  // The local S3 of the stack (DAN-817, scripts/stack/local-s3.ts) and the
+  // storage variables the server reads (server/external/storage).
+  "VS1_S3_ROOT",
+  "VS1_S3_BUCKET",
+  "VS1_S3_REGION",
+  "EVIDENCE_STORAGE_DOMAINS",
+  "EVIDENCE_S3_VS1_KEY_ID",
+  "EVIDENCE_S3_VS1_SECRET",
   // What the stack hands the fake OIDC provider (DAN-787), names from
   // packages/test-fakes/oidc/server.ts.
   "ISSUER",

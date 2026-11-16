@@ -1,0 +1,702 @@
+// DAN-817, plan of attack ductura/server#129 (S1-S9, P1, P3): the local S3 of
+// the VS-1 stack, with the production adapter S3EvidencePayloadStore as its
+// contract test, over a real loopback socket and a temporary directory.
+import { createHash, createHmac } from "node:crypto";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
+import { request as httpRequest } from "node:http";
+import { connect, type AddressInfo } from "node:net";
+import { networkInterfaces, tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  EvidenceStorageConfigError,
+  InstitutionRoutedPayloadStore,
+  loadEvidenceStorageConfig,
+  S3EvidencePayloadStore,
+  S3SecretCredentials,
+  STORAGE_IDENTITY_KEY,
+} from "../../server/external/storage/index.ts";
+import {
+  LOCAL_S3_HOST,
+  localS3Config,
+  localS3Server,
+  lstatOrAbsent,
+  MAX_OBJECT_BYTES,
+  startLocalS3,
+} from "./local-s3.ts";
+
+// Invented values only; the key is made for each run.
+const INSTITUTION = "00000000-0000-4000-8000-00000000000a";
+const OTHER = "00000000-0000-4000-8000-00000000000b";
+const PACKAGE = "paket-izmisljeni-1";
+const BUCKET = "ductus-evidence-demo-fakultet";
+const REGION = "us-east-1";
+const KEY_ID = `vs1${Math.random().toString(36).slice(2, 12)}`;
+const SECRET = `s${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+
+let root: string;
+let endpoint: string;
+let close: () => Promise<void>;
+
+beforeEach(async () => {
+  root = mkdtempSync(join(tmpdir(), "vs1-s3-"));
+  const server = localS3Server({
+    root,
+    bucket: BUCKET,
+    region: REGION,
+    accessKeyId: KEY_ID,
+    secretAccessKey: SECRET,
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  close = () => new Promise((resolve) => server.close(() => resolve()));
+});
+
+afterEach(async () => {
+  await close();
+  rmSync(root, { recursive: true, force: true });
+});
+
+const capability = () => ({
+  provider: "vs1-local-s3",
+  endpoint,
+  conditionalWrite: "verified" as const,
+  checksumEcho: "verified" as const,
+  verifiedOn: "2026-11-16",
+  contractTest: "scripts-stack-local-s3.integration",
+});
+
+function store(secret = SECRET) {
+  const warn = vi.fn();
+  return new S3EvidencePayloadStore({
+    endpoint,
+    region: REGION,
+    bucket: BUCKET,
+    storageDomain: "local-demo-fakultet",
+    credentials: new S3SecretCredentials({ accessKeyId: KEY_ID, secretAccessKey: secret }),
+    capability: capability(),
+    requestTimeoutMs: 5000,
+    allowPlainHttpOnLoopback: true,
+    warn,
+  });
+}
+
+const segment = (text: string) => {
+  const canonicalPayload = JSON.stringify({ tekst: text });
+  return {
+    institutionId: INSTITUTION,
+    evidencePackageId: PACKAGE,
+    segmentHash: createHash("sha256").update(canonicalPayload).digest("hex"),
+    canonicalPayload,
+  };
+};
+
+const sha = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest();
+const mac = (key: Uint8Array | string, value: string) =>
+  createHmac("sha256", key).update(value, "utf8").digest();
+
+/**
+ * SigV4 written here again, apart from the adapter's signer, so the local S3
+ * is checked against the published algorithm and not against itself. Every
+ * given header is signed; `extra` headers are signed as given.
+ */
+function signedOver(
+  method: "GET" | "HEAD" | "PUT",
+  path: string[],
+  extra: Record<string, string>,
+  body = new Uint8Array(),
+  credentials = { accessKeyId: KEY_ID, secretAccessKey: SECRET },
+) {
+  const url = new URL(`/${path.join("/")}`, endpoint);
+  const amzDate = new Date()
+    .toISOString()
+    .replace(/[-:]/gu, "")
+    .replace(/\.\d{3}/u, "");
+  const day = amzDate.slice(0, 8);
+  const payload = sha(body).toString("hex");
+  const headers: Record<string, string> = {
+    ...extra,
+    "x-amz-date": amzDate,
+    "x-amz-content-sha256": payload,
+  };
+  const all: Record<string, string> = { ...headers, host: url.host };
+  const names = Object.keys(all).sort();
+  const canonical = [
+    method,
+    url.pathname,
+    "",
+    names.map((name) => `${name}:${all[name]}\n`).join(""),
+    names.join(";"),
+    payload,
+  ].join("\n");
+  const scope = `${day}/${REGION}/s3/aws4_request`;
+  const toSign = ["AWS4-HMAC-SHA256", amzDate, scope, sha(canonical).toString("hex")].join("\n");
+  let key = mac(`AWS4${credentials.secretAccessKey}`, day);
+  for (const part of [REGION, "s3", "aws4_request"]) key = mac(key, part);
+  const signature = createHmac("sha256", key).update(toSign, "utf8").digest("hex");
+  headers.authorization =
+    `AWS4-HMAC-SHA256 Credential=${credentials.accessKeyId}/${scope}, ` +
+    `SignedHeaders=${names.join(";")}, Signature=${signature}`;
+  return { url: url.href, headers };
+}
+
+/** One request signed as the adapter signs it: a PUT is create-only with its checksum. */
+function signed(
+  method: "GET" | "HEAD" | "PUT",
+  path: string[],
+  body = new Uint8Array(),
+  credentials = { accessKeyId: KEY_ID, secretAccessKey: SECRET },
+) {
+  const extra: Record<string, string> =
+    method === "PUT"
+      ? { "if-none-match": "*", "x-amz-checksum-sha256": sha(body).toString("base64") }
+      : {};
+  return signedOver(method, path, extra, body, credentials);
+}
+
+async function send(
+  method: string,
+  url: string,
+  headers: Record<string, string>,
+  body?: Uint8Array,
+) {
+  const response = await fetch(url, { method, headers, ...(body ? { body } : {}) });
+  return { status: response.status, text: await response.text(), headers: response.headers };
+}
+
+/** A raw request: the path goes out exactly as written, never normalized by URL. */
+function raw(path: string, headers: Record<string, string>): Promise<number> {
+  const { port } = new URL(endpoint);
+  return new Promise((resolve, reject) => {
+    const req = httpRequest({ host: "127.0.0.1", port, path, method: "GET", headers }, (res) => {
+      res.resume();
+      resolve(res.statusCode ?? 0);
+    });
+    req.once("error", reject);
+    req.end();
+  });
+}
+
+const files = (dir: string): string[] =>
+  readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name));
+
+describe("the local S3 under the production adapter (S9)", () => {
+  it("stores, finds the same bytes again, and refuses other bytes under the key", async () => {
+    const s3 = store();
+    const first = segment("prvi");
+    expect(await s3.putImmutable(first)).toMatchObject({ status: "stored" });
+    expect(await s3.putImmutable(first)).toMatchObject({ status: "existing" });
+    const other = { ...first, canonicalPayload: JSON.stringify({ tekst: "drugi" }) };
+    // Another payload under the same hash is refused by the adapter first.
+    expect(await s3.putImmutable(other)).toEqual({ status: "invalid" });
+    const read = await s3.readImmutable(first);
+    expect(read.status).toBe("found");
+    const bytes = new TextEncoder().encode(first.canonicalPayload);
+    expect(await s3.headImmutable({ ...first, payloadBytes: bytes.byteLength })).toEqual({
+      status: "present",
+    });
+    expect(await s3.readImmutable({ ...first, segmentHash: "a".repeat(64) })).toEqual({
+      status: "not_found",
+    });
+    expect(
+      await s3.headImmutable({ ...first, segmentHash: "a".repeat(64), payloadBytes: 3 }),
+    ).toEqual({ status: "absent" });
+  });
+
+  it("answers conflict when the key holds other bytes (S3)", async () => {
+    const first = segment("treći");
+    const key = ["v2", INSTITUTION, PACKAGE, `${first.segmentHash}.json`];
+    const dir = join(root, BUCKET, ...key.slice(0, -1));
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, key[3] ?? ""), "drugi bajtovi");
+    expect(await store().putImmutable(first)).toEqual({ status: "conflict" });
+  });
+
+  it("verifies the bucket identity label, and refuses another institution's", async () => {
+    mkdirSync(join(root, BUCKET));
+    writeFileSync(
+      join(root, BUCKET, STORAGE_IDENTITY_KEY),
+      JSON.stringify({ institutionId: INSTITUTION, region: REGION }),
+    );
+    expect(await store().verifyIdentity({ institutionId: INSTITUTION })).toEqual({
+      status: "verified",
+    });
+    expect(await store().verifyIdentity({ institutionId: OTHER })).toEqual({ status: "mismatch" });
+  });
+
+  it("never stores with a wrong key (S2)", async () => {
+    const outcome = await store(`${SECRET}x`).putImmutable(segment("četvrti"));
+    expect(outcome).toEqual({ status: "unavailable", reason: "storage_signature_rejected" });
+    expect(files(root)).toEqual([]);
+  });
+
+  it("two writes of one key at once store it once (S7)", async () => {
+    const s3 = store();
+    const one = segment("istodobno");
+    const outcomes = await Promise.all([s3.putImmutable(one), s3.putImmutable(one)]);
+    expect(outcomes.map((o) => o.status).sort()).toEqual(["existing", "stored"]);
+    expect(files(root)).toHaveLength(1);
+  });
+});
+
+describe("requests the adapter never sends (S2-S6, S8)", () => {
+  const path = [BUCKET, "objekt.json"];
+  const body = new TextEncoder().encode('{"a":1}');
+
+  it("refuses a missing, foreign or altered signature", async () => {
+    const good = signed("PUT", path, body);
+    const url = good.url;
+    const without = Object.fromEntries(
+      Object.entries(good.headers).filter(([name]) => name.toLowerCase() !== "authorization"),
+    );
+    expect((await send("PUT", url, without, body)).status).toBe(403);
+    const foreign = signed("PUT", path, body, { accessKeyId: "drugi", secretAccessKey: SECRET });
+    const refused = await send("PUT", url, foreign.headers, body);
+    expect(refused.status).toBe(403);
+    expect(refused.text).toContain("InvalidAccessKeyId");
+    // A signed header changed after signing.
+    const altered = { ...good.headers, "x-amz-date": "20261116T000000Z" };
+    expect((await send("PUT", url, altered, body)).status).toBe(403);
+    // Another body under the signed hash.
+    const other = new TextEncoder().encode('{"a":2}');
+    expect((await send("PUT", url, good.headers, other)).status).toBe(400);
+    expect(files(root)).toEqual([]);
+  });
+
+  it("refuses a PUT that is not create-only and a checksum of other bytes", async () => {
+    const good = signed("PUT", path, body);
+    // Dropping or changing a create-only header breaks the adapter's signature.
+    const plain = Object.fromEntries(
+      Object.entries(good.headers).filter(([name]) => name.toLowerCase() !== "if-none-match"),
+    );
+    expect((await send("PUT", good.url, plain, body)).status).toBe(403);
+    const checksum = { ...good.headers, "x-amz-checksum-sha256": `${"A".repeat(43)}=` };
+    expect((await send("PUT", good.url, checksum, body)).status).toBe(403);
+    // Validly signed by another client: still never an overwrite or a wrong checksum.
+    const sum = createHash("sha256").update(body).digest("base64");
+    const unconditional = signedOver(
+      "PUT",
+      path,
+      { "if-none-match": "x", "x-amz-checksum-sha256": sum },
+      body,
+    );
+    expect((await send("PUT", unconditional.url, unconditional.headers, body)).status).toBe(501);
+    const wrong = signedOver(
+      "PUT",
+      path,
+      { "if-none-match": "*", "x-amz-checksum-sha256": `${"A".repeat(43)}=` },
+      body,
+    );
+    const bad = await send("PUT", wrong.url, wrong.headers, body);
+    expect(bad.status).toBe(400);
+    expect(bad.text).toContain("BadDigest");
+    expect(files(root)).toEqual([]);
+    const right = signedOver(
+      "PUT",
+      path,
+      { "if-none-match": "*", "x-amz-checksum-sha256": sum },
+      body,
+    );
+    expect((await send("PUT", right.url, right.headers, body)).status).toBe(200);
+    expect((await send("PUT", right.url, right.headers, body)).status).toBe(412);
+  });
+
+  it("refuses a body over the limit without storing it (S6)", async () => {
+    const large = new Uint8Array(MAX_OBJECT_BYTES + 1);
+    const request = signed("PUT", path, large);
+    const got = await send("PUT", request.url, request.headers, large).catch(() => ({
+      status: 0,
+    }));
+    expect([0, 400]).toContain(got.status);
+    expect(files(root)).toEqual([]);
+  });
+
+  it.each([
+    "/../etc/passwd",
+    "/%2e%2e/x",
+    `/${BUCKET}/..%2fx`,
+    `/${BUCKET}//x`,
+    `/${BUCKET}/x?versionId=1`,
+    `/${BUCKET}/./x`,
+    `/${BUCKET}/a%20b`,
+    `/${BUCKET}/x#y`,
+  ])("refuses the path %s before reading anything", async (path) => {
+    const request = signed("GET", [BUCKET, "x"]);
+    expect(await raw(path, request.headers)).toBe(400);
+  });
+
+  it("answers NoSuchBucket for another bucket and NoSuchKey for a missing key", async () => {
+    const other = signed("GET", ["drugi-bucket", "x"]);
+    expect((await send("GET", other.url, other.headers)).text).toContain("NoSuchBucket");
+    const missing = signed("GET", [BUCKET, "nema.json"]);
+    const got = await send("GET", missing.url, missing.headers);
+    expect(got.status).toBe(404);
+    expect(got.text).toContain("<Code>NoSuchKey</Code>");
+  });
+
+  it("never follows a link in the storage directory (S5)", async () => {
+    const outside = mkdtempSync(join(tmpdir(), "vs1-s3-outside-"));
+    try {
+      writeFileSync(join(outside, "tajna.json"), "{}");
+      mkdirSync(join(root, BUCKET));
+      symlinkSync(outside, join(root, BUCKET, "veza"));
+      symlinkSync(join(outside, "tajna.json"), join(root, BUCKET, "datoteka.json"));
+      for (const key of [["veza", "tajna.json"], ["datoteka.json"]]) {
+        const request = signed("GET", [BUCKET, ...key]);
+        expect((await send("GET", request.url, request.headers)).status).toBe(500);
+      }
+      const put = signed("PUT", [BUCKET, "veza", "novo.json"], body);
+      expect((await send("PUT", put.url, put.headers, body)).status).toBe(500);
+      expect(readdirSync(outside)).toEqual(["tajna.json"]);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("production never reaches the local S3 (P1, P3)", () => {
+  const env = (nodeEnv: string | undefined) => ({
+    NODE_ENV: nodeEnv,
+    EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+    EVIDENCE_S3_VS1_SECRET: SECRET,
+    EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
+      requestTimeoutMs: 5000,
+      domains: [
+        {
+          label: "local-demo-fakultet",
+          institutionId: INSTITUTION,
+          endpoint,
+          region: REGION,
+          bucket: BUCKET,
+          accessKeyIdVar: "EVIDENCE_S3_VS1_KEY_ID",
+          secretAccessKeyVar: "EVIDENCE_S3_VS1_SECRET",
+          capability: capability(),
+        },
+      ],
+    }),
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("the stack's storage configuration builds under development", () => {
+    const config = loadEvidenceStorageConfig(env("development"));
+    expect(() =>
+      InstitutionRoutedPayloadStore.fromConfig(config, { allowPlainHttpOnLoopback: true }),
+    ).not.toThrow();
+  });
+
+  it("under NODE_ENV production the same configuration is refused before any request", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const fetch = vi.fn();
+    const config = loadEvidenceStorageConfig(env("production"));
+    // Even a caller that asks for plain http on loopback gets none in production.
+    expect(() =>
+      InstitutionRoutedPayloadStore.fromConfig(config, { allowPlainHttpOnLoopback: true, fetch }),
+    ).toThrow(EvidenceStorageConfigError);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(files(root)).toEqual([]);
+  });
+
+  it.each(["production", "", undefined, "Production", " test", "dev"])(
+    "the local S3 refuses to start with NODE_ENV %j",
+    (nodeEnv) => {
+      expect(() =>
+        localS3Config({
+          NODE_ENV: nodeEnv,
+          PORT: "4190",
+          VS1_S3_ROOT: root,
+          VS1_S3_BUCKET: BUCKET,
+          VS1_S3_REGION: REGION,
+          EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+          EVIDENCE_S3_VS1_SECRET: SECRET,
+        }),
+      ).toThrow(/NODE_ENV/u);
+    },
+  );
+
+  it("its configuration errors name variables, never a value", () => {
+    let message = "";
+    try {
+      localS3Config({
+        NODE_ENV: "test",
+        PORT: "4190",
+        VS1_S3_ROOT: root,
+        VS1_S3_BUCKET: BUCKET,
+        VS1_S3_REGION: REGION,
+        EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+      });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toBe("EVIDENCE_S3_VS1_SECRET is not set");
+    expect(message).not.toContain(KEY_ID);
+  });
+});
+
+describe("the local S3 stays a local tool (contract condition 1, S1, P3)", () => {
+  const SOURCE = fileURLToPath(new URL("./local-s3.ts", import.meta.url));
+
+  it("imports only node: modules, never server code", () => {
+    const text = readFileSync(SOURCE, "utf8");
+    // Static imports and re-exports, either quote; a dynamic import() is refused outright.
+    const imports = [...text.matchAll(/^(?:import|export)\b[^;]*?from\s*["']([^"']+)["']/gmu)].map(
+      (match) => match[1],
+    );
+    expect(text).not.toMatch(/\bimport\s*\(/u);
+    expect(text).not.toMatch(/\brequire\s*\(/u);
+    expect(imports.length).toBeGreaterThan(0);
+    expect(imports.every((name) => name?.startsWith("node:"))).toBe(true);
+  });
+
+  it("no server file imports it", () => {
+    const serverRoot = fileURLToPath(new URL("../../server", import.meta.url));
+    const sources = readdirSync(serverRoot, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
+      .map((entry) => readFileSync(join(entry.parentPath, entry.name), "utf8"));
+    expect(sources.some((text) => /local-s3|scripts\/stack/u.test(text))).toBe(false);
+  });
+
+  it("listens on 127.0.0.1 only, never on another interface", async () => {
+    const server = await startLocalS3({
+      port: 0,
+      root,
+      bucket: BUCKET,
+      region: REGION,
+      accessKeyId: KEY_ID,
+      secretAccessKey: SECRET,
+    });
+    try {
+      const address = server.address() as AddressInfo;
+      expect(LOCAL_S3_HOST).toBe("127.0.0.1");
+      expect(address.address).toBe("127.0.0.1");
+      const others = Object.values(networkInterfaces())
+        .flat()
+        .filter((face) => face !== undefined && face.family === "IPv4" && !face.internal)
+        .map((face) => face?.address ?? "");
+      for (const other of others) {
+        const reached = await new Promise<boolean>((resolve) => {
+          const socket = connect({ host: other, port: address.port });
+          socket.once("connect", () => resolve((socket.destroy(), true)));
+          socket.once("error", () => resolve(false));
+        });
+        expect(reached).toBe(false);
+      }
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  it.each([["production"], [""]])(
+    "run as a script with NODE_ENV %j it exits before opening a port",
+    (nodeEnv) => {
+      const run = spawnSync(process.execPath, [SOURCE], {
+        env: {
+          PATH: process.env.PATH ?? "",
+          NODE_ENV: nodeEnv,
+          PORT: "4190",
+          VS1_S3_ROOT: root,
+          VS1_S3_BUCKET: BUCKET,
+          VS1_S3_REGION: REGION,
+          EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+          EVIDENCE_S3_VS1_SECRET: SECRET,
+        },
+        encoding: "utf8",
+        timeout: 20_000,
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("NODE_ENV");
+      expect(run.stdout).not.toContain("local S3 on");
+      expect(`${run.stdout}${run.stderr}`).not.toContain(SECRET);
+    },
+  );
+});
+
+describe("signature rules the adapter always meets (S2)", () => {
+  const body = new TextEncoder().encode('{"b":1}');
+
+  async function withClock(offsetMs: number, run: (url: string) => Promise<void>) {
+    const other = mkdtempSync(join(tmpdir(), "vs1-s3-clock-"));
+    const server = localS3Server({
+      root: other,
+      bucket: BUCKET,
+      region: REGION,
+      accessKeyId: KEY_ID,
+      secretAccessKey: SECRET,
+      now: () => new Date(Date.now() + offsetMs),
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      await run(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+      expect(files(other)).toEqual([]);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+      rmSync(other, { recursive: true, force: true });
+    }
+  }
+
+  it.each([16 * 60 * 1000, -16 * 60 * 1000])(
+    "refuses a valid signature from a clock %i ms away",
+    async (offset) => {
+      await withClock(offset, async (url) => {
+        const request = signed("PUT", [BUCKET, "sat.json"], body);
+        const path = new URL(request.url).pathname;
+        const got = await send("PUT", `${url}${path}`, request.headers, body);
+        // The host header differs from the signed one only by port; the clock is checked first.
+        expect(got.status).toBe(403);
+        expect(got.text).toContain("RequestTimeTooSkewed");
+      });
+    },
+  );
+
+  it("accepts the same request inside the window", async () => {
+    const request = signed("PUT", [BUCKET, "sat.json"], body);
+    expect((await send("PUT", request.url, request.headers, body)).status).toBe(200);
+  });
+
+  it.each([["if-none-match"], ["x-amz-checksum-sha256"]])(
+    "refuses a valid signature that leaves %s unsigned",
+    async (name) => {
+      const sum = sha(body).toString("base64");
+      const all: Record<string, string> = { "if-none-match": "*", "x-amz-checksum-sha256": sum };
+      const value = all[name] ?? "";
+      delete all[name];
+      const request = signedOver("PUT", [BUCKET, "nepotpisano.json"], all, body);
+      const got = await send("PUT", request.url, { ...request.headers, [name]: value }, body);
+      expect(got.status).toBe(403);
+      expect(got.text).toContain("SignatureDoesNotMatch");
+      expect(files(root)).toEqual([]);
+    },
+  );
+
+  it("refuses a GET or HEAD whose signed payload hash is not the empty body", async () => {
+    const request = signedOver("GET", [BUCKET, "x.json"], {}, body);
+    expect((await send("GET", request.url, request.headers)).status).toBe(400);
+  });
+
+  it("answers a key that is a directory as an error, never as an existing object", async () => {
+    const deep = signed("PUT", [BUCKET, "b", "c", "d.json"], body);
+    expect((await send("PUT", deep.url, deep.headers, body)).status).toBe(200);
+    const shallow = signed("PUT", [BUCKET, "b", "c"], body);
+    expect((await send("PUT", shallow.url, shallow.headers, body)).status).toBe(500);
+    expect(files(root)).toHaveLength(1);
+  });
+});
+
+describe("faults of the disk and of the root (review FAIL on 5ecd3a0)", () => {
+  it("only ENOENT reads as absent; any other fault throws", async () => {
+    expect(await lstatOrAbsent(join(root, "nema"))).toBeNull();
+    writeFileSync(join(root, "datoteka"), "x");
+    // ENOTDIR: a fault, never "not there".
+    await expect(lstatOrAbsent(join(root, "datoteka", "ispod"))).rejects.toMatchObject({
+      code: "ENOTDIR",
+    });
+  });
+
+  it("a directory without the right of passage answers 500, never NoSuchKey", async () => {
+    const body = new TextEncoder().encode('{"c":1}');
+    const put = signed("PUT", [BUCKET, "zatvoreno", "o.json"], body);
+    expect((await send("PUT", put.url, put.headers, body)).status).toBe(200);
+    chmodSync(join(root, BUCKET, "zatvoreno"), 0o000);
+    try {
+      const get = signed("GET", [BUCKET, "zatvoreno", "o.json"]);
+      const got = await send("GET", get.url, get.headers);
+      const head = signed("HEAD", [BUCKET, "zatvoreno", "o.json"]);
+      const headed = await send("HEAD", head.url, head.headers);
+      // root ignores the mode bits; anyone else is refused by the disk.
+      const expected = process.getuid?.() === 0 ? 200 : 500;
+      expect(got.status).toBe(expected);
+      expect(headed.status).toBe(expected);
+      expect(got.text).not.toContain("NoSuchKey");
+    } finally {
+      chmodSync(join(root, BUCKET, "zatvoreno"), 0o700);
+    }
+  });
+
+  it.each(["/tmp/veza/", "/tmp//veza", "/tmp/./veza", "/tmp/a/../veza", "relativno"])(
+    "refuses the root %j that is not absolute and normal",
+    (given) => {
+      expect(() =>
+        localS3Config({
+          NODE_ENV: "test",
+          PORT: "4190",
+          VS1_S3_ROOT: given,
+          VS1_S3_BUCKET: BUCKET,
+          VS1_S3_REGION: REGION,
+          EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+          EVIDENCE_S3_VS1_SECRET: SECRET,
+        }),
+      ).toThrow(/VS1_S3_ROOT/u);
+    },
+  );
+
+  it("refuses a root that is a link, or reached through one, and writes nothing there", async () => {
+    const target = mkdtempSync(join(tmpdir(), "vs1-s3-target-"));
+    const holder = mkdtempSync(join(tmpdir(), "vs1-s3-holder-"));
+    try {
+      symlinkSync(target, join(holder, "veza"));
+      mkdirSync(join(target, "unutra"));
+      for (const linked of [join(holder, "veza"), join(holder, "veza", "unutra")]) {
+        await expect(
+          startLocalS3({
+            port: 0,
+            root: linked,
+            bucket: BUCKET,
+            region: REGION,
+            accessKeyId: KEY_ID,
+            secretAccessKey: SECRET,
+          }),
+        ).rejects.toThrow(/VS1_S3_ROOT/u);
+      }
+      expect(readdirSync(target)).toEqual(["unutra"]);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      rmSync(holder, { recursive: true, force: true });
+    }
+  });
+
+  it("a link as the root answers every request with 500 even if served directly", async () => {
+    const target = mkdtempSync(join(tmpdir(), "vs1-s3-target-"));
+    const holder = mkdtempSync(join(tmpdir(), "vs1-s3-holder-"));
+    symlinkSync(target, join(holder, "veza"));
+    const server = localS3Server({
+      root: join(holder, "veza"),
+      bucket: BUCKET,
+      region: REGION,
+      accessKeyId: KEY_ID,
+      secretAccessKey: SECRET,
+    });
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    try {
+      const body = new TextEncoder().encode('{"d":1}');
+      const own = endpoint;
+      // Signed for this server, so the signature passes and only the root rule decides.
+      endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      try {
+        const put = signed("PUT", [BUCKET, "o.json"], body);
+        expect((await send("PUT", put.url, put.headers, body)).status).toBe(500);
+      } finally {
+        endpoint = own;
+      }
+      expect(readdirSync(target)).toEqual([]);
+    } finally {
+      await new Promise((done) => server.close(done));
+      rmSync(target, { recursive: true, force: true });
+      rmSync(holder, { recursive: true, force: true });
+    }
+  });
+});
