@@ -70,7 +70,9 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
 > = {
   // The entry point reads the environment and sets the exit code (S-1B-a, DAN-775).
   // On shutdown it listens to SIGTERM and SIGINT and exits with a code (S-1B-c, DAN-778).
-  "server/server.ts": { process: ["env", "exitCode", "exit", "on", "off"] },
+  // The working directory is the repository root the development signer's seed
+  // must stay out of, as in Ductus ingest-deps.ts (DAN-815 c).
+  "server/server.ts": { process: ["env", "exitCode", "exit", "on", "off", "cwd"] },
   // The logs hook waits for stdout and stderr to drain (S-1B-c, DAN-778).
   "server/http/shutdown.ts": { process: ["stdout", "stderr"] },
   "server/config/environment.ts": { process: ["env"] },

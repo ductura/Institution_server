@@ -23,11 +23,12 @@ import type {
 export class DevelopmentEd25519SigningKeyProvider implements SigningKeyProvider {
   private readonly privateKey: KeyObject;
   private readonly publicKey: KeyObject;
+  private readonly keyId: string;
+  private readonly keyVersion: string;
 
-  constructor(
-    private readonly keyId = "pisac-dev-ed25519",
-    private readonly keyVersion = "ephemeral-v1",
-  ) {
+  constructor(keyId = "pisac-dev-ed25519", keyVersion = "ephemeral-v1") {
+    this.keyId = keyId;
+    this.keyVersion = keyVersion;
     // An allowlist, as for the fake login provider: an unset, empty or
     // misspelt NODE_ENV counts as production (F-020).
     if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") {
