@@ -11,8 +11,10 @@
 --              no login (app_admin, owner action V-7); the row says why
 -- A probe is an RPC called as the web role ductus_app with the session of the
 -- person, never through an administrator connection. Every probe is rolled
--- back, so no probe sees what another wrote. A probe that fails with any other
--- error proves nothing and fails the row. Every person below is invented
+-- back, so no probe sees what another wrote. A probe is allowed only when it
+-- succeeds with the answer it expects; any other answer (another error, or an
+-- outcome such as "not_accepting" or "unauthenticated") proves nothing and
+-- fails the row. Every person below is invented
 -- (fixtures/institution.inc).
 BEGIN;
 \ir fixtures/institution.inc
@@ -52,28 +54,32 @@ SELECT bag_eq(
   $$ SELECT kind, kind AS kinds FROM kind_person $$,
   'each person is of its kind and of no other');
 
--- The probes of each action. A new probe goes here; an action with a probe has
--- allowed or refused rows, one without has not_built rows.
-CREATE TEMP TABLE probe (action text NOT NULL, n integer NOT NULL, sql text NOT NULL, PRIMARY KEY (action, n));
+-- The probes of each action and the whole answer each gives on success, as a
+-- regular expression (a void function answers the empty text). A new probe
+-- goes here; an action with a probe has allowed or refused rows, one without
+-- has not_built rows.
+CREATE TEMP TABLE probe (
+  action text NOT NULL, n integer NOT NULL, sql text NOT NULL, success text NOT NULL, PRIMARY KEY (action, n)
+);
 INSERT INTO probe VALUES
-  ('read_own_work', 1, 'SELECT outcome FROM app.open_student_work({z1}, true)'),
-  ('read_students_work', 1, 'SELECT outcome FROM app.read_replay_source({dora_work})'),
-  ('read_students_work', 2, $$ SELECT outcome FROM collaboration.read_live_state({dora_work}, repeat('0', 64)) $$),
-  ('manage_courses_and_members', 1, $$ SELECT institution.create_course('K9', '2026/2027', 'prohibited')::text $$),
-  ('manage_courses_and_members', 2, $$ SELECT institution.create_enrollment_code({k1}, now() + interval '1 day') $$),
-  ('manage_courses_and_members', 3, 'SELECT institution.remove_student({k1}, {dora})::text'),
-  ('manage_courses_and_members', 4, 'SELECT institution.hand_over_course({k1}, {vesna})::text'),
-  ('assign_student_teacher_roles', 1, 'SELECT institution.confirm_teacher_role({nina})::text'),
-  ('assign_student_teacher_roles', 2, 'SELECT institution.revoke_teacher_role({marko})::text'),
-  ('assign_admin_network_engineer_roles', 1, 'SELECT identity.appoint_network_engineer({marko})::text'),
-  ('assign_admin_network_engineer_roles', 2, 'SELECT identity.revoke_network_engineer({boris})::text'),
-  ('assign_admin_network_engineer_roles', 3, 'SELECT institution.admin_appoint_admin({marko})::text'),
-  ('change_personal_settings', 1, $$ SELECT settings.set_value('personal', NULL, 'ui.size', '16')::text $$),
-  ('change_course_settings', 1, $$ SELECT settings.set_value('course', {k1}, 'ui.size', '16')::text $$),
-  ('change_institution_settings', 1, $$ SELECT settings.set_value('institution', NULL, 'ui.size', '16')::text $$),
-  ('change_system_settings', 1, $$ SELECT settings.set_value('system', NULL, 'ui.size', '16')::text $$),
+  ('read_own_work', 1, 'SELECT outcome FROM app.open_student_work({z1}, true)', 'opened'),
+  ('read_students_work', 1, 'SELECT outcome FROM app.read_replay_source({dora_work})', 'found'),
+  ('read_students_work', 2, $$ SELECT outcome FROM collaboration.read_live_state({dora_work}, repeat('0', 64)) $$, 'empty'),
+  ('manage_courses_and_members', 1, $$ SELECT institution.create_course('K9', '2026/2027', 'prohibited')::text $$, '[0-9a-f-]{36}'),
+  ('manage_courses_and_members', 2, $$ SELECT institution.create_enrollment_code({k1}, now() + interval '1 day') $$, '[0-9A-F]{4}(-[0-9A-F]{4}){3}'),
+  ('manage_courses_and_members', 3, 'SELECT institution.remove_student({k1}, {dora})::text', 'true'),
+  ('manage_courses_and_members', 4, 'SELECT institution.hand_over_course({k1}, {vesna})::text', '[0-9a-f-]{36}'),
+  ('assign_student_teacher_roles', 1, 'SELECT institution.confirm_teacher_role({nina})::text', ''),
+  ('assign_student_teacher_roles', 2, 'SELECT institution.revoke_teacher_role({marko})::text', 'true'),
+  ('assign_admin_network_engineer_roles', 1, 'SELECT identity.appoint_network_engineer({marko})::text', 'true'),
+  ('assign_admin_network_engineer_roles', 2, 'SELECT identity.revoke_network_engineer({boris})::text', 'true'),
+  ('assign_admin_network_engineer_roles', 3, 'SELECT institution.admin_appoint_admin({marko})::text', 'true'),
+  ('change_personal_settings', 1, $$ SELECT settings.set_value('personal', NULL, 'ui.size', '16')::text $$, '[1-9][0-9]*'),
+  ('change_course_settings', 1, $$ SELECT settings.set_value('course', {k1}, 'ui.size', '16')::text $$, '[1-9][0-9]*'),
+  ('change_institution_settings', 1, $$ SELECT settings.set_value('institution', NULL, 'ui.size', '16')::text $$, '[1-9][0-9]*'),
+  ('change_system_settings', 1, $$ SELECT settings.set_value('system', NULL, 'ui.size', '16')::text $$, '[1-9][0-9]*'),
   ('change_network_security_settings', 1,
-   $$ SELECT settings.set_value('network_security', NULL, 'network.size', '16')::text $$);
+   $$ SELECT settings.set_value('network_security', NULL, 'network.size', '16')::text $$, '[1-9][0-9]*');
 
 -- account-kinds-matrix: kind, action, outcome, why not built.
 CREATE TEMP TABLE matrix (
@@ -251,11 +257,18 @@ BEGIN
   RETURN v_result;
 END
 $$;
-CREATE FUNCTION pg_temp.verdict(p_answer text) RETURNS text
+CREATE FUNCTION pg_temp.verdict(p_answer text, p_success text) RETURNS text
 LANGUAGE sql IMMUTABLE AS $$
   SELECT CASE WHEN p_answer ~ '^ZD403: ' OR p_answer = 'ok: not_found' THEN 'refused'
-              WHEN p_answer ~ '^ok: ' THEN 'allowed' ELSE 'error' END
+              WHEN p_answer ~ ('^ok: (' || p_success || ')$') THEN 'allowed' ELSE 'error' END
 $$;
+SELECT is(
+  ARRAY[pg_temp.verdict('ok: opened', 'opened'), pg_temp.verdict('ok: not_accepting', 'opened'),
+        pg_temp.verdict('ok: unauthenticated', 'opened'), pg_temp.verdict('ok: opened later', 'opened'),
+        pg_temp.verdict('ok: not_found', 'opened'), pg_temp.verdict('ZD403: forbidden', 'true'),
+        pg_temp.verdict('ZD422: invalid input', 'true'), pg_temp.verdict('ZD401: not authenticated', 'true')],
+  ARRAY['allowed', 'error', 'error', 'error', 'refused', 'refused', 'error', 'error'],
+  'only the expected answer is allowed; a failure given as an outcome is an error');
 
 -- 1. The matrix is whole: every kind of the matrix with every action of it.
 SELECT is_empty(
@@ -274,8 +287,8 @@ SELECT is_empty(
 -- 2. Each probed row, as the person of its kind.
 CREATE TEMP TABLE before AS SELECT pg_temp.print() AS print;
 CREATE TEMP TABLE answer AS
-SELECT x.*, pg_temp.verdict(x.raw) AS verdict FROM (
-  SELECT m.kind, m.action, m.outcome, p.n, pg_temp.probe(k.name, p.sql) AS raw
+SELECT x.kind, x.action, x.outcome, x.n, x.raw, pg_temp.verdict(x.raw, x.success) AS verdict FROM (
+  SELECT m.kind, m.action, m.outcome, p.n, p.success, pg_temp.probe(k.name, p.sql) AS raw
   FROM matrix m JOIN kind_person k USING (kind) JOIN probe p USING (action)
 ) AS x;
 SELECT is(
