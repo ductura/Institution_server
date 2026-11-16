@@ -480,7 +480,7 @@ export default defineConfig(
   },
   {
     // Interface text lives in locales/ (S-1L.2, DAN-780). Left out: tests and
-    // fixtures (TEXT_EXEMPT) and the transitional server (TEXT_TRANSITIONAL).
+    // fixtures (TEXT_EXEMPT) and the transitional list (TEXT_TRANSITIONAL, empty since DAN-782).
     files: ["server/**/*.ts"],
     ignores: [...TEXT_EXEMPT, ...TEXT_TRANSITIONAL],
     rules: { "local/no-hardcoded-text": "error" },

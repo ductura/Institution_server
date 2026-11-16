@@ -6,6 +6,7 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - `forbiddenTerms.*`: greške ulaza skenera zabranjenih izraza (`scripts/forbidden-terms/scan.ts`, `messageKey` po `docs/CODE_STYLE.md` §8). Test `scripts/forbidden-terms/scan.test.ts` provjerava da svaki kod greške ima tekst.
 - `signing.*`: greške porta potpisa (`server/external/keys/signing-errors.ts`). Test `server/external/keys/signing-errors.test.ts` provjerava da svaki `messageKey` porta ima tekst.
 - `logCatalog.*`: greške provjere zapisa iz kataloga događaja (`server/log/events/catalog.ts`, S-1K.1). Test `server/log/events/catalog.test.ts` provjerava da svaki `messageKey` provjere ima tekst.
+- `app.*`: greške prijelaznog poslužitelja `server/app.ts` (DAN-782; `APP_ERRORS`, odgovor `{ code, messageKey }`). Test `server/app.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija `app` nema drugih ključeva.
 
 ## Katalog sučelja (S-1L.1, DAN-768)
 
@@ -26,7 +27,7 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 
 - Svaka datoteka u `locales/` mora biti na zatvorenom popisu: katalog (`CATALOGUES`: `hr.ts`, `en.ts`, `hr.json`) ili ne-katalog s razlogom (`NOT_CATALOGUES`, i `*.test.ts`). Nova datoteka ili podmapa ruši skener, pa novu datoteku treba razvrstati u `scan.ts`. `source.ts` je namjerno ne-katalog: čuva izvorne Ductus tekstove kao zapis.
 - `.ts` katalog čita se kao podatak iz sintaksnog stabla, bez izvođenja ijednog retka (DAN-774). Katalog smije imati samo `import type`, tipove i `const` deklaracije čije su vrijednosti stringovi, predlošci stringova, literali objekata i popisa i ranije konstante iste datoteke; `as`, `satisfies` i zagrade se preskaču. Sve ostalo je greška ulaza: getter, setter, metoda, Proxy, poziv, `__proto__`, izračunati ključ, spread, polje s rupom, naredba, funkcija i uvoz vrijednosti. Zato getter ne može vratiti tekst drukčiji od onoga koji skener čita. Skener čita svaki izvoz (i popise); list koji nije string i dvaput napisan ključ ruše skener.
-- `textOf` je zato u `text-of.ts`, izvan kataloga. Skener ne čita ne-kataloge (`NOT_CATALOGUES`) i ne sprječava da kod izvan kataloga promijeni tablicu nakon učitavanja; to i dalje provjerava review. Test provjerava točan broj pročitanih tekstova (1375, 1375 i 28); kad se tekst doda ili makne, broj se mijenja u testu.
+- `textOf` je zato u `text-of.ts`, izvan kataloga. Skener ne čita ne-kataloge (`NOT_CATALOGUES`) i ne sprječava da kod izvan kataloga promijeni tablicu nakon učitavanja; to i dalje provjerava review. Test provjerava točan broj pročitanih tekstova (1409, 1409 i 34); kad se tekst doda ili makne, broj se mijenja u testu.
 - Svaki tekst prolazi rječnik obaju jezika (`findForbiddenTerms`) i provjeru znakova (`unreadableCharacters`). U `en` nije dopušteno hrvatsko slovo, ni tekst jednak hrvatskom na istoj putanji, osim putanja na popisu `SAME_IN_BOTH` (imena i riječi iste u oba jezika).
 - Iznimke su zatvoren popis `EXCEPTIONS`; danas samo doslovni „Risk:” u `hr.json` `gate.risk_invalid` i `gate.risk_below_floor` (ime retka u opisu PR-a). Zastarjela stavka `EXCEPTIONS` ili `SAME_IN_BOTH` ruši skener.
 

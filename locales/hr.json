@@ -46,5 +46,13 @@
     "missing_field": "Događaju nedostaje obavezno polje.",
     "bad_field_value": "Vrijednost polja nije dopuštena za ovaj događaj.",
     "bad_options": "Postavke provjere zapisa nisu ispravne."
+  },
+  "app": {
+    "login_required": "Prijava je obavezna.",
+    "not_found": "Nije pronađeno.",
+    "document_not_found": "Dokument ne postoji.",
+    "document_read_forbidden": "Nemate pristup ovom dokumentu.",
+    "document_write_forbidden": "Nemate pravo mijenjati ovaj dokument.",
+    "method_not_allowed": "Metoda nije podržana."
   }
 }

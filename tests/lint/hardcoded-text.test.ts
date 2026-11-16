@@ -370,15 +370,22 @@ describe("repository config", () => {
     return Array.isArray(entry) ? entry[0] === 2 : entry === 2;
   }
 
-  it("reads every server file but tests, fixtures and the transitional server", async () => {
-    for (const f of ["server/access.ts", "server/app.spec.ts", "server/test-server/index.ts"])
+  it("reads every server file but tests and fixtures", async () => {
+    const read = ["server/access.ts", "server/app.spec.ts", "server/test-server/index.ts"];
+    // DAN-782: the transitional server is read like any other file.
+    for (const f of [...read, "server/app.ts", "server/index.ts"])
       expect(await ruleOn(f), f).toBe(true);
-    for (const f of ["server/app.test.ts", "server/log/invented.fixture.ts", "server/app.ts"])
+    for (const f of ["server/app.test.ts", "server/log/invented.fixture.ts"])
       expect(await ruleOn(f), f).toBe(false);
   });
 
-  it("keeps the transitional list closed and still needed", async () => {
-    expect(TEXT_TRANSITIONAL).toEqual(["server/app.ts"]);
+  it("keeps the transitional list empty and closed (DAN-782)", () => {
+    expect(TEXT_TRANSITIONAL).toEqual([]);
+  });
+
+  // A file on the transitional list must still hold text; today the list is
+  // empty, and the check stays for any entry an orchestrator decision adds.
+  it("keeps every file on the transitional list still needed", async () => {
     const only = new ESLint({
       cwd: ROOT,
       overrideConfigFile: true,
@@ -391,7 +398,30 @@ describe("repository config", () => {
         },
       ],
     });
-    const [result] = await only.lintFiles([path.join(ROOT, "server/app.ts")]);
-    expect(result?.messages.length ?? 0).toBeGreaterThan(0);
+    for (const file of TEXT_TRANSITIONAL) {
+      const [result] = await only.lintFiles([path.join(ROOT, file)]);
+      expect(result?.messages.length ?? 0, file).toBeGreaterThan(0);
+    }
+  });
+
+  it("finds no text in server/app.ts, whose errors are keys (DAN-782)", async () => {
+    const [result] = await eslint.lintFiles([path.join(ROOT, "server/app.ts")]);
+    const own = (result?.messages ?? []).filter((m) => m.ruleId === RULE || m.fatal);
+    expect(own.map((m) => m.message)).toEqual([]);
+  });
+
+  // Negative: the old text put back into server/app.ts is caught now that the
+  // file is read. Each piece is read on its own (no `+`, `.join` or constant
+  // resolution, c.6896146643), so a joined case is caught by its own letter.
+  it.each([
+    ['write(res, 404, { error: "Nije pronađeno." });', "letter"],
+    ['write(res, 404, { error: "Nije " + "pronađeno." });', "letter"],
+    ["write(res, 404, { error: `Nije ${x} pronađeno.` });", "letter"],
+    ['write(res, 405, { error: "Metoda nije podr" + "\\u017eana." });', "builder"],
+    ['write(res, 401, { error: "Prijava je obavezna" });', "sentence"],
+  ])("reports text put back into server/app.ts: %s", async (line, messageId) => {
+    const source = readFileSync(path.join(ROOT, "server/app.ts"), "utf8");
+    const code = `${source}\ndeclare const x: string;\n${line}\n`;
+    expect(await ids(code, "server/app.ts")).toContain(messageId);
   });
 });
