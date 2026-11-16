@@ -47,6 +47,10 @@
     "bad_field_value": "Vrijednost polja nije dopuštena za ovaj događaj.",
     "bad_options": "Postavke provjere zapisa nisu ispravne."
   },
+  "logWriter": {
+    "log_redacted": "Zapis sadrži vrijednost koju redakcija uklanja, pa nije upisan.",
+    "log_store_failed": "Baza zapisa nije primila zapis."
+  },
   "app": {
     "login_required": "Prijava je obavezna.",
     "not_found": "Nije pronađeno.",
