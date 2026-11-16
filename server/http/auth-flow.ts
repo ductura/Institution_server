@@ -113,17 +113,22 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+/** The HTML of the neutral page; step 7 of the pipeline answers a refused origin with it too. */
+export function failureHtml(status: 400 | 403 | 503): string {
+  const body = status === 503 ? t.auth.unavailableBody : t.auth.failedBody;
+  return `<!doctype html>
+<html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(t.auth.failedTitle)} · ${escapeHtml(t.app.name)}</title></head>
+<body><main><h1>${escapeHtml(t.auth.failedTitle)}</h1><p>${escapeHtml(body)}</p>
+<p><a href="${LOGIN_PATH}">${escapeHtml(t.auth.retry)}</a> · <a href="/">${escapeHtml(t.auth.home)}</a></p></main></body></html>`;
+}
+
 /** The neutral page every failure ends on. */
 export function failurePage(
   status: 400 | 403 | 503,
   extraHeaders: Headers = new Headers(),
 ): Response {
-  const body = status === 503 ? t.auth.unavailableBody : t.auth.failedBody;
-  const html = `<!doctype html>
-<html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(t.auth.failedTitle)} · ${escapeHtml(t.app.name)}</title></head>
-<body><main><h1>${escapeHtml(t.auth.failedTitle)}</h1><p>${escapeHtml(body)}</p>
-<p><a href="${LOGIN_PATH}">${escapeHtml(t.auth.retry)}</a> · <a href="/">${escapeHtml(t.auth.home)}</a></p></main></body></html>`;
+  const html = failureHtml(status);
   const headers = new Headers(extraHeaders);
   for (const [k, v] of Object.entries(NO_STORE)) headers.set(k, v);
   headers.set("content-type", "text/html; charset=utf-8");

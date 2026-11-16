@@ -181,6 +181,54 @@ describe("originLayer", () => {
   });
 });
 
+describe("originLayer on a route whose contract answers 403 with a page (QA on #155)", () => {
+  /** Runs the layer on a refused request and returns the content type and body sent. */
+  async function refused(method: string, url: string) {
+    const sent: { type?: string | undefined; body?: string; connection?: string | undefined } = {};
+    const set = new Map<string, string>();
+    const response = {
+      headersSent: false,
+      hasHeader: (key: string) => set.has(key.toLowerCase()),
+      setHeader: (key: string, value: string) => set.set(key.toLowerCase(), value),
+      getHeaderNames: () => [...set.keys()],
+      removeHeader: (key: string) => set.delete(key.toLowerCase()),
+      addTrailers: () => undefined,
+      writeHead(_status: number, a: unknown, b?: Record<string, string>) {
+        const headers = { ...Object.fromEntries(set), ...(b ?? (a as Record<string, string>)) };
+        sent.type = headers["content-type"];
+        sent.connection = headers.connection;
+      },
+      end: (body: string) => (sent.body = body),
+    } as unknown as ServerResponse;
+    const req = Object.assign(post({ origin: ["https://evil.invalid"] }, method), { url });
+    expect(await originLayer(ORIGIN)(req, response)).toBe("done");
+    return sent;
+  }
+
+  it.each([
+    ["POST", "/api/v1/auth/logout-all"],
+    ["POST", "/api/v1/auth/logout-all?a=1"],
+    ["POST", "/api/v1/auth/logout"],
+  ])("%s %s is the HTML page, the connection closed", async (method, url) => {
+    const sent = await refused(method, url);
+    expect(sent.type).toBe("text/html; charset=utf-8");
+    expect(sent.connection).toBe("close");
+    expect(sent.body).toMatch(/^<!doctype html>\n<html lang="hr">/u);
+  });
+
+  it.each([
+    ["POST", "/api/v1/client-context"],
+    ["PUT", "/api/v1/auth/logout-all"],
+    ["POST", "//api/v1/auth/logout-all"],
+    ["POST", "/api/v1/auth/logout-all/"],
+    ["POST", "/API/v1/auth/logout-all"],
+  ])("%s %s stays the problem JSON", async (method, url) => {
+    const sent = await refused(method, url);
+    expect(sent.type).toBe("application/json; charset=utf-8");
+    expect(JSON.parse(sent.body ?? "")).toMatchObject({ code: "origin_mismatch" });
+  });
+});
+
 /** A body that produces chunks on demand and records how far it was read. */
 function tracked(chunkSize: number, chunks: number, headers: Record<string, string> = {}) {
   const state = { pulled: 0 };

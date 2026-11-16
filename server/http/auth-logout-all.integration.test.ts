@@ -68,14 +68,30 @@ async function start(fail: "database" | "config" | null = null) {
     databases: createDatabases(),
     routes: createAuthRoutes({ NODE_ENV: "test" }, load),
   });
-  const send = (method: string, headers: Record<string, string> = GOOD, body?: string) =>
-    fetch(`http://127.0.0.1:${app!.port}${PATH}`, {
+  const send = (
+    method: string,
+    headers: Record<string, string> = GOOD,
+    body?: string,
+    query = "",
+  ) =>
+    fetch(`http://127.0.0.1:${app!.port}${PATH}${query}`, {
       method,
       headers,
       redirect: "manual",
       ...(body === undefined ? {} : { body }),
     });
   return { closed, send };
+}
+
+/** The vector `forbidden`: the neutral HTML page, no cookie, the connection closed. */
+async function expectHtml403(answer: Response) {
+  expect(answer.status).toBe(403);
+  expect(answer.headers.get("content-type")).toBe("text/html; charset=utf-8");
+  expect(answer.headers.get("cache-control")).toBe("no-store");
+  expect(answer.headers.get("connection")).toBe("close");
+  expect(answer.headers.get("location")).toBeNull();
+  expect(answer.headers.getSetCookie()).toEqual([]);
+  expect(await answer.text()).toMatch(/^<!doctype html>\n<html lang="hr">/u);
 }
 
 /** A Set-Cookie as its name and value and its attributes, in any order. */
@@ -97,16 +113,16 @@ describe("logout-all answers POST alone", () => {
     },
   );
 
-  it.each([
+  it.each<[string, Record<string, string>, string?]>([
     ["no Origin", { cookie: GOOD.cookie! }],
     ["Origin null", { ...GOOD, origin: "null" }],
     ["same-site", { ...GOOD, "sec-fetch-site": "same-site" }],
     ["two Origins", { ...GOOD, origin: `${ORIGIN}, ${ORIGIN}` }],
-  ])("POST with %s is refused by the pipeline before the route", async (_n, headers) => {
+    ["a cross-site fetch", { ...GOOD, "sec-fetch-site": "cross-site" }],
+    ["a query on the path", { ...GOOD, origin: "https://drugo.example.invalid" }, "?a=1"],
+  ])("POST with %s is refused by the pipeline with the HTML page", async (_n, headers, query) => {
     const { closed, send } = await start();
-    const answer = await send("POST", headers);
-    expect(answer.status).toBe(403);
-    expect(answer.headers.getSetCookie()).toEqual([]);
+    await expectHtml403(await send("POST", headers, undefined, query ?? ""));
     expect(closed).toEqual([]);
   });
 });
@@ -130,9 +146,9 @@ describe("the vectors of auth.logout-all.post", () => {
     const v = vector("forbidden");
     const { closed, send } = await start();
     const answer = await send("POST", v.request.headers);
-    // Step 7 of the pipeline answers before the route, with its own problem.
+    // Step 7 answers before the route, with the contract's HTML error (QA on #155).
     expect(answer.status).toBe(v.response.status);
-    expect(answer.headers.getSetCookie()).toEqual([]);
+    await expectHtml403(answer);
     expect(closed).toEqual([]);
   });
 
