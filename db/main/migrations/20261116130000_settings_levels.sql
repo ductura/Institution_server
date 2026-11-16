@@ -24,6 +24,11 @@
 -- one transaction-level advisory lock, so a bound and a lower write never pass
 -- each other.
 --
+-- The network_security level holds only keys under "network." (D-297: the
+-- network engineer reaches the network and security settings alone), so its
+-- bounds reach no other key; until the key catalogue (S-1J-f) names the keys.
+-- Lower levels may hold a "network." key, inside its bound.
+--
 -- Who writes (D-297, D-298): personal, every person for themselves; course,
 -- an open teacher of the course or an administrator of its institution;
 -- institution, its administrator; network_security, a network engineer with
@@ -34,7 +39,10 @@
 -- settings.change is append-only, in three layers like identity.app_admin
 -- (DAN-798): its owner has only SELECT and INSERT, the only policies are for
 -- those two, and a trigger refuses UPDATE, DELETE and TRUNCATE to every role
--- that is not a superuser (ZD409).
+-- that is not a superuser (ZD409). Known limit, as for app_admin: the owner,
+-- and ductus_migrator through SET ROLE or as owner of the schema, can still
+-- undo the layers with DDL (ALTER TABLE, DROP, a policy, the rights back).
+-- Neither is an application role and no function runs DDL for them.
 -- migrate:up
 
 SET LOCAL ROLE ductus_migrator;
@@ -190,6 +198,12 @@ DECLARE
   v_low settings.value;
   v_change bigint;
 BEGIN
+  -- The advisory lock below orders writes of a key only if every statement
+  -- takes a fresh snapshot; under REPEATABLE READ a bound and a lower write
+  -- could miss each other.
+  IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'READ COMMITTED required' USING ERRCODE = 'ZD500';
+  END IF;
   PERFORM 1 FROM identity.session s
    WHERE s.token_hash = pg_catalog.sha256(pg_catalog.convert_to(pg_catalog.current_setting('app.session_token', true), 'UTF8'))
      FOR SHARE;
@@ -200,6 +214,7 @@ BEGIN
 
   IF p_level IS NULL OR p_level NOT IN ('personal', 'course', 'institution', 'system', 'network_security')
      OR (p_level = 'course') <> (p_course IS NOT NULL)
+     OR (p_level = 'network_security' AND p_key NOT LIKE 'network.%')
      OR p_key IS NULL OR length(p_key) > 64 OR p_key !~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$'
      OR octet_length(p_value::text) > 8192
      OR (p_bound IS NOT NULL AND (p_level NOT IN ('institution', 'system', 'network_security')
@@ -217,7 +232,8 @@ BEGIN
     WHEN 'institution' THEN institution.actor_has_role('admin')
     WHEN 'network_security' THEN EXISTS (
       SELECT 1 FROM identity.network_engineer_appointment n
-       WHERE n.user_id = v_user AND n.institution_id = v_actor_institution AND n.revoked_at IS NULL)
+       WHERE n.user_id = v_user AND n.institution_id = v_actor_institution AND n.revoked_at IS NULL
+         AND n.appointed_at <= pg_catalog.now())
     ELSE false
   END;
   IF NOT coalesce(v_allowed, false) THEN

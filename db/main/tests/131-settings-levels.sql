@@ -110,7 +110,7 @@ SELECT doesnt_imatch((SELECT prosrc FROM pg_proc WHERE oid = 'settings.set_value
 
 -- 3. Account kind by level. Iva admin fak-a, Vesna teacher of K1, Ana
 -- student, Boris network engineer, Lea admin fak-b, Nina unconfirmed teacher.
-SELECT is(pg_temp.put(m.actor, m.level, m.course, 'm.k' || m.n, '1'), m.expect,
+SELECT is(pg_temp.put(m.actor, m.level, m.course, CASE m.level WHEN 'network_security' THEN 'network.k' ELSE 'm.k' END || m.n, '1'), m.expect,
   format('%s on %s%s: %s', m.actor, m.level, coalesce(' ' || m.course, ''), m.expect))
 FROM (VALUES
   (1, 'ana', 'personal', NULL, 'ok'), (2, 'ana', 'course', 'k1', 'ZD403: not allowed'),
@@ -133,7 +133,7 @@ FROM (VALUES
 SELECT is(pg_temp.stored('institution', 'm.k28'), '-=1', 'Lea''s institution row is fak-b''s own');
 SELECT is((SELECT institution_id FROM settings.value WHERE key = 'm.k28'), pg_temp.id('fak_b'),
   'the institution comes from the session, not from an argument');
-SELECT is((SELECT institution_id FROM settings.value WHERE key = 'm.k25'), NULL,
+SELECT is((SELECT institution_id FROM settings.value WHERE key = 'network.k25'), NULL,
   'network_security is application-wide');
 
 -- A revoked admin role and a revoked teacher membership lose the level.
@@ -144,6 +144,19 @@ UPDATE institution.institution_role SET revoked_at = NULL WHERE user_id = pg_tem
 UPDATE institution.course_member SET member_to = now() WHERE user_id = pg_temp.id('vesna') AND course_id = pg_temp.id('k1');
 SELECT is(pg_temp.put('vesna', 'course', 'k1', 'm.r', '1'), 'ZD403: not allowed', 'ended membership: course refused');
 UPDATE institution.course_member SET member_to = NULL WHERE user_id = pg_temp.id('vesna') AND course_id = pg_temp.id('k1');
+
+-- An appointment that has not started yet does not count.
+UPDATE identity.network_engineer_appointment SET appointed_at = now() + interval '1 day' WHERE user_id = pg_temp.id('boris');
+SELECT is(pg_temp.put('boris', 'network_security', NULL, 'network.r', '1'), 'ZD403: not allowed', 'future appointment: refused');
+UPDATE identity.network_engineer_appointment SET appointed_at = now() - interval '1 day' WHERE user_id = pg_temp.id('boris');
+
+-- The network engineer reaches network keys alone: another institution's
+-- settings of any other key stay out of reach (D-297).
+SELECT is(pg_temp.put('lea', 'institution', NULL, 'citation.style', '"apa"', '{"locked": true}'), 'ok', 'Lea locks fak-b citation.style');
+SELECT is(pg_temp.put('boris', 'network_security', NULL, n.key, NULL, '{"locked": true}'), 'ZD422: invalid input',
+  format('Boris cannot set %s at network_security', n.key))
+FROM unnest(ARRAY['citation.style', 'networking', 'network', 'm.network.x']) AS n (key);
+SELECT is(pg_temp.stored('institution', 'citation.style'), '-="apa" {"locked": true}', 'Lea''s row is untouched');
 
 -- 4. No live session: ZD401, nothing written.
 SELECT is(pg_temp.put(t.name, 'personal', NULL, 'm.s', '1'), 'ZD401: not authenticated', format('ZD401 for %s', t.name))
@@ -181,9 +194,9 @@ FROM (VALUES
 ) AS b (what, level, course, key, value, bound);
 SELECT is((SELECT count(*)::int FROM settings.value WHERE key = 'x'), 0, 'no ZD422 call wrote a row');
 
--- 6. The bound of a higher level. Iva bounds fak-a's key s.limit to [2, 10].
-SELECT is(pg_temp.put('iva', 'institution', NULL, 's.limit', '6', '{"min": 2, "max": 10}'), 'ok', 'Iva sets [2, 10] with 6');
-SELECT is(pg_temp.put('vesna', 'course', 'k1', 's.limit', v.value), v.expect, format('K1 value %s: %s', v.value, v.expect))
+-- 6. The bound of a higher level. Iva bounds fak-a's key network.limit to [2, 10].
+SELECT is(pg_temp.put('iva', 'institution', NULL, 'network.limit', '6', '{"min": 2, "max": 10}'), 'ok', 'Iva sets [2, 10] with 6');
+SELECT is(pg_temp.put('vesna', 'course', 'k1', 'network.limit', v.value), v.expect, format('K1 value %s: %s', v.value, v.expect))
 FROM (VALUES ('10', 'ok'), ('2', 'ok'), ('10.0', 'ok'), ('1e1', 'ok'),
              ('10.0000000001', 'ZD409: crosses a higher bound'), ('11', 'ZD409: crosses a higher bound'),
              ('1.9999999999', 'ZD409: crosses a higher bound'), ('-0', 'ZD409: crosses a higher bound'),
@@ -191,45 +204,45 @@ FROM (VALUES ('10', 'ok'), ('2', 'ok'), ('10.0', 'ok'), ('1e1', 'ok'),
              ('true', 'ZD409: crosses a higher bound'), ('[5]', 'ZD409: crosses a higher bound'),
              ('{"n": 5}', 'ZD409: crosses a higher bound'), ('null', 'ZD409: crosses a higher bound'),
              ('5', 'ok')) AS v (value, expect);
-SELECT is(pg_temp.put('ana', 'personal', NULL, 's.limit', '11'), 'ZD409: crosses a higher bound', 'a personal value is bound by the institution');
-SELECT is(pg_temp.put('ana', 'personal', NULL, 's.limit', '3'), 'ok', 'a personal value inside the bound');
-SELECT is(pg_temp.put('tomo', 'personal', NULL, 's.limit', '99'), 'ok', 'fak-a''s bound does not reach fak-b');
-SELECT is(pg_temp.put('lea', 'course', 'k3', 's.limit', '99'), 'ok', 'nor a fak-b course');
-SELECT is(pg_temp.stored('course', 's.limit'), 'K1=5, K3=99', 'only the values inside the bound were stored');
+SELECT is(pg_temp.put('ana', 'personal', NULL, 'network.limit', '11'), 'ZD409: crosses a higher bound', 'a personal value is bound by the institution');
+SELECT is(pg_temp.put('ana', 'personal', NULL, 'network.limit', '3'), 'ok', 'a personal value inside the bound');
+SELECT is(pg_temp.put('tomo', 'personal', NULL, 'network.limit', '99'), 'ok', 'fak-a''s bound does not reach fak-b');
+SELECT is(pg_temp.put('lea', 'course', 'k3', 'network.limit', '99'), 'ok', 'nor a fak-b course');
+SELECT is(pg_temp.stored('course', 'network.limit'), 'K1=5, K3=99', 'only the values inside the bound were stored');
 
 -- The application-wide level bounds the institution too, and a lower bound
 -- may not widen a higher one.
-SELECT is(pg_temp.put('boris', 'network_security', NULL, 's.limit', NULL, '{"max": 50}'), 'ok', 'Boris bounds s.limit to 50 everywhere');
-SELECT is(pg_temp.stored('course', 's.limit'), 'K1=5', 'the fak-b course value of 99 is gone');
-SELECT is(pg_temp.stored('personal', 's.limit'), 'ana=3', 'and so is Tomo''s 99');
-SELECT is(pg_temp.put('lea', 'institution', NULL, 's.limit', NULL, '{"max": 60}'), 'ZD409: crosses a higher bound',
+SELECT is(pg_temp.put('boris', 'network_security', NULL, 'network.limit', NULL, '{"max": 50}'), 'ok', 'Boris bounds network.limit to 50 everywhere');
+SELECT is(pg_temp.stored('course', 'network.limit'), 'K1=5', 'the fak-b course value of 99 is gone');
+SELECT is(pg_temp.stored('personal', 'network.limit'), 'ana=3', 'and so is Tomo''s 99');
+SELECT is(pg_temp.put('lea', 'institution', NULL, 'network.limit', NULL, '{"max": 60}'), 'ZD409: crosses a higher bound',
   'a lower bound wider than the higher one is refused');
-SELECT is(pg_temp.put('lea', 'institution', NULL, 's.limit', NULL, '{"min": 0}'), 'ZD409: crosses a higher bound',
+SELECT is(pg_temp.put('lea', 'institution', NULL, 'network.limit', NULL, '{"min": 0}'), 'ZD409: crosses a higher bound',
   'a lower bound without the higher end is refused');
-SELECT is(pg_temp.put('lea', 'institution', NULL, 's.limit', NULL, '{"locked": true}'), 'ok', 'a lock lies inside any bound');
-SELECT is(pg_temp.put('petra', 'course', 'k3', 's.limit', '1'), 'ZD409: crosses a higher bound', 'under a lock, nothing lower is set');
-SELECT is(pg_temp.put('lea', 'institution', NULL, 's.limit', NULL, '{"max": 50.0}'), 'ok', 'an equal bound is inside');
+SELECT is(pg_temp.put('lea', 'institution', NULL, 'network.limit', NULL, '{"locked": true}'), 'ok', 'a lock lies inside any bound');
+SELECT is(pg_temp.put('petra', 'course', 'k3', 'network.limit', '1'), 'ZD409: crosses a higher bound', 'under a lock, nothing lower is set');
+SELECT is(pg_temp.put('lea', 'institution', NULL, 'network.limit', NULL, '{"max": 50.0}'), 'ok', 'an equal bound is inside');
 
 -- Narrowing deletes every lower row that breaks the new bound, each with a
 -- history row (cause 'bound', author the narrowing person); rows inside stay.
-SELECT is(pg_temp.put('vesna', 'course', 'k1', 's.limit', '9'), 'ok', 'K1 at 9');
-SELECT is(pg_temp.put('marko', 'course', 'k2', 's.limit', '4'), 'ok', 'K2 at 4');
-SELECT is(pg_temp.put('dora', 'personal', NULL, 's.limit', '8'), 'ok', 'Dora at 8');
-SELECT is(pg_temp.put('iva', 'institution', NULL, 's.limit', '4', '{"min": 2, "max": 4}'), 'ok', 'Iva narrows to [2, 4]');
-SELECT is(pg_temp.stored('course', 's.limit'), 'K2=4', 'K1 at 9 is deleted, K2 at 4 stays');
-SELECT is(pg_temp.stored('personal', 's.limit'), 'ana=3', 'Dora at 8 is deleted, Ana at 3 stays');
+SELECT is(pg_temp.put('vesna', 'course', 'k1', 'network.limit', '9'), 'ok', 'K1 at 9');
+SELECT is(pg_temp.put('marko', 'course', 'k2', 'network.limit', '4'), 'ok', 'K2 at 4');
+SELECT is(pg_temp.put('dora', 'personal', NULL, 'network.limit', '8'), 'ok', 'Dora at 8');
+SELECT is(pg_temp.put('iva', 'institution', NULL, 'network.limit', '4', '{"min": 2, "max": 4}'), 'ok', 'Iva narrows to [2, 4]');
+SELECT is(pg_temp.stored('course', 'network.limit'), 'K2=4', 'K1 at 9 is deleted, K2 at 4 stays');
+SELECT is(pg_temp.stored('personal', 'network.limit'), 'ana=3', 'Dora at 8 is deleted, Ana at 3 stays');
 SELECT bag_eq(
   $$ SELECT coalesce(p.name, c.name) || ' ' || h.old_value::text || ' by ' || a.name FROM settings.change h
      LEFT JOIN person p ON p.id = h.user_id LEFT JOIN institution.course c ON c.id = h.course_id
      JOIN person a ON a.id = h.changed_by
-     WHERE h.key = 's.limit' AND h.cause = 'bound' AND h.new_value IS NULL AND h.new_bound IS NULL
+     WHERE h.key = 'network.limit' AND h.cause = 'bound' AND h.new_value IS NULL AND h.new_bound IS NULL
        AND h.changed_by_institution = a.institution_id $$,
   ARRAY['K3 99 by boris', 'tomo 99 by boris', 'K1 9 by iva', 'dora 8 by iva'],
   'every deleted lower row has its own history row naming who set the bound');
-SELECT is(pg_temp.put('boris', 'network_security', NULL, 's.limit', NULL, '{"locked": true}'), 'ok', 'Boris locks s.limit');
-SELECT is((SELECT count(*)::int FROM settings.value WHERE key = 's.limit'), 1, 'only the locking row is left');
-SELECT is(pg_temp.put('iva', 'institution', NULL, 's.limit', '3'), 'ZD409: crosses a higher bound', 'the institution is locked out too');
-SELECT is(pg_temp.put('ana', 'personal', NULL, 's.limit', NULL), 'ok', 'removing what is not there changes nothing');
+SELECT is(pg_temp.put('boris', 'network_security', NULL, 'network.limit', NULL, '{"locked": true}'), 'ok', 'Boris locks network.limit');
+SELECT is((SELECT count(*)::int FROM settings.value WHERE key = 'network.limit'), 1, 'only the locking row is left');
+SELECT is(pg_temp.put('iva', 'institution', NULL, 'network.limit', '3'), 'ZD409: crosses a higher bound', 'the institution is locked out too');
+SELECT is(pg_temp.put('ana', 'personal', NULL, 'network.limit', NULL), 'ok', 'removing what is not there changes nothing');
 
 -- A level may lock its own value; the levels below then change nothing.
 SELECT is(pg_temp.put('iva', 'institution', NULL, 's.cite', '"apa"', '{"locked": true}'), 'ok', 'Iva locks s.cite at "apa"');
