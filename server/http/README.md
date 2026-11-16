@@ -49,7 +49,7 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);
 - `createDatabases`, `Databases` (`databases.ts`);
 - `startLogin`, `finishLogin`, `LOGIN_COOKIE_NAME`, `AuthDeps` (`auth-flow.ts`);
-- `createAuthRoutes`, `loadAuthDeps` (`auth.ts`) i `sendHtmlProblem` (`problem.ts`).
+- `createAuthRoutes` (`auth.ts`) i `sendHtmlProblem` (`problem.ts`). `loadAuthDeps` ostaje unutar mape: vraća goli `openSession` (F-042).
 
 ## Što ne smije uvoziti
 

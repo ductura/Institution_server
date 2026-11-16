@@ -221,7 +221,10 @@ describe("login against the fake OIDC provider in each of its modes", () => {
     expect(cookies).toEqual([
       `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
     ]);
-    expect(logged.some((line) => line.startsWith("login failed verify"))).toBe(true);
+    // The userinfo challenge for an expired access token, not any other 400.
+    expect(logged).toContain(
+      "login failed verify WWWAuthenticateChallengeError:OAUTH_WWW_AUTHENTICATE_CHALLENGE",
+    );
     expect(opened).toEqual([]);
   });
 
@@ -238,21 +241,41 @@ describe("login against the fake OIDC provider in each of its modes", () => {
 });
 
 describe("the login routes over HTTP", () => {
-  it("come from the contract, and answer other methods 405", async () => {
+  it("come from the contract, and answer another method 405 with Allow: GET", async () => {
     const { origin } = await stack("success");
     const ids = ROUTES.filter((r) => r.path.startsWith("/api/v1/auth/") && r.method === "GET");
     expect(ids.map((r) => r.id).sort()).toEqual(["auth.callback.get", "auth.login.get"]);
-    const post = await fetch(`${origin}/api/v1/auth/login`, { method: "POST" });
-    expect([403, 405]).toContain(post.status);
+    for (const path of ["/api/v1/auth/login", "/api/v1/auth/callback"]) {
+      const head = await fetch(`${origin}${path}`, { method: "HEAD" });
+      expect(head.status, path).toBe(405);
+      expect(head.headers.get("allow")).toBe("GET");
+    }
   });
 
   it("build the callback URL from the configuration, never from Host", async () => {
-    const { origin, logged } = await stack("success");
-    const answer = await fetch(`${origin}/api/v1/auth/callback?code=x&state=y`, {
+    const { origin, opened } = await stack("success");
+    const b = browser();
+    const start = await b.get(`${origin}/api/v1/auth/login?returnTo=/radovi`);
+    const authorize = location(start, origin);
+    const interaction = location(await b.get(authorize), authorize);
+    const resume = location(
+      await b.get(`${interaction}/login`, { method: "POST", form: { account: "demo-student" } }),
+      interaction,
+    );
+    const back = location(await b.get(resume), resume);
+    // The callback arrives with a forged Host; the provider redeems the code
+    // only for the configured redirect URI, and the browser goes back to the
+    // configured origin.
+    const answer = await fetch(back, {
       redirect: "manual",
-      headers: { host: "attacker.invalid" },
+      headers: {
+        host: "attacker.invalid",
+        cookie: [...b.jar].map(([name, value]) => `${name}=${value}`).join("; "),
+      },
     });
-    await expectPage(answer, 400, logged);
+    expect(answer.status).toBe(303);
+    expect(answer.headers.get("location")).toBe(`${origin}/radovi`);
+    expect(opened).toHaveLength(1);
   });
 
   it("a callback replayed after a login opens no second session", async () => {
