@@ -60,9 +60,9 @@ function fakeResponse() {
 // tested in server/contracts/message-keys.test.ts (DAN-789 a).
 
 // Bodies that keep a v1 shape the guard does not let change (PR opis, "Poznate
-// granice"): a page for a browser navigation, no body, the code in `status`, or
-// {error: code} under a oneOf (v1Error). A closed list, so a new route with
-// another shape fails here.
+// granice"): a page for a browser navigation, no body or the code in `status`
+// are closed lists below, so a new route with another shape fails here;
+// {error: code} under a oneOf (v1Error) is the rule V1_GUARD_CODES further down.
 const HTML = new Set([
   "auth.login.get",
   "auth.callback.get",
