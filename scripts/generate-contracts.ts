@@ -224,6 +224,9 @@ const NESTED_READ = /value\['(\w+)'\]\['/g;
  * refused, as an unexpected shape.
  */
 function nestedObjects(code: string, where: string): string {
+  // A nested read whose key is not a plain name would stay untyped: refuse it here, not in tsc.
+  if (/value\['[^']*[^\w'][^']*'\]\['/.test(code))
+    throw new Error(`unexpected nested validator shape for ${where}`);
   const keys = [...new Set([...code.matchAll(NESTED_READ)].map((m) => m[1] ?? ""))];
   if (keys.length === 0) return code;
   if (code.includes("for(const value of array)") || /\['\w+'\]\['\w+'\]\['/.test(code))

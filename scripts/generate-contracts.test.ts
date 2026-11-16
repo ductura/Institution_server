@@ -77,6 +77,10 @@ describe("compileValidator", () => {
     const leaf = Type.Object({ x: Type.String() });
     const deep = Type.Object({ a: Type.Object({ b: leaf }) });
     expect(() => compileValidator(deep, "test:deep")).toThrow(/unexpected nested validator shape/u);
+    const dashed = Type.Object({ "a-b": Type.Object({ f: Type.Integer() }) });
+    expect(() => compileValidator(dashed, "test:dashed")).toThrow(
+      /unexpected nested validator shape/u,
+    );
     const listed = Type.Object({ a: leaf, list: Type.Array(Type.Object({ c: leaf })) });
     expect(() => compileValidator(listed, "test:listed")).toThrow(
       /unexpected nested validator shape/u,
