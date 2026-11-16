@@ -76,8 +76,8 @@ const overHttp = VECTORS.filter((v) => v.request.headers?.["content-length"] ===
 
 describe("fake server over HTTP", () => {
   it("sends all but the framing vectors over the wire", () => {
-    // Five framing vectors per guarded mutation route: 9 before DAN-803, +5 support.problem-report.post.
-    expect(VECTORS.length - overHttp.length).toBe(14);
+    // Five framing vectors per guarded mutation route: 18 on main, +5 support.problem-report.post.
+    expect(VECTORS.length - overHttp.length).toBe(23);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

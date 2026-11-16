@@ -1985,6 +1985,7 @@ export const hr = {
     bodyStreamError: "Slanje zahtjeva prekinuto je prije kraja. Pokušajte ponovno.",
     bodyTimeout: "Slanje zahtjeva trajalo je predugo. Pokušajte ponovno.",
     bodyTooLarge: "Zahtjev je prevelik.",
+    boundCrossed: "Vrijednost je izvan granice koju je postavila viša razina.",
     chainConflict:
       "Zapis rada na poslužitelju razlikuje se od onoga na ovom uređaju. Učitajte rad ponovno.",
     contentLengthInvalid: "Duljina zahtjeva nije ispravno navedena.",

@@ -8,6 +8,7 @@ export {
   MAX_BACKCHANNEL_BODY_BYTES,
   type BackchannelDeps,
 } from "./backchannel.ts";
+export { previousSessionToken, sessionSetCookie } from "./login-cookie.ts";
 export { sessionTokenFromCookie } from "./cookie.ts";
 export { ENDED_MARK_COOKIE, liveSessionToken, type CookieReader } from "./ended-mark.ts";
 export type {

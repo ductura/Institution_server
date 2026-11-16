@@ -28,6 +28,7 @@
     "release:check": "node scripts/release/check.ts",
     "release:tag": "node scripts/release/tag.ts",
     "release:tarball": "node scripts/release/tarball.ts",
+    "release:level": "node scripts/release/auto.ts",
     "db:up": "docker compose up -d --build --wait postgres-main postgres-logs && pnpm db:migrate",
     "db:up:native": "node scripts/db/native-db.ts up",
     "db:provision": "docker compose exec -T postgres-main psql -U ductus -d ductus -v ON_ERROR_STOP=1 -q < db/main/local/migrator.sql",

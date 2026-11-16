@@ -9,6 +9,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["body_stream_error", "errors.bodyStreamError"],
   ["body_timeout", "errors.bodyTimeout"],
   ["body_too_large", "errors.bodyTooLarge"],
+  ["bound_crossed", "errors.boundCrossed"],
   ["chain_conflict", "errors.chainConflict"],
   ["content_length_invalid", "errors.contentLengthInvalid"],
   ["content_length_mismatch", "errors.contentLengthMismatch"],
