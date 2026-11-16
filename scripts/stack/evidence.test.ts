@@ -3,6 +3,7 @@
 // bucket label and server environment, and that a production NODE_ENV never
 // falls back to the development signer or the local S3.
 import {
+  chmodSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -107,6 +108,17 @@ describe("the signing seed through a link (Codex c.4584063033)", () => {
     const seed = seedFile(join(checkout, ".stack", "vs1"), checkout, join(dir, "home"));
     ensureSeed(seed, checkout);
     expect(readFileSync(seed).byteLength).toBe(32);
+  });
+});
+
+describe("an existing seed directory (QA c.6913087963)", () => {
+  it.each([[0o755], [0o777]])("with mode %o is made 0700 before the seed is written", (mode) => {
+    const holder = join(dir, "postoji");
+    mkdirSync(holder);
+    chmodSync(holder, mode);
+    ensureSeed(join(holder, "signing-seed"), ROOT);
+    expect(statSync(holder).mode & 0o777).toBe(0o700);
+    expect(statSync(join(holder, "signing-seed")).mode & 0o777).toBe(0o600);
   });
 });
 

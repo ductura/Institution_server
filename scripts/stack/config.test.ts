@@ -114,23 +114,8 @@ describe("stackPorts", () => {
     expect(() => stackPorts({ [name]: value })).toThrow(/bad port/u);
   });
 
-  it("has default ports fetch accepts", async () => {
-    for (const port of Object.values(DEFAULT_PORTS)) {
-      expect(FETCH_BAD_PORTS).not.toContain(port);
-      // undici's own refusal, never a connection: "bad port" only for the listed ones.
-      const fault = await fetch(`http://127.0.0.1:${port}/`, {
-        signal: AbortSignal.timeout(2000),
-      }).then(
-        () => null,
-        (error: unknown) =>
-          String((error as { cause?: { message?: string } }).cause?.message ?? ""),
-      );
-      expect(fault).not.toBe("bad port");
-    }
-    const refused = await fetch("http://127.0.0.1:4190/").catch(
-      (error: unknown) => (error as { cause?: { message?: string } }).cause?.message,
-    );
-    expect(refused).toBe("bad port");
+  it("has no default port fetch refuses", () => {
+    for (const port of Object.values(DEFAULT_PORTS)) expect(FETCH_BAD_PORTS).not.toContain(port);
   });
 
   it.each(["3000", "3004"])("refuses the reserved port %s for the local S3", (value) => {

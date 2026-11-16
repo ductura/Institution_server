@@ -7,7 +7,14 @@
 // part of dist/server.js.
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 import { PersistentDevelopmentEd25519SigningKeyProvider } from "../../server/external/keys/index.ts";
@@ -70,6 +77,13 @@ export function ensureSeed(file: string, root: string): void {
   if (inside(realLocation(dirname(file)), repository)) refuse();
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
   if (inside(realpathSync(dirname(file)), repository)) refuse();
+  // An existing directory keeps its mode under mkdir: it must be this user's
+  // own real directory, and it is made 0700 here, so no one else can swap the seed.
+  const holder = lstatSync(dirname(file));
+  if (!holder.isDirectory() || holder.uid !== process.getuid?.()) {
+    throw new Error("the signing seed's directory is not this user's own directory");
+  }
+  chmodSync(dirname(file), 0o700);
   try {
     writeFileSync(file, randomBytes(32), { flag: "wx", mode: 0o600 });
   } catch (error) {
