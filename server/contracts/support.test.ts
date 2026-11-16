@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { VECTORS } from "./generated/fake-server/index.ts";
-import { canonicalJson, createClient } from "./generated/index.ts";
+import { canonicalJson, createClient, validateInput } from "./generated/index.ts";
 
 const vector = (name: string) => {
   const found = VECTORS.find((v) => v.route === "support.problem-report.post" && v.name === name);
@@ -54,5 +54,31 @@ describe("the client sends the JCS bytes Ductus asks for", () => {
     expect(JSON.parse(raw)).toEqual(vector("recorded").request.body);
     expect(raw).not.toBe(canonicalJson(JSON.parse(raw)));
     expect(vector("not-canonical").response.status).toBe(422);
+  });
+});
+
+describe("lone surrogates are refused, as Ductus does (review c.6908717137)", () => {
+  const report = () => ({ ...(vector("recorded").request.body as Record<string, unknown>) });
+  const valid = (description: string) =>
+    validateInput("support.problem-report.post", "body", { ...report(), description });
+  const astral = "\u{1D4D0}";
+
+  it("the description is 1 to 1000 code points with no lone surrogate", () => {
+    expect(valid("a\uD800b")).toBe(false);
+    expect(valid("a\uDC00b")).toBe(false);
+    expect(valid("\uDC00\uD800")).toBe(false);
+    expect(valid(`a${astral}b`)).toBe(true);
+    expect(valid(astral.repeat(1000))).toBe(true);
+    expect(valid("č".repeat(1000))).toBe(true);
+    expect(valid("x".repeat(1001))).toBe(false);
+    expect(valid(astral.repeat(1001))).toBe(false);
+    expect(valid("")).toBe(false);
+  });
+
+  it("canonicalJson refuses a lone surrogate in a value or a key, never sends it", () => {
+    expect(() => canonicalJson({ description: "a\uD800b" })).toThrow(/lone surrogate/u);
+    expect(() => canonicalJson({ ["k\uDFFF"]: 1 })).toThrow(/lone surrogate/u);
+    expect(() => canonicalJson(["\uD800"])).toThrow(/lone surrogate/u);
+    expect(canonicalJson({ d: `a${astral}` })).toBe(`{"d":"a${astral}"}`);
   });
 });

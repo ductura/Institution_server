@@ -42,7 +42,7 @@ export const problemReportPost = defineRoute({
   inventory: "app/api/support/problem-report/route.ts",
   access: "signed_in",
   summary:
-    "Sends a problem report: the user's description and a closed technical context. The body is the JCS form of the value, at most 8 KiB; the description is 1 to 1000 code points with a visible character and no control or bidi character other than newline and tab (checked by the server, answered 422). The route is a page template; the server checks it against its closed list of 27 templates and answers 422 otherwise. At most five reports per account in an hour.",
+    "Sends a problem report: the user's description and a closed technical context. The body is the JCS form of the value, at most 8 KiB; the description is 1 to 1000 code points, no lone surrogate, with a visible character and no control or bidi character other than newline and tab (checked by the server, answered 422). The route is a page template; the server checks it against its closed list of 27 templates and answers 422 otherwise. At most five reports per account in an hour.",
   request: {
     contentType: "application/json",
     maxBodyBytes: 8 * 1024,
@@ -53,8 +53,11 @@ export const problemReportPost = defineRoute({
         major: Type.Union([Type.Integer({ minimum: 0, maximum: 999 }), Type.Null()]),
       }),
       category: literals(["technical", "account", "course"]),
-      // 1000 code points are at most 2000 UTF-16 units; the server counts code points.
-      description: Type.String({ minLength: 1, maxLength: 2000 }),
+      // 1 to 1000 code points, no lone surrogate (isProblemDescription, canonicalizeJcs);
+      // a surrogate pair is one code point. The other rules stay the server's (422).
+      description: Type.String({
+        pattern: "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,1000}(?![\\s\\S])",
+      }),
       route: Type.Union([PAGE_ROUTE, Type.Null()]),
       syncState: Type.Union([literals(SYNC_STATES), Type.Null()]),
     }),

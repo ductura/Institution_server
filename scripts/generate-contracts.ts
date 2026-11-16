@@ -315,13 +315,18 @@ export type Result<Id extends OperationId> =
  * Routes that read canonical JSON (support.problem-report.post) refuse any
  * other spelling with 422, so every JSON body is sent this way.
  */
+const LONE_SURROGATE = /[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]/;
+
 export function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return \`[\${value.map((item) => canonicalJson(item === undefined ? null : item)).join(",")}]\`;
   if (value !== null && typeof value === "object") {
     const record = value as Record<string, unknown>;
     const keys = Object.keys(record).sort().filter((key) => record[key] !== undefined);
+    for (const key of keys) canonicalJson(key);
     return \`{\${keys.map((key) => \`\${JSON.stringify(key)}:\${canonicalJson(record[key])}\`).join(",")}}\`;
   }
+  // JCS refuses a lone surrogate (RFC 8785 §3.2.2.2), as Ductus canonicalizeJcs does.
+  if (typeof value === "string" && LONE_SURROGATE.test(value)) throw new TypeError("canonicalJson: lone surrogate");
   return JSON.stringify(value) ?? "null";
 }
 

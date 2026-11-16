@@ -98,7 +98,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   })(),
   "support.problem-report.post:body": (() => {
   const local0 = /^(?:(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})(?:\+[0-9a-f]{7,40})?|[0-9a-f]{7,40})$/;
-  const local1 = /^\/(?:(?:[a-z]+(?:-[a-z]+)*|\[[A-Za-z]+\])(?:\/(?:[a-z]+(?:-[a-z]+)*|\[[A-Za-z]+\]))*)?$/;
+  const local1 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,1000}(?![\s\S])/;
+  const local2 = /^\/(?:(?:[a-z]+(?:-[a-z]+)*|\[[A-Za-z]+\])(?:\/(?:[a-z]+(?:-[a-z]+)*|\[[A-Za-z]+\]))*)?$/;
   return function check(value: Record<string, unknown>): boolean {
       const nestedBrowser = (typeof value === 'object' && value !== null ? value['browser'] : undefined) as Record<string, unknown>;
     return (
@@ -111,9 +112,8 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value['browser']).length === 2 &&
       (((value['category'] === 'technical')) || ((value['category'] === 'account')) || ((value['category'] === 'course'))) &&
       (typeof value['description'] === 'string') &&
-      value['description'].length <= 2000 &&
-      value['description'].length >= 1 &&
-      (((typeof value['route'] === 'string') && value['route'].length <= 128 && local1.test(value['route'])) || ((value['route'] === null))) &&
+      local1.test(value['description']) &&
+      (((typeof value['route'] === 'string') && value['route'].length <= 128 && local2.test(value['route'])) || ((value['route'] === null))) &&
       (((((value['syncState'] === 'EDITING')) || ((value['syncState'] === 'SAVING_LOCAL')) || ((value['syncState'] === 'LOCAL_DURABLE')) || ((value['syncState'] === 'SYNCING')) || ((value['syncState'] === 'SYNCED')) || ((value['syncState'] === 'CONFLICT')) || ((value['syncState'] === 'ERROR')) || ((value['syncState'] === 'RECOVERY_REQUIRED')))) || ((value['syncState'] === null))) &&
       Object.getOwnPropertyNames(value).length === 6
     )
