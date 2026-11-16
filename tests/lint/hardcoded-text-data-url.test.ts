@@ -3,7 +3,11 @@ import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
 import { describe, expect, it } from "vitest";
 
-import { dataUrlProblem, normalizeUrlInput } from "../../scripts/lint-rules/index.ts";
+import {
+  dataUrlProblem,
+  htmlReferenceText,
+  normalizeUrlInput,
+} from "../../scripts/lint-rules/index.ts";
 
 // S-1L.2c (DAN-784): interface text hidden in a data: URL. The scheme is found
 // as the WHATWG URL parser finds it (normalizeUrlInput), then the body is
@@ -92,6 +96,13 @@ const hidden: [what: string, literal: string][] = [
   ["encoded upper case flag", "data:;%42ase64,xI1la2Fq"],
   ["encoded upper case flag, all letters", "data:;%42%41%53%45%36%34,xI1la2Fq"],
   ["markup after the body", "data:;base64,xI1la2Fq}}]]>"],
+  // Review FAIL c.6904968268 on #82: HTML reads 0x80–0x9F as windows-1252.
+  ["windows-1252 reference, decimal", "data:text/html,%26%23154%3Balji"],
+  ["windows-1252 reference, hex", "data:text/html,%26%23x9A%3Balji"],
+  ["windows-1252 reference, upper case hex", "data:text/html,%26%23X9a%3Balji"],
+  ["windows-1252 reference without a semicolon", "data:text/html,%26%23138alje"],
+  ["windows-1252 reference, zero-padded", "data:text/html,%26%2300158%3Bivot"],
+  ["windows-1252 reference in an attribute", "<iframe src='data:text/html,%26%23154%3Balji'>"],
   ["zero-padded decimal reference", "data:text/html,%26%2300000269%3Bekaj"],
   ["zero-padded hex reference", "data:text/html,%26%23x000010D%3Bekaj"],
   ["zero-padded JS escape", "data:application/json,%5Cu%7B0000010D%7Dekaj"],
@@ -152,5 +163,33 @@ describe("normalizeUrlInput", () => {
   it("is the one input every check reads", () => {
     expect(dataUrlProblem("\tDA\nTA\r:;BASE\t64,xI1la2Fq")).toBe("čekaj");
     expect(dataUrlProblem("data:text/plain,ok")).toBeNull();
+  });
+});
+
+describe("htmlReferenceText", () => {
+  it("maps references as HTML does", () => {
+    // Decimal and hexadecimal give the same character.
+    expect(htmlReferenceText(154)).toBe("š");
+    expect(htmlReferenceText(0x9a)).toBe("š");
+    // windows-1252 in 0x80–0x9F; the unmapped ones stay.
+    expect(htmlReferenceText(0x8a)).toBe("Š");
+    expect(htmlReferenceText(0x8e)).toBe("Ž");
+    expect(htmlReferenceText(0x9e)).toBe("ž");
+    expect(htmlReferenceText(0x80)).toBe("€");
+    expect(htmlReferenceText(0x81)).toBe("\u0081");
+    expect(htmlReferenceText(0x9d)).toBe("\u009D");
+    // Outside the range nothing changes.
+    expect(htmlReferenceText(0x7f)).toBe("\u007F");
+    expect(htmlReferenceText(0xa0)).toBe("\u00A0");
+    expect(htmlReferenceText(0x10d)).toBe("č");
+    // NUL, surrogates and past U+10FFFF are U+FFFD.
+    for (const code of [0, 0xd800, 0xdbff, 0xdc00, 0xdfff, 0x110000, Number.MAX_SAFE_INTEGER])
+      expect(htmlReferenceText(code), String(code)).toBe("\uFFFD");
+    expect(htmlReferenceText(0x10ffff)).toBe(String.fromCodePoint(0x10ffff));
+  });
+
+  it("decodes 0, a surrogate and a too large reference to no letter", () => {
+    for (const ref of ["%26%230%3B", "%26%23xD801%3B%26%23xDC00%3B", "%26%231114112%3B"])
+      expect(dataUrlProblem(`data:text/html,${ref}`), ref).toBeNull();
   });
 });

@@ -40,5 +40,5 @@ export {
   TEXT_TRANSITIONAL,
   textProblem,
 } from "./hardcoded-text.ts";
-export { dataUrlTexts, normalizeUrlInput } from "./data-url.ts";
+export { dataUrlTexts, htmlReferenceText, normalizeUrlInput } from "./data-url.ts";
 export { TEST_ONLY_RE } from "./fake-server-boundary.ts";
