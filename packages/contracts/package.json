@@ -1,6 +1,6 @@
 {
   "name": "@ductura/contracts",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "description": "Ugovor API-ja Ducture v1: klijent, tipovi, validatori ulaza i OpenAPI",
   "type": "module",
