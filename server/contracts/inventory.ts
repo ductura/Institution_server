@@ -86,6 +86,11 @@ export const SERVER_SOURCES: Readonly<
  */
 export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
+  "institution.enrollments.post",
+  "institution.acknowledgment.post",
+  "institution.work-language.post",
+  "institution.student-work-language.post",
+  "institution.work-work-language.post",
   "projection.process-summary.post",
   "collaboration.comments.post",
   "collaboration.revision-requests.post",
@@ -108,18 +113,13 @@ export const CONTRACT_ONLY: readonly string[] = [
  */
 export const PENDING: readonly string[] = [
   "app/api/evidence/replay/route.ts",
-  "app/api/institution/assignments/[assignmentId]/acknowledgment/route.ts",
-  "app/api/institution/assignments/[assignmentId]/students/[studentId]/work-language/route.ts",
   "app/api/institution/assignments/[assignmentId]/versions/route.ts",
-  "app/api/institution/assignments/[assignmentId]/work-language/route.ts",
-  "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts",
   "app/api/institution/courses/[courseId]/assignments/route.ts",
   "app/api/institution/courses/[courseId]/enrollment-code/revocation/route.ts",
   "app/api/institution/courses/[courseId]/enrollment-code/route.ts",
   "app/api/institution/courses/[courseId]/students/[studentId]/removal/route.ts",
   "app/api/institution/courses/[courseId]/students/[studentId]/return-permission/route.ts",
   "app/api/institution/courses/route.ts",
-  "app/api/institution/enrollments/route.ts",
   "app/api/institution/teachers/[teacherId]/role-confirmation/route.ts",
   "app/api/institution/teachers/[teacherId]/role-revocation/route.ts",
   "app/api/submission/route.ts",
