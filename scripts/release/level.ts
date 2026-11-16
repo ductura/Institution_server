@@ -159,6 +159,8 @@ type Declarations = {
   readonly file: ts.SourceFile;
   /** Every declared or exported name; a new entry of one of these merges or shadows. */
   readonly names: Set<string>;
+  /** Every identifier the file uses: a new declaration of one shadows a global (review #92). */
+  readonly identifiers: Set<string>;
   /** An `export *`: a new local name may shadow one of it. */
   readonly star: boolean;
   /** Triple-slash directives: trivia to the scanner, but they change a client's types. */
@@ -202,6 +204,12 @@ function declarations(text: string, path: string): Declarations {
     }
   }
   const names = new Set([...nodes, ...named.values()].flatMap(namesOf));
+  const identifiers = new Set<string>();
+  const collect = (node: ts.Node): void => {
+    if (ts.isIdentifier(node)) identifiers.add(node.text);
+    ts.forEachChild(node, collect);
+  };
+  collect(file);
   const refs = (list: readonly ts.FileReference[]) =>
     list.map((r) => [r.fileName, r.preserve ?? null, r.resolutionMode ?? null]);
   const directives = JSON.stringify([
@@ -228,6 +236,7 @@ function declarations(text: string, path: string): Declarations {
     nodes: new Map([...keyed(nodes, file), ...named]),
     file,
     names,
+    identifiers,
     star,
     directives,
     modules,
@@ -258,6 +267,7 @@ export function declarationChange(before: string, after: string, path: string): 
   }
   // A new entry is safe only as a new name: not an overload (#1), not a second
   // block of an existing interface, not `declare global` or `declare module`,
+  // not a name the file already used (a global it would shadow, e.g. Date),
   // not next to an `export *` whose names it could shadow, and not an import
   // for its side effects (a module that may augment what exists).
   for (const [key, node] of db)
@@ -267,7 +277,7 @@ export function declarationChange(before: string, after: string, path: string): 
         ts.isModuleDeclaration(node) ||
         (ts.isImportDeclaration(node) && node.importClause === undefined) ||
         now.star ||
-        namesOf(node).some((name) => old.names.has(name));
+        namesOf(node).some((name) => old.names.has(name) || old.identifiers.has(name));
       note(key, merges ? "changed" : "optional");
     }
   return { level, reasons };

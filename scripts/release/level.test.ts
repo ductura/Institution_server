@@ -390,3 +390,17 @@ describe("releaseLevel for the generated client and module references", () => {
     expect(level(fakes(known), fakes(`${known}export type More = Hook;\n`))).toBe("minor");
   });
 });
+
+// Second review on #92 (c.6906342227): a new name that shadows a global in use.
+describe("releaseLevel refuses a new name that shadows what the file used", () => {
+  const CLOCK = "export interface FakeClock { now(): Date }\n";
+
+  it("is major when a new type takes the name of a global the file uses", () => {
+    expect(level(fakes(CLOCK), fakes(`${CLOCK}export type Date = string;\n`))).toBe("major");
+    expect(level(fakes(CLOCK), fakes(`type Date = string;\n${CLOCK}`))).toBe("major");
+  });
+
+  it("stays minor for a new name the file never used", () => {
+    expect(level(fakes(CLOCK), fakes(`${CLOCK}export type Instant = string;\n`))).toBe("minor");
+  });
+});
