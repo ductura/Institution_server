@@ -83,6 +83,7 @@ describe("classifyStorage", () => {
     ["verified"],
     getter("a", "verified"),
     Object.defineProperty({}, "a", { value: "disabled", enumerable: false }),
+    Object.defineProperty({}, "a", { value: "verified", enumerable: false }),
     { [Symbol("a")]: "verified" },
     inherited("toString", "verified"),
     trap(),
