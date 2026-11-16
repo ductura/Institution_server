@@ -147,6 +147,8 @@ type Declarations = {
   readonly names: Set<string>;
   /** An `export *`: a new local name may shadow one of it. */
   readonly star: boolean;
+  /** Triple-slash directives: trivia to the scanner, but they change a client's types. */
+  readonly directives: string;
 };
 
 const nameOf = (node: ts.Node): string | undefined => {
@@ -183,7 +185,15 @@ function declarations(text: string, path: string): Declarations {
     }
   }
   const names = new Set([...nodes, ...named.values()].flatMap(namesOf));
-  return { nodes: new Map([...keyed(nodes, file), ...named]), file, names, star };
+  const refs = (list: readonly ts.FileReference[]) =>
+    list.map((r) => [r.fileName, r.preserve ?? null, r.resolutionMode ?? null]);
+  const directives = JSON.stringify([
+    refs(file.referencedFiles),
+    refs(file.typeReferenceDirectives),
+    refs(file.libReferenceDirectives),
+    file.amdDependencies.map((d) => [d.name ?? null, d.path]),
+  ]);
+  return { nodes: new Map([...keyed(nodes, file), ...named]), file, names, star, directives };
 }
 
 export type Surface = { readonly level: Change; readonly reasons: string[] };
@@ -200,18 +210,21 @@ export function declarationChange(before: string, after: string, path: string): 
     level = worst(level, change);
     reasons.push(`${path} ${key.replace(/#0$/u, "")}: ${change}`);
   };
+  if (old.directives !== now.directives) note("/// directives", "changed");
   for (const [key, node] of da) {
     const other = db.get(key);
     note(key, other ? compare(node, other, fa, fb) : "changed");
   }
   // A new entry is safe only as a new name: not an overload (#1), not a second
   // block of an existing interface, not `declare global` or `declare module`,
-  // and not next to an `export *` whose names it could shadow.
+  // not next to an `export *` whose names it could shadow, and not an import
+  // for its side effects (a module that may augment what exists).
   for (const [key, node] of db)
     if (!da.has(key)) {
       const merges =
         !/#0$/u.test(key) ||
         ts.isModuleDeclaration(node) ||
+        (ts.isImportDeclaration(node) && node.importClause === undefined) ||
         now.star ||
         namesOf(node).some((name) => old.names.has(name));
       note(key, merges ? "changed" : "optional");
@@ -272,10 +285,10 @@ function packageLevel(input: LevelInput): LevelResult {
     const a = before.get(path);
     const b = after.get(path);
     if (a === b || path === "openapi/v1.json") continue;
-    if (a === undefined) raise(path.endsWith(".d.ts") ? "minor" : "patch", `${path} added`);
+    if (a === undefined && !path.endsWith(".d.ts")) raise("patch", `${path} added`);
     else if (b === undefined) raise("major", `${path} removed`);
     else if (path === "package.json") {
-      const ma = JSON.parse(a) as Manifest;
+      const ma = JSON.parse(a ?? "{}") as Manifest;
       const mb = JSON.parse(b) as Manifest;
       const ea = ma.exports ?? {};
       const eb = mb.exports ?? {};
@@ -302,7 +315,9 @@ function packageLevel(input: LevelInput): LevelResult {
       const rest = (m: Manifest) => JSON.stringify({ ...m, version: null, exports: null });
       if (rest(ma) !== rest(mb)) raise("patch", "package.json");
     } else if (path.endsWith(".d.ts")) {
-      const surface = declarationChange(a, b, path);
+      // A new file is read like a new name in an empty one: an augmentation in it is major.
+      if (a === undefined) raise("minor", `${path} added`);
+      const surface = declarationChange(a ?? "", b, path);
       const required = backed && path.startsWith(GENERATED) ? "minor" : "major";
       const to = { same: "patch", optional: "minor", required, changed: "major" } as const;
       raise(to[surface.level], path);
