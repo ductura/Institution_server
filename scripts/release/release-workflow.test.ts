@@ -1,7 +1,9 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 // DAN-804: release.yml as GitHub reads it, against exact allow lists, in the
@@ -120,8 +122,9 @@ export function releaseErrors(text: string): string[] {
     [reportRun, '[[ "$RUN" =~ ^[0-9]+$ ]]'],
     [
       reportRun,
-      '[[ "$STOPPED" =~ ^(contracts|test-fakes):(major|blocked)( (contracts|test-fakes):(major|blocked))?$ ]]',
+      "stopped_re='^(contracts|test-fakes):(major|blocked)( (contracts|test-fakes):(major|blocked))?$'",
     ],
+    [reportRun, '[[ "$STOPPED" =~ $stopped_re ]]'],
     [reportRun, 'if [[ "$pr" =~ ^[0-9]+$ ]]; then'],
     [reportRun, "exit 1"],
   ] as const)
@@ -197,10 +200,109 @@ describe("release.yml", () => {
     ],
     ["a duplicate key", "permissions: {}\n", "permissions: {}\npermissions: {}\n"],
     ["no check of the tag name", '          [[ "$tag" =~', '          echo "$tag" #'],
-    ["no check of STOPPED", '          [[ "$STOPPED" =~', '          echo "$STOPPED" #'],
+    [
+      "no check of STOPPED",
+      '          [[ "$STOPPED" =~ $stopped_re ]]',
+      '          echo "$STOPPED"',
+    ],
     ["no check of the PR number", 'if [[ "$pr" =~ ^[0-9]+$ ]]; then', "if true; then"],
     ["report that does not fail", "          exit 1\n", "          exit 0\n"],
   ])("refuses %s", (_, from, to) => {
     expect(releaseErrors(replace(from, to))).not.toEqual([]);
   });
+});
+
+// Review on #93 (c.6906332117): the run blocks are executed, not only read.
+// GitHub runs them with `bash -e`; gh is a stub that logs its arguments.
+describe("release.yml run blocks under bash", () => {
+  const doc = parse(RELEASE) as { jobs: Record<string, { steps: { run?: string }[] }> };
+  const runOf = (job: string) => doc.jobs[job]!.steps[0]!.run!;
+  const dir = mkdtempSync(join(tmpdir(), "release-run-"));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  const log = join(dir, "gh.log");
+  writeFileSync(
+    join(dir, "gh"),
+    [
+      "#!/usr/bin/env bash",
+      'echo "$*" >> "$GH_LOG"',
+      'case "$*" in',
+      '  *git/ref/heads/main*) echo "$TIP" ;;',
+      '  *commits/*/pulls*) echo "7" ;;',
+      "esac",
+      "",
+    ].join("\n"),
+  );
+  chmodSync(join(dir, "gh"), 0o755);
+  const SHA = "d".repeat(40);
+  const run = (job: string, env: Record<string, string>) => {
+    writeFileSync(log, "");
+    const result = spawnSync(
+      "bash",
+      ["--noprofile", "--norc", "-eo", "pipefail", "-c", runOf(job)],
+      {
+        encoding: "utf8",
+        env: {
+          PATH: `${dir}:${process.env.PATH ?? ""}`,
+          GH_LOG: log,
+          GH_TOKEN: "invented-token",
+          REPO: "example/repo",
+          SHA,
+          TIP: SHA,
+          ...env,
+        },
+      },
+    );
+    return { status: result.status, stdout: result.stdout, calls: readFileSync(log, "utf8") };
+  };
+
+  it.each(["level", "tag", "report"])("%s parses under bash -n", (job) => {
+    const steps = doc.jobs[job]!.steps.flatMap((step) => (step.run ? [step.run] : []));
+    for (const script of steps) expect(spawnSync("bash", ["-n", "-c", script]).status).toBe(0);
+  });
+
+  it.each(["contracts:major", "test-fakes:blocked", "contracts:major test-fakes:blocked"])(
+    "report comments on the merged PR and fails for STOPPED=%s",
+    (stopped) => {
+      const result = run("report", { STOPPED: stopped, RUN: "123" });
+      expect(result.status).toBe(1);
+      expect(result.calls).toContain("repos/example/repo/commits/" + SHA + "/pulls");
+      expect(result.calls).toContain("-X POST repos/example/repo/issues/7/comments");
+      expect(result.stdout).toContain(`::error::Automatsko izdanje je stalo (${stopped})`);
+    },
+  );
+
+  it.each(["contracts:minor", "contracts:major;id", "evil:major", ""])(
+    "report refuses STOPPED=%j before calling gh",
+    (stopped) => {
+      const result = run("report", { STOPPED: stopped, RUN: "123" });
+      expect(result.status).not.toBe(0);
+      expect(result.calls).toBe("");
+    },
+  );
+
+  it("tag creates the tag and dispatches publish.yml on the tip of main", () => {
+    const result = run("tag", { RELEASES: "contracts-v1.2.0 test-fakes-v0.3.1" });
+    expect(result.status).toBe(0);
+    for (const tag of ["contracts-v1.2.0", "test-fakes-v0.3.1"]) {
+      expect(result.calls).toContain(
+        `-X POST repos/example/repo/git/refs -f ref=refs/tags/${tag} -f sha=${SHA}`,
+      );
+      expect(result.calls).toContain(`actions/workflows/publish.yml/dispatches -f ref=${tag}`);
+    }
+  });
+
+  it("tag does nothing when main moved on", () => {
+    const result = run("tag", { RELEASES: "contracts-v1.2.0", TIP: "e".repeat(40) });
+    expect(result.status).toBe(0);
+    expect(result.calls).not.toContain("git/refs -f");
+  });
+
+  it.each(["contracts-v1.2.0;id", "contracts-v01.2.0", "other-v1.0.0"])(
+    "tag refuses RELEASES=%j before creating anything",
+    (releases) => {
+      const result = run("tag", { RELEASES: releases });
+      expect(result.status).not.toBe(0);
+      expect(result.calls).not.toContain("git/refs -f");
+    },
+  );
 });

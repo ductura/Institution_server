@@ -91,7 +91,9 @@ jobs:
         run: |
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$RUN" =~ ^[0-9]+$ ]]
-          [[ "$STOPPED" =~ ^(contracts|test-fakes):(major|blocked)( (contracts|test-fakes):(major|blocked))?$ ]]
+          # In a variable: an unescaped space in a [[ =~ ]] regex is a syntax error.
+          stopped_re='^(contracts|test-fakes):(major|blocked)( (contracts|test-fakes):(major|blocked))?$'
+          [[ "$STOPPED" =~ $stopped_re ]]
           body="Automatsko izdanje je stalo ($STOPPED): major ili neodređena razina traži vlasnikovu odluku. Razlozi: https://github.com/$REPO/actions/runs/$RUN"
           pr="$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[0].number // ""')"
           if [[ "$pr" =~ ^[0-9]+$ ]]; then
