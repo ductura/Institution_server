@@ -46,7 +46,7 @@ describe("evidence routes in the contract", () => {
     expect(PENDING).not.toContain("app/api/evidence/open/route.ts");
     expect(PENDING).not.toContain("app/api/evidence/commit/route.ts");
     expect(PENDING).toContain("app/api/evidence/replay/route.ts");
-    expect(PENDING).toHaveLength(3);
+    expect(PENDING).toHaveLength(2);
   });
 
   it.each(
@@ -103,6 +103,50 @@ describe("input validation: closed bodies", () => {
     }
     for (const name of ["invalid-unknown-field", "invalid-two-segments", "invalid-base64"]) {
       expect(validateInput(COMMIT, "body", vector(COMMIT, name).request.body)).toBe(false);
+    }
+  });
+});
+
+// The submission (Ductus 078c780 submission-route.ts): exactly {documentId, revision},
+// a non-empty id and a whole revision from 0; anything else is 422 invalid.
+const SUBMIT = "submission.submit.post";
+const SUBMISSION = { documentId: "izmisljeni-rad-predaje-0001", revision: 7 };
+
+describe("submission: closed body and receipt", () => {
+  it.each([
+    ["the plain submission", SUBMISSION, true],
+    [
+      "revision 0 (409 blocked no_evidence or stale_revision, never 422)",
+      { ...SUBMISSION, revision: 0 },
+      true,
+    ],
+    ["an unknown field", { ...SUBMISSION, submittedAt: "2026-12-20T21:00:00Z" }, false],
+    ["a hash from the client", { ...SUBMISSION, artifactSha256: "a1".repeat(32) }, false],
+    ["a negative revision", { ...SUBMISSION, revision: -1 }, false],
+    ["a fractional revision", { ...SUBMISSION, revision: 0.5 }, false],
+    ["a revision as text", { ...SUBMISSION, revision: "7" }, false],
+    ["an empty document id", { ...SUBMISSION, documentId: "" }, false],
+    ["no revision", { documentId: SUBMISSION.documentId }, false],
+  ])("%s -> %s", (_, value, valid) => {
+    expect(validateInput(SUBMIT, "body", JSON.parse(JSON.stringify(value)) as unknown)).toBe(valid);
+  });
+
+  it("every vector refused as invalid with a JSON body has a body the contract refuses too", () => {
+    for (const name of ["invalid-unknown-field", "invalid-negative-revision"]) {
+      expect(validateInput(SUBMIT, "body", vector(SUBMIT, name).request.body)).toBe(false);
+    }
+  });
+
+  it("a receipt is after the deadline exactly when it was requested after it, and signed after the request", () => {
+    for (const name of ["submitted", "submitted-after-deadline"]) {
+      const { receipt } = body(SUBMIT, name) as {
+        receipt: {
+          payload: { requestedAt: string; dueAt: string; signedAt: string; afterDeadline: boolean };
+        };
+      };
+      const p = receipt.payload;
+      expect(p.afterDeadline).toBe(p.requestedAt > p.dueAt);
+      expect(p.signedAt >= p.requestedAt).toBe(true);
     }
   });
 });

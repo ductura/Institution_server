@@ -223,4 +223,117 @@ export const commit = defineRoute({
   ],
 });
 
-export const evidenceRoutes = [open, commit] as const;
+// Port of Ductus 078c780 src/server/evidence/submission-route.ts and submission.ts
+// (B-12): the same guards and {status: <code>} answers as open and commit.
+
+/** A canonical lowercase UUID of any version (submission-receipt.ts CANONICAL_UUID). */
+const Uuid = Type.String({
+  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+});
+/** isSubmissionInstant: the database clock with exactly six fraction digits, in UTC. */
+const Microsecond = Type.String({
+  pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+});
+
+/** SignedSubmissionReceiptV2 (Ductus src/domain/forensics/submission-receipt-v2.ts). */
+const SignedSubmissionReceipt = closed({
+  payload: closed({
+    receiptSchema: Type.Literal("ductus-submission-receipt-v2"),
+    submissionId: Uuid,
+    evidenceDomainId: UuidV4,
+    principalId: UuidV4,
+    assignmentId: Uuid,
+    assignmentVersion: Positive,
+    // isDocumentId of the receipt: 1 to 256 UTF-16 units, trimmed, no control
+    // character and no lone surrogate.
+    documentId: Type.String({
+      minLength: 1,
+      maxLength: 256,
+      pattern:
+        "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF])+(?<!\\s)$",
+    }),
+    evidencePackageId: Type.String({ pattern: "^[a-z0-9][a-z0-9_-]{0,127}$" }),
+    revision: Positive,
+    artifactSha256: Sha256,
+    evidenceHeadSegmentHash: Sha256,
+    evidenceRecord: Type.Union([Type.Literal("continuous"), Type.Literal("with_gaps")]),
+    requestedAt: Microsecond,
+    dueAt: Microsecond,
+    afterDeadline: Type.Boolean(),
+    signedAt: Microsecond,
+  }),
+  payloadDigestSha256: Sha256,
+  signature: closed({
+    algorithm: Type.Literal("Ed25519"),
+    keyId: Text(2048),
+    keyVersion: Text(256),
+    signatureEncoding: Type.Literal("raw"),
+    signatureBase64Url: Type.String({ pattern: "^[A-Za-z0-9_-]{86}$" }),
+  }),
+});
+
+export const submit = defineRoute({
+  id: "submission.submit.post",
+  method: "POST",
+  path: "/api/v1/submission",
+  inventory: "app/api/submission/route.ts",
+  access: "student_owner",
+  summary:
+    "The student submits the revision they saw: exactly {documentId, revision}, at most 1 KiB; " +
+    "no time, text of the work or hash comes from the client. Same Origin, `ductus-protocol: 1`. The " +
+    "database clock at the click is the time; the revision is reconstructed and, only when it " +
+    "matches, the submission is recorded and its signed receipt returned. The first click binds: " +
+    "another revision later is 409 already_requested. Another student's or a missing work is " +
+    "404. 503 carries the stage and `retry-after: 5`.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 1024,
+    body: closed({
+      documentId: Type.String({ minLength: 1 }),
+      // Revision 0 is a work with nothing saved: 409 blocked no_evidence while the
+      // work has none either, else 409 stale_revision (app.request_submission).
+      revision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+    }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "submitted",
+      body: closed({ status: Type.Literal("submitted"), receipt: SignedSubmissionReceipt }),
+    },
+  ],
+  errors: [
+    refusal(403, "forbidden"),
+    refusal(426, "upgrade_required"),
+    refusal(415, "unsupported_media_type"),
+    refusal(401, "unauthenticated"),
+    refusal(413, "too_large"),
+    refusal(408, "timeout"),
+    refusal(400, "bad_request"),
+    refusal(422, "invalid"),
+    refusal(404, "not_found"),
+    refusal(409, "blocked", {
+      reason: Type.Union(
+        ["segment_unsigned", "record_mismatch", "record_discontinuous", "no_evidence"].map((r) =>
+          Type.Literal(r),
+        ),
+      ),
+    }),
+    refusal(409, "stale_revision", { currentRevision: Count }),
+    refusal(409, "already_requested", { revision: Positive }),
+    refusal(409, "not_acknowledged"),
+    refusal(409, "not_open"),
+    unavailable([
+      "context",
+      "request",
+      "record",
+      "chain",
+      "storage",
+      "verification",
+      "submission",
+      "signing",
+    ]),
+  ],
+});
+
+export const evidenceRoutes = [open, commit, submit] as const;

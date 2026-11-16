@@ -457,6 +457,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "submission.submit.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      value['documentId'].length >= 1 &&
+      (typeof value['revision'] === 'number' && Number.isInteger(value['revision'])) &&
+      value['revision'] <= 9007199254740991 &&
+      value['revision'] >= 0 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
   "support.problem-report.post:body": (() => {
   const local0 = /^(?:(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})(?:\+[0-9a-f]{7,40})?|[0-9a-f]{7,40})$/;
   const local1 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,1000}(?![\s\S])/;

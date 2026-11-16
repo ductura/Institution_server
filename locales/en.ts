@@ -1999,7 +1999,10 @@ const en = {
   },
   // Server error texts by message key (server/contracts ERROR_MESSAGE_KEYS, S-1L.3, DAN-789); added after the port.
   errors: {
+    alreadyRequested: "A submission has already been requested for another version of the text.",
     badRequest: "The request is not valid.",
+    blocked:
+      "Submission is not possible until the server confirms the whole record of this version of the text.",
     bodyStreamError: "Sending the request stopped before the end. Please try again.",
     bodyTimeout: "Sending the request took too long. Please try again.",
     bodyTooLarge: "The request is too large.",
@@ -2024,10 +2027,12 @@ const en = {
     loginRefused: "Signing in was refused.",
     methodNotAllowed: "This action is not available at this address.",
     notAccepting: "The work does not accept changes at the moment.",
+    notAcknowledged: "Acknowledge the assignment notice before submitting.",
     notAllowed: "This action is not possible in the request's current state.",
     notContinuous:
       "The changes do not continue the last state of the work on the server. Load the work again.",
     notFound: "What you asked for was not found.",
+    notOpen: "Submission for this assignment is not open right now.",
     notStarted: "The work has not been started yet.",
     noticeChanged: "The assignment notice has changed in the meantime. Read it again.",
     originMismatch: "The request does not come from this site.",
@@ -2036,6 +2041,8 @@ const en = {
       "The request does not say which version of the work it changes. Load the work again.",
     refused: "The code does not exist or has expired. Check it with your teacher.",
     staleBase: "The work has changed in the meantime. Load the latest version.",
+    staleRevision:
+      "There is a newer version of the text on the server. Reload it before submitting.",
     timeout: "The request took too long. Please try again.",
     tooManyRequests: "Too many requests were sent in a short time. Wait a moment and try again.",
     tooLarge: "The request is too large.",
