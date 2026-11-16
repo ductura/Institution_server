@@ -8,7 +8,7 @@ Zatvoren popis vrsta događaja (`EVENT_CATALOG`) i provjera zapisa (`checkEvent`
 
 - Područja: prijava (`authn`), sesija i kolačići (`session`), ovlasti (`authz`), promet (`traffic`), vanjski servisi (`external`), radnje vrsta 3–5 (`admin`), metrika (`metrics`), kontekst klijenta (`client`), pravni tekstovi (`legal`), backup (`backup`), brisanje (`deletion`), upozorenja (`warning`) i neočekivane greške (`error`).
 - Svaka vrsta ima popis dopuštenih vrsta računa (`actors`) i zatvorena polja. Polje je kod iz popisa, ograničen cijeli broj, zastavica, UUID, verzija `x.y.z` ili predložak rute koji mora biti u inventaru ruta predanom provjeri. Vrste polja za slobodni tekst nema, pa tekst rada ni osobni podatak nemaju polje kroz koje bi prošli.
-- Odbija se: nepoznata vrsta (točan zapis, bez rezanja razmaka i promjene velikih slova; `__proto__` i nasljeđena imena nisu vrste), vrsta računa koja nije na popisu događaja, višak ili manjak ključa ili polja, ugniježđeni objekt, getter, simbolni ključ, Proxy, instanca klase. Greška nosi samo kod, nikad odbijenu vrijednost.
+- Odbija se: nepoznata vrsta (točan zapis, bez rezanja razmaka i promjene velikih slova; `__proto__` i nasljeđena imena nisu vrste), vrsta računa koja nije na popisu događaja, višak ili manjak ključa ili polja, ugniježđeni objekt, getter, simbolni ključ, Proxy, instanca klase. Greška ima oblik `{ code, messageKey }` (`docs/CODE_STYLE.md` §8; tekst je u `locales/hr.json` pod `logCatalog`) i nikad ne nosi odbijenu vrijednost.
 - Rezultat je nova zamrznuta kopija s provjerenim vrijednostima; katalog je zamrznut do dna, pa ga uvoznik ne može proširiti.
 - Inventar ruta predaje se kao pravi `Set` predložaka (nikad stvarnih putanja zahtjeva); provjera zove `Set.prototype.has`. Bez inventara nijedna ruta ne prolazi, a neispravne opcije daju `BAD_OPTIONS`. `checkEvent` nikad ne baca.
 - Poznata granica: brojčana polja, UUID i verzija mogu nositi nekoliko bajtova proizvoljnih znamenki, ali ne čitljiv tekst.
@@ -24,7 +24,7 @@ Nijedne; čista provjera bez ulaza i izlaza.
 
 ## Što izvozi
 
-`EVENT_CATALOG`, `EVENT_KINDS`, `checkEvent`, `isEventKind`, `LOG_ACCOUNT_KINDS`, `LOG_ACTORS`, `LOG_ACTIONS`, `ADMIN_LOG_ACTIONS` i tipove `EventKind`, `EventSpec`, `FieldSpec`, `LogActor`, `LogRecord`, `CatalogResult`, `CatalogErrorCode`, `CheckOptions`.
+`EVENT_CATALOG`, `EVENT_KINDS`, `CATALOG_ERROR_CODES`, `catalogMessageKey`, `checkEvent`, `isEventKind`, `LOG_ACCOUNT_KINDS`, `LOG_ACTORS`, `LOG_ACTIONS`, `ADMIN_LOG_ACTIONS` i tipove `EventKind`, `EventSpec`, `FieldSpec`, `LogActor`, `LogRecord`, `CatalogResult`, `CatalogErrorCode`, `CheckOptions`.
 
 ## Što ne smije uvoziti
 

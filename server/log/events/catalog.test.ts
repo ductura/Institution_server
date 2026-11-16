@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { isSensitiveKey } from "../index.ts";
 import {
+  CATALOG_ERROR_CODES,
+  catalogMessageKey,
   checkEvent,
   EVENT_CATALOG,
   EVENT_KINDS,
@@ -429,5 +432,36 @@ describe("catalog and options cannot be bent (adversarial QA findings)", () => {
     expect(Object.isFrozen(refused)).toBe(true);
     if (!ok.ok) throw new Error(ok.error.code);
     expect(Object.getPrototypeOf(ok.value.fields)).toBeNull();
+  });
+});
+
+describe("error shape (docs/CODE_STYLE.md §8)", () => {
+  const hr = JSON.parse(
+    readFileSync(new URL("../../../locales/hr.json", import.meta.url), "utf8"),
+  ) as { logCatalog: Record<string, string> };
+
+  it("refuses with exactly a code and its static message key", () => {
+    expect(check(null)).toEqual({
+      ok: false,
+      error: { code: "NOT_A_PLAIN_OBJECT", messageKey: "logCatalog.not_a_plain_object" },
+    });
+    const result = check({ ...validRecord("authn.logout"), event: "AUTHN.LOGOUT" });
+    expect(result).toEqual({
+      ok: false,
+      error: { code: "UNKNOWN_EVENT", messageKey: "logCatalog.unknown_event" },
+    });
+    if (!result.ok) expect(Object.keys(result.error).sort()).toEqual(["code", "messageKey"]);
+  });
+
+  it("has a Croatian text in locales/hr.json for every message key, and no extra text", () => {
+    const keys = CATALOG_ERROR_CODES.map(catalogMessageKey);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const errorCode of CATALOG_ERROR_CODES) {
+      const key = catalogMessageKey(errorCode);
+      expect(errorCode).toMatch(/^[A-Z_]+$/);
+      expect(key).toBe(`logCatalog.${errorCode.toLowerCase()}`);
+      expect(hr.logCatalog[key.slice("logCatalog.".length)], key).toMatch(/\S/);
+    }
+    expect(Object.keys(hr.logCatalog).length).toBe(keys.length);
   });
 });

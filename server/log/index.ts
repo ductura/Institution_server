@@ -10,6 +10,8 @@ export {
 export { isSensitiveKey, redact, redactString, REDACTED, stripUrl } from "./redact.ts";
 export {
   ADMIN_LOG_ACTIONS,
+  CATALOG_ERROR_CODES,
+  catalogMessageKey,
   checkEvent,
   EVENT_CATALOG,
   EVENT_KINDS,

@@ -32,5 +32,19 @@
     "duplicate_key": "Isti ključ u katalogu tekstova napisan je dvaput.",
     "stale_same_in_both": "Putanja na popisu SAME_IN_BOTH više nema jednak tekst u oba jezika.",
     "stale_exception": "Iznimka rječnika zabranjenih izraza više ne vrijedi."
+  },
+  "logCatalog": {
+    "not_a_plain_object": "Zapis ili njegova polja nisu običan objekt s podatkovnim svojstvima.",
+    "unknown_key": "Zapis ima ključ kojeg nema u katalogu događaja.",
+    "missing_key": "Zapisu nedostaje obavezan ključ.",
+    "bad_time": "Vrijeme zapisa nije ispravno vrijeme u UTC-u.",
+    "unknown_event": "Vrsta događaja nije u katalogu događaja.",
+    "bad_request_id": "Oznaka zahtjeva nije ispravna.",
+    "unknown_account_kind": "Vrsta računa nije poznata.",
+    "account_kind_not_allowed": "Ova vrsta računa ne može biti uz ovaj događaj.",
+    "unknown_field": "Događaj ima polje kojeg nema u katalogu.",
+    "missing_field": "Događaju nedostaje obavezno polje.",
+    "bad_field_value": "Vrijednost polja nije dopuštena za ovaj događaj.",
+    "bad_options": "Postavke provjere zapisa nisu ispravne."
   }
 }

@@ -329,24 +329,30 @@ export type LogRecord = {
   readonly fields: Readonly<Record<string, string | number | boolean>>;
 };
 
-/** Why a record was refused. Only a code: the refused value is never echoed back. */
-export type CatalogErrorCode =
-  | "NOT_A_PLAIN_OBJECT"
-  | "UNKNOWN_KEY"
-  | "MISSING_KEY"
-  | "BAD_TIME"
-  | "UNKNOWN_EVENT"
-  | "BAD_REQUEST_ID"
-  | "UNKNOWN_ACCOUNT_KIND"
-  | "ACCOUNT_KIND_NOT_ALLOWED"
-  | "UNKNOWN_FIELD"
-  | "MISSING_FIELD"
-  | "BAD_FIELD_VALUE"
-  | "BAD_OPTIONS";
+/** Why a record was refused: a code and its message key, never the refused value. */
+export const CATALOG_ERROR_CODES = Object.freeze([
+  "NOT_A_PLAIN_OBJECT",
+  "UNKNOWN_KEY",
+  "MISSING_KEY",
+  "BAD_TIME",
+  "UNKNOWN_EVENT",
+  "BAD_REQUEST_ID",
+  "UNKNOWN_ACCOUNT_KIND",
+  "ACCOUNT_KIND_NOT_ALLOWED",
+  "UNKNOWN_FIELD",
+  "MISSING_FIELD",
+  "BAD_FIELD_VALUE",
+  "BAD_OPTIONS",
+] as const);
+
+export type CatalogErrorCode = (typeof CATALOG_ERROR_CODES)[number];
 
 export type CatalogResult =
   | { readonly ok: true; readonly value: LogRecord }
-  | { readonly ok: false; readonly error: { readonly code: CatalogErrorCode } };
+  | {
+      readonly ok: false;
+      readonly error: { readonly code: CatalogErrorCode; readonly messageKey: string };
+    };
 
 export type CheckOptions = {
   /**
@@ -382,8 +388,19 @@ function routesOf(options: unknown): ReadonlySet<string> | undefined {
     : undefined;
 }
 
+/**
+ * The message key of each code (docs/CODE_STYLE.md §8); the Croatian text is in
+ * locales/hr.json under `logCatalog`.
+ */
+export function catalogMessageKey(errorCode: CatalogErrorCode): string {
+  return `logCatalog.${errorCode.toLowerCase()}`;
+}
+
 const refuse = (errorCode: CatalogErrorCode): CatalogResult =>
-  Object.freeze({ ok: false, error: Object.freeze({ code: errorCode }) });
+  Object.freeze({
+    ok: false,
+    error: Object.freeze({ code: errorCode, messageKey: catalogMessageKey(errorCode) }),
+  });
 
 /**
  * The own data properties of a plain object, keyed exactly as `allowed`, or a

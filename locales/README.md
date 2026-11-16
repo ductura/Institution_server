@@ -5,6 +5,7 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - `hr.json`: ugniježđeni ključevi, npr. `gate.risk_below_floor`. Danas sadrži poruke razvojnog gatea (`scripts/engineering/risk-floor.ts`) i porta potpisa. Test `server/risk-floor.test.ts` provjerava da svaki ključ greške gatea ima tekst.
 - `forbiddenTerms.*`: greške ulaza skenera zabranjenih izraza (`scripts/forbidden-terms/scan.ts`, `messageKey` po `docs/CODE_STYLE.md` §8). Test `scripts/forbidden-terms/scan.test.ts` provjerava da svaki kod greške ima tekst.
 - `signing.*`: greške porta potpisa (`server/external/keys/signing-errors.ts`). Test `server/external/keys/signing-errors.test.ts` provjerava da svaki `messageKey` porta ima tekst.
+- `logCatalog.*`: greške provjere zapisa iz kataloga događaja (`server/log/events/catalog.ts`, S-1K.1). Test `server/log/events/catalog.test.ts` provjerava da svaki `messageKey` provjere ima tekst.
 
 ## Katalog sučelja (S-1L.1, DAN-768)
 
