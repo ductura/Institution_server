@@ -57,7 +57,8 @@ export function pgtapFailure(files: number, status: number | null, output: strin
   if (Number(summary[1]) !== files) return `pg_prove ran ${summary[1]} of ${files} test files`;
   if (Number(summary[2]) === 0) return "pg_prove ran no test";
   if (/ \.+ skipped/.test(output)) return "a test file was skipped whole (plan 1..0)";
-  if (/^(?:not )?ok \d+\b.*# (?:SKIP|TODO)\b/im.test(output))
+  // TAP: a directive is `#`, any whitespace, then SKIP or TODO, in any case.
+  if (/^(?:not )?ok\b[^\n]*#\s*(?:SKIP|TODO)/im.test(output))
     return "a test was skipped or marked TODO";
   return null;
 }

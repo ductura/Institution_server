@@ -71,6 +71,11 @@ test("a run counts only when every file ran, something was tested and pg_prove p
     [2, 0, `db/x/tests/a.sql ..\nok 1 # SKIP x\n${PASS(2, 36)}`, /skipped or marked TODO/],
     [2, 0, `db/x/tests/a.sql ..\nok 2 # skip later\n${PASS(2, 36)}`, /skipped or marked TODO/],
     [2, 0, `db/x/tests/a.sql ..\nnot ok 2 - y # TODO t\n${PASS(2, 36)}`, /skipped or marked TODO/],
+    // QA cxcqs86: TAP allows no or several spaces after #, in any case.
+    [2, 0, `db/x/tests/a.sql ..\nnot ok 1 #TODO kasnije\n${PASS(2, 36)}`, /skipped or marked TODO/],
+    [2, 0, `db/x/tests/a.sql ..\nok 1 #  SKIP razlog\n${PASS(2, 36)}`, /skipped or marked TODO/],
+    [2, 0, `db/x/tests/a.sql ..\nok 1 #skip\n${PASS(2, 36)}`, /skipped or marked TODO/],
+    [2, 0, `db/x/tests/a.sql ..\nok 1\t#\tTodo later\n${PASS(2, 36)}`, /skipped or marked TODO/],
   ];
   for (const [files, status, output, error] of cases) {
     assert.match(pgtapFailure(files, status, output) ?? "", error, output);
