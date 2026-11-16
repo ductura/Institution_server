@@ -29,6 +29,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["login_refused", "errors.loginRefused"],
   ["method_not_allowed", "errors.methodNotAllowed"],
   ["not_accepting", "errors.notAccepting"],
+  ["not_allowed", "errors.notAllowed"],
   ["not_continuous", "errors.notContinuous"],
   ["not_found", "errors.notFound"],
   ["not_started", "errors.notStarted"],
