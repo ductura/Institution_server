@@ -11,7 +11,12 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ROUTES } from "../contracts/index.ts";
 import { sessionTokenFromCookie } from "../session/index.ts";
-import { createRateLimiter, parseTrustedProxies, type RateLimits } from "../traffic/index.ts";
+import {
+  createRateLimiter,
+  DEFAULT_RATE_LIMITS,
+  parseTrustedProxies,
+  type RateLimits,
+} from "../traffic/index.ts";
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import type { RateLimitLog } from "./rate-limit-layer.ts";
@@ -233,5 +238,44 @@ describe("rate limit on a real server", () => {
     );
     expect(answers.map((a) => a.status)).toEqual([200, 200, 200, 429]);
     expect(counter.n).toBe(3);
+  });
+});
+
+// QA on DAN-814 b (c.6909256164): the production path, createLayers() without a
+// limiter (server/server.ts), limits with the catalogue's defaults, and each
+// server counts on its own. Login is the smallest default (30 a minute per
+// address); the real clock refills about one token in two seconds, far more
+// than these requests take.
+describe("the default limiter of createLayers()", () => {
+  const LOGIN = "/api/v1/auth/login";
+  const startDefault = async (): Promise<Running> =>
+    startServer({
+      host: "127.0.0.1",
+      port: 0,
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      routes: [],
+      databases: createDatabases(),
+    });
+  const others: Running[] = [];
+  afterEach(async () => {
+    await Promise.all(others.splice(0).map((running) => running.close()));
+  });
+
+  it("refuses past the default login limit, and a second server has its own buckets", async () => {
+    const first = await startDefault();
+    const second = await startDefault();
+    others.push(first, second);
+    const statuses: number[] = [];
+    for (let i = 0; i < DEFAULT_RATE_LIMITS.login.perIp + 2; i += 1) {
+      statuses.push((await one(first.port, request("GET", LOGIN))).status);
+    }
+    const limit = DEFAULT_RATE_LIMITS.login.perIp;
+    expect(statuses.slice(0, limit).includes(429)).toBe(false);
+    expect(statuses.slice(limit)).toEqual([429, 429]);
+    const refused = await one(first.port, request("GET", LOGIN));
+    expect(JSON.parse(refused.body)).toMatchObject({ code: "too_many_requests", status: 429 });
+    expect(Number(refused.headers["retry-after"])).toBeGreaterThanOrEqual(1);
+    // The same address on another server: its buckets are untouched.
+    expect((await one(second.port, request("GET", LOGIN))).status).not.toBe(429);
   });
 });
