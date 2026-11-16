@@ -11,6 +11,8 @@ import {
   catalogErrorOf,
   ERROR_CATALOG,
   reportServerError,
+  ROUTE_429_CODES,
+  route429Problems,
   SERVER_ERROR_CLASSES,
   serverErrorClass,
   SESSION_EXPIRED,
@@ -42,9 +44,32 @@ describe("ERROR_CATALOG", () => {
   it("a status the server answers names that status's contract error and key", () => {
     const answered = new Set(SERVER_ERRORS.map((spec) => spec.status));
     for (const error of ERROR_CATALOG) {
-      if (error.code === SESSION_EXPIRED || !answered.has(error.status)) continue;
+      // 429 stays generic: routes answer it with their own codes (ROUTE_429_CODES).
+      if (error.code === SESSION_EXPIRED || error.status === 429 || !answered.has(error.status))
+        continue;
       expect(knownError(error.status, error.code)?.key, error.code).toBe(error.messageKey);
     }
+  });
+
+  it("a route answers 429 only with a code of ROUTE_429_CODES", () => {
+    expect(route429Problems(SERVER_ERRORS)).toEqual([]);
+    expect(catalogErrorFor(429)).toMatchObject({ code: "too_many_requests" });
+  });
+
+  it("another 429 code is refused, the listed ones and other statuses are not", () => {
+    expect(
+      route429Problems([
+        { status: 429, code: "too_many_reports" },
+        { status: 429, code: "too_many_attempts" },
+        { status: 429, code: "too_many_requests" },
+        { status: 429, code: "slow_down" },
+        { status: 400, code: "slow_down" },
+      ]),
+    ).toEqual([
+      "429 too_many_requests: not a route 429 code",
+      "429 slow_down: not a route 429 code",
+    ]);
+    expect(Object.isFrozen(ROUTE_429_CODES)).toBe(true);
   });
 
   it("a code under clientErrors is not a contract code (yet)", () => {

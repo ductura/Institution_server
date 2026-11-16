@@ -3,7 +3,8 @@
 // Statuses the server answers use the contract's own error (server/contracts,
 // SERVER_ERRORS), so the key equals the messageKey of the problem body; the
 // ones only a proxy or a later task gives (429, 502, 504, session_expired)
-// have their texts under clientErrors. Also the one record of an uncaught
+// have their texts under clientErrors. 429 stays generic even when a route
+// answers it with its own code (ROUTE_429_CODES). Also the one record of an uncaught
 // error (server_error), written by the router, the pipeline and the server.
 export type CatalogError = {
   readonly status: number;
@@ -31,6 +32,25 @@ export const ERROR_CATALOG: readonly CatalogError[] = Object.freeze([
   entry(504, "gateway_timeout", "clientErrors.gatewayTimeout"),
   entry(401, "session_expired", "clientErrors.sessionExpired"),
 ]);
+
+/**
+ * The 429 codes a route of the contract may answer (DAN-803, Ductus#1836
+ * c.6905799359 N2, decision c.6905867488): Ductus's own words for a limit of
+ * one action. The catalogue keeps the generic too_many_requests for 429, so a
+ * client that knows only the status still shows one text; any other 429 code
+ * in the contract fails server/http/error-catalog.test.ts.
+ */
+export const ROUTE_429_CODES: readonly string[] = Object.freeze([
+  "too_many_reports",
+  "too_many_attempts",
+]);
+
+/** Every contract error that breaks the rule of ROUTE_429_CODES. */
+export function route429Problems(errors: readonly { status: number; code: string }[]): string[] {
+  return errors
+    .filter((error) => error.status === 429 && !ROUTE_429_CODES.includes(error.code))
+    .map((error) => `429 ${error.code}: not a route 429 code`);
+}
 
 /** The code that is looked up by name only; by status 401 stays unauthenticated. */
 export const SESSION_EXPIRED = "session_expired";
