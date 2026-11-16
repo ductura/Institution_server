@@ -138,6 +138,23 @@ function keyed(
  * new member is "required": major, except a generated contracts type backed
  * by a minor rise of the OpenAPI document (a new route or field).
  */
+/**
+ * Whether `node` is the type of a top-level declaration itself (an interface,
+ * `type X = { … }` or `declare const X: { … }`): only there is a new member a
+ * new route; any deeper new member (a field of an existing route) is major (QA #92).
+ */
+function topLevel(node: ts.Node): boolean {
+  if (ts.isInterfaceDeclaration(node)) return ts.isSourceFile(node.parent);
+  const owner = node.parent;
+  if (ts.isTypeAliasDeclaration(owner)) return ts.isSourceFile(owner.parent);
+  return (
+    ts.isVariableDeclaration(owner) &&
+    ts.isVariableDeclarationList(owner.parent) &&
+    ts.isVariableStatement(owner.parent.parent) &&
+    ts.isSourceFile(owner.parent.parent.parent)
+  );
+}
+
 function members(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): Change {
   const ma = keyed((a as ts.TypeLiteralNode).members, fa, true);
   const mb = keyed((b as ts.TypeLiteralNode).members, fb, true);
@@ -147,7 +164,7 @@ function members(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): 
     out = worst(out, other ? compare(node, other, fa, fb) : "changed");
   }
   for (const [key, node] of mb)
-    if (!ma.has(key)) out = worst(out, !/#0$/u.test(key) ? "changed" : "required");
+    if (!ma.has(key)) out = worst(out, !/#0$/u.test(key) || !topLevel(b) ? "changed" : "required");
   // Everything of an interface besides its members (heritage, type parameters).
   const rest = (n: ts.Node) =>
     children(n).filter((c) => !(n as ts.TypeLiteralNode).members.includes(c as ts.TypeElement));
