@@ -1,6 +1,13 @@
 // Public interface of server/http, the only composition root; only the entry
 // point (server/server.ts) and test-server import it (docs/server-map.md §2).
 export { createAuthRoutes } from "./auth.ts";
+export {
+  CLIENT_CONTEXT_MAX_BYTES,
+  createClientContextRoute,
+  parseClientContext,
+  type ClientContext,
+  type ClientContextOptions,
+} from "./client-context.ts";
 export { finishLogin, LOGIN_COOKIE_NAME, startLogin, type AuthDeps } from "./auth-flow.ts";
 export { AREA_NAMES, routesOf, type AreaWithRoutes } from "./areas.ts";
 export { createDatabases, type Databases } from "./databases.ts";
@@ -20,6 +27,7 @@ export {
 } from "./error-catalog.ts";
 export {
   createEvidenceCommitRouteFor,
+  createEvidenceReplayRouteFor,
   evidenceIngestDependencies,
   type EvidenceIngestDependencies,
   REFUSING_SIGNER,
@@ -37,6 +45,15 @@ export {
   OPEN_TIMEOUT_MS,
   type EvidenceOpenOptions,
 } from "./evidence-open.ts";
+export {
+  createEvidenceReplayRoute,
+  parseReplayRequest,
+  REPLAY_MAX_BYTES,
+  REPLAY_PROTOCOLS,
+  REPLAY_TIMEOUT_MS,
+  replayAnswer,
+  type EvidenceReplayOptions,
+} from "./evidence-replay.ts";
 export {
   parseClosedObject,
   readEvidenceBody,

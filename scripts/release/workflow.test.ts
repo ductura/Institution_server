@@ -71,7 +71,9 @@ const PUBLISH_JOB = {
         ["FILE", FILE],
         ["SHA256", "${{ needs.verify.outputs.sha256 }}"],
       ]),
+      // DAN-866 (review on #148): a run without `shell:` is `bash -e {0}`, no pipefail.
       run: [
+        "set -o pipefail",
         '[[ "$FILE" =~ ^ductura-(contracts|test-fakes)-[0-9]+\\.[0-9]+\\.[0-9]+\\.tgz$ ]]',
         '[[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]',
         '[ "$(find release -type f | wc -l)" -eq 1 ]',
@@ -309,6 +311,7 @@ describe("publish.yml", () => {
     // DAN-742: the first publish failed on this; npm took it for owner/repo.
     ["5f a tarball npm reads as a GitHub shorthand", '"./release/$FILE"', '"release/$FILE"'],
     ["5f without the sha256 check", "sha256sum --check --strict -", "cat"],
+    ["5f a pipe without pipefail", "          set -o pipefail\n", ""],
     ["5f publish without verify", "    needs: verify\n", ""],
     ["5f publish without the environment", "    environment: packages\n", ""],
     ["5f another node", 'node-version: "24"', 'node-version: "22"'],

@@ -2,6 +2,7 @@
 export { ROLES_ROUTES } from "./routes.ts";
 export { ROLES_SCHEMAS } from "./schemas.ts";
 export type { RolesService } from "./service.ts";
+export { createSettingsService, type SettingsService } from "./settings-write.ts";
 export { ACCOUNT_KINDS, LOGIN_ROWS, isAccountKind, loginOf } from "./account-kinds.ts";
 export type { AccountKind, Login, LoginMethod } from "./account-kinds.ts";
 export {

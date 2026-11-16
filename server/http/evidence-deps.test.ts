@@ -114,6 +114,11 @@ describe("evidenceIngestDependencies: the storage", () => {
       reason: "storage_not_configured",
     });
     expect(await payloads.storageRefFor(KEY.put)).toMatchObject({ status: "unavailable" });
+    // DAN-818: a replay read is unavailable too (503 storage), never "not found".
+    expect(await payloads.readImmutable(KEY.put)).toEqual({
+      status: "unavailable",
+      reason: "storage_not_configured",
+    });
   });
 
   it.each(["development", "test"])(

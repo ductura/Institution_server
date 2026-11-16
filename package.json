@@ -75,6 +75,7 @@
     "@aws-sdk/client-kms": "3.1155.0",
     "@sinclair/typebox": "0.34.52",
     "openid-client": "6.8.8",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "pg-boss": "12.38.0"
   }
 }

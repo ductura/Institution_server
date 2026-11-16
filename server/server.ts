@@ -16,9 +16,11 @@ import {
 import {
   type AreaWithRoutes,
   createAuthRoutes,
+  createClientContextRoute,
   createDatabases,
   createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
+  createEvidenceReplayRouteFor,
   evidenceIngestDependencies,
   createLayers,
   createShutdownCoordinator,
@@ -78,6 +80,8 @@ async function main(): Promise<void> {
   }
   const { host, port } = listenAddress(process.env);
   const databases = createDatabases();
+  // One signer and one storage per process, shared by commit and replay.
+  const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
   const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
   const running = await startServer({
     host,
@@ -87,13 +91,15 @@ async function main(): Promise<void> {
     layers: LAYERS,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
+      // The preloader's environment (S-1M-b, D-300); no log writer is wired
+      // into the process yet, so it is checked and answered, not recorded.
+      createClientContextRoute(),
       createEvidenceOpenRoute(databases.main),
       // B-8: the development signer only under NODE_ENV development or test;
       // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise).
-      createEvidenceCommitRouteFor(
-        databases.main,
-        evidenceIngestDependencies(process.env, process.cwd()),
-      ),
+      createEvidenceCommitRouteFor(databases.main, evidenceDeps),
+      // DAN-818: one replay page, read from the same storage as commit writes.
+      createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // Login over AAI@EduHr (S-1E-a; D-09: the fake provider only in development and test).
       ...createAuthRoutes(process.env),
       ...routesOf(AREAS),

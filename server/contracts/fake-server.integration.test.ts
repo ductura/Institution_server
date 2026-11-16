@@ -77,8 +77,9 @@ const overHttp = VECTORS.filter((v) => v.request.headers?.["content-length"] ===
 describe("fake server over HTTP", () => {
   it("sends all but the framing vectors over the wire", () => {
     // Five framing vectors per guarded mutation route: 36 on main, +5 revision-requests, +25 enrolment, notice and work language, +40 institution;
-    // the submission and the replay (DAN-818), as the evidence routes, have two each (timeout and bad-request).
-    expect(VECTORS.length - overHttp.length).toBe(110);
+    // the submission and the replay (DAN-818), as the evidence routes, have two each (timeout and bad-request);
+    // the client context (DAN-846) has four (no session, so no unauthorized vector).
+    expect(VECTORS.length - overHttp.length).toBe(114);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
