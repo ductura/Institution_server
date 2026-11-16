@@ -321,3 +321,72 @@ describe("releaseLevel reads new files and directives", () => {
     expect(level(fakes(`${directive}${OPTIONS}`), fakes(OPTIONS))).toBe("major");
   });
 });
+
+// Review and Codex on #92: variables by name, attributes, new module references.
+describe("releaseLevel for the generated client and module references", () => {
+  const route = (props: Record<string, unknown>) => ({
+    get: {
+      responses: {
+        "200": {
+          description: "ok",
+          content: { "application/json": { schema: { type: "object", properties: props } } },
+        },
+      },
+    },
+  });
+  const doc = (version: string, paths: Record<string, unknown>) =>
+    JSON.stringify({ openapi: "3.1.0", info: { title: "Ductura API", version }, paths });
+  const IMPORT = 'import type { OperationId } from "./types.ts";\n';
+  const A = '  readonly "a.get": { readonly method: "GET"; readonly path: "/api/v1/a" };\n';
+  const B = '  readonly "b.get": { readonly method: "GET"; readonly path: "/api/v1/b" };\n';
+  const client = (...routes: string[]) =>
+    `${IMPORT}export declare const ROUTE_TABLE: {\n${routes.join("")}};\nexport type Id = OperationId;\n`;
+  const contracts = (openapi: string, dts: string) =>
+    files({
+      "package.json": "{}",
+      "openapi/v1.json": openapi,
+      "server/contracts/generated/client.d.ts": dts,
+    });
+  const before = contracts(doc("1.3.0", { "/a": route({}) }), client(A));
+  const run = (after: LevelInput["after"], generatorChanged = false) =>
+    releaseLevel({ short: "contracts", before, after, generatorChanged }).level;
+
+  it("is minor for a new route in ROUTE_TABLE backed by the document", () => {
+    expect(run(contracts(doc("1.4.0", { "/a": route({}), "/b": route({}) }), client(A, B)))).toBe(
+      "minor",
+    );
+  });
+
+  it("is major for ROUTE_TABLE changes the document does not back", () => {
+    expect(run(contracts(doc("1.3.0", { "/a": route({}) }), client(A, B)))).toBe("major");
+    const both = contracts(doc("1.4.0", { "/a": route({}), "/b": route({}) }), client(A, B));
+    expect(run(both, true)).toBe("major");
+    const changed = client(A.replace('"/api/v1/a"', '"/api/v1/x"'), B);
+    expect(run(contracts(doc("1.4.0", { "/a": route({}), "/b": route({}) }), changed))).toBe(
+      "major",
+    );
+    expect(run(contracts(doc("1.4.0", { "/a": route({}), "/b": route({}) }), client(B)))).toBe(
+      "major",
+    );
+    expect(
+      run(contracts(doc("1.3.0", { "/a": route({}) }), client(A).replace("const", "let"))),
+    ).toBe("major");
+  });
+
+  it("is major when import attributes of a re-export change", () => {
+    const re = (mode: string) =>
+      `export type { Foo } from "dual" with { "resolution-mode": "${mode}" };\n`;
+    expect(level(fakes(re("import")), fakes(re("require")))).toBe("major");
+  });
+
+  it("is major for a reference to a module not referred to before", () => {
+    const OPTIONS = "export interface Options { port: number }\n";
+    const added = 'import type { Hook } from "./aug.js";\nexport type Added = Hook;\n';
+    expect(level(fakes(OPTIONS), fakes(`${OPTIONS}${added}`))).toBe("major");
+    const typeImport = 'export type Added = import("./aug.js").Hook;\n';
+    expect(level(fakes(OPTIONS), fakes(`${OPTIONS}${typeImport}`))).toBe("major");
+    // A module already referred to brings nothing new.
+    const known = `${OPTIONS}${added}`;
+    expect(level(fakes(known), fakes(`${known}export type More = Hook;\n`))).toBe("minor");
+  });
+});
