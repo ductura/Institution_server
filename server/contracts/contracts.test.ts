@@ -11,6 +11,9 @@ import { createClient, validateInput } from "./generated/index.ts";
 import { FALLBACK, ROUTES, defineRoute, error, type RouteContract } from "./index.ts";
 import { INVENTORY, PENDING, SERVER_SOURCES } from "./inventory.ts";
 
+// An import or export specifier. Not a quoted key or a word inside one: a
+// property named "from" (a minute span) is data, not an import.
+const IMPORT_RE = /(?<![\w"'.$])(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
 const CONTRACTS_DIR = dirname(fileURLToPath(import.meta.url));
 // Fixed here, not read from the contract, so the fallback cannot be moved to hide a route.
 const FALLBACK_FILE = "app/api/[...path]/route.ts";
@@ -143,9 +146,7 @@ describe("server/contracts imports only the schema library", () => {
 
   it.each(sources)("%s", (file) => {
     const text = readFileSync(join(CONTRACTS_DIR, file), "utf8");
-    const specifiers = [...text.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)].map(
-      (m) => m[1] ?? "",
-    );
+    const specifiers = [...text.matchAll(IMPORT_RE)].map((m) => m[1] ?? "");
     for (const spec of specifiers) {
       const target = resolve(dirname(join(CONTRACTS_DIR, file)), spec);
       const inside = spec.startsWith(".") && !relative(CONTRACTS_DIR, target).startsWith("..");
@@ -169,7 +170,7 @@ describe("generated/index.ts loads without Node built-ins", () => {
       if (seen.has(file)) return;
       seen.add(file);
       const text = readFileSync(file, "utf8");
-      for (const [, spec = ""] of text.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)) {
+      for (const [, spec = ""] of text.matchAll(IMPORT_RE)) {
         expect(spec.startsWith("node:"), `${relative(CONTRACTS_DIR, file)}: ${spec}`).toBe(false);
         if (spec.startsWith(".")) visit(resolve(dirname(file), spec));
       }
