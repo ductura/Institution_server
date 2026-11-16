@@ -7,6 +7,7 @@ export {
   openapiDocument,
   openapiJson,
   OUT_DIR,
+  typeScriptOf,
   v1Key,
 } from "./generate-contracts.ts";
 export { toPosix } from "./posix-path.ts";

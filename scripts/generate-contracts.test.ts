@@ -4,7 +4,7 @@ import { Type } from "@sinclair/typebox";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { compileValidator } from "./index.ts";
+import { compileValidator, typeScriptOf } from "./index.ts";
 
 /** The compiled check, transpiled to JavaScript and run. */
 function run(code: string): (value: unknown) => boolean {
@@ -85,5 +85,18 @@ describe("compileValidator", () => {
     expect(() => compileValidator(listed, "test:listed")).toThrow(
       /unexpected nested validator shape/u,
     );
+  });
+});
+
+describe("typeScriptOf", () => {
+  it("keeps the value type of a map keyed by pattern (DAN-818, resumeDocuments)", () => {
+    const map = Type.Record(Type.String({ pattern: "^[0-9a-f]{64}$" }), Type.String(), {
+      additionalProperties: false,
+    });
+    expect(typeScriptOf(map)).toBe("{ [key: string]: string }");
+    expect(typeScriptOf(Type.Object({ a: Type.Number() }, { additionalProperties: false }))).toBe(
+      '{ "a": number }',
+    );
+    expect(typeScriptOf(Type.Object({}))).toBe("{ [key: string]: unknown }");
   });
 });
