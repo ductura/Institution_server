@@ -19,12 +19,27 @@ const bytes = (c: string | Uint8Array): Buffer =>
 const decode = (c: string | Uint8Array): string =>
   typeof c === "string" ? c : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(c);
 
-/** Every identifier token of `text`: a name that appears here may be shadowed. */
-function identifierTokens(text: string, into: Set<string>): Set<string> {
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, text);
-  for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan())
-    if (kind === ts.SyntaxKind.Identifier) into.add(scanner.getTokenValue());
-  return into;
+/**
+ * Every identifier of an old declaration file (by AST, so a template literal
+ * type cannot hide the rest of the file), into `used`; and whether the file
+ * types a module namespace (`typeof import(…)`, `import * as`, `export * as`),
+ * whose type gains a member with every new export (self-attack #92).
+ */
+function scanOld(text: string, path: string, used: Set<string>): boolean {
+  const file = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  let namespace = false;
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node)) used.add(node.text);
+    if (
+      (ts.isImportTypeNode(node) && node.isTypeOf) ||
+      ts.isNamespaceImport(node) ||
+      ts.isNamespaceExport(node)
+    )
+      namespace = true;
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return namespace;
 }
 
 const ORDER: readonly Level[] = ["none", "patch", "minor", "major", "blocked"];
@@ -290,6 +305,8 @@ export function declarationChange(
   path: string,
   /** Identifier tokens of every old .d.ts of the package. */
   used: ReadonlySet<string> = new Set(),
+  /** A module namespace is typed somewhere: no new export is minor. */
+  frozen = false,
 ): Surface {
   const old = declarations(before, path);
   const now = declarations(after, path);
@@ -326,6 +343,7 @@ export function declarationChange(
         ts.isImportEqualsDeclaration(node) ||
         ts.isExportAssignment(node) ||
         now.star ||
+        frozen ||
         namesOf(node).some(
           (name) => old.names.has(name) || old.identifiers.has(name) || used.has(name),
         );
@@ -387,8 +405,9 @@ function packageLevel(input: LevelInput): LevelResult {
   const backed = api === "minor" && !input.generatorChanged;
   // A new name that appears anywhere in the old declarations may shadow it.
   const used = new Set<string>();
+  let frozen = false;
   for (const [path, content] of before)
-    if (DECLARATION.test(path)) identifierTokens(decode(content), used);
+    if (DECLARATION.test(path)) frozen = scanOld(decode(content), path, used) || frozen;
   for (const path of new Set([...before.keys(), ...after.keys()])) {
     const rawA = before.get(path);
     const rawB = after.get(path);
@@ -441,7 +460,7 @@ function packageLevel(input: LevelInput): LevelResult {
     } else if (DECLARATION.test(path)) {
       // A new file is read like a new name in an empty one: an augmentation in it is major.
       if (a === undefined) raise("minor", `${path} added`);
-      const surface = declarationChange(a ?? "", b, path, used);
+      const surface = declarationChange(a ?? "", b, path, used, frozen);
       const required = backed && path.startsWith(GENERATED) ? "minor" : "major";
       const to = { same: "patch", optional: "minor", required, changed: "major" } as const;
       raise(to[surface.level], path);
