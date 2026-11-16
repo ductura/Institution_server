@@ -39,6 +39,8 @@
     "document_not_found": "Dokument ne postoji.",
     "document_read_forbidden": "Nemate pristup ovom dokumentu.",
     "document_write_forbidden": "Nemate pravo mijenjati ovaj dokument.",
-    "method_not_allowed": "Metoda nije podržana."
+    "method_not_allowed": "Metoda nije podržana.",
+    "invalid_json": "Tijelo zahtjeva nije ispravan JSON objekt.",
+    "body_too_large": "Tijelo zahtjeva je preveliko."
   }
 }
