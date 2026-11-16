@@ -31,7 +31,7 @@ Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/g
   - `Content-Type` (415);
   - oblik kolačića sesije (401 `unauthenticated`);
   - samo kod commita i prije čitanja tijela: živa sesija u bazi (401 `unauthenticated` ili 503 sa `stage: context`), osim kad deklarirana duljina već daje 400 ili 413;
-  - tijelo pod granicom veličine (413 `too_large`) i vremena (408 `timeout`, 400 `bad_request`).
+  - tijelo pod granicom veličine (413 `too_large`) i vremena (408 `timeout`, 400 `bad_request`). `Content-Length` koji Nodeov parser ne prihvaća (npr. `-1` iz vektora `bad-request`) dobiva 400 od samog Nodea, prije rute i bez tijela `{status}`; status je jednak vektoru.
 - **Zatvoreno tijelo.** Svako nepoznato polje daje 422 `invalid`. `start` mora biti boolean, a `segments` ima točno jedan element. Bajtovi su standardni base64 s paddingom.
 - **Tuđi rad.** Tuđi ili nepostojeći rad daje isti 404 `not_found` s istim tijelom. Nastavnik na `open` također dobiva 404.
 - **202 nije potvrda.** `202` dolazi samo pod `ductus-protocol: 2`, uz `retry-after: 2` i `receipt.status = "pending_signature"`. Klijent šalje isti zahtjev dok ne dobije 200 s potpisanom potvrdom. 200 uvijek nosi `receipt.status = "signed"`.

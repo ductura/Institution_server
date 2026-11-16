@@ -16,6 +16,7 @@ import {
 import {
   type AreaWithRoutes,
   createDatabases,
+  createEvidenceOpenRoute,
   createLayers,
   createShutdownCoordinator,
   FLUSH_LOGS,
@@ -83,6 +84,7 @@ async function main(): Promise<void> {
     layers: LAYERS,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
+      createEvidenceOpenRoute(databases.main),
       ...routesOf(AREAS),
     ],
   }).catch((error: unknown) => {

@@ -10,10 +10,16 @@ import {
   type HealthReport,
   withActor,
   type WithActor,
+  workOpener,
+  type WorkOpener,
 } from "../database/index.ts";
 
 export type Databases = {
-  readonly main: { readonly withActor: WithActor; readonly actorReader: ActorReader };
+  readonly main: {
+    readonly withActor: WithActor;
+    readonly actorReader: ActorReader;
+    readonly workOpener: WorkOpener;
+  };
   /** The state of main, logs and legal, each apart; the input of readiness (S-1M-a). */
   health(): Promise<HealthReport>;
   /** Ends every open pool, on shutdown; each database of the registry closes here too. */
@@ -21,5 +27,9 @@ export type Databases = {
 };
 
 export function createDatabases(): Databases {
-  return { main: { withActor, actorReader }, health: databaseHealth, close: closePools };
+  return {
+    main: { withActor, actorReader, workOpener },
+    health: databaseHealth,
+    close: closePools,
+  };
 }

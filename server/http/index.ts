@@ -16,6 +16,13 @@ export {
   type ServerErrorSite,
 } from "./error-catalog.ts";
 export {
+  createEvidenceOpenRoute,
+  OPEN_MAX_BYTES,
+  OPEN_PROTOCOLS,
+  OPEN_TIMEOUT_MS,
+  type EvidenceOpenOptions,
+} from "./evidence-open.ts";
+export {
   parseClosedObject,
   readEvidenceBody,
   sendEvidenceAnswer,

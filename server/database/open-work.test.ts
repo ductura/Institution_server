@@ -1,0 +1,224 @@
+// DAN-811, plan of attack ductura/server#107 parts D and E: every row the open
+// statements return is checked before it leaves server/database; an
+// unexpected one makes the work unavailable, never a partial answer.
+// Every identifier, hash and key below is invented.
+import { describe, expect, it } from "vitest";
+
+import { count, createWorkOpener } from "./open-work.ts";
+import type { ActorTransaction, WithActor } from "./with-actor.ts";
+
+const TOKEN = "izmisljeni-token-evidencije-000000000000001";
+const ASSIGNMENT = "00000000-0000-4000-8000-0000000000a1";
+const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
+const HASH = "a".repeat(64);
+const OPENED = {
+  outcome: "opened",
+  document_id: "dokument-izmisljeni-1",
+  evidence_profile_id: "standard-v1",
+  current_revision: "0",
+  document_hash: HASH,
+  head_segment_hash: null,
+  last_sequence_to: "0",
+  snapshot: '{"nodes":[],"naslov":"Čćžšđ"}',
+};
+const KEY = {
+  key_id: "kljuc-1",
+  key_version: "1",
+  evidence_domain_id: DOMAIN,
+  purpose: "receipt",
+  algorithm: "Ed25519",
+  key_base64url: "MCowBQYDK2VwAyEA" + "A".repeat(43),
+  valid_from: "2026-11-01T10:00:00.000Z",
+  valid_to: null,
+  revoked_at: null,
+};
+
+type Rows = {
+  open?: Record<string, unknown>[];
+  submitted?: Record<string, unknown>[];
+  domain?: Record<string, unknown>[];
+  keys?: Record<string, unknown>[];
+};
+
+function opener(rows: Rows) {
+  const seen: { text: string; values: readonly unknown[] | undefined; token: unknown }[] = [];
+  const withActor = (async (token, fn) => {
+    const tx: ActorTransaction = {
+      async query(text, values) {
+        seen.push({ text, values, token });
+        const pick = text.includes("open_student_work")
+          ? (rows.open ?? [OPENED])
+          : text.includes("work_submitted")
+            ? (rows.submitted ?? [{ submitted: false }])
+            : text.includes("evidence.package")
+              ? (rows.domain ?? [{ evidence_domain_id: DOMAIN }])
+              : (rows.keys ?? [KEY]);
+        return { rows: pick as never[], rowCount: pick.length };
+      },
+    };
+    return fn(tx);
+  }) as WithActor;
+  return { open: createWorkOpener(withActor), seen };
+}
+
+const UNAVAILABLE = { status: "unavailable", reason: expect.any(String) };
+
+describe("createWorkOpener", () => {
+  it("opens the work in one transaction with the token presented, never a parameter", async () => {
+    const { open, seen } = opener({});
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result).toEqual({
+      status: "opened",
+      work: {
+        documentId: "dokument-izmisljeni-1",
+        evidenceProfileId: "standard-v1",
+        currentRevision: 0,
+        documentHash: HASH,
+        headSegmentHash: null,
+        lastSequenceTo: 0,
+        snapshot: OPENED.snapshot,
+        receiptKeys: [
+          {
+            algorithm: "Ed25519",
+            keyId: "kljuc-1",
+            keyVersion: "1",
+            encoding: "spki-der",
+            keyBase64Url: KEY.key_base64url,
+            evidenceDomainId: DOMAIN,
+            purpose: "receipt",
+            validFrom: KEY.valid_from,
+            validTo: null,
+            revokedAt: null,
+          },
+        ],
+        submitted: false,
+      },
+    });
+    expect(seen.map((s) => s.values)).toEqual([
+      [ASSIGNMENT, true],
+      [ASSIGNMENT],
+      ["dokument-izmisljeni-1"],
+      [DOMAIN],
+    ]);
+    for (const s of seen) expect(JSON.stringify(s.values)).not.toContain(TOKEN);
+  });
+
+  it.each(["unauthenticated", "not_found", "not_accepting", "not_started"])(
+    "passes the refusal %s on and asks nothing more",
+    async (outcome) => {
+      const { open, seen } = opener({ open: [{ outcome }] });
+      expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual({ status: outcome });
+      expect(seen).toHaveLength(1);
+    },
+  );
+
+  it("C8: not configured is unavailable", async () => {
+    const { open } = opener({ open: [{ outcome: "not_configured" }] });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual({
+      status: "unavailable",
+      reason: "work_not_configured",
+    });
+  });
+
+  it.each([
+    ["no row", []],
+    ["two rows", [OPENED, OPENED]],
+    ["an unknown outcome", [{ ...OPENED, outcome: "otvoreno" }]],
+    ["an outcome of another type", [{ ...OPENED, outcome: 1 }]],
+    ["an empty document id", [{ ...OPENED, document_id: "" }]],
+    ["no profile", [{ ...OPENED, evidence_profile_id: null }]],
+    ["a hash in capitals", [{ ...OPENED, document_hash: HASH.toUpperCase() }]],
+    ["a short hash", [{ ...OPENED, document_hash: "a".repeat(63) }]],
+    ["a head segment hash that is not one", [{ ...OPENED, head_segment_hash: "x" }]],
+    ["a negative revision", [{ ...OPENED, current_revision: -1 }]],
+    ["a revision with a leading zero", [{ ...OPENED, current_revision: "01" }]],
+    ["a revision past 2^53", [{ ...OPENED, current_revision: "9007199254740993" }]],
+    ["a fractional sequence", [{ ...OPENED, last_sequence_to: 0.5 }]],
+    ["a snapshot that is not text", [{ ...OPENED, snapshot: null }]],
+  ])("E2: %s is unavailable", async (_name, rows) => {
+    const { open } = opener({ open: rows });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(UNAVAILABLE);
+  });
+
+  it.each([
+    ["null", [{ submitted: null }]],
+    ["text", [{ submitted: "false" }]],
+    ["no row", []],
+  ])("E3: submitted as %s is unavailable, never false by assumption", async (_name, rows) => {
+    const { open } = opener({ submitted: rows });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(UNAVAILABLE);
+  });
+
+  it("D4: a submitted work says so", async () => {
+    const { open } = opener({ submitted: [{ submitted: true }] });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, false);
+    expect(result.status === "opened" && result.work.submitted).toBe(true);
+  });
+
+  it.each([
+    ["no package", []],
+    [
+      "a domain id that is not a UUID v4",
+      [{ evidence_domain_id: "00000000-0000-1000-8000-0000000000d1" }],
+    ],
+    ["a domain id in capitals", [{ evidence_domain_id: DOMAIN.toUpperCase() }]],
+  ])("E4: %s is unavailable", async (_name, rows) => {
+    const { open } = opener({ domain: rows });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(UNAVAILABLE);
+  });
+
+  it.each([
+    ["another algorithm", { algorithm: "RSA_PSS_SHA256" }],
+    ["another purpose", { purpose: "signing" }],
+    ["an empty key id", { key_id: "" }],
+    ["no key version", { key_version: null }],
+    ["a key of another domain", { evidence_domain_id: "00000000-0000-4000-8000-0000000000d2" }],
+    ["no key bytes", { key_base64url: "" }],
+    ["no valid_from", { valid_from: null }],
+    ["a valid_to that is not text", { valid_to: 1 }],
+    ["a revoked_at that is empty", { revoked_at: "" }],
+  ])("E4: a key row with %s makes the whole list unavailable", async (_name, change) => {
+    const { open } = opener({ keys: [KEY, { ...KEY, ...change }] });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual({
+      status: "unavailable",
+      reason: "domain_keys_malformed",
+    });
+  });
+
+  it("D2: a checkpoint key is checked but never sent", async () => {
+    const { open } = opener({
+      keys: [{ ...KEY, purpose: "checkpoint", key_id: "kontrolni" }, KEY],
+    });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.status === "opened" && result.work.receiptKeys.map((k) => k.keyId)).toEqual([
+      "kljuc-1",
+    ]);
+  });
+
+  it("D3: a domain without a receipt key opens with no keys", async () => {
+    const { open } = opener({ keys: [] });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.status === "opened" && result.work.receiptKeys).toEqual([]);
+  });
+
+  it("E1: a database error reaches the caller, who answers it", async () => {
+    const failing = createWorkOpener((async () => {
+      throw new Error("veza prekinuta");
+    }) as WithActor);
+    await expect(failing.openWork(TOKEN, ASSIGNMENT, true)).rejects.toThrow();
+  });
+});
+
+describe("count", () => {
+  it.each([
+    [0, 0],
+    ["0", 0],
+    ["42", 42],
+    [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
+  ])("%s is %s", (value, expected) => expect(count(value)).toBe(expected));
+
+  it.each([-1, "-1", "01", " 1", "1e3", 1.5, "9007199254740992", null, undefined, true, 10n])(
+    "%s is no count",
+    (value) => expect(count(value)).toBeNull(),
+  );
+});
