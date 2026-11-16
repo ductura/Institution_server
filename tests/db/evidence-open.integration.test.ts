@@ -91,7 +91,7 @@ async function fixture(): Promise<void> {
     await q(
       `INSERT INTO identity.user_account (id, institution_id, oidc_issuer, oidc_subject, hr_edu_person_unique_id)
        VALUES ($1, $2, 'https://issuer.test', $3, $4)`,
-      [user, institution, `sub-${name}-${suffix}`, `${name}-${suffix}@fak.example`],
+      [user, institution, `sub-${name}-${suffix}`, `${name}-${suffix}@fak.invalid`],
     );
   }
   for (const name of people) {
@@ -346,7 +346,7 @@ describe("evidence/open over real PostgreSQL with RLS", () => {
     }
   });
 
-  it("C7: a user id in a header or the query never changes whose work is opened", async () => {
+  it("C7: a user id in a header never changes whose work is opened", async () => {
     const own = await open(token.ana, { assignmentId: id.z1 });
     const spoofed = await open(token.ana, { assignmentId: id.z1 }, { "x-user-id": id.eva });
     expect(spoofed.body.documentId).toBe(own.body.documentId);

@@ -12,7 +12,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import type { ActorReader, OpenWorkResult, WorkOpener } from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
-import * as catalog from "./error-catalog.ts";
 import { createEvidenceOpenRoute, OPEN_PROTOCOLS } from "./evidence-open.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
@@ -168,14 +167,35 @@ describe("B. the closed body", () => {
 
 describe("E. failures of the opener", () => {
   it("E1, E5: a throw is 503 context; the record has the class only, never the message or token", async () => {
-    const report = vi.spyOn(catalog, "reportServerError");
-    next = () => Promise.reject(new Error(`kanarinac ${TOKEN}`));
-    const answer = await post(`{"assignmentId":"${A1}"}`);
-    expect(answer.status).toBe(503);
-    expect(answer.head["retry-after"]).toBe("5");
-    expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
-    expect(answer.body).not.toContain("kanarinac");
-    report.mockRestore();
+    const lines: string[] = [];
+    const stderr = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    try {
+      next = () => Promise.reject(new Error(`kanarinac ${TOKEN}`));
+      const answer = await post(`{"assignmentId":"${A1}"}`);
+      expect(answer.status).toBe(503);
+      expect(answer.head["retry-after"]).toBe("5");
+      expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
+      expect(answer.body).not.toContain("kanarinac");
+    } finally {
+      stderr.mockRestore();
+    }
+    // Exactly one record, of the route and the error's class, with nothing of the error or token.
+    const records = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(records).toEqual([
+      {
+        event: "server_error",
+        where: "route",
+        errorClass: expect.any(String),
+        requestId: expect.any(String),
+        route: "evidence.open.post",
+      },
+    ]);
+    for (const line of lines) {
+      expect(line).not.toContain("kanarinac");
+      expect(line).not.toContain(TOKEN);
+    }
   });
 
   it.each(["work_malformed", "domain_keys_malformed", "work_not_configured"])(

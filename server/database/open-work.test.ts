@@ -162,9 +162,13 @@ describe("createWorkOpener", () => {
       [{ evidence_domain_id: "00000000-0000-1000-8000-0000000000d1" }],
     ],
     ["a domain id in capitals", [{ evidence_domain_id: DOMAIN.toUpperCase() }]],
-  ])("E4: %s is unavailable", async (_name, rows) => {
-    const { open } = opener({ domain: rows });
-    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(UNAVAILABLE);
+  ])("E4: %s is unavailable before any key is read", async (_name, rows) => {
+    const { open, seen } = opener({ domain: rows, keys: [] });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual({
+      status: "unavailable",
+      reason: "work_malformed",
+    });
+    expect(seen.some((s) => s.text.includes("signing_key"))).toBe(false);
   });
 
   it.each([
