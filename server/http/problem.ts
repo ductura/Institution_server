@@ -126,6 +126,8 @@ export function sendRouteRefusal(
     (status === 503) !== (retry !== undefined) ||
     (retry !== undefined && !/^[1-9][0-9]{0,3}$/.test(retry))
   ) {
+    // A Retry-After set before belongs to no answer of this writer, the 500 included.
+    if (!response.headersSent) response.removeHeader("retry-after");
     sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
     return;
   }

@@ -346,6 +346,16 @@ describe("F. the {status} writer behind the router's gate", () => {
     expect(answer.head["retry-after"]).toBeUndefined();
   });
 
+  it("F2: a Retry-After set before is dropped from the 500 of a refused call too", async () => {
+    probe = (response) => {
+      response.setHeader("Retry-After", "120");
+      sendRouteRefusal(response, OPEN, 503, { status: "unavailable", stage: "context" });
+    };
+    const answer = await send(port(), PROBE_PATH, withLength(GOOD, BODY), BODY);
+    expect(answer.status).toBe(500);
+    expect(answer.head["retry-after"]).toBeUndefined();
+  });
+
   it("F2: a 503 carries only its own Retry-After, not one set before", async () => {
     probe = (response) => {
       response.setHeader("Retry-After", "120");
