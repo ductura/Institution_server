@@ -33,6 +33,13 @@ Ograničenje broja zahtjeva (`rate-limit.ts`, ugovor Ductus#1836 c.6908215789, p
 - Sat se ubrizgava; sat koji ide unatrag ne dodaje tokene. Najviše 50 000 bucketa ukupno; preko toga odlazi najdulje nekorišten (i odbijen zahtjev računa se kao korištenje).
 - Odluka nosi samo razred, vrstu bucketa i `retryAfter`, nikad IP, kolačić ni hash. 429 i zapis `traffic.rate_limited` piše `http` (DAN-814 b).
 
+Zapis prometa (`traffic-record.ts`, ugovor Ductus#1836 c.6919128457, dodatak c.6925832235; DAN-831-2):
+
+- `createTrafficRecorder` daje `arm(request, response)`: jedan zapis `traffic.request` po odgovoru, kad se odgovor zatvori (`close`); ako je već zatvoren, odmah. Drugi `arm` za isti odgovor ne radi ništa, ni iz drugog snimača.
+- Zapis nosi metodu (izvan `TRAFFIC_METHODS` je `OTHER`), predložak rute koji daje pozivatelj ili `none`, IP iz koraka 2 ili `none`, poslani status (`499` kad zaglavlja nisu poslana), trajanje od `arm` do zatvaranja (cijeli ms, 0 do 86 400 000) i vrstu računa `anonymous`. Tijelo, zaglavlja, kolačić i upit se ne čitaju.
+- `routeOf` i `requestIdOf` daje `http` (ovo područje ga ne uvozi); `requestIdOf` se zove tek pri zatvaranju, pa uspješan odgovor ne dobiva `X-Request-Id`. Sat se ubrizgava.
+- Snimač nikad ne baca i ne čeka zapisnik. Status izvan 100 do 599 katalog odbija (rezervni redak); ovaj server takve ne šalje. Uključivanje u pipeline je DAN-831-3.
+
 ## Tko ga zove
 
 Samo `http`.
@@ -48,6 +55,7 @@ Brojači ograničenja u memoriji. Zapis prometa i sigurnosne događaje piše pre
 - `TrafficService`: tip servisa bez članova (`service.ts`);
 - `parseTrustedProxies`, `NO_TRUSTED_PROXIES`, `TrustedProxies`: popis povjerljivih proxyja (`client-ip.ts`);
 - `clientIpLayer`: korak 2 pipelinea; `clientIpOf(request)`: IP koji je korak zapisao, za korake 3 do 5 (`client-ip.ts`);
+- `createTrafficRecorder`, `TRAFFIC_METHODS`, `STATUS_CLOSED_EARLY`, `MAX_DURATION_MS` i tipovi: zapis prometa, korak 5 (`traffic-record.ts`);
 - `parseAllowedNetworks`, `networkAllows`, `isOpsPath`, `NO_ALLOWED_NETWORKS`, `MAX_ALLOWED_NETWORKS`, `MAX_ALLOWED_NETWORKS_LENGTH`, `AllowedNetworks`: IP prava, korak 3 (`ip-rules.ts`);
 - `createRateLimiter`, `checkRateLimits`, `DEFAULT_RATE_LIMITS`, `RATE_LIMIT_CLASSES` i tipovi: ograničenje broja zahtjeva, korak 4 (`rate-limit.ts`).
 

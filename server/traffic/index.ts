@@ -30,3 +30,11 @@ export {
   parseAllowedNetworks,
   type AllowedNetworks,
 } from "./ip-rules.ts";
+export {
+  createTrafficRecorder,
+  MAX_DURATION_MS,
+  STATUS_CLOSED_EARLY,
+  TRAFFIC_METHODS,
+  type TrafficRecorder,
+  type TrafficRecorderOptions,
+} from "./traffic-record.ts";
