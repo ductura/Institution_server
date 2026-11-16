@@ -23,3 +23,12 @@ export {
   type MetricsCollectorOptions,
   type MetricsSkipReason,
 } from "./collector.ts";
+export {
+  createMetricSampleWriter,
+  METRIC_SAMPLE_INSERT,
+  METRICS_WRITE_DEADLINE_MS,
+  type MetricName,
+  type MetricSample,
+  type MetricSampleStore,
+  type MetricSampleWriterOptions,
+} from "./sample-writer.ts";
