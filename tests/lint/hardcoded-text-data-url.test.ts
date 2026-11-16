@@ -167,6 +167,13 @@ const hidden: [what: string, literal: string][] = [
   ["markup in a base64 SVG", "data:image/svg+xml;base64,PGI+b2s8L2I+"],
   ["escape in PDF", "data:application/pdf,(%5C350ekaj)"],
   ["backslash in an untyped body", "data:,%5C10D"],
+  // Second self-attack on this PR: CSS escapes, scripts, deeper bytes.
+  ["CSS escape in a stylesheet", 'data:text/css,b::after{content:\\"\\\\10D ekaj\\"}'],
+  ["reference in a stylesheet", "data:text/css,%26eacute"],
+  ["any script body", "data:text/javascript,document.write(1)"],
+  ["any script body, alias", "data:application/x-javascript,x"],
+  ["windows-1252 byte one layer down", "data:text/plain,%259Aalji"],
+  ["non-UTF-8 byte one layer down", "data:application/json,%25E8ekaj"],
   // base64 is a flag in any parameter position.
   ["base64 before another parameter", "data:text/plain;base64;x=y,xI1la2Fq"],
   ["base64 before a charset", "data:text/plain;base64;charset=utf-8,xI1la2Fq"],
@@ -186,6 +193,14 @@ describe("data: URL", () => {
       "dataUrl",
     );
     expect(await ids("export const u = (x: string) => `da${x}ta:,a`;")).toContain("dataUrl");
+    // Second self-attack: a scheme character before the expression.
+    for (const code of [
+      "(y: string, z: string) => `a${y}data:${z},%C4%8Dekaj`",
+      "(y: string) => `a${y}data:,${y}%C4%8Dekaj`",
+      "(y: string, z: string) => `a${y}data:te${z}xt/html,&eacute`",
+      "(y: string) => `x${y}data:text/html,%26${y}eacute`",
+    ])
+      expect(await ids(`export const u = ${code};`), code).toContain("dataUrl");
     expect(await ids("export const u = (x: string) => `data:text/plain,${x}ok`;")).toEqual([]);
     expect(await ids("export const u = (x: string) => `${x} data`;")).toEqual([]);
   });
@@ -216,7 +231,7 @@ describe("data: URL", () => {
       "data:text/plain,%26eacute",
       "data:text/plain,&#269;ekaj",
       "data:application/json,%7B%22a%22%3A%22%26eacute%22%7D",
-      "data:text/css,a%20%7B%7D%20%26eacute",
+      "data:text/css,a%7Bcolor:red%7D",
       "data:text/plain;base64,JmVhY3V0ZQ==",
       // HTML with no markup, or `&` before no letter and no `#`.
       "data:text/html,ok",
@@ -225,7 +240,7 @@ describe("data: URL", () => {
       "data:text/html,ok&",
       // A text type keeps markup and escapes as text.
       "data:text/plain,%3Cb%3E%5C10D",
-      "data:text/css,a::before%7Bcontent:%22%5C2D%22%7D",
+      "data:text/javascript,",
     ])
       expect(await ids(`export const u = "${literal}";`), literal).toEqual([]);
   });
@@ -262,7 +277,10 @@ describe("fail closed", () => {
     for (const mime of ["text/vtt", "unknown/unknown", "application/unknown", "*/*"])
       expect(typeKind(mime), mime).toBe("strict");
     expect(typeKind("application/pdf")).toBe("strict");
-    for (const mime of ["text/plain", "application/json", "text/css;charset=utf-8", "x/y"])
+    expect(typeKind("text/css;charset=utf-8")).toBe("strict");
+    for (const mime of ["text/javascript", "application/x-javascript", "text/ecmascript"])
+      expect(typeKind(mime), mime).toBe("script");
+    for (const mime of ["text/plain", "application/json", "text/csv", "x/y"])
       expect(typeKind(mime), mime).toBe("text");
     for (const mime of ["image/gif", "audio/ogg", "font/woff2", "application/octet-stream"])
       expect(typeKind(mime), mime).toBe("binary");
@@ -290,12 +308,12 @@ describe("fail closed", () => {
   });
 
   it("fails when a body decodes to too many texts", () => {
-    // Each layer is a byte that UTF-8, Latin-1 and windows-1250 read apart.
-    // The body itself is encoded once more, so its own bytes are plain ASCII.
-    let body = "%E8";
-    for (let i = 0; i < MAX_DEPTH - 2; i += 1) body = `${body.replaceAll("%", "%25")}%E8`;
-    body = body.replaceAll("%", "%25");
-    const findings = dataUrlFindings(`data:text/plain;charset=windows-1250,${body}`);
+    // A binary type (no plain-byte rule) whose every layer UTF-8, windows-1250,
+    // UTF-16 after the byte order mark and the JS escape read apart.
+    const seed = "%FF%FE%E8";
+    let body = seed;
+    for (let i = 0; i < MAX_DEPTH - 1; i += 1) body = `${body.replaceAll("%", "%25")}${seed}\\x41`;
+    const findings = dataUrlFindings(`data:image/png;charset=windows-1250,${body}`);
     expect(findings.suspect).toBe(`more than ${MAX_TEXTS} decoded texts`);
   });
 

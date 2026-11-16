@@ -510,7 +510,16 @@ export const noHardcodedText: Rule.RuleModule = {
             messageId: "dataUrl",
             data: { text: JSON.stringify("an expression before the comma of a data: URL") },
           });
-        else if (!parts.some((part) => dataUrlProblem(part))) checkDataUrl(node, parts.join(""));
+        else if (!parts.some((part) => dataUrlProblem(part)))
+          // Joined, and from each expression on, since an expression may end
+          // with a space or a quote that starts a scheme (`a${y}data:`).
+          for (const at of parts.keys()) {
+            const joined = parts.slice(at).join("");
+            if (dataUrlProblem(joined) !== null) {
+              checkDataUrl(node, joined);
+              break;
+            }
+          }
         const text = quasis.map((q) => q.value.cooked ?? "").join(" ");
         if (quasis.some((q) => textProblem(q.value.cooked ?? ""))) return;
         const problem = textProblem(text);

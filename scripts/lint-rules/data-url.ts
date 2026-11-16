@@ -74,25 +74,30 @@ const BINARY_TYPES = new Set(["image", "audio", "video", "font"]);
 const BINARY = new Set(["application/octet-stream", "application/wasm", "application/zip"]);
 
 /** How a body of this media type (ASCII-lowercased, as before the comma) is read. */
-export type TypeKind = "strict" | "text" | "binary";
+export type TypeKind = "script" | "strict" | "text" | "binary";
 
-/** Strict: renders markup or references, or unclear. Binary: no text. Text: the rest. */
+/**
+ * Script: runs, so may build any text. Strict: renders markup, references or
+ * escapes, or unclear. Binary: no text. Text: the rest.
+ */
 export function typeKind(mime: string): TypeKind {
   const match = ESSENCE.exec(mime.split(";")[0] ?? "");
   if (!match) return "strict";
   const [type, subtype] = [match[1] ?? "", match[2] ?? ""];
   const essence = `${type}/${subtype}`;
-  // HTML, XHTML, XML and its family (`+xml`, XSL, SVG), WebVTT and PDF.
+  // JavaScript and its aliases (`x-javascript`, `ecmascript`, `jscript`).
+  if (/(?:java|ecma|j|live)script/u.test(subtype)) return "script";
+  // HTML, XHTML, XML and its family (`+xml`, XSL, SVG), WebVTT, PDF and CSS.
   if (
     SNIFFED.has(essence) ||
     ["html", "xml", "xsl"].some((part) => subtype.includes(part)) ||
-    essence === "text/vtt" ||
-    essence === "application/pdf"
+    ["text/vtt", "application/pdf", "text/css"].includes(essence)
   )
     return "strict";
   return BINARY_TYPES.has(type) || BINARY.has(essence) ? "binary" : "text";
 }
-const KIND_RANK: Readonly<Record<TypeKind, number>> = { binary: 0, text: 1, strict: 2 };
+const KIND_RANK: Readonly<Record<TypeKind, number>> = { binary: 0, text: 1, strict: 2, script: 3 };
+const NOT_PLAIN = "a byte that is not printable ASCII in a text body";
 
 type State = { out: Set<string>; suspect: string | null };
 const flag = (state: State, why: string): void => {
@@ -171,8 +176,8 @@ function unescapeText(text: string): string {
 
 // A decoded text, and every text it gives when percent-decoded or unescaped
 // again or when it holds a data: URL itself. Each text is read once.
-function layers(text: string, mime: string, strict: boolean, depth: number, state: State): void {
-  if (strict && MARKUP.test(text)) flag(state, text);
+function layers(text: string, mime: string, kind: TypeKind, depth: number, state: State): void {
+  if (kind !== "text" && kind !== "binary" && MARKUP.test(text)) flag(state, text);
   // Once the rule reports, nothing more is read (a long literal stays fast).
   if (state.suspect !== null || state.out.has(text)) return;
   state.out.add(text);
@@ -181,10 +186,13 @@ function layers(text: string, mime: string, strict: boolean, depth: number, stat
     if (STILL_ENCODED.test(text)) flag(state, `encoded more than ${MAX_DEPTH} times: ${text}`);
     return;
   }
-  const next = /%[0-9a-fA-F]{2}/u.test(text) ? bytesToTexts(percentDecode(text), mime) : [];
+  const bytes = /%[0-9a-fA-F]{2}/u.test(text) ? percentDecode(text) : null;
+  const next = bytes ? bytesToTexts(bytes, mime) : [];
   next.push(unescapeText(text));
-  for (const t of new Set(next)) if (t !== text) layers(t, mime, strict, depth + 1, state);
+  for (const t of new Set(next)) if (t !== text) layers(t, mime, kind, depth + 1, state);
   collect(text, depth + 1, state);
+  // Every percent layer is held to the plain-byte rule, as the body is.
+  if (kind !== "binary" && bytes && !bytes.every(PLAIN_BYTE)) flag(state, NOT_PLAIN);
 }
 
 function collect(text: string, depth: number, state: State): void {
@@ -251,7 +259,6 @@ function readBody(rest: string, depth: number, state: State): void {
   const kind = [typeKind(mime), typeKind(decodedMime)].reduce((a, b) =>
     KIND_RANK[a] >= KIND_RANK[b] ? a : b,
   );
-  const strict = kind === "strict";
   const parts = [body];
   if (base64) {
     // The whole body, and its longest base64 prefix: text after the URL that
@@ -265,10 +272,11 @@ function readBody(rest: string, depth: number, state: State): void {
   }
   for (const bytes of parts)
     for (const decoded of bytesToTexts(bytes, decodedMime))
-      layers(decoded, decodedMime, strict, depth, state);
+      layers(decoded, decodedMime, kind, depth, state);
   // After the texts are read, so a letter they hold is what the rule names.
-  if (kind !== "binary" && parts.some((bytes) => !bytes.every(PLAIN_BYTE)))
-    flag(state, "a byte that is not printable ASCII in a text body");
+  if (kind !== "binary" && parts.some((bytes) => !bytes.every(PLAIN_BYTE))) flag(state, NOT_PLAIN);
+  // A script can build any letter from ASCII, so any body is suspect.
+  if (kind === "script" && body.length > 0) flag(state, "a script body");
 }
 
 /**
@@ -286,7 +294,8 @@ export function dataUrlHeadSplit(parts: readonly string[]): boolean {
   }
   const folded = asciiLower(joined);
   for (let at = folded.indexOf("data:"); at !== -1; at = folded.indexOf("data:", at + 1)) {
-    if (at > 0 && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
+    // An expression right before `data:` may end with a space or a quote.
+    if (at > 0 && !bounds.includes(at) && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
     const comma = folded.indexOf(",", at);
     const end = comma === -1 ? folded.length : comma;
     if (bounds.some((b) => b > at && b <= end)) return true;
