@@ -141,7 +141,21 @@ describe("an unexpected answer makes the whole read row_malformed (S-2)", () => 
         { oldest_created_at: t },
       ],
     ),
-    ["no such date", { oldest_created_at: "2026-02-30T10:00:00.000Z" }],
+    // Out of range in every field: a rolled-over date (30 February) parses to
+    // another day, the rest do not parse at all and must not throw (Codex P2).
+    ...[
+      "2026-02-30T10:00:00.000Z",
+      "2026-13-16T10:00:00.000Z",
+      "2026-00-16T10:00:00.000Z",
+      "2026-11-00T10:00:00.000Z",
+      "2026-11-32T10:00:00.000Z",
+      "2026-11-16T25:00:00.000Z",
+      "2026-11-16T10:60:00.000Z",
+      "2026-11-16T10:00:60.000Z",
+    ].map((t): [string, Record<string, unknown>] => [
+      `no such time ${t}`,
+      { oldest_created_at: t },
+    ]),
     ["receipt id in it (S-6)", { receipt_id: R1 }],
     ["payload in it (S-6)", { receipt_payload: PAYLOAD }],
   ])("backlog: %s", async (_name, change) => {
