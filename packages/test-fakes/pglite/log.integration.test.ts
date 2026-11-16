@@ -2,12 +2,19 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { createFakeLogDatabase, type FakeLogDatabase } from "./log.ts";
 
 // U9-b (DAN-741), S-1K.2-a (DAN-813): the fake log database, the migrated
 // logs database, is append-only for everyone.
+
+// The logs database is migrated once per process (log.ts); that first run
+// gets the 60 s budget of the other PGlite migration tests, so no test below
+// pays it inside the 5 s test timeout.
+beforeAll(async () => {
+  await (await createFakeLogDatabase()).close();
+}, 60_000);
 
 const open: FakeLogDatabase[] = [];
 afterEach(async () => {
