@@ -6,8 +6,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { clientIpLayer, NO_TRUSTED_PROXIES, type TrustedProxies } from "../traffic/index.ts";
+import { reportServerError } from "./error-catalog.ts";
 import { originLayer } from "./mutation-request.ts";
-import { errorName } from "./router.ts";
+import { requestIdOf } from "./request-id.ts";
 import { answerInternal, refuse, securityHeadersLayer } from "./security-headers.ts";
 
 export const PIPELINE_STEPS = Object.freeze([
@@ -105,7 +106,7 @@ export function createPipeline(layers: Layers, app: App): App {
       try {
         outcome = await layer(request, response);
       } catch (error) {
-        console.error("layer failed", errorName(error));
+        reportServerError("layer", error, requestIdOf(response));
         outcome = undefined;
       }
       // Anything but "next" from a layer that has not answered, or "next" from

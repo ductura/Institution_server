@@ -8,9 +8,11 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 - `createRouter` traži rutu po metodi i putanji iz ugovora (`server/contracts`), s točnim podudaranjem i bez upita. Odbijanja imaju oblik ugovora:
   - nepoznata putanja: 404 `{"error":"not_found"}` (`FALLBACK`);
   - druga metoda: 405 `{"error":"method_not_allowed"}` uz `Allow`;
-  - iznimka u rukovatelju: 500 `{"error":"internal"}` (`INTERNAL` iz ugovora, DAN-776), a zapisuje se samo ime greške iz zatvorenog popisa (`errorName`).
+  - iznimka u rukovatelju: 500 `{"error":"internal"}` (`INTERNAL` iz ugovora, DAN-776), a zapisuje se samo događaj `server_error` (niže).
   - Sve odgovore 500 šalje `answerInternal` (`security-headers.ts`). Prije prvog bajta briše sva zaglavlja, trailere i statusnu liniju koje je postavio rukovatelj ili sloj, ponovno postavlja sigurnosna zaglavlja i zatvara vezu. Nakon početka odgovora prekida samo nedovršen odgovor, a dovršeni pušta do kraja. Nikad ne baca iznimku.
   - `sendJson` (`json.ts`) serijalizira tijelo prije `writeHead`, pa tijelo koje se ne može serijalizirati daje 500 `internal`, a ne prekinutu vezu.
+- `error-catalog.ts` (S-1M-c, DAN-802) je katalog grešaka za preloader: `ERROR_CATALOG` ima `{ status, code, messageKey }` za 400, 401, 403, 404, 408, 429, 500, 502, 503, 504 i `session_expired` (401). Status koji server odgovara nosi ugovornu grešku tog statusa i njezin ključ `errors.*`, isti kao `messageKey` problem tijela; 429, 502, 504 i `session_expired` server danas ne šalje, pa su im tekstovi u `clientErrors.*`. Svaki ključ ima tekst u `hr` i `en`. `catalogErrorFor(status)` daje stavku statusa, inače 400 za drugi 4xx i 500 za sve ostalo; `session_expired` se dohvaća samo po kodu (`catalogErrorOf`). Kad ugovor dobije 429 (S-1C.3) ili `session_expired` (S-1D-d), test traži da stavka prijeđe na ugovornu grešku.
+- Neuhvaćena greška (rukovatelj, sloj ili cijeli zahtjev) daje 500 `internal` (`answerInternal`) i jedan JSON redak na stderr: `{"event":"server_error","where":"route"|"layer"|"request","errorClass","requestId","route"?}` (`reportServerError`). `errorClass` je iz zatvorenog popisa (`type_error`, `range_error`, `reference_error`, `syntax_error`, `other`), `route` je samo id rute iz ugovora. Nikad poruka, stog, ime podklase, URL, zaglavlja ni tijelo. **Vezanje (S-1K.3-a):** kad servis zapisa postoji, `reportServerError` piše `error.unexpected` iz kataloga `server/log/events` s `area: "http"` i istim `errorClass` (popis je podskup, provjerava test); pozivatelji se ne mijenjaju (potvrda ugovora Ductus#1836 c.6904663277).
 - `createHealthRoute({ health, serverVersion })` daje `GET /api/v1/health` (S-1M-a, DAN-795): uvijek 200, `Cache-Control: no-store` i tijelo točno `{"status":"ok","state","apiVersion","serverVersion","minClientVersion"}`. `state` je `degraded` kad glavna baza nije `ok`, kad provjera baci ili ne završi u `CHECK_DEADLINE_MS` (2,5 s); baze zapisa i pravnih tekstova ga ne mijenjaju. Jedna provjera odgovara svim zahtjevima 1 s. Nikad adresa, ime baze ni poruka greške; sesiju ne čita (prijenos Ductusa `app/api/health/route.ts`, proširen).
 - `routesOf` daje rute imenovanih područja (`areas.ts`).
 - `createDatabases` daje registar baza nad `server/database`. Ništa ne otvara, jer se veza otvara pri prvoj upotrebi. `close()` zatvara otvorene bazene pri gašenju; svaka nova baza u registru zatvara se i ondje.
@@ -38,6 +40,7 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 - `createRouter`, `Route`, `Handler`, `Router` (`router.ts`);
 - `readBodyWithLimit`, `declaredLengthRefusal`, `LimitedBodyResult` (`mutation-request.ts`);
 - `createHealthRoute` i `CHECK_DEADLINE_MS` (`health.ts`);
+- `ERROR_CATALOG`, `catalogErrorFor`, `catalogErrorOf`, `SESSION_EXPIRED`, `reportServerError`, `SERVER_ERROR_CLASSES` i tipovi (`error-catalog.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);
 - `createDatabases`, `Databases` (`databases.ts`).
 

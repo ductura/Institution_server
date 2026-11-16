@@ -2036,6 +2036,14 @@ const en = {
     unsupportedMediaType: "The content type of the request is not supported.",
     upgradeRequired: "A newer version of the app is needed. Refresh the page.",
   },
+  // Texts of the error catalogue the server's contract does not answer (S-1M-c, DAN-802); added after the port.
+  clientErrors: {
+    tooManyRequests: "Too many requests were sent in a short time. Wait a moment and try again.",
+    badGateway:
+      "The server is not answering correctly at the moment. Please try again in a few seconds.",
+    gatewayTimeout: "The server did not answer in time. Please try again.",
+    sessionExpired: "Your sign-in has expired. Please sign in again.",
+  },
 } as const satisfies Messages;
 
 export const messagesEn: Messages = en;

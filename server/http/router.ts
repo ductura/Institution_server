@@ -7,6 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { FALLBACK, METHOD_NOT_ALLOWED, type RouteContract } from "../contracts/index.ts";
 
+import { reportServerError } from "./error-catalog.ts";
 import { isProblemAnswer, sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 import { answerInternal } from "./security-headers.ts";
@@ -15,34 +16,8 @@ export type Handler = (request: IncomingMessage, response: ServerResponse) => Pr
 export type Route = { readonly contract: RouteContract; readonly handle: Handler };
 export type Router = (request: IncomingMessage, response: ServerResponse) => Promise<void>;
 
+export { errorName } from "./error-catalog.ts";
 export { sendJson } from "./json.ts";
-
-// The names errorName passes on; any other name (a subclass, a name set from
-// data) is logged as "Error", so nothing from a request reaches the log.
-const BUILT_IN_NAMES: ReadonlySet<string> = new Set([
-  "Error",
-  "AggregateError",
-  "EvalError",
-  "RangeError",
-  "ReferenceError",
-  "SyntaxError",
-  "TypeError",
-  "URIError",
-]);
-
-/**
- * The name of a thrown value for the log, never its message. Reading it never
- * throws: a throwing "name" getter, a Proxy or a revoked Proxy give a fixed word.
- */
-export function errorName(error: unknown): string {
-  try {
-    if (!(error instanceof Error)) return error === null ? "null" : typeof error;
-    const name: unknown = error.name;
-    return typeof name === "string" && BUILT_IN_NAMES.has(name) ? name : "Error";
-  } catch {
-    return "unreadable";
-  }
-}
 
 // An origin-form path as sent: "/" then no "//", backslash or dot segment. Nothing is
 // decoded or rewritten (as WHATWG URL would), so the router and any layer that
@@ -85,9 +60,9 @@ export function createRouter(routes: readonly Route[]): Router {
       guardErrorHead(response);
       await route.handle(request, response);
     } catch (error) {
-      // Only the name of the error: never its message, the request or a token.
-      // The request id ties the line to the answer the caller got.
-      console.error("route failed", route.contract.id, errorName(error), requestIdOf(response));
+      // Only the class of the error: never its message, the request or a token.
+      // The request id ties the record to the answer the caller got.
+      reportServerError("route", error, requestIdOf(response), route.contract.id);
       answerInternal(response);
     }
   };

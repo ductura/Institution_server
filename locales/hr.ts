@@ -2018,6 +2018,16 @@ export const hr = {
     unsupportedMediaType: "Vrsta sadržaja zahtjeva nije podržana.",
     upgradeRequired: "Potrebna je novija verzija aplikacije. Osvježite stranicu.",
   },
+  // Texts of the error catalogue that the server's contract does not answer
+  // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.
+  clientErrors: {
+    tooManyRequests:
+      "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",
+    badGateway:
+      "Poslužitelj trenutačno ne odgovara ispravno. Pokušajte ponovno za nekoliko sekundi.",
+    gatewayTimeout: "Poslužitelj nije odgovorio na vrijeme. Pokušajte ponovno.",
+    sessionExpired: "Prijava je istekla. Prijavite se ponovno.",
+  },
 } as const;
 
 /** A text table with the keys of `hr`, any text in place of each Croatian one. */

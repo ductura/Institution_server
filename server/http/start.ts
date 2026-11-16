@@ -8,7 +8,8 @@ import type { Databases } from "./databases.ts";
 import { createPipeline, type Layers } from "./pipeline.ts";
 import { sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
-import { createRouter, errorName, type Route } from "./router.ts";
+import { reportServerError } from "./error-catalog.ts";
+import { createRouter, type Route } from "./router.ts";
 import { answerInternal, applySecurityHeaders, refuse } from "./security-headers.ts";
 import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
 
@@ -167,7 +168,7 @@ export async function startServer(options: StartOptions): Promise<Running> {
     const done = track(socket, exchange, 1, () => ticket.release());
     void handle(request, response)
       .catch((error: unknown) => {
-        console.error("request failed", errorName(error), requestIdOf(response));
+        reportServerError("request", error, requestIdOf(response));
         answerInternal(response);
       })
       .finally(done);
