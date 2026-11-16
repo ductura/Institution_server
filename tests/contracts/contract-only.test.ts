@@ -60,29 +60,32 @@ describe("CONTRACT_ONLY", () => {
     expect(contractOnlyProblems(CONTRACT_ONLY, ids, mounted())).toEqual([]);
   });
 
+  // Fixed inputs, not the live ROUTES, so these stay true as DAN-803 adds routes.
+  const routeIds = ["auth.login.get", "student.assignments.get", "teacher.courses.get"];
+
   it("refuses a route outside DAN-803, a route without contract, a duplicate and a mounted one", () => {
     expect(
       contractOnlyProblems(
-        [...CONTRACT_ONLY, "auth.login.get", "teacher.courses.get", "student.assignments.get"],
-        [...ids, "teacher.courses.get"],
-        ["student.assignments.get"],
+        ["teacher.courses.get", "auth.login.get", "live.document.get", "teacher.courses.get"],
+        routeIds,
+        ["teacher.courses.get", "student.assignments.get"],
       ),
     ).toEqual([
       "duplicate id",
-      "student.assignments.get: mounted",
+      "teacher.courses.get: mounted",
       "auth.login.get: not a route of DAN-803",
-      "student.assignments.get: mounted",
-    ]);
-    expect(contractOnlyProblems(["live.document.get"], ids, [])).toEqual([
       "live.document.get: no contract",
-      "student.assignments.get: contract without a handler, not in CONTRACT_ONLY",
+      "teacher.courses.get: mounted",
     ]);
   });
 
   it("refuses a DAN-803 contract left out of the list", () => {
-    expect(contractOnlyProblems([], [...ids, "teacher.courses.get"], [])).toEqual([
+    expect(contractOnlyProblems([], routeIds, [])).toEqual([
       "student.assignments.get: contract without a handler, not in CONTRACT_ONLY",
       "teacher.courses.get: contract without a handler, not in CONTRACT_ONLY",
     ]);
+    expect(
+      contractOnlyProblems(["student.assignments.get", "teacher.courses.get"], routeIds, []),
+    ).toEqual([]);
   });
 });

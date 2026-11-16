@@ -1,0 +1,143 @@
+{
+  "route": "teacher.courses.get",
+  "vectors": [
+    {
+      "name": "courses",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "courses": [
+            {
+              "id": "2c1d0e9f-8a7b-4c6d-9e5f-4a3b2c1d0e01",
+              "name": "Izmišljeni kolegij nastavnika",
+              "academicYear": "2026/2027",
+              "aiPolicy": "partially_allowed",
+              "assignments": [
+                {
+                  "id": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+                  "title": "Izmišljeni seminar",
+                  "workType": "seminar_paper",
+                  "opensAt": "2026-10-01T08:00:00.000Z",
+                  "dueAt": "2026-12-15T22:59:00.000Z",
+                  "currentVersion": 2,
+                  "enrolledStudents": 14
+                }
+              ]
+            },
+            {
+              "id": "2c1d0e9f-8a7b-4c6d-9e5f-4a3b2c1d0e02",
+              "name": "Izmišljeni stari kolegij",
+              "academicYear": "2025/2026",
+              "aiPolicy": "prohibited",
+              "assignments": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "no-courses",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "courses": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {},
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+          "sec-fetch-site": "cross-site"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000003"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000000004"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000005"
+        }
+      }
+    }
+  ]
+}

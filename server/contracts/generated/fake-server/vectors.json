@@ -1643,7 +1643,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.4.0",
+        "apiVersion": "1.5.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -1659,7 +1659,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.4.0",
+        "apiVersion": "1.5.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -2217,6 +2217,528 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  {
+    "route": "teacher.courses.get",
+    "name": "courses",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "courses": [
+          {
+            "id": "2c1d0e9f-8a7b-4c6d-9e5f-4a3b2c1d0e01",
+            "name": "Izmišljeni kolegij nastavnika",
+            "academicYear": "2026/2027",
+            "aiPolicy": "partially_allowed",
+            "assignments": [
+              {
+                "id": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+                "title": "Izmišljeni seminar",
+                "workType": "seminar_paper",
+                "opensAt": "2026-10-01T08:00:00.000Z",
+                "dueAt": "2026-12-15T22:59:00.000Z",
+                "currentVersion": 2,
+                "enrolledStudents": 14
+              }
+            ]
+          },
+          {
+            "id": "2c1d0e9f-8a7b-4c6d-9e5f-4a3b2c1d0e02",
+            "name": "Izmišljeni stari kolegij",
+            "academicYear": "2025/2026",
+            "aiPolicy": "prohibited",
+            "assignments": []
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.courses.get",
+    "name": "no-courses",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "courses": []
+      }
+    }
+  },
+  {
+    "route": "teacher.courses.get",
+    "name": "unauthorized",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  {
+    "route": "teacher.courses.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000003"
+      }
+    }
+  },
+  {
+    "route": "teacher.courses.get",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "teacher.courses.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000005"
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorship.get",
+    "name": "work",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "work": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901",
+          "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+          "documentId": "izmisljeni-rad-0003",
+          "student": {
+            "givenName": "Izmišljena",
+            "familyName": "Studentica"
+          },
+          "title": "Izmišljeni diplomski rad",
+          "workType": "master_thesis",
+          "workState": "in_progress"
+        }
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorship.get",
+    "name": "work-without-name",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "work": {
+          "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2902",
+          "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c03",
+          "documentId": null,
+          "student": null,
+          "title": "Izmišljeni završni rad",
+          "workType": "bachelor_thesis",
+          "workState": "not_started"
+        }
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorship.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorship.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      },
+      "params": {
+        "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000003"
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorship.get",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorship.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000005"
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorships.get",
+    "name": "works",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "works": [
+          {
+            "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901",
+            "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+            "documentId": "izmisljeni-rad-0003",
+            "student": {
+              "givenName": "Izmišljena",
+              "familyName": "Studentica"
+            },
+            "title": "Izmišljeni diplomski rad",
+            "workType": "master_thesis",
+            "workState": "in_progress"
+          },
+          {
+            "mentorshipId": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2902",
+            "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c03",
+            "documentId": null,
+            "student": null,
+            "title": "Izmišljeni završni rad",
+            "workType": "bachelor_thesis",
+            "workState": "not_started"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorships.get",
+    "name": "none-or-not-a-mentor",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "works": []
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorships.get",
+    "name": "unauthorized",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorships.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000003"
+      }
+    }
+  },
+  {
+    "route": "teacher.mentorships.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "teacher.submissions.get",
+    "name": "submissions",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "submissions": [
+          {
+            "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01",
+            "documentId": "izmisljeni-rad-0001",
+            "submitted": true,
+            "revision": 42,
+            "requestedMinute": "2026-12-15T21:30:00.000Z",
+            "afterDeadline": false
+          },
+          {
+            "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d02",
+            "documentId": "izmisljeni-rad-0002",
+            "submitted": false,
+            "revision": null,
+            "requestedMinute": null,
+            "afterDeadline": null
+          },
+          {
+            "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d03",
+            "documentId": null,
+            "submitted": false,
+            "revision": null,
+            "requestedMinute": null,
+            "afterDeadline": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.submissions.get",
+    "name": "none-or-not-the-teacher",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "submissions": []
+      }
+    }
+  },
+  {
+    "route": "teacher.submissions.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  {
+    "route": "teacher.submissions.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      },
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000003"
+      }
+    }
+  },
+  {
+    "route": "teacher.submissions.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000004"
       }
     }
   }
