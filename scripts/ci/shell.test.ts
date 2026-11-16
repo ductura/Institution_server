@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { join, posix, resolve, sep, win32 } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { shellViolations } from "./index.ts";
@@ -82,6 +82,11 @@ describe("shellViolations", () => {
   });
 });
 
+/** `path` relative to `root` with `/`, the form EXEMPT and the filters use. */
+function repoPath(root: string, path: string, paths: typeof posix = posix): string {
+  return paths.relative(root, path).split(paths.sep).join("/");
+}
+
 /** Every action.yml or action.yaml in the repository, outside dependencies. */
 function actions(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -97,7 +102,19 @@ describe("the workflows and composite actions of this repository", () => {
   const workflows = readdirSync(dir)
     .filter((name) => /\.ya?ml$/i.test(name))
     .map((name) => join(dir, name));
-  const files = [...workflows, ...actions(ROOT)].map((path) => relative(ROOT, path));
+  const files = [...workflows, ...actions(ROOT)].map((path) =>
+    repoPath(ROOT, path, sep === "/" ? posix : win32),
+  );
+
+  // Review cxcrs153: on Windows `relative` gives `\\`, and EXEMPT would not match.
+  it("names files with / on every platform", () => {
+    expect(repoPath("D:\\r", "D:\\r\\.github\\workflows\\release.yml", win32)).toBe(
+      ".github/workflows/release.yml",
+    );
+    expect(repoPath("/r", "/r/.github/workflows/release.yml")).toBe(
+      ".github/workflows/release.yml",
+    );
+  });
 
   it("finds every workflow", () => {
     for (const name of ["ci", "engineering-gate", "publish", "release"])
