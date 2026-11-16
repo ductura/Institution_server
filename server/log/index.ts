@@ -8,3 +8,21 @@ export {
   type LogSink,
 } from "./logger.ts";
 export { isSensitiveKey, redact, redactString, REDACTED, stripUrl } from "./redact.ts";
+export {
+  ADMIN_LOG_ACTIONS,
+  checkEvent,
+  EVENT_CATALOG,
+  EVENT_KINDS,
+  isEventKind,
+  LOG_ACCOUNT_KINDS,
+  LOG_ACTIONS,
+  LOG_ACTORS,
+  type CatalogErrorCode,
+  type CatalogResult,
+  type CheckOptions,
+  type EventKind,
+  type EventSpec,
+  type FieldSpec,
+  type LogActor,
+  type LogRecord,
+} from "./events/index.ts";
