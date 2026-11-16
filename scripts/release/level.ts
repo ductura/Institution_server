@@ -36,12 +36,20 @@ export function latestTag(tags: readonly string[], short: string): Version | nul
   return best;
 }
 
-/** The version to tag, or a reason why nothing is tagged. */
-export function nextVersion(base: Version, level: Level, floor: string): Version | string {
+/** Why package.json (the floor) does not fit the last tag's major, or null. */
+export function floorProblem(base: Version, floor: string): string | null {
   const f = parseVersion(floor);
   if (f === null) return `package.json version ${floor} is not X.Y.Z`;
   if (f[0] > base[0]) return `package.json is on major ${f[0]}; a major awaits the owner's tag`;
   if (f[0] < base[0]) return `package.json major ${f[0]} is below the last tag`;
+  return null;
+}
+
+/** The version to tag, or a reason why nothing is tagged. */
+export function nextVersion(base: Version, level: Level, floor: string): Version | string {
+  const problem = floorProblem(base, floor);
+  if (problem !== null) return problem;
+  const f = parseVersion(floor)!;
   if (level !== "minor" && level !== "patch") return `level ${level}`;
   const next: Version =
     level === "minor" ? [base[0], base[1] + 1, 0] : [base[0], base[1], base[2] + 1];
