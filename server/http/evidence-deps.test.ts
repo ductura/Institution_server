@@ -136,6 +136,49 @@ describe("evidenceIngestDependencies: the storage", () => {
     },
   );
 
+  // QA FAIL on #133 (P9): shared credentials between institutions are allowed
+  // only for loopback outside production, and production is every NODE_ENV
+  // outside the allowlist, not only the exact word.
+  const sharedTwo = (endpoints: [string, string]) => {
+    const a = domain(endpoints[0]);
+    const b = {
+      ...domain(endpoints[1]),
+      label: "fak-b-lokalno",
+      institutionId: "00000000-0000-4000-8000-00000000000b",
+      bucket: "ductus-fak-b",
+    };
+    return {
+      [EVIDENCE_STORAGE_DOMAINS]: JSON.stringify({
+        requestTimeoutMs: 5_000,
+        sharedCredentials: "loopback-only",
+        domains: [a, b],
+      }),
+      [KEY_VAR]: "izmisljeni-kljuc",
+      [SECRET_VAR]: "izmisljena-tajna-kanarinac",
+    };
+  };
+  const httpsLoopback: [string, string] = ["https://127.0.0.1:9001", "https://127.0.0.1:9002"];
+
+  it.each([undefined, "", "production", "Production", "staging"])(
+    "shared credentials on https loopback are never storage under NODE_ENV %s",
+    (nodeEnv) => {
+      expect(
+        evidenceIngestDependencies({ NODE_ENV: nodeEnv, ...sharedTwo(httpsLoopback) }, ROOT)
+          .payloads,
+      ).toBe(STORAGE_NOT_CONFIGURED);
+    },
+  );
+
+  it.each(["development", "test"])(
+    "shared credentials on loopback are storage under NODE_ENV %s",
+    (nodeEnv) => {
+      expect(
+        evidenceIngestDependencies({ NODE_ENV: nodeEnv, ...sharedTwo(httpsLoopback) }, ROOT)
+          .payloads,
+      ).toBeInstanceOf(InstitutionRoutedPayloadStore);
+    },
+  );
+
   it("an https domain is storage in production", () => {
     const { payloads } = evidenceIngestDependencies(
       { NODE_ENV: "production", ...storage("https://s3.example.invalid") },

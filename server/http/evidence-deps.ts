@@ -53,12 +53,16 @@ function signerOf(env: Env, repositoryRoot: string): Pick<SigningKeyProvider, "s
 }
 
 function payloadsOf(env: Env): EvidencePayloadStore & EvidencePayloadLocator {
+  // An allowlist, as for the signer (F-020): an unset, empty or misspelt
+  // NODE_ENV counts as production. Ductus could read "!== production"
+  // because next build fixed NODE_ENV; this server reads it at start. The
+  // loader gets NODE_ENV production outside the allowlist too, so its own
+  // production rules (no shared credentials, P9) hold for every such value.
+  const nonProduction = env.NODE_ENV === "development" || env.NODE_ENV === "test";
+  const configEnv: Env = nonProduction ? env : { ...env, NODE_ENV: "production" };
   try {
-    return InstitutionRoutedPayloadStore.fromConfig(loadEvidenceStorageConfig(env), {
-      // An allowlist, as for the signer (F-020): an unset, empty or misspelt
-      // NODE_ENV counts as production. Ductus could read "!== production"
-      // because next build fixed NODE_ENV; this server reads it at start.
-      allowPlainHttpOnLoopback: env.NODE_ENV === "development" || env.NODE_ENV === "test",
+    return InstitutionRoutedPayloadStore.fromConfig(loadEvidenceStorageConfig(configEnv), {
+      allowPlainHttpOnLoopback: nonProduction,
     });
   } catch {
     // The adapter's messages name no value; none is kept here either.
