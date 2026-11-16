@@ -36,7 +36,7 @@
         "body": {
           "status": "ok",
           "state": "ok",
-          "apiVersion": "1.10.0",
+          "apiVersion": "1.11.0",
           "serverVersion": "0.1.0",
           "minClientVersion": "1.0.0"
         }
@@ -52,7 +52,7 @@
         "body": {
           "status": "ok",
           "state": "degraded",
-          "apiVersion": "1.10.0",
+          "apiVersion": "1.11.0",
           "serverVersion": "0.1.0",
           "minClientVersion": "1.0.0"
         }
@@ -71,6 +71,26 @@
           "code": "internal",
           "messageKey": "errors.internal",
           "status": 500,
+          "requestId": "00000000-0000-4000-8000-000000000000"
+        }
+      }
+    },
+    {
+      "name": "too-many-requests",
+      "kind": "error",
+      "code": "too_many_requests",
+      "request": {},
+      "response": {
+        "status": 429,
+        "contentType": "application/json",
+        "headers": {
+          "retry-after": "12"
+        },
+        "body": {
+          "error": "too_many_requests",
+          "code": "too_many_requests",
+          "messageKey": "errors.tooManyRequests",
+          "status": 429,
           "requestId": "00000000-0000-4000-8000-000000000000"
         }
       }

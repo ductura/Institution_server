@@ -2034,6 +2034,7 @@ const en = {
       "The request does not say which version of the work it changes. Load the work again.",
     staleBase: "The work has changed in the meantime. Load the latest version.",
     timeout: "The request took too long. Please try again.",
+    tooManyRequests: "Too many requests were sent in a short time. Wait a moment and try again.",
     tooLarge: "The request is too large.",
     tooManyReports: "Your account can send at most five reports in one hour. Try again later.",
     txidReused: "This change was already sent with other content.",
@@ -2045,7 +2046,6 @@ const en = {
   },
   // Texts of the error catalogue the server's contract does not answer (S-1M-c, DAN-802); added after the port.
   clientErrors: {
-    tooManyRequests: "Too many requests were sent in a short time. Wait a moment and try again.",
     badGateway:
       "The server is not answering correctly at the moment. Please try again in a few seconds.",
     gatewayTimeout: "The server did not answer in time. Please try again.",

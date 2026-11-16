@@ -6,7 +6,16 @@ import { FormatRegistry, Type } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
-import { INTERNAL, ROUTES, SHARED_ERRORS, closed, defineRoute, error, errorBody } from "./index.ts";
+import {
+  INTERNAL,
+  ROUTES,
+  SHARED_ERRORS,
+  TOO_MANY_REQUESTS,
+  closed,
+  defineRoute,
+  error,
+  errorBody,
+} from "./index.ts";
 import { checkVectors, type VectorFile } from "./vectors.ts";
 
 const VECTORS_DIR = fileURLToPath(new URL("./vectors/", import.meta.url));
@@ -49,7 +58,14 @@ describe("contract vectors", () => {
       key: "errors.internal",
       body: errorBody("internal", 500),
     });
-    expect(SHARED_ERRORS).toEqual([INTERNAL.error]);
+    expect(SHARED_ERRORS).toEqual([INTERNAL.error, TOO_MANY_REQUESTS.error]);
+    // The rate limit's 429 (DAN-814): the same closed problem body.
+    expect(TOO_MANY_REQUESTS.error).toEqual({
+      status: 429,
+      code: "too_many_requests",
+      key: "errors.tooManyRequests",
+      body: errorBody("too_many_requests", 429),
+    });
     const health = load()["platform.health.get"] as VectorFile;
     expect(health.vectors.find((v) => v.name === "internal")).toEqual({
       name: "internal",
@@ -138,7 +154,9 @@ describe("checkVectors refuses", () => {
         },
       },
     } as const;
-    const shared = (f: unknown) => checkVectors([route], { [route.id]: f }, check, SHARED_ERRORS);
+    // Only 500 here: the mechanism, not the list (SHARED_ERRORS also has the 429 of DAN-814).
+    const shared = (f: unknown) =>
+      checkVectors([route], { [route.id]: f }, check, [INTERNAL.error]);
 
     it("is accepted in any route's file", () => {
       expect(shared(file(success, invalid, unavailable, internal))).toEqual([]);

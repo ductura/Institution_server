@@ -5,9 +5,15 @@
 // stops the request before the application.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { clientIpLayer, NO_TRUSTED_PROXIES, type TrustedProxies } from "../traffic/index.ts";
+import {
+  clientIpLayer,
+  NO_TRUSTED_PROXIES,
+  type RateLimiter,
+  type TrustedProxies,
+} from "../traffic/index.ts";
 import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
 import { originLayer } from "./mutation-request.ts";
+import { defaultRateLimiter, type RateLimitLog, rateLimitLayer } from "./rate-limit-layer.ts";
 import { requestIdOf } from "./request-id.ts";
 import { answerInternal, refuse, securityHeadersLayer } from "./security-headers.ts";
 
@@ -61,21 +67,28 @@ function attached(request: IncomingMessage, response: ServerResponse): Promise<b
   });
 }
 
-/** Steps 3 to 5 are empty until wave 5 fills them; they read nothing. */
+/** Step 3 (IP rules) and step 5 (traffic record) are empty until wave 5 fills them; they read nothing. */
 const pass: Layer = async () => "next";
 
 /**
  * Without trustedProxies (TRUSTED_PROXIES) X-Forwarded-For is never read and
- * the client IP is the direct peer (S-1C.1, DAN-790).
+ * the client IP is the direct peer (S-1C.1, DAN-790). Without rateLimiter
+ * the limit has the catalogue's defaults (S-1C.3, DAN-814); every server
+ * built here has one, so no caller can leave step 4 open.
  */
 export function createLayers(options: {
   readonly expectedOrigin: string | null;
   readonly trustedProxies?: TrustedProxies;
+  readonly rateLimiter?: RateLimiter;
+  readonly rateLimitLog?: RateLimitLog;
 }): Layers {
   return Object.freeze({
     clientIp: clientIpLayer(options.trustedProxies ?? NO_TRUSTED_PROXIES),
     ipRules: pass,
-    rateLimit: pass,
+    rateLimit: rateLimitLayer(
+      options.rateLimiter ?? defaultRateLimiter(),
+      ...(options.rateLimitLog === undefined ? [] : [options.rateLimitLog]),
+    ),
     trafficRecord: pass,
     securityHeaders: securityHeadersLayer,
     originCheck: originLayer(options.expectedOrigin),
