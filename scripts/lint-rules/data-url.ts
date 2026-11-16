@@ -90,8 +90,9 @@ function bytesToTexts(bytes: Uint8Array, mime: string): string[] {
 // written as two escapes is one character), `\\u{…}`, `\\xXX`, and HTML
 // character references. A named reference other than the markup ones is read
 // as a letter: the rule keeps no entity table, and `&ccaron;` is "č".
-const JS_ESCAPE = /\\u\{([0-9a-fA-F]{1,6})\}|\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})/gu;
-const ENTITY = /&#(?:([0-9]{1,7})|[xX]([0-9a-fA-F]{1,6}));?|&([A-Za-z][A-Za-z0-9]*);/gu;
+// Digit runs are read whole: `&#00000269;` and `\u{0010D}` are "č" (Codex P2 on #82).
+const JS_ESCAPE = /\\u\{([0-9a-fA-F]+)\}|\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})/gu;
+const ENTITY = /&#(?:([0-9]+)|[xX]([0-9a-fA-F]+));?|&([A-Za-z][A-Za-z0-9]*);/gu;
 const MARKUP_ENTITIES = new Set([
   ...["amp", "lt", "gt", "quot", "apos", "nbsp", "copy", "reg", "trade", "mdash", "ndash"],
   ...["hellip", "laquo", "raquo", "bull", "middot", "times", "divide", "deg", "euro", "shy"],
@@ -131,16 +132,29 @@ function collect(text: string, depth: number, out: Set<string>): void {
   // scheme holds (an attribute quote, a space, a control).
   for (let at = folded.indexOf("data:"); at !== -1; at = folded.indexOf("data:", at + 1)) {
     if (at > 0 && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
-    // The raw text after `data:`, and the URL as the parser serializes it,
-    // which drops dot segments (`/a,b/../`) and so may move the first comma.
-    const rests = [input.slice(at + "data:".length)];
-    try {
-      const href = new URL(input.slice(at)).href;
-      if (href.startsWith("data:")) rests.push(href.slice("data:".length));
-    } catch {
-      // No URL to the parser: the raw text is still read.
+    // The URL runs to the end of the text, or, inside markup, CSS or a
+    // sentence, up to the first character that ends it there (Codex P2 on
+    // #82: `<iframe src="data:;base64,…"></iframe>`). A space ends it only in
+    // the last cut, since base64 may hold spaces inside a quoted attribute.
+    const url = input.slice(at);
+    const ends = [/["'`<>]/u, /["'`<>)\s]/u];
+    const cut = (end: RegExp): string => {
+      const stop = url.search(end);
+      return stop === -1 ? url : url.slice(0, stop);
+    };
+    const urls = new Set([url, ...ends.map(cut)]);
+    for (const candidate of urls) {
+      // The raw text after `data:`, and the URL as the parser serializes it,
+      // which drops dot segments (`/a,b/../`) and so may move the first comma.
+      const rests = [candidate.slice("data:".length)];
+      try {
+        const href = new URL(candidate).href;
+        if (href.startsWith("data:")) rests.push(href.slice("data:".length));
+      } catch {
+        // No URL to the parser: the raw text is still read.
+      }
+      for (const rest of rests) readBody(rest, depth, out);
     }
-    for (const rest of rests) readBody(rest, depth, out);
   }
 }
 

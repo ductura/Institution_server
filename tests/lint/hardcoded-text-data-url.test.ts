@@ -73,6 +73,15 @@ const hidden: [what: string, literal: string][] = [
   ["encoded dot segments", "data:/a,b/%2e%2E/;base64,xI1la2Fq"],
   ["invalid UTF-8 before a letter", "data:,%80%D7%90%D7%91"],
   ["invalid UTF-8 before a letter, base64", "data:;base64,gNeQ15E="],
+  // Codex P2 on #82: a base64 URL inside markup, and zero-padded references.
+  ["base64 in a markup attribute", '<iframe src=\\"data:text/plain;base64,xI1la2Fq\\"></iframe>'],
+  ["base64 in single quotes", "<img src='data:;base64,xI1la2Fq' alt=x>"],
+  ["base64 with spaces in an attribute", "<a href='data:;base64,xI1 la2Fq'>x</a>"],
+  ["base64 in CSS url()", "a { background: url(data:;base64,xI1la2Fq) }"],
+  ["base64 before a space", "see data:;base64,xI1la2Fq for more"],
+  ["zero-padded decimal reference", "data:text/html,%26%2300000269%3Bekaj"],
+  ["zero-padded hex reference", "data:text/html,%26%23x000010D%3Bekaj"],
+  ["zero-padded JS escape", "data:application/json,%5Cu%7B0000010D%7Dekaj"],
 ];
 
 describe("data: URL", () => {
@@ -104,6 +113,8 @@ describe("data: URL", () => {
       "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==",
       "data:application/octet-stream,%FF%D8%FF%E0",
       "data:text/html,&copy; 2026 ACME &mdash; ok",
+      "<img src='data:;base64,aGVsbG8=' alt='ok'>",
+      "data:text/html,%26%2399999999999%3B",
     ])
       expect(await ids(`export const u = "${literal}";`), literal).toEqual([]);
   });
