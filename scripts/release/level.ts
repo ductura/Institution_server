@@ -1,0 +1,242 @@
+import ts from "typescript";
+
+import { breakingChanges } from "../../server/contracts/index.ts";
+
+// DAN-804: the semver level of a release, from the staged package of the last
+// tag to the staged package of HEAD. Closed by default: whatever cannot be
+// classified for sure is major (owner's decision) and any failure is blocked,
+// never patch (POTVRDA UGOVORA w804a t. 4).
+
+export type Level = "none" | "patch" | "minor" | "major" | "blocked";
+export type Version = readonly [number, number, number];
+/** Staged package: path inside the package → file text. */
+export type Files = ReadonlyMap<string, string>;
+
+const ORDER: readonly Level[] = ["none", "patch", "minor", "major", "blocked"];
+const max = (a: Level, b: Level): Level => (ORDER.indexOf(a) >= ORDER.indexOf(b) ? a : b);
+const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
+
+export function parseVersion(text: string): Version | null {
+  const m = VERSION.exec(text);
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+export function compareVersions(a: Version, b: Version): number {
+  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
+
+/** The highest `<short>-vX.Y.Z` among `tags`; anything else (rc, leading zero) is ignored. */
+export function latestTag(tags: readonly string[], short: string): Version | null {
+  let best: Version | null = null;
+  for (const tag of tags) {
+    if (!tag.startsWith(`${short}-v`)) continue;
+    const v = parseVersion(tag.slice(short.length + 2));
+    if (v && (best === null || compareVersions(v, best) > 0)) best = v;
+  }
+  return best;
+}
+
+/** The version to tag, or a reason why nothing is tagged. */
+export function nextVersion(base: Version, level: Level, floor: string): Version | string {
+  const f = parseVersion(floor);
+  if (f === null) return `package.json version ${floor} is not X.Y.Z`;
+  if (f[0] > base[0]) return `package.json is on major ${f[0]}; a major awaits the owner's tag`;
+  if (f[0] < base[0]) return `package.json major ${f[0]} is below the last tag`;
+  if (level !== "minor" && level !== "patch") return `level ${level}`;
+  const next: Version =
+    level === "minor" ? [base[0], base[1] + 1, 0] : [base[0], base[1], base[2] + 1];
+  return compareVersions(f, next) > 0 ? f : next;
+}
+
+// --- declarations -----------------------------------------------------------
+
+type Change = "same" | "optional" | "required" | "changed";
+const RANK: readonly Change[] = ["same", "optional", "required", "changed"];
+const worst = (a: Change, b: Change): Change => (RANK.indexOf(a) >= RANK.indexOf(b) ? a : b);
+
+const children = (node: ts.Node): ts.Node[] => {
+  const out: ts.Node[] = [];
+  ts.forEachChild(node, (child) => void out.push(child));
+  return out;
+};
+
+/** Named nodes by "name#n" (overloads keep their order), the rest by their text. */
+function keyed(nodes: readonly ts.Node[], file: ts.SourceFile): Map<string, ts.Node> {
+  const out = new Map<string, ts.Node>();
+  const seen = new Map<string, number>();
+  for (const node of nodes) {
+    const name = (node as { name?: ts.Node }).name;
+    const base = name ? `${ts.SyntaxKind[node.kind]} ${name.getText(file)}` : node.getText(file);
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    out.set(`${base}#${n}`, node);
+  }
+  return out;
+}
+
+/** Members of a type literal or interface; a new optional property is the only safe change. */
+function members(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): Change {
+  const ma = keyed((a as ts.TypeLiteralNode).members, fa);
+  const mb = keyed((b as ts.TypeLiteralNode).members, fb);
+  let out: Change = "same";
+  for (const [key, node] of ma) {
+    const other = mb.get(key);
+    out = worst(out, other ? compare(node, other, fa, fb) : "changed");
+  }
+  for (const [key, node] of mb)
+    if (!ma.has(key))
+      out = worst(
+        out,
+        ts.isPropertySignature(node) && node.questionToken ? "optional" : "required",
+      );
+  // Everything of an interface besides its members (heritage, type parameters).
+  const rest = (n: ts.Node) =>
+    children(n).filter((c) => !(n as ts.TypeLiteralNode).members.includes(c as ts.TypeElement));
+  return worst(out, list(rest(a), rest(b), fa, fb));
+}
+
+function list(a: ts.Node[], b: ts.Node[], fa: ts.SourceFile, fb: ts.SourceFile): Change {
+  if (a.length !== b.length) return "changed";
+  return a.reduce<Change>((out, node, i) => worst(out, compare(node, b[i]!, fa, fb)), "same");
+}
+
+/** Two declarations, structurally; comments and layout do not count. */
+function compare(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): Change {
+  if (a.kind !== b.kind) return "changed";
+  if (ts.isTypeLiteralNode(a) || ts.isInterfaceDeclaration(a)) return members(a, b, fa, fb);
+  const ca = children(a);
+  const cb = children(b);
+  if (ca.length === 0 && cb.length === 0)
+    return a.getText(fa) === b.getText(fb) ? "same" : "changed";
+  return list(ca, cb, fa, fb);
+}
+
+/** Top-level declarations of a .d.ts; each name of `export { … }` is its own entry. */
+function declarations(text: string, path: string): [Map<string, ts.Node>, ts.SourceFile] {
+  const file = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const diagnostics = (file as unknown as { parseDiagnostics: readonly unknown[] })
+    .parseDiagnostics;
+  if (diagnostics.length > 0) throw new Error(`${path} does not parse`);
+  const nodes: ts.Node[] = [];
+  const named = new Map<string, ts.Node>();
+  for (const statement of file.statements) {
+    const clause = ts.isExportDeclaration(statement) ? statement.exportClause : undefined;
+    if (ts.isExportDeclaration(statement) && clause && ts.isNamedExports(clause)) {
+      const from = statement.moduleSpecifier?.getText(file) ?? "";
+      // A value that becomes type-only is gone for JavaScript: the key holds the flag.
+      for (const spec of clause.elements) {
+        const type = statement.isTypeOnly || spec.isTypeOnly ? "type " : "";
+        named.set(`export ${type}${spec.name.text} from ${from}#0`, spec);
+      }
+    } else nodes.push(statement);
+  }
+  return [new Map([...keyed(nodes, file), ...named]), file];
+}
+
+export type Surface = { readonly level: Change; readonly reasons: string[] };
+
+/** The declaration change from `before` to `after` of one .d.ts. */
+export function declarationChange(before: string, after: string, path: string): Surface {
+  const [da, fa] = declarations(before, path);
+  const [db, fb] = declarations(after, path);
+  const reasons: string[] = [];
+  let level: Change = "same";
+  const note = (key: string, change: Change) => {
+    if (change === "same") return;
+    level = worst(level, change);
+    reasons.push(`${path} ${key.replace(/#0$/u, "")}: ${change}`);
+  };
+  for (const [key, node] of da) {
+    const other = db.get(key);
+    note(key, other ? compare(node, other, fa, fb) : "changed");
+  }
+  for (const key of db.keys()) if (!da.has(key)) note(key, "optional");
+  return { level, reasons };
+}
+
+// --- package ----------------------------------------------------------------
+
+export type LevelInput = {
+  readonly short: "contracts" | "test-fakes";
+  readonly before: Files;
+  readonly after: Files;
+  /** Whether scripts/generate-contracts.ts changed since the tag. */
+  readonly generatorChanged: boolean;
+};
+export type LevelResult = { readonly level: Level; readonly reasons: string[] };
+
+const GENERATED = "server/contracts/generated/";
+type Manifest = { version?: unknown; exports?: Record<string, unknown> };
+
+function openapiLevel(before: string, after: string, reasons: string[]): Level {
+  const a = JSON.parse(before) as { info?: { version?: unknown } };
+  const b = JSON.parse(after) as { info?: { version?: unknown } };
+  const problems = breakingChanges(a, b);
+  if (problems.length > 0) {
+    reasons.push(...problems.map((p) => `openapi ${p}`));
+    return "major";
+  }
+  const va = parseVersion(String(a.info?.version));
+  const vb = parseVersion(String(b.info?.version));
+  if (!va || !vb) throw new Error("openapi info.version is not X.Y.Z");
+  if (vb[0] === va[0] && vb[1] > va[1]) return "minor";
+  if (vb[0] === va[0] && vb[1] === va[1] && vb[2] > va[2]) return "patch";
+  throw new Error("openapi changed without a minor or patch rise");
+}
+
+function packageLevel(input: LevelInput): LevelResult {
+  const { before, after } = input;
+  const reasons: string[] = [];
+  let level: Level = "none";
+  const raise = (to: Level, why: string) => {
+    level = max(level, to);
+    reasons.push(`${to}: ${why}`);
+  };
+  let api: Level = "none";
+  if (input.short === "contracts") {
+    const a = before.get("openapi/v1.json");
+    const b = after.get("openapi/v1.json");
+    if (a === undefined || b === undefined) throw new Error("contracts without openapi/v1.json");
+    if (a !== b) api = openapiLevel(a, b, reasons);
+    if (api !== "none") raise(api, "openapi/v1.json");
+  }
+  // A new required member of a generated type (a new route) is backed by the
+  // document only when the document grew and the generator stayed the same.
+  const backed = api === "minor" && !input.generatorChanged;
+  for (const path of new Set([...before.keys(), ...after.keys()])) {
+    const a = before.get(path);
+    const b = after.get(path);
+    if (a === b || path === "openapi/v1.json") continue;
+    if (a === undefined) raise(path.endsWith(".d.ts") ? "minor" : "patch", `${path} added`);
+    else if (b === undefined) raise("major", `${path} removed`);
+    else if (path === "package.json") {
+      const ma = JSON.parse(a) as Manifest;
+      const mb = JSON.parse(b) as Manifest;
+      const ea = ma.exports ?? {};
+      const eb = mb.exports ?? {};
+      for (const key of Object.keys(ea))
+        if (JSON.stringify(ea[key]) !== JSON.stringify(eb[key]))
+          raise("major", `export ${key} removed or changed`);
+      for (const key of Object.keys(eb))
+        if (!Object.hasOwn(ea, key)) raise("minor", `export ${key}`);
+      const rest = (m: Manifest) => JSON.stringify({ ...m, version: null, exports: null });
+      if (rest(ma) !== rest(mb)) raise("patch", "package.json");
+    } else if (path.endsWith(".d.ts")) {
+      const surface = declarationChange(a, b, path);
+      const required = backed && path.startsWith(GENERATED) ? "minor" : "major";
+      const to = { same: "patch", optional: "minor", required, changed: "major" } as const;
+      raise(to[surface.level], path);
+      reasons.push(...surface.reasons);
+    } else raise("patch", path);
+  }
+  return { level, reasons };
+}
+
+/** The level of `input`; a failure is blocked, never a lower level. */
+export function releaseLevel(input: LevelInput): LevelResult {
+  try {
+    return packageLevel(input);
+  } catch (error) {
+    return { level: "blocked", reasons: [`blocked: ${String(error)}`] };
+  }
+}

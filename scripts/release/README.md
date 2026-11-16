@@ -11,6 +11,18 @@ Priprema i provjera paketa za objavu na GitHub Packages (U10-a, DAN-742; [plan](
 - `tag.ts`: `pnpm release:tag` u `publish.yml` provjerava oznaku: ime točno `<contracts|test-fakes>-vX.Y.Z`, `GITHUB_REF` je ta oznaka, verzija je `version` paketa u repou, za `contracts` glavna je glavna `API_VERSION`, a commit je predak `origin/main`. Tek tada piše `package=` u `$GITHUB_OUTPUT`.
 - `tarball.ts`: `pnpm release:tarball <contracts|test-fakes>...` priprema i stvarno pakira paket u `dist/release/tarball/`, raspakira te bajtove (samo obične datoteke pod `package/`) i nad njima pokreće cijeli `checkStaged`, pa ispisuje sha256.
 
+Automatska razina izdanja (DAN-804, POTVRDA UGOVORA w804a):
+
+- `level.ts`: `releaseLevel` uspoređuje paket pripremljen na zadnjem tagu s pripremljenim na HEAD-u. Ishod je `none`, `patch`, `minor`, `major` ili `blocked`. Pravila:
+  - isti bajtovi (osim `version`) daju `none`;
+  - `.d.ts` se uspoređuje po TypeScript AST-u, bez komentara i rasporeda: nova deklaracija ili novi **opcionalni** član je minor, a uklonjeno ili promijenjeno je major;
+  - `exports` iz `package.json`: dodan je minor, uklonjen ili promijenjen major;
+  - ostali bajtovi daju patch;
+  - za `contracts` `breakingChanges` nad `openapi/v1.json` daje major, a rast minora ili patcha `info.version` daje minor ili patch. Novi obvezni član generiranog tipa (nova ruta) je minor samo ako je dokument narastao minorom, a `scripts/generate-contracts.ts` nije mijenjan.
+  - Što se ne može pouzdano odrediti (neparsabilan `.d.ts`, nečitljiv dokument) je `blocked`, nikad patch.
+- `nextVersion`: minor ili patch od zadnjeg taga, nikad ispod `version` iz `package.json`. Viši major u `package.json` znači da major čeka vlasnički tag, pa se ništa ne označava.
+- `auto.ts`: `pnpm release:level`. Stari paket priprema **kodom taga** (`git worktree`, `pnpm install`, `check.ts --stage-only`), a novi kodom HEAD-a. U `$GITHUB_OUTPUT` piše `releases` (tagove za stvaranje) i `stopped` (`<paket>:major|blocked`). Svaki pad (git, instalacija, priprema) je `blocked`. Sam ne stvara tag.
+
 Objava (`publish.yml`, na oznaku):
 
 - `verify` (samo `contents: read`): testovi, `release:tag`, `release:check`, `release:tarball`, artefakt s tarballom i njegov sha256.
@@ -31,4 +43,4 @@ Pravila:
 - Provjera uz popis gleda i datoteke na disku, uvoze objavljenog JS-a (relativni samo na datoteke s popisa, paketi samo deklarirani) i da `test-fakes` u produkciji odbija baš čuvar.
 - `oidc/server.js` zadržava pokretanje izravno (`node …/oidc/server.js`), kao u U9: i tada vrijedi čuvar `NODE_ENV`, a nepostavljen `NODE_ENV` je dopušten po dizajnu U9 (D-09).
 
-Testovi: `release.test.ts` (validator izlaza, popis, tajne, manifest), `release.integration.test.ts` (prava priprema i `npm pack`, s negativnim slučajevima: višak, manjak, ključ, `private`, korijen bez čuvara), `tag.test.ts` (oznaka), `tarball.integration.test.ts` (pravi tarball i njegovi negativni slučajevi), `workflow.test.ts` (invarijanta 5 nad `publish.yml` i korak u `ci.yml`), `production.test.ts` (`test-fakes` nije produkcijska ovisnost).
+Testovi: `level.test.ts` (razina: minor, patch, major, blocked i lažni minor), `auto.test.ts` (plan i pad pripreme starog paketa), `release.test.ts` (validator izlaza, popis, tajne, manifest), `release.integration.test.ts` (prava priprema i `npm pack`, s negativnim slučajevima: višak, manjak, ključ, `private`, korijen bez čuvara), `tag.test.ts` (oznaka), `tarball.integration.test.ts` (pravi tarball i njegovi negativni slučajevi), `workflow.test.ts` (invarijanta 5 nad `publish.yml` i korak u `ci.yml`), `production.test.ts` (`test-fakes` nije produkcijska ovisnost).
