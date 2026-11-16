@@ -3228,7 +3228,7 @@
     "/api/v1/teacher/fast-path": {
       "post": {
         "operationId": "teacher.fast-path.post",
-        "summary": "The teacher's fast path through the works of one assignment (B-11, #757): per student the state of the work, its text as blocks and the same process summary the student sees. POST so the assignment id never lands in a URL; the body is exactly {assignmentId}, at most 1 KiB. An assignment the caller does not teach, an unknown or a malformed one, is the same empty list, never 403 or 404. Named students by surname, given name (hr) and id, then the unnamed by id.",
+        "summary": "The teacher's fast path through the works of one assignment (B-11, #757): per student the state of the work, its text as blocks and the same process summary the student sees. POST so the assignment id never lands in a URL; the body is exactly {assignmentId}, a UUID in any case, at most 1 KiB; any other key or a malformed id is 422 invalid_input. An assignment the caller does not teach, or that does not exist, is the same empty list, never 403 or 404. Named students by surname, given name (hr) and id, then the unnamed by id.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/teacher/fast-path/route.ts",
         "requestBody": {
@@ -3243,7 +3243,7 @@
                 ],
                 "properties": {
                   "assignmentId": {
-                    "minLength": 1,
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
                     "type": "string"
                   }
                 }
@@ -3291,28 +3291,14 @@
                                 "type": "string"
                               },
                               "givenName": {
-                                "anyOf": [
-                                  {
-                                    "minLength": 1,
-                                    "maxLength": 510,
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
+                                "minLength": 1,
+                                "maxLength": 510,
+                                "type": "string"
                               },
                               "surname": {
-                                "anyOf": [
-                                  {
-                                    "minLength": 1,
-                                    "maxLength": 510,
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
+                                "minLength": 1,
+                                "maxLength": 510,
+                                "type": "string"
                               },
                               "documentId": {
                                 "type": "null"
@@ -3347,10 +3333,37 @@
                                 "type": "string"
                               },
                               "givenName": {
+                                "minLength": 1,
+                                "maxLength": 510,
+                                "type": "string"
+                              },
+                              "surname": {
+                                "minLength": 1,
+                                "maxLength": 510,
+                                "type": "string"
+                              },
+                              "documentId": {
+                                "minLength": 1,
+                                "maxLength": 512,
+                                "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+                                "type": "string"
+                              },
+                              "work": {
                                 "anyOf": [
                                   {
-                                    "minLength": 1,
-                                    "maxLength": 510,
+                                    "const": "writing",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "submitted",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "lastChangeAt": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
                                     "type": "string"
                                   },
                                   {
@@ -3358,17 +3371,298 @@
                                   }
                                 ]
                               },
-                              "surname": {
-                                "anyOf": [
-                                  {
-                                    "minLength": 1,
-                                    "maxLength": 510,
-                                    "type": "string"
+                              "record": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "pastesWithoutSource",
+                                  "blocks",
+                                  "summary"
+                                ],
+                                "properties": {
+                                  "pastesWithoutSource": {
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991,
+                                    "type": "integer"
                                   },
-                                  {
-                                    "type": "null"
+                                  "blocks": {
+                                    "type": "array",
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "kind",
+                                        "text"
+                                      ],
+                                      "properties": {
+                                        "kind": {
+                                          "anyOf": [
+                                            {
+                                              "const": "heading",
+                                              "type": "string"
+                                            },
+                                            {
+                                              "const": "paragraph",
+                                              "type": "string"
+                                            },
+                                            {
+                                              "const": "bulletItem",
+                                              "type": "string"
+                                            },
+                                            {
+                                              "const": "quote",
+                                              "type": "string"
+                                            }
+                                          ]
+                                        },
+                                        "text": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "summary": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "summaryFormat",
+                                      "sessions",
+                                      "pastes",
+                                      "gaps",
+                                      "recordState"
+                                    ],
+                                    "properties": {
+                                      "summaryFormat": {
+                                        "const": "ductus-process-summary-v1",
+                                        "type": "string"
+                                      },
+                                      "sessions": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "evidenceKind",
+                                          "breakAboveMinutes",
+                                          "count",
+                                          "items"
+                                        ],
+                                        "properties": {
+                                          "evidenceKind": {
+                                            "const": "observed",
+                                            "type": "string"
+                                          },
+                                          "breakAboveMinutes": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "count": {
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "required": [
+                                                "from",
+                                                "to"
+                                              ],
+                                              "properties": {
+                                                "from": {
+                                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                                  "type": "string"
+                                                },
+                                                "to": {
+                                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                                  "type": "string"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "pastes": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "evidenceKind",
+                                          "listedAboveCharacters",
+                                          "listed",
+                                          "smallerCount"
+                                        ],
+                                        "properties": {
+                                          "evidenceKind": {
+                                            "const": "observed",
+                                            "type": "string"
+                                          },
+                                          "listedAboveCharacters": {
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "listed": {
+                                            "type": "array",
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "required": [
+                                                "at",
+                                                "characters",
+                                                "origin"
+                                              ],
+                                              "properties": {
+                                                "at": {
+                                                  "additionalProperties": false,
+                                                  "type": "object",
+                                                  "required": [
+                                                    "from",
+                                                    "to"
+                                                  ],
+                                                  "properties": {
+                                                    "from": {
+                                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                                      "type": "string"
+                                                    },
+                                                    "to": {
+                                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                },
+                                                "characters": {
+                                                  "minimum": 0,
+                                                  "maximum": 9007199254740991,
+                                                  "type": "integer"
+                                                },
+                                                "origin": {
+                                                  "const": "not_observed",
+                                                  "type": "string"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "smallerCount": {
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          }
+                                        }
+                                      },
+                                      "gaps": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "evidenceKind",
+                                          "items"
+                                        ],
+                                        "properties": {
+                                          "evidenceKind": {
+                                            "const": "observed",
+                                            "type": "string"
+                                          },
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "additionalProperties": false,
+                                              "type": "object",
+                                              "required": [
+                                                "previousEndedAt",
+                                                "nextStartedAt"
+                                              ],
+                                              "properties": {
+                                                "previousEndedAt": {
+                                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                                  "type": "string"
+                                                },
+                                                "nextStartedAt": {
+                                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$",
+                                                  "type": "string"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "recordState": {
+                                        "anyOf": [
+                                          {
+                                            "const": "complete",
+                                            "type": "string"
+                                          },
+                                          {
+                                            "const": "has_gaps",
+                                            "type": "string"
+                                          }
+                                        ]
+                                      }
+                                    }
                                   }
-                                ]
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "givenName",
+                              "surname",
+                              "documentId",
+                              "work",
+                              "lastChangeAt",
+                              "record"
+                            ],
+                            "properties": {
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "givenName": {
+                                "type": "null"
+                              },
+                              "surname": {
+                                "type": "null"
+                              },
+                              "documentId": {
+                                "type": "null"
+                              },
+                              "work": {
+                                "const": "notice_pending",
+                                "type": "string"
+                              },
+                              "lastChangeAt": {
+                                "type": "null"
+                              },
+                              "record": {
+                                "type": "null"
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "givenName",
+                              "surname",
+                              "documentId",
+                              "work",
+                              "lastChangeAt",
+                              "record"
+                            ],
+                            "properties": {
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "givenName": {
+                                "type": "null"
+                              },
+                              "surname": {
+                                "type": "null"
                               },
                               "documentId": {
                                 "minLength": 1,
@@ -4180,107 +4474,181 @@
                   ],
                   "properties": {
                     "work": {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "mentorshipId",
-                        "assignmentId",
-                        "documentId",
-                        "student",
-                        "title",
-                        "workType",
-                        "workState"
-                      ],
-                      "properties": {
-                        "mentorshipId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                          "type": "string"
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "mentorshipId",
+                            "assignmentId",
+                            "documentId",
+                            "student",
+                            "title",
+                            "workType",
+                            "workState"
+                          ],
+                          "properties": {
+                            "mentorshipId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "documentId": {
+                              "type": "null"
+                            },
+                            "student": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "givenName",
+                                    "familyName"
+                                  ],
+                                  "properties": {
+                                    "givenName": {
+                                      "minLength": 1,
+                                      "maxLength": 510,
+                                      "type": "string"
+                                    },
+                                    "familyName": {
+                                      "minLength": 1,
+                                      "maxLength": 510,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "title": {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "workType": {
+                              "anyOf": [
+                                {
+                                  "const": "bachelor_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "master_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "specialist_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "doctoral_thesis",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "workState": {
+                              "const": "not_started",
+                              "type": "string"
+                            }
+                          }
                         },
-                        "assignmentId": {
-                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                          "type": "string"
-                        },
-                        "documentId": {
-                          "anyOf": [
-                            {
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "mentorshipId",
+                            "assignmentId",
+                            "documentId",
+                            "student",
+                            "title",
+                            "workType",
+                            "workState"
+                          ],
+                          "properties": {
+                            "mentorshipId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "documentId": {
                               "minLength": 1,
                               "maxLength": 512,
                               "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
                               "type": "string"
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "student": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "type": "object",
-                              "required": [
-                                "givenName",
-                                "familyName"
-                              ],
-                              "properties": {
-                                "givenName": {
-                                  "minLength": 1,
-                                  "maxLength": 510,
+                            "student": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "givenName",
+                                    "familyName"
+                                  ],
+                                  "properties": {
+                                    "givenName": {
+                                      "minLength": 1,
+                                      "maxLength": 510,
+                                      "type": "string"
+                                    },
+                                    "familyName": {
+                                      "minLength": 1,
+                                      "maxLength": 510,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "title": {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "workType": {
+                              "anyOf": [
+                                {
+                                  "const": "bachelor_thesis",
                                   "type": "string"
                                 },
-                                "familyName": {
-                                  "minLength": 1,
-                                  "maxLength": 510,
+                                {
+                                  "const": "master_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "specialist_thesis",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "doctoral_thesis",
                                   "type": "string"
                                 }
-                              }
+                              ]
                             },
-                            {
-                              "type": "null"
+                            "workState": {
+                              "anyOf": [
+                                {
+                                  "const": "in_progress",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "submitted",
+                                  "type": "string"
+                                }
+                              ]
                             }
-                          ]
-                        },
-                        "title": {
-                          "minLength": 1,
-                          "type": "string"
-                        },
-                        "workType": {
-                          "anyOf": [
-                            {
-                              "const": "bachelor_thesis",
-                              "type": "string"
-                            },
-                            {
-                              "const": "master_thesis",
-                              "type": "string"
-                            },
-                            {
-                              "const": "specialist_thesis",
-                              "type": "string"
-                            },
-                            {
-                              "const": "doctoral_thesis",
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "workState": {
-                          "anyOf": [
-                            {
-                              "const": "not_started",
-                              "type": "string"
-                            },
-                            {
-                              "const": "in_progress",
-                              "type": "string"
-                            },
-                            {
-                              "const": "submitted",
-                              "type": "string"
-                            }
-                          ]
+                          }
                         }
-                      }
+                      ]
                     }
                   }
                 }
@@ -4477,107 +4845,181 @@
                     "works": {
                       "type": "array",
                       "items": {
-                        "additionalProperties": false,
-                        "type": "object",
-                        "required": [
-                          "mentorshipId",
-                          "assignmentId",
-                          "documentId",
-                          "student",
-                          "title",
-                          "workType",
-                          "workState"
-                        ],
-                        "properties": {
-                          "mentorshipId": {
-                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                            "type": "string"
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "mentorshipId",
+                              "assignmentId",
+                              "documentId",
+                              "student",
+                              "title",
+                              "workType",
+                              "workState"
+                            ],
+                            "properties": {
+                              "mentorshipId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "assignmentId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "documentId": {
+                                "type": "null"
+                              },
+                              "student": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "givenName",
+                                      "familyName"
+                                    ],
+                                    "properties": {
+                                      "givenName": {
+                                        "minLength": 1,
+                                        "maxLength": 510,
+                                        "type": "string"
+                                      },
+                                      "familyName": {
+                                        "minLength": 1,
+                                        "maxLength": 510,
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "title": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "workType": {
+                                "anyOf": [
+                                  {
+                                    "const": "bachelor_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "master_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "specialist_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "doctoral_thesis",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "workState": {
+                                "const": "not_started",
+                                "type": "string"
+                              }
+                            }
                           },
-                          "assignmentId": {
-                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                            "type": "string"
-                          },
-                          "documentId": {
-                            "anyOf": [
-                              {
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "mentorshipId",
+                              "assignmentId",
+                              "documentId",
+                              "student",
+                              "title",
+                              "workType",
+                              "workState"
+                            ],
+                            "properties": {
+                              "mentorshipId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "assignmentId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "documentId": {
                                 "minLength": 1,
                                 "maxLength": 512,
                                 "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
                                 "type": "string"
                               },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "student": {
-                            "anyOf": [
-                              {
-                                "additionalProperties": false,
-                                "type": "object",
-                                "required": [
-                                  "givenName",
-                                  "familyName"
-                                ],
-                                "properties": {
-                                  "givenName": {
-                                    "minLength": 1,
-                                    "maxLength": 510,
+                              "student": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "givenName",
+                                      "familyName"
+                                    ],
+                                    "properties": {
+                                      "givenName": {
+                                        "minLength": 1,
+                                        "maxLength": 510,
+                                        "type": "string"
+                                      },
+                                      "familyName": {
+                                        "minLength": 1,
+                                        "maxLength": 510,
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "title": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "workType": {
+                                "anyOf": [
+                                  {
+                                    "const": "bachelor_thesis",
                                     "type": "string"
                                   },
-                                  "familyName": {
-                                    "minLength": 1,
-                                    "maxLength": 510,
+                                  {
+                                    "const": "master_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "specialist_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "doctoral_thesis",
                                     "type": "string"
                                   }
-                                }
+                                ]
                               },
-                              {
-                                "type": "null"
+                              "workState": {
+                                "anyOf": [
+                                  {
+                                    "const": "in_progress",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "submitted",
+                                    "type": "string"
+                                  }
+                                ]
                               }
-                            ]
-                          },
-                          "title": {
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          "workType": {
-                            "anyOf": [
-                              {
-                                "const": "bachelor_thesis",
-                                "type": "string"
-                              },
-                              {
-                                "const": "master_thesis",
-                                "type": "string"
-                              },
-                              {
-                                "const": "specialist_thesis",
-                                "type": "string"
-                              },
-                              {
-                                "const": "doctoral_thesis",
-                                "type": "string"
-                              }
-                            ]
-                          },
-                          "workState": {
-                            "anyOf": [
-                              {
-                                "const": "not_started",
-                                "type": "string"
-                              },
-                              {
-                                "const": "in_progress",
-                                "type": "string"
-                              },
-                              {
-                                "const": "submitted",
-                                "type": "string"
-                              }
-                            ]
+                            }
                           }
-                        }
+                        ]
                       }
                     }
                   }

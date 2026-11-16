@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type, type TSchema } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
@@ -22,8 +22,9 @@ const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{
 const Minute = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$" });
 /**
  * A work id (evidence.document.id): 1 to 256 code points, trimmed, no control
- * character. JSON Schema counts UTF-16 units, so the bound here is 512; the
- * server keeps the exact rule (server/contracts/work-id.ts).
+ * character. The bound here is 512, so the check is never stricter than the
+ * work id under any length count (TypeBox counts UTF-16 units, JSON Schema
+ * code points); the server keeps the exact rule (server/contracts/work-id.ts).
  */
 const WorkId = Type.String({
   minLength: 1,
@@ -116,22 +117,38 @@ export const teacherSubmissionsGet = defineRoute({
   errors: [...READ_ERRORS, error(503, "unavailable")],
 });
 
-/** MentoredWork: the student is null when the account has no name pair, never a stand-in. */
-const MentoredWork = closed({
-  mentorshipId: Uuid,
-  assignmentId: Uuid,
-  documentId: Type.Union([WorkId, Type.Null()]),
-  student: Type.Union([
-    closed({
-      givenName: Type.String({ minLength: 1, maxLength: 510 }),
-      familyName: Type.String({ minLength: 1, maxLength: 510 }),
-    }),
-    Type.Null(),
-  ]),
-  title: Type.String({ minLength: 1 }),
-  workType: literals(["bachelor_thesis", "master_thesis", "specialist_thesis", "doctoral_thesis"]),
-  workState: literals(["not_started", "in_progress", "submitted"]),
-});
+const StudentName = Type.Union([
+  closed({
+    givenName: Type.String({ minLength: 1, maxLength: 510 }),
+    familyName: Type.String({ minLength: 1, maxLength: 510 }),
+  }),
+  Type.Null(),
+]);
+
+/**
+ * MentoredWork: the student is null when the account has no name pair, never
+ * a stand-in. The work state follows the work: not started without one, in
+ * progress or submitted with one (mentoredWorkOf refuses anything else).
+ */
+const mentoredWork = (documentId: TSchema, workState: TSchema) =>
+  closed({
+    mentorshipId: Uuid,
+    assignmentId: Uuid,
+    documentId,
+    student: StudentName,
+    title: Type.String({ minLength: 1 }),
+    workType: literals([
+      "bachelor_thesis",
+      "master_thesis",
+      "specialist_thesis",
+      "doctoral_thesis",
+    ]),
+    workState,
+  });
+const MentoredWork = Type.Union([
+  mentoredWork(Type.Null(), Type.Literal("not_started")),
+  mentoredWork(WorkId, literals(["in_progress", "submitted"])),
+]);
 
 export const teacherMentorshipsGet = defineRoute({
   id: "teacher.mentorships.get",
@@ -165,36 +182,43 @@ export const teacherMentorshipGet = defineRoute({
   errors: [...READ_ERRORS, error(404, "not_found"), error(503, "unavailable")],
 });
 
-/** A student of the fast path (#757): both names null when the account has none. */
-const FastPathStudent = Type.Union([
-  closed({
-    id: Uuid,
-    givenName: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
-    surname: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
-    documentId: Type.Null(),
-    work: Type.Literal("notice_pending"),
-    lastChangeAt: Type.Null(),
-    record: Type.Null(),
+/** Both names, or both null when the account has no name pair (#757 D1); never one alone. */
+const NAMES = [
+  {
+    givenName: Type.String({ minLength: 1, maxLength: 510 }),
+    surname: Type.String({ minLength: 1, maxLength: 510 }),
+  },
+  { givenName: Type.Null(), surname: Type.Null() },
+] as const;
+
+const PendingWork = {
+  documentId: Type.Null(),
+  work: Type.Literal("notice_pending"),
+  lastChangeAt: Type.Null(),
+  record: Type.Null(),
+};
+const StartedWork = {
+  documentId: WorkId,
+  work: literals(["writing", "submitted"]),
+  lastChangeAt: Type.Union([SummaryMinute, Type.Null()]),
+  record: closed({
+    pastesWithoutSource: Count(0),
+    blocks: Type.Array(
+      closed({
+        kind: literals(["heading", "paragraph", "bulletItem", "quote"]),
+        text: Type.String(),
+      }),
+    ),
+    summary: ProcessSummaryV1,
   }),
-  closed({
-    id: Uuid,
-    givenName: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
-    surname: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
-    documentId: WorkId,
-    work: literals(["writing", "submitted"]),
-    lastChangeAt: Type.Union([SummaryMinute, Type.Null()]),
-    record: closed({
-      pastesWithoutSource: Count(0),
-      blocks: Type.Array(
-        closed({
-          kind: literals(["heading", "paragraph", "bulletItem", "quote"]),
-          text: Type.String(),
-        }),
-      ),
-      summary: ProcessSummaryV1,
-    }),
-  }),
-]);
+};
+
+/** A student of the fast path (#757): a record exactly when there is a work. */
+const FastPathStudent = Type.Union(
+  NAMES.flatMap((names) =>
+    [PendingWork, StartedWork].map((work) => closed({ id: Uuid, ...names, ...work })),
+  ),
+);
 
 export const teacherFastPathPost = defineRoute({
   id: "teacher.fast-path.post",
@@ -203,11 +227,15 @@ export const teacherFastPathPost = defineRoute({
   inventory: "app/api/teacher/fast-path/route.ts",
   access: "course_teacher",
   summary:
-    "The teacher's fast path through the works of one assignment (B-11, #757): per student the state of the work, its text as blocks and the same process summary the student sees. POST so the assignment id never lands in a URL; the body is exactly {assignmentId}, at most 1 KiB. An assignment the caller does not teach, an unknown or a malformed one, is the same empty list, never 403 or 404. Named students by surname, given name (hr) and id, then the unnamed by id.",
+    "The teacher's fast path through the works of one assignment (B-11, #757): per student the state of the work, its text as blocks and the same process summary the student sees. POST so the assignment id never lands in a URL; the body is exactly {assignmentId}, a UUID in any case, at most 1 KiB; any other key or a malformed id is 422 invalid_input. An assignment the caller does not teach, or that does not exist, is the same empty list, never 403 or 404. Named students by surname, given name (hr) and id, then the unnamed by id.",
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
-    body: closed({ assignmentId: Type.String({ minLength: 1 }) }),
+    body: closed({
+      assignmentId: Type.String({
+        pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      }),
+    }),
   },
   responses: [
     {

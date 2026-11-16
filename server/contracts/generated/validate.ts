@@ -66,14 +66,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
-  "teacher.fast-path.post:body": (function check(value: Record<string, unknown>): boolean {
+  "teacher.fast-path.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['assignmentId'] === 'string') &&
-      value['assignmentId'].length >= 1 &&
+      local0.test(value['assignmentId']) &&
       Object.getOwnPropertyNames(value).length === 1
     )
-  }),
+  }
+  })(),
   "teacher.mentorship.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
