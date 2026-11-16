@@ -5,7 +5,9 @@
 -- main application), the refusals of UPDATE, DELETE and TRUNCATE, the
 -- writer's columns (no forged id or time, no reading the history) and the
 -- shape of a row. Plan of attack: ductura/server#114. The chain over the rows
--- is S-1K.2-b.
+-- (S-1K.2-b, DAN-816) is in 020-log-chain.sql. Rows other tests left (the
+-- concurrent appends of pnpm test:database commit) may be there: the rows of
+-- this file are those after the last id found.
 --
 -- The search path and the guard against planted functions are those of
 -- 000-rls-everywhere.sql. The file rolls back, so nothing stays.
@@ -65,6 +67,8 @@ $$;
 
 
 SELECT plan(75);
+
+CREATE TABLE pg_temp.found_before AS SELECT coalesce(max(id), 0) AS id FROM public.log_entry;
 
 -- Runs `sql` as `who` (NULL: the session's superuser), with
 -- session_replication_role = replica when asked, and gives back the SQLSTATE
@@ -130,8 +134,9 @@ SELECT is(
                      || CASE WHEN a.attnotnull THEN ' not null' ELSE '' END
                      || CASE WHEN a.attidentity = 'a' THEN ' identity always' ELSE '' END, ', ' ORDER BY a.attnum)
    FROM pg_attribute a WHERE a.attrelid = 'public.log_entry'::regclass AND a.attnum > 0 AND NOT a.attisdropped),
-  'id bigint not null identity always, at timestamp with time zone not null, kind text not null, payload jsonb not null',
-  'log_entry has id (identity always), at, kind and payload, none of them nullable');
+  'id bigint not null identity always, at timestamp with time zone not null, kind text not null, payload jsonb not null, '
+  || 'seq bigint not null, prev_hash bytea not null, hash bytea not null',
+  'log_entry has id (identity always), at, kind, payload and the chain (seq, prev_hash, hash, S-1K.2-b), none of them nullable');
 SELECT is((SELECT relowner::regrole::text FROM pg_class WHERE oid = 'public.log_entry'::regclass),
   'ductus_logs_migrator', 'the migrator owns the table');
 SELECT ok((SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE oid = 'public.log_entry'::regclass),
@@ -155,9 +160,10 @@ SELECT set_eq(
 SELECT set_eq(
   $$ SELECT t.tgname || ' ' || t.tgenabled::text || ' ' || t.tgtype::text FROM pg_trigger t
      WHERE t.tgrelid = 'public.log_entry'::regclass AND NOT t.tgisinternal $$,
-  -- tgtype: 27 = ROW | BEFORE | DELETE | UPDATE, 34 = BEFORE | TRUNCATE (per statement).
-  ARRAY['log_entry_no_change A 27', 'log_entry_no_truncate A 34'],
-  'the refusing triggers fire ALWAYS: before UPDATE or DELETE of each row, and before TRUNCATE');
+  -- tgtype: 27 = ROW | BEFORE | DELETE | UPDATE, 34 = BEFORE | TRUNCATE (per statement),
+  -- 7 = ROW | BEFORE | INSERT (the chain, S-1K.2-b; 020-log-chain.sql).
+  ARRAY['log_entry_no_change A 27', 'log_entry_no_truncate A 34', 'log_entry_chain A 7'],
+  'the refusing triggers fire ALWAYS: before UPDATE or DELETE of each row, and before TRUNCATE; so does the chain before INSERT');
 SELECT is(
   (SELECT array_to_string(p.proconfig, ',') || ' ' || p.prosecdef::text || ' '
           || (NOT EXISTS (SELECT 1 FROM aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
@@ -171,12 +177,13 @@ SELECT is(pg_temp.try_as('ductus_logs_writer',
   $$ INSERT INTO public.log_entry (kind, payload) VALUES ('authn.login_started', '{"time": "2026-11-16T05:00:00.000Z"}'),
                                                         ('authn.login_succeeded', '{"accountKind": "student"}') $$),
   'ok', 'the writer appends rows of kind and payload');
-SELECT is((SELECT count(*)::int FROM public.log_entry), 2, 'both rows are there');
-SELECT ok((SELECT bool_and(at IS NOT NULL AND at <= clock_timestamp()) AND count(DISTINCT id) = 2 FROM public.log_entry),
+SELECT is((SELECT count(*)::int FROM public.log_entry WHERE id > (SELECT id FROM pg_temp.found_before)), 2, 'both rows are there');
+SELECT ok((SELECT bool_and(at IS NOT NULL AND at <= clock_timestamp()) AND count(DISTINCT id) = 2 FROM public.log_entry
+           WHERE id > (SELECT id FROM pg_temp.found_before)),
   'the database gives each row its id and time');
 SELECT is(pg_temp.try_as('ductus_logs_reader',
   $$ DO $d$ BEGIN
-       IF (SELECT array_agg(kind ORDER BY id) FROM public.log_entry)
+       IF (SELECT array_agg(kind ORDER BY id) FROM public.log_entry WHERE id > $$ || (SELECT id FROM pg_temp.found_before) || $$)
           IS DISTINCT FROM ARRAY['authn.login_started', 'authn.login_succeeded'] THEN
          RAISE EXCEPTION 'unexpected rows' USING ERRCODE = 'P0001';
        END IF;
@@ -227,8 +234,10 @@ SELECT is(pg_temp.try_as('ductus_logs_retention', 'SELECT 1 FROM public.log_entr
   '42501', 'the retention role cannot read');
 SELECT pg_temp.try_as('ductus_logs_writer', 'GRANT UPDATE, DELETE, TRUNCATE, SELECT ON public.log_entry TO ductus_logs_writer');
 SELECT is_empty('SELECT found FROM pg_temp.entry_drift', 'a GRANT by the writer to itself gives it nothing');
-SELECT is((SELECT count(*)::int FROM public.log_entry), 2, 'after every attempt the two rows stay');
-SELECT is((SELECT array_agg(kind || ' ' || payload::text ORDER BY id) FROM public.log_entry),
+SELECT is((SELECT count(*)::int FROM public.log_entry WHERE id > (SELECT id FROM pg_temp.found_before)), 2,
+  'after every attempt the two rows stay');
+SELECT is((SELECT array_agg(kind || ' ' || payload::text ORDER BY id) FROM public.log_entry
+           WHERE id > (SELECT id FROM pg_temp.found_before)),
   ARRAY['authn.login_started {"time": "2026-11-16T05:00:00.000Z"}', 'authn.login_succeeded {"accountKind": "student"}'],
   'and are unchanged');
 
