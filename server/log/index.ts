@@ -19,6 +19,13 @@ export {
   type LogWriterErrorCode,
   type LogWriterOptions,
 } from "./writer.ts";
+export {
+  createOperatorAudit,
+  OPERATOR_AUDIT_ERROR_CODES,
+  type OperatorActionResult,
+  type OperatorAudit,
+  type OperatorAuditOptions,
+} from "./operator-audit.ts";
 export { isSensitiveKey, redact, redactString, REDACTED, stripUrl } from "./redact.ts";
 export {
   ADMIN_LOG_ACTIONS,
