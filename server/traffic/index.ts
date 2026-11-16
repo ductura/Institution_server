@@ -9,3 +9,15 @@ export {
   parseTrustedProxies,
   type TrustedProxies,
 } from "./client-ip.ts";
+export {
+  checkRateLimits,
+  createRateLimiter,
+  DEFAULT_RATE_LIMITS,
+  RATE_LIMIT_CLASSES,
+  type ClassLimits,
+  type RateLimitClass,
+  type RateLimitDecision,
+  type RateLimiter,
+  type RateLimiterOptions,
+  type RateLimits,
+} from "./rate-limit.ts";
