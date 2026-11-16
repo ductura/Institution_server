@@ -171,6 +171,19 @@ const DATABASE_NAMES = [
   "server_version",
   "token_set",
   "user_id",
+  // Result columns of the work opener (open-work.ts, DAN-811) and its tests.
+  "current_revision",
+  "document_hash",
+  "evidence_domain_id",
+  "evidence_profile_id",
+  "head_segment_hash",
+  "key_base64url",
+  "key_id",
+  "key_version",
+  "last_sequence_to",
+  "revoked_at",
+  "valid_from",
+  "valid_to",
   // The alias of the institution slug in the current-actor statement
   // (current-actor.ts, S-0.18, DAN-731).
   "institution_slug",

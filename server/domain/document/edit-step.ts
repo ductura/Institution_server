@@ -195,11 +195,14 @@ export type EditStepsV2Result =
   { ok: true; steps: EditStepV2[] } | { ok: false; code: EditStepRejection; path: string };
 
 class Rejected extends Error {
-  constructor(
-    readonly code: EditStepRejection,
-    readonly path: string,
-  ) {
+  // Declared fields, not parameter properties: server.ts runs under Node's
+  // type stripping, which has no parameter properties (DAN-811).
+  readonly code: EditStepRejection;
+  readonly path: string;
+  constructor(code: EditStepRejection, path: string) {
     super(code);
+    this.code = code;
+    this.path = path;
   }
 }
 
