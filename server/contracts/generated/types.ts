@@ -85,6 +85,27 @@ export type Operations = {
     success: { status: 200; body: { "locale": "hr" | "en" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "invalid_input" | "unavailable";
   };
+  "settings.catalogue.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "keys": ({ "key": string; "levels": ("personal" | "course" | "institution" | "system" | "network_security")[]; "kind": "boolean" | "integer" | "enum"; "default": boolean | number | string; "min"?: number; "max"?: number; "values"?: (string)[] })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
+  "settings.values.get": {
+    params: undefined;
+    query: { "level": "personal" | "course" | "institution" | "system" | "network_security"; "course"?: string };
+    body: undefined;
+    success: { status: 200; body: { "level": "personal" | "course" | "institution" | "system" | "network_security"; "course": string | null; "values": ({ "key": string; "value": boolean | number | string | null; "bound": { "locked": true } | { "min"?: number; "max"?: number } | null; "updatedAt": string })[]; "inherited": ({ "key": string; "value": boolean | number | string; "source": "personal" | "course" | "institution" | "system" | "network_security" | "default"; "bound": { "locked": true } | { "min"?: number; "max"?: number } | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
+  "settings.values.put": {
+    params: undefined;
+    query: undefined;
+    body: { "level": "personal" | "course" | "institution" | "system" | "network_security"; "course": string | null; "key": string; "value": boolean | number | string | null; "locked": boolean; "min": number | null; "max": number | null };
+    success: { status: 200; body: { "key": string; "value": boolean | number | string | null; "bound": { "locked": true } | { "min"?: number; "max"?: number } | null; "changed": boolean }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "not_found" | "bound_crossed" | "invalid_input" | "unavailable";
+  };
   "student.assignments.get": {
     params: undefined;
     query: undefined;

@@ -11,4 +11,4 @@ Preneseno iz Ductusa `src/server/auth` (`d52a92c3`, S-0.18, DAN-731) bez promjen
 - `logout-verifier.ts`: `createLogoutVerifier`, port provjere tokena odjave koji sastavljač predaje ruti u `session` (`docs/server-map.md` §2); vraća rezultat (`invalid` ili `unavailable`) umjesto bacanja.
 - `index.ts`: javno sučelje mape.
 
-Testovi su uz kod; ispitni pružatelj u memoriji je u [test-support/test-idp](../../../test-support/test-idp/index.ts). Mapa uvozi samo `openid-client` i `node:`; prema karti smije još `settings`, `log` i `metrics`. Tok prijave (`flow.ts`), sastavljač (`deps.ts`) i rute dolaze u S-1E-a i S-1D-d.
+Testovi su uz kod; ispitni pružatelj u memoriji je u [test-support/test-idp](../../../test-support/test-idp/index.ts). Mapa uvozi samo `openid-client` i `node:`; prema karti smije još `settings`, `log` i `metrics`. Tok prijave je u `server/http/auth-flow.ts` (S-1E-a, DAN-808); sastavljač i rute dolaze u drugom PR-u S-1E-a, odjava u S-1D-d.

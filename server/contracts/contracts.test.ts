@@ -83,6 +83,9 @@ describe("route inventory", () => {
     ).toEqual(["app/api/student/assignments/route.ts: methods none, inventory GET"]);
     expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
       "student.assignments.get: app/api/student/assignments/route.ts is not in the inventory",
+      "settings.catalogue.get: app/api/settings/catalogue/route.ts is not in the inventory",
+      "settings.values.get: app/api/settings/values/route.ts is not in the inventory",
+      "settings.values.put: app/api/settings/values/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(
