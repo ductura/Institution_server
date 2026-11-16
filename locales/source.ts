@@ -49,9 +49,11 @@ const NOUN_FINDING = "https://github.com/ductura/server/pull/38#issuecomment-688
 /**
  * Top-level sections added after the port, with texts Ductus does not have;
  * the source digest is taken without them. `errors`: the texts of the server's
- * error codes (S-1L.3, DAN-789, server/http/problem.ts).
+ * error codes (S-1L.3, DAN-789, server/http/problem.ts). `clientErrors`: the
+ * error catalogue's texts the contract does not answer (S-1M-c, DAN-802,
+ * server/http/error-catalog.ts).
  */
-export const SOURCE_ADDITIONS: readonly string[] = ["errors"];
+export const SOURCE_ADDITIONS: readonly string[] = ["errors", "clientErrors"];
 
 /** A text the port changed on purpose: its path in the port, the source text and the new one. */
 export type TextChange = {

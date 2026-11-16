@@ -75,19 +75,28 @@ describe("port from Ductus", () => {
 });
 
 describe("sections added after the port", () => {
-  it.each(TABLES)("%s adds only the errors section, and only at the top", (_language, table) => {
-    expect(SOURCE_ADDITIONS).toEqual(["errors"]);
-    const all = textPairs(table).map(([path]) => path.join("."));
-    const kept = new Set(textPairs(withoutAdditions(table)).map(([path]) => path.join(".")));
-    const added = all.filter((path) => !kept.has(path));
-    expect(added.length).toBeGreaterThan(0);
-    expect(added.every((path) => path.startsWith("errors."))).toBe(true);
-  });
+  it.each(TABLES)(
+    "%s adds only the errors and clientErrors sections, and only at the top",
+    (_language, table) => {
+      expect(SOURCE_ADDITIONS).toEqual(["errors", "clientErrors"]);
+      const all = textPairs(table).map(([path]) => path.join("."));
+      const kept = new Set(textPairs(withoutAdditions(table)).map(([path]) => path.join(".")));
+      const added = all.filter((path) => !kept.has(path));
+      for (const section of SOURCE_ADDITIONS)
+        expect(added.filter((path) => path.startsWith(`${section}.`)).length).toBeGreaterThan(0);
+      expect(
+        added.every((path) => SOURCE_ADDITIONS.some((section) => path.startsWith(`${section}.`))),
+      ).toBe(true);
+    },
+  );
 
   it("refuses a table without an added section", () => {
     const rest: Record<string, unknown> = { ...messagesHr };
     delete rest["errors"];
     expect(() => withoutAdditions(rest)).toThrow("no added section errors");
+    const noClient: Record<string, unknown> = { ...messagesHr };
+    delete noClient["clientErrors"];
+    expect(() => withoutAdditions(noClient)).toThrow("no added section clientErrors");
   });
 });
 

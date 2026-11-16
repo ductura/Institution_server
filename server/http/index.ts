@@ -2,6 +2,18 @@
 // point (server/server.ts) and test-server import it (docs/server-map.md §2).
 export { AREA_NAMES, routesOf, type AreaWithRoutes } from "./areas.ts";
 export { createDatabases, type Databases } from "./databases.ts";
+export {
+  catalogErrorFor,
+  catalogErrorOf,
+  ERROR_CATALOG,
+  reportServerError,
+  SERVER_ERROR_CLASSES,
+  SESSION_EXPIRED,
+  type CatalogError,
+  type ServerErrorClass,
+  type ServerErrorRecord,
+  type ServerErrorSite,
+} from "./error-catalog.ts";
 export { CHECK_DEADLINE_MS, createHealthRoute, type HealthState } from "./health.ts";
 export {
   declaredLengthRefusal,
