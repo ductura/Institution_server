@@ -142,12 +142,185 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.assignment-versions.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.assignment-versions.post:body": (() => {
+  const local0 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){1,200}(?![\s\S])/;
+  const local1 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){0,20000}(?![\s\S])/;
+  const local2 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
+  const local3 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['expectedVersion'] === 'number' && Number.isInteger(value['expectedVersion'])) &&
+      value['expectedVersion'] <= 2147483647 &&
+      value['expectedVersion'] >= 1 &&
+      (typeof value['title'] === 'string') &&
+      local0.test(value['title']) &&
+      (typeof value['instructions'] === 'string') &&
+      local1.test(value['instructions']) &&
+      (((value['workType'] === 'short_paper')) || ((value['workType'] === 'essay')) || ((value['workType'] === 'seminar_paper')) || ((value['workType'] === 'bachelor_thesis')) || ((value['workType'] === 'master_thesis')) || ((value['workType'] === 'specialist_thesis')) || ((value['workType'] === 'doctoral_thesis'))) &&
+      (typeof value['opensAt'] === 'string') &&
+      local2.test(value['opensAt']) &&
+      (typeof value['dueAt'] === 'string') &&
+      local3.test(value['dueAt']) &&
+      (((value['aiPolicy'] === 'prohibited')) || ((value['aiPolicy'] === 'partially_allowed')) || ((value['aiPolicy'] === 'encouraged'))) &&
+      Array.isArray(value['aiPurposes']) &&
+      value['aiPurposes'].length <= 5 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((((value === 'formatting')) || ((value === 'proofreading')) || ((value === 'literature_search')) || ((value === 'transcription')) || ((value === 'translation')))))) { return false }; return true; })(value['aiPurposes']) &&
+      (((value['evidenceProfile'] === 'basic')) || ((value['evidenceProfile'] === 'extended'))) &&
+      (typeof value['importAllowed'] === 'boolean') &&
+      (((typeof value['wordMin'] === 'number' && Number.isInteger(value['wordMin'])) && value['wordMin'] <= 1000000 && value['wordMin'] >= 1) || ((value['wordMin'] === null))) &&
+      (((typeof value['wordMax'] === 'number' && Number.isInteger(value['wordMax'])) && value['wordMax'] <= 1000000 && value['wordMax'] >= 1) || ((value['wordMax'] === null))) &&
+      Object.getOwnPropertyNames(value).length === 12
+    )
+  }
+  })(),
+  "institution.courses.post:body": (() => {
+  const local0 = /^(?!\s)[\s\S]*(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9]{4}\/[0-9]{4}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['name'] === 'string') &&
+      value['name'].length <= 160 &&
+      value['name'].length >= 1 &&
+      local0.test(value['name']) &&
+      (typeof value['academicYear'] === 'string') &&
+      local1.test(value['academicYear']) &&
+      (((value['aiPolicy'] === 'prohibited')) || ((value['aiPolicy'] === 'partially_allowed')) || ((value['aiPolicy'] === 'encouraged'))) &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
+  "institution.enrollment-code-revocation.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.enrollment-code-revocation.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.enrollment-code.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.enrollment-code.post:body": (() => {
+  const local0 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['validUntil'] === 'string') &&
+      local0.test(value['validUntil']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "institution.enrollments.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['code'] === 'string') &&
       value['code'].length <= 64 &&
       Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.role-confirmation.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['teacherId'] === 'string') &&
+      local0.test(value['teacherId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.role-confirmation.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.role-revocation.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['teacherId'] === 'string') &&
+      local0.test(value['teacherId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.role-revocation.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.student-removal.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      (typeof value['studentId'] === 'string') &&
+      local1.test(value['studentId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "institution.student-removal.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.student-return.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      (typeof value['studentId'] === 'string') &&
+      local1.test(value['studentId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "institution.student-return.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
     )
   }),
   "institution.student-work-language.post:params": (() => {
