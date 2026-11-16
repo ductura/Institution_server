@@ -21,3 +21,12 @@ export {
   type RateLimiterOptions,
   type RateLimits,
 } from "./rate-limit.ts";
+export {
+  isOpsPath,
+  MAX_ALLOWED_NETWORKS,
+  MAX_ALLOWED_NETWORKS_LENGTH,
+  networkAllows,
+  NO_ALLOWED_NETWORKS,
+  parseAllowedNetworks,
+  type AllowedNetworks,
+} from "./ip-rules.ts";

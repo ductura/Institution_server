@@ -10,7 +10,8 @@ import type { IncomingMessage } from "node:http";
 import { isIPv6 } from "node:net";
 
 type Ip = { readonly v: 4 | 6; readonly n: bigint };
-type Range = { readonly v: 4 | 6; readonly net: bigint; readonly mask: bigint };
+export type IpRange = { readonly v: 4 | 6; readonly net: bigint; readonly mask: bigint };
+type Range = IpRange;
 /** Parsed TRUSTED_PROXIES; empty means the headers are never read. */
 export type TrustedProxies = readonly Range[];
 
@@ -133,7 +134,14 @@ function contains(ranges: TrustedProxies, ip: Ip): boolean {
   return ranges.some((range) => range.v === ip.v && (ip.n & range.mask) === range.net);
 }
 
-function parseRange(entry: string): Range | null {
+/** Does an address, as clientIpOf writes it, lie in one of the ranges? */
+export function inRanges(ranges: readonly Range[], text: string): boolean {
+  const ip = parseIp(text);
+  return ip !== null && contains(ranges, ip);
+}
+
+/** One address or CIDR range with the limits of TRUSTED_PROXIES; also used by ip-rules.ts. */
+export function parseRange(entry: string): Range | null {
   const slash = entry.indexOf("/");
   const ip = parseIp(slash < 0 ? entry : entry.slice(0, slash));
   if (ip === null) return null;

@@ -1,6 +1,6 @@
 # server/traffic
 
-Područje iz [karte servera](../../docs/server-map.md). Ima IP klijenta (S-1C.1, DAN-790) i ograničenje broja zahtjeva (S-1C.3, DAN-814); IP prava i zapis prometa dolaze u valu 5.
+Područje iz [karte servera](../../docs/server-map.md). Ima IP klijenta (S-1C.1, DAN-790), IP prava za operatorske staze (S-1C.2, DAN-832-1) i ograničenje broja zahtjeva (S-1C.3, DAN-814); zapis prometa dolazi u valu 5.
 
 ## Što radi
 
@@ -16,6 +16,13 @@ IP klijenta (`client-ip.ts`, ugovor Ductus#1836 c.6900102277):
 - Pravilo pretpostavlja da svaki povjerljivi proxy dodaje izravnu adresu na kraj `X-Forwarded-For`. Proxy koji zaglavlje prosljeđuje nepromijenjeno ne smije biti na popisu, jer bi klijent iza njega mogao lažirati adresu.
 - Unos dulji od 53 znaka (nakon skidanja razmaka) je neispravan i ne čita se.
 - Sloj nikad ne odbija ni ne baca. Bez adrese socketa IP je `null`. Nijedna vrijednost zaglavlja ne ide u zapis.
+
+IP prava (`ip-rules.ts`, ugovor Ductus#1836, DAN-832-1):
+
+- Popis dopuštenih mreža vrijedi samo za operatorske staze: `/api/v1/ops` i sve ispod. Staza se čita šire od routera: bez sheme i hosta apsolutnog cilja, bez upita i `#`, bez obzira na velika slova i s nizom `/` kao jednim. Ostale staze pravilo ne gleda.
+- Prazan popis (zadano) ne ograničava nikoga. Inače prolazi samo IP iz koraka 2 (`clientIpOf`) koji je u popisu; zahtjev bez IP-a ne prolazi. `X-Forwarded-For` se ovdje ne čita.
+- Popis je string: adrese i CIDR rasponi odvojeni zarezom, s ograničenjima kao `TRUSTED_PROXIES` (bez bitova domaćina, ne šire od /8 i /16), oko unosa samo razmaci, najviše 16 unosa i 256 znakova. Svaki drugi znak (tab, CR, LF, NBSP, DEL, `%`, zagrade, port), prazan unos ili ne-string daje `null`.
+- Odluku donosi samo popis koji je napravio `parseAllowedNetworks`; drugo polje ne propušta nikoga. Odbijanje (403 `forbidden`) piše `http`.
 
 Ograničenje broja zahtjeva (`rate-limit.ts`, ugovor Ductus#1836 c.6908215789, plan napada ductura/server#117):
 
@@ -41,6 +48,7 @@ Brojači ograničenja u memoriji. Zapis prometa i sigurnosne događaje piše pre
 - `TrafficService`: tip servisa bez članova (`service.ts`);
 - `parseTrustedProxies`, `NO_TRUSTED_PROXIES`, `TrustedProxies`: popis povjerljivih proxyja (`client-ip.ts`);
 - `clientIpLayer`: korak 2 pipelinea; `clientIpOf(request)`: IP koji je korak zapisao, za korake 3 do 5 (`client-ip.ts`);
+- `parseAllowedNetworks`, `networkAllows`, `isOpsPath`, `NO_ALLOWED_NETWORKS`, `MAX_ALLOWED_NETWORKS`, `MAX_ALLOWED_NETWORKS_LENGTH`, `AllowedNetworks`: IP prava, korak 3 (`ip-rules.ts`);
 - `createRateLimiter`, `checkRateLimits`, `DEFAULT_RATE_LIMITS`, `RATE_LIMIT_CLASSES` i tipovi: ograničenje broja zahtjeva, korak 4 (`rate-limit.ts`).
 
 ## Što ne smije uvoziti

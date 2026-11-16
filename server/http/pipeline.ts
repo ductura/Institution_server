@@ -6,12 +6,15 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import {
+  type AllowedNetworks,
   clientIpLayer,
+  NO_ALLOWED_NETWORKS,
   NO_TRUSTED_PROXIES,
   type RateLimiter,
   type TrustedProxies,
 } from "../traffic/index.ts";
 import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
+import { ipRulesLayer } from "./ip-rules-layer.ts";
 import { originLayer } from "./mutation-request.ts";
 import { defaultRateLimiter, type RateLimitLog, rateLimitLayer } from "./rate-limit-layer.ts";
 import { requestIdOf } from "./request-id.ts";
@@ -67,24 +70,26 @@ function attached(request: IncomingMessage, response: ServerResponse): Promise<b
   });
 }
 
-/** Step 3 (IP rules) and step 5 (traffic record) are empty until wave 5 fills them; they read nothing. */
+/** Step 5 (traffic record) is empty until wave 5 fills it; it reads nothing. */
 const pass: Layer = async () => "next";
 
 /**
  * Without trustedProxies (TRUSTED_PROXIES) X-Forwarded-For is never read and
  * the client IP is the direct peer (S-1C.1, DAN-790). Without rateLimiter
  * the limit has the catalogue's defaults (S-1C.3, DAN-814); every server
- * built here has one, so no caller can leave step 4 open.
+ * built here has one, so no caller can leave step 4 open. Without
+ * allowedNetworks operator paths are open to every network (S-1C.2, DAN-832-1).
  */
 export function createLayers(options: {
   readonly expectedOrigin: string | null;
   readonly trustedProxies?: TrustedProxies;
   readonly rateLimiter?: RateLimiter;
   readonly rateLimitLog?: RateLimitLog;
+  readonly allowedNetworks?: () => AllowedNetworks;
 }): Layers {
   return Object.freeze({
     clientIp: clientIpLayer(options.trustedProxies ?? NO_TRUSTED_PROXIES),
-    ipRules: pass,
+    ipRules: ipRulesLayer(options.allowedNetworks ?? (() => NO_ALLOWED_NETWORKS)),
     rateLimit: rateLimitLayer(
       options.rateLimiter ?? defaultRateLimiter(),
       ...(options.rateLimitLog === undefined ? [] : [options.rateLimitLog]),
