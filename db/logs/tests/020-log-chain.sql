@@ -65,7 +65,7 @@ END
 $$;
 
 
-SELECT plan(91);
+SELECT plan(95);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -354,6 +354,14 @@ FROM (VALUES
    'a changed kind is found at its row'),
   ('UPDATE public.log_entry SET at = at - interval ''1 microsecond'' WHERE seq = :base + 2', ARRAY['2 hash'],
    'a time moved by one microsecond is found at its row'),
+  ('UPDATE public.log_entry SET at = ''infinity'' WHERE seq = :base + 2', ARRAY['2 hash'],
+   'a time set to infinity is found at its row, the verification does not fail'),
+  ('UPDATE public.log_entry SET at = ''-infinity'' WHERE seq = :base + 2', ARRAY['2 hash'],
+   'a time set to -infinity is found at its row'),
+  ('UPDATE public.log_entry SET at = ''294276-12-31 23:59:59.999999+00'' WHERE seq = :base + 2', ARRAY['2 hash'],
+   'a time set to the end of the range (beyond 64-bit microseconds since 1970) is found at its row'),
+  ('UPDATE public.log_entry SET at = ''4713-11-24 00:00:00+00 BC'' WHERE seq = :base + 2', ARRAY['2 hash'],
+   'a time set to the start of the range is found at its row'),
   ('UPDATE public.log_entry SET hash = decode(repeat(''ee'', 32), ''hex'') WHERE seq = :base + 2', ARRAY['2 hash', '3 link'],
    'a changed digest is found at its row and the next'),
   ('UPDATE public.log_entry SET payload = ''{"n": 9}'', hash = public.log_entry_digest(prev_hash, seq, id, at, kind, ''{"n": 9}'')

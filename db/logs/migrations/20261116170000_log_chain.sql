@@ -5,9 +5,12 @@
 -- changed, deleted or inserted row breaks the chain where it stands, and
 -- public.log_chain_verify() finds it. Plan of attack: ductura/server#125.
 --
--- - The digest is SHA-256 over prev_hash and the row: seq, id and the time in
---   microseconds as 8 bytes each, the length of kind as 4 bytes, kind, and the
---   text of payload (jsonb prints one way). No session setting changes it.
+-- - The digest is SHA-256 over prev_hash and the row: seq and id as 8 bytes
+--   each; the time as the text of its epoch in seconds (numeric, six decimals,
+--   or Infinity), kind, each after its length as 4 bytes; and the text of
+--   payload (jsonb prints one way). No session setting changes it, and no
+--   stored value makes it fail: a time changed to infinity or to the end of
+--   the range is reported as a changed row, not an error.
 -- - The head of the chain (last seq and hash) is the one row of
 --   public.log_chain_head. The insert trigger locks it, so appends queue up:
 --   under READ COMMITTED each one chains on the one before; under REPEATABLE
@@ -52,8 +55,8 @@ CREATE FUNCTION public.log_entry_digest(
     prev_hash
     OPERATOR(pg_catalog.||) pg_catalog.int8send(seq)
     OPERATOR(pg_catalog.||) pg_catalog.int8send(id)
-    OPERATOR(pg_catalog.||) pg_catalog.int8send(
-      (pg_catalog.extract('epoch', at) OPERATOR(pg_catalog.*) 1000000)::bigint)
+    OPERATOR(pg_catalog.||) pg_catalog.int4send(pg_catalog.octet_length(pg_catalog.extract('epoch', at)::text))
+    OPERATOR(pg_catalog.||) pg_catalog.convert_to(pg_catalog.extract('epoch', at)::text, 'UTF8')
     OPERATOR(pg_catalog.||) pg_catalog.int4send(pg_catalog.octet_length(kind))
     OPERATOR(pg_catalog.||) pg_catalog.convert_to(kind, 'UTF8')
     OPERATOR(pg_catalog.||) pg_catalog.convert_to(payload::text, 'UTF8'))
