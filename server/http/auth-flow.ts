@@ -19,6 +19,7 @@ import {
 
 import type { OpenSession } from "../database/index.ts";
 import {
+  DEFAULT_RETURN_TO,
   newSessionToken,
   previousSessionToken,
   safeReturnTo,
@@ -37,6 +38,8 @@ export type AuthDeps = {
 export const LOGIN_COOKIE_NAME = "__Host-ductus_login";
 const LOGIN_COOKIE_MAX_AGE = 600;
 const RANDOM_VALUE = /^[A-Za-z0-9_-]{43}$/;
+/** The longest attempt cookie value finishLogin reads. */
+const MAX_ATTEMPT_CHARS = 1024;
 
 /** Where the neutral page sends a new attempt (the contract path of auth.login.get). */
 export const LOGIN_PATH = "/api/v1/auth/login";
@@ -67,7 +70,7 @@ function encodeAttempt(attempt: Attempt): string {
 // The cookie is not signed: it is __Host- and HttpOnly, so whoever can write
 // it already controls this origin. It is still parsed as untrusted input.
 function decodeAttempt(value: string | undefined): Attempt | undefined {
-  if (!value || value.length > 1024) return undefined;
+  if (!value || value.length > MAX_ATTEMPT_CHARS) return undefined;
   try {
     const raw: unknown = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
     if (typeof raw !== "object" || raw === null) return undefined;
@@ -137,12 +140,16 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
     logFailure("authorize", errorCode(error));
     return failurePage(503);
   }
+  // A return path that normalizes past the decoder's limit (a long
+  // non-ASCII path, percent-encoded by URL) would give an attempt that
+  // finishLogin refuses; such an attempt returns to the default page instead
+  // (Codex on #104; the same gap is in Ductus flow.ts at 078c780).
+  let attempt = encodeAttempt({ ...checks, returnTo });
+  if (attempt.length > MAX_ATTEMPT_CHARS) {
+    attempt = encodeAttempt({ ...checks, returnTo: DEFAULT_RETURN_TO });
+  }
   return redirect(location.href, [
-    cookie(
-      LOGIN_COOKIE_NAME,
-      encodeAttempt({ ...checks, returnTo }),
-      `Max-Age=${LOGIN_COOKIE_MAX_AGE}`,
-    ),
+    cookie(LOGIN_COOKIE_NAME, attempt, `Max-Age=${LOGIN_COOKIE_MAX_AGE}`),
   ]);
 }
 

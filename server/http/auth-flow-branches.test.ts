@@ -128,6 +128,45 @@ describe("startLogin", () => {
   });
 });
 
+describe("startLogin with a return path that grows when normalized", () => {
+  // Codex on #104: "/" and 100 "č" pass safeReturnTo's 512-character input
+  // limit but normalize to 601 characters, and the attempt would be 1055.
+  it("keeps every attempt it issues readable by finishLogin, falling back to /", async () => {
+    const path = `/${"č".repeat(100)}`;
+    const response = await startLogin(
+      new Request(`${APP}/api/v1/auth/login?returnTo=${encodeURIComponent(path)}`),
+      deps,
+    );
+    const attempt = response.headers
+      .getSetCookie()
+      .find((c) => c.startsWith(`${LOGIN_COOKIE_NAME}=`));
+    const value = (attempt ?? "").slice(LOGIN_COOKIE_NAME.length + 1, (attempt ?? "").indexOf(";"));
+    expect(value.length).toBeLessThanOrEqual(1024);
+    const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as Record<
+      string,
+      unknown
+    >;
+    expect(decoded.returnTo).toBe("/");
+  });
+
+  it("keeps a long non-ASCII path that still fits", async () => {
+    const path = `/${"č".repeat(40)}`;
+    const response = await startLogin(
+      new Request(`${APP}/api/v1/auth/login?returnTo=${encodeURIComponent(path)}`),
+      deps,
+    );
+    const attempt = response.headers
+      .getSetCookie()
+      .find((c) => c.startsWith(`${LOGIN_COOKIE_NAME}=`));
+    const value = (attempt ?? "").slice(LOGIN_COOKIE_NAME.length + 1, (attempt ?? "").indexOf(";"));
+    const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as Record<
+      string,
+      unknown
+    >;
+    expect(decoded.returnTo).toBe(`/${"%C4%8D".repeat(40)}`);
+  });
+});
+
 describe("finishLogin with an attempt cookie it cannot trust", () => {
   /**
    * One attempt: `cookieOf` turns its own cookie value into the one sent, so
