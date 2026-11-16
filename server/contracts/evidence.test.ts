@@ -46,7 +46,7 @@ describe("evidence routes in the contract", () => {
     expect(PENDING).not.toContain("app/api/evidence/open/route.ts");
     expect(PENDING).not.toContain("app/api/evidence/commit/route.ts");
     expect(PENDING).toContain("app/api/evidence/replay/route.ts");
-    expect(PENDING).toHaveLength(3);
+    expect(PENDING).toHaveLength(2);
   });
 
   it.each(

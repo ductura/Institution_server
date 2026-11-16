@@ -86,6 +86,7 @@ export const SERVER_SOURCES: Readonly<
  */
 export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
+  "submission.submit.post",
   "institution.enrollments.post",
   "institution.acknowledgment.post",
   "institution.work-language.post",
@@ -122,5 +123,4 @@ export const CONTRACT_ONLY: readonly string[] = [
 export const PENDING: readonly string[] = [
   "app/api/evidence/replay/route.ts",
   "app/api/institution/courses/[courseId]/assignments/route.ts",
-  "app/api/submission/route.ts",
 ];

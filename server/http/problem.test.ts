@@ -75,6 +75,7 @@ const CODE_IN_STATUS = new Set([
   "platform.ready.get",
   "evidence.open.post",
   "evidence.commit.post",
+  "submission.submit.post",
 ]);
 
 function properties(schema: TSchema): Record<string, TSchema> {

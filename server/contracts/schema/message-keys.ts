@@ -5,7 +5,9 @@
 // error() takes the key only from here, so a code without a row cannot be
 // declared (server/http/problem.test.ts).
 export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
+  ["already_requested", "errors.alreadyRequested"],
   ["bad_request", "errors.badRequest"],
+  ["blocked", "errors.blocked"],
   ["body_stream_error", "errors.bodyStreamError"],
   ["body_timeout", "errors.bodyTimeout"],
   ["body_too_large", "errors.bodyTooLarge"],
@@ -29,9 +31,11 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["login_refused", "errors.loginRefused"],
   ["method_not_allowed", "errors.methodNotAllowed"],
   ["not_accepting", "errors.notAccepting"],
+  ["not_acknowledged", "errors.notAcknowledged"],
   ["not_allowed", "errors.notAllowed"],
   ["not_continuous", "errors.notContinuous"],
   ["not_found", "errors.notFound"],
+  ["not_open", "errors.notOpen"],
   ["not_started", "errors.notStarted"],
   ["notice_changed", "errors.noticeChanged"],
   ["origin_mismatch", "errors.originMismatch"],
@@ -39,6 +43,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["precondition_required", "errors.preconditionRequired"],
   ["refused", "errors.refused"],
   ["stale_base", "errors.staleBase"],
+  ["stale_revision", "errors.staleRevision"],
   ["timeout", "errors.timeout"],
   ["too_large", "errors.tooLarge"],
   ["too_many_attempts", "errors.tooManyAttempts"],

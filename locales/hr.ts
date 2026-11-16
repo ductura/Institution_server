@@ -1981,7 +1981,9 @@ export const hr = {
   },
   // Server error texts by message key (server/contracts ERROR_MESSAGE_KEYS, S-1L.3, DAN-789); added after the port.
   errors: {
+    alreadyRequested: "Predaja je već zatražena za drugu verziju teksta.",
     badRequest: "Zahtjev nije ispravan.",
+    blocked: "Predaja nije moguća dok poslužitelj ne potvrdi cijeli zapis ove verzije teksta.",
     bodyStreamError: "Slanje zahtjeva prekinuto je prije kraja. Pokušajte ponovno.",
     bodyTimeout: "Slanje zahtjeva trajalo je predugo. Pokušajte ponovno.",
     bodyTooLarge: "Zahtjev je prevelik.",
@@ -2006,10 +2008,12 @@ export const hr = {
     loginRefused: "Prijava je odbijena.",
     methodNotAllowed: "Ova radnja nije dostupna na ovoj adresi.",
     notAccepting: "Rad trenutačno ne prima izmjene.",
+    notAcknowledged: "Prije predaje potvrdite obavijest zadatka.",
     notAllowed: "Ova radnja nije moguća u trenutačnom stanju zahtjeva.",
     notContinuous:
       "Izmjene ne nastavljaju zadnje stanje rada na poslužitelju. Učitajte rad ponovno.",
     notFound: "Traženo nije pronađeno.",
+    notOpen: "Predaja za ovaj zadatak trenutačno nije otvorena.",
     notStarted: "Rad još nije započet.",
     noticeChanged: "Obavijest zadatka se u međuvremenu promijenila. Pročitajte je ponovno.",
     originMismatch: "Zahtjev ne dolazi s ove stranice.",
@@ -2017,6 +2021,7 @@ export const hr = {
     preconditionRequired: "Zahtjev ne navodi koju verziju rada mijenja. Učitajte rad ponovno.",
     refused: "Kod ne postoji ili je istekao. Provjerite ga s nastavnikom.",
     staleBase: "Rad je u međuvremenu promijenjen. Učitajte zadnju verziju.",
+    staleRevision: "Na poslužitelju je novija verzija teksta. Učitajte je ponovno prije predaje.",
     timeout: "Zahtjev je trajao predugo. Pokušajte ponovno.",
     tooManyRequests:
       "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",

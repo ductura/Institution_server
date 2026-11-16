@@ -239,6 +239,13 @@ export type Operations = {
     success: { status: 200; body: { "courses": ({ "id": string; "name": string; "assignments": ({ "id": string; "title": string; "dueAt": string; "noticeFirst": boolean })[] })[] }; headers: {  } };
     errorCode: "unauthorized" | "unavailable";
   };
+  "submission.submit.post": {
+    params: undefined;
+    query: undefined;
+    body: { "documentId": string; "revision": number };
+    success: { status: 200; body: { "status": "submitted"; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: {  } };
+    errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "blocked" | "stale_revision" | "already_requested" | "not_acknowledged" | "not_open" | "unavailable";
+  };
   "support.problem-report.post": {
     params: undefined;
     query: undefined;
