@@ -16,3 +16,10 @@ export {
   type ExternalCallResult,
   type ExternalService,
 } from "./external-call.ts";
+export {
+  createMetricsCollector,
+  METRICS_SKIP_REASONS,
+  type MetricsCollector,
+  type MetricsCollectorOptions,
+  type MetricsSkipReason,
+} from "./collector.ts";
