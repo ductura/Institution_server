@@ -7,8 +7,8 @@
 // part of dist/server.js.
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { lstatSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 
 import { PersistentDevelopmentEd25519SigningKeyProvider } from "../../server/external/keys/index.ts";
 
@@ -41,9 +41,35 @@ export function seedFile(stackDir: string, root: string, home: string): string {
   return join(home, ".ductura", `stack-vs1-${id}`, "signing-seed");
 }
 
-/** 32 random bytes, 0600, in a 0700 directory; an existing seed is never replaced. */
-export function ensureSeed(file: string): void {
+/**
+ * The real location of `path` even where its end does not exist yet: the
+ * nearest existing ancestor with its links resolved, then the rest.
+ */
+function realLocation(path: string): string {
+  const rest: string[] = [];
+  for (let at = path; ; at = dirname(at)) {
+    try {
+      return join(realpathSync(at), ...rest.reverse());
+    } catch (error) {
+      if (Reflect.get(error as object, "code") !== "ENOENT" || dirname(at) === at) throw error;
+      rest.push(basename(at));
+    }
+  }
+}
+
+/**
+ * 32 random bytes, 0600, in a 0700 directory; an existing seed is never
+ * replaced. Where the seed would land is judged through links before any
+ * directory or byte is made, and again after mkdir: never inside `root`.
+ */
+export function ensureSeed(file: string, root: string): void {
+  const repository = realpathSync(root);
+  const refuse = (): never => {
+    throw new Error("the signing seed would land inside the checkout (through a link?)");
+  };
+  if (inside(realLocation(dirname(file)), repository)) refuse();
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+  if (inside(realpathSync(dirname(file)), repository)) refuse();
   try {
     writeFileSync(file, randomBytes(32), { flag: "wx", mode: 0o600 });
   } catch (error) {

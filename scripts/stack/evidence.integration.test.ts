@@ -34,7 +34,7 @@ beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), "vs1-evidence-it-"));
   const storage = join(dir, "s3");
   const seed = join(dir, "signing-seed");
-  ensureSeed(seed);
+  ensureSeed(seed, ROOT);
   const credentials = newS3Credentials();
   ensureBucketIdentity(storage, INSTITUTION);
   s3 = await startLocalS3({

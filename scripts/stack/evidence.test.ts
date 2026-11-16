@@ -2,7 +2,15 @@
 // the contract confirmation (Ductus#1836 c.6911545693): the stack's seed,
 // bucket label and server environment, and that a production NODE_ENV never
 // falls back to the development signer or the local S3.
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -63,13 +71,42 @@ describe("the signing seed (K1)", () => {
 
   it("is 32 bytes, 0600 in a 0700 directory, and never replaced", () => {
     const seed = join(dir, "a", "signing-seed");
-    ensureSeed(seed);
+    ensureSeed(seed, ROOT);
     const first = readFileSync(seed);
     expect(first.byteLength).toBe(32);
     expect(statSync(seed).mode & 0o777).toBe(0o600);
     expect(statSync(join(dir, "a")).mode & 0o777).toBe(0o700);
-    ensureSeed(seed);
+    ensureSeed(seed, ROOT);
     expect(readFileSync(seed).equals(first)).toBe(true);
+  });
+});
+
+describe("the signing seed through a link (Codex c.4584063033)", () => {
+  // A stand-in checkout in /tmp, so the test never writes into the real one.
+  it.each([["the HOME"], [".ductura"]])(
+    "is refused when %s leads into the checkout, before any byte is written",
+    (where) => {
+      const checkout = join(dir, "checkout");
+      const inner = join(checkout, "unutra");
+      mkdirSync(inner, { recursive: true });
+      const home = join(dir, "home");
+      if (where === "the HOME") symlinkSync(inner, home);
+      else {
+        mkdirSync(home);
+        symlinkSync(inner, join(home, ".ductura"));
+      }
+      const seed = seedFile(join(checkout, ".stack", "vs1"), checkout, home);
+      expect(() => ensureSeed(seed, checkout)).toThrow(/inside the checkout/u);
+      expect(readdirSync(inner)).toEqual([]);
+    },
+  );
+
+  it("is written when HOME is a real directory outside the checkout", () => {
+    const checkout = join(dir, "checkout");
+    mkdirSync(checkout);
+    const seed = seedFile(join(checkout, ".stack", "vs1"), checkout, join(dir, "home"));
+    ensureSeed(seed, checkout);
+    expect(readFileSync(seed).byteLength).toBe(32);
   });
 });
 
@@ -99,7 +136,7 @@ describe("the bucket's identity label (S9 on the stack)", () => {
 describe("the server environment of the stack", () => {
   const setup = () => {
     const seed = join(dir, "signing-seed");
-    ensureSeed(seed);
+    ensureSeed(seed, ROOT);
     return serverEvidenceEnv({ institutionId: INSTITUTION, seed }, 4191, newS3Credentials());
   };
 

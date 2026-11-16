@@ -193,7 +193,7 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   // DAN-817: the invented institutions, the receipt key of demo-fakultet and
   // its bucket. The seed lies outside the checkout (the signer refuses it inside).
   const seed = seedFile(DIR, ROOT, process.env.HOME ?? "");
-  ensureSeed(seed);
+  ensureSeed(seed, ROOT);
   const institutionId = await registerEvidenceKey(
     { socket: DIR, port: postgres, env: base() },
     ROOT,
