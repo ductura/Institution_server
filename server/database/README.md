@@ -50,11 +50,20 @@ Nijedna grupna uloga nema `LOGIN`; prijava je običan član jedne grupe i nema p
 
 ## Nova tablica
 
-1. Migracija u `db/<baza>/migrations/` stvara tablicu u aplikacijskoj shemi (nikad u `public`) s vlasnikom NOLOGIN uloge te baze.
-2. U istoj migraciji `ENABLE ROW LEVEL SECURITY` i `FORCE ROW LEVEL SECURITY` i barem jedna politika; politika koja propušta sve retke smije imenovati samo vlasnika, nikad PUBLIC.
+1. Migracija u `db/<baza>/migrations/` stvara tablicu u aplikacijskoj shemi (nikad u `public`; jedina iznimka je baza zapisa, niže) s vlasnikom NOLOGIN uloge te baze.
+2. U istoj migraciji `ENABLE ROW LEVEL SECURITY` i `FORCE ROW LEVEL SECURITY` i barem jedna politika; politika koja propušta sve retke smije imenovati samo vlasnika, nikad PUBLIC (iznimka za bazu zapisa niže).
 3. Prava: web proces tablicu samo čita kroz RLS; pisanje u evidenciju, predaju i revizijski trag ide samo kroz funkciju (RPC).
 4. **Redak u pgTAP matrici pristupa** (`db/<baza>/tests/`, u `main` po uzoru na `030-institution-access-matrix.sql`): tko čita, tko piše, i da tuđi redak nije vidljiv.
 5. `pnpm db:sum`, zatim pgTAP te baze (niže). `000-rls-everywhere.sql` pada dok tablici nedostaje ENABLE, FORCE ili politika.
+
+**Iznimka za bazu zapisa (`ductus_logs`)** (odluka orkestratora na ductura/server#159, c.6919879286): za tablice te baze točke 1 i 2 zamjenjuje ovo, jer baza zapisa nema aplikacijsku shemu ni odnos po retku (redak zapisa ili uzorka metrike nema vlasnika, ustanovu ni osobu), pa C-23 nema na čemu suziti pristup.
+
+- Tablica je u shemi `public`, jedinoj koju `20261115120000_roles.sql` otvara grupnim ulogama baze; vlasnik je `ductus_logs_migrator`. Druga shema u ovoj bazi traži zaseban zadatak koji seli sve tablice zajedno.
+- Politika koja propušta sve retke (`true`) smije, osim vlasniku, imenovati samo `ductus_logs_writer` za `INSERT` i `ductus_logs_reader` za `SELECT`; nikad PUBLIC, nikad `UPDATE` ni `DELETE`, nikad drugu ulogu.
+- Pristup tada drže prava, ne redak: pisac ima samo `INSERT` nad navedenim stupcima i nijedan `SELECT`, čitač samo `SELECT`, PUBLIC i ostale uloge ništa; uz to FORCE RLS i okidači `ENABLE ALWAYS` koji odbijaju svaku promjenu mimo dopuštene (na tablicama samo za dopisivanje `UPDATE`, `DELETE` i `TRUNCATE`).
+- pgTAP tablice (`db/logs/tests/`) imenuje točan skup politika i prava po ulozi i stupcu, kao `010-log-entry.sql` (`log_entry`), `020-log-chain.sql` (`log_chain_head`) i `030-metric-sample.sql` (`metric_sample`).
+
+Iznimka ne vrijedi za `main` ni za `legal`.
 
 ## pgTAP po bazi
 
