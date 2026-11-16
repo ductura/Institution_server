@@ -424,3 +424,15 @@ describe("readBodyWithLimit (#155 items 10 and 12, HTTP part)", () => {
     }
   });
 });
+
+describe("routes the origin step lets through (DAN-829-3)", () => {
+  // The step skips Origin for every route whose contract the identity provider
+  // calls. A new route with that access fails here until the list is widened
+  // on purpose (orchestrator's condition, ductura/server#173).
+  it("is exactly the back-channel logout", () => {
+    const provider = ROUTES.filter((route) => route.access === "identity_provider");
+    expect(provider.map((route) => `${route.id} ${route.method} ${route.path}`)).toEqual([
+      "auth.backchannel-logout.post POST /api/v1/auth/backchannel-logout",
+    ]);
+  });
+});
