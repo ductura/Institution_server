@@ -10,6 +10,8 @@ import {
   EVENT_KINDS,
   type EventKind,
   type FieldSpec,
+  LOG_MAX_PENDING,
+  LOG_WRITE_DEADLINE_MS,
   LOG_WRITER_ERROR_CODES,
   type LogEvent,
   type LogStore,
@@ -295,6 +297,211 @@ describe("createLogWriter", () => {
     expect(Object.keys(texts.logWriter).sort()).toEqual(
       LOG_WRITER_ERROR_CODES.map((code) => code.toLowerCase()).sort(),
     );
+  });
+});
+
+// S-1K.3-b (DAN-812, plan ductura/server#109): a slow, hanging or crowded log
+// database never holds a write past its deadline, and a record it did not
+// take is in the fallback line, never dropped silently.
+describe("createLogWriter when the log database is slow or down", () => {
+  afterEach(() => vi.useRealTimers());
+
+  const hanging = (): LogStore & { calls: number; release: () => void } => {
+    let release = () => {};
+    const store = {
+      calls: 0,
+      release: () => release(),
+      append: () => {
+        store.calls += 1;
+        return new Promise<void>((resolve) => (release = resolve));
+      },
+    };
+    return store;
+  };
+  const parsed = (line: string | undefined) =>
+    JSON.parse(line ?? "") as { event: string; fields: { code: string; record?: unknown } };
+
+  it("has the agreed defaults", () => {
+    expect([LOG_WRITE_DEADLINE_MS, LOG_MAX_PENDING]).toEqual([1_000, 64]);
+  });
+
+  it("answers LOG_STORE_TIMEOUT at the deadline and puts the record in the fallback (A2)", async () => {
+    vi.useFakeTimers();
+    const { lines, fallback } = capture();
+    const store = hanging();
+    const write = createLogWriter({ store, routes: ROUTES, fallback, deadlineMs: 50 });
+    let result: unknown;
+    void write(validRecord("authn.logout")).then((value) => (result = value));
+    await vi.advanceTimersByTimeAsync(49);
+    expect(result).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(result).toEqual({
+      ok: false,
+      error: { code: "LOG_STORE_TIMEOUT", messageKey: "logWriter.log_store_timeout" },
+    });
+    expect(lines).toHaveLength(1);
+    expect(parsed(lines[0])).toEqual({
+      time: new Date(0).toISOString(),
+      level: "error",
+      event: "log_store_failed",
+      fields: { code: "LOG_STORE_TIMEOUT", record: validRecord("authn.logout") },
+    });
+  });
+
+  it("keeps one outcome when the store settles after the deadline (A3)", async () => {
+    vi.useFakeTimers();
+    for (const late of ["resolves", "rejects"] as const) {
+      const { lines, fallback } = capture();
+      let settle = () => {};
+      const append = () =>
+        new Promise<void>((resolve, reject) => {
+          settle = () => (late === "resolves" ? resolve() : reject(new Error(CANARY)));
+        });
+      const write = createLogWriter({ store: { append }, routes: ROUTES, fallback, deadlineMs: 5 });
+      const pending = write(validRecord("authn.logout"));
+      await vi.advanceTimersByTimeAsync(5);
+      await expect(pending).resolves.toMatchObject({ error: { code: "LOG_STORE_TIMEOUT" } });
+      settle();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(lines).toHaveLength(1);
+      expect(lines.join("")).not.toContain("kanarinac");
+    }
+  });
+
+  it("sends at most maxPending records to a hanging store; the rest go to the fallback (A4)", async () => {
+    vi.useFakeTimers();
+    const { lines, fallback } = capture();
+    const store = hanging();
+    const write = createLogWriter({ store, routes: ROUTES, fallback, maxPending: 2 });
+    const first = [write(validRecord("authn.logout")), write(validRecord("authn.logout"))];
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(write(validRecord("session.created"))).resolves.toEqual({
+      ok: false,
+      error: { code: "LOG_STORE_BUSY", messageKey: "logWriter.log_store_busy" },
+    });
+    expect(store.calls).toBe(2);
+    expect(parsed(lines[0]).fields).toEqual({
+      code: "LOG_STORE_BUSY",
+      record: validRecord("session.created"),
+    });
+    // The deadline answers the callers, yet the places stay taken while the
+    // store still holds the two writes.
+    await vi.advanceTimersByTimeAsync(LOG_WRITE_DEADLINE_MS);
+    for (const result of await Promise.all(first))
+      expect(result).toMatchObject({ error: { code: "LOG_STORE_TIMEOUT" } });
+    await expect(write(validRecord("authn.logout"))).resolves.toMatchObject({
+      error: { code: "LOG_STORE_BUSY" },
+    });
+    expect(store.calls).toBe(2);
+  });
+
+  it("frees a place when the store settles, so writes reach it again (A5)", async () => {
+    const rows: unknown[] = [];
+    let down = true;
+    const failures: (() => void)[] = [];
+    const store: LogStore = {
+      append: (_kind, payload) =>
+        down
+          ? new Promise<void>((_resolve, reject) => failures.push(() => reject(new Error(CANARY))))
+          : Promise.resolve(void rows.push(payload)),
+    };
+    const write = createLogWriter({
+      store,
+      routes: ROUTES,
+      fallback: capture().fallback,
+      maxPending: 1,
+    });
+    const stuck = write(validRecord("authn.logout"));
+    await expect(write(validRecord("authn.logout"))).resolves.toMatchObject({
+      error: { code: "LOG_STORE_BUSY" },
+    });
+    for (const fail of failures) fail();
+    await expect(stuck).resolves.toMatchObject({ error: { code: "LOG_STORE_FAILED" } });
+    down = false;
+    await expect(write(validRecord("authn.logout"))).resolves.toMatchObject({ ok: true });
+    expect(rows).toHaveLength(1);
+  });
+
+  it("puts the record in the fallback when the store fails (A1), never the store's message", async () => {
+    const { lines, fallback } = capture();
+    const write = createLogWriter({
+      store: { append: () => Promise.reject(new Error(CANARY)) },
+      routes: ROUTES,
+      fallback,
+    });
+    await write(validRecord("error.unexpected"));
+    expect(parsed(lines[0]).fields).toEqual({
+      code: "LOG_STORE_FAILED",
+      record: validRecord("error.unexpected"),
+    });
+    expect(lines.join("")).not.toContain("kanarinac");
+  });
+
+  it("refuses a deadlineMs past what setTimeout keeps, which Node would make 1 ms (A7)", () => {
+    const base = { store: memoryStore(), routes: ROUTES };
+    expect(() => createLogWriter({ ...base, deadlineMs: 2 ** 31 })).toThrow(RangeError);
+    expect(() => createLogWriter({ ...base, deadlineMs: 2 ** 31 - 1 })).not.toThrow();
+  });
+
+  it("puts a record with a route in the fallback without throwing or the canary (A13)", async () => {
+    vi.useFakeTimers();
+    const routes = new Set(INVENTORY);
+    const record = {
+      ...validRecord("traffic.rate_limited"),
+      fields: { route: "/api/v1/evidence/commit", bucket: "per_address" },
+    };
+    const stores: [string, LogStore][] = [
+      ["LOG_STORE_FAILED", { append: () => Promise.reject(new Error(CANARY)) }],
+      ["LOG_STORE_TIMEOUT", hanging()],
+    ];
+    for (const [code, store] of stores) {
+      const { lines, fallback } = capture();
+      const write = createLogWriter({ store, routes, fallback, deadlineMs: 1, maxPending: 1 });
+      const first = write(record);
+      if (code === "LOG_STORE_TIMEOUT") {
+        await expect(write(record)).resolves.toMatchObject({ error: { code: "LOG_STORE_BUSY" } });
+      }
+      await vi.advanceTimersByTimeAsync(1);
+      await expect(first).resolves.toMatchObject({ error: { code } });
+      const fallbackLines = lines.map(parsed);
+      expect(fallbackLines.at(-1)?.fields).toMatchObject({
+        code,
+        record: { event: "traffic.rate_limited", fields: { bucket: "per_address" } },
+      });
+      for (const line of fallbackLines)
+        expect((line.fields.record as { fields: { route: string } }).fields.route).toMatch(
+          /^(\/api\/v1\/evidence\/commit|\[redacted\])$/u,
+        );
+      expect(lines.join("")).not.toContain("kanarinac");
+    }
+  });
+
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53])(
+    "refuses deadlineMs and maxPending %s at creation (A7)",
+    (value) => {
+      const base = { store: memoryStore(), routes: ROUTES };
+      expect(() => createLogWriter({ ...base, deadlineMs: value })).toThrow(RangeError);
+      expect(() => createLogWriter({ ...base, maxPending: value })).toThrow(RangeError);
+    },
+  );
+
+  it("never throws when the store hangs and the fallback throws (A8)", async () => {
+    vi.useFakeTimers();
+    const write = createLogWriter({
+      store: hanging(),
+      routes: ROUTES,
+      fallback: () => {
+        throw new Error(CANARY);
+      },
+      deadlineMs: 1,
+      maxPending: 1,
+    });
+    const first = write(validRecord("authn.logout"));
+    await expect(write(validRecord("authn.logout"))).resolves.toMatchObject({
+      error: { code: "LOG_STORE_BUSY" },
+    });
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(first).resolves.toMatchObject({ error: { code: "LOG_STORE_TIMEOUT" } });
   });
 });
 
