@@ -17,10 +17,12 @@ test("every database has a pgTAP directory with at least one test file, which pg
     assert.equal(entry.testsDir, `db/${entry.name}/tests`);
     assert.ok(testFiles(entry.testsDir).length > 0, `${entry.name}: no test file`);
     assert.deepEqual(pgtapArgs(entry), [
+      "--norc",
       "--recurse",
       "--ext",
       ".sql",
       "--failures",
+      "--directives",
       entry.testsDir,
     ]);
   }
@@ -63,6 +65,12 @@ test("a run counts only when every file ran, something was tested and pg_prove p
       /skipped whole/,
     ],
     [1, 0, "Result: PASS (not at the start)\nFiles=1, Tests=3,\n", /did not report Result: PASS/],
+    // Findings of the attack run: a name with a space, and SKIP or TODO, which
+    // pg_prove counts as passed and prints only with --directives.
+    [3, 0, `db/x/tests/900 c.sql ..... skipped: whole file\n${PASS(3, 36)}`, /skipped whole/],
+    [2, 0, `db/x/tests/a.sql ..\nok 1 # SKIP x\n${PASS(2, 36)}`, /skipped or marked TODO/],
+    [2, 0, `db/x/tests/a.sql ..\nok 2 # skip later\n${PASS(2, 36)}`, /skipped or marked TODO/],
+    [2, 0, `db/x/tests/a.sql ..\nnot ok 2 - y # TODO t\n${PASS(2, 36)}`, /skipped or marked TODO/],
   ];
   for (const [files, status, output, error] of cases) {
     assert.match(pgtapFailure(files, status, output) ?? "", error, output);

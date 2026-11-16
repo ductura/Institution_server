@@ -34,15 +34,19 @@ export function testFiles(dir: string, root = ROOT): string[] {
     .sort();
 }
 
-/** The pg_prove argv for a database's tests, program left out. */
+/**
+ * The pg_prove argv for a database's tests, program left out. `--norc` keeps
+ * a .proverc out (`--ignore-exit` there would hide a psql error); with
+ * `--directives` pg_prove prints every SKIP and TODO, which it counts as passed.
+ */
 export function pgtapArgs(database: Database): string[] {
-  return ["--recurse", "--ext", ".sql", "--failures", database.testsDir];
+  return ["--norc", "--recurse", "--ext", ".sql", "--failures", "--directives", database.testsDir];
 }
 
 /**
  * Why a pg_prove run over `files` does not count as passed, or null when it
  * does: exit 0, `Result: PASS`, every file run, at least one test, no file
- * skipped whole.
+ * skipped whole, no test skipped or marked TODO.
  */
 export function pgtapFailure(files: number, status: number | null, output: string): string | null {
   if (files === 0) return "no pgTAP test file found";
@@ -52,7 +56,9 @@ export function pgtapFailure(files: number, status: number | null, output: strin
   if (!summary) return "pg_prove printed no summary";
   if (Number(summary[1]) !== files) return `pg_prove ran ${summary[1]} of ${files} test files`;
   if (Number(summary[2]) === 0) return "pg_prove ran no test";
-  if (/^\S+ \.+ skipped/m.test(output)) return "a test file was skipped whole (plan 1..0)";
+  if (/ \.+ skipped/.test(output)) return "a test file was skipped whole (plan 1..0)";
+  if (/^(?:not )?ok \d+\b.*# (?:SKIP|TODO)\b/im.test(output))
+    return "a test was skipped or marked TODO";
   return null;
 }
 

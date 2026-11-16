@@ -73,7 +73,7 @@ END
 $$;
 
 
-SELECT plan(18);
+SELECT plan(21);
 
 -- The roles of this database, and the other databases of the server: a right
 -- that crosses between them is what this file looks for. Only the databases
@@ -90,16 +90,22 @@ INSERT INTO pg_temp.other_database VALUES ('ductus'), ('ductus_logs');
 -- of the database, the migrator.
 CREATE TABLE pg_temp.expected_database_right (found text PRIMARY KEY);
 INSERT INTO pg_temp.expected_database_right VALUES
-  ('ductus_legal_migrator: CREATE'), ('ductus_legal_migrator: TEMPORARY'), ('ductus_legal_migrator: CONNECT'),
+  ('ductus_legal_migrator: OWNER'), ('ductus_legal_migrator: CREATE'), ('ductus_legal_migrator: TEMPORARY'), ('ductus_legal_migrator: CONNECT'),
   ('ductus_legal_app: CONNECT');
 CREATE TABLE pg_temp.expected_schema_right (found text PRIMARY KEY);
 INSERT INTO pg_temp.expected_schema_right VALUES
-  ('pg_database_owner: USAGE'), ('pg_database_owner: CREATE'), ('ductus_legal_app: USAGE');
+  ('pg_database_owner: OWNER'), ('pg_database_owner: USAGE'), ('pg_database_owner: CREATE'), ('ductus_legal_app: USAGE');
 
+-- Ownership counts as a right (an owner may grant itself anything, or drop
+-- the database), and so does a grant option (its holder may open the database
+-- to anyone).
 CREATE VIEW pg_temp.database_right AS
-  SELECT d.datname::text AS database, a.grantee, a.privilege_type AS privilege,
+  SELECT d.datname::text AS database, a.grantee,
+         a.privilege_type || CASE WHEN a.is_grantable THEN ' WITH GRANT OPTION' ELSE '' END AS privilege,
          CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END AS grantee_name
-  FROM pg_database d, aclexplode(coalesce(d.datacl, acldefault('d', d.datdba))) a;
+  FROM pg_database d, aclexplode(coalesce(d.datacl, acldefault('d', d.datdba))) a
+  UNION ALL
+  SELECT d.datname::text, d.datdba, 'OWNER', d.datdba::regrole::text FROM pg_database d;
 
 -- A role of this database that is missing, may log in, has an elevated
 -- attribute, or is a member of another role.
@@ -125,9 +131,11 @@ CREATE VIEW pg_temp.database_drift AS
      EXCEPT SELECT grantee_name || ': ' || privilege FROM pg_temp.database_right
      WHERE database = current_database()) x);
 CREATE VIEW pg_temp.schema_right AS
-  SELECT CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END || ': ' || a.privilege_type AS found
+  SELECT CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END || ': ' || a.privilege_type
+         || CASE WHEN a.is_grantable THEN ' WITH GRANT OPTION' ELSE '' END AS found
   FROM pg_namespace n, aclexplode(coalesce(n.nspacl, acldefault('n', n.nspowner))) a
-  WHERE n.nspname = 'public';
+  WHERE n.nspname = 'public'
+  UNION ALL SELECT n.nspowner::regrole::text || ': OWNER' FROM pg_namespace n WHERE n.nspname = 'public';
 CREATE VIEW pg_temp.schema_drift AS
   (SELECT '+' || x.found AS found FROM (
      SELECT found FROM pg_temp.schema_right EXCEPT SELECT found FROM pg_temp.expected_schema_right) x)
@@ -170,7 +178,7 @@ SELECT is((SELECT datdba::regrole::text FROM pg_database WHERE datname = current
 SELECT is_empty('SELECT found FROM pg_temp.database_drift',
   'the legal database grants exactly its own roles, nothing to PUBLIC or to a role of the main database');
 SELECT is_empty('SELECT found FROM pg_temp.schema_drift',
-  'the public schema: CREATE only for the owner, USAGE only for the app');
+  'the public schema: owned by pg_database_owner, CREATE only for the owner, USAGE only for the app');
 SELECT is_empty('SELECT found FROM pg_temp.own_elsewhere',
   'no role of the legal database reaches the main database or another database of the server');
 SELECT is_empty('SELECT found FROM pg_temp.bridge',
@@ -196,6 +204,19 @@ SELECT set_eq('SELECT found FROM pg_temp.database_drift', ARRAY['+PUBLIC: TEMPOR
   'a right granted to PUBLIC is caught');
 REVOKE TEMPORARY ON DATABASE ductus_legal FROM PUBLIC;
 
+GRANT CONNECT ON DATABASE ductus_legal TO ductus_legal_app WITH GRANT OPTION;
+SELECT set_eq('SELECT found FROM pg_temp.database_drift',
+  ARRAY['+ductus_legal_app: CONNECT WITH GRANT OPTION', '-ductus_legal_app: CONNECT'],
+  'a right with GRANT OPTION, which would let its holder open the database to anyone, is caught');
+REVOKE GRANT OPTION FOR CONNECT ON DATABASE ductus_legal FROM ductus_legal_app;
+
+ALTER SCHEMA public OWNER TO ductus_legal_app;
+SELECT isnt_empty($$ SELECT found FROM pg_temp.schema_drift WHERE found = '+ductus_legal_app: OWNER' $$,
+  'the public schema owned by a role other than pg_database_owner is caught');
+ALTER SCHEMA public OWNER TO pg_database_owner;
+-- The owner change folded ductus_legal_app's USAGE into the owner's entry; it is given back.
+GRANT USAGE ON SCHEMA public TO ductus_legal_app;
+
 GRANT CREATE ON SCHEMA public TO ductus_legal_app;
 SELECT set_eq('SELECT found FROM pg_temp.schema_drift', ARRAY['+ductus_legal_app: CREATE'],
   'CREATE on the public schema for the app is caught');
@@ -220,6 +241,12 @@ SELECT set_eq('SELECT found FROM pg_temp.own_elsewhere',
   ARRAY['ductus_legal_migrator reaches ductus: CONNECT via PUBLIC', 'ductus_legal_app reaches ductus: CONNECT via PUBLIC'],
   'the main database open to PUBLIC is caught for every role of the legal database');
 REVOKE CONNECT ON DATABASE ductus FROM PUBLIC;
+
+-- The legal migrator owning the main database.
+ALTER DATABASE ductus OWNER TO ductus_legal_migrator;
+SELECT isnt_empty($$ SELECT found FROM pg_temp.own_elsewhere WHERE found = 'ductus_legal_migrator reaches ductus: OWNER' $$,
+  'the legal migrator owning the main database is caught');
+ALTER DATABASE ductus OWNER TO ductus_migrator;
 
 -- A login of the legal app that is also a login of the main web role.
 CREATE ROLE test_roles_login LOGIN IN ROLE ductus_legal_app, ductus_app;
