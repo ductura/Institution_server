@@ -692,6 +692,81 @@ describe("createExternalCaller", () => {
       ).toThrow(RangeError);
     });
 
+    // QA FAIL c.6916918330: a policy must be a plain record, not only carry
+    // five valid own keys. Its prototype is Object.prototype or null, and the
+    // caller keeps the values it checked, whatever the object does later.
+    class PolicyRecord {
+      timeoutMs = 1000;
+      retries = 2;
+      retryDelayMs = 100;
+      downAfter = 2;
+      downForMs = 5000;
+    }
+    it.each([
+      ["a prototype with an extra key", Object.assign(Object.create({ extra: true }), POLICY)],
+      ["a prototype with no keys", Object.assign(Object.create({}), POLICY)],
+      [
+        "a prototype without a prototype",
+        Object.assign(Object.create(Object.create(null)), POLICY),
+      ],
+      ["a class instance", new PolicyRecord()],
+      ["an array prototype", Object.assign(Object.create(Array.prototype), POLICY)],
+    ])("refuses a policy with %s", (_name, policy) => {
+      let reached = 0;
+      expect(() => {
+        const caller = createExternalCaller("storage", policy as typeof POLICY);
+        void caller.call("read", async () => (reached += 1));
+      }).toThrow(RangeError);
+      expect(reached).toBe(0);
+    });
+
+    it("keeps the checked values when the policy object changes later", async () => {
+      const policy = { ...POLICY };
+      const { clock, events, caller } = (() => {
+        const clock = createFakeClock();
+        const events: ExternalCallEvent[] = [];
+        const caller = createExternalCaller("email", policy, {
+          now: () => clock.nowMs(),
+          sleep: (ms, signal) => clock.sleep(ms, signal),
+          onEvent: (event) => events.push(event),
+        });
+        return { clock, events, caller };
+      })();
+      policy.timeoutMs = 0;
+      policy.downAfter = 0;
+      const pending = caller.call("send", () => new Promise<string>(() => {}));
+      clock.advance(999);
+      await flush();
+      expect(events).toHaveLength(0);
+      clock.advance(1);
+      expect(await pending).toEqual({ ok: false, failure: "timeout" });
+      expect(events[0]).toMatchObject({ durationMs: 1000 });
+      expect(caller.availability()).toBe("available");
+    });
+
+    it("keeps the checked values when a proxy answers differently on a later read", async () => {
+      let reads = 0;
+      const policy = new Proxy(
+        { ...POLICY },
+        {
+          get: (target, key, receiver) => (
+            (reads += 1),
+            key === "timeoutMs" ? 0 : Reflect.get(target, key, receiver)
+          ),
+        },
+      );
+      const { clock, caller } = setup(policy);
+      const pending = caller.call("send", () => new Promise<string>(() => {}));
+      clock.advance(999);
+      let done = false;
+      void pending.then(() => (done = true));
+      await flush();
+      expect(done).toBe(false);
+      clock.advance(1);
+      expect(await pending).toEqual({ ok: false, failure: "timeout" });
+      expect(reads).toBe(0);
+    });
+
     it("accepts a plain policy, one without a prototype and the timer limit itself", () => {
       const bare = Object.assign(Object.create(null) as object, POLICY) as typeof POLICY;
       for (const policy of [POLICY, bare, { ...POLICY, timeoutMs: TIMER_MAX }])

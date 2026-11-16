@@ -10,9 +10,10 @@
  *   attempt's signal is aborted. Synchronous work in an adapter cannot be
  *   interrupted: the event then carries the real duration, which may exceed
  *   `timeoutMs`, and the outcome `timeout`. The default clock is monotonic.
- * - Inputs: the service is one of a closed list, the policy has exactly its
- *   five own whole-number keys (delays within the timer limit), the operation
- *   is a lower-case code and only an own `retry: true` allows a retry.
+ * - Inputs: the service is one of a closed list; the policy is a plain record
+ *   with exactly its five own whole-number keys (delays within the timer
+ *   limit), kept as a frozen copy; the operation is a lower-case code; and
+ *   only an own `retry: true` allows a retry.
  * - Retry: only when the caller says the operation is idempotent, and only
  *   when the pause still ends before the deadline.
  * - Availability: after `downAfter` failed calls in a row the service is
@@ -100,19 +101,30 @@ const POLICY_LIMITS: Readonly<Record<keyof ExternalCallPolicy, readonly [number,
   downForMs: [0, Number.MAX_SAFE_INTEGER],
 };
 
-/** Exactly the five own data keys, each a whole number in its range. */
-function checkPolicy(policy: unknown): asserts policy is ExternalCallPolicy {
+/**
+ * A plain record (prototype `Object.prototype` or none) with exactly the five
+ * own data keys, each a whole number in its range. Returns a frozen copy of
+ * the checked values: a later change of the object, or a proxy that answers
+ * differently on another read, cannot reach the caller.
+ */
+function checkPolicy(policy: unknown): ExternalCallPolicy {
   if (typeof policy !== "object" || policy === null || Array.isArray(policy))
+    throw new RangeError("policy must be a plain object");
+  const proto: unknown = Object.getPrototypeOf(policy);
+  if (proto !== Object.prototype && proto !== null)
     throw new RangeError("policy must be a plain object");
   const keys = Reflect.ownKeys(policy);
   for (const key of keys)
     if (typeof key !== "string" || !Object.hasOwn(POLICY_LIMITS, key))
       throw new RangeError(`policy has an unknown key: ${String(key)}`);
+  const checked: Record<string, number> = {};
   for (const [key, [min, max]] of Object.entries(POLICY_LIMITS)) {
     const value: unknown = Object.getOwnPropertyDescriptor(policy, key)?.value;
     if (typeof value !== "number" || !Number.isSafeInteger(value) || value < min || value > max)
       throw new RangeError(`${key} must be a whole number from ${min} to ${max}`);
+    checked[key] = value;
   }
+  return Object.freeze(checked as ExternalCallPolicy);
 }
 
 /** Only an own data property counts: nothing inherited from a prototype. */
@@ -127,7 +139,7 @@ export function createExternalCaller(
 ): ExternalCaller {
   if (!(EXTERNAL_SERVICES as readonly unknown[]).includes(service))
     throw new RangeError("service must be one of the closed list");
-  checkPolicy(policy);
+  const checked = checkPolicy(policy);
   // Monotonic by default: a jump of the wall clock moves no deadline.
   const now = deps.now ?? (() => performance.now());
   const sleep = deps.sleep ?? timerSleep;
@@ -163,8 +175,8 @@ export function createExternalCaller(
       else breaker = { state: "closed", failures: 0 };
       return;
     }
-    const failures = breaker.state === "closed" ? breaker.failures + 1 : policy.downAfter;
-    if (failures >= policy.downAfter) enter({ state: "open", until: now() + policy.downForMs });
+    const failures = breaker.state === "closed" ? breaker.failures + 1 : checked.downAfter;
+    if (failures >= checked.downAfter) enter({ state: "open", until: now() + checked.downForMs });
     else breaker = { state: "closed", failures };
   };
 
@@ -237,7 +249,7 @@ export function createExternalCaller(
     // A retry goes only while the breaker is where the call found it, or
     // closed again; open (expired or not) or probing means `down`.
     const blocked = (): boolean => admitted.epoch !== epoch && breaker.state !== "closed";
-    const deadline = start + policy.timeoutMs;
+    const deadline = start + checked.timeoutMs;
     const work = new AbortController();
     const timer = new AbortController();
     let attempts = 0;
@@ -261,13 +273,13 @@ export function createExternalCaller(
         if (now() > deadline) return { ok: false, failure: "timeout" };
         if (good) return { ok: true, value: result.value };
         answered = result.done ? { value: result.value } : undefined;
-        const more = !probe && retry && attempts <= policy.retries;
+        const more = !probe && retry && attempts <= checked.retries;
         if (more && blocked()) return { ok: false, failure: "down" };
-        if (!more || now() + policy.retryDelayMs >= deadline || work.signal.aborted)
+        if (!more || now() + checked.retryDelayMs >= deadline || work.signal.aborted)
           return answered
             ? { ok: false, failure: "failed", answer: answered.value }
             : { ok: false, failure: "failed" };
-        await sleep(policy.retryDelayMs, work.signal);
+        await sleep(checked.retryDelayMs, work.signal);
       }
     })();
     const result = await Promise.race([
