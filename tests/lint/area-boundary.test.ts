@@ -156,6 +156,11 @@ const bypasses: Case[] = [
   ...all("server/log/x.ts", "edge", ["./\t../database/index.ts", "./.\\n./database/index.ts"]),
   { file: "server/domain/x.ts", code: 'import("./\t../log/index.ts");\n', messageId: "edge" },
   ...all("server/session/x.ts", "typeOnly", ["./\\r../database/index.ts"]),
+  // DAN-815 b1: evidence takes database and storage as port types only; http makes the adapters.
+  ...all("server/evidence/x.ts", "typeOnly", [
+    "../database/index.ts",
+    "../external/storage/index.ts",
+  ]),
   // every spelling must pass (Codex r4576951392): settings as text, server/index.ts to Node
   ...all("server/log/x.ts", "edge", [
     "../settings/\t./../index.ts",

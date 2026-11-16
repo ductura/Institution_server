@@ -34,7 +34,7 @@ Svaka mapa je pod `server/`. „Tko ga zove” navodi procese i područja; podru
 | domain             | `server/domain`             | Čista pravila i modeli bez I/O-a, SQL-a i vendor SDK-ova                                                                                         | `database`, `external/storage`, `external/keys`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence`                                                                                             | Ništa                                                                               | postoji |
 | test-server        | `server/test-server`        | Server sastavljen s lažnim zamjenama (lažni AAI OIDC iz `@ductura/test-fakes`, PGlite, lažna baza zapisa) za testove servera i klijenata         | samo testovi                                                                                                                                                                                                            | Samo izmišljeni podaci                                                              | postoji |
 
-Feature područja su `roles`, `legal`, `backup`, `deletion` i `downloads`. U njima je `service`: logika jedne rute ili posla. Ostala područja su infrastruktura i ne sadrže pravila proizvoda.
+Feature područja su `roles`, `legal`, `backup`, `deletion`, `downloads` i `evidence`. U njima je `service`: logika jedne rute ili posla. Ostala područja su infrastruktura i ne sadrže pravila proizvoda.
 
 Planirani posao znači pozadinski proces s vlastitim sastavljačem (ARCHITECTURE §2: web i worker dijele module, a svaki ima svoj composition root). Dok ga nema, takva područja zove samo `http`.
 
