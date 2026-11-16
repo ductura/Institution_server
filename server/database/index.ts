@@ -21,6 +21,14 @@ export type {
   EvidenceCommitContextResult,
   EvidenceCommitState,
 } from "./commit-context.ts";
+export type {
+  EvidenceCommitFault,
+  EvidenceCommitInput,
+  EvidenceCommitOutcome,
+  EvidenceCommitSigning,
+  EvidenceCommitter,
+  ReceiptSigner,
+} from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
@@ -34,6 +42,7 @@ export { createBackchannelLogout } from "./backchannel-logout.ts";
 export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
+export { createEvidenceCommitter } from "./commit-evidence.ts";
 export { createWorkOpener } from "./open-work.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";

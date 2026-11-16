@@ -81,7 +81,10 @@ type Row = Record<string, unknown>;
  * form makes the whole list unavailable; nothing is skipped. A checkpoint
  * key is checked like the others but never sent.
  */
-async function receiptKeys(tx: ActorTransaction, domainId: string): Promise<ReceiptKey[] | null> {
+export async function receiptKeys(
+  tx: ActorTransaction,
+  domainId: string,
+): Promise<ReceiptKey[] | null> {
   const { rows } = await tx.query<Row>(KEYS_SQL, [domainId]);
   const keys: ReceiptKey[] = [];
   for (const row of rows) {
