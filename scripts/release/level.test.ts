@@ -628,6 +628,8 @@ describe("releaseLevel with a typed module namespace", () => {
       'import * as c from "./clock.js";\nexport declare const fakes: {\n    clock: typeof c;\n};\n',
     ],
     ["export * as", 'export * as clock from "./clock.js";\n'],
+    ["import = require", 'import c = require("./clock.js");\nexport type Clock = typeof c;\n'],
+    ["export import = require", 'export import c = require("./clock.js");\n'],
   ])("is major for a new export once %s types a namespace", (_, index) => {
     const before = fakes(index, { "clock.d.ts": CLOCK });
     expect(level(before, fakes(index, { "clock.d.ts": TICK }))).toBe("major");
