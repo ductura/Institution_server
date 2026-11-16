@@ -11,7 +11,7 @@ export type StackProcess = { pid: number; marker: string };
 export type Revision = { sha: string; dirty: boolean };
 // The preloader and web slots are not attached yet (SLOTS): null, never a guess.
 export type Repos = { server: Revision; preloader: Revision | null; web: Revision | null };
-export const PROCESSES = ["oidc", "server"] as const;
+export const PROCESSES = ["oidc", "s3", "server"] as const;
 export type StackState = {
   env: StackEnv;
   startedAt: string;
@@ -75,7 +75,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 export function isStackState(value: unknown): value is StackState {
   if (!isObject(value) || !isObject(value.ports) || !isObject(value.processes)) return false;
   const { ports, processes } = value;
-  const portsOk = ["postgres", "server", "oidc"].every((name) => {
+  const portsOk = ["postgres", "server", "oidc", "s3"].every((name) => {
     const port = ports[name];
     return (
       Number.isInteger(port) &&
@@ -93,7 +93,7 @@ export function isStackState(value: unknown): value is StackState {
   });
   // Exactly the known keys: down and status may only ever touch these ports.
   const keysOk =
-    Object.keys(ports).sort().join() === "oidc,postgres,server" &&
+    Object.keys(ports).sort().join() === "oidc,postgres,s3,server" &&
     Object.keys(processes).every((name) => (PROCESSES as readonly string[]).includes(name));
   return keysOk && portsOk && processesOk;
 }

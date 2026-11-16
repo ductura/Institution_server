@@ -8,8 +8,14 @@ export type StackEnv = (typeof STACK_ENVS)[number];
 export type Command = "up" | "down" | "status";
 // Ports 3000 to 3004 belong to other stacks on the same machine; never ours.
 export const FORBIDDEN_PORTS: readonly number[] = [3000, 3001, 3002, 3003, 3004];
-export const DEFAULT_PORTS = { postgres: 54360, server: 4100, oidc: 4180 } as const;
-export type Ports = { postgres: number; server: number; oidc: number };
+export const DEFAULT_PORTS = { postgres: 54360, server: 4100, oidc: 4180, s3: 4191 } as const;
+// Ports the Fetch standard blocks (undici refuses them with "bad port"): the
+// server reaches the local S3 through fetch, so none of these may be a stack port.
+export const FETCH_BAD_PORTS: readonly number[] = [
+  1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669,
+  6679, 6697, 10080,
+];
+export type Ports = { postgres: number; server: number; oidc: number; s3: number };
 export type StackConfig = { env: StackEnv; ports: Ports };
 // Same origin: preloader at `/`, web at `/app/`; slots only, filled later.
 export const SLOTS = Object.freeze({
@@ -49,10 +55,14 @@ export function stackPorts(env: Env): Ports {
     postgres: port(env, "VS1_POSTGRES_PORT", DEFAULT_PORTS.postgres),
     server: port(env, "VS1_SERVER_PORT", DEFAULT_PORTS.server),
     oidc: port(env, "VS1_OIDC_PORT", DEFAULT_PORTS.oidc),
+    s3: port(env, "VS1_S3_PORT", DEFAULT_PORTS.s3),
   };
   const values = Object.values(ports);
   if (values.some((value) => FORBIDDEN_PORTS.includes(value))) {
     throw new Error("ports 3000-3004 are reserved for other stacks");
+  }
+  if (values.some((value) => FETCH_BAD_PORTS.includes(value))) {
+    throw new Error("a stack port is one fetch refuses (bad port)");
   }
   if (new Set(values).size !== values.length) throw new Error("the stack ports must differ");
   return ports;

@@ -278,7 +278,7 @@ jobs:
         run: |
           pnpm build
           PATH="$PGBIN:$PATH" pnpm stack:vs1 up --env ci
-          # DAN-787: read only; 0 only when PostgreSQL, fake OIDC and the server run and answer.
+          # DAN-787, DAN-817: read only; 0 only when PostgreSQL, fake OIDC and the server run and answer, and the local S3 listens.
           PATH="$PGBIN:$PATH" pnpm stack:vs1 status
           curl -fsS http://127.0.0.1:4100/api/v1/health
           # Health reads no database: check that the server's own login reaches it.
@@ -289,10 +289,10 @@ jobs:
         if: always() && steps.vs1-up.outcome != 'skipped'
         run: |
           PATH="$PGBIN:$PATH" pnpm stack:vs1 down
-          for port in 54360 4100 4180; do
+          for port in 54360 4100 4180 4191; do
             if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "port $port still answers" >&2; exit 1; fi
           done
-          if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata|packages/test-fakes/oidc/server.ts)"; then
+          if pgrep -f "$GITHUB_WORKSPACE/(dist/server.js|.stack/vs1/pgdata|packages/test-fakes/oidc/server.ts|scripts/stack/local-s3.ts)"; then
             echo "a process of the stack is still running" >&2; exit 1
           fi
 

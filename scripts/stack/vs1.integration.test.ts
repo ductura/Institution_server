@@ -18,7 +18,8 @@ import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { buildServer } from "../build/index.ts";
-import { commandLine, portFree, type StackState, startDetached } from "./index.ts";
+import { AuthConfigError, loadAuthConfig } from "../../server/external/srce-auth/index.ts";
+import { commandLine, listensOn, portFree, type StackState, startDetached } from "./index.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts/stack/vs1.ts");
@@ -33,13 +34,20 @@ const PGDATA = join(STACK, "pgdata");
 const TAIL = {
   server: [join(ROOT, "dist/server.js"), `--vs1-stack=${STACK}`],
   oidc: [join(ROOT, "packages/test-fakes/oidc/server.ts"), `--vs1-stack=${STACK}`],
+  s3: [join(ROOT, "scripts/stack/local-s3.ts"), `--vs1-stack=${STACK}`],
 };
 process.env.VS1_STACK_DIR = STACK;
-const { down, LOCK, oidcEnv, status, up } = await import("./vs1.ts");
+const { down, localS3Status, LOCK, oidcEnv, serverEnv, stackHealthy, status, up } =
+  await import("./vs1.ts");
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 // Ports no other test uses, so "nothing listens" means the stack started nothing.
-const PORTS = { VS1_POSTGRES_PORT: "54397", VS1_SERVER_PORT: "4197", VS1_OIDC_PORT: "4297" };
+const PORTS = {
+  VS1_POSTGRES_PORT: "54397",
+  VS1_SERVER_PORT: "4197",
+  VS1_OIDC_PORT: "4297",
+  VS1_S3_PORT: "4397",
+};
 
 function run(
   args: string[],
@@ -107,7 +115,7 @@ describe("pnpm stack:vs1 down without a state", () => {
 });
 
 describe("down with a state that names an extra port (QA c.6900731697)", () => {
-  it("never connects to it, and checks only the stack's three ports", async () => {
+  it("never connects to it, and checks only the stack's four ports", async () => {
     // A listener on a free port stands in for 3000: down must not report it.
     const other = createServer();
     await new Promise<void>((resolve) => other.listen(0, "127.0.0.1", resolve));
@@ -115,7 +123,7 @@ describe("down with a state that names an extra port (QA c.6900731697)", () => {
     let connections = 0;
     other.on("connection", () => (connections += 1));
     mkdirSync(STACK, { recursive: true });
-    const ports = { postgres: 54397, server: 4197, oidc: 4297, web: port };
+    const ports = { postgres: 54397, server: 4197, oidc: 4297, s3: 4397, web: port };
     writeFileSync(STATE, JSON.stringify({ ports, processes: {} }));
     try {
       const result = run(["down"], {});
@@ -145,7 +153,7 @@ describe("down with the state of a failed up", () => {
       repos: { server: { sha: "0".repeat(40), dirty: false }, preloader: null, web: null },
       versions: {},
       serverBuildSha256: "",
-      ports: { postgres: 54397, server: 4197, oidc: 4297 },
+      ports: { postgres: 54397, server: 4197, oidc: 4297, s3: 4397 },
       processes: { server: { pid, marker } },
       pgdata: join(dir, "pgdata"),
     };
@@ -160,11 +168,11 @@ describe("up while another up holds the lock", () => {
     writeFileSync(LOCK, "");
     try {
       await expect(
-        up({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } }),
+        up({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297, s3: 4397 } }),
       ).rejects.toThrow(/up\.lock exists.*pnpm stack:vs1 down, then delete the lock by hand/u);
       expect(existsSync(LOCK)).toBe(true);
       expect(existsSync(STATE)).toBe(false);
-      for (const port of [54397, 4197, 4297]) expect(await portFree(port)).toBe(true);
+      for (const port of [54397, 4197, 4297, 4397]) expect(await portFree(port)).toBe(true);
     } finally {
       rmSync(LOCK, { force: true });
     }
@@ -238,7 +246,7 @@ function stateWith(processes: StackState["processes"], server = 4197): StackStat
     repos: { server: { sha: "a".repeat(40), dirty: false }, preloader: null, web: null },
     versions: { node: "v24.0.0", postgres: "17.2" },
     serverBuildSha256: "0".repeat(64),
-    ports: { postgres: 54397, server, oidc: 4297 },
+    ports: { postgres: 54397, server, oidc: 4297, s3: 4397 },
     processes,
     pgdata: PGDATA,
   };
@@ -426,7 +434,10 @@ describe("the fake OIDC provider of the stack (D-09)", () => {
   it("gets NODE_ENV=test, loopback addresses of this stack, and nothing of the caller", () => {
     process.env.DUCTURA_PROBE_SECRET = "x";
     try {
-      const env = oidcEnv({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } });
+      const env = oidcEnv({
+        env: "ci",
+        ports: { postgres: 54397, server: 4197, oidc: 4297, s3: 4397 },
+      });
       expect(Object.keys(env).sort()).toEqual(
         [
           "BACKCHANNEL_LOGOUT_URI",
@@ -496,4 +507,143 @@ describe("a state copied from another stack (review c.6900962987)", () => {
       rmSync(STATE, { force: true });
     }
   }, 30_000);
+});
+
+describe("status of the local S3 (QA c.6913384896)", () => {
+  it("is not up when its pid does not listen and another process holds its port", async () => {
+    const other = createServer();
+    await new Promise<void>((resolve) => other.listen(4397, "127.0.0.1", resolve));
+    const ours = await sleeper("s3-quiet.log", TAIL.s3);
+    try {
+      const s3 = localS3Status(ours, 4397);
+      expect(s3).toEqual({ up: false, text: `pid ${ours.pid} running, not listening` });
+      expect(stackHealthy({ postgres: true, server: true, oidc: true, s3: s3.up })).toBe(false);
+    } finally {
+      process.kill(-ours.pid, "SIGKILL");
+      await new Promise<void>((resolve) => other.close(() => resolve()));
+    }
+  }, 30_000);
+
+  it("is up only when that very pid listens on its port", async () => {
+    const code = 'require("node:http").createServer().listen(4397, "127.0.0.1")';
+    const ours = await sleeper("s3-listening.log", TAIL.s3, code);
+    try {
+      let s3 = localS3Status(ours, 4397);
+      for (let i = 0; i < 50 && !s3.up; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        s3 = localS3Status(ours, 4397);
+      }
+      expect(s3).toEqual({ up: true, text: `pid ${ours.pid} running, listening` });
+      expect(stackHealthy({ postgres: true, server: true, oidc: true, s3: s3.up })).toBe(true);
+    } finally {
+      process.kill(-ours.pid, "SIGKILL");
+    }
+  }, 30_000);
+
+  it("is not up for a pid of another stack or a missing entry", async () => {
+    // It listens on the S3 port, so only the marker check can refuse it.
+    const listen = 'require("node:http").createServer().listen(4397, "127.0.0.1")';
+    const foreign = await sleeper("s3-foreign.log", TAIL.oidc, listen);
+    try {
+      for (let i = 0; i < 50 && !listensOn(foreign.pid, 4397); i += 1)
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(listensOn(foreign.pid, 4397)).toBe(true);
+      expect(localS3Status(foreign, 4397).up).toBe(false);
+      expect(localS3Status(undefined, 4397)).toEqual({ up: false, text: "not started" });
+    } finally {
+      process.kill(-foreign.pid, "SIGKILL");
+    }
+  }, 30_000);
+
+  it.each([["postgres"], ["server"], ["oidc"], ["s3"]] as const)(
+    "the stack is not healthy when %s is down",
+    (part) => {
+      const parts = { postgres: true, server: true, oidc: true, s3: true };
+      expect(stackHealthy(parts)).toBe(true);
+      expect(stackHealthy({ ...parts, [part]: false })).toBe(false);
+    },
+  );
+});
+
+describe("the local S3 entry whose command line is not the recorded one", () => {
+  it("is not up even though its pid listens on the port", async () => {
+    const listen = 'require("node:http").createServer().listen(4397, "127.0.0.1")';
+    const running = await sleeper("s3-reused.log", TAIL.s3, listen);
+    try {
+      for (let i = 0; i < 50 && !listensOn(running.pid, 4397); i += 1)
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      // A reused pid: the marker has this stack's tail but another command before it.
+      const recorded = { pid: running.pid, marker: `/other/node ${TAIL.s3.join(" ")}` };
+      expect(localS3Status(recorded, 4397).up).toBe(false);
+      expect(localS3Status(running, 4397).up).toBe(true);
+    } finally {
+      process.kill(-running.pid, "SIGKILL");
+    }
+  }, 30_000);
+});
+
+describe("pnpm stack:vs1 down and the local S3 port", () => {
+  it("reports something still answering on the S3 port", async () => {
+    // A process killed by an earlier test may hold the port for a moment.
+    for (let i = 0; i < 100 && !(await portFree(Number(PORTS.VS1_S3_PORT))); i += 1)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    const orphan = createServer();
+    await new Promise<void>((resolve) =>
+      orphan.listen(Number(PORTS.VS1_S3_PORT), "127.0.0.1", resolve),
+    );
+    try {
+      const result = run(["down"], {});
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/port 4397 \(s3\) still answers/u);
+    } finally {
+      await new Promise<void>((resolve) => orphan.close(() => resolve()));
+    }
+    expect(run(["down"], {}).status).toBe(0);
+  }, 30_000);
+});
+
+describe("the server's environment on the stack (contract condition 3, D-09)", () => {
+  const config = {
+    env: "ci" as const,
+    ports: { postgres: 54397, server: 4197, oidc: 4297, s3: 4397 },
+  };
+  const evidence = {
+    NODE_ENV: "development",
+    EVIDENCE_STORAGE_DOMAINS: "{}",
+    EVIDENCE_S3_VS1_KEY_ID: "kljuc",
+    EVIDENCE_S3_VS1_SECRET: "tajna",
+    DUCTUS_DEV_SIGNING_KEY_FILE: "/tmp/sjeme",
+  };
+
+  it("is exactly these variables, with no OIDC, issuer or auth variable", () => {
+    const env = serverEnv(config, evidence);
+    expect(Object.keys(env).sort()).toEqual(
+      [
+        "APP_DATABASE_URL",
+        "APP_ORIGIN",
+        "DUCTUS_DEV_SIGNING_KEY_FILE",
+        "EVIDENCE_S3_VS1_KEY_ID",
+        "EVIDENCE_S3_VS1_SECRET",
+        "EVIDENCE_STORAGE_DOMAINS",
+        "HOME",
+        "HOST",
+        "NODE_ENV",
+        "PATH",
+        "PORT",
+      ].sort(),
+    );
+    expect(Object.keys(env).some((name) => /OIDC|ISSUER|AUTH|REDIRECT/u.test(name))).toBe(false);
+    expect(env.NODE_ENV).toBe("development");
+    expect(env.HOST).toBe("127.0.0.1");
+    expect(() => loadAuthConfig(env)).toThrow(AuthConfigError);
+  });
+
+  it("takes nothing of the caller's environment", () => {
+    process.env.OIDC_ISSUER = "http://127.0.0.1:4297";
+    try {
+      expect(serverEnv(config, evidence).OIDC_ISSUER).toBeUndefined();
+    } finally {
+      delete process.env.OIDC_ISSUER;
+    }
+  });
 });
