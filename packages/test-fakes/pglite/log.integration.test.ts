@@ -2,11 +2,19 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { createFakeLogDatabase, type FakeLogDatabase } from "./log.ts";
 
-// U9-b (DAN-741): the fake log database is append-only for everyone.
+// U9-b (DAN-741), S-1K.2-a (DAN-813): the fake log database, the migrated
+// logs database, is append-only for everyone.
+
+// The logs database is migrated once per process (log.ts); that first run
+// gets the 60 s budget of the other PGlite migration tests, so no test below
+// pays it inside the 5 s test timeout.
+beforeAll(async () => {
+  await (await createFakeLogDatabase()).close();
+}, 60_000);
 
 const open: FakeLogDatabase[] = [];
 afterEach(async () => {
@@ -16,22 +24,24 @@ afterEach(async () => {
 async function seeded(): Promise<FakeLogDatabase> {
   const log = await createFakeLogDatabase();
   open.push(log);
-  await log.append("login", { account: "demo-student-1" });
-  await log.append("logout", { account: "demo-student-1", reason: "user" });
+  await log.append("authn.login_succeeded", { account: "demo-student-1" });
+  await log.append("session.logged_out", { account: "demo-student-1", reason: "user" });
   return log;
 }
 
 const CHANGES = [
-  "UPDATE logs.entry SET kind = 'changed'",
-  "UPDATE logs.entry SET payload = '{}'::jsonb WHERE id = 1",
-  "DELETE FROM logs.entry",
-  "DELETE FROM logs.entry WHERE id = 2",
-  "TRUNCATE logs.entry",
+  "UPDATE public.log_entry SET kind = 'authn.changed'",
+  "UPDATE public.log_entry SET payload = '{}'::jsonb WHERE id = 1",
+  "DELETE FROM public.log_entry",
+  "DELETE FROM public.log_entry WHERE id = 2",
+  "TRUNCATE public.log_entry",
 ];
 
 const AS = {
-  writer: "SET LOCAL ROLE fake_logs_writer;",
-  owner: "SET LOCAL ROLE fake_logs_owner;",
+  writer: "SET LOCAL ROLE ductus_logs_writer;",
+  reader: "SET LOCAL ROLE ductus_logs_reader;",
+  retention: "SET LOCAL ROLE ductus_logs_retention;",
+  owner: "SET LOCAL ROLE ductus_logs_migrator;",
   superuser: "",
   "superuser with session_replication_role = replica":
     "SET LOCAL session_replication_role = replica;",
@@ -42,8 +52,8 @@ describe("createFakeLogDatabase", () => {
     const log = await seeded();
     const entries = await log.entries();
     expect(entries.map(({ id, kind, payload }) => ({ id, kind, payload }))).toEqual([
-      { id: 1, kind: "login", payload: { account: "demo-student-1" } },
-      { id: 2, kind: "logout", payload: { account: "demo-student-1", reason: "user" } },
+      { id: 1, kind: "authn.login_succeeded", payload: { account: "demo-student-1" } },
+      { id: 2, kind: "session.logged_out", payload: { account: "demo-student-1", reason: "user" } },
     ]);
     expect(entries[0]?.at).toBeInstanceOf(Date);
   });
@@ -62,25 +72,25 @@ describe("createFakeLogDatabase", () => {
   );
 
   it.each([
-    "ALTER TABLE logs.entry DISABLE TRIGGER entry_no_change",
-    "DROP TRIGGER entry_no_truncate ON logs.entry",
-    "DROP TABLE logs.entry",
+    "ALTER TABLE public.log_entry DISABLE TRIGGER log_entry_no_change",
+    "DROP TRIGGER log_entry_no_truncate ON public.log_entry",
+    "DROP TABLE public.log_entry",
   ])("the writer cannot remove the protection: %s", async (sql) => {
     const log = await seeded();
     await expect(
-      log.db.exec(`BEGIN; SET LOCAL ROLE fake_logs_writer; ${sql}; COMMIT;`),
+      log.db.exec(`BEGIN; SET LOCAL ROLE ductus_logs_writer; ${sql}; COMMIT;`),
     ).rejects.toThrow(/must be owner|permission denied|no privileges/u);
     await log.db.exec("ROLLBACK");
   });
 
   it.each([
-    "INSERT INTO logs.entry (id, kind, payload) OVERRIDING SYSTEM VALUE VALUES (-5, 'x', '{}')",
-    "INSERT INTO logs.entry (at, kind, payload) VALUES ('1999-01-01', 'x', '{}')",
+    "INSERT INTO public.log_entry (id, kind, payload) OVERRIDING SYSTEM VALUE VALUES (-5, 'x', '{}')",
+    "INSERT INTO public.log_entry (at, kind, payload) VALUES ('1999-01-01', 'x', '{}')",
   ])("the writer cannot forge the order: %s", async (sql) => {
     const log = await seeded();
     const before = await log.entries();
     await expect(
-      log.db.exec(`BEGIN; SET LOCAL ROLE fake_logs_writer; ${sql}; COMMIT;`),
+      log.db.exec(`BEGIN; SET LOCAL ROLE ductus_logs_writer; ${sql}; COMMIT;`),
     ).rejects.toThrow(/permission denied/u);
     await log.db.exec("ROLLBACK");
     expect(await log.entries()).toEqual(before);
@@ -88,15 +98,56 @@ describe("createFakeLogDatabase", () => {
 
   it("a GRANT by the writer gives it nothing", async () => {
     const log = await seeded();
-    await log.db.exec(
-      "BEGIN; SET LOCAL ROLE fake_logs_writer; GRANT UPDATE, DELETE, TRUNCATE ON logs.entry TO fake_logs_writer; COMMIT;",
-    );
+    // The writer holds no right on the table as a whole, so PostgreSQL refuses
+    // the GRANT outright (with a table right it would only warn).
+    await expect(
+      log.db.exec(
+        "BEGIN; SET LOCAL ROLE ductus_logs_writer; GRANT UPDATE, DELETE, TRUNCATE ON public.log_entry TO ductus_logs_writer; COMMIT;",
+      ),
+    ).rejects.toThrow(/permission denied/u);
+    await log.db.exec("ROLLBACK");
     const rights = await log.db.query<{ u: boolean; d: boolean; t: boolean }>(
-      `SELECT has_table_privilege('fake_logs_writer', 'logs.entry', 'UPDATE') AS u,
-              has_table_privilege('fake_logs_writer', 'logs.entry', 'DELETE') AS d,
-              has_table_privilege('fake_logs_writer', 'logs.entry', 'TRUNCATE') AS t`,
+      `SELECT has_table_privilege('ductus_logs_writer', 'public.log_entry', 'UPDATE') AS u,
+              has_table_privilege('ductus_logs_writer', 'public.log_entry', 'DELETE') AS d,
+              has_table_privilege('ductus_logs_writer', 'public.log_entry', 'TRUNCATE') AS t`,
     );
     expect(rights.rows).toEqual([{ u: false, d: false, t: false }]);
+  });
+
+  it.each([
+    ["ductus_logs_writer", "SELECT count(*) FROM public.log_entry"],
+    ["ductus_logs_retention", "SELECT count(*) FROM public.log_entry"],
+    ["ductus_logs_reader", "INSERT INTO public.log_entry (kind, payload) VALUES ('authn.x', '{}')"],
+  ])("%s is refused: %s", async (role, sql) => {
+    const log = await seeded();
+    await expect(log.db.exec(`BEGIN; SET LOCAL ROLE ${role}; ${sql}; COMMIT;`)).rejects.toThrow(
+      /permission denied/u,
+    );
+    await log.db.exec("ROLLBACK");
+    expect(await log.entries()).toHaveLength(2);
+  });
+
+  it("is the logs database with its migrations, the log table among them", async () => {
+    const log = await seeded();
+    const result = await log.db.query<{ db: string; version: string }>(
+      "SELECT current_database() AS db, version FROM public.schema_migrations WHERE version = '20261116160000'",
+    );
+    expect(result.rows).toEqual([{ db: "ductus_logs", version: "20261116160000" }]);
+  });
+
+  it("append returns the row it appended, not the one with the largest id", async () => {
+    const log = await createFakeLogDatabase();
+    open.push(log);
+    await log.db.exec(
+      `INSERT INTO public.log_entry (id, kind, payload) OVERRIDING SYSTEM VALUE
+         VALUES (1000, 'authn.login_started', '{"planted": true}')`,
+    );
+    const entry = await log.append("session.logged_out", { reason: "user" });
+    expect(entry.id).not.toBe(1000);
+    expect({ kind: entry.kind, payload: entry.payload }).toEqual({
+      kind: "session.logged_out",
+      payload: { reason: "user" },
+    });
   });
 
   it("refuses a payload that is not JSON and an empty kind", async () => {

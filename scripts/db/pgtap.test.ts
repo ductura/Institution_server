@@ -26,10 +26,12 @@ test("every database has a pgTAP directory with at least one test file, which pg
       entry.testsDir,
     ]);
   }
+  const extra: Record<string, string[]> = { logs: ["db/logs/tests/010-log-entry.sql"], legal: [] };
   for (const name of ["logs", "legal"]) {
     assert.deepEqual(testFiles(databaseNamed(name).testsDir), [
       `db/${name}/tests/000-rls-everywhere.sql`,
       `db/${name}/tests/000-roles.sql`,
+      ...(extra[name] ?? []),
     ]);
   }
 });
