@@ -2,11 +2,21 @@
 // the VS-1 stack, with the production adapter S3EvidencePayloadStore as its
 // contract test, over a real loopback socket and a temporary directory.
 import { createHash, createHmac } from "node:crypto";
-import { mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync, mkdirSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
 import { request as httpRequest } from "node:http";
-import type { AddressInfo } from "node:net";
-import { tmpdir } from "node:os";
+import { connect, type AddressInfo } from "node:net";
+import { networkInterfaces, tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,7 +28,13 @@ import {
   S3SecretCredentials,
   STORAGE_IDENTITY_KEY,
 } from "../../server/external/storage/index.ts";
-import { localS3Config, localS3Server, MAX_OBJECT_BYTES } from "./local-s3.ts";
+import {
+  LOCAL_S3_HOST,
+  localS3Config,
+  localS3Server,
+  MAX_OBJECT_BYTES,
+  startLocalS3,
+} from "./local-s3.ts";
 
 // Invented values only; the key is made for each run.
 const INSTITUTION = "00000000-0000-4000-8000-00000000000a";
@@ -428,4 +444,78 @@ describe("production never reaches the local S3 (P1, P3)", () => {
     expect(message).toBe("EVIDENCE_S3_VS1_SECRET is not set");
     expect(message).not.toContain(KEY_ID);
   });
+});
+
+describe("the local S3 stays a local tool (contract condition 1, S1, P3)", () => {
+  const SOURCE = fileURLToPath(new URL("./local-s3.ts", import.meta.url));
+
+  it("imports only node: modules, never server code", () => {
+    const imports = [...readFileSync(SOURCE, "utf8").matchAll(/^import[^"]*"([^"]+)"/gmu)].map(
+      (match) => match[1],
+    );
+    expect(imports.length).toBeGreaterThan(0);
+    expect(imports.every((name) => name?.startsWith("node:"))).toBe(true);
+  });
+
+  it("no server file imports it", () => {
+    const serverRoot = fileURLToPath(new URL("../../server", import.meta.url));
+    const sources = readdirSync(serverRoot, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
+      .map((entry) => readFileSync(join(entry.parentPath, entry.name), "utf8"));
+    expect(sources.some((text) => /local-s3|scripts\/stack/u.test(text))).toBe(false);
+  });
+
+  it("listens on 127.0.0.1 only, never on another interface", async () => {
+    const server = await startLocalS3({
+      port: 0,
+      root,
+      bucket: BUCKET,
+      region: REGION,
+      accessKeyId: KEY_ID,
+      secretAccessKey: SECRET,
+    });
+    try {
+      const address = server.address() as AddressInfo;
+      expect(LOCAL_S3_HOST).toBe("127.0.0.1");
+      expect(address.address).toBe("127.0.0.1");
+      const others = Object.values(networkInterfaces())
+        .flat()
+        .filter((face) => face !== undefined && face.family === "IPv4" && !face.internal)
+        .map((face) => face?.address ?? "");
+      for (const other of others) {
+        const reached = await new Promise<boolean>((resolve) => {
+          const socket = connect({ host: other, port: address.port });
+          socket.once("connect", () => resolve((socket.destroy(), true)));
+          socket.once("error", () => resolve(false));
+        });
+        expect(reached).toBe(false);
+      }
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  it.each([["production"], [""]])(
+    "run as a script with NODE_ENV %j it exits before opening a port",
+    (nodeEnv) => {
+      const run = spawnSync(process.execPath, [SOURCE], {
+        env: {
+          PATH: process.env.PATH ?? "",
+          NODE_ENV: nodeEnv,
+          PORT: "4190",
+          VS1_S3_ROOT: root,
+          VS1_S3_BUCKET: BUCKET,
+          VS1_S3_REGION: REGION,
+          EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+          EVIDENCE_S3_VS1_SECRET: SECRET,
+        },
+        encoding: "utf8",
+        timeout: 20_000,
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("NODE_ENV");
+      expect(run.stdout).not.toContain("local S3 on");
+      expect(`${run.stdout}${run.stderr}`).not.toContain(SECRET);
+    },
+  );
 });

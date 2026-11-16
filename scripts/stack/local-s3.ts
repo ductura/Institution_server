@@ -286,6 +286,18 @@ export function localS3Config(env: Env): LocalS3Config & { port: number } {
   };
 }
 
+/** The only address the local S3 listens on (loopback; never 0.0.0.0 or another interface). */
+export const LOCAL_S3_HOST = "127.0.0.1";
+
+/** Starts the local S3 on loopback; resolves once it listens. */
+export function startLocalS3(config: LocalS3Config & { port: number }): Promise<Server> {
+  const server = localS3Server(config);
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(config.port, LOCAL_S3_HOST, () => resolve(server));
+  });
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   let config: ReturnType<typeof localS3Config>;
   try {
@@ -295,10 +307,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.error(error instanceof Error ? error.message : "failed");
     process.exit(1);
   }
-  const server = localS3Server(config);
-  server.listen(config.port, "127.0.0.1", () => {
-    console.log(`local S3 on 127.0.0.1:${config.port}`);
-  });
+  const server = await startLocalS3(config);
+  console.log(`local S3 on ${LOCAL_S3_HOST}:${config.port}`);
   for (const signal of ["SIGTERM", "SIGINT"] as const) {
     process.once(signal, () => server.close(() => process.exit(0)));
   }
