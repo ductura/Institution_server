@@ -128,26 +128,34 @@ SELECT is_empty(
 
 -- 3. No path around the rights: no function but the refusal names either
 -- table, in its source, in an SQL-standard body (BEGIN ATOMIC) or as a
--- dependency; no SECURITY DEFINER function runs dynamic SQL, which could name
--- a table without spelling it; and no view, rule or materialised view reads
--- one. Each function check has a negative control below.
+-- dependency, except settings.set_value (DAN-801), which only reads
+-- network_engineer_appointment to know a network engineer; no SECURITY
+-- DEFINER function runs dynamic SQL, which could name a table without
+-- spelling it; and no view, rule or materialised view reads one. Each
+-- function and table it names is one row, marked "writes" when the source
+-- has a write statement on the table and "reads" otherwise. Each function
+-- check has a negative control below.
 CREATE VIEW pg_temp.touching_function AS
-  SELECT p.oid::regprocedure::text AS found FROM pg_proc p
+  SELECT p.oid::regprocedure::text || ' ' || t.name || ' '
+         || CASE WHEN s.src ~* ('(INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE|MERGE\s+INTO)\s+(ONLY\s+)?(TABLE\s+)?[a-z_."]*'
+                                || t.name) THEN 'writes' ELSE 'reads' END AS found
+  FROM pg_proc p
+  CROSS JOIN (VALUES ('app_admin', 'identity.app_admin'::regclass),
+                     ('network_engineer_appointment', 'identity.network_engineer_appointment'::regclass)) AS t (name, rel)
+  CROSS JOIN LATERAL (SELECT coalesce(p.prosrc, '') || ' ' || coalesce(pg_get_function_sqlbody(p.oid), '') AS src) AS s
   WHERE p.pronamespace NOT IN ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
     AND p.pronamespace <> pg_my_temp_schema()
     AND p.oid <> 'identity.refuse_app_admin_write()'::regprocedure
-    AND (coalesce(p.prosrc, '') || ' ' || coalesce(pg_get_function_sqlbody(p.oid), '')
-           ~* '(app_admin|network_engineer_appointment)'
+    AND (s.src ~* t.name
          OR EXISTS (SELECT 1 FROM pg_depend d
-                    WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid
-                      AND d.refobjid IN ('identity.app_admin'::regclass,
-                                         'identity.network_engineer_appointment'::regclass)));
+                    WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.refobjid = t.rel));
 CREATE VIEW pg_temp.dynamic_definer AS
   SELECT p.oid::regprocedure::text AS found FROM pg_proc p
   WHERE p.prosecdef AND p.pronamespace <> pg_my_temp_schema()
     AND regexp_replace(coalesce(p.prosrc, ''), 'EXECUTE\s+(FUNCTION|PROCEDURE)', '', 'gi') ~* '\mEXECUTE\M';
-SELECT is_empty('SELECT found FROM pg_temp.touching_function',
-  'no function in the database reads or writes the new tables');
+SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
+  ARRAY['settings.set_value(text,uuid,text,jsonb,jsonb) network_engineer_appointment reads'],
+  'only settings.set_value names a new table, and it only reads network_engineer_appointment');
 SELECT is_empty('SELECT found FROM pg_temp.dynamic_definer',
   'no SECURITY DEFINER function runs dynamic SQL');
 CREATE FUNCTION identity.test_atomic_write(p_institution uuid, p_user uuid, p_by uuid) RETURNS void
@@ -155,17 +163,27 @@ LANGUAGE sql SECURITY DEFINER SET search_path = ''
 BEGIN ATOMIC
   INSERT INTO identity.network_engineer_appointment (institution_id, user_id, appointed_by) VALUES (p_institution, p_user, p_by);
 END;
+CREATE FUNCTION identity.test_plain_read() RETURNS bigint
+LANGUAGE plpgsql SET search_path = '' AS $f$ BEGIN RETURN (SELECT count(*) FROM identity.app_admin); END $f$;
+CREATE FUNCTION identity.test_plain_write() RETURNS void
+LANGUAGE plpgsql SET search_path = ''
+AS $f$ BEGIN UPDATE  identity.network_engineer_appointment SET revoked_at = now(); END $f$;
 CREATE FUNCTION identity.test_dynamic_write(p_table text) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
 AS $f$ BEGIN EXECUTE format('DELETE FROM identity.%I', p_table); END $f$;
 SELECT bag_eq('SELECT found FROM pg_temp.touching_function',
-  ARRAY['identity.test_atomic_write(uuid,uuid,uuid)'],
-  'control: a BEGIN ATOMIC body that writes a new table is found');
+  ARRAY['settings.set_value(text,uuid,text,jsonb,jsonb) network_engineer_appointment reads',
+        'identity.test_atomic_write(uuid,uuid,uuid) network_engineer_appointment writes',
+        'identity.test_plain_read() app_admin reads',
+        'identity.test_plain_write() network_engineer_appointment writes'],
+  'control: a BEGIN ATOMIC body that writes a new table, a read and a write in plpgsql are found');
 SELECT bag_eq('SELECT found FROM pg_temp.dynamic_definer',
   ARRAY['identity.test_dynamic_write(text)'],
   'control: a definer with dynamic SQL is found');
 DROP FUNCTION identity.test_atomic_write(uuid, uuid, uuid);
 DROP FUNCTION identity.test_dynamic_write(text);
+DROP FUNCTION identity.test_plain_read();
+DROP FUNCTION identity.test_plain_write();
 SELECT is_empty(
   $$ SELECT r.ev_class::regclass::text FROM pg_depend d JOIN pg_rewrite r ON r.oid = d.objid
      WHERE d.classid = 'pg_rewrite'::regclass
