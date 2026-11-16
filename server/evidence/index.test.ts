@@ -1,14 +1,20 @@
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import * as domain from "../domain/index.ts";
 import * as area from "./index.ts";
-import type { EvidenceService } from "./index.ts";
 
 describe("server/evidence public interface", () => {
-  it("exports no value yet (DAN-815 b1)", () => {
-    expect(Object.keys(area)).toEqual([]);
+  it("exports the service factory and the domain's wire limits, nothing else", () => {
+    expect(Object.keys(area).sort()).toEqual([
+      "DUCTUS_ASYNC_COMMIT_PROTOCOL",
+      "DUCTUS_PROTOCOL_VERSION",
+      "MAX_COMMIT_REQUEST_BYTES",
+      "createEvidenceService",
+    ]);
   });
 
-  it("has a service type without members", () => {
-    expectTypeOf<keyof EvidenceService>().toEqualTypeOf<string>();
-    expectTypeOf<EvidenceService[string]>().toEqualTypeOf<never>();
+  it("B2: the limits http reads are the domain's own, one size on client and server", () => {
+    expect(area.MAX_COMMIT_REQUEST_BYTES).toBe(domain.MAX_COMMIT_REQUEST_BYTES);
+    expect(area.DUCTUS_PROTOCOL_VERSION).toBe(domain.DUCTUS_PROTOCOL_VERSION);
+    expect(area.DUCTUS_ASYNC_COMMIT_PROTOCOL).toBe(domain.DUCTUS_ASYNC_COMMIT_PROTOCOL);
   });
 });
