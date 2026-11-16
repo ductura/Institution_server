@@ -50,8 +50,8 @@ export async function createFakeLogDatabase(): Promise<FakeLogDatabase> {
     append: (kind, payload) => {
       const json = JSON.stringify(payload) as string | undefined;
       if (json === undefined) return Promise.reject(new TypeError("payload is not JSON"));
-      // The writer has no SELECT (no RETURNING); in the same transaction of
-      // the one connection, the reader sees the row just appended as the last.
+      // The writer has no SELECT (no RETURNING); in the same transaction the
+      // reader reads back the row this transaction appended (its xmin).
       return db.transaction(async (tx) => {
         await tx.exec("SET LOCAL ROLE ductus_logs_writer");
         await tx.query("INSERT INTO public.log_entry (kind, payload) VALUES ($1, $2::jsonb)", [
@@ -60,7 +60,7 @@ export async function createFakeLogDatabase(): Promise<FakeLogDatabase> {
         ]);
         const rows = await read(
           tx,
-          `SELECT ${COLUMNS} FROM public.log_entry ORDER BY id DESC LIMIT 1`,
+          `SELECT ${COLUMNS} FROM public.log_entry WHERE xmin::text = pg_current_xact_id()::text ORDER BY id DESC LIMIT 1`,
         );
         return toEntry(rows[0] as Row);
       });

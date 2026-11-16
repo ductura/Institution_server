@@ -64,7 +64,7 @@ END
 $$;
 
 
-SELECT plan(71);
+SELECT plan(75);
 
 -- Runs `sql` as `who` (NULL: the session's superuser), with
 -- session_replication_role = replica when asked, and gives back the SQLSTATE
@@ -244,6 +244,10 @@ FROM (VALUES
   ('Authn.login_started', '{}', '23514', 'a kind in capitals is refused'),
   ('authn', '{}', '23514', 'a kind without an area is refused'),
   ('authn.login.started', '{}', '23514', 'a kind with two dots is refused'),
+  ('authn:login_started', '{}', '23514', 'a kind with another separator than a literal dot is refused'),
+  ('authnxlogin_started', '{}', '23514', 'a kind whose separator is any character but a dot is refused'),
+  ('authn.login_started' || E'\n', '{}', '23514', 'a kind with a trailing newline is refused'),
+  ('authn.prijava_é', '{}', '23514', 'a kind with a letter beyond a-z is refused'),
   ('authn.x''; DROP TABLE public.log_entry; --', '{}', '23514', 'a kind carrying SQL is refused'),
   ('a.' || repeat('b', 62), '{}', 'ok', 'a kind of 64 characters is accepted'),
   ('a.' || repeat('b', 63), '{}', '23514', 'a kind of 65 characters is refused'),

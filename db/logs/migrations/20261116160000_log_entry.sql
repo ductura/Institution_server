@@ -32,6 +32,7 @@ CREATE TABLE public.log_entry (
     pg_catalog.length(kind) <= 64
     AND kind OPERATOR(pg_catalog.~) '^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$'
   ),
+  -- A JSON object; the bound is on its canonical text, not on the stored size.
   payload jsonb NOT NULL CONSTRAINT log_entry_payload_shape CHECK (
     pg_catalog.jsonb_typeof(payload) = 'object'
     AND pg_catalog.octet_length(payload::text) <= 16384
