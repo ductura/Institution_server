@@ -193,7 +193,10 @@ function layers(text: string, mime: string, kind: TypeKind, depth: number, state
   state.out.add(text);
   if (state.out.size > MAX_TEXTS) return flag(state, `more than ${MAX_TEXTS} decoded texts`);
   if (depth >= MAX_DEPTH) {
-    if (STILL_ENCODED.test(text)) flag(state, `encoded more than ${MAX_DEPTH} times: ${text}`);
+    // Read as the URL parser reads it: a tab, CR or LF inside `data:` is no
+    // break (review FAIL cxcrs95 on #95: `da\tta:` at the limit).
+    if (STILL_ENCODED.test(normalizeUrlInput(text).input))
+      flag(state, `encoded more than ${MAX_DEPTH} times: ${text}`);
     return;
   }
   const bytes = /%[0-9a-fA-F]{2}/u.test(text) ? percentDecode(text) : null;

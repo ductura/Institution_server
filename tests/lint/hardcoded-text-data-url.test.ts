@@ -347,6 +347,13 @@ describe("fail closed", () => {
     expect(dataUrlFindings(url).suspect).toMatch(/encoded more than/u);
   });
 
+  it("fails on a nested scheme with a tab left at the depth limit", () => {
+    // Review FAIL cxcrs95 on #95: `da\tta:` appears only at depth 8.
+    const url = "data:text/plain,da%252525252525252509ta:text/plain;base64,xI1la2Fq";
+    expect(dataUrlFindings(url).suspect).toMatch(/encoded more than/u);
+    expect(dataUrlProblem(url)).not.toBeNull();
+  });
+
   it("reads base64 in any parameter position, and the body as it is", () => {
     const { texts } = dataUrlFindings("data:text/plain;base64;x=y,aGVsbG8=");
     expect(texts).toContain("hello");
