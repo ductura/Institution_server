@@ -23,7 +23,13 @@ export const localPlugin: ESLint.Plugin = {
   },
 };
 export { databaseBoundaryPlugin, PG_SPECIFIER } from "./database-boundary.ts";
-export { AREA_IMPORTS, areaOf, ENTRY } from "./area-boundary.ts";
+export {
+  AREA_IMPORTS,
+  areaOf,
+  ENTRY,
+  isAllowedLocaleImport,
+  LOCALE_IMPORT_ALLOWED,
+} from "./area-boundary.ts";
 export {
   DYNAMIC_LOAD_ALLOWED,
   IMPORT_META,

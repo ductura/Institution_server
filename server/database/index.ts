@@ -13,7 +13,7 @@ export type {
   BackchannelLogoutResult,
 } from "./backchannel-logout.ts";
 export type { ActorReader, CurrentActor, CurrentActorWithInstitution } from "./current-actor.ts";
-export type { OpenSessionInput, OpenSessionResult } from "./open-session.ts";
+export type { OpenSession, OpenSessionInput, OpenSessionResult } from "./open-session.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
 export type { DatabaseHealth, DatabaseName, HealthReport } from "./registry.ts";

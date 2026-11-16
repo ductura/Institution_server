@@ -1,5 +1,6 @@
 // Public interface of server/http, the only composition root; only the entry
 // point (server/server.ts) and test-server import it (docs/server-map.md §2).
+export { finishLogin, LOGIN_COOKIE_NAME, startLogin, type AuthDeps } from "./auth-flow.ts";
 export { AREA_NAMES, routesOf, type AreaWithRoutes } from "./areas.ts";
 export { createDatabases, type Databases } from "./databases.ts";
 export {
