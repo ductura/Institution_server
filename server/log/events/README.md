@@ -16,7 +16,7 @@ Zatvoren popis vrsta događaja (`EVENT_CATALOG`) i provjera zapisa (`checkEvent`
 
 ## Tko ga zove
 
-Servis zapisa `server/log/writer.ts` (S-1K.3-a, DAN-807) prije spremanja; područja zapise pišu kroz njega.
+Servis zapisa `server/log/writer.ts` (S-1K.3-a, DAN-807) prije spremanja; područja zapise pišu kroz njega. Događaje sesije (`session.*`) slaže `server/session/events.ts` (DAN-830) iz stanja sesije; razlozi `session.revoked` uključuju sve razloge zatvaranja iz `identity.session`.
 
 ## Koje podatke dira
 

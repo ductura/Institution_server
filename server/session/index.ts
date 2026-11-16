@@ -33,6 +33,12 @@ export {
 } from "./principal.ts";
 export { checkSession, type SessionCheck } from "./live-session.ts";
 export {
+  createSessionEvents,
+  type SessionEvents,
+  type SessionEventsOptions,
+  type SessionTransition,
+} from "./events.ts";
+export {
   ENDED_REASONS,
   type EndedReason,
   INTERRUPTED_REASONS,
