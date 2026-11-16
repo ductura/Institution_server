@@ -211,6 +211,8 @@ const DATABASE_NAMES = [
   "transaction_known",
   // Result column of the replay source (replay-source.ts, DAN-818) and its tests.
   "segment_hashes",
+  // A column of pgboss.job that the job queue test reads (DAN-820).
+  "retry_count",
   // The alias of the institution slug in the current-actor statement
   // (current-actor.ts, S-0.18, DAN-731).
   "institution_slug",

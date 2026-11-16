@@ -27,6 +27,15 @@ const ALLOWED: readonly string[] = [
   // A one-off command run by hand before one migration (S-0.17).
   "server/database/plain-label-check.ts",
 ];
+/**
+ * The worker process's own connections, outside the registry of the web
+ * process (DAN-820): the job queue's guard client and the pool pg-boss holds.
+ * The folder is never imported by another production file, so the web process
+ * (server/database/index.ts and dist/server.js) never opens them; the test
+ * below keeps it that way. The list may only get shorter.
+ */
+const WORKER_ONLY: readonly string[] = ["server/database/queue/job-queue.ts"];
+const WORKER_FOLDER = "server/database/queue/";
 /** Where a registry may be made or named. */
 const REGISTRY_MAKERS: readonly string[] = [
   "server/database/registry.ts",
@@ -101,7 +110,7 @@ const read = (file: string) => readFileSync(resolve(ROOT, file), "utf8");
 describe("database connections only through the registry", () => {
   it("finds the driver at runtime nowhere else", () => {
     const offenders = productionFiles()
-      .filter((file) => !ALLOWED.includes(file))
+      .filter((file) => !ALLOWED.includes(file) && !WORKER_ONLY.includes(file))
       .flatMap((file) => runtimeDriverUses(read(file)).map((use) => `${file}: ${use}`));
     expect(offenders).toEqual([]);
   });
@@ -114,7 +123,21 @@ describe("database connections only through the registry", () => {
   });
 
   it("still finds the driver in each allowed file, so the list stays honest", () => {
-    for (const file of ALLOWED) expect(runtimeDriverUses(read(file)), file).not.toEqual([]);
+    for (const file of [...ALLOWED, ...WORKER_ONLY]) {
+      expect(runtimeDriverUses(read(file)), file).not.toEqual([]);
+    }
+  });
+
+  it("keeps the worker's connections out of every other production file", () => {
+    for (const file of WORKER_ONLY) expect(file.startsWith(WORKER_FOLDER), file).toBe(true);
+    // Any mention of the folder by path, from inside server/database or from
+    // another area, would let the web process load it.
+    const importers = productionFiles().filter(
+      (file) =>
+        !file.startsWith(WORKER_FOLDER) &&
+        /(?:database\/queue|\.\/queue)(?:\/|["'])/u.test(read(file)),
+    );
+    expect(importers).toEqual([]);
   });
 
   it.each([
