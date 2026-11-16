@@ -31,6 +31,13 @@ export type {
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type {
+  PendingBacklogRead,
+  PendingBacklogRow,
+  PendingReceiptQueue,
+  PendingReceiptRow,
+  PendingReceiptsRead,
+} from "./pending-receipt-signing.ts";
+export type {
   ReplayCheckpointsResult,
   ReplayHead,
   ReplaySource,
@@ -50,6 +57,9 @@ export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export { createWorkOpener } from "./open-work.ts";
+// The worker's read of the pending receipts, over the worker's own login;
+// only the worker process builds it (D-71, D-102).
+export { createPendingReceiptQueue } from "./pending-receipt-queue.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";

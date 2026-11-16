@@ -209,6 +209,9 @@ const DATABASE_NAMES = [
   "receipt_id",
   "receipt_payload",
   "transaction_known",
+  // Result columns of the worker's pending backlog (pending-receipt-queue.ts, DAN-820) and its tests.
+  "oldest_created_at",
+  "pending_count",
   // Result column of the replay source (replay-source.ts, DAN-818) and its tests.
   "segment_hashes",
   // A column of pgboss.job that the job queue test reads (DAN-820).
