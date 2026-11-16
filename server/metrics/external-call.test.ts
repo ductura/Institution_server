@@ -232,18 +232,76 @@ describe("createExternalCaller", () => {
       expect(events[0]?.durationMs).toBeGreaterThan(SHORT.timeoutMs);
     });
 
-    it("an answer exactly at the deadline still counts", async () => {
+    // Review FAIL c.6917395187: with a live timer the expiry and an answer
+    // at the very deadline race, so the deadline is exclusive on every path:
+    // only an answer before it counts, with or without timers.
+    const atDeadline: [string, (advance: (ms: number) => void) => Promise<string>][] = [
+      ["returns a value", async (advance) => (advance(10), "bytes")],
+      [
+        "throws",
+        async (advance) => {
+          advance(10);
+          throw new TypeError("fetch failed");
+        },
+      ],
+    ];
+
+    it.each(atDeadline)(
+      "an adapter that %s exactly at the deadline, live timer: timeout",
+      async (_n, run) => {
+        const { clock, events, caller } = setup(SHORT);
+        expect(await caller.call("read", () => run((ms) => clock.advance(ms)))).toEqual({
+          ok: false,
+          failure: "timeout",
+        });
+        expect(events[0]).toMatchObject({ outcome: "timeout", durationMs: 10 });
+      },
+    );
+
+    it.each(atDeadline)(
+      "an adapter that %s exactly at the deadline, no timer: timeout",
+      async (_n, run) => {
+        let time = 0;
+        const caller = createExternalCaller("storage", SHORT, {
+          now: () => time,
+          sleep: () => new Promise(() => {}),
+        });
+        expect(await caller.call("read", () => run((ms) => (time += ms)))).toEqual({
+          ok: false,
+          failure: "timeout",
+        });
+      },
+    );
+
+    it("a failed-check that ends exactly at the deadline: timeout", async () => {
+      const { clock, caller } = setup(SHORT);
+      const result = await caller.call("read", async () => "bytes", {
+        failed: () => (clock.advance(10), false),
+      });
+      expect(result).toEqual({ ok: false, failure: "timeout" });
+    });
+
+    it("a failed-check that throws exactly at the deadline, no timer: timeout", async () => {
       let time = 0;
       const caller = createExternalCaller("storage", SHORT, {
         now: () => time,
         sleep: () => new Promise(() => {}),
       });
-      expect(
-        await caller.call("read", async () => {
+      const result = await caller.call("read", async () => "bytes", {
+        failed: () => {
           time += 10;
-          return "bytes";
-        }),
-      ).toEqual({ ok: true, value: "bytes" });
+          throw new Error("check broke");
+        },
+      });
+      expect(result).toEqual({ ok: false, failure: "timeout" });
+    });
+
+    it("an answer one millisecond before the deadline counts, live timer", async () => {
+      const { clock, caller } = setup(SHORT);
+      expect(await caller.call("read", async () => (clock.advance(9), "bytes"))).toEqual({
+        ok: true,
+        value: "bytes",
+      });
     });
   });
 
