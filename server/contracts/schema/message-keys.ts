@@ -46,6 +46,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["unavailable", "errors.unavailable"],
   ["unsupported_media_type", "errors.unsupportedMediaType"],
   ["upgrade_required", "errors.upgradeRequired"],
+  ["version_conflict", "errors.versionConflict"],
 ]);
 
 /** The message key of a code; throws for a code the table does not have. */

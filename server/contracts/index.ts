@@ -3,6 +3,7 @@ import {
   collaborationRoutes,
   evidenceRoutes,
   FALLBACK,
+  institutionRoutes,
   liveRoutes,
   INTERNAL,
   METHOD_NOT_ALLOWED,
@@ -60,6 +61,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...projectionRoutes,
   ...collaborationRoutes,
   ...liveRoutes,
+  ...institutionRoutes,
   ...teacherRoutes,
   ...settingsRoutes,
 ];

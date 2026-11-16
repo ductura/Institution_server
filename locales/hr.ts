@@ -2026,6 +2026,8 @@ export const hr = {
     unavailable: "Usluga trenutačno nije dostupna. Pokušajte ponovno kasnije.",
     unsupportedMediaType: "Vrsta sadržaja zahtjeva nije podržana.",
     upgradeRequired: "Potrebna je novija verzija aplikacije. Osvježite stranicu.",
+    versionConflict:
+      "Zadatak je u međuvremenu promijenjen. Učitajte zadnju verziju pa pokušajte ponovno.",
   },
   // Texts of the error catalogue that the server's contract does not answer
   // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.
