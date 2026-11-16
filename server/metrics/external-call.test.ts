@@ -168,6 +168,112 @@ describe("createExternalCaller", () => {
     expect(result).toEqual({ ok: false, failure: "failed" });
   });
 
+  it("consumes the rejection of an async event sink (Codex c.4585087003)", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown): void => void unhandled.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      const caller = createExternalCaller("email", POLICY, {
+        onEvent: async () => {
+          throw new Error("event-sink-offline");
+        },
+      });
+      expect(await caller.call("send", async () => 1)).toEqual({ ok: true, value: 1 });
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
+
+  it("drops an answer that arrives after the deadline, whatever the timers did (Codex c.4585086980)", async () => {
+    let time = 0;
+    const events: ExternalCallEvent[] = [];
+    const caller = createExternalCaller(
+      "storage",
+      { ...POLICY, timeoutMs: 10 },
+      {
+        now: () => time,
+        sleep: () => new Promise(() => {}),
+        onEvent: (e) => events.push(e),
+      },
+    );
+    const result = await caller.call("read", async () => {
+      time += 40; // synchronous work past the deadline before the answer
+      return "late";
+    });
+    expect(result).toEqual({ ok: false, failure: "timeout" });
+    expect(events[0]).toMatchObject({ outcome: "timeout", attempts: 1, durationMs: 40 });
+  });
+
+  it("starts no retry at or after the deadline (Codex c.4585086980)", async () => {
+    let time = 0;
+    let tries = 0;
+    const caller = createExternalCaller(
+      "storage",
+      { ...POLICY, retryDelayMs: 100, downAfter: 9 },
+      {
+        now: () => time,
+        sleep: async (ms) => {
+          time += ms === 100 ? 2000 : 0; // the pause overruns the whole deadline
+        },
+      },
+    );
+    const result = await caller.call(
+      "read",
+      async () => {
+        tries += 1;
+        throw new TypeError("fetch failed");
+      },
+      { retry: true },
+    );
+    expect(result).toEqual({ ok: false, failure: "timeout" });
+    expect(tries).toBe(1);
+  });
+
+  it("lets one probe through after the down window, alone and without retry (Codex c.4585086991)", async () => {
+    const { clock, caller } = setup({ ...POLICY, retries: 2, downAfter: 1, downForMs: 5000 });
+    let reached = 0;
+    const fail = async (): Promise<string> => {
+      reached += 1;
+      throw new Error("down");
+    };
+    await caller.call("read", fail);
+    expect(caller.availability()).toBe("down");
+    clock.advance(5000);
+    expect(caller.availability()).toBe("available");
+    reached = 0;
+
+    let release: (v: string) => void = () => {};
+    const probe = caller.call(
+      "read",
+      () => ((reached += 1), new Promise<string>((r) => (release = r))),
+      {
+        retry: true,
+      },
+    );
+    await flush();
+    expect(caller.availability()).toBe("down");
+    expect(await caller.call("read", fail, { retry: true })).toEqual({
+      ok: false,
+      failure: "down",
+    });
+    expect(reached).toBe(1);
+    release("ok");
+    expect(await probe).toEqual({ ok: true, value: "ok" });
+    expect(caller.availability()).toBe("available");
+
+    await caller.call("read", fail);
+    clock.advance(5000);
+    reached = 0;
+    expect(await caller.call("read", fail, { retry: true })).toEqual({
+      ok: false,
+      failure: "failed",
+    });
+    expect(reached).toBe(1);
+    expect(caller.availability()).toBe("down");
+  });
+
   it("survives an event sink that throws", async () => {
     const caller = createExternalCaller("keys", POLICY, {
       onEvent: () => {

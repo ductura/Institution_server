@@ -9,8 +9,8 @@
  * - Retry: only when the caller says the operation is idempotent, and only
  *   when the pause still ends before the deadline.
  * - Availability: after `downAfter` failed calls in a row the service is
- *   `down` for `downForMs` and calls do not reach it; the next call afterwards
- *   is one trial.
+ *   `down` for `downForMs` and calls do not reach it; afterwards one probe goes
+ *   alone and without retry, and other calls stay `down` until it ends.
  * - Event: one `external_call` per call with closed fields only. No message,
  *   argument or answer of the service ever goes into it, so a key, password
  *   or address has nowhere to travel.
@@ -44,7 +44,8 @@ export type ExternalCallDeps = {
   readonly now?: () => number;
   /** Resolves after `ms`; an abort rejects it. */
   readonly sleep?: (ms: number, signal: AbortSignal) => Promise<void>;
-  readonly onEvent?: (event: ExternalCallEvent) => void;
+  /** May be async; a throw or a rejection never reaches the caller. */
+  readonly onEvent?: (event: ExternalCallEvent) => unknown;
 };
 
 /** `answer` is the service's own last answer when it answered but `failed` said no. */
@@ -97,6 +98,9 @@ export function createExternalCaller(
   const sleep = deps.sleep ?? timerSleep;
   let failuresInRow = 0;
   let downUntil = Number.NEGATIVE_INFINITY;
+  // After a down window one probe goes alone and without retry; other calls
+  // stay `down` until its outcome is known.
+  let probing = false;
 
   const report = (
     operation: string,
@@ -113,7 +117,9 @@ export function createExternalCaller(
       durationMs: Math.max(0, now() - start),
     };
     try {
-      deps.onEvent?.(event);
+      const written = deps.onEvent?.(event);
+      // An async sink is not awaited, but its rejection is consumed.
+      if (written instanceof Promise) written.catch(() => {});
     } catch {
       // An event that cannot be written must not change the answer.
     }
@@ -133,10 +139,26 @@ export function createExternalCaller(
     options: ExternalCallOptions<T>,
   ): Promise<ExternalCallResult<T>> {
     const start = now();
-    if (start < downUntil) {
+    const probe = failuresInRow >= policy.downAfter;
+    if (start < downUntil || (probe && probing)) {
       report(operation, "down", 0, start);
       return { ok: false, failure: "down" };
     }
+    if (probe) probing = true;
+    try {
+      return await guarded(operation, run, options, start, probe);
+    } finally {
+      if (probe) probing = false;
+    }
+  }
+
+  async function guarded<T>(
+    operation: string,
+    run: (signal: AbortSignal) => Promise<T>,
+    options: ExternalCallOptions<T>,
+    start: number,
+    probe: boolean,
+  ): Promise<ExternalCallResult<T>> {
     const deadline = start + policy.timeoutMs;
     const work = new AbortController();
     const timer = new AbortController();
@@ -145,12 +167,16 @@ export function createExternalCaller(
 
     const tries = (async (): Promise<ExternalCallResult<T>> => {
       for (;;) {
+        // The deadline is absolute: no attempt starts at or after it, and an
+        // answer that arrives after it is dropped, however the timers ran.
+        if (now() >= deadline || work.signal.aborted) return { ok: false, failure: "timeout" };
         attempts += 1;
         const result = await attempt(run, work.signal);
+        if (now() > deadline) return { ok: false, failure: "timeout" };
         if (result.done && !options.failed?.(result.value))
           return { ok: true, value: result.value };
         answered = result.done ? { value: result.value } : undefined;
-        const more = options.retry === true && attempts <= policy.retries;
+        const more = !probe && options.retry === true && attempts <= policy.retries;
         if (!more || now() + policy.retryDelayMs >= deadline || work.signal.aborted)
           return answered
             ? { ok: false, failure: "failed", answer: answered.value }
@@ -181,6 +207,6 @@ export function createExternalCaller(
         throw new RangeError("operation must be a lower-case code");
       return call(operation, run, options);
     },
-    availability: () => (now() < downUntil ? "down" : "available"),
+    availability: () => (probing || now() < downUntil ? "down" : "available"),
   };
 }
