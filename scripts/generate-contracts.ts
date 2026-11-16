@@ -19,6 +19,7 @@ import {
   INVENTORY_SOURCE,
   PENDING,
   ROUTES,
+  SERVER_SOURCES,
   SHARED_ERRORS,
   type RouteContract,
   type Vector,
@@ -228,7 +229,7 @@ function validators(routes: RouteContract[]): string {
 }
 
 function contractRoutes(): RouteContract[] {
-  const problems = checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK.inventory);
+  const problems = checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK.inventory, SERVER_SOURCES);
   if (problems.length) throw new Error(`contracts are not valid:\n${problems.join("\n")}`);
   return sorted();
 }

@@ -1985,6 +1985,7 @@ export const hr = {
     bodyStreamError: "Slanje zahtjeva prekinuto je prije kraja. Pokušajte ponovno.",
     bodyTimeout: "Slanje zahtjeva trajalo je predugo. Pokušajte ponovno.",
     bodyTooLarge: "Zahtjev je prevelik.",
+    boundCrossed: "Vrijednost je izvan granice koju je postavila viša razina.",
     chainConflict:
       "Zapis rada na poslužitelju razlikuje se od onoga na ovom uređaju. Učitajte rad ponovno.",
     contentLengthInvalid: "Duljina zahtjeva nije ispravno navedena.",
@@ -2017,6 +2018,16 @@ export const hr = {
     unavailable: "Usluga trenutačno nije dostupna. Pokušajte ponovno kasnije.",
     unsupportedMediaType: "Vrsta sadržaja zahtjeva nije podržana.",
     upgradeRequired: "Potrebna je novija verzija aplikacije. Osvježite stranicu.",
+  },
+  // Texts of the error catalogue that the server's contract does not answer
+  // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.
+  clientErrors: {
+    tooManyRequests:
+      "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",
+    badGateway:
+      "Poslužitelj trenutačno ne odgovara ispravno. Pokušajte ponovno za nekoliko sekundi.",
+    gatewayTimeout: "Poslužitelj nije odgovorio na vrijeme. Pokušajte ponovno.",
+    sessionExpired: "Prijava je istekla. Prijavite se ponovno.",
   },
 } as const;
 

@@ -6,6 +6,7 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - `forbiddenTerms.*`: greške ulaza skenera zabranjenih izraza (`scripts/forbidden-terms/scan.ts`, `messageKey` po `docs/CODE_STYLE.md` §8). Test `scripts/forbidden-terms/scan.test.ts` provjerava da svaki kod greške ima tekst.
 - `signing.*`: greške porta potpisa (`server/external/keys/signing-errors.ts`). Test `server/external/keys/signing-errors.test.ts` provjerava da svaki `messageKey` porta ima tekst.
 - `logCatalog.*`: greške provjere zapisa iz kataloga događaja (`server/log/events/catalog.ts`, S-1K.1). Test `server/log/events/catalog.test.ts` provjerava da svaki `messageKey` provjere ima tekst.
+- `clientErrors.*` (u `hr.ts` i `en.ts`): tekstovi kataloga grešaka za preloader koje ugovor servera ne odgovara (429, 502, 504, `session_expired`; `server/http/error-catalog.ts`, DAN-802). Test `server/http/error-catalog.test.ts` provjerava da svaki ključ kataloga ima tekst u oba jezika i da sekcija nema drugih ključeva.
 - `app.*`: greške prijelaznog poslužitelja `server/app.ts` (DAN-782; `APP_ERRORS`, odgovor `{ code, messageKey }`). Test `server/app.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija `app` nema drugih ključeva.
 
 ## Katalog sučelja (S-1L.1, DAN-768)

@@ -148,8 +148,11 @@ describe("dist/server.js", () => {
     expect(slash.status).toBe(404);
     // Step 7 (S-1B-b) comes before the router: a POST without our Origin never reaches it.
     const foreign = await fetch(url(port, "/api/v1/health"), { method: "POST" });
-    // 403 is a oneOf in v1 (v1Error), so its body stays {error}.
-    expect([foreign.status, await foreign.json()]).toEqual([403, { error: "origin_missing" }]);
+    // 403 is a oneOf discriminated by the code: the full problem body (DAN-791).
+    expect([foreign.status, await foreign.json()]).toEqual([
+      403,
+      problem(403, "origin_missing", "errors.originMissing"),
+    ]);
     const post = await fetch(url(port, "/api/v1/health"), {
       method: "POST",
       headers: { origin: "https://ductura.invalid" },
