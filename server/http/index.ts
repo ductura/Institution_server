@@ -1,5 +1,6 @@
 // Public interface of server/http, the only composition root; only the entry
 // point (server/server.ts) and test-server import it (docs/server-map.md §2).
+export { finishLogin, LOGIN_COOKIE_NAME, startLogin, type AuthDeps } from "./auth-flow.ts";
 export { AREA_NAMES, routesOf, type AreaWithRoutes } from "./areas.ts";
 export { createDatabases, type Databases } from "./databases.ts";
 export {
@@ -14,6 +15,13 @@ export {
   type ServerErrorRecord,
   type ServerErrorSite,
 } from "./error-catalog.ts";
+export {
+  parseClosedObject,
+  readEvidenceBody,
+  sendEvidenceAnswer,
+  type EvidenceAnswer,
+  type GuardedBody,
+} from "./evidence-request.ts";
 export { evidenceSession, type EvidenceRefusal, type EvidenceSession } from "./evidence-session.ts";
 export { CHECK_DEADLINE_MS, createHealthRoute, type HealthState } from "./health.ts";
 export {
@@ -21,7 +29,7 @@ export {
   readBodyWithLimit,
   type LimitedBodyResult,
 } from "./mutation-request.ts";
-export { knownError, problemOf, sendProblem, type Problem } from "./problem.ts";
+export { knownError, problemOf, sendProblem, sendRouteRefusal, type Problem } from "./problem.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { createRouter, routePath, type Handler, type Route, type Router } from "./router.ts";
 export {

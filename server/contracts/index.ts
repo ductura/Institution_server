@@ -7,6 +7,7 @@ import {
   platformRoutes,
   profileRoutes,
   SHARED_ERRORS,
+  settingsRoutes,
   studentRoutes,
   teacherRoutes,
 } from "./routes/index.ts";
@@ -43,6 +44,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...evidenceRoutes,
   ...studentRoutes,
   ...teacherRoutes,
+  ...settingsRoutes,
 ];
 
 /**

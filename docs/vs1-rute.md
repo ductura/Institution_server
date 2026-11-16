@@ -26,7 +26,7 @@ Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/g
 - **Tijelo greške.** Rute evidencije svaku grešku vraćaju kao `{status: <kod>}`, a ne `{error: <kod>}`, jer tako čita klijent Ductusa. 503 je `{status: "unavailable", stage}` uz zaglavlje `retry-after: 5`. Zaglavlje je samo u vektorima, jer `ErrorSpec` nema polje za zaglavlja. `stage` je kod open uvijek `context`, a kod commit jedan od `context`, `storage`, `repository` ili `signing`.
 - **Zaštita prije tijela.** Kontrole idu ovim redom:
   - metoda (405 `method_not_allowed`; u ovom repou to daje router);
-  - `Origin` i `Sec-Fetch-Site` (403 `forbidden`);
+  - `Origin` i `Sec-Fetch-Site` (403 `forbidden`; u ovom repou to daje sloj 7 cjevovoda prije routera, s tijelom problema umjesto `{status: "forbidden"}`. Status i `no-store` jednaki su vektoru, a klijent Ductusa 403 čita samo po statusu. Odluka: potvrda ugovora DAN-811, Ductus#1836 c.6906871274);
   - `ductus-protocol` (426 `upgrade_required`);
   - `Content-Type` (415);
   - oblik kolačića sesije (401 `unauthenticated`);

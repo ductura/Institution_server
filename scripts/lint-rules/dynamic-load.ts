@@ -24,6 +24,7 @@
 import { readFileSync } from "node:fs";
 import { posix } from "node:path";
 import type { Rule, Scope } from "eslint";
+import { isAllowedLocaleImport } from "./area-boundary.ts";
 
 type Node = Rule.Node;
 type Loose = {
@@ -202,8 +203,9 @@ export const noDynamicLoad: Rule.RuleModule = {
       return member !== undefined && (allowed[name] ?? []).includes(member);
     }
 
-    function allowedModule(spec: string): boolean {
+    function allowedModule(spec: string, node?: Node): boolean {
       if (/^\.\.?\//u.test(spec)) {
+        if (node !== undefined && isAllowedLocaleImport(file, node)) return true;
         const target = posix.normalize(posix.join(posix.dirname(file), spec));
         return target.startsWith("server/") && !target.split("/").includes("node_modules");
       }
@@ -218,7 +220,7 @@ export const noDynamicLoad: Rule.RuleModule = {
     function checkSource(node: Node, source: Loose | null | undefined, kind?: string): void {
       if (!source || kind === "type") return;
       const spec = typeof source.value === "string" ? source.value : "";
-      if (!allowedModule(spec)) context.report({ node, messageId: "module", data: { spec } });
+      if (!allowedModule(spec, node)) context.report({ node, messageId: "module", data: { spec } });
     }
 
     function reportGlobal(node: Loose, name: string): void {

@@ -67,6 +67,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@078c780:src/components/student/my-assignments-read.ts",
   },
+  // DAN-806 (c.6906291102): Ductus has no settings route; the shape is D-298.
+  "app/api/settings/catalogue/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
+  },
+  "app/api/settings/values/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
+  },
 };
 
 /**
@@ -82,6 +91,9 @@ export const CONTRACT_ONLY: readonly string[] = [
   "teacher.mentorships.get",
   "teacher.mentorship.get",
   "teacher.fast-path.post",
+  "settings.catalogue.get",
+  "settings.values.get",
+  "settings.values.put",
 ];
 
 /**
