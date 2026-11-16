@@ -125,6 +125,8 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   // Request bodies and path segments.
   "server/session/backchannel.ts": ["TextDecoder"],
   "server/http/evidence-request.ts": ["TextDecoder"],
+  // The verified segment bytes as the text the payload store keeps (DAN-815).
+  "server/evidence/service.ts": ["TextDecoder"],
   "server/session/return-to.ts": ["decodeURIComponent"],
   "server/contracts/work-id.ts": ["decodeURIComponent"],
   // Link targets in the repository's Markdown (a docs check, S-0.x).
