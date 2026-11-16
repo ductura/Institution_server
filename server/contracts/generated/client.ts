@@ -26,7 +26,7 @@ export const ROUTE_TABLE = {
   "teacher.submissions.get": { method: "GET", path: "/api/v1/teacher/assignments/{assignmentId}/submissions", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
 } as const;
 
-export const SHARED_ERRORS = {"500":["internal"]} as const;
+export const SHARED_ERRORS = {"429":["too_many_requests"],"500":["internal"]} as const;
 
 type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body">;
 export type Result<Id extends OperationId> =

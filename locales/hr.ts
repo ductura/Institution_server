@@ -2011,6 +2011,8 @@ export const hr = {
     originMissing: "Zahtjev ne navodi stranicu s koje dolazi.",
     staleBase: "Rad je u međuvremenu promijenjen. Učitajte zadnju verziju.",
     timeout: "Zahtjev je trajao predugo. Pokušajte ponovno.",
+    tooManyRequests:
+      "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",
     tooLarge: "Zahtjev je prevelik.",
     txidReused: "Ova je izmjena već poslana s drugim sadržajem.",
     unauthenticated: "Prijavite se ponovno.",
@@ -2022,8 +2024,6 @@ export const hr = {
   // Texts of the error catalogue that the server's contract does not answer
   // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.
   clientErrors: {
-    tooManyRequests:
-      "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",
     badGateway:
       "Poslužitelj trenutačno ne odgovara ispravno. Pokušajte ponovno za nekoliko sekundi.",
     gatewayTimeout: "Poslužitelj nije odgovorio na vrijeme. Pokušajte ponovno.",

@@ -4,7 +4,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { messagesEn, messagesHr, textOf, type MessageKey } from "../../locales/index.ts";
-import { ERROR_MESSAGE_KEYS, SERVER_ERRORS } from "../contracts/index.ts";
+import {
+  ERROR_MESSAGE_KEYS,
+  ROUTES,
+  SERVER_ERRORS,
+  SHARED_ERRORS,
+  TOO_MANY_REQUESTS,
+} from "../contracts/index.ts";
 import { checkEvent, EVENT_CATALOG, type LogWriter } from "../log/index.ts";
 import {
   catalogErrorFor,
@@ -45,16 +51,24 @@ describe("ERROR_CATALOG", () => {
   it("a status the server answers names that status's contract error and key", () => {
     const answered = new Set(SERVER_ERRORS.map((spec) => spec.status));
     for (const error of ERROR_CATALOG) {
-      // 429 stays generic: routes answer it with their own codes (ROUTE_429_CODES).
-      if (error.code === SESSION_EXPIRED || error.status === 429 || !answered.has(error.status))
-        continue;
+      if (error.code === SESSION_EXPIRED || !answered.has(error.status)) continue;
       expect(knownError(error.status, error.code)?.key, error.code).toBe(error.messageKey);
     }
   });
 
   it("a route answers 429 only with a code of ROUTE_429_CODES", () => {
-    expect(route429Problems(SERVER_ERRORS)).toEqual([]);
+    expect(route429Problems(ROUTES.flatMap((route) => route.errors))).toEqual([]);
     expect(catalogErrorFor(429)).toMatchObject({ code: "too_many_requests" });
+  });
+
+  it("the only shared 429 is the rate limit's too_many_requests, the catalogue's own (DAN-814)", () => {
+    expect(SHARED_ERRORS.filter((spec) => spec.status === 429)).toEqual([TOO_MANY_REQUESTS.error]);
+    expect(catalogErrorFor(429)).toEqual({
+      status: 429,
+      code: "too_many_requests",
+      messageKey: TOO_MANY_REQUESTS.error.key,
+    });
+    expect(knownError(429, "too_many_requests")).toBe(TOO_MANY_REQUESTS.error);
   });
 
   it("another 429 code is refused, and a listed code only goes with 429", () => {

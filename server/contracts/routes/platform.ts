@@ -129,7 +129,17 @@ export const INTERNAL = {
   error: error(500, "internal"),
 } as const;
 
+/**
+ * The answer of the rate limit, step 4 of the pipeline, before any route
+ * (S-1C.3, DAN-814; contract Ductus#1836 c.6908215789): the problem body of
+ * `too_many_requests` with Retry-After in whole seconds. A route's own 429
+ * codes (server/http/error-catalog.ts, ROUTE_429_CODES) stay apart.
+ */
+export const TOO_MANY_REQUESTS = {
+  error: error(429, "too_many_requests"),
+} as const;
+
 /** Answers every route may give besides its own errors. */
-export const SHARED_ERRORS = [INTERNAL.error] as const;
+export const SHARED_ERRORS = [INTERNAL.error, TOO_MANY_REQUESTS.error] as const;
 
 export const platformRoutes = [health, ready, status] as const;

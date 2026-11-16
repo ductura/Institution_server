@@ -48,6 +48,16 @@ const define = (definition: SettingDefinition): SettingDefinition =>
     ...(definition.kind === "enum" ? { values: Object.freeze([...definition.values]) } : {}),
   });
 
+const rateLimit = (name: string, value: number): SettingDefinition =>
+  define({
+    key: `network.rate_limit_${name}`,
+    levels: ["network_security"],
+    kind: "integer",
+    default: value,
+    min: 1,
+    max: 100_000,
+  });
+
 /**
  * The catalogue. Adding a key is a minor change of @ductura/contracts (its
  * vector of settings.catalogue.get must equal this list). The interface
@@ -68,6 +78,15 @@ export const SETTINGS_CATALOGUE: readonly SettingDefinition[] = Object.freeze([
     min: 15,
     max: 120,
   }),
+  // S-1C.3 (DAN-814, Ductus#1836 c.6908215789): requests per minute of the
+  // rate limit (server/traffic/rate-limit.ts), per client IP and per account.
+  rateLimit("login_per_ip", 30),
+  rateLimit("enroll_per_ip", 60),
+  rateLimit("enroll_per_account", 10),
+  rateLimit("save_per_ip", 1200),
+  rateLimit("save_per_account", 120),
+  rateLimit("default_per_ip", 3000),
+  rateLimit("default_per_account", 300),
 ]);
 
 const BY_KEY: ReadonlyMap<string, SettingDefinition> = new Map(
