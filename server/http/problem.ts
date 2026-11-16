@@ -127,6 +127,32 @@ export function sendHtmlProblem(
 }
 
 /**
+ * An error of a route whose contract gives it no body (the back-channel
+ * logout's 400 and 503: the caller is the provider, not a browser). Only an
+ * error of this route's own contract with `body: "none"` is answered, with
+ * `no-store` and an empty body; anything else answers 500 internal. Headers
+ * are cleared as by sendProblem.
+ */
+export function sendBareRefusal(
+  response: ServerResponse,
+  contract: RouteContract,
+  status: number,
+): void {
+  const spec = contract.errors.find((e) => e.status === status && e.body === "none");
+  if (spec === undefined) {
+    sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
+    return;
+  }
+  for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
+  response.addTrailers({});
+  response.statusMessage = STATUS_CODES[status] ?? "";
+  answering.add(response);
+  requestIdOf(response);
+  response.writeHead(status, { "cache-control": "no-store", "content-length": "0" });
+  response.end();
+}
+
+/**
  * Answers an error of a route whose contract body is {status, ...} instead of
  * a problem (the evidence routes, docs/vs1-rute.md, DAN-811). Only an error of
  * this route's own contract, with a body its schema takes, is answered; any

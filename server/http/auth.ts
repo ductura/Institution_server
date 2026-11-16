@@ -5,8 +5,22 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { type ErrorSpec, ROUTES, type RouteContract } from "../contracts/index.ts";
-import { openSession, withActor } from "../database/index.ts";
-import { createOidcClient, loadAuthConfig } from "../external/srce-auth/index.ts";
+import {
+  backchannelLogout as closeNamedSessions,
+  openSession,
+  withActor,
+} from "../database/index.ts";
+import {
+  createCachedKeySource,
+  createLogoutVerifier,
+  createOidcClient,
+  loadAuthConfig,
+} from "../external/srce-auth/index.ts";
+import {
+  backchannelLogout,
+  type BackchannelDeps,
+  MAX_BACKCHANNEL_BODY_BYTES,
+} from "../session/index.ts";
 
 import {
   type AuthDeps,
@@ -16,7 +30,8 @@ import {
   logoutAll,
   startLogin,
 } from "./auth-flow.ts";
-import { sendHtmlProblem } from "./problem.ts";
+import { readBodyWithLimit } from "./mutation-request.ts";
+import { sendBareRefusal, sendHtmlProblem } from "./problem.ts";
 import type { Route } from "./router.ts";
 
 type Flow = (request: Request, deps: AuthDeps) => Promise<Response>;
@@ -119,21 +134,104 @@ function route(id: string, flow: Flow, load: () => AuthDeps): Route {
 }
 
 /**
- * GET /api/v1/auth/login, GET /api/v1/auth/callback, POST /api/v1/auth/logout
- * and POST /api/v1/auth/logout-all.
+ * The back-channel dependencies (S-1D-d, DAN-829-3; Ductus
+ * backchannel-route.ts): the login configuration, one JWKS cache per set of
+ * routes (an unknown kid refreshes the keys at most once a minute) and the
+ * database port that only closes sessions, never opens one (F-042). A set
+ * that fails to load is tried again on the next request. `ports` replaces
+ * the provider fetch and the database port in tests only.
+ */
+export function loadBackchannelDeps(
+  env: Readonly<Record<string, string | undefined>>,
+  ports: { fetch?: typeof fetch; backchannelLogout?: BackchannelDeps["backchannelLogout"] } = {},
+): BackchannelDeps {
+  const config = loadAuthConfig({ ...env, NODE_ENV: env.NODE_ENV });
+  const provider = createOidcClient(config, ports.fetch);
+  return {
+    verifier: createLogoutVerifier({
+      config,
+      discoveredIssuer: () => provider.discoveredIssuer(),
+      keys: createCachedKeySource({ load: () => provider.jwks() }),
+    }),
+    backchannelLogout: ports.backchannelLogout ?? closeNamedSessions,
+  };
+}
+
+/**
+ * The core's answer, which never has a body: 200 as it is, 400 and 503
+ * through the contract's bare refusal (the router lets errors out only so).
+ */
+function writeBare(response: ServerResponse, contract: RouteContract, answer: Response): void {
+  if (answer.status >= 400) {
+    sendBareRefusal(response, contract, answer.status);
+    return;
+  }
+  const headers: Record<string, string> = {};
+  for (const [name, value] of answer.headers) headers[name] = value;
+  response.writeHead(answer.status, headers);
+  response.end();
+}
+
+/**
+ * POST /api/v1/auth/backchannel-logout. The body is read to the contract's
+ * limit and handed to server/session as a form; a body refused before that
+ * is 400 (the contract's only refusal of a request) and closes the
+ * connection. Only the content type crosses over, never a cookie or Origin.
+ */
+function backchannelRoute(load: () => BackchannelDeps): Route {
+  const contract = contractOf("auth.backchannel-logout.post");
+  return {
+    contract,
+    handle: async (request, response) => {
+      let deps: BackchannelDeps;
+      try {
+        deps = load();
+      } catch (error) {
+        console.error(
+          "backchannel logout failed",
+          "config",
+          error instanceof Error ? error.name : "unknown",
+        );
+        sendBareRefusal(response, contract, 503);
+        return;
+      }
+      const body = await readBodyWithLimit(request, MAX_BACKCHANNEL_BODY_BYTES);
+      if (!body.ok) {
+        console.error("backchannel logout failed", "request", body.reason);
+        response.setHeader("Connection", "close");
+        sendBareRefusal(response, contract, 400);
+        return;
+      }
+      const type = request.headers["content-type"];
+      const web = new Request(new URL(contract.path, "http://backchannel.invalid"), {
+        method: "POST",
+        headers: typeof type === "string" ? { "content-type": type } : {},
+        body: body.bytes,
+      });
+      writeBare(response, contract, await backchannelLogout(web, deps));
+    },
+  };
+}
+
+/**
+ * GET /api/v1/auth/login, GET /api/v1/auth/callback, POST /api/v1/auth/logout,
+ * POST /api/v1/auth/logout-all and POST /api/v1/auth/backchannel-logout.
  */
 export function createAuthRoutes(
   env: Readonly<Record<string, string | undefined>>,
   load: () => AuthDeps = () => loadAuthDeps(env),
+  loadBackchannel: () => BackchannelDeps = () => loadBackchannelDeps(env),
 ): Route[] {
   // One set for all routes, kept once it loads; a failed load is tried again
   // on the next login, as in Ductus deps.ts.
   let deps: AuthDeps | undefined;
   const shared = (): AuthDeps => (deps ??= load());
+  let backchannel: BackchannelDeps | undefined;
   return [
     route("auth.login.get", startLogin, shared),
     route("auth.callback.get", finishLogin, shared),
     route("auth.logout.post", logout, shared),
     route("auth.logout-all.post", logoutAll, shared),
+    backchannelRoute(() => (backchannel ??= loadBackchannel())),
   ];
 }
