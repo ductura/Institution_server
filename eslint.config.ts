@@ -184,6 +184,10 @@ const DATABASE_NAMES = [
   "revoked_at",
   "valid_from",
   "valid_to",
+  // Result columns of the evidence commit context (commit-context.ts, DAN-815) and its tests.
+  "evidence_package_id",
+  "max_payload_bytes",
+  "transaction_known",
   // The alias of the institution slug in the current-actor statement
   // (current-actor.ts, S-0.18, DAN-731).
   "institution_slug",
