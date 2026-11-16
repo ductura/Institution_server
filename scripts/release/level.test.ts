@@ -612,3 +612,42 @@ describe("releaseLevel closes the last directive and manifest gaps", () => {
     expect(level(before, fakes(OPTIONS, { [nested]: '{"type":"commonjs"}' }))).toBe("major");
   });
 });
+
+// Last self-attack on #92: a typed module namespace and a template literal type.
+describe("releaseLevel with a typed module namespace", () => {
+  const CLOCK = "export declare function now(): number;\n";
+  const TICK = `${CLOCK}export declare function tick(): void;\n`;
+
+  it.each([
+    [
+      "typeof import",
+      'export { now } from "./clock.js";\nexport type Clock = typeof import("./clock.js");\n',
+    ],
+    [
+      "import * as",
+      'import * as c from "./clock.js";\nexport declare const fakes: {\n    clock: typeof c;\n};\n',
+    ],
+    ["export * as", 'export * as clock from "./clock.js";\n'],
+  ])("is major for a new export once %s types a namespace", (_, index) => {
+    const before = fakes(index, { "clock.d.ts": CLOCK });
+    expect(level(before, fakes(index, { "clock.d.ts": TICK }))).toBe("major");
+  });
+
+  it("stays minor for a new export when no namespace is typed", () => {
+    const index = 'export { now } from "./clock.js";\n';
+    expect(level(fakes(index, { "clock.d.ts": CLOCK }), fakes(index, { "clock.d.ts": TICK }))).toBe(
+      "minor",
+    );
+  });
+
+  it("sees names after a template literal type", () => {
+    const before = fakes(
+      "export type K = `k${string}`;\nexport declare function f(d: Date): void;\n",
+    );
+    const after = fakes(
+      "export type K = `k${string}`;\nexport declare function f(d: Date): void;\n",
+      { "date.d.ts": "export declare const Date: number;\n" },
+    );
+    expect(level(before, after)).toBe("major");
+  });
+});
