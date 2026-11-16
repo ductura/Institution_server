@@ -169,20 +169,24 @@ async function readObject(file: string): Promise<Buffer | null> {
 /** Writes once: a private temporary file, then a hard link that fails if the key exists. */
 async function writeOnce(dir: string, file: string, bytes: Buffer): Promise<boolean> {
   const temp = join(dir, `.tmp-${randomBytes(12).toString("hex")}`);
-  const handle = await open(temp, "wx", 0o600);
   try {
-    await handle.writeFile(bytes);
-    await handle.sync();
-  } finally {
-    await handle.close();
-  }
-  try {
+    const handle = await open(temp, "wx", 0o600);
+    try {
+      await handle.writeFile(bytes);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
     await link(temp, file);
     return true;
   } catch (error) {
-    if (Reflect.get(error as object, "code") === "EEXIST") return false;
-    throw error;
+    if (Reflect.get(error as object, "code") !== "EEXIST") throw error;
+    // Only an object already under the key is "exists"; a directory there is not one.
+    const held = await lstat(file);
+    if (!held.isFile()) throw new Error("not a file");
+    return false;
   } finally {
+    // Removed on every path, a failed write included.
     await unlink(temp).catch(() => undefined);
   }
 }

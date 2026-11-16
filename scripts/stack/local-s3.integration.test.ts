@@ -450,9 +450,13 @@ describe("the local S3 stays a local tool (contract condition 1, S1, P3)", () =>
   const SOURCE = fileURLToPath(new URL("./local-s3.ts", import.meta.url));
 
   it("imports only node: modules, never server code", () => {
-    const imports = [...readFileSync(SOURCE, "utf8").matchAll(/^import[^"]*"([^"]+)"/gmu)].map(
+    const text = readFileSync(SOURCE, "utf8");
+    // Static imports and re-exports, either quote; a dynamic import() is refused outright.
+    const imports = [...text.matchAll(/^(?:import|export)\b[^;]*?from\s*["']([^"']+)["']/gmu)].map(
       (match) => match[1],
     );
+    expect(text).not.toMatch(/\bimport\s*\(/u);
+    expect(text).not.toMatch(/\brequire\s*\(/u);
     expect(imports.length).toBeGreaterThan(0);
     expect(imports.every((name) => name?.startsWith("node:"))).toBe(true);
   });
@@ -518,4 +522,75 @@ describe("the local S3 stays a local tool (contract condition 1, S1, P3)", () =>
       expect(`${run.stdout}${run.stderr}`).not.toContain(SECRET);
     },
   );
+});
+
+describe("signature rules the adapter always meets (S2)", () => {
+  const body = new TextEncoder().encode('{"b":1}');
+
+  async function withClock(offsetMs: number, run: (url: string) => Promise<void>) {
+    const other = mkdtempSync(join(tmpdir(), "vs1-s3-clock-"));
+    const server = localS3Server({
+      root: other,
+      bucket: BUCKET,
+      region: REGION,
+      accessKeyId: KEY_ID,
+      secretAccessKey: SECRET,
+      now: () => new Date(Date.now() + offsetMs),
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      await run(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+      expect(files(other)).toEqual([]);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+      rmSync(other, { recursive: true, force: true });
+    }
+  }
+
+  it.each([16 * 60 * 1000, -16 * 60 * 1000])(
+    "refuses a valid signature from a clock %i ms away",
+    async (offset) => {
+      await withClock(offset, async (url) => {
+        const request = signed("PUT", [BUCKET, "sat.json"], body);
+        const path = new URL(request.url).pathname;
+        const got = await send("PUT", `${url}${path}`, request.headers, body);
+        // The host header differs from the signed one only by port; the clock is checked first.
+        expect(got.status).toBe(403);
+        expect(got.text).toContain("RequestTimeTooSkewed");
+      });
+    },
+  );
+
+  it("accepts the same request inside the window", async () => {
+    const request = signed("PUT", [BUCKET, "sat.json"], body);
+    expect((await send("PUT", request.url, request.headers, body)).status).toBe(200);
+  });
+
+  it.each([["if-none-match"], ["x-amz-checksum-sha256"]])(
+    "refuses a valid signature that leaves %s unsigned",
+    async (name) => {
+      const sum = sha(body).toString("base64");
+      const all: Record<string, string> = { "if-none-match": "*", "x-amz-checksum-sha256": sum };
+      const value = all[name] ?? "";
+      delete all[name];
+      const request = signedOver("PUT", [BUCKET, "nepotpisano.json"], all, body);
+      const got = await send("PUT", request.url, { ...request.headers, [name]: value }, body);
+      expect(got.status).toBe(403);
+      expect(got.text).toContain("SignatureDoesNotMatch");
+      expect(files(root)).toEqual([]);
+    },
+  );
+
+  it("refuses a GET or HEAD whose signed payload hash is not the empty body", async () => {
+    const request = signedOver("GET", [BUCKET, "x.json"], {}, body);
+    expect((await send("GET", request.url, request.headers)).status).toBe(400);
+  });
+
+  it("answers a key that is a directory as an error, never as an existing object", async () => {
+    const deep = signed("PUT", [BUCKET, "b", "c", "d.json"], body);
+    expect((await send("PUT", deep.url, deep.headers, body)).status).toBe(200);
+    const shallow = signed("PUT", [BUCKET, "b", "c"], body);
+    expect((await send("PUT", shallow.url, shallow.headers, body)).status).toBe(500);
+    expect(files(root)).toHaveLength(1);
+  });
 });
