@@ -14,7 +14,7 @@ Samo `http`.
 
 ## Koje podatke dira
 
-Članstva i uloge u glavnoj bazi. Gdje je koja od pet vrsta računa piše u [docs/account-permissions.md](../../docs/account-permissions.md#vrste-računa-u-bazi); `server/roles/account-kinds-db.test.ts` provjerava da svaka vrsta ima redak u pgTAP matrici `db/main/tests/130-account-kinds.sql`.
+Članstva i uloge u glavnoj bazi. Gdje je koja od pet vrsta računa piše u [docs/account-permissions.md](../../docs/account-permissions.md#vrste-računa-u-bazi); `server/roles/account-kinds-db.test.ts` provjerava da svaka vrsta ima redak u pgTAP matrici `db/main/tests/130-account-kinds.sql`, a `server/roles/account-kinds-matrix-db.test.ts` da matrica vrsta računa × radnja `db/main/tests/135-account-kinds-matrix.sql` ima redak za svaku vrstu i radnju, s ishodom u skladu s `scopeOf`.
 
 ## Što izvozi
 
