@@ -20,6 +20,7 @@ export const ROUTE_TABLE = {
   "profile.interface-locale.get": { method: "GET", path: "/api/v1/profile/interface-locale", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "profile.interface-locale.post": { method: "POST", path: "/api/v1/profile/interface-locale", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "student.assignments.get": { method: "GET", path: "/api/v1/student/assignments", body: null, headers: [], errors: {"401":["unauthorized"],"503":["unavailable"]} },
+  "support.problem-report.post": { method: "POST", path: "/api/v1/support/problem-report", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"429":["too_many_reports"],"503":["unavailable"]} },
 } as const;
 
 const FALLBACK_CODE = "not_found";

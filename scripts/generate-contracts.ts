@@ -209,6 +209,45 @@ export function compileValidator(schema: TSchema, where: string): string {
     );
   if (code === raw || code.includes(": any"))
     throw new Error(`unexpected validator shape for ${where}`);
+  return wrap(nestedObjects(code, where));
+}
+
+const NESTED_READ = /value\['(\w+)'\]\['/g;
+
+/**
+ * A closed object inside the body (support.problem-report.post: browser) is
+ * read as value['k']['f'], which a record of unknown does not type. Each such
+ * object is bound once to a record `nestedK` that is undefined unless the root
+ * is an object; TypeBox tests value['k'] for a plain object before it reads a
+ * field of it, so nestedK is read only after that test passed. One level only,
+ * and not inside an array check, whose items shadow `value`: anything else is
+ * refused, as an unexpected shape.
+ */
+function nestedObjects(code: string, where: string): string {
+  const keys = [...new Set([...code.matchAll(NESTED_READ)].map((m) => m[1] ?? ""))];
+  if (keys.length === 0) return code;
+  if (code.includes("for(const value of array)") || /\['\w+'\]\['\w+'\]\['/.test(code))
+    throw new Error(`unexpected nested validator shape for ${where}`);
+  const head = "function check(value: Record<string, unknown>): boolean {";
+  const name = (key: string) => `nested${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+  if (new Set(keys.map(name)).size !== keys.length || !code.includes(head))
+    throw new Error(`unexpected nested validator shape for ${where}`);
+  const bindings = keys
+    .map(
+      (key) =>
+        `\n    const ${name(key)} = (typeof value === 'object' && value !== null ? value['${key}'] : undefined) as Record<string, unknown>;`,
+    )
+    .join("");
+  return code
+    .replace(NESTED_READ, (_, key: string) => `${name(key)}['`)
+    .replace(head, head + bindings)
+    .replace(
+      /Number\.isInteger\((nested\w+\['\w+'\])\)/g,
+      "(typeof $1 === 'number' && Number.isInteger($1))",
+    );
+}
+
+function wrap(code: string): string {
   // A pattern compiles to a `const local_N` regex before the function: keep it in a closure.
   return code.startsWith("function ") ? `(${code})` : `(() => {\n${code}\n})()`;
 }

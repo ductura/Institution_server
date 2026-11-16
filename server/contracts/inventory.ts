@@ -75,7 +75,10 @@ export const SERVER_SOURCES: Readonly<
  * fake server. This list may only shrink: an id leaves it when its handler is
  * mounted (tests/contracts/contract-only.test.ts).
  */
-export const CONTRACT_ONLY: readonly string[] = ["student.assignments.get"];
+export const CONTRACT_ONLY: readonly string[] = [
+  "student.assignments.get",
+  "support.problem-report.post",
+];
 
 /**
  * Inventory files whose contracts follow in the next PR (DAN-736, part 2). This
@@ -102,7 +105,6 @@ export const PENDING: readonly string[] = [
   "app/api/process-summary/route.ts",
   "app/api/revision-requests/[action]/route.ts",
   "app/api/submission/route.ts",
-  "app/api/support/problem-report/route.ts",
   "app/api/teacher/assignments/[assignmentId]/submissions/route.ts",
   "app/api/teacher/courses/route.ts",
   "app/api/teacher/fast-path/route.ts",

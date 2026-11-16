@@ -33,6 +33,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["stale_base", "errors.staleBase"],
   ["timeout", "errors.timeout"],
   ["too_large", "errors.tooLarge"],
+  ["too_many_reports", "errors.tooManyReports"],
   ["txid_reused", "errors.txidReused"],
   ["unauthenticated", "errors.unauthenticated"],
   ["unauthorized", "errors.unauthorized"],

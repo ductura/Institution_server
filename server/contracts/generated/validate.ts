@@ -66,6 +66,29 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "support.problem-report.post:body": (() => {
+  const local0 = /^(?:(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})(?:\+[0-9a-f]{7,40})?|[0-9a-f]{7,40})$/;
+  const local1 = /^\/(?:(?:[a-z]+(?:-[a-z]+)*|\[[A-Za-z]+\])(?:\/(?:[a-z]+(?:-[a-z]+)*|\[[A-Za-z]+\]))*)?$/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedBrowser = (typeof value === 'object' && value !== null ? value['browser'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['appVersion'] === 'string') &&
+      local0.test(value['appVersion']) &&
+      (typeof value['browser'] === 'object' && value['browser'] !== null && !Array.isArray(value['browser'])) &&
+      (((nestedBrowser['family'] === 'chromium')) || ((nestedBrowser['family'] === 'firefox')) || ((nestedBrowser['family'] === 'safari')) || ((nestedBrowser['family'] === 'other'))) &&
+      (((typeof nestedBrowser['major'] === 'number' && Number.isInteger(nestedBrowser['major'])) && nestedBrowser['major'] <= 999 && nestedBrowser['major'] >= 0) || ((nestedBrowser['major'] === null))) &&
+      Object.getOwnPropertyNames(value['browser']).length === 2 &&
+      (((value['category'] === 'technical')) || ((value['category'] === 'account')) || ((value['category'] === 'course'))) &&
+      (typeof value['description'] === 'string') &&
+      value['description'].length <= 2000 &&
+      value['description'].length >= 1 &&
+      (((typeof value['route'] === 'string') && value['route'].length <= 128 && local1.test(value['route'])) || ((value['route'] === null))) &&
+      (((((value['syncState'] === 'EDITING')) || ((value['syncState'] === 'SAVING_LOCAL')) || ((value['syncState'] === 'LOCAL_DURABLE')) || ((value['syncState'] === 'SYNCING')) || ((value['syncState'] === 'SYNCED')) || ((value['syncState'] === 'CONFLICT')) || ((value['syncState'] === 'ERROR')) || ((value['syncState'] === 'RECOVERY_REQUIRED')))) || ((value['syncState'] === null))) &&
+      Object.getOwnPropertyNames(value).length === 6
+    )
+  }
+  })(),
 };
 
 export function validateInput(id: string, part: "params" | "query" | "body", value: unknown): boolean {
