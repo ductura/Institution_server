@@ -163,11 +163,19 @@ describe("originLayer", () => {
     });
     expect(await originLayer(ORIGIN)(req, response)).toBe("done");
     const sent: unknown = JSON.parse(answer.body ?? "");
-    // 403 is a oneOf in v1, so the body stays {error} (v1Error); the id is in the header.
-    expect([answer.status, sent]).toEqual([403, { error: "origin_mismatch" }]);
-    expect(answer.headers?.["x-request-id"]).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
-    );
+    const id = answer.headers?.["x-request-id"];
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
+    // 403 is a oneOf discriminated by the code: the full problem body (DAN-791).
+    expect([answer.status, sent]).toEqual([
+      403,
+      {
+        error: "origin_mismatch",
+        code: "origin_mismatch",
+        messageKey: "errors.originMismatch",
+        status: 403,
+        requestId: id,
+      },
+    ]);
     expect(answer.headers?.["x-frame-options"]).toBe("DENY");
     expect(touched).toEqual([]);
   });

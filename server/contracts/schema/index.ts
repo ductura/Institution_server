@@ -31,15 +31,13 @@ export const API_PREFIX = "/api/v1";
  * An error answer. `code` is the closed word on the wire, `key` the locales key
  * a client shows (ERROR_MESSAGE_KEYS); neither is ever a sentence. `body`
  * defaults to the problem body of `errorBody`; "none" means no body, "html" a
- * page for a browser navigation. `v1` marks an error that keeps the v1 body
- * {error: code} on the wire (v1Error).
+ * page for a browser navigation.
  */
 export type ErrorSpec = {
   readonly status: number;
   readonly code: string;
   readonly key: string;
   readonly body?: TSchema | "none" | "html";
-  readonly v1?: true;
 };
 
 export type SuccessSpec = {
@@ -83,17 +81,6 @@ export function error(status: number, code: string, body?: ErrorSpec["body"]): E
 }
 
 /**
- * An error that keeps the v1 body {error: code}, without the problem fields:
- * one of several errors of a status, whose bodies are a oneOf in v1 that the
- * guard (breaking.ts) lets no field into. The server answers it in the same
- * shape (server/http/problem.ts).
- */
-export function v1Error(status: number, code: string): ErrorSpec {
-  const body = Type.Object({ error: Type.Literal(code) }, { additionalProperties: false });
-  return { status, code, key: messageKeyOf(code), body, v1: true };
-}
-
-/**
  * A request id: a lowercase UUID v4 the server makes for each request
  * (server/http/request-id.ts). It never comes from the client.
  */
@@ -115,7 +102,11 @@ export function problemFields(code: string, status: number) {
   };
 }
 
-/** The default error body: the closed word `error` (v1) and the problem fields. */
+/**
+ * The default error body: the closed word `error` (v1) and the problem fields.
+ * `error` is required and a const, so several errors of one status form a
+ * oneOf discriminated by the code (DAN-791, breaking.ts discriminatorOf).
+ */
 export function errorBody(code: string, status: number): TObject {
   return Type.Object(
     { error: Type.Literal(code), ...problemFields(code, status) },
