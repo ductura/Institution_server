@@ -55,7 +55,10 @@ function signerOf(env: Env, repositoryRoot: string): Pick<SigningKeyProvider, "s
 function payloadsOf(env: Env): EvidencePayloadStore & EvidencePayloadLocator {
   try {
     return InstitutionRoutedPayloadStore.fromConfig(loadEvidenceStorageConfig(env), {
-      allowPlainHttpOnLoopback: env.NODE_ENV !== "production",
+      // An allowlist, as for the signer (F-020): an unset, empty or misspelt
+      // NODE_ENV counts as production. Ductus could read "!== production"
+      // because next build fixed NODE_ENV; this server reads it at start.
+      allowPlainHttpOnLoopback: env.NODE_ENV === "development" || env.NODE_ENV === "test",
     });
   } catch {
     // The adapter's messages name no value; none is kept here either.
@@ -68,7 +71,9 @@ export function evidenceIngestDependencies(
   env: Env,
   repositoryRoot: string,
 ): EvidenceIngestDependencies {
-  return { signer: signerOf(env, repositoryRoot), payloads: payloadsOf(env) };
+  // A copy, as Ductus handed over: later changes of the process environment change nothing.
+  const own: Env = { ...env };
+  return { signer: signerOf(own, repositoryRoot), payloads: payloadsOf(own) };
 }
 
 /** The commit route over the main database and this process's signer and storage. */

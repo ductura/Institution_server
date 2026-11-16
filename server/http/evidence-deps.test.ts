@@ -85,12 +85,16 @@ describe("evidenceIngestDependencies: the signer", () => {
     },
   );
 
-  it("a seed inside the repository is no signature, without throwing", async () => {
+  it("a valid seed inside the repository root is no signature, without throwing", async () => {
+    // A seed the adapter would take anywhere else (32 bytes, 0600): only the root refuses it.
     const { signer } = evidenceIngestDependencies(
-      { NODE_ENV: "test", [DEV_SIGNING_KEY_FILE]: join(ROOT, "package.json") },
-      ROOT,
+      { NODE_ENV: "test", [DEV_SIGNING_KEY_FILE]: SEED },
+      dir,
     );
-    expect(await signer.sign(new Uint8Array(59))).toMatchObject({ ok: false });
+    expect(await signer.sign(new Uint8Array(59))).toMatchObject({
+      ok: false,
+      error: { code: "SIGNING_KEY_IN_REPOSITORY" },
+    });
   });
 });
 
@@ -100,7 +104,7 @@ describe("evidenceIngestDependencies: the storage", () => {
     ["configuration that is not JSON", { [EVIDENCE_STORAGE_DOMAINS]: "{" }],
     [
       "a domain without its secret",
-      { ...storage("https://s3.example.eu"), [SECRET_VAR]: undefined },
+      { ...storage("https://s3.example.invalid"), [SECRET_VAR]: undefined },
     ],
   ])("%s is no storage at all, never a default bucket", async (_name, env) => {
     const { payloads } = evidenceIngestDependencies({ NODE_ENV: "development", ...env }, ROOT);
@@ -112,19 +116,29 @@ describe("evidenceIngestDependencies: the storage", () => {
     expect(await payloads.storageRefFor(KEY.put)).toMatchObject({ status: "unavailable" });
   });
 
-  it("plain http to loopback is storage in development, never in production", () => {
-    const local = storage("http://127.0.0.1:4190");
-    expect(
-      evidenceIngestDependencies({ NODE_ENV: "development", ...local }, ROOT).payloads,
-    ).toBeInstanceOf(InstitutionRoutedPayloadStore);
-    expect(evidenceIngestDependencies({ NODE_ENV: "production", ...local }, ROOT).payloads).toBe(
-      STORAGE_NOT_CONFIGURED,
-    );
-  });
+  it.each(["development", "test"])(
+    "plain http to loopback is storage under NODE_ENV %s",
+    (nodeEnv) => {
+      const local = storage("http://127.0.0.1:4190");
+      expect(
+        evidenceIngestDependencies({ NODE_ENV: nodeEnv, ...local }, ROOT).payloads,
+      ).toBeInstanceOf(InstitutionRoutedPayloadStore);
+    },
+  );
+
+  it.each([undefined, "", "production", "Production", "staging"])(
+    "plain http to loopback is never storage under NODE_ENV %s (F-020 allowlist)",
+    (nodeEnv) => {
+      const local = storage("http://127.0.0.1:4190");
+      expect(evidenceIngestDependencies({ NODE_ENV: nodeEnv, ...local }, ROOT).payloads).toBe(
+        STORAGE_NOT_CONFIGURED,
+      );
+    },
+  );
 
   it("an https domain is storage in production", () => {
     const { payloads } = evidenceIngestDependencies(
-      { NODE_ENV: "production", ...storage("https://s3.example.eu") },
+      { NODE_ENV: "production", ...storage("https://s3.example.invalid") },
       ROOT,
     );
     expect(payloads).toBeInstanceOf(InstitutionRoutedPayloadStore);
