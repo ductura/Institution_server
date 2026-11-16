@@ -8,7 +8,13 @@ export {
   type ClientContext,
   type ClientContextOptions,
 } from "./client-context.ts";
-export { finishLogin, LOGIN_COOKIE_NAME, startLogin, type AuthDeps } from "./auth-flow.ts";
+export {
+  finishLogin,
+  LOGIN_COOKIE_NAME,
+  logoutAll,
+  startLogin,
+  type AuthDeps,
+} from "./auth-flow.ts";
 export { AREA_NAMES, routesOf, type AreaWithRoutes } from "./areas.ts";
 export { createDatabases, type Databases } from "./databases.ts";
 export {
