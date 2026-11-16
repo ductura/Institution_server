@@ -81,3 +81,14 @@ describe("outputs", () => {
     expect(outputs(new Map())).toBe("releases=\nstopped=\n");
   });
 });
+
+describe("planRelease with a staged file that is not UTF-8", () => {
+  it("is blocked when reading the staged package throws", () => {
+    const notUtf8 = () => {
+      throw new TypeError("The encoded data was not valid for encoding utf-8");
+    };
+    expect(
+      planRelease("contracts", io({ tags: ["contracts-v1.1.0"], stagedHead: notUtf8 })).level,
+    ).toBe("blocked");
+  });
+});

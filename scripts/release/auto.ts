@@ -76,7 +76,9 @@ function readTree(dir: string): Files {
   for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true }))
     if (entry.isFile()) {
       const path = join(entry.parentPath, entry.name);
-      files.set(relative(dir, path).replaceAll("\\", "/"), readFileSync(path, "utf8"));
+      // Not UTF-8 throws (blocked): U+FFFD would hide a change of bytes.
+      const text = new TextDecoder("utf-8", { fatal: true }).decode(readFileSync(path));
+      files.set(relative(dir, path).replaceAll("\\", "/"), text);
     } else if (!entry.isDirectory()) throw new Error(`${entry.name} is not a regular file`);
   return files;
 }
@@ -130,8 +132,19 @@ function gitIo(head: string): ReleaseIo {
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const io = gitIo(run("git", ["rev-parse", "HEAD"]).trim());
-  const plans = new Map(PACKAGES.map((short) => [short, planRelease(short, io)] as const));
+  // Staging HEAD or reading the tags failing stops both packages, visibly.
+  let plans: Map<Short, Plan>;
+  try {
+    const io = gitIo(run("git", ["rev-parse", "HEAD"]).trim());
+    plans = new Map(PACKAGES.map((short) => [short, planRelease(short, io)] as const));
+  } catch (error) {
+    plans = new Map(
+      PACKAGES.map((short) => [short, { level: "blocked", reasons: [String(error)] }]),
+    );
+  }
+  // The worktrees of the tags are not left behind for lint or tests to find.
+  rmSync(join(ROOT, "dist", "auto-release"), { recursive: true, force: true });
+  spawnSync("git", ["worktree", "prune"], { cwd: ROOT });
   // One line per reason, without control characters, at most 50.
   const report = [...plans].flatMap(([short, p]) => [
     `### ${short}: ${p.level} ${p.release ?? ""}`,

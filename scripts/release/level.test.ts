@@ -220,3 +220,73 @@ describe("declarationChange", () => {
     expect(change.reasons.join()).toMatch(/index\.d\.ts FunctionDeclaration clock: changed/);
   });
 });
+
+// Self-attack before SPREMAN (#92): each of these was minor or patch, and is a major.
+describe("releaseLevel refuses what merges, shadows or hides in tokens", () => {
+  const dts = (before: string, after: string) => level(fakes(before), fakes(after));
+  const OPTIONS = "export interface Options { port: number }\n";
+
+  it.each([
+    [
+      "a second block of an exported interface",
+      OPTIONS,
+      `${OPTIONS}export interface Options { host: string }\n`,
+    ],
+    [
+      "a declaration of a name already exported",
+      "export declare const A: 1;\n",
+      "export declare const A: 1;\nexport type A = string;\n",
+    ],
+    [
+      "a new overload",
+      "export declare function f(a: string): void;\n",
+      "export declare function f(a: string): void;\nexport declare function f(a: number): void;\n",
+    ],
+    ["declare global", OPTIONS, `${OPTIONS}declare global { interface Window { x: 1 } }\n`],
+    ["declare module", OPTIONS, `${OPTIONS}declare module "./a.js" { interface X { y: 1 } }\n`],
+    [
+      "a new name next to export *",
+      'export * from "./a.js";\n',
+      'export * from "./a.js";\nexport type X = number;\n',
+    ],
+    [
+      "a duplicate member of a type",
+      "export type T = { m(): void };\n",
+      "export type T = { m(): void; m(a?: 1): void };\n",
+    ],
+    ["keyof to readonly", "export type K = keyof O[];\n", "export type K = readonly O[];\n"],
+    ["keyof to unique", "export type K = keyof symbol;\n", "export type K = unique symbol;\n"],
+    [
+      "typeof import to import",
+      'export type T = typeof import("./a.js");\n',
+      'export type T = import("./a.js");\n',
+    ],
+    [
+      "extends to implements",
+      "export declare class A extends B {}\n",
+      "export declare class A implements B {}\n",
+    ],
+    ["const to let", "export declare const A: 1;\n", "export declare let A: 1;\n"],
+  ])("%s", (_, before, after) => {
+    expect(dts(before, after)).toBe("major");
+  });
+
+  it("keeps a new optional member and a new name minor, and a comment patch", () => {
+    expect(dts(OPTIONS, "export interface Options { port: number; host?: string }\n")).toBe(
+      "minor",
+    );
+    expect(dts(OPTIONS, `${OPTIONS}export interface Other { host: string }\n`)).toBe("minor");
+    expect(dts(OPTIONS, `/** Options. */\n${OPTIONS}`)).toBe("patch");
+  });
+
+  it("reads how a package loads as a major", () => {
+    const loads = (extra: object) =>
+      new Map([...fakes(BASE_DTS), ["package.json", manifest({ ".": "./index.js" }, extra)]]);
+    for (const extra of [
+      { type: "commonjs" },
+      { main: "./x.js" },
+      { peerDependencies: { a: "1" } },
+    ])
+      expect(level(fakes(BASE_DTS), loads(extra))).toBe("major");
+  });
+});
