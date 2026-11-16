@@ -7,7 +7,6 @@ import {
   platformRoutes,
   profileRoutes,
   SHARED_ERRORS,
-  settingsRoutes,
   studentRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -42,7 +41,6 @@ export const ROUTES: readonly RouteContract[] = [
   ...profileRoutes,
   ...evidenceRoutes,
   ...studentRoutes,
-  ...settingsRoutes,
 ];
 
 /**

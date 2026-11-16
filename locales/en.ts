@@ -2003,7 +2003,6 @@ const en = {
     bodyStreamError: "Sending the request stopped before the end. Please try again.",
     bodyTimeout: "Sending the request took too long. Please try again.",
     bodyTooLarge: "The request is too large.",
-    boundCrossed: "The value is outside the limit set at a higher level.",
     chainConflict:
       "The record of the work on the server differs from the one on this device. Load the work again.",
     contentLengthInvalid: "The length of the request is not stated correctly.",
