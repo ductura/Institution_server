@@ -43,6 +43,8 @@
     "db:migrate:legal": "pnpm db:provision:legal && node scripts/db/migrate-locked.ts --database legal --url \"postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus_legal?sslmode=disable&role=ductus_legal_migrator\"",
     "test:db": "docker compose exec -T postgres-main pg_prove -U ductus -d ductus --recurse --ext .sql /db/tests",
     "test:db:main": "pg_prove --recurse --ext .sql db/main/tests",
+    "test:db:logs": "node scripts/db/pgtap.ts logs",
+    "test:db:legal": "node scripts/db/pgtap.ts legal",
     "test:db:native": "node scripts/db/native-db.ts test",
     "db:sum": "node scripts/db/migrations-ledger.ts --write",
     "prepare": "lefthook install"

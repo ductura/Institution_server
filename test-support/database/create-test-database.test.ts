@@ -27,6 +27,7 @@ const PROBE: Database = {
   database: "ductura_probe",
   migrationsDir: "test-support/database/no-such-dir/migrations",
   ledger: "test-support/database/no-such-dir/migrations.sum",
+  testsDir: "test-support/database/no-such-dir/tests",
   migrator: "ductura_probe_migrator",
   service: "postgres-main",
 };

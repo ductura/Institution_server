@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { DATABASES } from "../db/index.ts";
 import { jobsFor, POSTGRES_MAJOR } from "./index.ts";
 
 const ROOT = resolve(import.meta.dirname, "../..");
@@ -131,6 +132,40 @@ describe("ci.yml", () => {
     expect(migrate).toBeGreaterThan(bootstrap);
     expect(count).toBeGreaterThan(migrate);
     expect(tests).toBeGreaterThan(count);
+  });
+
+  // S-1F-d (DAN-797): the pgTAP of every database runs in the database job,
+  // which ci-ok requires on the full profile, after that database is migrated,
+  // with nothing that would let the step fail without failing the job.
+  it("the database job runs the pgTAP of every database after its migration, gating ci-ok", () => {
+    const database = job("database");
+    const scripts = (
+      JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")) as {
+        scripts: Record<string, string>;
+      }
+    ).scripts;
+    expect(database).not.toMatch(/continue-on-error|\|\| true|set \+e/);
+    expect(jobsFor("full")).toContain("database");
+    expect(job("ci-ok")).toContain("database");
+    const migrated: Record<string, string> = {
+      main: "pnpm db:up:native",
+      logs: "find db/logs/migrations -maxdepth 1 -name '*.sql'",
+      legal: "find db/legal/migrations -maxdepth 1 -name '*.sql'",
+    };
+    for (const entry of DATABASES) {
+      const script = entry.name === "main" ? "test:db:native" : `test:db:${entry.name}`;
+      const run = database.search(
+        new RegExp(`\\n {8}run: PATH="\\$PGBIN:\\$PATH" pnpm ${script}\\n`),
+      );
+      expect(run, entry.name).toBeGreaterThan(database.lastIndexOf(migrated[entry.name]!));
+      const step = database.slice(database.lastIndexOf("\n      - ", run), run);
+      expect(step, entry.name).not.toMatch(/\n {8}if:/);
+      if (entry.name !== "main") {
+        expect(scripts[script]).toBe(`node scripts/db/pgtap.ts ${entry.name}`);
+        expect(step).toContain(`PGDATABASE: ${entry.database}`);
+        expect(step).toContain(`PGPORT: "${entry.service === "postgres-logs" ? 54330 : 54329}"`);
+      }
+    }
   });
 
   it("checks run every repository check and test project", () => {
