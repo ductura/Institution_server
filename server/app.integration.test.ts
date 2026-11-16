@@ -152,6 +152,11 @@ describe("PUT body that the server cannot use (DAN-800)", () => {
     ["a number", "5"],
     ["a string", `"${SECRET}"`],
     ["bytes that are not UTF-8", new Uint8Array([0x7b, 0xff, 0x7d])],
+    // Valid JSON once decoded with U+FFFD; only the UTF-8 check refuses it.
+    [
+      "a byte that is not UTF-8 inside a string",
+      new Uint8Array([...Buffer.from('{"content":"'), 0xff, ...Buffer.from('"}')]),
+    ],
   ] as const)("answers %s with 400 and quotes nothing of it", async (_name, body) => {
     const { result: raw, written } = await silently(async () => {
       const res = await put("a-2", body);
