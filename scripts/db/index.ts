@@ -43,4 +43,6 @@ export {
 } from "./migrate-locked.ts";
 export type { LockClient, LockedChild, RunLockedOptions } from "./migrate-locked.ts";
 export { DATABASES, databaseNamed } from "./databases.ts";
+export { pgtapArgs, pgtapFailure, runPgtap, testFiles } from "./pgtap.ts";
+export type { PgtapRun } from "./pgtap.ts";
 export type { Database } from "./databases.ts";

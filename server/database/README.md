@@ -55,10 +55,12 @@ Nijedna grupna uloga nema `LOGIN`; prijava je običan član jedne grupe i nema p
 
 `db/<baza>/tests/000-rls-everywhere.sql` (S-1F-b) iz kataloga (`pg_class`) traži ENABLE i FORCE RLS i barem jednu politiku na svakoj tablici te baze, u svim shemama. Izostavljene su samo tablice sustava koje je napravio `initdb` (po oidu ispod 16384, ne po imenu sheme, pa se vidi i tablica podmetnuta u `pg_catalog` ili `information_schema`) i privremene tablice. Jedina imenovana iznimka je dbmate dnevnik `public.schema_migrations`, i to samo dok je obična tablica vlasnika baze do koje ne vodi particija, nasljeđivanje, pogled ni pravilo, i dok na njemu nitko osim vlasnika i superkorisnika, ni PUBLIC, nema nijedno pravo (u PostgreSQL-u 17 i `MAINTAIN`). Datoteka sama napravi tablice koje krše pravilo (druga shema, `public`, bez FORCE, `UNLOGGED`, particija, strana tablica, bez politike) i provjeri da ih vidi. Funkcija ili operator na putanji pretrage koji bi zasjenio `pg_catalog` zaustavlja datoteku prije prvog testa, a provjere se rade s putanjom pretrage svedenom na `pg_catalog`.
 
+`db/logs/tests/000-roles.sql` i `db/legal/tests/000-roles.sql` (S-1F-d) iz kataloga (ACL baze i sheme `public`) provjeravaju uloge baze (postoje, bez `LOGIN` i povišenih atributa, nisu članovi ničega), da baza i shema `public` daju točno očekivana prava i ništa PUBLIC-u ni ulozi druge baze, da nijedna uloga baze ne doseže drugu bazu servera (izravno, preko PUBLIC-a ili članstvom) i da nijedna uloga, ni prijava, ne doseže i ovu i drugu bazu. Baza `legal` dijeli klaster s glavnom, pa se provjere rade nad stvarnom glavnom bazom; `logs` ima svoj klaster, pa kontrole koriste `postgres` kao zamjenu za drugu bazu.
+
 Pokreće se kao superkorisnik nad migriranom bazom (pgTAP se stvara u transakciji koja se vraća):
 
 - `main`: `pnpm test:db:native` ili `pnpm test:db:main` (cijela `db/main/tests`); u CI-ju korak „pgTAP glavne baze”.
-- `logs`: `pg_prove -h <host> -p <port> -U <superkorisnik> -d ductus_logs db/logs/tests/*.sql`.
-- `legal`: isto nad `ductus_legal` s `db/legal/tests/*.sql`.
+- `logs`: `pnpm test:db:logs`, uz `PGHOST`, `PGPORT`, `PGUSER` i `PGDATABASE=ductus_logs`; u CI-ju korak „pgTAP baze zapisa”.
+- `legal`: `pnpm test:db:legal` isto nad `ductus_legal`; u CI-ju korak „pgTAP baze pravnih tekstova”.
 
-pgTAP baza `logs` i `legal` još ne ide u CI; to dolazi sa S-1F-d (nadovezuje se na DAN-759).
+`test:db:logs` i `test:db:legal` idu kroz `scripts/db/pgtap.ts`, koji ruši pokretanje kad mapa nema nijedan test, kad `pg_prove` nije pokrenuo svaku datoteku, kad nije bilo nijednog testa ili je datoteka cijela preskočena (`1..0`); sam `pg_prove` tada izlazi s 0. Koraci su u poslu `database`, koji `ci-ok` traži u profilu `full`.
