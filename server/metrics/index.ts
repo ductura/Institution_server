@@ -32,3 +32,4 @@ export {
   type MetricSampleStore,
   type MetricSampleWriterOptions,
 } from "./sample-writer.ts";
+export { createConnectionSource } from "./connection-source.ts";

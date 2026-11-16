@@ -23,6 +23,11 @@
     "key_malformed": "Datoteka razvojnog ključa za potpisivanje nije ispravna.",
     "key_unreadable": "Datoteku razvojnog ključa za potpisivanje nije moguće pročitati."
   },
+  "ready": {
+    "queue_worker": "Pozadinski poslovi trenutačno ne rade. Pokušaj ponovno kasnije.",
+    "storage_domain": "Spremište zapisa trenutačno nije spremno. Pokušaj ponovno kasnije.",
+    "signing": "Potpisivanje zapisa trenutačno nije dostupno. Pokušaj ponovno kasnije."
+  },
   "forbiddenTerms": {
     "unlisted_file": "U mapi locales/ je datoteka koju skener zabranjenih izraza nema na popisu.",
     "catalogue_missing": "Katalog tekstova s popisa skenera zabranjenih izraza ne postoji.",
