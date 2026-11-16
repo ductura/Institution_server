@@ -49,7 +49,17 @@ const handle: Handler = async (request) => {
 };
 
 const throwingLayer: Layer = async (request) => {
-  if ((request.url ?? "").includes("layer")) throw new RangeError(CANARY);
+  const url = request.url ?? "";
+  if (url.includes("layer")) throw new RangeError(CANARY);
+  if (url.includes("request-site")) {
+    // The router reads the path outside its handler catch, so this throw
+    // rejects the whole request and only start.ts catches it.
+    Object.defineProperty(request, "url", {
+      get() {
+        throw new SyntaxError(CANARY);
+      },
+    });
+  }
   return "next";
 };
 
@@ -161,6 +171,25 @@ describe("an uncaught error on the wire", () => {
         event: "server_error",
         where: "layer",
         errorClass: "range_error",
+        requestId: wire.headers["x-request-id"],
+      },
+    ]);
+    expect(JSON.stringify(wire)).not.toContain(CANARY);
+    expect(read().join("\n")).not.toContain(CANARY);
+  });
+
+  it("a request that fails outside the layer and handler catches gives server_error at the request", async () => {
+    const read = captureConsole();
+    const wire = await get(`/api/v1/health?request-site=${CANARY}`);
+    expect(wire.status).toBe(500);
+    const body = JSON.parse(wire.body) as unknown;
+    expect(Value.Check(INTERNAL.error.body as never, body)).toBe(true);
+    expect(body).toMatchObject({ code: "internal", requestId: wire.headers["x-request-id"] });
+    expect(records(read())).toEqual([
+      {
+        event: "server_error",
+        where: "request",
+        errorClass: "syntax_error",
         requestId: wire.headers["x-request-id"],
       },
     ]);
