@@ -128,8 +128,10 @@ describe("publish manifest", () => {
     );
   });
 
-  it("the contracts major is the API major", () => {
-    expect(source(CONTRACTS.dir).version.split(".")[0]).toBe(API_VERSION.split(".")[0]);
+  // DAN-869: the package major may be above the API major, never below it.
+  it("the contracts major is not below the API major", () => {
+    const major = (version: string) => Number(version.split(".")[0]);
+    expect(major(source(CONTRACTS.dir).version)).toBeGreaterThanOrEqual(major(API_VERSION));
   });
 
   it.each([
