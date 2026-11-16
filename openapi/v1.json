@@ -3291,13 +3291,11 @@
                                 "type": "string"
                               },
                               "givenName": {
-                                "minLength": 1,
-                                "maxLength": 510,
+                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                 "type": "string"
                               },
                               "surname": {
-                                "minLength": 1,
-                                "maxLength": 510,
+                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                 "type": "string"
                               },
                               "documentId": {
@@ -3333,19 +3331,15 @@
                                 "type": "string"
                               },
                               "givenName": {
-                                "minLength": 1,
-                                "maxLength": 510,
+                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                 "type": "string"
                               },
                               "surname": {
-                                "minLength": 1,
-                                "maxLength": 510,
+                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                 "type": "string"
                               },
                               "documentId": {
-                                "minLength": 1,
-                                "maxLength": 512,
-                                "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+                                "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                                 "type": "string"
                               },
                               "work": {
@@ -3665,9 +3659,7 @@
                                 "type": "null"
                               },
                               "documentId": {
-                                "minLength": 1,
-                                "maxLength": 512,
-                                "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+                                "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                                 "type": "string"
                               },
                               "work": {
@@ -4510,13 +4502,11 @@
                                   ],
                                   "properties": {
                                     "givenName": {
-                                      "minLength": 1,
-                                      "maxLength": 510,
+                                      "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                       "type": "string"
                                     },
                                     "familyName": {
-                                      "minLength": 1,
-                                      "maxLength": 510,
+                                      "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                       "type": "string"
                                     }
                                   }
@@ -4578,9 +4568,7 @@
                               "type": "string"
                             },
                             "documentId": {
-                              "minLength": 1,
-                              "maxLength": 512,
-                              "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "student": {
@@ -4594,13 +4582,11 @@
                                   ],
                                   "properties": {
                                     "givenName": {
-                                      "minLength": 1,
-                                      "maxLength": 510,
+                                      "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                       "type": "string"
                                     },
                                     "familyName": {
-                                      "minLength": 1,
-                                      "maxLength": 510,
+                                      "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                       "type": "string"
                                     }
                                   }
@@ -4881,13 +4867,11 @@
                                     ],
                                     "properties": {
                                       "givenName": {
-                                        "minLength": 1,
-                                        "maxLength": 510,
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "familyName": {
-                                        "minLength": 1,
-                                        "maxLength": 510,
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -4949,9 +4933,7 @@
                                 "type": "string"
                               },
                               "documentId": {
-                                "minLength": 1,
-                                "maxLength": 512,
-                                "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+                                "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                                 "type": "string"
                               },
                               "student": {
@@ -4965,13 +4947,11 @@
                                     ],
                                     "properties": {
                                       "givenName": {
-                                        "minLength": 1,
-                                        "maxLength": 510,
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "familyName": {
-                                        "minLength": 1,
-                                        "maxLength": 510,
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -5207,9 +5187,7 @@
                               "documentId": {
                                 "anyOf": [
                                   {
-                                    "minLength": 1,
-                                    "maxLength": 512,
-                                    "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   {
@@ -5251,9 +5229,7 @@
                               "documentId": {
                                 "anyOf": [
                                   {
-                                    "minLength": 1,
-                                    "maxLength": 512,
-                                    "pattern": "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   {

@@ -20,16 +20,24 @@ const Uuid = Type.String({
 const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
 /** A whole UTC minute. */
 const Minute = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$" });
+// One code point: a surrogate pair or any other UTF-16 unit outside the
+// surrogates. Without the u flag (TypeBox compiles `new RegExp(pattern)`) this
+// still counts code points; an engine with full Unicode strings reads the pair
+// branch as never used. A lone surrogate is refused (the database cannot store it).
+const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
+/** The end of the text: unlike `$`, never before a final line end in any engine. */
+const END = "(?![\\s\\S])";
+
 /**
- * A work id (evidence.document.id): 1 to 256 code points, trimmed, no control
- * character. The bound here is 512, so the check is never stricter than the
- * work id under any length count (TypeBox counts UTF-16 units, JSON Schema
- * code points); the server keeps the exact rule (server/contracts/work-id.ts).
+ * A work id (evidence.document.id, server/contracts/work-id.ts): 1 to 256 code
+ * points, no control character (C0, DEL, C1), no white space at either end.
  */
 const WorkId = Type.String({
-  minLength: 1,
-  maxLength: 512,
-  pattern: "^(?!\\s)[^\\u0000-\\u001f\\u007f-\\u009f]*(?<!\\s)$",
+  pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)${END}`,
+});
+/** A name of the login claims (isName): 1 to 255 code points. */
+const Name = Type.String({
+  pattern: `^(?:${CODE_POINT}|[^\\uD800-\\uDFFF]){1,255}${END}`,
 });
 const Count = (minimum: number) => Type.Integer({ minimum, maximum: Number.MAX_SAFE_INTEGER });
 const literals = <T extends string>(values: readonly T[]) =>
@@ -119,8 +127,8 @@ export const teacherSubmissionsGet = defineRoute({
 
 const StudentName = Type.Union([
   closed({
-    givenName: Type.String({ minLength: 1, maxLength: 510 }),
-    familyName: Type.String({ minLength: 1, maxLength: 510 }),
+    givenName: Name,
+    familyName: Name,
   }),
   Type.Null(),
 ]);
@@ -185,8 +193,8 @@ export const teacherMentorshipGet = defineRoute({
 /** Both names, or both null when the account has no name pair (#757 D1); never one alone. */
 const NAMES = [
   {
-    givenName: Type.String({ minLength: 1, maxLength: 510 }),
-    surname: Type.String({ minLength: 1, maxLength: 510 }),
+    givenName: Name,
+    surname: Name,
   },
   { givenName: Type.Null(), surname: Type.Null() },
 ] as const;

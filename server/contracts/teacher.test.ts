@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { VECTORS } from "./generated/fake-server/index.ts";
 import { validateInput } from "./generated/index.ts";
-import { ROUTES } from "./index.ts";
+import { isWorkId, ROUTES } from "./index.ts";
 
 const success = (id: string) => {
   const route = ROUTES.find((r) => r.id === id);
@@ -84,5 +84,64 @@ describe("teacher.fast-path.post", () => {
     expect(Value.Check(body, answer({ ...student, givenName: null }))).toBe(false);
     expect(Value.Check(body, answer({ ...student, surname: null }))).toBe(false);
     expect(Value.Check(body, answer({ ...student, work: "writing" }))).toBe(false);
+  });
+});
+
+describe("work id and name patterns hold the Ductus rules exactly", () => {
+  const work = (documentId: unknown) =>
+    Value.Check(success("teacher.mentorship.get"), {
+      work: {
+        mentorshipId: "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901",
+        assignmentId: "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        documentId,
+        student: null,
+        title: "Izmišljeni rad",
+        workType: "master_thesis",
+        workState: "in_progress",
+      },
+    });
+  const named = (givenName: string) =>
+    Value.Check(success("teacher.mentorship.get"), {
+      work: {
+        mentorshipId: "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2901",
+        assignmentId: "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        documentId: null,
+        student: { givenName, familyName: "Anić" },
+        title: "Izmišljeni rad",
+        workType: "master_thesis",
+        workState: "not_started",
+      },
+    });
+  const astral = "\u{1D4D0}";
+
+  it.each([
+    "rad",
+    "a b",
+    "x".repeat(256),
+    astral.repeat(256),
+    "č".repeat(256),
+    "'; DROP --",
+    "rad\n",
+    "rad ",
+    " rad",
+    " rad",
+    "rad\u0000",
+    "ra\u0085d",
+    "ra\u007fd",
+    "",
+    "x".repeat(257),
+    astral.repeat(257),
+    "\ud800rad",
+  ])("%j is a work id exactly when isWorkId says so", (id) => {
+    expect(work(id)).toBe(isWorkId(id));
+  });
+
+  it("a name is 1 to 255 code points (isName)", () => {
+    expect(named("x".repeat(255))).toBe(true);
+    expect(named(astral.repeat(255))).toBe(true);
+    expect(named("x".repeat(256))).toBe(false);
+    expect(named(astral.repeat(256))).toBe(false);
+    expect(named("")).toBe(false);
+    expect(named("Ana\n")).toBe(true);
   });
 });
