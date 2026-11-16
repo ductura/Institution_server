@@ -86,6 +86,7 @@ export const SERVER_SOURCES: Readonly<
  */
 export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
+  "support.problem-report.post",
   "teacher.courses.get",
   "teacher.submissions.get",
   "teacher.mentorships.get",
@@ -121,5 +122,4 @@ export const PENDING: readonly string[] = [
   "app/api/process-summary/route.ts",
   "app/api/revision-requests/[action]/route.ts",
   "app/api/submission/route.ts",
-  "app/api/support/problem-report/route.ts",
 ];

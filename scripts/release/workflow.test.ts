@@ -29,6 +29,7 @@ const EXPRESSIONS: Readonly<Record<string, string>> = {
   "jobs.verify.outputs.file": "${{ steps.tarball.outputs.file }}",
   "jobs.verify.outputs.sha256": "${{ steps.tarball.outputs.sha256 }}",
   "jobs.verify.steps.9.env.PACKAGE": "${{ steps.tag.outputs.package }}",
+  "jobs.verify.steps.9.env.RELEASE_VERSION": "${{ steps.tag.outputs.version }}",
   "jobs.verify.steps.10.with.path": "dist/release/tarball/${{ steps.tarball.outputs.file }}",
   "jobs.publish.steps.2.env.FILE": FILE,
   "jobs.publish.steps.2.env.SHA256": "${{ needs.verify.outputs.sha256 }}",
@@ -116,9 +117,11 @@ export function publishErrors(text: string): string[] {
   const jobs = (doc.jobs ?? {}) as Record<string, Node>;
   const verify = jobs.verify ?? {};
   const steps = (verify.steps ?? []) as Node[];
-  // 5a: only push of the two tag patterns; nothing else at the top.
+  // 5a: only push of the two tag patterns, and (DAN-804) workflow_dispatch
+  // without inputs, which release:tag refuses on any ref but the tag itself.
   if (keys(doc) !== "name,on,permissions,concurrency,jobs") errors.push(`top: ${keys(doc)}`);
-  if (!same(doc.on, { push: { tags: TAGS } })) errors.push("trigger is not the two tag patterns");
+  if (!same(doc.on, { push: { tags: TAGS }, ["workflow_dispatch"]: null }))
+    errors.push("trigger is not the two tag patterns and a bare workflow_dispatch");
   // 5b: nothing at the top, read in verify, packages: write only in publish.
   if (!same(doc.permissions, {})) errors.push("top permissions are not {}");
   if (keys(jobs) !== "verify,publish") errors.push(`jobs: ${keys(jobs)}`);
@@ -190,7 +193,28 @@ describe("publish.yml", () => {
   it.each([
     ["5a pull_request", tags, `${tags}  pull_request:\n`],
     ["5a pull_request_target", tags, `${tags}  pull_request_target:\n`],
-    ["5a workflow_dispatch", tags, `${tags}  workflow_dispatch:\n`],
+    // DAN-804 replaces "5a workflow_dispatch": a dispatch is allowed, but no input.
+    [
+      "5a workflow_dispatch with inputs",
+      "  workflow_dispatch:\n",
+      "  workflow_dispatch:\n    inputs:\n      ref: { type: string }\n",
+    ],
+    [
+      "5a workflow_dispatch with an empty map",
+      "  workflow_dispatch:\n",
+      "  workflow_dispatch: {}\n",
+    ],
+    ["5a without workflow_dispatch", "  workflow_dispatch:\n", ""],
+    [
+      "5a repository_dispatch",
+      "  workflow_dispatch:\n",
+      "  workflow_dispatch:\n  repository_dispatch:\n",
+    ],
+    [
+      "5e RELEASE_VERSION from the ref name",
+      "RELEASE_VERSION: ${{ steps.tag.outputs.version }}",
+      "RELEASE_VERSION: ${{ github.ref_name }}",
+    ],
     ["5a workflow_run", tags, `${tags}  workflow_run:\n    workflows: [CI]\n`],
     ["5a a trigger after a blank line", tags, `${tags}\n  issue_comment:\n    types: [created]\n`],
     ["5a push branches", tags, `${tags}    branches: [main]\n`],

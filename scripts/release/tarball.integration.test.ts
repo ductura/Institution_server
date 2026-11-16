@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
@@ -163,5 +164,48 @@ describe("buildTarball", () => {
     expect(checkTarball(TEST_FAKES, file, dir())).toContain(
       "@ductura/test-fakes: export ./clock (./packages/test-fakes/clock/index.js) is not refused by the guard with NODE_ENV=production",
     );
+  });
+});
+
+// QA on #93 (c.6906349844): the tag's version (RELEASE_VERSION) reaches the tarball.
+describe("buildTarball with the tag's version (DAN-804)", () => {
+  const source = String(
+    (
+      JSON.parse(readFileSync(join(ROOT, CONTRACTS.dir, "package.json"), "utf8")) as {
+        version: unknown;
+      }
+    ).version,
+  );
+  const [major = 0, minor = 0] = source.split(".").map(Number);
+  const version = `${major}.${minor + 1}.0`;
+
+  it("names the tarball and its unpacked package.json with the given version", () => {
+    const out = join(TMP, "tag-version");
+    mkdirSync(out, { recursive: true });
+    const built = buildTarball(CONTRACTS, out, version);
+    expect(built.file).toBe(`ductura-contracts-${version}.tgz`);
+    const manifest = JSON.parse(
+      readTarball(readFileSync(built.path)).get("package.json")!.toString("utf8"),
+    ) as { version: string };
+    expect(manifest.version).toBe(version);
+  });
+
+  it.each([`${major + 1}.0.0`, "0.0.1", `${major}.${minor}`, `${version}-rc.1`])(
+    "refuses the version %s",
+    (bad) => {
+      expect(() => buildTarball(CONTRACTS, join(TMP, "bad-version"), bad)).toThrow(
+        /release version/,
+      );
+    },
+  );
+
+  it("release:tarball refuses RELEASE_VERSION for two packages", () => {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/release/tarball.ts", "contracts", "test-fakes"],
+      { cwd: ROOT, encoding: "utf8", env: { ...process.env, ["RELEASE_VERSION"]: version } },
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("RELEASE_VERSION is for one package");
   });
 });
