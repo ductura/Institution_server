@@ -8,6 +8,7 @@ export {
   MAX_BACKCHANNEL_BODY_BYTES,
   type BackchannelDeps,
 } from "./backchannel.ts";
+export { sessionTokenFromCookie } from "./cookie.ts";
 export { ENDED_MARK_COOKIE, liveSessionToken, type CookieReader } from "./ended-mark.ts";
 export type {
   ActorReader,
@@ -29,6 +30,7 @@ export {
   type SessionPrincipal,
   type SessionPrincipalWithInstitution,
 } from "./principal.ts";
+export { checkSession, type SessionCheck } from "./live-session.ts";
 export { DEFAULT_RETURN_TO, safeReturnTo } from "./return-to.ts";
 export {
   clearedSessionCookieOptions,
