@@ -3,9 +3,12 @@ import * as area from "./index.ts";
 import type { TrafficService } from "./index.ts";
 
 describe("server/traffic public interface", () => {
-  it("exports the empty routes and schemas and the client IP and rate limit steps", () => {
+  it("exports the empty routes and schemas and the client IP, IP rules and rate limit steps", () => {
     expect(Object.keys(area).sort()).toEqual([
       "DEFAULT_RATE_LIMITS",
+      "MAX_ALLOWED_NETWORKS",
+      "MAX_ALLOWED_NETWORKS_LENGTH",
+      "NO_ALLOWED_NETWORKS",
       "NO_TRUSTED_PROXIES",
       "RATE_LIMIT_CLASSES",
       "TRAFFIC_ROUTES",
@@ -14,6 +17,9 @@ describe("server/traffic public interface", () => {
       "clientIpLayer",
       "clientIpOf",
       "createRateLimiter",
+      "isOpsPath",
+      "networkAllows",
+      "parseAllowedNetworks",
       "parseTrustedProxies",
     ]);
     expect(area.TRAFFIC_ROUTES).toEqual([]);
