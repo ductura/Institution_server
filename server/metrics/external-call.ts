@@ -4,13 +4,17 @@
  * (docs/server-map.md §2), so the pattern lives here, next to the duration and
  * outcome it measures.
  *
- * - Deadline: a call never waits longer than `timeoutMs`, retries included; a
- *   late answer is dropped and the attempt's signal is aborted.
+ * - Deadline: a call never waits longer than `timeoutMs` from its start,
+ *   retries included. The timer is armed before any caller code runs, so
+ *   synchronous work in an adapter cannot push it back; a late answer is
+ *   dropped and the attempt's signal is aborted.
  * - Retry: only when the caller says the operation is idempotent, and only
  *   when the pause still ends before the deadline.
  * - Availability: after `downAfter` failed calls in a row the service is
  *   `down` for `downForMs` and calls do not reach it; afterwards one probe goes
- *   alone and without retry, and other calls stay `down` until it ends.
+ *   alone and without retry, and other calls stay `down` until it ends. A call
+ *   that started before the availability changed only reports when it ends:
+ *   it neither counts, nor opens, nor closes.
  * - Event: one `external_call` per call with closed fields only. No message,
  *   argument or answer of the service ever goes into it, so a key, password
  *   or address has nowhere to travel.
@@ -96,11 +100,42 @@ export function createExternalCaller(
   checkPolicy(policy);
   const now = deps.now ?? Date.now;
   const sleep = deps.sleep ?? timerSleep;
-  let failuresInRow = 0;
-  let downUntil = Number.NEGATIVE_INFINITY;
-  // After a down window one probe goes alone and without retry; other calls
-  // stay `down` until its outcome is known.
-  let probing = false;
+  // closed: calls go through; open: calls are `down` until `until`; probing:
+  // one call goes alone and every other call is `down`. Each change of state
+  // starts a new epoch, and only a call that ends in its own epoch moves it.
+  type Breaker =
+    | { readonly state: "closed"; readonly failures: number }
+    | { readonly state: "open"; readonly until: number }
+    | { readonly state: "probing" };
+  let breaker: Breaker = { state: "closed", failures: 0 };
+  let epoch = 0;
+  const enter = (next: Breaker): void => {
+    breaker = next;
+    epoch += 1;
+  };
+
+  /** `down`, or the epoch the call runs in and whether it is the probe. */
+  const admit = (at: number): "down" | { epoch: number; probe: boolean } => {
+    if (breaker.state === "probing") return "down";
+    if (breaker.state === "open") {
+      if (at < breaker.until) return "down";
+      enter({ state: "probing" });
+      return { epoch, probe: true };
+    }
+    return { epoch, probe: false };
+  };
+
+  const settle = (started: number, ok: boolean): void => {
+    if (started !== epoch) return; // a stale call only reports
+    if (ok) {
+      if (breaker.state === "probing") enter({ state: "closed", failures: 0 });
+      else breaker = { state: "closed", failures: 0 };
+      return;
+    }
+    const failures = breaker.state === "closed" ? breaker.failures + 1 : policy.downAfter;
+    if (failures >= policy.downAfter) enter({ state: "open", until: now() + policy.downForMs });
+    else breaker = { state: "closed", failures };
+  };
 
   const report = (
     operation: string,
@@ -139,16 +174,19 @@ export function createExternalCaller(
     options: ExternalCallOptions<T>,
   ): Promise<ExternalCallResult<T>> {
     const start = now();
-    const probe = failuresInRow >= policy.downAfter;
-    if (start < downUntil || (probe && probing)) {
+    const admitted = admit(start);
+    if (admitted === "down") {
       report(operation, "down", 0, start);
       return { ok: false, failure: "down" };
     }
-    if (probe) probing = true;
+    let ok = false;
     try {
-      return await guarded(operation, run, options, start, probe);
+      const result = await guarded(operation, run, options, start, admitted.probe);
+      ok = result.ok;
+      return result;
     } finally {
-      if (probe) probing = false;
+      // Also when something unforeseen threw: a probe never stays open-ended.
+      settle(admitted.epoch, ok);
     }
   }
 
@@ -165,9 +203,8 @@ export function createExternalCaller(
     let attempts = 0;
     let answered: { value: T } | undefined;
 
-    // The deadline timer starts before the service is called, so synchronous
-    // work inside `run` counts against the deadline too.
-    const expiry = sleep(policy.timeoutMs, timer.signal).then(
+    // Armed first, for what is left of the deadline: no caller code has run yet.
+    const expiry = sleep(Math.max(0, deadline - now()), timer.signal).then(
       (): ExternalCallResult<T> => ({ ok: false, failure: "timeout" }),
       () => new Promise<never>(() => {}),
     );
@@ -178,9 +215,10 @@ export function createExternalCaller(
         if (now() >= deadline || work.signal.aborted) return { ok: false, failure: "timeout" };
         attempts += 1;
         const result = await attempt(run, work.signal);
+        const good = result.done && !options.failed?.(result.value);
+        // Checked after the failed-check too: it is caller code and takes time.
         if (now() > deadline) return { ok: false, failure: "timeout" };
-        if (result.done && !options.failed?.(result.value))
-          return { ok: true, value: result.value };
+        if (good) return { ok: true, value: result.value };
         answered = result.done ? { value: result.value } : undefined;
         const more = !probe && options.retry === true && attempts <= policy.retries;
         if (!more || now() + policy.retryDelayMs >= deadline || work.signal.aborted)
@@ -191,19 +229,15 @@ export function createExternalCaller(
       }
     })();
     const result = await Promise.race([
-      tries.catch(() => ({ ok: false, failure: "failed" }) as const),
+      // A throw in caller code (the failed-check) is a failure, or a timeout once past the deadline.
+      tries.catch((): ExternalCallResult<T> => ({
+        ok: false,
+        failure: now() > deadline ? "timeout" : "failed",
+      })),
       expiry,
     ]);
     timer.abort();
     work.abort();
-
-    // Any answer proves the service is reachable, a call that started before a
-    // down window included: the window closes with the count, so no half state
-    // (count reset, window open) can skip the single probe.
-    if (result.ok) {
-      failuresInRow = 0;
-      downUntil = Number.NEGATIVE_INFINITY;
-    } else if ((failuresInRow += 1) >= policy.downAfter) downUntil = now() + policy.downForMs;
     report(operation, result.ok ? "ok" : result.failure, attempts, start);
     return result;
   }
@@ -214,6 +248,9 @@ export function createExternalCaller(
         throw new RangeError("operation must be a lower-case code");
       return call(operation, run, options);
     },
-    availability: () => (probing || now() < downUntil ? "down" : "available"),
+    availability: () =>
+      breaker.state === "probing" || (breaker.state === "open" && now() < breaker.until)
+        ? "down"
+        : "available",
   };
 }

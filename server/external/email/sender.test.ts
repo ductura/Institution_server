@@ -1,10 +1,17 @@
 // S-1E-c (DAN-837): the email port behind the outside-service pattern. Invented values only.
 import { readFileSync } from "node:fs";
 
+import { createFakeClock } from "@ductura/test-fakes/clock";
 import { describe, expect, it } from "vitest";
 
 import { createExternalCaller } from "../../metrics/index.ts";
-import { EMAIL_ERRORS, EMAIL_UNAVAILABLE, guardEmail, type EmailSender } from "./sender.ts";
+import {
+  EMAIL_ERRORS,
+  EMAIL_TIMEOUT,
+  EMAIL_UNAVAILABLE,
+  guardEmail,
+  type EmailSender,
+} from "./sender.ts";
 
 const POLICY = { timeoutMs: 1000, retries: 3, retryDelayMs: 0, downAfter: 9, downForMs: 0 };
 const MESSAGE = { to: "student-a@primjer.invalid", template: "invite", values: {} };
@@ -41,5 +48,23 @@ describe("guardEmail", () => {
       ok: true,
     });
     expect(seen).toBeInstanceOf(AbortSignal);
+  });
+  it("times out at the deadline even when the adapter prepares synchronously (Review/QA ddba14b4)", async () => {
+    const clock = createFakeClock();
+    const caller = createExternalCaller("email", POLICY, {
+      now: () => clock.nowMs(),
+      sleep: (ms, signal) => clock.sleep(ms, signal),
+    });
+    const sender: EmailSender = {
+      send: () => (clock.advance(600), new Promise(() => {})),
+    };
+    let result: unknown;
+    void guardEmail(sender, caller)
+      .send(MESSAGE)
+      .then((r) => (result = r));
+    await new Promise((resolve) => setImmediate(resolve));
+    clock.advance(400);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(result).toEqual({ ok: false, error: EMAIL_TIMEOUT });
   });
 });

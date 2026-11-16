@@ -286,7 +286,7 @@ describe("createExternalCaller", () => {
     expect(events[0]).toMatchObject({ outcome: "timeout", durationMs: 1000 });
   });
 
-  it("closes the down window when a call that started earlier succeeds (QA c.6915174918, 2)", async () => {
+  it("keeps the down window when a call that started earlier succeeds, then lets one probe through (QA c.6915174918, 2)", async () => {
     const { clock, caller } = setup({ ...POLICY, downAfter: 1, downForMs: 5000 });
     let reached = 0;
     const fail = async (): Promise<string> => {
@@ -300,10 +300,12 @@ describe("createExternalCaller", () => {
     expect(caller.availability()).toBe("down");
     release("ok");
     expect(await earlier).toEqual({ ok: true, value: "ok" });
-    expect(caller.availability()).toBe("available");
-
-    await caller.call("read", fail);
+    // The earlier call started before the window: it reports, but the window stays.
     expect(caller.availability()).toBe("down");
+
+    reached = 0;
+    expect(await caller.call("read", fail)).toEqual({ ok: false, failure: "down" });
+    expect(reached).toBe(0);
     clock.advance(5000);
     reached = 0;
     expect(await caller.call("read", fail, { retry: true })).toEqual({
@@ -311,6 +313,172 @@ describe("createExternalCaller", () => {
       failure: "failed",
     });
     expect(reached).toBe(1);
+  });
+
+  // Review and QA FAIL on ddba14b4, finding 1: the deadline counts from the
+  // start of the call, whatever caller code runs before the timer would fire.
+  describe("the deadline counts from the start of the call", () => {
+    const settled = (promise: Promise<unknown>) => {
+      const state = { done: false };
+      void promise.then(() => (state.done = true));
+      return state;
+    };
+
+    it("when the service works synchronously before it yields", async () => {
+      const { clock, events, caller } = setup();
+      const pending = caller.call("send", () => {
+        clock.advance(600); // synchronous preparation inside the adapter
+        return new Promise<string>(() => {});
+      });
+      const state = settled(pending);
+      await flush();
+      clock.advance(399);
+      await flush();
+      expect(state.done).toBe(false);
+      clock.advance(1);
+      await flush();
+      expect(state.done).toBe(true);
+      expect(await pending).toEqual({ ok: false, failure: "timeout" });
+      expect(events[0]).toMatchObject({ outcome: "timeout", attempts: 1, durationMs: 1000 });
+    });
+
+    it("when a retry works synchronously before it yields", async () => {
+      const { clock, events, caller } = setup({ ...POLICY, downAfter: 9 });
+      let tries = 0;
+      const pending = caller.call(
+        "read",
+        () => {
+          tries += 1;
+          if (tries === 1) return Promise.reject(new TypeError("fetch failed"));
+          clock.advance(500);
+          return new Promise<string>(() => {});
+        },
+        { retry: true },
+      );
+      const state = settled(pending);
+      await flush();
+      clock.advance(100); // the pause, then the second try spends 500 ms
+      await flush();
+      expect(tries).toBe(2);
+      clock.advance(399);
+      await flush();
+      expect(state.done).toBe(false);
+      clock.advance(1);
+      await flush();
+      expect(state.done).toBe(true);
+      expect(events[0]).toMatchObject({ outcome: "timeout", attempts: 2, durationMs: 1000 });
+    });
+
+    it("when the failed-check spends the rest of the deadline, whatever the timers did", async () => {
+      let time = 0;
+      const caller = createExternalCaller("storage", POLICY, {
+        now: () => time,
+        sleep: () => new Promise(() => {}), // no timer ever fires
+      });
+      const result = await caller.call("read", async () => "bytes", {
+        failed: () => ((time += 1500), false),
+      });
+      expect(result).toEqual({ ok: false, failure: "timeout" });
+      const thrown = await caller.call("read", async () => "bytes", {
+        failed: () => {
+          time += 1500;
+          throw new Error("check broke");
+        },
+      });
+      expect(thrown).toEqual({ ok: false, failure: "timeout" });
+    });
+  });
+
+  // Review and QA FAIL on ddba14b4, finding 2: a call that started before the
+  // availability changed must not change it when it ends.
+  describe("a call that started before a change of availability leaves it alone", () => {
+    const LONG = { ...POLICY, timeoutMs: 60_000, retries: 2, downAfter: 1, downForMs: 5000 };
+    const parked = () => {
+      const hold: { ok: (v: string) => void; fail: (e: Error) => void } = {
+        ok: () => {},
+        fail: () => {},
+      };
+      const run = () =>
+        new Promise<string>((resolve, reject) => ((hold.ok = resolve), (hold.fail = reject)));
+      return { hold, run };
+    };
+
+    it("an earlier success does not cancel the single probe", async () => {
+      const { clock, events, caller } = setup(LONG);
+      const a = parked();
+      const pendingA = caller.call("read", a.run, { retry: true });
+      await flush();
+      await caller.call("read", async () => {
+        throw new TypeError("fetch failed");
+      });
+      expect(caller.availability()).toBe("down");
+      a.hold.ok("late");
+      expect(await pendingA).toEqual({ ok: true, value: "late" });
+      expect(caller.availability()).toBe("down");
+
+      clock.advance(5000);
+      let reached = 0;
+      const fail = async (): Promise<string> => {
+        reached += 1;
+        throw new TypeError("fetch failed");
+      };
+      const probe = caller.call("read", fail, { retry: true });
+      const other = caller.call("read", fail, { retry: true });
+      await flush();
+      expect(reached).toBe(1);
+      expect(await other).toEqual({ ok: false, failure: "down" });
+      expect(await probe).toEqual({ ok: false, failure: "failed" });
+      expect(reached).toBe(1);
+      expect(events.at(-2)).toMatchObject({ outcome: "down", attempts: 0 });
+      expect(events.at(-1)).toMatchObject({ outcome: "failed", attempts: 1 });
+      expect(caller.availability()).toBe("down");
+    });
+
+    it("an earlier answer during the probe neither opens nor closes the service", async () => {
+      const { clock, caller } = setup(LONG);
+      const a1 = parked();
+      const a2 = parked();
+      const pending1 = caller.call("read", a1.run);
+      const pending2 = caller.call("read", a2.run);
+      await caller.call("read", async () => {
+        throw new TypeError("fetch failed");
+      });
+      clock.advance(5000);
+
+      const probe = parked();
+      const pendingProbe = caller.call("read", probe.run);
+      await flush();
+      a1.hold.ok("late");
+      expect(await pending1).toEqual({ ok: true, value: "late" });
+      expect(caller.availability()).toBe("down");
+      expect(await caller.call("read", async () => "x")).toEqual({ ok: false, failure: "down" });
+
+      probe.hold.ok("back");
+      expect(await pendingProbe).toEqual({ ok: true, value: "back" });
+      expect(caller.availability()).toBe("available");
+      a2.hold.fail(new TypeError("fetch failed"));
+      expect(await pending2).toEqual({ ok: false, failure: "failed" });
+      expect(caller.availability()).toBe("available");
+      expect(await caller.call("read", async () => "x")).toEqual({ ok: true, value: "x" });
+    });
+
+    it("an earlier failure after the down window does not open it again", async () => {
+      const { clock, caller } = setup({ ...LONG, downAfter: 2 });
+      const a = parked();
+      const pendingA = caller.call("read", a.run);
+      const failNow = async (): Promise<string> => {
+        throw new TypeError("fetch failed");
+      };
+      await caller.call("read", failNow);
+      await caller.call("read", failNow);
+      clock.advance(5000);
+      expect(await caller.call("read", async () => "back")).toEqual({ ok: true, value: "back" });
+      a.hold.fail(new TypeError("fetch failed"));
+      await pendingA;
+      await caller.call("read", failNow);
+      // one fresh failure is below downAfter = 2; the stale one does not count
+      expect(caller.availability()).toBe("available");
+    });
   });
 
   it("survives an event sink that throws", async () => {
