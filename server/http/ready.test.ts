@@ -93,6 +93,33 @@ describe("ready check limits", () => {
     expect(state.report?.codes).toEqual({ database: "TIMEOUT" });
   });
 
+  it("synchronous work of one probe spends the total limit of the others", async () => {
+    const busy = (ms: number) => async (): Promise<"ok"> => {
+      clock.advance(ms); // stands for work that blocks the event loop
+      return "ok";
+    };
+    const called: string[] = [];
+    const later = async (): Promise<never> => {
+      called.push("queue");
+      return hang();
+    };
+    const spent = checkOf([cap({ probe: busy(80) }), cap({ name: "queue", probe: hang })], 100);
+    const state = await start(spent);
+    clock.advance(19);
+    await settle();
+    expect(state.report).toBeUndefined();
+    clock.advance(1);
+    await settle();
+    expect(state.report?.capabilities).toEqual({ database: "ok", queue: "nedostupno" });
+    // Past the total limit before its turn: the probe is never called.
+    const over = await checkOf(
+      [cap({ probe: busy(120) }), cap({ name: "queue", probe: later })],
+      100,
+    )();
+    expect(over.codes).toEqual({ database: "TIMEOUT", queue: "TIMEOUT" });
+    expect(called).toEqual([]);
+  });
+
   it("one slow probe holds no other", async () => {
     const check = checkOf([
       cap({ name: "storage", required: false, timeoutMs: 2_500, probe: hang }),

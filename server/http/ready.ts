@@ -120,9 +120,12 @@ export function createReadyCheck(
   const now = options.now ?? (() => performance.now());
   const sleep = options.sleep ?? unrefSleep;
 
-  const run = async (capability: ReadyCapability): Promise<Outcome> => {
-    const limitMs = Math.min(capability.timeoutMs, totalMs);
+  const run = async (capability: ReadyCapability, checkStart: number): Promise<Outcome> => {
     const start = now();
+    // One absolute total limit per check: synchronous work of an earlier
+    // probe spends it for the later ones, and none starts at or past it.
+    const limitMs = Math.min(capability.timeoutMs, totalMs - (start - checkStart));
+    if (limitMs <= 0) return { status: "nedostupno", code: "TIMEOUT" };
     // The timer starts before any probe code and has its own signal; its
     // rejection on abort is caught here.
     const timer = new AbortController();
@@ -164,7 +167,8 @@ export function createReadyCheck(
   };
 
   return async () => {
-    const outcomes = await Promise.all(list.map(run));
+    const checkStart = now();
+    const outcomes = await Promise.all(list.map(async (capability) => run(capability, checkStart)));
     const report: ReadyReport = { ready: true, capabilities: {}, codes: {} };
     list.forEach((capability, i) => {
       const { status, code } = outcomes[i] as Outcome;
