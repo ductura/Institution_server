@@ -219,6 +219,16 @@ describe("PUT body that the server cannot use (DAN-800)", () => {
     await expectUntouched();
   });
 
+  it.each(["//", "//a:b", "//["])("answers the path %s that is no URL with 404", async (path) => {
+    const answer = await raw(
+      `GET ${path} HTTP/1.1\r\nhost: x\r\nauthorization: Bearer ${A}\r\nconnection: close\r\n\r\n`,
+      "",
+    );
+    expect(answer).toMatch(/^HTTP\/1\.1 404 /u);
+    expect(answer).toContain(JSON.stringify(APP_ERRORS.notFound.body));
+    expect(unhandled).toEqual([]);
+  });
+
   it("keeps an empty body a change of nothing", async () => {
     const res = await put("a-3", "");
     expect(res.status).toBe(200);

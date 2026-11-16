@@ -97,7 +97,9 @@ export function createApp({ store }: { store: Store }): Server {
 }
 
 async function handle(store: Store, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const url = new URL(req.url ?? "/", "http://localhost");
+  // A path such as "//a:b" is no URL; it answers 404, not a dropped connection.
+  const url = URL.parse(req.url ?? "/", "http://localhost");
+  if (!url) return fail(res, "notFound");
   if (url.pathname === "/health") return ok(res, { ok: true });
 
   const userId = parseBearer(req.headers.authorization);
