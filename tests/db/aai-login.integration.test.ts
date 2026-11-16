@@ -117,6 +117,7 @@ async function signIn(account: TestAccount, next: Misbehaviour = {}) {
     oidc: createOidcClient(config, idp.fetch),
     openSession: createOpenSession(authPool),
     closeSession: async () => true,
+    closeAllSessions: async () => undefined,
   };
   const start = await startLogin(new Request(`${APP}/api/v1/auth/login`), deps);
   const attempt = start.headers.getSetCookie().find((c) => c.startsWith(`${LOGIN_COOKIE_NAME}=`))!;

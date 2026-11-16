@@ -5,7 +5,8 @@
  * browser learns neither which check failed nor whether an institution
  * exists. Logs carry a stage and an error code, never a value from the
  * request or the provider. Ported from Ductus src/server/auth/flow.ts at
- * 078c780 (S-1E-a, DAN-808); logout and logout-all follow with S-1D-d.
+ * 078c780 (S-1E-a, DAN-808); logout-all (S-1D-c, DAN-828-1) from 333e163.
+ * Logout follows with S-1D-d.
  */
 import { messagesHr as t } from "../../locales/index.ts";
 import {
@@ -19,6 +20,7 @@ import {
 
 import type { OpenSession } from "../database/index.ts";
 import {
+  clearedSessionSetCookie,
   DEFAULT_RETURN_TO,
   newSessionToken,
   previousSessionToken,
@@ -32,6 +34,11 @@ export type AuthDeps = {
   openSession: OpenSession;
   /** Closes the session behind a raw cookie token; false when there was none. */
   closeSession: (token: string) => Promise<boolean>;
+  /**
+   * Closes every live session of the account behind a raw cookie token, this
+   * one included (DAN-296); nothing when the token names no live session.
+   */
+  closeAllSessions: (token: string) => Promise<void>;
 };
 
 /** The pending login attempt: state, nonce, PKCE verifier and where to go after. */
@@ -106,17 +113,22 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+/** The HTML of the neutral page; step 7 of the pipeline answers a refused origin with it too. */
+export function failureHtml(status: 400 | 403 | 503): string {
+  const body = status === 503 ? t.auth.unavailableBody : t.auth.failedBody;
+  return `<!doctype html>
+<html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(t.auth.failedTitle)} · ${escapeHtml(t.app.name)}</title></head>
+<body><main><h1>${escapeHtml(t.auth.failedTitle)}</h1><p>${escapeHtml(body)}</p>
+<p><a href="${LOGIN_PATH}">${escapeHtml(t.auth.retry)}</a> · <a href="/">${escapeHtml(t.auth.home)}</a></p></main></body></html>`;
+}
+
 /** The neutral page every failure ends on. */
 export function failurePage(
   status: 400 | 403 | 503,
   extraHeaders: Headers = new Headers(),
 ): Response {
-  const body = status === 503 ? t.auth.unavailableBody : t.auth.failedBody;
-  const html = `<!doctype html>
-<html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(t.auth.failedTitle)} · ${escapeHtml(t.app.name)}</title></head>
-<body><main><h1>${escapeHtml(t.auth.failedTitle)}</h1><p>${escapeHtml(body)}</p>
-<p><a href="${LOGIN_PATH}">${escapeHtml(t.auth.retry)}</a> · <a href="/">${escapeHtml(t.auth.home)}</a></p></main></body></html>`;
+  const html = failureHtml(status);
   const headers = new Headers(extraHeaders);
   for (const [k, v] of Object.entries(NO_STORE)) headers.set(k, v);
   headers.set("content-type", "text/html; charset=utf-8");
@@ -206,4 +218,51 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     clearedLoginCookie(),
     sessionSetCookie(token, opened.expires),
   ]);
+}
+
+/**
+ * The request comes from a page of this origin (DAN-302 L2): Origin is
+ * required and must be this origin, and Sec-Fetch-Site, when sent, must say
+ * same-origin. Step 7 of the pipeline checks the same first; this is the
+ * flow's own second check, as in Ductus.
+ */
+export function isSameOrigin(request: Request, origin: string): boolean {
+  if (request.headers.get("origin") !== origin) return false;
+  const site = request.headers.get("sec-fetch-site");
+  return site === null || site === "same-origin";
+}
+
+/**
+ * POST /api/v1/auth/logout-all: this session and every other live one of the
+ * account (DAN-296). Closes on the server first, then clears the cookie and
+ * goes to the provider; the answer is the same whether a session existed or
+ * not. When the database fails it answers 503 and keeps the cookie, so it
+ * never reports a sign-out while the account's other sessions live, and the
+ * browser can send it again (Ductus contract addendum on #1091, item 3).
+ */
+export async function logoutAll(request: Request, deps: AuthDeps): Promise<Response> {
+  if (!isSameOrigin(request, deps.config.redirectUri.origin)) {
+    logFailure("logout_all", "cross_origin");
+    return failurePage(403);
+  }
+  const token = previousSessionToken(request.headers.get("cookie"));
+  if (token) {
+    try {
+      await deps.closeAllSessions(token);
+    } catch (error) {
+      logFailure("logout_all", errorCode(error));
+      return failurePage(503);
+    }
+  }
+  // Only then the provider (DAN-212), also without a live session: its own
+  // may still be open (D-200 P2). Without an endpoint, or when the provider
+  // fails, the local sign-out stands and "/" follows.
+  let location = new URL(DEFAULT_RETURN_TO, deps.config.redirectUri.origin).href;
+  try {
+    const endSession = await deps.oidc.endSessionUrl();
+    if (endSession) location = endSession.href;
+  } catch (error) {
+    logFailure("end_session", errorCode(error));
+  }
+  return redirect(location, [clearedSessionSetCookie()]);
 }

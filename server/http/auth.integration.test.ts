@@ -75,6 +75,7 @@ async function stack(mode: FakeOidcMode, delayUserinfo = 0): Promise<Stack> {
         closed.push(token);
         return true;
       },
+      closeAllSessions: async () => undefined,
     };
   };
   app = await startServer({

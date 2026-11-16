@@ -8,7 +8,7 @@ import { type ErrorSpec, ROUTES, type RouteContract } from "../contracts/index.t
 import { openSession, withActor } from "../database/index.ts";
 import { createOidcClient, loadAuthConfig } from "../external/srce-auth/index.ts";
 
-import { type AuthDeps, failurePage, finishLogin, startLogin } from "./auth-flow.ts";
+import { type AuthDeps, failurePage, finishLogin, logoutAll, startLogin } from "./auth-flow.ts";
 import { sendHtmlProblem } from "./problem.ts";
 import type { Route } from "./router.ts";
 
@@ -42,18 +42,25 @@ export function loadAuthDeps(env: Readonly<Record<string, string | undefined>>):
         );
         return rows[0]?.closed === true;
       }),
+    closeAllSessions: (token) =>
+      withActor(token, async (tx) => {
+        await tx.query("SELECT identity.close_all_sessions_for_identity()");
+      }),
   };
 }
 
 /**
- * The request the flow reads: the path and query of this request on the
- * configured origin (never the Host header) and its cookies, nothing else.
+ * The request the flow reads: the contract's method, the path and query of
+ * this request on the configured origin (never the Host header), its cookies
+ * and its Origin and Sec-Fetch-Site, nothing else. The body is never read.
  */
-function webRequest(request: IncomingMessage, origin: string): Request {
+function webRequest(request: IncomingMessage, origin: string, method: string): Request {
   const headers = new Headers();
-  const cookie = request.headers.cookie;
-  if (cookie !== undefined) headers.set("cookie", cookie);
-  return new Request(new URL(request.url ?? "/", origin), { method: "GET", headers });
+  for (const name of ["cookie", "origin", "sec-fetch-site"]) {
+    const value = request.headers[name];
+    if (typeof value === "string") headers.set(name, value);
+  }
+  return new Request(new URL(request.url ?? "/", origin), { method, headers });
 }
 
 async function writeResponse(
@@ -97,23 +104,25 @@ function route(id: string, flow: Flow, load: () => AuthDeps): Route {
         await writeResponse(failurePage(503), response, contract);
         return;
       }
-      const answer = await flow(webRequest(request, deps.config.redirectUri.origin), deps);
+      const origin = deps.config.redirectUri.origin;
+      const answer = await flow(webRequest(request, origin, contract.method), deps);
       await writeResponse(answer, response, contract);
     },
   };
 }
 
-/** GET /api/v1/auth/login and GET /api/v1/auth/callback. */
+/** GET /api/v1/auth/login, GET /api/v1/auth/callback and POST /api/v1/auth/logout-all. */
 export function createAuthRoutes(
   env: Readonly<Record<string, string | undefined>>,
   load: () => AuthDeps = () => loadAuthDeps(env),
 ): Route[] {
-  // One set for both routes, kept once it loads; a failed load is tried again
+  // One set for all routes, kept once it loads; a failed load is tried again
   // on the next login, as in Ductus deps.ts.
   let deps: AuthDeps | undefined;
   const shared = (): AuthDeps => (deps ??= load());
   return [
     route("auth.login.get", startLogin, shared),
     route("auth.callback.get", finishLogin, shared),
+    route("auth.logout-all.post", logoutAll, shared),
   ];
 }

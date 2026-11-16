@@ -19,3 +19,8 @@ export function previousSessionToken(cookieHeader: string | null): string | unde
 export function sessionSetCookie(token: string, expires: Date): string {
   return `${SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${expires.toUTCString()}`;
 }
+
+/** The Set-Cookie that clears the session cookie at a sign-out (S-1D-c, DAN-828-1). */
+export function clearedSessionSetCookie(): string {
+  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+}

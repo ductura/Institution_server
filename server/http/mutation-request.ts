@@ -8,7 +8,12 @@
 // such request. The check never reads the body.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { refuse } from "./security-headers.ts";
+import { type ErrorSpec, ROUTES } from "../contracts/index.ts";
+
+import { failureHtml } from "./auth-flow.ts";
+import { sendHtmlProblem } from "./problem.ts";
+import { routePath } from "./router.ts";
+import { applySecurityHeaders, refuse } from "./security-headers.ts";
 
 /** An allow-list: any other method name is state-changing. */
 export const SAFE_METHODS: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -54,6 +59,17 @@ export function isCanonicalOrigin(value: string): boolean {
   }
 }
 
+/**
+ * The routes whose contract answers 403 with a page (a browser navigation,
+ * such as auth.logout-all.post): by method and path, as the router chooses.
+ */
+const HTML_REFUSALS: ReadonlyMap<string, ErrorSpec> = new Map(
+  ROUTES.flatMap((route) => {
+    const spec = route.errors.find((error) => error.status === 403 && error.body === "html");
+    return spec === undefined ? [] : [[`${route.method} ${route.path}`, spec] as const];
+  }),
+);
+
 /** Step 7 of the pipeline; null refuses every state-changing request. */
 export function originLayer(
   expectedOrigin: string | null,
@@ -65,7 +81,16 @@ export function originLayer(
   return async (request, response) => {
     const check = checkMutationRequest(request, expectedOrigin);
     if (check.ok) return "next";
-    refuse(response, check.status, check.reason);
+    // A navigation route's contract gives its own page (vector "forbidden",
+    // QA on #155); every other route gets the problem of the reason.
+    const page = HTML_REFUSALS.get(`${request.method ?? ""} ${routePath(request.url) ?? ""}`);
+    if (page === undefined) {
+      refuse(response, check.status, check.reason);
+      return "done";
+    }
+    applySecurityHeaders(response);
+    if (!response.headersSent) response.setHeader("Connection", "close");
+    sendHtmlProblem(response, page, failureHtml(403));
     return "done";
   };
 }
