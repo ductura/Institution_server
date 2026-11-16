@@ -5,8 +5,8 @@
  * browser learns neither which check failed nor whether an institution
  * exists. Logs carry a stage and an error code, never a value from the
  * request or the provider. Ported from Ductus src/server/auth/flow.ts at
- * 078c780 (S-1E-a, DAN-808); logout-all (S-1D-c, DAN-828-1) from 333e163.
- * Logout follows with S-1D-d.
+ * 078c780 (S-1E-a, DAN-808); logout-all (S-1D-c, DAN-828-1) from 333e163;
+ * logout (S-1D-d, DAN-829-1) from 393b8e0.
  */
 import { messagesHr as t } from "../../locales/index.ts";
 import {
@@ -232,26 +232,43 @@ export function isSameOrigin(request: Request, origin: string): boolean {
   return site === null || site === "same-origin";
 }
 
-/**
- * POST /api/v1/auth/logout-all: this session and every other live one of the
- * account (DAN-296). Closes on the server first, then clears the cookie and
- * goes to the provider; the answer is the same whether a session existed or
- * not. When the database fails it answers 503 and keeps the cookie, so it
- * never reports a sign-out while the account's other sessions live, and the
- * browser can send it again (Ductus contract addendum on #1091, item 3).
- */
+/** POST /api/v1/auth/logout: this session (S-1D-d, DAN-829-1). */
+export async function logout(request: Request, deps: AuthDeps): Promise<Response> {
+  return endSessions(request, deps, "logout", (token) => deps.closeSession(token), "clear");
+}
+
+/** POST /api/v1/auth/logout-all: this session and every other live one of the account (DAN-296). */
 export async function logoutAll(request: Request, deps: AuthDeps): Promise<Response> {
+  return endSessions(request, deps, "logout_all", (token) => deps.closeAllSessions(token), "keep");
+}
+
+/**
+ * Closes on the server first, then clears the cookie and goes to the
+ * provider; the answer is the same whether a session existed or not. When the
+ * database fails, logout clears the cookie all the same and the session ends
+ * at expiry or idle (Ductus DAN-99); logout-all answers 503 and keeps the
+ * cookie, so it never reports a sign-out while the account's other sessions
+ * live, and the browser can send it again (Ductus contract addendum on #1091,
+ * item 3). As Ductus endSessions in src/server/auth/flow.ts at 393b8e0.
+ */
+async function endSessions(
+  request: Request,
+  deps: AuthDeps,
+  stage: string,
+  close: (token: string) => Promise<unknown>,
+  onCloseFailure: "clear" | "keep",
+): Promise<Response> {
   if (!isSameOrigin(request, deps.config.redirectUri.origin)) {
-    logFailure("logout_all", "cross_origin");
+    logFailure(stage, "cross_origin");
     return failurePage(403);
   }
   const token = previousSessionToken(request.headers.get("cookie"));
   if (token) {
     try {
-      await deps.closeAllSessions(token);
+      await close(token);
     } catch (error) {
-      logFailure("logout_all", errorCode(error));
-      return failurePage(503);
+      logFailure(stage, errorCode(error));
+      if (onCloseFailure === "keep") return failurePage(503);
     }
   }
   // Only then the provider (DAN-212), also without a live session: its own

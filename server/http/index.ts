@@ -11,6 +11,7 @@ export {
 export {
   finishLogin,
   LOGIN_COOKIE_NAME,
+  logout,
   logoutAll,
   startLogin,
   type AuthDeps,
