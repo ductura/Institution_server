@@ -30,6 +30,12 @@ export type {
   ReceiptSigner,
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
+export type {
+  ReplayCheckpointsResult,
+  ReplayHead,
+  ReplaySource,
+  ReplaySourceResult,
+} from "./replay-source.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
 export type { DatabaseHealth, DatabaseName, HealthReport } from "./registry.ts";
@@ -44,6 +50,7 @@ export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export { createWorkOpener } from "./open-work.ts";
+export { createReplaySource } from "./replay-source.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the

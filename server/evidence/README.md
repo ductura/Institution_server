@@ -4,7 +4,7 @@ Područje iz [karte servera](../../docs/server-map.md). Pripremu commita (DAN-81
 
 ## Što radi
 
-Dokazi rada: priprema i provjera commita segmenta (JCS, SHA-256, snimka), pohrana objekta i potpisana transakcija kroz `database`. Feature područje: logika rute je u `service`.
+Dokazi rada: priprema i provjera commita segmenta (JCS, SHA-256, snimka), pohrana objekta i potpisana transakcija kroz `database`, te stranica replaya iz provjerenih spremljenih segmenata. Feature područje: logika rute je u `service`.
 
 ## Tko ga zove
 
@@ -17,6 +17,7 @@ Objekte segmenata u pohrani; revizije, segmente i potvrde u glavnoj bazi, samo k
 ## Što izvozi
 
 - `createEvidenceService({ committer, payloads })` i tipovi `EvidenceService`, `EvidenceCommitRequest`, `EvidenceCommitRequestOutcome`, `EvidenceCommitDependencies` (`service.ts`): priprema i commit jednog segmenta; nikad ne baca, kvar je zatvoreni kod;
+- `readReplayPage({ source, payloads }, documentId, from, pin)`, `REPLAY_FORMAT`, `MAX_REPLAY_PAGE_SEGMENTS` i tipovi `ReplayPage`, `ReplayReadResult`, `ReplayReaderDeps` (`replay.ts`, DAN-818, prijenos Ductus `replay-reader.ts` na `333e163`): jedna stranica replaya s provjerenim spremljenim bajtovima segmenata. Server ne izvodi korake (B-12 na serveru je DAN-819); svaki kvar je cijeli, nikad djelomična stranica;
 - `MAX_COMMIT_REQUEST_BYTES`, `DUCTUS_PROTOCOL_VERSION`, `DUCTUS_ASYNC_COMMIT_PROTOCOL`: granice rute iz `domain`, da ih `http` čita odavde (ista granica na klijentu i serveru).
 
 ## Što ne smije uvoziti

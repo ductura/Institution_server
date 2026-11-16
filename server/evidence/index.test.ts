@@ -3,12 +3,15 @@ import * as domain from "../domain/index.ts";
 import * as area from "./index.ts";
 
 describe("server/evidence public interface", () => {
-  it("exports the service factory and the domain's wire limits, nothing else", () => {
+  it("exports the service factory, the replay reader and the domain's wire limits, nothing else", () => {
     expect(Object.keys(area).sort()).toEqual([
       "DUCTUS_ASYNC_COMMIT_PROTOCOL",
       "DUCTUS_PROTOCOL_VERSION",
       "MAX_COMMIT_REQUEST_BYTES",
+      "MAX_REPLAY_PAGE_SEGMENTS",
+      "REPLAY_FORMAT",
       "createEvidenceService",
+      "readReplayPage",
     ]);
   });
 
