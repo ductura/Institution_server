@@ -1501,13 +1501,14 @@
         "content-type": "application/json"
       },
       "params": {
-        "action": "reopen"
+        "action": "accept"
       },
       "body": {
-        "expectedSeq": 3,
-        "instruction": "Izmišljena nova uputa.",
-        "requestId": "8b7a6c5d-4e3f-4a2b-9c1d-0e9f8a7b6c01",
-        "requestedRevision": 45
+        "acceptedAnchor": null,
+        "acceptedRevision": 40,
+        "expectedSeq": 1,
+        "rangeHash": null,
+        "requestId": "8b7a6c5d-4e3f-4a2b-9c1d-0e9f8a7b6c01"
       }
     },
     "response": {
@@ -1526,14 +1527,11 @@
     "route": "collaboration.revision-requests.post",
     "name": "unknown-action",
     "request": {
-      "headers": {
-        "cookie": "__Host-ductus_session=izmisljeni-token-revizije-00000000000000001",
-        "origin": "https://ductura.example.invalid",
-        "sec-fetch-site": "same-origin",
-        "content-type": "application/json"
-      },
       "params": {
         "action": "nepoznato"
+      },
+      "headers": {
+        "content-type": "application/json"
       },
       "body": {
         "documentId": "izmisljeni-rad-0001"

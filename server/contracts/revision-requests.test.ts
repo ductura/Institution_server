@@ -36,6 +36,9 @@ describe("409 of revision requests", () => {
   it("a transition the state does not allow is the error not_allowed", async () => {
     const res = await withdraw(answer(409, { error: "not_allowed", code: "not_allowed" }));
     expect(res).toEqual({ ok: false, status: 409, code: "not_allowed" });
+    // Ductus answers {error} alone (revision-requests.ts, ZD409): still the error.
+    const bare = await withdraw(answer(409, { error: "not_allowed" }));
+    expect(bare).toEqual({ ok: false, status: 409, code: "not_allowed" });
   });
 
   it("the published 409 holds both: the answer and the error, as an anyOf", () => {
