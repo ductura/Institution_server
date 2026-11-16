@@ -195,6 +195,9 @@ type Declarations = {
 };
 
 const nameOf = (node: ts.Node): string | undefined => {
+  // `export * as ns from` binds ns.
+  if (ts.isExportDeclaration(node) && node.exportClause && ts.isNamespaceExport(node.exportClause))
+    return node.exportClause.name.text;
   const name = (node as { name?: ts.Node }).name;
   return name && (ts.isIdentifier(name) || ts.isStringLiteral(name)) ? name.text : undefined;
 };
@@ -244,6 +247,13 @@ function declarations(text: string, path: string): Declarations {
     refs(file.typeReferenceDirectives),
     refs(file.libReferenceDirectives),
     file.amdDependencies.map((d) => [d.name ?? null, d.path]),
+    // Every triple-slash line as written, so a directive the parser keeps only
+    // as a flag (no-default-lib) is a change too (self-attack #92).
+    text
+      .split(/\r?\n/u)
+      .filter((line) => /^\s*\/\/\//u.test(line))
+      .map((line) => line.trim()),
+    file.hasNoDefaultLib,
   ]);
   const modules = new Set<string>();
   const visit = (node: ts.Node): void => {
@@ -387,6 +397,11 @@ function packageLevel(input: LevelInput): LevelResult {
     // TypeScript that is not a declaration file is not what tsc publishes: blocked.
     if (/\.[mc]?tsx?$/u.test(path) && !DECLARATION.test(path))
       throw new Error(`${path} is TypeScript but not a declaration file`);
+    // A nested package.json changes how Node loads the files beside it: major.
+    if (path !== "package.json" && /(?:^|\/)package\.json$/u.test(path)) {
+      raise("major", `${path} added, removed or changed`);
+      continue;
+    }
     const parsed = path === "package.json" || DECLARATION.test(path);
     const a = rawA === undefined || !parsed ? undefined : decode(rawA);
     const b = rawB === undefined || !parsed ? undefined : decode(rawB);

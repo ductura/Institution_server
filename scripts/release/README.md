@@ -22,6 +22,7 @@ Automatska razina izdanja (DAN-804, POTVRDA UGOVORA w804a):
   - Datoteke se uspoređuju kao sirovi bajtovi; dekodira se samo ono što se parsira (`.d.ts`, JSON), strogo kao UTF-8 i s BOM-om.
   - Nova deklaracija čije se ime kao token pojavljuje u ijednoj staroj `.d.ts` datoteci paketa (i globalna imena poput `Date`) je major, jer ga može zasjeniti.
   - Što se ne može pouzdano odrediti (neparsabilan `.d.ts`, nečitljiv dokument) je `blocked`, nikad patch.
+- **Prihvaćena granica (ugovor t. 4):** nova ruta u `contracts` je minor iako širi `OperationId` (`keyof Operations`); potrošač s `Record<OperationId, …>` ili iscrpnim `switch` mora dodati granu. To je značenje nove rute u API-ju v1.
 - **Opće pravilo:** kad klasifikator ne može dokazati da promjena nije lomljiva, rezultat je `major` (vlasnička odluka) ili `blocked`, nikad niža razina.
 - `nextVersion`: minor ili patch od zadnjeg taga, nikad ispod `version` iz `package.json`. Viši major u `package.json` znači da major čeka vlasnički tag, pa se ništa ne označava.
 - `auto.ts`: `pnpm release:level`. Stari paket priprema **kodom taga** (`git worktree`, `pnpm install`, `check.ts --stage-only`), a novi kodom HEAD-a. U `$GITHUB_OUTPUT` piše `releases` (tagove za stvaranje) i `stopped` (`<paket>:major|blocked`). Svaki pad (git, instalacija, priprema) je `blocked`. Sam ne stvara tag.
