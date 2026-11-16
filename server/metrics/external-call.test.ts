@@ -825,8 +825,8 @@ describe("createExternalCaller", () => {
 
     it("retries only on an own `retry: true`", async () => {
       for (const options of [
-        Object.create({ retry: true }) as { retry?: boolean },
         { retry: "true" as unknown as boolean },
+        { retry: 1 as unknown as boolean },
       ]) {
         const { caller } = setup({ ...POLICY, downAfter: 9 });
         let reached = 0;
@@ -843,7 +843,20 @@ describe("createExternalCaller", () => {
       }
     });
 
-    it.each([null, "retry", 1])("refuses the options %j before the service", (options) => {
+    // Orchestrator c.6917060647: the same plain-record rule as the policy.
+    class OptionsRecord {
+      retry = true;
+    }
+    it.each([
+      ["null", null],
+      ["a string", "retry"],
+      ["a number", 1],
+      ["an array", [true]],
+      ["an inherited retry", Object.create({ retry: true })],
+      ["a prototype with no keys", Object.assign(Object.create({}), { retry: true })],
+      ["a prototype without a prototype", Object.create(Object.create(null))],
+      ["a class instance", new OptionsRecord()],
+    ])("refuses options that are %s before the service", (_name, options) => {
       const { caller } = setup();
       let reached = 0;
       const run = async () => (reached += 1);
@@ -851,6 +864,20 @@ describe("createExternalCaller", () => {
         RangeError,
       );
       expect(reached).toBe(0);
+    });
+
+    it("accepts plain options and options without a prototype", async () => {
+      const { caller } = setup();
+      const bare = Object.assign(Object.create(null) as object, { failed: (v: number) => v === 1 });
+      expect(await caller.call("read", async () => 1, bare)).toEqual({
+        ok: false,
+        failure: "failed",
+        answer: 1,
+      });
+      expect(await caller.call("read", async () => 2, { failed: (v: number) => v === 1 })).toEqual({
+        ok: true,
+        value: 2,
+      });
     });
 
     it("a failed-check that is not a function fails the call without a crash", async () => {

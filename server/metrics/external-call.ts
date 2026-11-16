@@ -12,8 +12,8 @@
  *   `timeoutMs`, and the outcome `timeout`. The default clock is monotonic.
  * - Inputs: the service is one of a closed list; the policy is a plain record
  *   with exactly its five own whole-number keys (delays within the timer
- *   limit), kept as a frozen copy; the operation is a lower-case code; and
- *   only an own `retry: true` allows a retry.
+ *   limit), kept as a frozen copy; the operation is a lower-case code; the
+ *   options are a plain record too, and only an own `retry: true` retries.
  * - Retry: only when the caller says the operation is idempotent, and only
  *   when the pause still ends before the deadline.
  * - Availability: after `downAfter` failed calls in a row the service is
@@ -101,6 +101,13 @@ const POLICY_LIMITS: Readonly<Record<keyof ExternalCallPolicy, readonly [number,
   downForMs: [0, Number.MAX_SAFE_INTEGER],
 };
 
+/** An object whose prototype is `Object.prototype` or none: no array, class or chain. */
+function isPlainRecord(value: unknown): value is object {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const proto: unknown = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
 /**
  * A plain record (prototype `Object.prototype` or none) with exactly the five
  * own data keys, each a whole number in its range. Returns a frozen copy of
@@ -108,11 +115,7 @@ const POLICY_LIMITS: Readonly<Record<keyof ExternalCallPolicy, readonly [number,
  * differently on another read, cannot reach the caller.
  */
 function checkPolicy(policy: unknown): ExternalCallPolicy {
-  if (typeof policy !== "object" || policy === null || Array.isArray(policy))
-    throw new RangeError("policy must be a plain object");
-  const proto: unknown = Object.getPrototypeOf(policy);
-  if (proto !== Object.prototype && proto !== null)
-    throw new RangeError("policy must be a plain object");
+  if (!isPlainRecord(policy)) throw new RangeError("policy must be a plain object");
   const keys = Reflect.ownKeys(policy);
   for (const key of keys)
     if (typeof key !== "string" || !Object.hasOwn(POLICY_LIMITS, key))
@@ -300,8 +303,7 @@ export function createExternalCaller(
     call(operation, run, options = {}) {
       if (typeof operation !== "string" || !OPERATION_RE.test(operation))
         throw new RangeError("operation must be a lower-case code");
-      if (typeof options !== "object" || options === null)
-        throw new RangeError("options must be an object");
+      if (!isPlainRecord(options)) throw new RangeError("options must be a plain object");
       return call(operation, run, options);
     },
     availability: () =>
