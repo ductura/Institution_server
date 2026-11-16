@@ -1635,6 +1635,38 @@
   },
   {
     "route": "platform.health.get",
+    "name": "alive-current",
+    "request": {},
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "status": "ok",
+        "state": "ok",
+        "apiVersion": "1.3.0",
+        "serverVersion": "0.1.0",
+        "minClientVersion": "1.0.0"
+      }
+    }
+  },
+  {
+    "route": "platform.health.get",
+    "name": "degraded",
+    "request": {},
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "status": "ok",
+        "state": "degraded",
+        "apiVersion": "1.3.0",
+        "serverVersion": "0.1.0",
+        "minClientVersion": "1.0.0"
+      }
+    }
+  },
+  {
+    "route": "platform.health.get",
     "name": "internal",
     "request": {},
     "response": {

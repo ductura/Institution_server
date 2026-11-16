@@ -11,7 +11,7 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
   - iznimka u rukovatelju: 500 `{"error":"internal"}` (`INTERNAL` iz ugovora, DAN-776), a zapisuje se samo ime greške iz zatvorenog popisa (`errorName`).
   - Sve odgovore 500 šalje `answerInternal` (`security-headers.ts`). Prije prvog bajta briše sva zaglavlja, trailere i statusnu liniju koje je postavio rukovatelj ili sloj, ponovno postavlja sigurnosna zaglavlja i zatvara vezu. Nakon početka odgovora prekida samo nedovršen odgovor, a dovršeni pušta do kraja. Nikad ne baca iznimku.
   - `sendJson` (`json.ts`) serijalizira tijelo prije `writeHead`, pa tijelo koje se ne može serijalizirati daje 500 `internal`, a ne prekinutu vezu.
-- `HEALTH_ROUTE` je `GET /api/v1/health`, s tijelom točno `{"status":"ok"}` i `Cache-Control: no-store`. Ne čita bazu, sesiju ni okolinu (prijenos Ductusa `app/api/health/route.ts`).
+- `createHealthRoute({ health, serverVersion })` daje `GET /api/v1/health` (S-1M-a, DAN-795): uvijek 200, `Cache-Control: no-store` i tijelo točno `{"status":"ok","state","apiVersion","serverVersion","minClientVersion"}`. `state` je `degraded` kad glavna baza nije `ok`, kad provjera baci ili ne završi u `CHECK_DEADLINE_MS` (2,5 s); baze zapisa i pravnih tekstova ga ne mijenjaju. Jedna provjera odgovara svim zahtjevima 1 s. Nikad adresa, ime baze ni poruka greške; sesiju ne čita (prijenos Ductusa `app/api/health/route.ts`, proširen).
 - `routesOf` daje rute imenovanih područja (`areas.ts`).
 - `createDatabases` daje registar baza nad `server/database`. Ništa ne otvara, jer se veza otvara pri prvoj upotrebi. `close()` zatvara otvorene bazene pri gašenju; svaka nova baza u registru zatvara se i ondje.
 - `shutdown.ts` (S-1B-c, DAN-778; prijenos Ductusa `src/server/shutdown.ts`): svaki zahtjev uzima ulaznicu koordinatora. Prvi SIGTERM ili SIGINT redom: prestaje primati veze i zatvara prazne keep-alive veze; svaki zahtjev raščlanjen nakon signala dobiva 503 `{"error":"unavailable"}` uz `Retry-After: 1`, i na istoj vezi iza zahtjeva u tijeku (pipelining); `Connection: close` nosi samo zadnji odgovor na vezi, najviše 16 odbijanja po vezi, a odbijeni zahtjev s tijelom uvijek zatvara vezu (DAN-778 c3, ugovor Ductus#1836 c.6895155382); čeka započete zahtjeve i dugovane 503 (`hold()`); veza koja se zatvara čita se još najviše 1 s dok je klijent ne zatvori, da reset ne odreže već poslane bajtove; zatim kuke redom (`FLUSH_LOGS`, pa baze); izlaz 0. Drugi signal ne pokreće ništa novo. Jedan rok od signala (`SHUTDOWN_GRACE_MS`, zadano 8000 ms) pokriva sve: nakon njega izlaz 1 i redak `shutdown.deadline` s fazom; kuka koja baci daje izlaz 1 i `shutdown.hook_failed`. U zapisu su samo imena, nikad poruka greške ni zahtjev.
@@ -37,7 +37,7 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 - `createShutdownCoordinator`, `installShutdown`, `FLUSH_LOGS`, `SHUTDOWN_GRACE_MS`, `ShutdownCoordinator`, `ShutdownHook` (`shutdown.ts`);
 - `createRouter`, `Route`, `Handler`, `Router` (`router.ts`);
 - `readBodyWithLimit`, `declaredLengthRefusal`, `LimitedBodyResult` (`mutation-request.ts`);
-- `HEALTH_ROUTE` (`health.ts`);
+- `createHealthRoute` i `CHECK_DEADLINE_MS` (`health.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);
 - `createDatabases`, `Databases` (`databases.ts`).
 

@@ -5,4 +5,12 @@
  * breaks existing clients is refused (scripts/check-breaking.ts) and needs a
  * new major, which is a new document and a new path prefix.
  */
-export const API_VERSION = "1.2.0";
+export const API_VERSION = "1.3.0";
+
+/**
+ * The oldest client (preloader, web, desktop) this server still serves,
+ * major.minor.patch; health sends it as minClientVersion (S-1M-a, DAN-795).
+ * A client older than this asks its user to update. Raise it only together
+ * with a change that old clients cannot use.
+ */
+export const MIN_CLIENT_VERSION = "1.0.0";

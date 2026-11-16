@@ -12,11 +12,16 @@ import {
   createLayers,
   createShutdownCoordinator,
   FLUSH_LOGS,
-  HEALTH_ROUTE,
+  createHealthRoute,
   installShutdown,
   type ShutdownHook,
   startServer,
 } from "../../server/http/index.ts";
+
+const HEALTH_ROUTE = createHealthRoute({
+  health: async () => ({ main: "ok", logs: "ok", legal: "ok" }),
+  serverVersion: "0.0.0",
+});
 
 const [slowArgument = "0", hookArgument = "ok"] = process.argv.slice(2);
 const slowMs = Number(slowArgument);

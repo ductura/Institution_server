@@ -6,12 +6,18 @@ import { connect } from "node:net";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createDatabases } from "./databases.ts";
-import { HEALTH_ROUTE } from "./health.ts";
+import { createHealthRoute } from "./health.ts";
 import { sendJson } from "./json.ts";
 import { createLayers, type Layer } from "./pipeline.ts";
 import type { Handler } from "./router.ts";
 import { createShutdownCoordinator } from "./shutdown.ts";
 import { type Running, startServer } from "./start.ts";
+
+// Health with the main database up: these tests are about the pipeline, not the database.
+const HEALTH_ROUTE = createHealthRoute({
+  health: async () => ({ main: "ok", logs: "ok", legal: "ok" }),
+  serverVersion: "0.0.0",
+});
 
 const CANARY = "made-up-canary-7f3a";
 const BIG = 4 * 1024 * 1024;

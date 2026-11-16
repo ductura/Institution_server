@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { answerFake, FAKE_VECTOR_HEADER, VECTORS } from "./generated/fake-server/index.ts";
 import { validateInput } from "./generated/index.ts";
 import { PENDING } from "./inventory.ts";
-import { API_VERSION, ROUTES } from "./index.ts";
+import { API_VERSION, MIN_CLIENT_VERSION, ROUTES } from "./index.ts";
 
 const OPEN = "evidence.open.post";
 const COMMIT = "evidence.commit.post";
@@ -108,9 +108,15 @@ describe("input validation: closed bodies", () => {
 });
 
 describe("VS-1 path", () => {
-  it("health may carry the API version, and then it is API_VERSION", () => {
-    const answer = body("platform.health.get", "alive-with-version") as { version: string };
-    expect(answer.version).toBe(API_VERSION);
+  // Since 1.3.0 (S-1M-a, DAN-795) the API version is apiVersion; the 1.2.0
+  // answer with `version` stays a valid vector, and that field is never newer.
+  it("health carries the API version as apiVersion, and then it is API_VERSION", () => {
+    const answer = body("platform.health.get", "alive-current") as Record<string, string>;
+    expect(answer.apiVersion).toBe(API_VERSION);
+    expect(answer.minClientVersion).toBe(MIN_CLIENT_VERSION);
+    expect(answer.version).toBeUndefined();
+    const old = body("platform.health.get", "alive-with-version") as { version: string };
+    expect(old.version).toBe("1.2.0");
     expect(validateInput("platform.health.get", "query", {})).toBe(true);
   });
 

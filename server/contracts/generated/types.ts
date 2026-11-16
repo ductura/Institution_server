@@ -54,7 +54,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "status": "ok"; "version"?: string }; headers: {  } };
+    success: { status: 200; body: { "status": "ok"; "version"?: string; "state"?: "ok" | "degraded"; "apiVersion"?: string; "serverVersion"?: string; "minClientVersion"?: string }; headers: {  } };
     errorCode: never;
   };
   "platform.ready.get": {
