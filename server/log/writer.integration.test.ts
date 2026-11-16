@@ -38,7 +38,10 @@ function validValue(spec: FieldSpec): string | number | boolean {
     case "version":
       return "1.4.0";
     case "route":
+    case "routeOrNone":
       return ROUTE;
+    case "ip":
+      return "2001:db8::7";
   }
 }
 

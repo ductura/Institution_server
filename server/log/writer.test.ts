@@ -61,7 +61,10 @@ function validValue(spec: FieldSpec): string | number | boolean {
     case "version":
       return "1.4.0";
     case "route":
+    case "routeOrNone":
       return ROUTE;
+    case "ip":
+      return "2001:db8::7";
   }
 }
 
@@ -137,6 +140,35 @@ describe("createLogWriter", () => {
     }
     expect(store.rows.length).toBeGreaterThanOrEqual(paths.length);
     expect(lines).toEqual([]);
+  });
+
+  it("stores a traffic record with its client IP and none unchanged (DAN-831-1)", async () => {
+    // `ip` is a key redact drops; the catalog admitted only an address or none.
+    const store = memoryStore();
+    const { lines, fallback } = capture();
+    const write = createLogWriter({ store, routes: ROUTES, fallback });
+    for (const [ip, route] of [
+      ["192.0.2.1", ROUTE],
+      ["2001:db8::7", "none"],
+      ["none", "none"],
+    ]) {
+      const record = validRecord("traffic.request");
+      Object.assign(record.fields as object, { ip, route });
+      expect(await write(record), ip).toEqual({ ok: true, value: record });
+      expect(store.rows.at(-1), ip).toEqual({ kind: "traffic.request", payload: record });
+    }
+    expect(lines).toEqual([]);
+  });
+
+  it("keeps the client IP out of the fallback line when the store fails", async () => {
+    const { lines, fallback } = capture();
+    const store = { append: () => Promise.reject(new Error("down")) };
+    const record = validRecord("traffic.request");
+    Object.assign(record.fields as object, { ip: "192.0.2.1" });
+    const result = await createLogWriter({ store, routes: ROUTES, fallback })(record);
+    expect(result).toMatchObject({ ok: false, error: { code: "LOG_STORE_FAILED" } });
+    expect(lines).toHaveLength(1);
+    expect(lines.join("")).not.toContain("192.0.2.1");
   });
 
   it("still refuses a route field that is not in the inventory", async () => {

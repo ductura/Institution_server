@@ -101,13 +101,13 @@ Redoslijed koraka za svaki zahtjev. Svaki korak može odbiti zahtjev; tada se sl
 
 ### Gdje se piše koji zapis
 
-| Zapis              | Piše                                    | Kamo        | Kada                                                                                                                    |
-| ------------------ | --------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Zapis prometa      | `traffic` preko `log`                   | Baza zapisa | Kad odgovor završi, za svaki zahtjev: vrijeme, metoda, predložak rute (bez upita), status, trajanje, ishod koraka 3 i 4 |
-| Sigurnosni događaj | `traffic` i `http` preko `log`          | Baza zapisa | Pri odbijanju u koracima 3, 4 i 7                                                                                       |
-| Metrika            | područje koje mjeri, preko `metrics`    | Metrika     | Uz svaki korak koji broji (zahtjevi, odbijanja, trajanje RPC-a)                                                         |
-| Zapis greške       | područje u kojem je greška, preko `log` | Baza zapisa | Neočekivana programska pogreška; bez tijela zahtjeva i kolačića                                                         |
-| Revizijski trag    | RPC u koraku 12                         | Glavna baza | U istoj transakciji kao promjena; ako se transakcija poništi, nema ni traga                                             |
+| Zapis              | Piše                                    | Kamo        | Kada                                                                                                                                         |
+| ------------------ | --------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zapis prometa      | `traffic` preko `log`                   | Baza zapisa | Kad odgovor završi, za svaki zahtjev: vrijeme, metoda, predložak rute (bez upita), status, trajanje, IP klijenta (D-303), ishod koraka 3 i 4 |
+| Sigurnosni događaj | `traffic` i `http` preko `log`          | Baza zapisa | Pri odbijanju u koracima 3, 4 i 7                                                                                                            |
+| Metrika            | područje koje mjeri, preko `metrics`    | Metrika     | Uz svaki korak koji broji (zahtjevi, odbijanja, trajanje RPC-a)                                                                              |
+| Zapis greške       | područje u kojem je greška, preko `log` | Baza zapisa | Neočekivana programska pogreška; bez tijela zahtjeva i kolačića                                                                              |
+| Revizijski trag    | RPC u koraku 12                         | Glavna baza | U istoj transakciji kao promjena; ako se transakcija poništi, nema ni traga                                                                  |
 
 Zapisi ne sadrže tijelo zahtjeva, kolačiće, tokene, sadržaj radova ni upit iz URL-a (ARCHITECTURE §10, BACKEND §4.9). Mrežni inženjer vidi zapise i metriku svih ustanova (c.6869502575).
 

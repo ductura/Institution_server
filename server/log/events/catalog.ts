@@ -9,6 +9,7 @@
 // S-1K.3-a. log imports only settings (docs/server-map.md §2), so the account
 // kinds and actions of server/roles are copied below and server/roles/index.test.ts
 // checks that the copies stay equal.
+import { isIPv6 } from "node:net";
 import { types } from "node:util";
 
 /** server/roles ACCOUNT_KINDS, in the same order. */
@@ -83,7 +84,15 @@ export type FieldSpec =
   /** `major.minor.patch`, digits only. */
   | { readonly kind: "version" }
   /** A route template that must be in the inventory passed to checkEvent. */
-  | { readonly kind: "route" };
+  | { readonly kind: "route" }
+  /** A route template as `route`, or `none` for a path that is no route (DAN-831-1). */
+  | { readonly kind: "routeOrNone" }
+  /**
+   * A client IP as server/traffic clientIpOf writes it, or `none` without one
+   * (DAN-831-1; D-303). Its field is named so that redact drops it from any
+   * console line: the address goes only to the log database.
+   */
+  | { readonly kind: "ip" };
 
 export type EventSpec = {
   readonly actors: readonly LogActor[];
@@ -96,6 +105,8 @@ const FLAG: FieldSpec = { kind: "flag" };
 const ID: FieldSpec = { kind: "id" };
 const VERSION: FieldSpec = { kind: "version" };
 const ROUTE: FieldSpec = { kind: "route" };
+const ROUTE_OR_NONE: FieldSpec = { kind: "routeOrNone" };
+const IP: FieldSpec = { kind: "ip" };
 const DURATION_MS = int(0, 86_400_000);
 const COUNT = int(0, Number.MAX_SAFE_INTEGER);
 
@@ -169,12 +180,15 @@ export const EVENT_CATALOG = {
       reason: code("origin_missing", "origin_not_allowed", "cross_site", "logout_token_invalid"),
     },
   },
-  // Traffic (docs/server-map.md §3: written when the answer ends).
+  // Traffic (docs/server-map.md §3: written when the answer ends). Every
+  // request gets one: OTHER for any other method, route none for a path that
+  // is no route.
   "traffic.request": {
     actors: ANYONE,
     fields: {
-      method: code("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"),
-      route: ROUTE,
+      method: code("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "OTHER"),
+      route: ROUTE_OR_NONE,
+      ip: IP,
       status: int(100, 599),
       durationMs: DURATION_MS,
       ipRule: code("allowed", "denied", "not_checked"),
@@ -385,6 +399,28 @@ const VERSION_RE = /^(?:0|[1-9]\d{0,5})\.(?:0|[1-9]\d{0,5})\.(?:0|[1-9]\d{0,5})$
  */
 const ROUTE_RE = /^\/api\/v1(?:\/(?:[a-z0-9-]{1,40}|\{[A-Za-z]{1,40}\})){0,10}$/;
 const NO_ROUTES: ReadonlySet<string> = new Set();
+/** The word for a missing route or client IP. */
+const NONE = "none";
+const IPV4_RE = /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
+const IPV6_CHARS_RE = /^[0-9a-f:]{2,39}$/;
+/** IPv4-mapped IPv6, which clientIpOf writes as the IPv4 address. */
+const MAPPED_RE = /^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/;
+
+/**
+ * IPv4 dotted without leading zeros, or IPv6 exactly as RFC 5952 writes it:
+ * the URL serializer compresses the first longest run of two or more zero
+ * words and writes lower-case hex without leading zeros, as clientIpOf does
+ * (server/traffic/client-ip-log.property.test.ts checks the parity).
+ */
+function ipOk(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  if (value === NONE || IPV4_RE.test(value)) return true;
+  if (!IPV6_CHARS_RE.test(value) || !isIPv6(value) || MAPPED_RE.test(value)) return false;
+  return new URL(`http://[${value}]/`).hostname === `[${value}]`;
+}
+
+const routeOk = (value: unknown, routes: ReadonlySet<string>): boolean =>
+  typeof value === "string" && ROUTE_RE.test(value) && setHas.call(routes, value);
 // Set.prototype.has itself, so an inventory with its own `has` cannot widen the check.
 const setHas = Set.prototype.has;
 
@@ -454,7 +490,11 @@ function fieldOk(spec: FieldSpec, value: unknown, routes: ReadonlySet<string>): 
     case "version":
       return typeof value === "string" && VERSION_RE.test(value);
     case "route":
-      return typeof value === "string" && ROUTE_RE.test(value) && setHas.call(routes, value);
+      return routeOk(value, routes);
+    case "routeOrNone":
+      return value === NONE || routeOk(value, routes);
+    case "ip":
+      return ipOk(value);
   }
 }
 

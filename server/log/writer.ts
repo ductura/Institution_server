@@ -74,16 +74,20 @@ const fail = (code: LogWriterErrorCode): LogWriteResult =>
   });
 
 /**
- * The record as `redact` must leave it: route fields are blanked first. A
- * route value passed the catalog only as an exact member of the server's own
- * route inventory, so it carries no free text, yet a long template such as
- * `/api/v1/evidence/commit` has the shape `redact` takes for a token.
+ * The record as `redact` must leave it: route fields are blanked and client
+ * IP fields left out first. A route value passed the catalog only as an exact
+ * member of the server's own route inventory, so it carries no free text, yet
+ * a long template such as `/api/v1/evidence/commit` has the shape `redact`
+ * takes for a token. A client IP passed only as an address or `none`, under a
+ * name `redact` drops whatever its value (DAN-831-1).
  */
 function withoutRoutes(record: LogRecord): LogRecord {
   const specs: Readonly<Record<string, FieldSpec>> = EVENT_CATALOG[record.event].fields;
   const fields: Record<string, string | number | boolean> = {};
-  for (const [name, value] of Object.entries(record.fields))
-    fields[name] = specs[name]?.kind === "route" ? "" : value;
+  for (const [name, value] of Object.entries(record.fields)) {
+    const kind = specs[name]?.kind;
+    if (kind !== "ip") fields[name] = kind === "route" || kind === "routeOrNone" ? "" : value;
+  }
   return { ...record, fields };
 }
 
