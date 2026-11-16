@@ -125,13 +125,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   return function check(value: Record<string, unknown>): boolean {
       const nestedHead = (typeof value === 'object' && value !== null ? value['head'] : undefined) as Record<string, unknown>;
     return (
-      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
-      (typeof value['documentId'] === 'string') &&
-      (typeof value['from'] === 'number' && Number.isInteger(value['from'])) &&
-      value['from'] <= 9007199254740991 &&
-      value['from'] >= 0 &&
-      (value['head'] !== undefined ? ((typeof value['head'] === 'object' && value['head'] !== null && !Array.isArray(value['head'])) && (typeof nestedHead['segmentHash'] === 'string') && local0.test(nestedHead['segmentHash']) && (typeof nestedHead['segmentCount'] === 'number' && Number.isInteger(nestedHead['segmentCount'])) && nestedHead['segmentCount'] <= 9007199254740991 && nestedHead['segmentCount'] >= 1 && Object.getOwnPropertyNames(value['head']).length === 2) : true) &&
-      Object.getOwnPropertyNames(value).every(key => ['documentId', 'from', 'head'].includes(key))
+      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['documentId'] === 'string') && (value['from'] === 0) && Object.getOwnPropertyNames(value).length === 2) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['documentId'] === 'string') && (typeof value['from'] === 'number' && Number.isInteger(value['from'])) && value['from'] <= 9007199254740991 && value['from'] >= 1 && (typeof value['head'] === 'object' && value['head'] !== null && !Array.isArray(value['head'])) && (typeof nestedHead['segmentHash'] === 'string') && local0.test(nestedHead['segmentHash']) && (typeof nestedHead['segmentCount'] === 'number' && Number.isInteger(nestedHead['segmentCount'])) && nestedHead['segmentCount'] <= 9007199254740991 && nestedHead['segmentCount'] >= 1 && Object.getOwnPropertyNames(value['head']).length === 2 && Object.getOwnPropertyNames(value).length === 3))
     )
   }
   })(),

@@ -2966,19 +2966,19 @@
         "cache-control": "no-store"
       },
       "body": {
-        "replayFormat": "ductus-evidence-replay-v1",
-        "segmentCount": 1,
+        "from": 0,
         "head": {
           "segmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
           "segmentCount": 1
         },
-        "from": 0,
         "next": null,
-        "startDocument": "{\"nodes\":[{\"children\":[],\"id\":\"5f0c1e8a-3b7d-4c2e-9a61-0d4e8b2f7c13\",\"type\":\"paragraph\"},{\"children\":[],\"id\":\"8b3e2d71-6c4f-4a90-b5d2-e17f0a9c3b46\",\"type\":\"paragraph\"}],\"schemaVersion\":1}",
+        "replayFormat": "ductus-evidence-replay-v1",
+        "resumeDocuments": {},
+        "segmentCount": 1,
         "segments": [
           "{\"canonicalization\":\"RFC8785-JCS\",\"captureContext\":{\"editorModel\":\"prosemirror\",\"transactionFormat\":\"ductus-edit-steps-v1\"},\"documentId\":\"dokument-izmisljeni-zv-1\",\"events\":[{\"afterDocumentHash\":\"d51563468ff4df2afb2a6f7909c7426108a7e0b1425fa7e6847d71f3e5419d1e\",\"beforeDocumentHash\":\"df89679f4a77a27f4c669a12c443a728423d36f1247b693733c96b455f172535\",\"sequence\":1,\"source\":\"editor\",\"steps\":[{\"from\":1,\"slice\":{\"content\":[{\"text\":\"Izmišljeni početak o čaju i šumi. \",\"type\":\"text\"}]},\"stepType\":\"replace\",\"to\":1}],\"touchedNodeIds\":[\"5f0c1e8a-3b7d-4c2e-9a61-0d4e8b2f7c13\"]},{\"afterDocumentHash\":\"c4653a345dc2b69e192e1cccc63c6bdaec210c1d806da446d2150bdf38e1111f\",\"beforeDocumentHash\":\"d51563468ff4df2afb2a6f7909c7426108a7e0b1425fa7e6847d71f3e5419d1e\",\"sequence\":2,\"source\":\"paste\",\"steps\":[{\"from\":35,\"slice\":{\"content\":[{\"text\":\"Zalijepljeni dio 😀. \",\"type\":\"text\"}]},\"stepType\":\"replace\",\"to\":35},{\"from\":1,\"slice\":{\"content\":[{\"text\":\"Đ: \",\"type\":\"text\"}]},\"stepType\":\"replace\",\"to\":1}],\"touchedNodeIds\":[\"5f0c1e8a-3b7d-4c2e-9a61-0d4e8b2f7c13\"]}],\"evidenceProfileId\":\"standard-v1\",\"evidenceSchema\":\"ductus-evidence-segment-v2\",\"finalDocumentHash\":\"c4653a345dc2b69e192e1cccc63c6bdaec210c1d806da446d2150bdf38e1111f\",\"hashAlgorithm\":\"sha256\",\"initialDocumentHash\":\"df89679f4a77a27f4c669a12c443a728423d36f1247b693733c96b455f172535\",\"observedEndedAt\":\"2026-10-12T08:02:00.000Z\",\"observedStartedAt\":\"2026-10-12T08:01:00.000Z\",\"predecessorSegmentHash\":null,\"segmentId\":\"odsjecak-zv-1\",\"sequenceFrom\":1,\"sequenceTo\":2,\"sessionId\":\"sesija-izmisljena-zv-1\"}"
         ],
-        "resumeDocuments": {}
+        "startDocument": "{\"nodes\":[{\"children\":[],\"id\":\"5f0c1e8a-3b7d-4c2e-9a61-0d4e8b2f7c13\",\"type\":\"paragraph\"},{\"children\":[],\"id\":\"8b3e2d71-6c4f-4a90-b5d2-e17f0a9c3b46\",\"type\":\"paragraph\"}],\"schemaVersion\":1}"
       }
     }
   },
@@ -3005,14 +3005,14 @@
         "cache-control": "no-store"
       },
       "body": {
-        "replayFormat": "ductus-evidence-replay-v1",
-        "segmentCount": 0,
-        "head": null,
         "from": 0,
+        "head": null,
         "next": null,
-        "startDocument": null,
+        "replayFormat": "ductus-evidence-replay-v1",
+        "resumeDocuments": {},
+        "segmentCount": 0,
         "segments": [],
-        "resumeDocuments": {}
+        "startDocument": null
       }
     }
   },
@@ -3324,6 +3324,37 @@
       "body": {
         "documentId": "dokument-izmisljeni-tudji-1",
         "from": 0
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "status": "not_found"
+      }
+    }
+  },
+  {
+    "route": "evidence.replay.post",
+    "name": "not-found-foreign-work-with-head",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "ductus-protocol": "1"
+      },
+      "body": {
+        "documentId": "dokument-izmisljeni-tudji-1",
+        "from": 1,
+        "head": {
+          "segmentHash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "segmentCount": 2
+        }
       }
     },
     "response": {

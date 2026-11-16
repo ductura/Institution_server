@@ -367,11 +367,11 @@ export const replay = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
-    body: closed({
-      documentId: Type.String(),
-      from: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
-      head: Type.Optional(ReplayHead),
-    }),
+    // The first page has no head; every later page has the head the first one reported.
+    body: Type.Union([
+      closed({ documentId: Type.String(), from: Type.Literal(0) }),
+      closed({ documentId: Type.String(), from: Positive, head: ReplayHead }),
+    ]),
   },
   responses: [
     {
@@ -388,7 +388,9 @@ export const replay = defineRoute({
         /** Exact canonical segment texts, at least one unless the record is empty. */
         segments: Type.Array(Type.String(), { maxItems: MAX_REPLAY_PAGE_SEGMENTS }),
         /** Per chain break on this page: the checkpoint text the replay resumes from. */
-        resumeDocuments: Type.Record(Type.String({ pattern: "^[0-9a-f]{64}$" }), Type.String()),
+        resumeDocuments: Type.Record(Type.String({ pattern: "^[0-9a-f]{64}$" }), Type.String(), {
+          additionalProperties: false,
+        }),
       }),
     },
   ],

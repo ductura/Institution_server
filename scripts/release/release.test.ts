@@ -218,6 +218,15 @@ describe("imports of the packed code", () => {
     ]);
   });
 
+  it.each([['x}from"y";'], ['import"y";'], ['export*as"b"from"y";'], ['import{"a"as b}from"y";']])(
+    "still reads the minified import %s",
+    (code) => {
+      expect(importErrors({ "a/index.js": code }, FILES, ["dep"])).toEqual([
+        "a/index.js imports undeclared y",
+      ]);
+    },
+  );
+
   it.each([
     ['export * from "./extra.js";', "a/index.js imports ./extra.js, not in the package"],
     ['import "../../outside.js";', "a/index.js imports ../../outside.js, not in the package"],

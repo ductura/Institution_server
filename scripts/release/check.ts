@@ -23,9 +23,9 @@ export function importStaged(entry: string, nodeEnv: string) {
 }
 
 const GUARD_MESSAGE = "fake OIDC runs only locally and in CI";
-// `from` or `import` as a keyword, never as a property name such as the
-// generated `value['from'] === 'number'` of a body with a `from` field (DAN-818).
-const SPECIFIER = /(?<![\w$.'"])(?:from|import)\s*\(?\s*["']([^"']+)["']/gu;
+// `from` or `import` as a keyword, never as a member such as the generated
+// `value['from'] === 'number'` of a body with a `from` field (DAN-818).
+const SPECIFIER = /(?<![\w$.]|\[\s*["'])(?:from|import)\s*\(?\s*["']([^"']+)["']/gu;
 
 /** [subpath, target] for every string target of `exports`, at any depth of conditions. */
 export function exportTargets(exports: unknown, path = "."): [string, string][] {

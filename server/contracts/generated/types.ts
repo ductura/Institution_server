@@ -67,8 +67,8 @@ export type Operations = {
   "evidence.replay.post": {
     params: undefined;
     query: undefined;
-    body: { "documentId": string; "from": number; "head"?: { "segmentHash": string; "segmentCount": number } };
-    success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": { [key: string]: unknown } }; headers: {  } };
+    body: { "documentId": string; "from": 0 } | { "documentId": string; "from": number; "head": { "segmentHash": string; "segmentCount": number } };
+    success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": {  } }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "record_changed" | "unavailable";
   };
   "institution.acknowledgment.post": {

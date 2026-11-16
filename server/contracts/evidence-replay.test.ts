@@ -3,6 +3,7 @@
 // ductura/server#136). Only invented data.
 import { createHash } from "node:crypto";
 
+import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
 import { answerFake, FAKE_VECTOR_HEADER, VECTORS } from "./generated/fake-server/index.ts";
@@ -55,6 +56,8 @@ describe("evidence/replay contract", () => {
     ["a fractional from", { documentId: DOC, from: 0.5 }, false],
     ["from as text", { documentId: DOC, from: "0" }, false],
     ["no from", { documentId: DOC }, false],
+    ["a later page without its head", { documentId: DOC, from: 1 }, false],
+    ["a first page with a head", { documentId: DOC, from: 0, head: HEAD }, false],
     ["no document", { from: 0 }, false],
     [
       "an uppercase head hash",
@@ -90,8 +93,46 @@ describe("evidence/replay contract", () => {
     expect(page.next).toBeNull();
   });
 
+  it("every vector refused as invalid has a body the contract refuses too", () => {
+    const invalid = VECTORS.filter((v) => v.route === REPLAY && v.name.startsWith("invalid-"));
+    expect(invalid.length).toBeGreaterThanOrEqual(4);
+    for (const v of invalid) expect(validateInput(REPLAY, "body", v.request.body)).toBe(false);
+  });
+
+  it("a page carries its keys in JCS order, as the route sends its bytes", () => {
+    for (const name of ["first-page", "empty-record"]) {
+      const keys = Object.keys(vector(name).response.body as object);
+      expect(keys).toEqual([...keys].sort());
+    }
+  });
+
+  it("only a SHA-256 names a resume document", () => {
+    const schema = ROUTES.find((r) => r.id === REPLAY)?.responses[0]?.body;
+    const page = vector("empty-record").response.body as Record<string, unknown>;
+    expect(schema && Value.Check(schema, page)).toBe(true);
+    for (const resumeDocuments of [
+      { "nije-hash": "x" },
+      { ["A".repeat(64)]: "x" },
+      { ["a".repeat(64)]: 1 },
+    ]) {
+      expect(schema && Value.Check(schema, { ...page, resumeDocuments })).toBe(false);
+    }
+  });
+
+  it("a foreign work is 404 even with a head that is not its own; access comes before the pin", () => {
+    expect(vector("not-found-foreign-work-with-head").response).toMatchObject({
+      status: 404,
+      body: { status: "not_found" },
+    });
+  });
+
   it("a page past the end, a foreign work and a changed record never carry content", () => {
-    for (const name of ["not-found-foreign-work", "not-found-past-end", "record-changed"]) {
+    for (const name of [
+      "not-found-foreign-work",
+      "not-found-foreign-work-with-head",
+      "not-found-past-end",
+      "record-changed",
+    ]) {
       expect(Object.keys(vector(name).response.body as object)).toEqual(["status"]);
     }
   });
