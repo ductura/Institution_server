@@ -37,6 +37,13 @@ const THROWN: Record<string, () => unknown> = {
 
 const handle: Handler = async (request) => {
   const pick = new URL(request.url ?? "", "http://x.invalid").searchParams.get("throw") ?? "";
+  if (pick === "body") {
+    // The body is read into memory and thrown back in every way it could leak.
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(chunk as Buffer);
+    const text = Buffer.concat(chunks).toString("utf8");
+    throw new Error(text, { cause: text });
+  }
   const make = THROWN[pick];
   if (make !== undefined) throw make();
 };
@@ -68,9 +75,17 @@ function get(path: string, body?: string): Promise<Wire> {
       {
         host: "127.0.0.1",
         port: server.port,
-        method: body === undefined ? "GET" : "POST",
+        // GET even with a body: the one route is GET, so the handler runs and
+        // reads it (a POST would stop at 405 before the handler).
+        method: "GET",
         path,
-        headers: { "x-debug": CANARY, cookie: `s=${CANARY}`, "user-agent": CANARY },
+        headers: {
+          "x-debug": CANARY,
+          cookie: `s=${CANARY}`,
+          "user-agent": CANARY,
+          // A GET is not chunked by default; the length frames the body.
+          ...(body === undefined ? {} : { "content-length": String(Buffer.byteLength(body)) }),
+        },
       },
       (incoming) => {
         const chunks: Buffer[] = [];
@@ -153,10 +168,20 @@ describe("an uncaught error on the wire", () => {
     expect(read().join("\n")).not.toContain(CANARY);
   });
 
-  it("the request body never reaches the answer or the log", async () => {
+  it("a handler that read the body and threw leaks no part of it", async () => {
     const read = captureConsole();
-    const wire = await get("/api/v1/health?throw=error", JSON.stringify({ text: CANARY }));
-    expect(wire.status).toBeGreaterThanOrEqual(400);
+    const wire = await get("/api/v1/health?throw=body", JSON.stringify({ text: CANARY }));
+    expect(wire.status).toBe(500);
+    expect(Value.Check(INTERNAL.error.body as never, JSON.parse(wire.body))).toBe(true);
+    expect(records(read())).toEqual([
+      {
+        event: "server_error",
+        where: "route",
+        errorClass: "other",
+        requestId: wire.headers["x-request-id"],
+        route: "platform.health.get",
+      },
+    ]);
     expect(JSON.stringify(wire)).not.toContain(CANARY);
     expect(read().join("\n")).not.toContain(CANARY);
   });
