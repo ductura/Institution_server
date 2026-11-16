@@ -15,6 +15,7 @@ import {
 } from "./config/index.ts";
 import {
   type AreaWithRoutes,
+  createAuthRoutes,
   createDatabases,
   createEvidenceOpenRoute,
   createLayers,
@@ -85,6 +86,8 @@ async function main(): Promise<void> {
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
       createEvidenceOpenRoute(databases.main),
+      // Login over AAI@EduHr (S-1E-a; D-09: the fake provider only in development and test).
+      ...createAuthRoutes(process.env),
       ...routesOf(AREAS),
     ],
   }).catch((error: unknown) => {
