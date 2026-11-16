@@ -9,7 +9,7 @@ import { generate, OUT_DIR, toPosix } from "../../scripts/index.ts";
 import { checkInventory, checkRoute, pathOf } from "./check.ts";
 import { createClient, validateInput } from "./generated/index.ts";
 import { FALLBACK, ROUTES, defineRoute, error, type RouteContract } from "./index.ts";
-import { INVENTORY, PENDING } from "./inventory.ts";
+import { INVENTORY, PENDING, SERVER_SOURCES } from "./inventory.ts";
 
 const CONTRACTS_DIR = dirname(fileURLToPath(import.meta.url));
 // Fixed here, not read from the contract, so the fallback cannot be moved to hide a route.
@@ -35,7 +35,7 @@ describe("generated = committed", () => {
 describe("route inventory", () => {
   it("covers all 38 inventory files: contract, fallback or pending, never two of them", () => {
     expect(Object.keys(INVENTORY)).toHaveLength(38);
-    expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([]);
+    expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE, SERVER_SOURCES)).toEqual([]);
   });
 
   it("the fallback is the catch-all file", () => {
@@ -59,21 +59,35 @@ describe("route inventory", () => {
   });
 
   it("a route outside the inventory fails", () => {
-    expect(checkInventory([...ROUTES, extra], INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
-      "made-up.route.get: app/api/made-up/route/route.ts is not in the inventory",
-    ]);
+    expect(
+      checkInventory([...ROUTES, extra], INVENTORY, PENDING, FALLBACK_FILE, SERVER_SOURCES),
+    ).toEqual(["made-up.route.get: app/api/made-up/route/route.ts is not in the inventory"]);
   });
 
   it("a missing method, a contracted pending file and an unknown pending file fail", () => {
     const withoutHealth = ROUTES.filter((r) => r.id !== "platform.health.get");
-    expect(checkInventory(withoutHealth, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
-      "app/api/health/route.ts: methods none, inventory GET",
-    ]);
+    expect(
+      checkInventory(withoutHealth, INVENTORY, PENDING, FALLBACK_FILE, SERVER_SOURCES),
+    ).toEqual(["app/api/health/route.ts: methods none, inventory GET"]);
     const pending = [...PENDING, "app/api/health/route.ts", "app/api/nope/route.ts"];
-    expect(checkInventory(ROUTES, INVENTORY, pending, FALLBACK_FILE)).toEqual([
+    expect(checkInventory(ROUTES, INVENTORY, pending, FALLBACK_FILE, SERVER_SOURCES)).toEqual([
       "platform.health.get: app/api/health/route.ts is also pending",
       "app/api/nope/route.ts: pending but not in the inventory",
     ]);
+  });
+
+  it("a server source counts as a file: its methods must match, and it is not an inventory file", () => {
+    const withoutStudent = ROUTES.filter((r) => r.id !== "student.assignments.get");
+    expect(
+      checkInventory(withoutStudent, INVENTORY, PENDING, FALLBACK_FILE, SERVER_SOURCES),
+    ).toEqual(["app/api/student/assignments/route.ts: methods none, inventory GET"]);
+    expect(checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE)).toEqual([
+      "student.assignments.get: app/api/student/assignments/route.ts is not in the inventory",
+    ]);
+    const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
+    expect(
+      checkInventory(ROUTES, INVENTORY, PENDING, FALLBACK_FILE, { ...SERVER_SOURCES, ...clash }),
+    ).toEqual(["app/api/health/route.ts: server source is also in the inventory"]);
   });
 
   it("maps inventory files to /api/v1 paths", () => {
