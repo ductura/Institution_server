@@ -15,7 +15,7 @@ import { gunzipSync } from "node:zlib";
 import { checkStaged } from "./check.ts";
 import { CONTRACTS, TEST_FAKES, type PackageSpec } from "./manifest.ts";
 import { compareFiles, npmCliPath, parsePackOutput } from "./pack.ts";
-import { ROOT, STAGE_DIR, stagePackage } from "./stage.ts";
+import { releaseVersion, ROOT, STAGE_DIR, stagePackage } from "./stage.ts";
 
 // `pnpm release:tarball <contracts|test-fakes>...` (U10-b, DAN-742): packs the
 // staged package for real, unpacks those exact bytes and runs the whole
@@ -75,7 +75,7 @@ export function readTarball(gzipped: Buffer): Map<string, Buffer> {
 }
 
 /** `npm pack` of `dir` into `out`, without a shell; the path of the tarball. */
-export function packTarball(spec: PackageSpec, dir: string, out: string): string {
+export function packTarball(spec: PackageSpec, dir: string, out: string, release?: string): string {
   const cli = npmCliPath({
     execPath: process.execPath,
     platform: process.platform,
@@ -86,12 +86,15 @@ export function packTarball(spec: PackageSpec, dir: string, out: string): string
   const run = spawnSync(process.execPath, args, { cwd: dir, encoding: "utf8" });
   if (run.status !== 0) throw new Error(`npm pack failed in ${dir}: ${run.stderr}`);
   const [result] = parsePackOutput(run.stdout);
-  const version = String(
-    (
-      JSON.parse(readFileSync(join(ROOT, spec.dir, "package.json"), "utf8")) as {
-        version?: unknown;
-      }
-    ).version,
+  const version = releaseVersion(
+    String(
+      (
+        JSON.parse(readFileSync(join(ROOT, spec.dir, "package.json"), "utf8")) as {
+          version?: unknown;
+        }
+      ).version,
+    ),
+    release,
   );
   const errors = [
     ...(result.name === spec.name ? [] : [`npm pack names ${result.name}`]),
@@ -116,9 +119,9 @@ export function checkTarball(spec: PackageSpec, bytes: Buffer, into: string): st
 }
 
 /** Stages, packs and checks `spec`: the tarball, its file name and sha256. */
-export function buildTarball(spec: PackageSpec, out = TARBALL_DIR) {
+export function buildTarball(spec: PackageSpec, out = TARBALL_DIR, version?: string) {
   const short = spec.name.slice("@ductura/".length);
-  const path = packTarball(spec, stagePackage(spec), out);
+  const path = packTarball(spec, stagePackage(spec, STAGE_DIR, version), out, version);
   // One read: the bytes checked are the bytes hashed.
   const bytes = readFileSync(path);
   const errors = checkTarball(spec, bytes, join(EXTRACT_DIR, short));
@@ -131,9 +134,13 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(
   const names = process.argv.slice(2);
   if (names.length === 0 || names.some((name) => SPECS[name] === undefined))
     throw new Error("usage: release:tarball <contracts|test-fakes>...");
+  // DAN-804: publish.yml passes the tag's version for its one package.
+  const version = process.env.RELEASE_VERSION || undefined;
+  if (version !== undefined && names.length !== 1)
+    throw new Error("release:tarball: RELEASE_VERSION is for one package");
   rmSync(TARBALL_DIR, { recursive: true, force: true });
   mkdirSync(TARBALL_DIR, { recursive: true });
-  const built = names.map((name) => buildTarball(SPECS[name]!));
+  const built = names.map((name) => buildTarball(SPECS[name]!, TARBALL_DIR, version));
   for (const { file, sha256 } of built) console.log(`release: ${sha256}  ${file}`);
   if (process.env.GITHUB_OUTPUT && built.length === 1)
     appendFileSync(

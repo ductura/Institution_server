@@ -6,6 +6,7 @@ import { Type, type Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import ts from "typescript";
 
+import { compareVersions, parseVersion } from "./level.ts";
 import {
   CONTRACTS,
   REGISTRY,
@@ -142,8 +143,21 @@ function compile(spec: PackageSpec, outDir: string): void {
     );
 }
 
+/**
+ * The published version: `version` (the tag's, DAN-804) when given, which must
+ * keep the major of package.json and not go below it; otherwise package.json.
+ */
+export function releaseVersion(source: string, version?: string): string {
+  if (version === undefined) return source;
+  const a = parseVersion(source);
+  const b = parseVersion(version);
+  if (!a || !b || a[0] !== b[0] || compareVersions(b, a) < 0)
+    throw new Error(`release version ${version} is not on the major of ${source} or above it`);
+  return version;
+}
+
 /** Stages `spec` under `stageDir` and returns the package folder. */
-export function stagePackage(spec: PackageSpec, stageDir = STAGE_DIR): string {
+export function stagePackage(spec: PackageSpec, stageDir = STAGE_DIR, version?: string): string {
   const out = join(stageDir, spec.name.replace(/^@ductura\//u, ""));
   rmSync(out, { recursive: true, force: true });
   compile(spec, out);
@@ -156,7 +170,7 @@ export function stagePackage(spec: PackageSpec, stageDir = STAGE_DIR): string {
   ) as SourceManifest;
   writeFileSync(
     join(out, "package.json"),
-    `${JSON.stringify(publishManifest(spec, source), null, 2)}\n`,
+    `${JSON.stringify(publishManifest(spec, { ...source, version: releaseVersion(source.version, version) }), null, 2)}\n`,
   );
   return out;
 }
