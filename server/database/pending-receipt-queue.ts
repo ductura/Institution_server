@@ -44,7 +44,10 @@ type Fail = {
 const fail = (reason: Fail["reason"]): Fail => ({ status: "unavailable", reason });
 
 /** The rows of an answer, each a plain record of exactly `columns`; null for anything else. */
-function exactRows(answer: unknown, columns: readonly string[]): Record<string, unknown>[] | null {
+export function exactRows(
+  answer: unknown,
+  columns: readonly string[],
+): Record<string, unknown>[] | null {
   const list: unknown = (answer as { rows?: unknown } | null)?.rows;
   if (!Array.isArray(list)) return null;
   for (const row of list) {
@@ -55,7 +58,11 @@ function exactRows(answer: unknown, columns: readonly string[]): Record<string, 
   return list as Record<string, unknown>[];
 }
 
-async function run(db: Pick<Pool, "query">, text: string, values: unknown[]): Promise<unknown> {
+export async function run(
+  db: Pick<Pool, "query">,
+  text: string,
+  values: unknown[],
+): Promise<unknown> {
   try {
     return await db.query(text, values);
   } catch {

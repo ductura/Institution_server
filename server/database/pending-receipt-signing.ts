@@ -1,9 +1,11 @@
 // The worker's port of the pending receipts (DAN-820, VS-1b part 1, 820b-1).
 // Port of Ductus src/application/ports/pending-receipt-signing.ts at 333e163,
 // the read half: the rows, the reads and PendingReceiptQueue, word for word,
-// with `type` for `interface` (docs/CODE_STYLE.md 4). The write half
-// (ReceiptKeysRead, AttachReceiptSignatureCommand, its outcome and
-// PendingReceiptStore) comes with its adapter in 820b-2.
+// with `type` for `interface` (docs/CODE_STYLE.md 4). 820b-2a adds
+// ReceiptKeysRead, the answer of the key read (receipt-keys.ts); the rest of
+// the write half (AttachReceiptSignatureCommand, its outcome and
+// PendingReceiptStore) comes with its adapter in 820b-2b.
+import type { EvidenceDomainKey } from "../domain/index.ts";
 
 /**
  * One row of `app.worker_pending_receipts`: a v2 receipt with no signature
@@ -25,6 +27,9 @@ export type PendingBacklogRow = {
   pendingCount: number;
   oldestCreatedAt: string;
 };
+
+export type ReceiptKeysRead =
+  { status: "ok"; keys: readonly EvidenceDomainKey[] } | { status: "unavailable"; reason: string };
 
 export type PendingBacklogRead =
   { status: "ok"; rows: readonly PendingBacklogRow[] } | { status: "unavailable"; reason: string };

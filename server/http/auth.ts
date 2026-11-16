@@ -8,7 +8,14 @@ import { type ErrorSpec, ROUTES, type RouteContract } from "../contracts/index.t
 import { openSession, withActor } from "../database/index.ts";
 import { createOidcClient, loadAuthConfig } from "../external/srce-auth/index.ts";
 
-import { type AuthDeps, failurePage, finishLogin, logoutAll, startLogin } from "./auth-flow.ts";
+import {
+  type AuthDeps,
+  failurePage,
+  finishLogin,
+  logout,
+  logoutAll,
+  startLogin,
+} from "./auth-flow.ts";
 import { sendHtmlProblem } from "./problem.ts";
 import type { Route } from "./router.ts";
 
@@ -111,7 +118,10 @@ function route(id: string, flow: Flow, load: () => AuthDeps): Route {
   };
 }
 
-/** GET /api/v1/auth/login, GET /api/v1/auth/callback and POST /api/v1/auth/logout-all. */
+/**
+ * GET /api/v1/auth/login, GET /api/v1/auth/callback, POST /api/v1/auth/logout
+ * and POST /api/v1/auth/logout-all.
+ */
 export function createAuthRoutes(
   env: Readonly<Record<string, string | undefined>>,
   load: () => AuthDeps = () => loadAuthDeps(env),
@@ -123,6 +133,7 @@ export function createAuthRoutes(
   return [
     route("auth.login.get", startLogin, shared),
     route("auth.callback.get", finishLogin, shared),
+    route("auth.logout.post", logout, shared),
     route("auth.logout-all.post", logoutAll, shared),
   ];
 }
