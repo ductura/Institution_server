@@ -23,6 +23,24 @@ const OTHER_ID = "0b1c2d3e-4f50-4617-8293-a4b5c6d7e8f9";
 const ROUTE = "/api/v1/live/{documentId}";
 const ROUTES: ReadonlySet<string> = new Set([ROUTE]);
 const TIME = "2026-11-16T09:30:00.000Z";
+// The route templates of server/contracts ROUTES at DAN-807, written out
+// because the area log may not import contracts (docs/server-map.md §2).
+const INVENTORY = [
+  "/api/v1/health",
+  "/api/v1/ready",
+  "/api/v1/status",
+  "/api/v1/auth/login",
+  "/api/v1/auth/callback",
+  "/api/v1/auth/logout",
+  "/api/v1/auth/logout-all",
+  "/api/v1/auth/backchannel-logout",
+  "/api/v1/profile/interface-locale",
+  "/api/v1/evidence/open",
+  "/api/v1/evidence/commit",
+  "/api/v1/student/assignments",
+  "/api/v1/live/{documentId}",
+  "/api/v1/settings/{level}/{settingKey}/history",
+];
 const SPECS = EVENT_CATALOG as Record<
   EventKind,
   { actors: readonly string[]; fields: Record<string, FieldSpec> }
@@ -96,6 +114,39 @@ describe("createLogWriter", () => {
     }
     expect(store.rows).toHaveLength(EVENT_KINDS.length);
     expect(lines).toEqual([]);
+  });
+
+  it("stores a route field of every route of the server's inventory unchanged", async () => {
+    // A long template such as /api/v1/evidence/commit has the shape redact
+    // takes for a token; the writer must store it as checked (self-attack).
+    const paths = INVENTORY;
+    const store = memoryStore();
+    const { lines, fallback } = capture();
+    const write = createLogWriter({ store, routes: new Set(paths), fallback });
+    for (const kind of EVENT_KINDS) {
+      const routeFields = Object.entries(SPECS[kind].fields).filter(([, s]) => s.kind === "route");
+      for (const path of routeFields.length > 0 ? paths : []) {
+        const record = validRecord(kind);
+        const fields = record.fields as Record<string, unknown>;
+        for (const [name] of routeFields) fields[name] = path;
+        expect(await write(record), `${kind} ${path}`).toEqual({ ok: true, value: record });
+        expect(store.rows.at(-1), `${kind} ${path}`).toEqual({ kind, payload: record });
+      }
+    }
+    expect(store.rows.length).toBeGreaterThanOrEqual(paths.length);
+    expect(lines).toEqual([]);
+  });
+
+  it("still refuses a route field that is not in the inventory", async () => {
+    const store = memoryStore();
+    const write = createLogWriter({ store, routes: ROUTES, fallback: capture().fallback });
+    const record = validRecord("traffic.request");
+    const fields = record.fields as Record<string, unknown>;
+    for (const value of [`/api/v1/${CANARY}`, `${ROUTE}?x=${CANARY}`, `${ROUTE} `]) {
+      fields.route = value;
+      expect(await write(record)).toMatchObject({ ok: false, error: { code: "BAD_FIELD_VALUE" } });
+    }
+    expect(store.rows).toEqual([]);
   });
 
   it("stores no refused record and logs only its code", async () => {
@@ -254,8 +305,8 @@ describe("createLogWriter with a redact that changes a checked record", () => {
   });
 
   it("stores nothing and answers LOG_REDACTED", async () => {
-    // No value the catalog admits is changed by redact today; this stands in
-    // for a future gap between the two nets.
+    // Apart from route templates, no value the catalog admits is changed by
+    // redact today; this stands in for a future gap between the two nets.
     vi.resetModules();
     vi.doMock("./redact.ts", async (original) => ({
       ...(await original<typeof import("./redact.ts")>()),
