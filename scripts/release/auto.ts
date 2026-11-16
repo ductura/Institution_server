@@ -84,13 +84,17 @@ function run(cmd: string, args: string[], cwd = ROOT): string {
   return out.stdout;
 }
 
-function readTree(dir: string): Files {
+/** Every regular file under `dir`, by its path inside it, as exact text. */
+export function readTree(dir: string): Files {
   const files = new Map<string, string>();
   for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true }))
     if (entry.isFile()) {
       const path = join(entry.parentPath, entry.name);
-      // Not UTF-8 throws (blocked): U+FFFD would hide a change of bytes.
-      const text = new TextDecoder("utf-8", { fatal: true }).decode(readFileSync(path));
+      // Not UTF-8 throws (blocked): U+FFFD would hide a change of bytes. A BOM is
+      // kept, so adding or removing one is a change too (review #92).
+      const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
+        readFileSync(path),
+      );
       files.set(relative(dir, path).replaceAll("\\", "/"), text);
     } else if (!entry.isDirectory()) throw new Error(`${entry.name} is not a regular file`);
   return files;
