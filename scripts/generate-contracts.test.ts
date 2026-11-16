@@ -49,4 +49,41 @@ describe("compileValidator", () => {
     expect(check({ n: 0, list: ["a", "a"] })).toBe(false);
     expect(check({ n: 0, list: ["a"], extra: 1 })).toBe(false);
   });
+  it("checks a closed object one level inside the body without reading past a failed test", () => {
+    const inner = Type.Object(
+      {
+        family: Type.Literal("other"),
+        major: Type.Union([Type.Integer({ maximum: 9 }), Type.Null()]),
+      },
+      { additionalProperties: false },
+    );
+    const schema = Type.Object({ browser: inner }, { additionalProperties: false });
+    const code = compileValidator(schema, "test:body");
+    expect(code).toContain("nestedBrowser['family']");
+    expect(code).not.toContain("value['browser']['");
+    const check = run(code);
+    expect(check({ browser: { family: "other", major: 9 } })).toBe(true);
+    expect(check({ browser: { family: "other", major: null } })).toBe(true);
+    expect(check({ browser: { family: "other", major: 10 } })).toBe(false);
+    expect(check({ browser: { family: "other", major: 1.5 } })).toBe(false);
+    expect(check({ browser: { family: "other", major: "9" } })).toBe(false);
+    expect(check({ browser: { family: "other", major: 9, extra: 1 } })).toBe(false);
+    expect(check({ browser: { family: "safari", major: 9 } })).toBe(false);
+    for (const value of [null, undefined, 1, "x", [], {}, { browser: null }, { browser: [] }])
+      expect(check(value)).toBe(false);
+  });
+
+  it("refuses a nested object two levels deep or inside an array", () => {
+    const leaf = Type.Object({ x: Type.String() });
+    const deep = Type.Object({ a: Type.Object({ b: leaf }) });
+    expect(() => compileValidator(deep, "test:deep")).toThrow(/unexpected nested validator shape/u);
+    const dashed = Type.Object({ "a-b": Type.Object({ f: Type.Integer() }) });
+    expect(() => compileValidator(dashed, "test:dashed")).toThrow(
+      /unexpected nested validator shape/u,
+    );
+    const listed = Type.Object({ a: leaf, list: Type.Array(Type.Object({ c: leaf })) });
+    expect(() => compileValidator(listed, "test:listed")).toThrow(
+      /unexpected nested validator shape/u,
+    );
+  });
 });

@@ -209,6 +209,48 @@ export function compileValidator(schema: TSchema, where: string): string {
     );
   if (code === raw || code.includes(": any"))
     throw new Error(`unexpected validator shape for ${where}`);
+  return wrap(nestedObjects(code, where));
+}
+
+const NESTED_READ = /value\['(\w+)'\]\['/g;
+
+/**
+ * A closed object inside the body (support.problem-report.post: browser) is
+ * read as value['k']['f'], which a record of unknown does not type. Each such
+ * object is bound once to a record `nestedK` that is undefined unless the root
+ * is an object; TypeBox tests value['k'] for a plain object before it reads a
+ * field of it, so nestedK is read only after that test passed. One level only,
+ * and not inside an array check, whose items shadow `value`: anything else is
+ * refused, as an unexpected shape.
+ */
+function nestedObjects(code: string, where: string): string {
+  // A nested read whose key is not a plain name would stay untyped: refuse it here, not in tsc.
+  if (/value\['[^']*[^\w'][^']*'\]\['/.test(code))
+    throw new Error(`unexpected nested validator shape for ${where}`);
+  const keys = [...new Set([...code.matchAll(NESTED_READ)].map((m) => m[1] ?? ""))];
+  if (keys.length === 0) return code;
+  if (code.includes("for(const value of array)") || /\['\w+'\]\['\w+'\]\['/.test(code))
+    throw new Error(`unexpected nested validator shape for ${where}`);
+  const head = "function check(value: Record<string, unknown>): boolean {";
+  const name = (key: string) => `nested${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+  if (new Set(keys.map(name)).size !== keys.length || !code.includes(head))
+    throw new Error(`unexpected nested validator shape for ${where}`);
+  const bindings = keys
+    .map(
+      (key) =>
+        `\n    const ${name(key)} = (typeof value === 'object' && value !== null ? value['${key}'] : undefined) as Record<string, unknown>;`,
+    )
+    .join("");
+  return code
+    .replace(NESTED_READ, (_, key: string) => `${name(key)}['`)
+    .replace(head, head + bindings)
+    .replace(
+      /Number\.isInteger\((nested\w+\['\w+'\])\)/g,
+      "(typeof $1 === 'number' && Number.isInteger($1))",
+    );
+}
+
+function wrap(code: string): string {
   // A pattern compiles to a `const local_N` regex before the function: keep it in a closure.
   return code.startsWith("function ") ? `(${code})` : `(() => {\n${code}\n})()`;
 }
@@ -252,7 +294,7 @@ export function generate(): Record<string, string> {
   };
 }
 
-const INDEX = `${HEADER}export { createClient, type Result } from "./client.ts";
+const INDEX = `${HEADER}export { canonicalJson, createClient, type Result } from "./client.ts";
 export type { OperationId, Operations, SharedErrorCode } from "./types.ts";
 export { VALIDATORS, validateInput } from "./validate.ts";
 `;
@@ -267,6 +309,27 @@ export type Result<Id extends OperationId> =
   | (Operations[Id]["success"] & { ok: true })
   | { ok: false; status: number; code: Operations[Id]["errorCode"] | SharedErrorCode | "unexpected" };
 
+/**
+ * The RFC 8785 (JCS) text of a JSON value: object keys in UTF-16 code unit
+ * order, no white space, numbers and strings as JSON.stringify writes them.
+ * Routes that read canonical JSON (support.problem-report.post) refuse any
+ * other spelling with 422, so every JSON body is sent this way.
+ */
+const LONE_SURROGATE = /[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]/;
+
+export function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return \`[\${value.map((item) => canonicalJson(item === undefined ? null : item)).join(",")}]\`;
+  if (value !== null && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record).sort().filter((key) => record[key] !== undefined);
+    for (const key of keys) canonicalJson(key);
+    return \`{\${keys.map((key) => \`\${JSON.stringify(key)}:\${canonicalJson(record[key])}\`).join(",")}}\`;
+  }
+  // JCS refuses a lone surrogate (RFC 8785 §3.2.2.2), as Ductus canonicalizeJcs does.
+  if (typeof value === "string" && LONE_SURROGATE.test(value)) throw new TypeError("canonicalJson: lone surrogate");
+  return JSON.stringify(value) ?? "null";
+}
+
 export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   return async function call<Id extends OperationId>(id: Id, input: Input<Id>): Promise<Result<Id>> {
     const route = ROUTE_TABLE[id];
@@ -277,7 +340,7 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     );
     if (query.size > 0) path += \`?\${query.toString()}\`;
     const init: RequestInit = { method: route.method, redirect: "manual" };
-    if (route.body === "application/json") init.body = JSON.stringify(input.body);
+    if (route.body === "application/json") init.body = canonicalJson(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
     if (route.body !== null) init.headers = { "content-type": route.body };
     const res = await fetchImpl(new URL(path, baseUrl), init);
