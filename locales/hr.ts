@@ -2005,6 +2005,7 @@ export const hr = {
     loginRefused: "Prijava je odbijena.",
     methodNotAllowed: "Ova radnja nije dostupna na ovoj adresi.",
     notAccepting: "Rad trenutačno ne prima izmjene.",
+    notAllowed: "Ova radnja nije moguća u trenutačnom stanju zahtjeva.",
     notContinuous:
       "Izmjene ne nastavljaju zadnje stanje rada na poslužitelju. Učitajte rad ponovno.",
     notFound: "Traženo nije pronađeno.",
