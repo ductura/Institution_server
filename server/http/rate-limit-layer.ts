@@ -7,7 +7,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { ROUTES, TOO_MANY_REQUESTS } from "../contracts/index.ts";
-import { logEvent } from "../log/index.ts";
+import { consoleSink, type LogSink } from "../log/index.ts";
 import { sessionTokenFromCookie } from "../session/index.ts";
 import { createRateLimiter, type RateLimiter } from "../traffic/index.ts";
 
@@ -22,7 +22,37 @@ export type RateLimitLog = (fields: {
 
 const PATHS: ReadonlySet<string> = new Set(ROUTES.map((route) => route.path));
 
-const defaultLog: RateLimitLog = (fields) => logEvent("warn", "traffic.rate_limited", fields);
+/**
+ * The stderr line of a refusal, { time, level, event, fields } as logEvent
+ * writes it, but built here without redact (QA on DAN-814 b): a route is an
+ * exact contract path, which redact takes for a token and blanks (writer.ts
+ * blanks route fields before redact for the same reason), and the bucket is
+ * one of two words. Nothing else from the request is in it.
+ */
+export function createRateLimitLog(
+  sink: LogSink = consoleSink,
+  now: () => Date = () => new Date(),
+): RateLimitLog {
+  return (fields) => {
+    const route = typeof fields.route === "string" && PATHS.has(fields.route) ? fields.route : null;
+    const bucket = fields.bucket === "per_account" ? "per_account" : "per_address";
+    try {
+      sink(
+        "warn",
+        JSON.stringify({
+          time: now().toISOString(),
+          level: "warn",
+          event: "traffic.rate_limited",
+          fields: { ...(route === null ? {} : { route }), bucket },
+        }),
+      );
+    } catch {
+      // A log that cannot be written must not change the answer.
+    }
+  };
+}
+
+const defaultLog: RateLimitLog = createRateLimitLog();
 
 /** The limiter with the catalogue's defaults and the session's own reading of the cookie. */
 export function defaultRateLimiter(now?: () => number): RateLimiter {

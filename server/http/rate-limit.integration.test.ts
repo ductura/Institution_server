@@ -7,9 +7,10 @@
 import { connect } from "node:net";
 
 import { createFakeClock } from "@ductura/test-fakes";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ROUTES } from "../contracts/index.ts";
+import { redact } from "../log/index.ts";
 import { sessionTokenFromCookie } from "../session/index.ts";
 import {
   createRateLimiter,
@@ -277,5 +278,51 @@ describe("the default limiter of createLayers()", () => {
     expect(Number(refused.headers["retry-after"])).toBeGreaterThanOrEqual(1);
     // The same address on another server: its buckets are untouched.
     expect((await one(second.port, request("GET", LOGIN))).status).not.toBe(429);
+  });
+});
+
+// QA on DAN-814 b (c.6909628841): the default record of a refusal keeps the
+// contract route. logEvent passes every field through redact, which blanks a
+// path such as /api/v1/settings/catalogue as if it were a token.
+describe("the default record of a refusal", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("names the contract route and the bucket on stderr, and nothing else (N16)", async () => {
+    const CATALOGUE = "/api/v1/settings/catalogue";
+    expect(JSON.stringify(redact({ route: CATALOGUE }))).not.toContain(CATALOGUE);
+    const lines: string[] = [];
+    vi.spyOn(console, "error").mockImplementation((line: unknown) => {
+      lines.push(String(line));
+    });
+    const clock = createFakeClock(0);
+    const layers = createLayers({
+      expectedOrigin: ORIGIN,
+      rateLimiter: createRateLimiter({
+        limits: LIMITS,
+        now: clock.nowMs,
+        sessionTokenOf: (r) => sessionTokenFromCookie(r.headers.cookie),
+      }),
+    });
+    server = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      layers,
+      routes: [],
+      databases: createDatabases(),
+    });
+    const port = server.port;
+    const cookie = `Cookie: ${SESSION}=${TOKEN_A}`;
+    for (let i = 0; i < LIMITS.default.perAccount!; i += 1)
+      await one(port, request("GET", CATALOGUE, [cookie]));
+    expect((await one(port, request("GET", `${CATALOGUE}?x=1`, [cookie]))).status).toBe(429);
+    expect((await one(port, request("GET", "/api/v1/no-such-route", [cookie]))).status).toBe(429);
+    const records = lines
+      .map((line) => JSON.parse(line) as { event?: string; level?: string; fields?: unknown })
+      .filter((record) => record.event === "traffic.rate_limited");
+    expect(records.map((r) => [r.level, r.fields])).toEqual([
+      ["warn", { route: CATALOGUE, bucket: "per_account" }],
+      ["warn", { bucket: "per_account" }],
+    ]);
+    expect(lines.join("\n")).not.toMatch(new RegExp(`127\\.0\\.0\\.1|${TOKEN_A}`, "u"));
   });
 });

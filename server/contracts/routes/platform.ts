@@ -143,7 +143,7 @@ export const TOO_MANY_REQUESTS = {
 /**
  * Answers every route may give besides its own errors. A new status on an
  * existing route breaks v1 (breaking.ts), so openapi/v1.json publishes them
- * once, in info["x-shared-errors"], not under each route (review on DAN-814 b).
+ * once, in info.description, not under each route (review on DAN-814 b).
  */
 export const SHARED_ERRORS = [INTERNAL.error, TOO_MANY_REQUESTS.error] as const;
 
