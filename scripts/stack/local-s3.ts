@@ -7,9 +7,9 @@
 // with SigV4 by the one key of this run. Never part of dist/server.js.
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { constants } from "node:fs";
-import { link, lstat, mkdir, open, unlink } from "node:fs/promises";
+import { link, lstat, mkdir, open, realpath, unlink } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export type LocalS3Config = {
@@ -134,12 +134,25 @@ function readBody(req: IncomingMessage): Promise<Buffer | null> {
   });
 }
 
+/**
+ * lstat, where only ENOENT means "not there"; any other fault (EACCES, EIO,
+ * ENOTDIR...) throws and answers 500, never NoSuchKey.
+ */
+export async function lstatOrAbsent(path: string) {
+  try {
+    return await lstat(path);
+  } catch (error) {
+    if (Reflect.get(error as object, "code") === "ENOENT") return null;
+    throw error;
+  }
+}
+
 /** Every directory from the root down must be a real directory, never a link. */
 async function realDirectories(root: string, parts: readonly string[], make: boolean) {
   let at = root;
   for (const part of ["", ...parts]) {
     at = part === "" ? at : join(at, part);
-    let stat = await lstat(at).catch(() => null);
+    let stat = await lstatOrAbsent(at);
     if (stat === null && make) {
       // Another write may make the same directory at once; it is then judged below.
       await mkdir(at, { mode: 0o700 }).catch((error: unknown) => {
@@ -155,7 +168,7 @@ async function realDirectories(root: string, parts: readonly string[], make: boo
 
 /** The bytes of a regular file, never through a link; null when it does not exist. */
 async function readObject(file: string): Promise<Buffer | null> {
-  const stat = await lstat(file).catch(() => null);
+  const stat = await lstatOrAbsent(file);
   if (stat === null) return null;
   if (!stat.isFile()) throw new Error("not a file");
   const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW);
@@ -277,7 +290,11 @@ export function localS3Config(env: Env): LocalS3Config & { port: number } {
     return value;
   };
   const root = named("VS1_S3_ROOT");
-  if (!root.startsWith("/")) throw new Error("VS1_S3_ROOT must be absolute");
+  // Absolute and already normal: no trailing "/", "//", "." or "..", so lstat
+  // of the root judges the root itself and never follows a link at its end.
+  if (!root.startsWith("/") || resolve(root) !== root) {
+    throw new Error("VS1_S3_ROOT must be an absolute normalized path");
+  }
   const bucket = named("VS1_S3_BUCKET");
   if (!SEGMENT.test(bucket)) throw new Error("VS1_S3_BUCKET is not valid");
   return {
@@ -294,11 +311,16 @@ export function localS3Config(env: Env): LocalS3Config & { port: number } {
 export const LOCAL_S3_HOST = "127.0.0.1";
 
 /** Starts the local S3 on loopback; resolves once it listens. */
-export function startLocalS3(config: LocalS3Config & { port: number }): Promise<Server> {
+export async function startLocalS3(config: LocalS3Config & { port: number }): Promise<Server> {
+  // The root is a real directory reached without any link on the way.
+  const stat = await lstat(config.root);
+  if (!stat.isDirectory() || (await realpath(config.root)) !== config.root) {
+    throw new Error("VS1_S3_ROOT must be a real directory, not a link");
+  }
   const server = localS3Server(config);
-  return new Promise((resolve, reject) => {
+  return new Promise((done, reject) => {
     server.once("error", reject);
-    server.listen(config.port, LOCAL_S3_HOST, () => resolve(server));
+    server.listen(config.port, LOCAL_S3_HOST, () => done(server));
   });
 }
 
@@ -311,7 +333,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.error(error instanceof Error ? error.message : "failed");
     process.exit(1);
   }
-  const server = await startLocalS3(config);
+  const server = await startLocalS3(config).catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : "failed");
+    process.exit(1);
+  });
   console.log(`local S3 on ${LOCAL_S3_HOST}:${config.port}`);
   for (const signal of ["SIGTERM", "SIGINT"] as const) {
     process.once(signal, () => server.close(() => process.exit(0)));

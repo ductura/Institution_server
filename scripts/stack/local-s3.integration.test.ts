@@ -3,6 +3,7 @@
 // contract test, over a real loopback socket and a temporary directory.
 import { createHash, createHmac } from "node:crypto";
 import {
+  chmodSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -32,6 +33,7 @@ import {
   LOCAL_S3_HOST,
   localS3Config,
   localS3Server,
+  lstatOrAbsent,
   MAX_OBJECT_BYTES,
   startLocalS3,
 } from "./local-s3.ts";
@@ -592,5 +594,109 @@ describe("signature rules the adapter always meets (S2)", () => {
     const shallow = signed("PUT", [BUCKET, "b", "c"], body);
     expect((await send("PUT", shallow.url, shallow.headers, body)).status).toBe(500);
     expect(files(root)).toHaveLength(1);
+  });
+});
+
+describe("faults of the disk and of the root (review FAIL on 5ecd3a0)", () => {
+  it("only ENOENT reads as absent; any other fault throws", async () => {
+    expect(await lstatOrAbsent(join(root, "nema"))).toBeNull();
+    writeFileSync(join(root, "datoteka"), "x");
+    // ENOTDIR: a fault, never "not there".
+    await expect(lstatOrAbsent(join(root, "datoteka", "ispod"))).rejects.toMatchObject({
+      code: "ENOTDIR",
+    });
+  });
+
+  it("a directory without the right of passage answers 500, never NoSuchKey", async () => {
+    const body = new TextEncoder().encode('{"c":1}');
+    const put = signed("PUT", [BUCKET, "zatvoreno", "o.json"], body);
+    expect((await send("PUT", put.url, put.headers, body)).status).toBe(200);
+    chmodSync(join(root, BUCKET, "zatvoreno"), 0o000);
+    try {
+      const get = signed("GET", [BUCKET, "zatvoreno", "o.json"]);
+      const got = await send("GET", get.url, get.headers);
+      const head = signed("HEAD", [BUCKET, "zatvoreno", "o.json"]);
+      const headed = await send("HEAD", head.url, head.headers);
+      // root ignores the mode bits; anyone else is refused by the disk.
+      const expected = process.getuid?.() === 0 ? 200 : 500;
+      expect(got.status).toBe(expected);
+      expect(headed.status).toBe(expected);
+      expect(got.text).not.toContain("NoSuchKey");
+    } finally {
+      chmodSync(join(root, BUCKET, "zatvoreno"), 0o700);
+    }
+  });
+
+  it.each(["/tmp/veza/", "/tmp//veza", "/tmp/./veza", "/tmp/a/../veza", "relativno"])(
+    "refuses the root %j that is not absolute and normal",
+    (given) => {
+      expect(() =>
+        localS3Config({
+          NODE_ENV: "test",
+          PORT: "4190",
+          VS1_S3_ROOT: given,
+          VS1_S3_BUCKET: BUCKET,
+          VS1_S3_REGION: REGION,
+          EVIDENCE_S3_VS1_KEY_ID: KEY_ID,
+          EVIDENCE_S3_VS1_SECRET: SECRET,
+        }),
+      ).toThrow(/VS1_S3_ROOT/u);
+    },
+  );
+
+  it("refuses a root that is a link, or reached through one, and writes nothing there", async () => {
+    const target = mkdtempSync(join(tmpdir(), "vs1-s3-target-"));
+    const holder = mkdtempSync(join(tmpdir(), "vs1-s3-holder-"));
+    try {
+      symlinkSync(target, join(holder, "veza"));
+      mkdirSync(join(target, "unutra"));
+      for (const linked of [join(holder, "veza"), join(holder, "veza", "unutra")]) {
+        await expect(
+          startLocalS3({
+            port: 0,
+            root: linked,
+            bucket: BUCKET,
+            region: REGION,
+            accessKeyId: KEY_ID,
+            secretAccessKey: SECRET,
+          }),
+        ).rejects.toThrow(/VS1_S3_ROOT/u);
+      }
+      expect(readdirSync(target)).toEqual(["unutra"]);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      rmSync(holder, { recursive: true, force: true });
+    }
+  });
+
+  it("a link as the root answers every request with 500 even if served directly", async () => {
+    const target = mkdtempSync(join(tmpdir(), "vs1-s3-target-"));
+    const holder = mkdtempSync(join(tmpdir(), "vs1-s3-holder-"));
+    symlinkSync(target, join(holder, "veza"));
+    const server = localS3Server({
+      root: join(holder, "veza"),
+      bucket: BUCKET,
+      region: REGION,
+      accessKeyId: KEY_ID,
+      secretAccessKey: SECRET,
+    });
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    try {
+      const body = new TextEncoder().encode('{"d":1}');
+      const own = endpoint;
+      // Signed for this server, so the signature passes and only the root rule decides.
+      endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      try {
+        const put = signed("PUT", [BUCKET, "o.json"], body);
+        expect((await send("PUT", put.url, put.headers, body)).status).toBe(500);
+      } finally {
+        endpoint = own;
+      }
+      expect(readdirSync(target)).toEqual([]);
+    } finally {
+      await new Promise((done) => server.close(done));
+      rmSync(target, { recursive: true, force: true });
+      rmSync(holder, { recursive: true, force: true });
+    }
   });
 });
