@@ -149,8 +149,15 @@ function schema(
     const p = [...ptr, k];
     const va = own(a, k);
     const vb = own(b, k);
+    // unevaluatedProperties beside the oneOf constrains a name the branches do not
+    // declare, so a field new to a branch is never safe there.
     const discriminated =
-      k === "oneOf" && discriminatorOf(va) !== null && discriminatorOf(va) === discriminatorOf(vb);
+      k === "oneOf" &&
+      ![own(a, "unevaluatedProperties"), own(b, "unevaluatedProperties")].some(
+        (rest) => rest !== undefined && rest !== true,
+      ) &&
+      discriminatorOf(va) !== null &&
+      discriminatorOf(va) === discriminatorOf(vb);
     const pos = positive && (POSITIVE.has(k) || discriminated);
     if (k === "properties" && (va === undefined || isObj(va)) && (vb === undefined || isObj(vb))) {
       properties(r, where, p, a, b, dir, pos);

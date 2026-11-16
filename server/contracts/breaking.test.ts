@@ -839,6 +839,21 @@ describe("a oneOf with a discriminator", () => {
     ]);
   });
 
+  // Self-review of DAN-791: beside unevaluatedProperties an old client checks a
+  // name no branch declares against that schema, so {n: "x"} would be refused.
+  it("a discriminated oneOf beside unevaluatedProperties stays closed", () => {
+    const at = (d: Obj) => node(responses(d, HEALTH), "409", "content", JSON_TYPE, "schema");
+    const before = withOneOf(
+      () => [branch("a"), branch("b")],
+      () => undefined,
+      MINOR_UP,
+    );
+    at(before).unevaluatedProperties = { type: "number" };
+    const after = withOneOf(() => [branch("a"), branch("b")], addField(0, "n"), MINOR_UP_TWICE);
+    at(after).unevaluatedProperties = { type: "number" };
+    expect(breakingChanges(before, after)).toEqual([`${AT}/oneOf/0/properties/n: field added`]);
+  });
+
   it("a discriminated oneOf under not stays closed", () => {
     const before = changed((d) => (ok(d, HEALTH).not = { oneOf: [branch("a"), branch("b")] }));
     const after = changed((d) => {
