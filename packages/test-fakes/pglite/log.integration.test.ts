@@ -118,6 +118,7 @@ describe("createFakeLogDatabase", () => {
     ["ductus_logs_writer", "SELECT count(*) FROM public.log_entry"],
     ["ductus_logs_retention", "SELECT count(*) FROM public.log_entry"],
     ["ductus_logs_reader", "INSERT INTO public.log_entry (kind, payload) VALUES ('authn.x', '{}')"],
+    ["ductus_logs_reader", "SELECT count(*) FROM public.log_entry"],
   ])("%s is refused: %s", async (role, sql) => {
     const log = await seeded();
     await expect(log.db.exec(`BEGIN; SET LOCAL ROLE ${role}; ${sql}; COMMIT;`)).rejects.toThrow(

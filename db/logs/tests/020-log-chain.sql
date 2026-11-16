@@ -65,7 +65,7 @@ END
 $$;
 
 
-SELECT plan(95);
+SELECT plan(97);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -155,10 +155,9 @@ CREATE TABLE pg_temp.expected_chain_right (found text PRIMARY KEY);
 INSERT INTO pg_temp.expected_chain_right VALUES
   ('ductus_logs_migrator: SELECT log_chain_head'), ('ductus_logs_migrator: UPDATE log_chain_head'),
   ('ductus_logs_migrator: REFERENCES log_chain_head'), ('ductus_logs_migrator: TRIGGER log_chain_head'),
-  ('ductus_logs_reader: SELECT log_chain_head'),
   ('ductus_logs_migrator: EXECUTE log_chain_verify'), ('ductus_logs_migrator: EXECUTE log_entry_digest'),
   ('ductus_logs_migrator: EXECUTE log_entry_chain'), ('ductus_logs_migrator: EXECUTE log_chain_head_guard'),
-  ('ductus_logs_reader: EXECUTE log_chain_verify'), ('ductus_logs_reader: EXECUTE log_entry_digest');
+  ('ductus_logs_reader: EXECUTE log_chain_verify');
 INSERT INTO pg_temp.expected_chain_right
   SELECT 'ductus_logs_migrator: MAINTAIN log_chain_head' WHERE current_setting('server_version_num')::int >= 170000;
 CREATE VIEW pg_temp.chain_drift AS
@@ -194,11 +193,10 @@ SELECT set_eq(
             || ' check ' || coalesce(pg_get_expr(polwithcheck, polrelid), '-')
      FROM pg_policy WHERE polrelid = 'public.log_chain_head'::regclass $$,
   ARRAY['log_chain_head_chain_read r ductus_logs_migrator using true check -',
-        'log_chain_head_chain_move w ductus_logs_migrator using true check true',
-        'log_chain_head_read r ductus_logs_reader using true check -'],
-  'the head: the owner reads and moves it (for the insert trigger), the reader reads it');
+        'log_chain_head_chain_move w ductus_logs_migrator using true check true'],
+  'the head: the owner reads and moves it (for the insert trigger); no policy for the reader');
 SELECT is_empty('SELECT found FROM pg_temp.chain_drift',
-  'the access matrix of the head and the functions: the reader reads the head and verifies, the owner keeps what the trigger needs, nobody else (writer, retention, PUBLIC, any other role) holds a right');
+  'the access matrix of the head and the functions: the reader only verifies, the owner keeps what the trigger needs, nobody else (writer, retention, PUBLIC, any other role) holds a right');
 SELECT set_eq(
   $$ SELECT t.tgrelid::regclass::text || ' ' || t.tgname || ' ' || t.tgenabled::text || ' ' || t.tgtype::text
      FROM pg_trigger t
@@ -208,6 +206,14 @@ SELECT set_eq(
   ARRAY['log_entry log_entry_chain A 7', 'log_entry log_entry_no_change A 27', 'log_entry log_entry_no_truncate A 34',
         'log_chain_head log_chain_head_guard A 31', 'log_chain_head log_chain_head_no_truncate A 34'],
   'every trigger of the chain fires ALWAYS');
+-- DAN-835-4: the head hash and the digest cover the full payload; with the
+-- rest of a row from operator_log they would let the reader guess an IPv4
+-- inside its /24. The reader holds neither.
+SELECT is(pg_temp.try_as('ductus_logs_reader', r.sql), '42501', 'the reader is refused: ' || r.sql)
+FROM unnest(ARRAY[
+  'SELECT hash FROM public.log_chain_head',
+  'SELECT public.log_entry_digest(''\x00'', 1, 1, now(), ''authn.x'', ''{}'')'
+]) r (sql);
 SELECT set_eq(
   $$ SELECT p.proname || ' ' || array_to_string(p.proconfig, ',') || ' ' || p.prosecdef::text
      FROM pg_proc p
@@ -215,8 +221,8 @@ SELECT set_eq(
                      'public.log_chain_verify()'::regprocedure,
                      'public.log_entry_digest(bytea, bigint, bigint, timestamptz, text, jsonb)'::regprocedure) $$,
   ARRAY['log_entry_chain search_path=pg_catalog true', 'log_chain_head_guard search_path=pg_catalog false',
-        'log_chain_verify search_path=pg_catalog false', 'log_entry_digest search_path=pg_catalog false'],
-  'every function has a fixed search path; only the insert trigger runs as its owner');
+        'log_chain_verify search_path=pg_catalog, pg_temp true', 'log_entry_digest search_path=pg_catalog false'],
+  'every function has a fixed search path; the insert trigger and the verification (the reader has no right on log_entry, DAN-835-4) run as their owner');
 SELECT is(pg_temp.verified(), '{}', 'the chain as found is intact');
 
 -- 2. Appending (A1, A4).
@@ -429,7 +435,7 @@ SELECT set_eq('SELECT found FROM pg_temp.chain_drift', ARRAY['+ductus_app: EXECU
   'EXECUTE of the verification for the main application role is caught');
 REVOKE EXECUTE ON FUNCTION public.log_chain_verify() FROM ductus_app;
 GRANT ductus_logs_reader TO ductus_app;
-SELECT isnt_empty($$ SELECT found FROM pg_temp.chain_drift WHERE found = '+ductus_app: SELECT log_chain_head via ductus_logs_reader' $$,
+SELECT isnt_empty($$ SELECT found FROM pg_temp.chain_drift WHERE found = '+ductus_app: EXECUTE log_chain_verify via ductus_logs_reader' $$,
   'a right reached through membership of a logs role is caught');
 REVOKE ductus_logs_reader FROM ductus_app;
 DROP ROLE ductus_app;
