@@ -15,6 +15,12 @@ export type {
 } from "./backchannel-logout.ts";
 export type { ActorReader, CurrentActor, CurrentActorWithInstitution } from "./current-actor.ts";
 export type { OpenSession, OpenSessionInput, OpenSessionResult } from "./open-session.ts";
+export type {
+  CommitContextReader,
+  EvidenceCommitContext,
+  EvidenceCommitContextResult,
+  EvidenceCommitState,
+} from "./commit-context.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
@@ -27,6 +33,7 @@ export { DATABASE_HEALTH_WORDS, handleConnectionErrors } from "./registry.ts";
 export { createBackchannelLogout } from "./backchannel-logout.ts";
 export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
+export { createCommitContextReader } from "./commit-context.ts";
 export { createWorkOpener } from "./open-work.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
