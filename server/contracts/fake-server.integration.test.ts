@@ -76,7 +76,7 @@ const overHttp = VECTORS.filter((v) => v.request.headers?.["content-length"] ===
 
 describe("fake server over HTTP", () => {
   it("sends all but the framing vectors over the wire", () => {
-    expect(VECTORS.length - overHttp.length).toBe(9);
+    expect(VECTORS.length - overHttp.length).toBe(13);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

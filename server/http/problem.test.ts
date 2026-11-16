@@ -79,6 +79,8 @@ const CODE_IN_STATUS = new Set([
 const V1_ONE_OF = new Set([
   "profile.interface-locale.post 400",
   "profile.interface-locale.post 403",
+  "settings.values.put 400",
+  "settings.values.put 403",
 ]);
 
 function properties(schema: TSchema): Record<string, TSchema> {
