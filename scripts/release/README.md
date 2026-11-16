@@ -15,7 +15,7 @@ Automatska razina izdanja (DAN-804, POTVRDA UGOVORA w804a):
 
 - `level.ts`: `releaseLevel` uspoređuje paket pripremljen na zadnjem tagu s pripremljenim na HEAD-u. Ishod je `none`, `patch`, `minor`, `major` ili `blocked`. Pravila:
   - isti bajtovi (osim `version`) daju `none`;
-  - `.d.ts` se uspoređuje po TypeScript AST-u, bez komentara i rasporeda: nova deklaracija ili novi **opcionalni** član je minor, a uklonjeno ili promijenjeno je major;
+  - `.d.ts` se uspoređuje po TypeScript AST-u, bez komentara i rasporeda: samo nova izvezena deklaracija (novo ime) je minor; uklonjeno, promijenjeno i **svaki novi član postojećeg tipa** (i opcionalni) je major. To je tvrdi rez iz naloga orkestratora na #92: novi član suzi `keyof`, `Required`, `implements`, nasljeđivanje, presjek i index signature;
   - `exports` iz `package.json`: dodan je minor, uklonjen ili promijenjen major;
   - ostali bajtovi daju patch;
   - za `contracts` `breakingChanges` nad `openapi/v1.json` daje major, a rast minora ili patcha `info.version` daje minor ili patch. Novi obvezni član generiranog tipa (nova ruta) je minor samo ako je dokument narastao minorom, a `scripts/generate-contracts.ts` nije mijenjan.

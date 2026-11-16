@@ -34,10 +34,11 @@ describe("releaseLevel for test-fakes (declarations)", () => {
     ["a JS fix", BASE_DTS, { "index.js": "export function clock() { return 1; }\n" }, "patch"],
     ["a new export", `${BASE_DTS}export declare const ZERO = 0;\n`, {}, "minor"],
     [
+      // Hard cut (#92 c.6906398937): a new member of an existing type is major.
       "a new optional member",
       BASE_DTS.replace("now(): number", "now(): number; tick?: number"),
       {},
-      "minor",
+      "major",
     ],
     ["a removed export", "export {};\n", {}, "major"],
     ["a renamed export", BASE_DTS.replace("clock", "watch"), {}, "major"],
@@ -271,9 +272,9 @@ describe("releaseLevel refuses what merges, shadows or hides in tokens", () => {
     expect(dts(before, after)).toBe("major");
   });
 
-  it("keeps a new optional member and a new name minor, and a comment patch", () => {
+  it("keeps a new name minor and a comment patch; a new optional member is major", () => {
     expect(dts(OPTIONS, "export interface Options { port: number; host?: string }\n")).toBe(
-      "minor",
+      "major",
     );
     expect(dts(OPTIONS, `${OPTIONS}export interface Other { host: string }\n`)).toBe("minor");
     expect(dts(OPTIONS, `/** Options. */\n${OPTIONS}`)).toBe("patch");
@@ -526,12 +527,57 @@ describe("releaseLevel closes the last self-attack findings", () => {
     );
   });
 
-  it("keeps a new optional member of a plain type minor", () => {
+  it("is major for a new optional member of a plain type too (hard cut)", () => {
     expect(
       dts(
         "export type T = {\n    a: string;\n};\n",
         "export type T = {\n    a: string;\n    b?: number;\n};\n",
       ),
-    ).toBe("minor");
+    ).toBe("major");
+  });
+});
+
+// Final self-attack on #92: the indirect forms that made a new optional member
+// narrow what was there. With the hard cut every one of them is major.
+describe("releaseLevel after the hard cut on new members", () => {
+  const dts = (before: string, after: string) => level(fakes(before), fakes(after));
+  it.each([
+    [
+      "an inherited index signature",
+      "interface Base {\n    [key: string]: string | number | undefined;\n}\nexport interface Opts extends Base {\n    name: string;\n}\nexport {};\n",
+      "interface Base {\n    [key: string]: string | number | undefined;\n}\nexport interface Opts extends Base {\n    name: string;\n    retries?: number;\n}\nexport {};\n",
+    ],
+    [
+      "extends Record",
+      "export interface Meta extends Record<string, string | number | undefined> {\n    id: string;\n}\n",
+      "export interface Meta extends Record<string, string | number | undefined> {\n    id: string;\n    weight?: number;\n}\n",
+    ],
+    [
+      "an inherited member narrowed",
+      "interface Base {\n    mode?: string;\n}\nexport interface Opts extends Base {\n    name: string;\n}\nexport {};\n",
+      'interface Base {\n    mode?: string;\n}\nexport interface Opts extends Base {\n    name: string;\n    mode?: "fast" | "slow";\n}\nexport {};\n',
+    ],
+    [
+      "an intersection through an alias",
+      "type Base = {\n    mode?: string;\n};\nexport type Extra = {\n    name: string;\n};\nexport type Opts = Base & Extra;\nexport {};\n",
+      'type Base = {\n    mode?: string;\n};\nexport type Extra = {\n    name: string;\n    mode?: "fast" | "slow";\n};\nexport type Opts = Base & Extra;\nexport {};\n',
+    ],
+    [
+      "a union inside an intersection",
+      "type Base = {\n    mode?: string;\n};\nexport type Opts = Base & ({\n    name: string;\n} | {\n    id: number;\n});\nexport {};\n",
+      'type Base = {\n    mode?: string;\n};\nexport type Opts = Base & ({\n    name: string;\n    mode?: "fast";\n} | {\n    id: number;\n});\nexport {};\n',
+    ],
+    [
+      "a second block of a merged interface",
+      "export interface Meta {\n    id: string;\n}\nexport interface Meta {\n    [key: string]: string | undefined;\n}\n",
+      "export interface Meta {\n    id: string;\n    weight?: number;\n}\nexport interface Meta {\n    [key: string]: string | undefined;\n}\n",
+    ],
+    [
+      "an empty interface gaining a member",
+      "export interface Opts {\n}\n",
+      "export interface Opts {\n    name?: string;\n}\n",
+    ],
+  ])("is major for %s", (_, before, after) => {
+    expect(dts(before, after)).toBe("major");
   });
 });
