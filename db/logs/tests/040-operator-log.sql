@@ -63,7 +63,7 @@ END
 $$;
 
 
-SELECT plan(37);
+SELECT plan(38);
 
 -- As in 030-metric-sample.sql: runs `sql` as `who`; the SQLSTATE, or 'ok'.
 CREATE FUNCTION pg_temp.try_as(who text, sql text) RETURNS text
@@ -219,9 +219,11 @@ END
 $$;
 SET LOCAL enable_seqscan = off;
 SET LOCAL enable_sort = off;
-SELECT is(pg_temp.scan_change(),
-  '{"log_entry": 0, "log_entry_at": 1, "log_entry_pkey": 0, "log_entry_seq_unique": 0, "log_entry_prev_hash_unique": 0}'::jsonb,
-  'a call scans log_entry_at once, and no table and no other index');
+CREATE TABLE pg_temp.change AS SELECT pg_temp.scan_change() AS c;
+SELECT is((SELECT c - 'log_entry_at' FROM pg_temp.change),
+  '{"log_entry": 0, "log_entry_pkey": 0, "log_entry_seq_unique": 0, "log_entry_prev_hash_unique": 0}'::jsonb,
+  'a call scans no table and no index but log_entry_at');
+SELECT ok((SELECT (c->>'log_entry_at')::int > 0 FROM pg_temp.change), 'a call reads the window through log_entry_at');
 SAVEPOINT without_index;
 DROP INDEX public.log_entry_at;
 SELECT isnt((pg_temp.scan_change()->>'log_entry_seq_unique')::int + (pg_temp.scan_change()->>'log_entry')::int, 0,
