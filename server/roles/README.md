@@ -1,6 +1,6 @@
 # server/roles
 
-Područje iz [karte servera](../../docs/server-map.md). Mapa nema rute ni bazu. Ima pet vrsta računa i tablicu prava v2 kao podatak (S-1J.1-a); vrste su u bazi od S-1J.1-b, a imenovanje i opoziv mrežnog inženjera u bazi od S-1J-c (`identity.appoint_network_engineer`, `identity.revoke_network_engineer`); rute dolaze kasnije.
+Područje iz [karte servera](../../docs/server-map.md). Mapa nema rute ni bazu. Ima pet vrsta računa i tablicu prava v2 kao podatak (S-1J.1-a); vrste su u bazi od S-1J.1-b, a imenovanje i opoziv mrežnog inženjera u bazi od S-1J-c (`identity.appoint_network_engineer`, `identity.revoke_network_engineer`), a imenovanje admina od admina od S-1J-c2 (`institution.admin_appoint_admin`); rute dolaze kasnije.
 
 ## Što radi
 
