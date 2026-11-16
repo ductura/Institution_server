@@ -42,6 +42,8 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 - `readBodyWithLimit`, `declaredLengthRefusal`, `LimitedBodyResult` (`mutation-request.ts`);
 - `createHealthRoute` i `CHECK_DEADLINE_MS` (`health.ts`);
 - `evidenceSession`, `EvidenceSession`, `EvidenceRefusal` (`evidence-session.ts`);
+- `readEvidenceBody`, `sendEvidenceAnswer`, `parseClosedObject`, `EvidenceAnswer`, `GuardedBody` (`evidence-request.ts`, DAN-811): zaštita ruta evidencije prije tijela (protokol 426, vrsta 415, sesija 401/503, tijelo 413/408/400) i odgovor odbijanja; kad tijelo nije pročitano do kraja, veza se zatvara;
+- `sendRouteRefusal` (`problem.ts`, DAN-811): greška rute čije je tijelo u ugovoru `{status, …}` (rute evidencije); samo greška iz ugovora te rute i tijelo koje njezina shema prima, inače 500 `internal`;
 - `ERROR_CATALOG`, `catalogErrorFor`, `catalogErrorOf`, `SESSION_EXPIRED`, `reportServerError`, `SERVER_ERROR_CLASSES` i tipovi (`error-catalog.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);
 - `createDatabases`, `Databases` (`databases.ts`).
