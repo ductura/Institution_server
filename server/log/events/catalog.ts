@@ -200,6 +200,9 @@ export const EVENT_CATALOG = {
       action: code(...ADMIN_LOG_ACTIONS),
       outcome: code("succeeded", "failed"),
       institutionId: ID,
+      // The operator's account (a UUID, never a name, e-mail or address); kinds
+      // 3–5 only, owner decision Ductus#2012 c.6917729838 (DAN-841).
+      userId: ID,
     },
   },
   // Metrics.

@@ -8,9 +8,9 @@ import type { LogWriter } from "./writer.ts";
  * of an account of kinds 3–5 runs through `audited`, which runs it only when
  * its `admin.action` record passes the catalog, and then hands exactly one
  * record with the outcome to the log service. The record holds the catalog's
- * keys only: who (account kind, institution, request id), what, when and the
- * outcome; nothing else of the actor (an address, a token) is read. The id of
- * the person is left out until the owner decides (contract Ductus#1836).
+ * keys only: who (the operator's account id, account kind, institution and
+ * request id; owner decision Ductus#2012 c.6917729838), what, when and the
+ * outcome; nothing else of the actor (a name, an address, a token) is read.
  *
  * The write is not awaited: a request never waits for the log (writer.ts),
  * and the writer bounds a slow log database itself (S-1K.3-b). `audited`
@@ -43,10 +43,10 @@ const REFUSED = Object.freeze({
   }),
 });
 
-const ACTOR_KEYS = ["requestId", "accountKind", "institutionId"] as const;
+const ACTOR_KEYS = ["requestId", "accountKind", "institutionId", "userId"] as const;
 type Actor = Record<(typeof ACTOR_KEYS)[number], string>;
 
-/** The three keys as own string data of a plain object, read without running caller code. */
+/** The four keys as own string data of a plain object, read without running caller code. */
 function readActor(actor: unknown): Actor | undefined {
   if (typeof actor !== "object" || actor === null || types.isProxy(actor)) return undefined;
   const proto: unknown = Object.getPrototypeOf(actor);
@@ -76,7 +76,7 @@ const recordOf = (actor: Actor, action: string, outcome: string, time: string) =
   event: "admin.action",
   requestId: actor.requestId,
   accountKind: actor.accountKind,
-  fields: { action, outcome, institutionId: actor.institutionId },
+  fields: { action, outcome, institutionId: actor.institutionId, userId: actor.userId },
 });
 
 export function createOperatorAudit({ write, now }: OperatorAuditOptions): OperatorAudit {

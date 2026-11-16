@@ -12,7 +12,13 @@ import { createOperatorAudit, OPERATOR_AUDIT_ERROR_CODES } from "./operator-audi
 
 const REQUEST_ID = "3f2a7c1e-9b4d-4e8a-a1c2-0d5e6f708192";
 const INSTITUTION_ID = "0b1c2d3e-4f50-4617-8293-a4b5c6d7e8f9";
-const ACTOR = { requestId: REQUEST_ID, accountKind: "app_admin", institutionId: INSTITUTION_ID };
+const USER_ID = "7d8e9f00-1a2b-4c3d-8e4f-5a6b7c8d9e0f";
+const ACTOR = {
+  requestId: REQUEST_ID,
+  accountKind: "app_admin",
+  institutionId: INSTITUTION_ID,
+  userId: USER_ID,
+};
 const ACTION = "manage_ip_rules";
 const REFUSED = {
   code: "OPERATOR_AUDIT_REFUSED",
@@ -31,15 +37,18 @@ function setup(options: { now?: () => Date; write?: (record: unknown) => unknown
   return { clock, records, write, audited, run };
 }
 
-const BAD_TEXT = ["\r\n", "\t", " ", "\u007f", " "];
+const BAD_TEXT = ["\r\n", "\t", String.fromCharCode(0xa0), "\u007f", " "];
 const proto = (value: object) => Object.create(value) as object;
 class Actor {
   requestId = REQUEST_ID;
   accountKind = "app_admin";
   institutionId = INSTITUTION_ID;
+  userId = USER_ID;
 }
 const getter = { ...ACTOR };
 Object.defineProperty(getter, "accountKind", { get: () => "app_admin", enumerable: true });
+const userGetter = { ...ACTOR };
+Object.defineProperty(userGetter, "userId", { get: () => USER_ID, enumerable: true });
 
 const BAD_ACTORS: [string, unknown][] = [
   ...["student", "teacher", "anonymous", "__proto__", "toString"].map((kind): [string, unknown] => [
@@ -50,7 +59,20 @@ const BAD_ACTORS: [string, unknown][] = [
     [`kind ${JSON.stringify(bad)}`, { ...ACTOR, accountKind: `app_admin${bad}` }],
     [`institution ${JSON.stringify(bad)}`, { ...ACTOR, institutionId: `${INSTITUTION_ID}${bad}` }],
     [`request ${JSON.stringify(bad)}`, { ...ACTOR, requestId: `${bad}${REQUEST_ID}` }],
+    [`user ${JSON.stringify(bad)}`, { ...ACTOR, userId: `${USER_ID}${bad}` }],
   ]),
+  ["upper-case user", { ...ACTOR, userId: USER_ID.toUpperCase() }],
+  ["empty user", { ...ACTOR, userId: "" }],
+  ["user not a UUID", { ...ACTOR, userId: "operator-1" }],
+  ["no user", { ...ACTOR, userId: undefined }],
+  [
+    "user inherited",
+    Object.assign(proto({ userId: USER_ID }), {
+      requestId: REQUEST_ID,
+      accountKind: "app_admin",
+      institutionId: INSTITUTION_ID,
+    }),
+  ],
   ["upper-case id", { ...ACTOR, institutionId: INSTITUTION_ID.toUpperCase() }],
   ["empty id", { ...ACTOR, institutionId: "" }],
   ["no institution", { ...ACTOR, institutionId: null }],
@@ -61,6 +83,7 @@ const BAD_ACTORS: [string, unknown][] = [
   ["inherited keys", proto(ACTOR)],
   ["class instance", new Actor()],
   ["getter", getter],
+  ["user getter", userGetter],
   ["Proxy", new Proxy(ACTOR, {})],
 ];
 const BAD_ACTIONS: unknown[] = [
@@ -99,15 +122,17 @@ describe("operator audit: refusals run nothing and write nothing", () => {
   });
 });
 
+const THROWN = new Error("x");
+
 describe("operator audit: one write attempt with the outcome", () => {
   it.each([
     [
       "throws",
       () => {
-        throw new Error("x");
+        throw THROWN;
       },
     ],
-    ["rejects", () => Promise.reject(new Error("x"))],
+    ["rejects", () => Promise.reject(THROWN)],
     [
       "throws undefined",
       () => {
@@ -117,9 +142,15 @@ describe("operator audit: one write attempt with the outcome", () => {
     ["rejects a string", () => Promise.reject("x")],
   ])("a run that %s is written failed and rethrown as is", async (_name, run) => {
     const { audited, records } = setup();
+    let original: unknown = "not read";
+    try {
+      await run();
+    } catch (error) {
+      original = error;
+    }
     let thrown: unknown = "nothing";
     await audited(ACTOR, ACTION, run as never).catch((error: unknown) => (thrown = error));
-    expect(thrown).not.toBe("nothing");
+    expect(thrown).toBe(original);
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({ fields: { outcome: "failed" } });
   });
@@ -136,7 +167,12 @@ describe("operator audit: one write attempt with the outcome", () => {
         event: "admin.action",
         requestId: REQUEST_ID,
         accountKind: "app_admin",
-        fields: { action: ACTION, outcome: "succeeded", institutionId: INSTITUTION_ID },
+        fields: {
+          action: ACTION,
+          outcome: "succeeded",
+          institutionId: INSTITUTION_ID,
+          userId: USER_ID,
+        },
       },
       expect.objectContaining({ fields: expect.objectContaining({ outcome: "failed" }) }),
     ]);
@@ -229,6 +265,40 @@ describe("operator audit: one write attempt with the outcome", () => {
       expect.objectContaining({
         requestId: REQUEST_ID,
         fields: expect.objectContaining({ action: ACTION, outcome: "succeeded" }),
+      }),
+    ]);
+  });
+
+  it("answers while the write still waits", async () => {
+    const { audited, write } = setup({ write: () => new Promise(() => undefined) });
+    await expect(audited(ACTOR, ACTION, () => ({ ok: true, value: 1 }))).resolves.toEqual({
+      ok: true,
+      value: 1,
+    });
+    expect(write).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [
+      "throws",
+      () => {
+        throw new Error(CANARY);
+      },
+    ],
+    ["gives an invalid date", () => new Date(Number.NaN)],
+  ])("a clock that %s after the start keeps the start time", async (_name, broken) => {
+    const clock = createFakeClock("2026-11-16T09:30:00.000Z");
+    let calls = 0;
+    const now = () => (calls++ === 0 ? clock.now() : broken());
+    const { audited, records } = setup({ now });
+    await expect(audited(ACTOR, ACTION, () => ({ ok: true, value: 4 }))).resolves.toEqual({
+      ok: true,
+      value: 4,
+    });
+    expect(records).toEqual([
+      expect.objectContaining({
+        time: "2026-11-16T09:30:00.000Z",
+        fields: expect.objectContaining({ outcome: "succeeded", userId: USER_ID }),
       }),
     ]);
   });
