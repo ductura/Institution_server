@@ -38,3 +38,9 @@ export {
   type TrafficRecorder,
   type TrafficRecorderOptions,
 } from "./traffic-record.ts";
+export {
+  createTrafficTally,
+  type TrafficMetric,
+  type TrafficSample,
+  type TrafficTally,
+} from "./traffic-tally.ts";
