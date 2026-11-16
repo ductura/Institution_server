@@ -19,7 +19,8 @@ import {
 const WORK_TEXT = "Uvod: ovaj izmišljeni rad o kanarincima nije stvaran.";
 const REQUEST_ID = "3f2a7c1e-9b4d-4e8a-a1c2-0d5e6f708192";
 const OTHER_ID = "0b1c2d3e-4f50-4617-8293-a4b5c6d7e8f9";
-const ROUTE = "/api/v1/works/:workId";
+// A real template of the route inventory (server/contracts), parameters as {name}.
+const ROUTE = "/api/v1/live/{documentId}";
 const ROUTES: ReadonlySet<string> = new Set([ROUTE]);
 const TIME = "2026-11-16T09:30:00.000Z";
 const SPECS = EVENT_CATALOG as Record<
@@ -513,5 +514,34 @@ describe("error shape (docs/CODE_STYLE.md §8)", () => {
     expect(missingTexts({ ...hr.logCatalog, ["bad_options"]: 1 })).toEqual([
       "logCatalog.bad_options",
     ]);
+  });
+});
+
+describe("route templates follow server/contracts (review c.6904439928)", () => {
+  const record = validRecord("traffic.request");
+  const withRoute = (route: string) => ({
+    ...record,
+    fields: { ...validFields("traffic.request"), route },
+  });
+
+  it("accepts a {param} template that is in the inventory", () => {
+    expect(codeOf(withRoute("/api/v1/live/{documentId}"))).toBe("OK");
+    const plain = new Set(["/api/v1/health"]);
+    expect(checkEvent(withRoute("/api/v1/health"), { routes: plain })).toMatchObject({ ok: true });
+  });
+
+  it("refuses other parameter spellings even when the inventory lists them", () => {
+    for (const route of [
+      "/api/v1/live/:documentId",
+      "/api/v1/live/[documentId]",
+      "/api/v1/live/{document-id}",
+      "/api/v1/live/{documentId",
+      "/api/v1/live/{}",
+    ]) {
+      expect(checkEvent(withRoute(route), { routes: new Set([route]) }), route).toMatchObject({
+        ok: false,
+        error: { code: "BAD_FIELD_VALUE" },
+      });
+    }
   });
 });

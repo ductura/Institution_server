@@ -368,8 +368,11 @@ const TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const REQUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const VERSION_RE = /^(?:0|[1-9]\d{0,5})\.(?:0|[1-9]\d{0,5})\.(?:0|[1-9]\d{0,5})$/;
-/** A template, not a path: lowercase segments and `:param`, no query; checked again by inventory. */
-const ROUTE_RE = /^\/api\/v1(?:\/(?:[a-z0-9-]{1,40}|:[a-zA-Z]{1,40})){0,10}$/;
+/**
+ * A template, not a path: lowercase segments and `{param}` as in
+ * server/contracts (RouteContract.path), no query; checked again by inventory.
+ */
+const ROUTE_RE = /^\/api\/v1(?:\/(?:[a-z0-9-]{1,40}|\{[A-Za-z]{1,40}\})){0,10}$/;
 const NO_ROUTES: ReadonlySet<string> = new Set();
 // Set.prototype.has itself, so an inventory with its own `has` cannot widen the check.
 const setHas = Set.prototype.has;

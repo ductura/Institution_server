@@ -10,7 +10,7 @@ Zatvoren popis vrsta događaja (`EVENT_CATALOG`) i provjera zapisa (`checkEvent`
 - Svaka vrsta ima popis dopuštenih vrsta računa (`actors`) i zatvorena polja. Polje je kod iz popisa, ograničen cijeli broj, zastavica, UUID, verzija `x.y.z` ili predložak rute koji mora biti u inventaru ruta predanom provjeri. Vrste polja za slobodni tekst nema, pa tekst rada ni osobni podatak nemaju polje kroz koje bi prošli.
 - Odbija se: nepoznata vrsta (točan zapis, bez rezanja razmaka i promjene velikih slova; `__proto__` i nasljeđena imena nisu vrste), vrsta računa koja nije na popisu događaja, višak ili manjak ključa ili polja, ugniježđeni objekt, getter, simbolni ključ, Proxy, instanca klase. Greška ima oblik `{ code, messageKey }` (`docs/CODE_STYLE.md` §8; tekst je u `locales/hr.json` pod `logCatalog`) i nikad ne nosi odbijenu vrijednost.
 - Rezultat je nova zamrznuta kopija s provjerenim vrijednostima; katalog je zamrznut do dna, pa ga uvoznik ne može proširiti.
-- Inventar ruta predaje se kao pravi `Set` predložaka (nikad stvarnih putanja zahtjeva); provjera zove `Set.prototype.has`. Bez inventara nijedna ruta ne prolazi, a neispravne opcije daju `BAD_OPTIONS`. `checkEvent` nikad ne baca.
+- Inventar ruta predaje se kao pravi `Set` predložaka u obliku iz `server/contracts`, s parametrima kao `{documentId}`, nikad stvarnih putanja zahtjeva; provjera zove `Set.prototype.has`. Bez inventara nijedna ruta ne prolazi, a neispravne opcije daju `BAD_OPTIONS`. `checkEvent` nikad ne baca.
 - Poznata granica: brojčana polja, UUID i verzija mogu nositi nekoliko bajtova proizvoljnih znamenki, ali ne čitljiv tekst.
 - Pozadinski posao bez prijavljene osobe (raspored backupa, brisanje po roku, metrika, upozorenja) bilježi se kao `anonymous`.
 
