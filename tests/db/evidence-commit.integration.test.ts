@@ -421,8 +421,7 @@ describe("evidence commit transaction over real PostgreSQL with RLS", () => {
     };
     const answers = await Promise.all([commit("iva", iva, step), commit("iva", iva, step)]);
     const statuses = answers.map((a) => a.outcome.status).sort();
-    expect(["committed", "duplicate"]).toContain(statuses[0]);
-    expect(statuses[1]).toBe("duplicate");
+    expect(statuses).toEqual(["committed", "duplicate"]);
     expect(await revisionOf(iva)).toBe(1);
     expect(await receiptsOf(iva)).toBe(1);
   });
