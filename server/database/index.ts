@@ -36,6 +36,7 @@ export type {
   PendingReceiptQueue,
   PendingReceiptRow,
   PendingReceiptsRead,
+  ReceiptKeysRead,
 } from "./pending-receipt-signing.ts";
 export type {
   ReplayCheckpointsResult,
@@ -68,6 +69,8 @@ export { createWorkOpener } from "./open-work.ts";
 // The worker's read of the pending receipts, over the worker's own login;
 // only the worker process builds it (D-71, D-102).
 export { createPendingReceiptQueue } from "./pending-receipt-queue.ts";
+// The worker's read of a domain's receipt keys (820b-2a), same login and owner.
+export { readReceiptKeys } from "./receipt-keys.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
