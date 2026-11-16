@@ -1,6 +1,6 @@
 # server/traffic
 
-Područje iz [karte servera](../../docs/server-map.md). Ima IP klijenta (S-1C.1, DAN-790); IP prava, ograničenje i zapis prometa dolaze u valu 5.
+Područje iz [karte servera](../../docs/server-map.md). Ima IP klijenta (S-1C.1, DAN-790) i ograničenje broja zahtjeva (S-1C.3, DAN-814); IP prava i zapis prometa dolaze u valu 5.
 
 ## Što radi
 
@@ -17,6 +17,15 @@ IP klijenta (`client-ip.ts`, ugovor Ductus#1836 c.6900102277):
 - Unos dulji od 53 znaka (nakon skidanja razmaka) je neispravan i ne čita se.
 - Sloj nikad ne odbija ni ne baca. Bez adrese socketa IP je `null`. Nijedna vrijednost zaglavlja ne ide u zapis.
 
+Ograničenje broja zahtjeva (`rate-limit.ts`, ugovor Ductus#1836 c.6908215789, plan napada ductura/server#117):
+
+- Token bucket po IP-u (iz `clientIpOf`; bez adrese jedan zajednički bucket) i po korisniku (SHA-256 sirove vrijednosti kolačića sesije; sesija se ne razrješava, ime kolačića daje `http`). Bez kolačića, s praznim ili ponovljenim kolačićem samo bucket po IP-u.
+- Razredi: `login` (`GET`/`HEAD` `/api/v1/auth/login` i `/api/v1/auth/callback`; samo po IP-u), `enroll` (ruta se prenosi kasnije), `save` (`POST /api/v1/evidence/commit`) i `default`. Razred je iz metode i točne staze bez upita; svaki drugi oblik staze je `default`.
+- Granica je broj zahtjeva u minuti: bucket ih drži toliko i dopunjuje ih kroz minutu. Zadano (`DEFAULT_RATE_LIMITS`, katalog postavki S-1J-f): login 30 po IP-u; upis 60 po IP-u i 10 po korisniku; spremanje 1200 i 120; ostalo 3000 i 300. Granica izvan 1 do 100 000 zaustavlja pokretanje.
+- Zahtjev prolazi samo kad svaki bucket koji dira ima token, i tek tada se tokeni uzimaju: odbijen zahtjev ne troši ništa. `retryAfter` su cijele sekunde (1 do 60) do trenutka kad svi kratki bucketi imaju token, pa ponovljeni zahtjev nakon njega prolazi.
+- Sat se ubrizgava; sat koji ide unatrag ne dodaje tokene. Najviše 50 000 bucketa; preko toga odlazi najdulje nekorišten.
+- Odluka nosi samo razred, vrstu bucketa i `retryAfter`, nikad IP, kolačić ni hash. 429 i zapis `traffic.rate_limited` piše `http` (DAN-814 b).
+
 ## Tko ga zove
 
 Samo `http`.
@@ -31,7 +40,8 @@ Brojači ograničenja u memoriji. Zapis prometa i sigurnosne događaje piše pre
 - `TRAFFIC_SCHEMAS`: sheme, za sada prazne (`schemas.ts`);
 - `TrafficService`: tip servisa bez članova (`service.ts`);
 - `parseTrustedProxies`, `NO_TRUSTED_PROXIES`, `TrustedProxies`: popis povjerljivih proxyja (`client-ip.ts`);
-- `clientIpLayer`: korak 2 pipelinea; `clientIpOf(request)`: IP koji je korak zapisao, za korake 3 do 5 (`client-ip.ts`).
+- `clientIpLayer`: korak 2 pipelinea; `clientIpOf(request)`: IP koji je korak zapisao, za korake 3 do 5 (`client-ip.ts`);
+- `createRateLimiter`, `checkRateLimits`, `DEFAULT_RATE_LIMITS`, `RATE_LIMIT_CLASSES` i tipovi: ograničenje broja zahtjeva, korak 3 (`rate-limit.ts`).
 
 ## Što ne smije uvoziti
 
