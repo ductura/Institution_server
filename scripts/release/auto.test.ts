@@ -146,30 +146,17 @@ describe("QA findings on #92", () => {
   });
 });
 
-// Second review on #92 (c.6906342227): a BOM is part of the bytes.
+// Second review on #92 (c.6906342227) and the 2nd fix round: raw bytes.
 describe("readTree", () => {
-  it("keeps a UTF-8 BOM, so adding one is a change", () => {
+  it("returns the raw bytes, a BOM and bytes that are not UTF-8 included", () => {
     const dir = mkdtempSync(join(tmpdir(), "release-tree-"));
     try {
-      writeFileSync(join(dir, "README.md"), "Lažne zamjene\n");
-      const plain = readTree(dir).get("README.md");
-      writeFileSync(
-        join(dir, "README.md"),
-        Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("Lažne zamjene\n")]),
-      );
-      const withBom = readTree(dir).get("README.md");
-      expect(withBom).not.toBe(plain);
-      expect(withBom?.charCodeAt(0)).toBe(0xfeff);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  it("throws for bytes that are not UTF-8", () => {
-    const dir = mkdtempSync(join(tmpdir(), "release-tree-"));
-    try {
+      const bom = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("Lažne zamjene\n")]);
+      writeFileSync(join(dir, "README.md"), bom);
       writeFileSync(join(dir, "data.bin"), Buffer.from([0xff, 0xfe]));
-      expect(() => readTree(dir)).toThrow();
+      const tree = readTree(dir);
+      expect(Buffer.from(tree.get("README.md")!).equals(bom)).toBe(true);
+      expect([...tree.get("data.bin")!]).toEqual([0xff, 0xfe]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
