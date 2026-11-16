@@ -93,6 +93,7 @@ export {
   type ReadyReport,
   type ReadyStatus,
 } from "./ready.ts";
+export { createReadyRoute, type ReadyRouteOptions } from "./ready-route.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { createRouter, routePath, type Handler, type Route, type Router } from "./router.ts";
 export {
