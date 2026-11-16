@@ -51,7 +51,7 @@ describe("@ductura/test-fakes as a package", () => {
     `${NAME}/guard`,
     `${NAME}/clock/clock.ts`,
     `${NAME}/pglite/log.ts`,
-    `${NAME}/pglite/log-schema.sql`,
+    `${NAME}/pglite/database.ts`,
     `${NAME}/package.json`,
     `${NAME}/boundary.test.ts`,
   ])(
