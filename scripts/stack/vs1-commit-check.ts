@@ -18,8 +18,15 @@ import {
   type EvidenceDomainKey,
   verifySignedEvidenceReceiptV2,
 } from "../../server/domain/index.ts";
-import { INSTITUTION_SLUG, storageDomains } from "./evidence.ts";
-import { readState, serverReady, startDetached, stopProcess } from "./index.ts";
+import { INSTITUTION_SLUG } from "./evidence.ts";
+import {
+  commandLine,
+  readState,
+  serverReady,
+  type StackState,
+  startDetached,
+  stopProcess,
+} from "./index.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/u, "");
 const SERVER = join(ROOT, "dist", "server.js");
@@ -79,16 +86,23 @@ function fixture(
   socket: string,
   port: number,
   token: string,
-): { assignmentId: string; secondId: string } {
+): { assignmentId: string; second: string; control: string } {
   const ids = {
     student: randomUUID(),
     teacher: randomUUID(),
     course: randomUUID(),
     assignment: randomUUID(),
     second: randomUUID(),
+    control: randomUUID(),
   };
   const tag = randomBytes(4).toString("hex");
-  const sql = `\\set ON_ERROR_STOP on
+  // Values reach psql through stdin, never argv: the session token is a live secret.
+  const vars = { slug: INSTITUTION_SLUG, tag, token, ...ids };
+  const sets = Object.entries(vars)
+    .map(([name, value]) => `\\set ${name} '${value}'`)
+    .join("\n");
+  const sql = `${sets}
+\\set ON_ERROR_STOP on
 BEGIN;
 SELECT id AS inst FROM identity.institution WHERE slug = :'slug' \\gset
 INSERT INTO identity.user_account (id, institution_id, oidc_issuer, oidc_subject, hr_edu_person_unique_id)
@@ -101,35 +115,23 @@ VALUES (:'course', :'inst', 'Kolegij (test)', '2026/2027', 'partially_allowed', 
 INSERT INTO institution.course_member (course_id, institution_id, user_id, role)
 VALUES (:'course', :'inst', :'teacher', 'teacher'), (:'course', :'inst', :'student', 'student');
 INSERT INTO institution.assignment (id, course_id, institution_id, current_version, created_by)
-VALUES (:'assignment', :'course', :'inst', 1, :'teacher'), (:'second', :'course', :'inst', 1, :'teacher');
+SELECT a, :'course', :'inst', 1, :'teacher'
+  FROM unnest(ARRAY[:'assignment', :'second', :'control']::uuid[]) AS a;
 INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type,
   opens_at, due_at, ai_policy, ai_purposes, evidence_profile, import_allowed, created_by)
 SELECT a, 1, 'Zadatak (test)', 'Upute za izmišljeni zadatak.', 'essay', now(),
   now() + interval '30 days', 'partially_allowed', '{proofreading}', 'basic', true, :'teacher'
-  FROM unnest(ARRAY[:'assignment', :'second']::uuid[]) AS a;
+  FROM unnest(ARRAY[:'assignment', :'second', :'control']::uuid[]) AS a;
 INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
-SELECT a, 1, :'student', :'inst' FROM unnest(ARRAY[:'assignment', :'second']::uuid[]) AS a;
+SELECT a, 1, :'student', :'inst' FROM unnest(ARRAY[:'assignment', :'second', :'control']::uuid[]) AS a;
 COMMIT;
 `;
-  const vars = { slug: INSTITUTION_SLUG, tag, token, ...ids };
   execFileSync(
     "psql",
-    [
-      "-h",
-      socket,
-      "-p",
-      String(port),
-      "-U",
-      "ductus",
-      "-d",
-      "ductus",
-      "-X",
-      "-q",
-      ...Object.entries(vars).flatMap(([name, value]) => ["-v", `${name}=${value}`]),
-    ],
+    ["-h", socket, "-p", String(port), "-U", "ductus", "-d", "ductus", "-X", "-q"],
     { input: sql, env: { PATH: process.env.PATH ?? "" }, stdio: ["pipe", "ignore", "inherit"] },
   );
-  return { assignmentId: ids.assignment, secondId: ids.second };
+  return { assignmentId: ids.assignment, second: ids.second, control: ids.control };
 }
 
 type GoldenSegment = Record<string, unknown> & { events: Record<string, unknown>[] };
@@ -184,7 +186,8 @@ export async function check(stackDir: string): Promise<void> {
   const { ports } = state;
   const s3Root = join(stackDir, "s3");
   const token = randomBytes(32).toString("base64url");
-  const { assignmentId, secondId } = fixture(stackDir, ports.postgres, token);
+  const ids = fixture(stackDir, ports.postgres, token);
+  const { assignmentId } = ids;
 
   // E1: open, commit, a signed receipt under open's keys, one new object.
   const opened = await post(
@@ -217,62 +220,76 @@ export async function check(stackDir: string): Promise<void> {
   if (!verified.ok) fail("the receipt does not verify under open's receipt keys");
   if (storedObjects(s3Root).length !== before + 1) fail("no new object in the local S3");
 
-  // P6: the same build and variables under NODE_ENV=production answer 503 and store nothing.
+  // P6: the very variables the stack gave its server, S3 key included, under
+  // NODE_ENV=production answer 503 storage and store nothing. A control run of
+  // the same process under development must commit (200), so the 503 cannot
+  // come from a wrong key, a wrong database or a server that never started.
+  const env = stackServerEnv(state);
+  const control = await commitThrough(env, "development", ports, stackDir, token, ids.control);
+  if (control.status !== 200) fail(`the control under development answered ${control.status}`);
+  if (storedObjects(s3Root).length !== before + 2) fail("the control stored no object");
+  const refused = await commitThrough(env, "production", ports, stackDir, token, ids.second);
+  if (refused.status !== 503 || refused.body.stage !== "storage") {
+    fail(
+      `production commit answered ${refused.status} ${JSON.stringify(refused.body)}, not 503 storage`,
+    );
+  }
+  if (storedObjects(s3Root).length !== before + 2) fail("production stored an object");
+}
+
+/**
+ * The environment of the stack's running server, read from /proc of that very
+ * pid once its command line is the recorded one: the same S3 key and seed,
+ * never written anywhere by the stack.
+ */
+export function stackServerEnv(state: StackState): Record<string, string> {
+  const entry = state.processes.server;
+  if (entry === undefined || commandLine(entry.pid) !== entry.marker) {
+    fail("the stack's server is not the recorded process");
+  }
+  const env: Record<string, string> = {};
+  for (const pair of readFileSync(`/proc/${entry.pid}/environ`, "utf8").split("\0")) {
+    const at = pair.indexOf("=");
+    if (at > 0) env[pair.slice(0, at)] = pair.slice(at + 1);
+  }
+  return env;
+}
+
+/** Opens `assignmentId` on the stack and commits it through a second server under `nodeEnv`. */
+async function commitThrough(
+  env: Record<string, string>,
+  nodeEnv: "development" | "production",
+  ports: StackState["ports"],
+  stackDir: string,
+  token: string,
+  assignmentId: string,
+): Promise<Answer> {
   const port = ports.server + 50;
-  const institutionId = String(
-    execFileSync(
-      "psql",
-      [
-        "-h",
-        stackDir,
-        "-p",
-        String(ports.postgres),
-        "-U",
-        "ductus",
-        "-d",
-        "ductus",
-        "-X",
-        "-tA",
-        "-c",
-        `SELECT id FROM identity.institution WHERE slug = '${INSTITUTION_SLUG}'`,
-      ],
-      { encoding: "utf8", env: { PATH: process.env.PATH ?? "" } },
-    ),
-  ).trim();
   const argv = [...SERVER_NODE_FLAGS, SERVER, "--vs1-commit-check"];
   const pid = await startDetached(process.execPath, argv, {
     cwd: ROOT,
-    log: join(stackDir, "commit-check-production.log"),
+    log: join(stackDir, `commit-check-${nodeEnv}.log`),
     env: {
-      PATH: process.env.PATH ?? "",
-      NODE_ENV: "production",
-      HOST: "127.0.0.1",
+      ...env,
+      NODE_ENV: nodeEnv,
       PORT: String(port),
       APP_ORIGIN: `http://127.0.0.1:${port}`,
-      APP_DATABASE_URL: `postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:${ports.postgres}/ductus`,
-      EVIDENCE_STORAGE_DOMAINS: storageDomains(institutionId, ports.s3),
-      EVIDENCE_S3_VS1_KEY_ID: "izmisljeni",
-      EVIDENCE_S3_VS1_SECRET: randomBytes(16).toString("hex"),
-      DUCTUS_DEV_SIGNING_KEY_FILE: join(stackDir, "signing-seed"),
     },
   });
   try {
     if (!(await serverReady(`http://127.0.0.1:${port}/api/v1/health`, pid, port, 30_000))) {
-      fail("the production server did not start");
+      fail(`the ${nodeEnv} server did not start`);
     }
     // A document of its own, opened on the stack's server, so the request reaches storage.
     const fresh = await post(
       ports.server,
       "/api/v1/evidence/open",
-      { assignmentId: secondId, start: true },
+      { assignmentId, start: true },
       token,
     );
-    if (fresh.status !== 200) fail(`open of the second assignment answered ${fresh.status}`);
-    const second = commitRequest(fresh.body, `tx-${randomBytes(4).toString("hex")}`);
-    const refused = await post(port, "/api/v1/evidence/commit", second, token);
-    if (refused.status !== 503) fail(`production commit answered ${refused.status}, not 503`);
-    if (refused.body.status !== "unavailable") fail("production commit is not unavailable");
-    if (storedObjects(s3Root).length !== before + 1) fail("production stored an object");
+    if (fresh.status !== 200) fail(`open answered ${fresh.status}`);
+    const req = commitRequest(fresh.body, `tx-${randomBytes(4).toString("hex")}`);
+    return await post(port, "/api/v1/evidence/commit", req, token);
   } finally {
     await stopProcess(pid, [process.execPath, ...argv].join(" "), 10_000);
   }
