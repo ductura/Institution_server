@@ -1,10 +1,12 @@
 # server/settings
 
-Područje iz [karte servera](../../docs/server-map.md). Mapa je za sada prazna (S-1A-a): ima samo prazne izvoze i tipove, bez logike.
+Područje iz [karte servera](../../docs/server-map.md). Rute, sheme i servis su za sada prazni (S-1A-a); logika je interval sakupljača metrika (S-1K.4-b, DAN-834-4b).
 
 ## Što radi
 
 Postavke iz okoline i njihova provjera pri pokretanju. Odbija lažni OIDC i razvojni potpisnik izvan lokalnog rada i CI-ja (D-09).
+
+`metrics-interval.ts` (DAN-834-4b): interval sakupljača metrika (`createMetricsCollector`, `server/metrics`) iz varijable `METRICS_INTERVAL_MS`, u milisekundama, neobavezan, cijeli broj od 5000 do 3600000 napisan samo znamenkama, zadano 60000. Donja granica ostavlja mjesta jednom krugu (provjera baza 2 s i upis uzorka 1 s), gornja je jedan sat. `metricsIntervalProblems(env)` vraća problem samo imenom varijable, nikad vrijednošću; `metricsIntervalMs(env)` se zove tek kad problema nema. Čita se samo vlastito podatkovno svojstvo okoline: naslijeđeni ključ je kao da varijable nema, a getter i vrijednost koja nije niz su problem (getter se ne poziva). Poziv iz `server/server.ts` i predaja sakupljaču dolaze s DAN-834-5.
 
 ## Tko ga zove
 
@@ -18,7 +20,8 @@ Varijable okoline. Tajne nikad nisu u repou.
 
 - `SETTINGS_ROUTES`: popis ruta, za sada prazan (`routes.ts`);
 - `SETTINGS_SCHEMAS`: sheme, za sada prazne (`schemas.ts`);
-- `SettingsService`: tip servisa bez članova (`service.ts`).
+- `SettingsService`: tip servisa bez članova (`service.ts`);
+- `metricsIntervalProblems`, `metricsIntervalMs`, `DEFAULT_METRICS_INTERVAL_MS`, `METRICS_INTERVAL_MIN_MS` i `METRICS_INTERVAL_MAX_MS` (`metrics-interval.ts`).
 
 ## Što ne smije uvoziti
 
