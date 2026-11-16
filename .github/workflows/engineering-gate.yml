@@ -16,6 +16,12 @@ on: # zizmor: ignore[dangerous-triggers] default-branch metadata gate; PR code i
 
 permissions: {}
 
+# DAN-867: every run step is bash -eo pipefail (scripts/ci/shell.ts); without
+# it GitHub runs bash -e {0}, and a failed command in a pipe passes.
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: engineering-gate-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
   # Queue instead of cancel, so a cancelled run never leaves a red evaluator.

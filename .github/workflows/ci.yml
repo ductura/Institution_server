@@ -7,6 +7,11 @@ permissions:
 concurrency:
   group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+# DAN-867: every run step is bash -eo pipefail (scripts/ci/shell.ts); without
+# it GitHub runs bash -e {0}, and a failed command in a pipe passes.
+defaults:
+  run:
+    shell: bash
 # DAN-721: scope picks the jobs from the changed paths, ci-ok is the one
 # aggregate status. Both run scripts/ci from protected main (the PR base), never
 # from the PR head, so a PR cannot skip its own database job. A base without
