@@ -87,12 +87,38 @@ function members(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): 
     if (!ma.has(key))
       out = worst(
         out,
-        ts.isPropertySignature(node) && node.questionToken ? "optional" : "required",
+        !/#0$/u.test(key)
+          ? "changed"
+          : ts.isPropertySignature(node) && node.questionToken
+            ? "optional"
+            : "required",
       );
   // Everything of an interface besides its members (heritage, type parameters).
   const rest = (n: ts.Node) =>
     children(n).filter((c) => !(n as ts.TypeLiteralNode).members.includes(c as ts.TypeElement));
   return worst(out, list(rest(a), rest(b), fa, fb));
+}
+
+/**
+ * The tokens of `node` outside its children, without comments or layout: the
+ * syntax forEachChild does not visit (`keyof` or `readonly`, `typeof import`,
+ * `extends` or `implements`, `const` or `let`).
+ */
+function skeleton(node: ts.Node, file: ts.SourceFile): string {
+  let text = "";
+  let pos = node.getStart(file);
+  for (const child of children(node)) {
+    text += `${file.text.slice(pos, Math.max(pos, child.getStart(file)))} \u0001 `;
+    pos = Math.max(pos, child.end);
+  }
+  text += file.text.slice(pos, node.end);
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, text);
+  const tokens: string[] = [];
+  // Separators carry no meaning of their own: the children are counted anyway.
+  const separators = new Set([ts.SyntaxKind.SemicolonToken, ts.SyntaxKind.CommaToken]);
+  for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan())
+    if (!separators.has(kind)) tokens.push(scanner.getTokenText());
+  return tokens.join("\u0002");
 }
 
 function list(a: ts.Node[], b: ts.Node[], fa: ts.SourceFile, fb: ts.SourceFile): Change {
@@ -103,7 +129,9 @@ function list(a: ts.Node[], b: ts.Node[], fa: ts.SourceFile, fb: ts.SourceFile):
 /** Two declarations, structurally; comments and layout do not count. */
 function compare(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): Change {
   if (a.kind !== b.kind) return "changed";
+  // Members are compared by name; the rest of an interface goes through compare.
   if (ts.isTypeLiteralNode(a) || ts.isInterfaceDeclaration(a)) return members(a, b, fa, fb);
+  if (skeleton(a, fa) !== skeleton(b, fb)) return "changed";
   const ca = children(a);
   const cb = children(b);
   if (ca.length === 0 && cb.length === 0)
@@ -112,13 +140,34 @@ function compare(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): 
 }
 
 /** Top-level declarations of a .d.ts; each name of `export { … }` is its own entry. */
-function declarations(text: string, path: string): [Map<string, ts.Node>, ts.SourceFile] {
+type Declarations = {
+  readonly nodes: Map<string, ts.Node>;
+  readonly file: ts.SourceFile;
+  /** Every declared or exported name; a new entry of one of these merges or shadows. */
+  readonly names: Set<string>;
+  /** An `export *`: a new local name may shadow one of it. */
+  readonly star: boolean;
+};
+
+const nameOf = (node: ts.Node): string | undefined => {
+  const name = (node as { name?: ts.Node }).name;
+  return name && (ts.isIdentifier(name) || ts.isStringLiteral(name)) ? name.text : undefined;
+};
+
+/** The names a top-level node declares; a variable statement names its declarations. */
+const namesOf = (node: ts.Node): string[] =>
+  ts.isVariableStatement(node)
+    ? node.declarationList.declarations.flatMap((d) => nameOf(d) ?? [])
+    : [nameOf(node) ?? []].flat();
+
+function declarations(text: string, path: string): Declarations {
   const file = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const diagnostics = (file as unknown as { parseDiagnostics: readonly unknown[] })
     .parseDiagnostics;
   if (diagnostics.length > 0) throw new Error(`${path} does not parse`);
   const nodes: ts.Node[] = [];
   const named = new Map<string, ts.Node>();
+  let star = false;
   for (const statement of file.statements) {
     const clause = ts.isExportDeclaration(statement) ? statement.exportClause : undefined;
     if (ts.isExportDeclaration(statement) && clause && ts.isNamedExports(clause)) {
@@ -128,17 +177,22 @@ function declarations(text: string, path: string): [Map<string, ts.Node>, ts.Sou
         const type = statement.isTypeOnly || spec.isTypeOnly ? "type " : "";
         named.set(`export ${type}${spec.name.text} from ${from}#0`, spec);
       }
-    } else nodes.push(statement);
+    } else {
+      if (ts.isExportDeclaration(statement) && !clause) star = true;
+      nodes.push(statement);
+    }
   }
-  return [new Map([...keyed(nodes, file), ...named]), file];
+  const names = new Set([...nodes, ...named.values()].flatMap(namesOf));
+  return { nodes: new Map([...keyed(nodes, file), ...named]), file, names, star };
 }
 
 export type Surface = { readonly level: Change; readonly reasons: string[] };
 
 /** The declaration change from `before` to `after` of one .d.ts. */
 export function declarationChange(before: string, after: string, path: string): Surface {
-  const [da, fa] = declarations(before, path);
-  const [db, fb] = declarations(after, path);
+  const old = declarations(before, path);
+  const now = declarations(after, path);
+  const [da, fa, db, fb] = [old.nodes, old.file, now.nodes, now.file];
   const reasons: string[] = [];
   let level: Change = "same";
   const note = (key: string, change: Change) => {
@@ -150,7 +204,18 @@ export function declarationChange(before: string, after: string, path: string): 
     const other = db.get(key);
     note(key, other ? compare(node, other, fa, fb) : "changed");
   }
-  for (const key of db.keys()) if (!da.has(key)) note(key, "optional");
+  // A new entry is safe only as a new name: not an overload (#1), not a second
+  // block of an existing interface, not `declare global` or `declare module`,
+  // and not next to an `export *` whose names it could shadow.
+  for (const [key, node] of db)
+    if (!da.has(key)) {
+      const merges =
+        !/#0$/u.test(key) ||
+        ts.isModuleDeclaration(node) ||
+        now.star ||
+        namesOf(node).some((name) => old.names.has(name));
+      note(key, merges ? "changed" : "optional");
+    }
   return { level, reasons };
 }
 
@@ -219,6 +284,21 @@ function packageLevel(input: LevelInput): LevelResult {
           raise("major", `export ${key} removed or changed`);
       for (const key of Object.keys(eb))
         if (!Object.hasOwn(ea, key)) raise("minor", `export ${key}`);
+      // How Node or TypeScript loads the package: any change may break a client.
+      for (const key of [
+        "type",
+        "main",
+        "types",
+        "typesVersions",
+        "imports",
+        "peerDependencies",
+        "engines",
+      ])
+        if (
+          JSON.stringify((ma as Record<string, unknown>)[key]) !==
+          JSON.stringify((mb as Record<string, unknown>)[key])
+        )
+          raise("major", `package.json ${key}`);
       const rest = (m: Manifest) => JSON.stringify({ ...m, version: null, exports: null });
       if (rest(ma) !== rest(mb)) raise("patch", "package.json");
     } else if (path.endsWith(".d.ts")) {
