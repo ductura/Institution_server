@@ -8,13 +8,17 @@ export const ROUTE_TABLE = {
   "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, headers: ["location","set-cookie"], errors: {"503":["unavailable"]} },
   "auth.logout-all.post": { method: "POST", path: "/api/v1/auth/logout-all", body: null, headers: ["location","set-cookie"], errors: {"403":["forbidden"],"503":["unavailable"]} },
   "auth.logout.post": { method: "POST", path: "/api/v1/auth/logout", body: null, headers: ["location","set-cookie"], errors: {"403":["forbidden"],"503":["unavailable"]} },
+  "collaboration.comments.post": { method: "POST", path: "/api/v1/comments/{action}", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site","forbidden"],"404":["not_found"],"408":["body_timeout"],"409":["conflict"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "evidence.commit.post": { method: "POST", path: "/api/v1/evidence/commit", body: "application/json", headers: ["retry-after"], errors: {"400":["bad_request"],"401":["unauthenticated"],"403":["forbidden"],"404":["not_found"],"408":["timeout"],"409":["not_accepting","stale_base","chain_conflict","not_continuous","txid_reused"],"413":["too_large"],"415":["unsupported_media_type"],"422":["invalid","document_mismatch"],"426":["upgrade_required"],"503":["unavailable"]} },
   "evidence.open.post": { method: "POST", path: "/api/v1/evidence/open", body: "application/json", headers: [], errors: {"400":["bad_request"],"401":["unauthenticated"],"403":["forbidden"],"404":["not_found"],"408":["timeout"],"409":["not_accepting","not_started"],"413":["too_large"],"415":["unsupported_media_type"],"422":["invalid"],"426":["upgrade_required"],"503":["unavailable"]} },
+  "live.document.get": { method: "GET", path: "/api/v1/live/{documentId}", body: null, headers: ["etag"], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"422":["invalid_document"],"503":["unavailable"]} },
+  "live.document.put": { method: "PUT", path: "/api/v1/live/{documentId}", body: "application/json", headers: [], errors: {"400":["bad_request"],"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"408":["timeout"],"413":["too_large"],"415":["unsupported_media_type"],"422":["invalid_document"],"428":["precondition_required"],"503":["unavailable"]} },
   "platform.health.get": { method: "GET", path: "/api/v1/health", body: null, headers: [], errors: {} },
   "platform.ready.get": { method: "GET", path: "/api/v1/ready", body: null, headers: [], errors: {"503":["unavailable","draining"]} },
   "platform.status.get": { method: "GET", path: "/api/v1/status", body: null, headers: [], errors: {"503":["unavailable"]} },
   "profile.interface-locale.get": { method: "GET", path: "/api/v1/profile/interface-locale", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "profile.interface-locale.post": { method: "POST", path: "/api/v1/profile/interface-locale", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
+  "projection.process-summary.post": { method: "POST", path: "/api/v1/process-summary", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "settings.catalogue.get": { method: "GET", path: "/api/v1/settings/catalogue", body: null, headers: [], errors: {"401":["unauthorized"],"503":["unavailable"]} },
   "settings.values.get": { method: "GET", path: "/api/v1/settings/values", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
   "settings.values.put": { method: "PUT", path: "/api/v1/settings/values", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"409":["bound_crossed"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
@@ -26,6 +30,11 @@ export const ROUTE_TABLE = {
   "teacher.mentorships.get": { method: "GET", path: "/api/v1/teacher/mentorships", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "teacher.submissions.get": { method: "GET", path: "/api/v1/teacher/assignments/{assignmentId}/submissions", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
 } as const;
+
+/** Answer statuses at 400 or above, by route (generated client). */
+export const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {
+  "live.document.put": [200,409],
+};
 
 export const SHARED_ERRORS = {"429":["too_many_requests"],"500":["internal"]} as const;
 
@@ -72,7 +81,12 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
     const body: unknown = res.headers.get("content-type")?.startsWith("application/json") ? await res.json() : undefined;
-    if (res.status < 400) {
+    // A status the contract lists as an answer is one even at 400 or above
+    // (live.document.put 409 {outcome, token}), unless its body is a problem
+    // body: the same status can also be an error (revision-requests 409).
+    // Only a JSON body that is not a problem body (no error, no code) is an answer.
+    const answer = typeof body === "object" && body !== null && !("error" in body) && !("code" in body);
+    if (res.status < 400 || ((ANSWER_STATUSES[id] ?? []).includes(res.status) && answer)) {
       // The headers the contract says callers rely on (location, set-cookie), nothing else.
       const headers: Record<string, string | string[]> = {};
       for (const name of route.headers as readonly string[]) {

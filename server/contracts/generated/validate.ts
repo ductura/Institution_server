@@ -22,6 +22,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['returnTo'] !== undefined ? ((typeof value['returnTo'] === 'string')) : true)
     )
   }),
+  "collaboration.comments.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['action'] === 'create')) || ((value['action'] === 'reply')) || ((value['action'] === 'resolve')) || ((value['action'] === 'reopen')) || ((value['action'] === 'delete')) || ((value['action'] === 'list'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "collaboration.comments.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+  const local1 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,500}(?![\s\S])/;
+  const local2 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,64}(?![\s\S])/;
+  const local3 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,64}(?![\s\S])/;
+  const local4 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local5 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local6 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local7 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local8 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local9 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local10 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedAnchor = (typeof value === 'object' && value !== null ? value['anchor'] : undefined) as Record<string, unknown>;
+    return (
+      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['anchor'] === 'object' && value['anchor'] !== null && !Array.isArray(value['anchor'])) && (typeof nestedAnchor['nodeId'] === 'string') && local0.test(nestedAnchor['nodeId']) && (typeof nestedAnchor['quote'] === 'string') && local1.test(nestedAnchor['quote']) && (typeof nestedAnchor['prefix'] === 'string') && local2.test(nestedAnchor['prefix']) && (typeof nestedAnchor['suffix'] === 'string') && local3.test(nestedAnchor['suffix']) && (typeof nestedAnchor['startHint'] === 'number' && Number.isInteger(nestedAnchor['startHint'])) && nestedAnchor['startHint'] <= 1000000 && nestedAnchor['startHint'] >= 0 && (typeof nestedAnchor['endHint'] === 'number' && Number.isInteger(nestedAnchor['endHint'])) && nestedAnchor['endHint'] <= 1000000 && nestedAnchor['endHint'] >= 0 && Object.getOwnPropertyNames(value['anchor']).length === 6 && (typeof value['body'] === 'string') && local4.test(value['body']) && (typeof value['documentId'] === 'string') && local5.test(value['documentId']) && Object.getOwnPropertyNames(value).length === 3) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['body'] === 'string') && local6.test(value['body']) && (typeof value['threadId'] === 'string') && local7.test(value['threadId']) && Object.getOwnPropertyNames(value).length === 2) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['threadId'] === 'string') && local8.test(value['threadId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['commentId'] === 'string') && local9.test(value['commentId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['documentId'] === 'string') && local10.test(value['documentId']) && Object.getOwnPropertyNames(value).length === 1))
+    )
+  }
+  })(),
   "evidence.commit.post:body": (() => {
   const local0 = /^(?=.*\S)[^\u0000-\u001f\u007f-\u009f]+$/;
   const local1 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
@@ -59,10 +85,44 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "live.document.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "live.document.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "live.document.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value))
+    )
+  }),
   "profile.interface-locale.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (((value['locale'] === 'hr')) || ((value['locale'] === 'en'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "projection.process-summary.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

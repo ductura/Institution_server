@@ -86,6 +86,10 @@ export const SERVER_SOURCES: Readonly<
  */
 export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
+  "projection.process-summary.post",
+  "collaboration.comments.post",
+  "live.document.get",
+  "live.document.put",
   "support.problem-report.post",
   "teacher.courses.get",
   "teacher.submissions.get",
@@ -102,7 +106,6 @@ export const CONTRACT_ONLY: readonly string[] = [
  * list may only shrink: a file moves out of it when its contract lands.
  */
 export const PENDING: readonly string[] = [
-  "app/api/comments/[action]/route.ts",
   "app/api/evidence/replay/route.ts",
   "app/api/institution/assignments/[assignmentId]/acknowledgment/route.ts",
   "app/api/institution/assignments/[assignmentId]/students/[studentId]/work-language/route.ts",
@@ -118,8 +121,6 @@ export const PENDING: readonly string[] = [
   "app/api/institution/enrollments/route.ts",
   "app/api/institution/teachers/[teacherId]/role-confirmation/route.ts",
   "app/api/institution/teachers/[teacherId]/role-revocation/route.ts",
-  "app/api/live/[documentId]/route.ts",
-  "app/api/process-summary/route.ts",
   "app/api/revision-requests/[action]/route.ts",
   "app/api/submission/route.ts",
 ];

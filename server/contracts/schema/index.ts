@@ -1,6 +1,6 @@
 // The format every route contract is written in. This package imports only the
 // schema library (TypeBox) and its own files, so any client can depend on it.
-import { Type, type TObject, type TSchema } from "@sinclair/typebox";
+import { Type, type TObject, type TSchema, type TUnion } from "@sinclair/typebox";
 
 import { messageKeyOf } from "./message-keys.ts";
 
@@ -52,7 +52,11 @@ export type SuccessSpec = {
 export type RequestSpec = {
   readonly params?: TObject;
   readonly query?: TObject;
-  readonly body?: TObject;
+  /**
+   * A closed object, or a union of closed objects when a path parameter picks
+   * the body (collaboration.comments.post {action}).
+   */
+  readonly body?: TObject | TUnion<TObject[]>;
   readonly contentType?: "application/json" | "application/x-www-form-urlencoded";
   readonly maxBodyBytes?: number;
 };

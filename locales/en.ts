@@ -2006,6 +2006,7 @@ const en = {
     boundCrossed: "The value is outside the limit set at a higher level.",
     chainConflict:
       "The record of the work on the server differs from the one on this device. Load the work again.",
+    conflict: "The state has changed in the meantime. Load it again.",
     contentLengthInvalid: "The length of the request is not stated correctly.",
     contentLengthMismatch: "The request is not as long as stated.",
     crossSite: "A request from another site is not allowed.",
@@ -2014,6 +2015,7 @@ const en = {
     forbidden: "You do not have access to this action.",
     internal: "An unexpected error occurred on the server. Please try again.",
     invalid: "The data sent is not valid.",
+    invalidDocument: "The text of the work is not in a valid form.",
     invalidInput: "The data sent is not valid.",
     invalidJson: "The body of the request is not valid JSON.",
     invalidLogoutToken: "The sign-out request is not valid.",
@@ -2027,6 +2029,8 @@ const en = {
     notStarted: "The work has not been started yet.",
     originMismatch: "The request does not come from this site.",
     originMissing: "The request does not say which site it comes from.",
+    preconditionRequired:
+      "The request does not say which version of the work it changes. Load the work again.",
     staleBase: "The work has changed in the meantime. Load the latest version.",
     timeout: "The request took too long. Please try again.",
     tooManyRequests: "Too many requests were sent in a short time. Wait a moment and try again.",
