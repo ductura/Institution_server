@@ -281,6 +281,9 @@ jobs:
           # DAN-787, DAN-817: read only; 0 only when PostgreSQL, fake OIDC and the server run and answer, and the local S3 listens.
           PATH="$PGBIN:$PATH" pnpm stack:vs1 status
           curl -fsS http://127.0.0.1:4100/api/v1/health
+          # DAN-817 (E1, P6): a real evidence/commit on the stack is 200 with a verified
+          # receipt and an object in the local S3; the same build under production is 503.
+          PATH="$PGBIN:$PATH" node scripts/stack/vs1-commit-check.ts
           # Health reads no database: check that the server's own login reaches it.
           "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'
       # Also after a failed up, but not when the job stopped before it (then

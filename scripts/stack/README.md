@@ -81,6 +81,8 @@ Stanje `state.json` iz starijeg stoga bez porta `s3` čita se kao nečitljivo; t
 
 Server stoga dobiva `NODE_ENV=development`, `EVIDENCE_STORAGE_DOMAINS`, `EVIDENCE_S3_VS1_KEY_ID`, `EVIDENCE_S3_VS1_SECRET` i `DUCTUS_DEV_SIGNING_KEY_FILE`, a čita ih proizvodnim putem (`server/http/evidence-deps.ts`). Adresu lažnog OIDC-a i dalje ne dobiva. S istim varijablama, a s `NODE_ENV` izvan `development` i `test`, potpisnik odbija potpisivanje i pohrane nema, pa server na `evidence/commit` odgovara 503 (test u `evidence.test.ts`).
 
+`node scripts/stack/vs1-commit-check.ts` (nakon `up`; CI ga pokreće u koraku „Stog VS-1”) upisuje izmišljenog studenta, kolegij i zadatak u demo-fakultet, zatim `evidence/open` i `evidence/commit` na serveru stoga traže 200 s potpisanom potvrdom koja prolazi provjeru ključevima iz `open` i novim objektom u lokalnom S3; isti `dist/server.js` s istim varijablama i `NODE_ENV=production` mora dati 503 i ne smije ništa spremiti.
+
 `down` gasi i lokalni S3, uz točan marker naredbenog retka. `status` za njega provjerava samo sluša li upravo taj PID na svom portu.
 
 ## Lokalni S3 (DAN-817)
