@@ -83,8 +83,16 @@ const children = (node: ts.Node): ts.Node[] => {
   return out;
 };
 
-/** Named nodes by "name#n" (overloads keep their order), the rest by their text. */
-function keyed(nodes: readonly ts.Node[], file: ts.SourceFile): Map<string, ts.Node> {
+/**
+ * Named nodes by "name#n" (overloads keep their order). The rest by their text
+ * at the top of a file, and among members (call, construct and index
+ * signatures) by kind and position, so a reordered overload is a change.
+ */
+function keyed(
+  nodes: readonly ts.Node[],
+  file: ts.SourceFile,
+  ordinal = false,
+): Map<string, ts.Node> {
   const out = new Map<string, ts.Node>();
   const seen = new Map<string, number>();
   for (const node of nodes) {
@@ -95,7 +103,9 @@ function keyed(nodes: readonly ts.Node[], file: ts.SourceFile): Map<string, ts.N
       ? `VariableStatement ${namesOf(node).join(",")}`
       : name
         ? `${ts.SyntaxKind[node.kind]} ${name.getText(file)}`
-        : node.getText(file);
+        : ordinal
+          ? ts.SyntaxKind[node.kind]
+          : node.getText(file);
     const n = seen.get(base) ?? 0;
     seen.set(base, n + 1);
     out.set(`${base}#${n}`, node);
@@ -105,8 +115,17 @@ function keyed(nodes: readonly ts.Node[], file: ts.SourceFile): Map<string, ts.N
 
 /** Members of a type literal or interface; a new optional property is the only safe change. */
 function members(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): Change {
-  const ma = keyed((a as ts.TypeLiteralNode).members, fa);
-  const mb = keyed((b as ts.TypeLiteralNode).members, fb);
+  const ma = keyed((a as ts.TypeLiteralNode).members, fa, true);
+  const mb = keyed((b as ts.TypeLiteralNode).members, fb, true);
+  // A new optional property is not new to the resulting type next to an index
+  // signature or inside an intersection: it narrows what was there (self-attack #92).
+  let up: ts.Node = b.parent;
+  while (ts.isParenthesizedTypeNode(up)) up = up.parent;
+  const open =
+    ts.isIntersectionTypeNode(up) ||
+    [...(a as ts.TypeLiteralNode).members, ...(b as ts.TypeLiteralNode).members].some((m) =>
+      ts.isIndexSignatureDeclaration(m),
+    );
   let out: Change = "same";
   for (const [key, node] of ma) {
     const other = mb.get(key);
@@ -118,7 +137,7 @@ function members(a: ts.Node, b: ts.Node, fa: ts.SourceFile, fb: ts.SourceFile): 
         out,
         !/#0$/u.test(key)
           ? "changed"
-          : ts.isPropertySignature(node) && node.questionToken
+          : ts.isPropertySignature(node) && node.questionToken && !open
             ? "optional"
             : "required",
       );
@@ -178,6 +197,8 @@ type Declarations = {
   readonly identifiers: Set<string>;
   /** An `export *`: a new local name may shadow one of it. */
   readonly star: boolean;
+  /** Empty `export {}` statements: the marker that hides undeclared exports. */
+  readonly markers: number;
   /** Triple-slash directives: trivia to the scanner, but they change a client's types. */
   readonly directives: string;
   /** Every module the file refers to (import, export from, import type): one may augment. */
@@ -203,6 +224,7 @@ function declarations(text: string, path: string): Declarations {
   const nodes: ts.Node[] = [];
   const named = new Map<string, ts.Node>();
   let star = false;
+  let markers = 0;
   for (const statement of file.statements) {
     const clause = ts.isExportDeclaration(statement) ? statement.exportClause : undefined;
     if (ts.isExportDeclaration(statement) && clause && ts.isNamedExports(clause)) {
@@ -213,6 +235,7 @@ function declarations(text: string, path: string): Declarations {
         const type = statement.isTypeOnly || spec.isTypeOnly ? "type " : "";
         named.set(`export ${type}${spec.name.text} from ${from}#0`, spec);
       }
+      if (clause.elements.length === 0 && !statement.moduleSpecifier) markers += 1;
     } else {
       if (ts.isExportDeclaration(statement) && !clause) star = true;
       nodes.push(statement);
@@ -253,6 +276,7 @@ function declarations(text: string, path: string): Declarations {
     names,
     identifiers,
     star,
+    markers,
     directives,
     modules,
   };
@@ -279,6 +303,7 @@ export function declarationChange(
     reasons.push(`${path} ${key.replace(/#0$/u, "")}: ${change}`);
   };
   if (old.directives !== now.directives) note("/// directives", "changed");
+  if (old.markers !== now.markers) note("export {}", "changed");
   // A module not referred to before may augment what exists (Codex #92): conservative.
   for (const module of now.modules)
     if (!old.modules.has(module)) note(`new module reference ${module}`, "changed");
@@ -296,7 +321,11 @@ export function declarationChange(
       const merges =
         !/#0$/u.test(key) ||
         ts.isModuleDeclaration(node) ||
-        (ts.isImportDeclaration(node) && node.importClause === undefined) ||
+        // Any new import or `export =`/`export default` may bind a name that
+        // shadows a used one (an alias such as `Agent as Date`): self-attack #92.
+        ts.isImportDeclaration(node) ||
+        ts.isImportEqualsDeclaration(node) ||
+        ts.isExportAssignment(node) ||
         now.star ||
         namesOf(node).some(
           (name) => old.names.has(name) || old.identifiers.has(name) || used.has(name),
@@ -318,6 +347,8 @@ export type LevelInput = {
 export type LevelResult = { readonly level: Level; readonly reasons: string[] };
 
 const GENERATED = "server/contracts/generated/";
+/** Every declaration file tsc can emit: .d.ts, .d.mts, .d.cts and .d.<ext>.ts. */
+const DECLARATION = /\.d\.(?:[mc]?ts|[^/.]+\.ts)$/u;
 type Manifest = { version?: unknown; exports?: Record<string, unknown> };
 
 function openapiLevel(before: string, after: string, reasons: string[]): Level {
@@ -358,20 +389,23 @@ function packageLevel(input: LevelInput): LevelResult {
   // A new name that appears anywhere in the old declarations may shadow it.
   const used = new Set<string>();
   for (const [path, content] of before)
-    if (path.endsWith(".d.ts")) identifierTokens(decode(content), used);
+    if (DECLARATION.test(path)) identifierTokens(decode(content), used);
   for (const path of new Set([...before.keys(), ...after.keys()])) {
     const rawA = before.get(path);
     const rawB = after.get(path);
     if (path === "openapi/v1.json") continue;
     if (rawA !== undefined && rawB !== undefined && bytes(rawA).equals(bytes(rawB))) continue;
-    const parsed = path === "package.json" || path.endsWith(".d.ts");
+    // TypeScript that is not a declaration file is not what tsc publishes: blocked.
+    if (/\.[mc]?tsx?$/u.test(path) && !DECLARATION.test(path))
+      throw new Error(`${path} is TypeScript but not a declaration file`);
+    const parsed = path === "package.json" || DECLARATION.test(path);
     const a = rawA === undefined || !parsed ? undefined : decode(rawA);
     const b = rawB === undefined || !parsed ? undefined : decode(rawB);
     if (!parsed) {
       raise(rawA === undefined ? "patch" : rawB === undefined ? "major" : "patch", path);
       continue;
     }
-    if (a === undefined && !path.endsWith(".d.ts")) raise("patch", `${path} added`);
+    if (a === undefined && !DECLARATION.test(path)) raise("patch", `${path} added`);
     else if (b === undefined) raise("major", `${path} removed`);
     else if (path === "package.json") {
       const ma = JSON.parse(a ?? "{}") as Manifest;
@@ -400,7 +434,7 @@ function packageLevel(input: LevelInput): LevelResult {
           raise("major", `package.json ${key}`);
       const rest = (m: Manifest) => JSON.stringify({ ...m, version: null, exports: null });
       if (rest(ma) !== rest(mb)) raise("patch", "package.json");
-    } else if (path.endsWith(".d.ts")) {
+    } else if (DECLARATION.test(path)) {
       // A new file is read like a new name in an empty one: an augmentation in it is major.
       if (a === undefined) raise("minor", `${path} added`);
       const surface = declarationChange(a ?? "", b, path, used);

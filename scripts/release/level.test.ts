@@ -456,3 +456,82 @@ describe("releaseLevel over raw bytes and the whole package", () => {
     expect(level(before, fresh)).toBe("minor");
   });
 });
+
+// Fourth self-attack on #92: order of unnamed signatures, imports that bind a
+// used name, every declaration file, open types and the scope marker.
+describe("releaseLevel closes the last self-attack findings", () => {
+  const dts = (before: string, after: string) => level(fakes(before), fakes(after));
+
+  it.each([
+    [
+      "reordered call signatures",
+      'export type Parse = {\n    (x: string): "text";\n    (x: unknown): "other";\n};\n',
+      'export type Parse = {\n    (x: unknown): "other";\n    (x: string): "text";\n};\n',
+    ],
+    [
+      "reordered construct signatures",
+      "export interface Make {\n    new (x: string): A;\n    new (x: unknown): B;\n}\n",
+      "export interface Make {\n    new (x: unknown): B;\n    new (x: string): A;\n}\n",
+    ],
+    [
+      "a new call signature",
+      'export type Parse = {\n    (x: string): "text";\n};\n',
+      'export type Parse = {\n    (x: string): "text";\n    (x: number): "n";\n};\n',
+    ],
+    [
+      "a new import aliased to a used global",
+      'import { type Server } from "node:http";\nexport declare function stamp(s: Server): Date;\n',
+      'import { type Server } from "node:http";\nimport type { Agent as Date } from "node:http";\nexport declare function stamp(s: Server): Date;\n',
+    ],
+    [
+      "a new namespace import",
+      'import { type Server } from "node:http";\nexport declare const s: Server;\n',
+      'import { type Server } from "node:http";\nimport * as http from "node:http";\nexport declare const s: Server;\n',
+    ],
+    [
+      "a new optional member next to an index signature",
+      "export type Bag = {\n    [key: string]: unknown;\n};\n",
+      "export type Bag = {\n    [key: string]: unknown;\n    size?: number;\n};\n",
+    ],
+    [
+      "a new optional member in an intersection",
+      "type Base = { id: string };\nexport type Item = Base & {\n    name: string;\n};\nexport {};\n",
+      "type Base = { id: string };\nexport type Item = Base & {\n    name: string;\n    id?: number;\n};\nexport {};\n",
+    ],
+    [
+      "a new scope marker",
+      "declare function helper(): void;\nexport declare function main(): void;\n",
+      "declare function helper(): void;\nexport declare function main(): void;\nexport {};\n",
+    ],
+    [
+      "a new export default",
+      "declare function helper(): void;\nexport declare function main(): void;\n",
+      "declare function helper(): void;\nexport declare function main(): void;\nexport default main;\n",
+    ],
+  ])("is major for %s", (_, before, after) => {
+    expect(dts(before, after)).toBe("major");
+  });
+
+  it.each(["a.d.mts", "a.d.cts", "a.d.json.ts"])("reads %s as a declaration file", (path) => {
+    const before = fakes(BASE_DTS, { [path]: "export declare const n: number;\n" });
+    expect(level(before, fakes(BASE_DTS, { [path]: "export declare const n: string;\n" }))).toBe(
+      "major",
+    );
+    expect(level(before, fakes(BASE_DTS, { [path]: "export {};\n" }))).toBe("major");
+  });
+
+  it("is blocked for TypeScript that is not a declaration file", () => {
+    expect(level(fakes(BASE_DTS), fakes(BASE_DTS, { "src.ts": "export const n = 1;\n" }))).toBe(
+      "blocked",
+    );
+  });
+
+  it("keeps a new optional member of a plain type minor", () => {
+    expect(
+      dts(
+        "export type T = {\n    a: string;\n};\n",
+        "export type T = {\n    a: string;\n    b?: number;\n};\n",
+      ),
+    ).toBe("minor");
+  });
+});
