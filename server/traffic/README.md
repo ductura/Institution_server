@@ -19,11 +19,11 @@ IP klijenta (`client-ip.ts`, ugovor Ductus#1836 c.6900102277):
 
 Ograničenje broja zahtjeva (`rate-limit.ts`, ugovor Ductus#1836 c.6908215789, plan napada ductura/server#117):
 
-- Token bucket po IP-u (iz `clientIpOf`; bez adrese jedan zajednički bucket) i po korisniku (SHA-256 sirove vrijednosti kolačića sesije; sesija se ne razrješava, ime kolačića daje `http`). Bez kolačića, s praznim ili ponovljenim kolačićem samo bucket po IP-u.
+- Token bucket po IP-u (iz `clientIpOf`; bez adrese jedan zajednički bucket) i po korisniku (SHA-256 tokena sesije; sesija se ne razrješava). Token čita funkcija `sessionTokenOf` koju daje `http` (`sessionTokenFromCookie` iz `session`), pa limiter i sesija uvijek čitaju isti kolačić. Bez tokena (ili kad funkcija baci) samo bucket po IP-u.
 - Razredi: `login` (`GET`/`HEAD` `/api/v1/auth/login` i `/api/v1/auth/callback`; samo po IP-u), `enroll` (ruta se prenosi kasnije), `save` (`POST /api/v1/evidence/commit`) i `default`. Razred je iz metode i točne staze bez upita; svaki drugi oblik staze je `default`.
 - Granica je broj zahtjeva u minuti: bucket ih drži toliko i dopunjuje ih kroz minutu. Zadano (`DEFAULT_RATE_LIMITS`, katalog postavki S-1J-f): login 30 po IP-u; upis 60 po IP-u i 10 po korisniku; spremanje 1200 i 120; ostalo 3000 i 300. Granica izvan 1 do 100 000 zaustavlja pokretanje.
 - Zahtjev prolazi samo kad svaki bucket koji dira ima token, i tek tada se tokeni uzimaju: odbijen zahtjev ne troši ništa. `retryAfter` su cijele sekunde (1 do 60) do trenutka kad svi kratki bucketi imaju token, pa ponovljeni zahtjev nakon njega prolazi.
-- Sat se ubrizgava; sat koji ide unatrag ne dodaje tokene. Najviše 50 000 bucketa; preko toga odlazi najdulje nekorišten.
+- Sat se ubrizgava; sat koji ide unatrag ne dodaje tokene. Najviše 50 000 bucketa ukupno; preko toga odlazi najdulje nekorišten (i odbijen zahtjev računa se kao korištenje).
 - Odluka nosi samo razred, vrstu bucketa i `retryAfter`, nikad IP, kolačić ni hash. 429 i zapis `traffic.rate_limited` piše `http` (DAN-814 b).
 
 ## Tko ga zove

@@ -32,7 +32,7 @@ export const DEFAULT_RATE_LIMITS: RateLimits = Object.freeze({
 /** A limit is a whole number of requests per minute in these bounds. */
 export const MIN_LIMIT = 1;
 export const MAX_LIMIT = 100_000;
-/** Buckets kept per class and kind; past it full buckets go, then the oldest (N5). */
+/** Buckets kept in all; past it the least recently used goes (N5). */
 export const DEFAULT_MAX_BUCKETS = 50_000;
 
 /**
@@ -102,23 +102,6 @@ export function classOf(method: string | undefined, url: string | undefined): Ra
   return CLASS_ROUTES.get(`${method ?? ""} ${path}`) ?? "default";
 }
 
-/**
- * The raw value of the session cookie when the request carries exactly one
- * non-empty one; null when it is missing, empty or given more than once
- * (N12). Node joins repeated Cookie headers with "; ".
- */
-export function sessionCookieOf(header: unknown, name: string): string | null {
-  if (typeof header !== "string") return null;
-  let found: string | null = null;
-  for (const part of header.split(";")) {
-    const eq = part.indexOf("=");
-    if (eq < 0 || part.slice(0, eq).trim() !== name) continue;
-    if (found !== null) return null;
-    found = part.slice(eq + 1).trim();
-  }
-  return found === null || found === "" ? null : found;
-}
-
 const hashOf = (value: string): string => createHash("sha256").update(value).digest("base64url");
 
 /**
@@ -140,6 +123,12 @@ function createStore(maxBuckets: number) {
       }
       buckets.set(id, bucket);
     },
+    touch(id: string): void {
+      const bucket = buckets.get(id);
+      if (bucket === undefined) return;
+      buckets.delete(id);
+      buckets.set(id, bucket);
+    },
     size: (): number => buckets.size,
   };
 }
@@ -148,8 +137,14 @@ export type RateLimiterOptions = {
   readonly limits?: RateLimits;
   /** Milliseconds; Date.now unless a test moves the clock. */
   readonly now?: () => number;
-  /** The session cookie's name, from server/session through server/http. */
-  readonly cookieName: string;
+  /**
+   * The session token of a request, read exactly as server/session reads it
+   * (server/http passes sessionTokenFromCookie): a cookie the session takes is
+   * the one the account bucket counts, so no second reading of the Cookie
+   * header can drop the bucket while the session still works (self-attack
+   * on DAN-814 a, B1). Nothing else, null or a throw means no account bucket.
+   */
+  readonly sessionTokenOf: (request: IncomingMessage) => string | null | undefined;
   readonly maxBuckets?: number;
 };
 
@@ -163,6 +158,14 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter & {
   if (!Number.isInteger(maxBuckets) || maxBuckets < 1) throw new Error("maxBuckets must be >= 1");
   const now = options.now ?? Date.now;
   const store = createStore(maxBuckets);
+  const tokenOf = (request: IncomingMessage): string | null => {
+    try {
+      const token = options.sessionTokenOf(request);
+      return typeof token === "string" && token !== "" ? token : null;
+    } catch {
+      return null;
+    }
+  };
   // The newest time seen: a clock that goes back never adds tokens (N9).
   let last = -Infinity;
 
@@ -191,11 +194,11 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter & {
         },
       ];
       if (own.perAccount !== null) {
-        const cookie = sessionCookieOf(request.headers.cookie, options.cookieName);
-        if (cookie !== null) {
+        const token = tokenOf(request);
+        if (token !== null) {
           keys.push({
             kind: "per_account",
-            id: `${limitClass} s ${hashOf(cookie)}`,
+            id: `${limitClass} s ${hashOf(token)}`,
             limit: own.perAccount,
           });
         }
@@ -213,6 +216,9 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter & {
         if (refusal === null || waitMs > refusal.waitMs) refusal = { kind: key.kind, waitMs };
       });
       if (refusal !== null) {
+        // A refused bucket stays as it is but counts as used, so a flood of
+        // new keys does not push it out ahead of the others (self-attack N2).
+        for (const key of keys) store.touch(key.id);
         const { kind, waitMs } = refusal as { kind: Key["kind"]; waitMs: number };
         const retryAfter = Math.min(60, Math.max(1, Math.ceil(waitMs / 1000)));
         return { allowed: false, limitClass, bucket: kind, retryAfter };

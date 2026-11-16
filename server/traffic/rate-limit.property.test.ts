@@ -11,6 +11,17 @@ import { createRateLimiter, type RateLimits } from "./rate-limit.ts";
 
 const COOKIE = "__Host-test_session";
 
+/** Reads the test cookie as server/session reads its own: one exact pair. */
+function testToken(request: IncomingMessage): string | undefined {
+  const header = request.headers.cookie;
+  if (typeof header !== "string") return undefined;
+  const found = header
+    .split(";")
+    .map((part) => part.replace(/^[ \t]+/u, ""))
+    .filter((pair) => pair.slice(0, pair.indexOf("=")) === COOKIE && pair.includes("="));
+  return found.length === 1 ? found[0]?.slice(COOKIE.length + 1) : undefined;
+}
+
 async function request(ip: number, account: number | null): Promise<IncomingMessage> {
   const message = {
     method: "GET",
@@ -47,7 +58,7 @@ async function replay(perIp: number, perAccount: number, steps: readonly Step[])
   const rl = createRateLimiter({
     limits: limitsWith(perIp, perAccount),
     now: () => now,
-    cookieName: COOKIE,
+    sessionTokenOf: testToken,
   });
   const out: { at: number; allowed: boolean; retryAfter: number }[] = [];
   for (const s of steps) {
@@ -157,7 +168,7 @@ describe("rate limit properties", () => {
           const rl = createRateLimiter({
             limits: limitsWith(perIp, 40),
             now: () => times[index] ?? 0,
-            cookieName: COOKIE,
+            sessionTokenOf: testToken,
           });
           let passed = 0;
           let high = Number.NEGATIVE_INFINITY;

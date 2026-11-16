@@ -12,10 +12,20 @@ import {
   createRateLimiter,
   DEFAULT_RATE_LIMITS,
   type RateLimits,
-  sessionCookieOf,
 } from "./rate-limit.ts";
 
 const COOKIE = "__Host-test_session";
+
+/** Reads the test cookie as server/session reads its own: one exact pair. */
+function testToken(request: IncomingMessage): string | undefined {
+  const header = request.headers.cookie;
+  if (typeof header !== "string") return undefined;
+  const found = header
+    .split(";")
+    .map((part) => part.replace(/^[ \t]+/u, ""))
+    .filter((pair) => pair.slice(0, pair.indexOf("=")) === COOKIE && pair.includes("="));
+  return found.length === 1 ? found[0]?.slice(COOKIE.length + 1) : undefined;
+}
 
 type Shape = {
   ip?: string;
@@ -52,7 +62,7 @@ function limiter(limits: RateLimits = small, maxBuckets?: number) {
   const rl = createRateLimiter({
     limits,
     now: clock.nowMs,
-    cookieName: COOKIE,
+    sessionTokenOf: testToken,
     ...(maxBuckets === undefined ? {} : { maxBuckets }),
   });
   return { clock, rl };
@@ -92,26 +102,42 @@ describe("classOf (N11)", () => {
   });
 });
 
-describe("sessionCookieOf (N12)", () => {
-  it.each([
-    [`${COOKIE}=abc`, "abc"],
-    [`other=1; ${COOKIE}=abc ; x=2`, "abc"],
-    [`${COOKIE}=a=b`, "a=b"],
-  ])("reads %j", (header, expected) => {
-    expect(sessionCookieOf(header, COOKIE)).toBe(expected);
+describe("sessionTokenOf decides the account bucket (N12, self-attack B1)", () => {
+  const counted = async (sessionTokenOf: (r: IncomingMessage) => string | null | undefined) => {
+    const clock = createFakeClock(0);
+    const rl = createRateLimiter({ limits: small, now: clock.nowMs, sessionTokenOf });
+    const out: string[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      const decision = rl.check(await request({ ip: `203.0.113.${i}` }));
+      out.push(decision.allowed ? "ok" : decision.bucket);
+    }
+    return out;
+  };
+
+  it("counts one account across addresses by the token it gives", async () => {
+    expect(await counted(() => "same-token")).toEqual(["ok", "ok", "ok", "per_account"]);
   });
 
   it.each([
-    [undefined],
-    [""],
-    [`${COOKIE}=`],
-    [`${COOKIE}=a; ${COOKIE}=b`],
-    [`${COOKIE}=a; ${COOKIE}=a`],
-    [`x${COOKIE}=a`],
-    [COOKIE],
-    [["a", "b"]],
-  ])("gives null for %j", (header) => {
-    expect(sessionCookieOf(header, COOKIE)).toBeNull();
+    ["null", () => null],
+    ["undefined", () => undefined],
+    ["an empty token", () => ""],
+    [
+      "a throw",
+      () => {
+        throw new Error("x");
+      },
+    ],
+  ])("%s means no account bucket and no throw", async (_name, reader) => {
+    expect(await counted(reader)).toEqual(["ok", "ok", "ok", "ok"]);
+  });
+
+  it("is handed the request itself", async () => {
+    const seen: IncomingMessage[] = [];
+    const rl = createRateLimiter({ limits: small, sessionTokenOf: (r) => (seen.push(r), null) });
+    const message = await request({ cookie: `${COOKIE}=a` });
+    rl.check(message);
+    expect(seen).toEqual([message]);
   });
 });
 
@@ -130,7 +156,9 @@ describe("checkRateLimits (N14)", () => {
     ["a missing class", { login: small.login, enroll: small.enroll, save: small.save }],
   ])("refuses %s", (_name, limits) => {
     expect(checkRateLimits(limits as RateLimits)).toBeNull();
-    expect(() => createRateLimiter({ limits: limits as RateLimits, cookieName: COOKIE })).toThrow();
+    expect(() =>
+      createRateLimiter({ limits: limits as RateLimits, sessionTokenOf: testToken }),
+    ).toThrow();
   });
 });
 
@@ -259,9 +287,21 @@ describe("createRateLimiter", () => {
     expect(rl.size()).toBe(4);
   });
 
+  it("a refused bucket counts as used and is not pushed out first (self-attack N2)", async () => {
+    const { rl } = limiter(small, 3);
+    const victim = { ip: "203.0.113.200" };
+    await run(rl, victim, 5);
+    await run(rl, { ip: "203.0.113.1" }, 1);
+    expect(await run(rl, victim, 1)).toEqual(["per_address:12"]);
+    await run(rl, { ip: "203.0.113.2" }, 1);
+    await run(rl, { ip: "203.0.113.3" }, 1);
+    // Without the touch the victim's empty bucket would be the oldest and go.
+    expect(await run(rl, victim, 1)).toEqual(["per_address:12"]);
+  });
+
   it("a clock that goes back adds nothing (N9)", async () => {
     let now = 60_000;
-    const rl = createRateLimiter({ limits: small, now: () => now, cookieName: COOKIE });
+    const rl = createRateLimiter({ limits: small, now: () => now, sessionTokenOf: testToken });
     for (let i = 0; i < 5; i += 1) rl.check(await request());
     now = 0;
     expect(rl.check(await request()).allowed).toBe(false);
