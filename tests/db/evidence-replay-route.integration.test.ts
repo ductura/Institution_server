@@ -48,6 +48,7 @@ const id = {
   b: randomUUID(),
   adminA: randomUUID(),
   vesna: randomUUID(),
+  petra: randomUUID(),
   ana: randomUUID(),
   ivo: randomUUID(),
   marko: randomUUID(),
@@ -59,6 +60,7 @@ const tokens = {
   ana: randomBytes(32).toString("base64url"),
   ivo: randomBytes(32).toString("base64url"),
   vesna: randomBytes(32).toString("base64url"),
+  petra: randomBytes(32).toString("base64url"),
   marko: randomBytes(32).toString("base64url"),
 };
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
@@ -73,9 +75,12 @@ const signer = new PersistentDevelopmentEd25519SigningKeyProvider(
 );
 const payloads = new InMemoryEvidencePayloadStore();
 let storageReads = 0;
+// When set, storage hands back these bytes for every object: a corrupt store (#136 C14).
+let corruptBytes: Uint8Array | null = null;
 const readImmutable = payloads.readImmutable.bind(payloads);
 payloads.readImmutable = (input) => {
   storageReads += 1;
+  if (corruptBytes !== null) return Promise.resolve({ status: "found", bytes: corruptBytes });
   return readImmutable(input);
 };
 
@@ -106,7 +111,7 @@ async function fixture(): Promise<void> {
      VALUES ($1, 'Fakultet A (test)', 5, '15 minutes')`,
     [id.a],
   );
-  const accounts: [string, string][] = (["adminA", "vesna", "ana", "ivo"] as const).map(
+  const accounts: [string, string][] = (["adminA", "vesna", "petra", "ana", "ivo"] as const).map(
     (name) => [id[name], name] as [string, string],
   );
   for (const [user, name] of accounts) {
@@ -116,7 +121,7 @@ async function fixture(): Promise<void> {
       [user, id.a, `sub-${name}-${suffix}`, `${name}-${suffix}@fak.invalid`],
     );
   }
-  for (const name of ["ana", "ivo", "vesna"] as const) {
+  for (const name of ["ana", "ivo", "vesna", "petra"] as const) {
     await q(
       `INSERT INTO identity.session (token_hash, user_id, institution_id, expires_at)
        VALUES (sha256(convert_to($1, 'UTF8')), $2, $3, now() + interval '1 hour')`,
@@ -128,6 +133,12 @@ async function fixture(): Promise<void> {
     `INSERT INTO institution.institution_role (institution_id, user_id, role, confirmed_by, confirmed_at)
      VALUES ($1, $2, 'teacher', $3, now())`,
     [id.a, id.vesna, id.adminA],
+  );
+  // A teacher of the same institution with no tie to the course (attack plan #136 A3).
+  await q(
+    `INSERT INTO institution.institution_role (institution_id, user_id, role, confirmed_by, confirmed_at)
+     VALUES ($1, $2, 'teacher', $3, now())`,
+    [id.a, id.petra, id.adminA],
   );
   await q(
     `INSERT INTO institution.course (id, institution_id, name, academic_year, ai_policy, created_by)
@@ -339,14 +350,14 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
     expect(teacher.text).toBe(owner.text);
   });
 
-  it("A1, A2: another student of the course and a student of another institution get the 404 of a missing work; storage is not read", async () => {
+  it("A1, A2, A3: another student of the course, a teacher not of the course and a student of another institution get the 404 of a missing work; storage is not read", async () => {
     const missing = await replay(
       { documentId: `dokument-nepostojeci-${suffix}`, from: 0 },
       tokens.ana,
     );
     expect(missing).toMatchObject({ status: 404, body: { status: "not_found" } });
     const before = storageReads;
-    for (const who of [tokens.ivo, tokens.marko]) {
+    for (const who of [tokens.ivo, tokens.petra, tokens.marko]) {
       const answer = await replay({ documentId, from: 0 }, who);
       expect(answer.status).toBe(404);
       expect(answer.text).toBe(missing.text);
@@ -369,5 +380,72 @@ describe("evidence/replay through a real server over real PostgreSQL", () => {
     expect((await replay({ documentId, from: 0 }, null)).status).toBe(401);
     const unknown = await replay({ documentId, from: 0 }, randomBytes(32).toString("base64url"));
     expect(unknown).toMatchObject({ status: 401, body: { status: "unauthenticated" } });
+  });
+  it("C14: an object that is not the listed segment is 503 storage, never 404 or a page", async () => {
+    corruptBytes = new TextEncoder().encode(segment.replace("sesija-", "sesijA-"));
+    try {
+      const answer = await replay({ documentId, from: 0 }, tokens.ana);
+      expect(answer).toMatchObject({
+        status: 503,
+        body: { status: "unavailable", stage: "storage" },
+      });
+      expect(answer.text).not.toContain("sesij");
+    } finally {
+      corruptBytes = null;
+    }
+  });
+
+  it("C19: a record that grows between pages is read up to the pinned head; a fresh first page sees the new head", async () => {
+    const pinned = (await replay({ documentId, from: 0 }, tokens.ana)).body.head as {
+      segmentHash: string;
+      segmentCount: number;
+    };
+    const template = chain.segments[0]!.segment;
+    const before = canonicalizeJcs(chain.documentStates[1]!.value);
+    const after = canonicalizeJcs(chain.documentStates[2]!.value);
+    const second = canonicalizeJcs({
+      ...template,
+      documentId,
+      sessionId: `sesija-${suffix}`,
+      segmentId: `segment-${suffix}-2`,
+      sequenceFrom: 2,
+      sequenceTo: 2,
+      initialDocumentHash: sha256(before),
+      finalDocumentHash: sha256(after),
+      predecessorSegmentHash: sha256(segment),
+      evidenceProfileId: (JSON.parse(segment) as { evidenceProfileId: string }).evidenceProfileId,
+      events: [
+        {
+          ...template.events[1],
+          sequence: 2,
+          beforeDocumentHash: sha256(before),
+          afterDocumentHash: sha256(after),
+        },
+      ],
+    });
+    const committed = await post(
+      "/api/v1/evidence/commit",
+      {
+        documentId,
+        clientTransactionId: `tx-${suffix}-2`,
+        baseRevision: 1,
+        segments: [Buffer.from(second, "utf8").toString("base64")],
+        document: Buffer.from(after, "utf8").toString("base64"),
+      },
+      tokens.ana,
+    );
+    expect(committed.status).toBe(200);
+    // The old pin still holds: nothing past it is served, never a page of two records.
+    expect((await replay({ documentId, from: 1, head: pinned }, tokens.ana)).status).toBe(404);
+    const fresh = await replay({ documentId, from: 0 }, tokens.ana);
+    expect(fresh.body).toMatchObject({
+      segmentCount: 2,
+      head: { segmentHash: sha256(second), segmentCount: 2 },
+      segments: [segment, second],
+      next: null,
+    });
+    const head = fresh.body.head;
+    const later = await replay({ documentId, from: 1, head }, tokens.vesna);
+    expect(later.body).toMatchObject({ from: 1, segments: [second], startDocument: null });
   });
 });
