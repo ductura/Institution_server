@@ -135,6 +135,21 @@ describe("createFakeLogDatabase", () => {
     expect(result.rows).toEqual([{ db: "ductus_logs", version: "20261116160000" }]);
   });
 
+  it("append returns the row it appended, not the one with the largest id", async () => {
+    const log = await createFakeLogDatabase();
+    open.push(log);
+    await log.db.exec(
+      `INSERT INTO public.log_entry (id, kind, payload) OVERRIDING SYSTEM VALUE
+         VALUES (1000, 'authn.login_started', '{"planted": true}')`,
+    );
+    const entry = await log.append("session.logged_out", { reason: "user" });
+    expect(entry.id).not.toBe(1000);
+    expect({ kind: entry.kind, payload: entry.payload }).toEqual({
+      kind: "session.logged_out",
+      payload: { reason: "user" },
+    });
+  });
+
   it("refuses a payload that is not JSON and an empty kind", async () => {
     const log = await seeded();
     await expect(log.append("x", undefined)).rejects.toThrow(TypeError);
