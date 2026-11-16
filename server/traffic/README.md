@@ -46,13 +46,20 @@ Izvor metrike iz zapisa prometa (`traffic-tally.ts`, DAN-834-3, ugovor Ductus#18
 - Broji se samo `traffic.request` sa statusom 100 do 599 i trajanjem 0 do `MAX_DURATION_MS`, kao u katalogu. Greška je status 500 i više; `499` je zahtjev, ali nije greška.
 - `take()` vraća tri zamrznuta uzorka (`request_count`, `error_count`, `latency_p95_ms`) samo s `metric` i `value` i prazni prozor. p95 je gornja granica košare iz `LATENCY_BUCKETS_MS` u kojoj je rang ⌈0,95 · n⌉, pa memorija ne raste s prometom. Spajanje sa sakupljačem iz `metrics` radi sastavljač (DAN-834).
 
+Zbrojevi prometa (`traffic-summary.ts`, DAN-836-1, ugovor Ductus#1836):
+
+- `createTrafficSummary({ now })` daje `observe(zapis)` i `summarize(windowMinutes)` za operatorsku rutu `GET /api/v1/ops/traffic` (DAN-836-2). `observe` čita samo `event`, `fields.route` i `fields.status`, kao vlastita podatkovna svojstva (kao `traffic-tally`), i nikad ne baca. IP, `requestId` i ostala polja ne stižu do zbroja.
+- Broji se samo `traffic.request` sa statusom 100 do 599 i rutom `none` ili predloškom iz kataloga zapisa (`/api/v1` i najviše 10 segmenata). Zapis ide u minutu sata u trenutku `observe`; sat koji baca ili ne daje konačan broj ne broji ništa.
+- `summarize` vraća `{ ok, value: { windowMinutes, total, rows: [{ route, status, count }] } }` za minute `(sada − windowMinutes, sada]`; minuta poslije sata (sat je išao unatrag) ne ulazi. Prozor je cijeli broj minuta od 1 do `MAX_WINDOW_MINUTES` (1440); veći broj daje `TRAFFIC_WINDOW_TOO_LARGE`, sve ostalo `TRAFFIC_WINDOW_INVALID` (tekstovi `trafficSummary.*` u `locales/hr.json`).
+- Čuva se najviše 1440 minuta i ukupno `MAX_ENTRIES` (50 000) parova (minuta, ruta, status); novi par preko toga se ne broji, poznati se broji dalje.
+
 ## Tko ga zove
 
 Samo `http`.
 
 ## Koje podatke dira
 
-Brojači ograničenja i brojači metrike prometa u memoriji. Zapis prometa i sigurnosne događaje piše preko `log` u bazu zapisa, bez tijela zahtjeva, kolačića, tokena i upita iz URL-a.
+Brojači ograničenja, brojači metrike prometa i zbrojevi prometa po minuti u memoriji. Zapis prometa i sigurnosne događaje piše preko `log` u bazu zapisa, bez tijela zahtjeva, kolačića, tokena i upita iz URL-a.
 
 ## Što izvozi
 
@@ -63,6 +70,7 @@ Brojači ograničenja i brojači metrike prometa u memoriji. Zapis prometa i sig
 - `clientIpLayer`: korak 2 pipelinea; `clientIpOf(request)`: IP koji je korak zapisao, za korake 3 do 5 (`client-ip.ts`);
 - `createTrafficRecorder`, `TRAFFIC_METHODS`, `STATUS_CLOSED_EARLY`, `MAX_DURATION_MS` i tipovi: zapis prometa, korak 5 (`traffic-record.ts`);
 - `createTrafficTally` i tipovi `TrafficTally`, `TrafficSample`, `TrafficMetric`: izvor metrike iz zapisa prometa (`traffic-tally.ts`);
+- `createTrafficSummary`, `MAX_WINDOW_MINUTES`, `MAX_ENTRIES`, `TRAFFIC_SUMMARY_ERROR_CODES` i tipovi: zbrojevi prometa po ruti, statusu i prozoru (`traffic-summary.ts`);
 - `parseAllowedNetworks`, `networkAllows`, `isOpsPath`, `NO_ALLOWED_NETWORKS`, `MAX_ALLOWED_NETWORKS`, `MAX_ALLOWED_NETWORKS_LENGTH`, `AllowedNetworks`: IP prava, korak 3 (`ip-rules.ts`);
 - `createRateLimiter`, `checkRateLimits`, `DEFAULT_RATE_LIMITS`, `RATE_LIMIT_CLASSES` i tipovi: ograničenje broja zahtjeva, korak 4 (`rate-limit.ts`).
 

@@ -44,3 +44,14 @@ export {
   type TrafficSample,
   type TrafficTally,
 } from "./traffic-tally.ts";
+export {
+  createTrafficSummary,
+  MAX_ENTRIES,
+  MAX_WINDOW_MINUTES,
+  TRAFFIC_SUMMARY_ERROR_CODES,
+  type TrafficSummary,
+  type TrafficSummaryOptions,
+  type TrafficSummaryResult,
+  type TrafficSummaryRow,
+  type TrafficSummaryValue,
+} from "./traffic-summary.ts";
