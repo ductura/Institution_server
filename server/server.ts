@@ -23,14 +23,16 @@ import {
   createEvidenceReplayRouteFor,
   evidenceIngestDependencies,
   createLayers,
+  createMetricsSampling,
   createShutdownCoordinator,
-  FLUSH_LOGS,
   createHealthRoute,
   installShutdown,
   parseTrustedProxies,
   routesOf,
+  serverShutdownHooks,
   startServer,
 } from "./http/index.ts";
+import { metricsIntervalMs, metricsIntervalProblems } from "./settings/index.ts";
 
 // 1. Environment. A bad value stops the start before anything listens; the
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
@@ -41,6 +43,7 @@ const problems = [
   ...listenProblems(process.env),
   ...shutdownProblems(process.env),
   ...originProblems(process.env),
+  ...metricsIntervalProblems(process.env),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
@@ -115,8 +118,19 @@ async function main(): Promise<void> {
   if (running === undefined) return;
   console.log(JSON.stringify({ event: "server.listening", host, port: running.port }));
 
+  // Metrics (S-1K.4-b, DAN-834-5a): every METRICS_INTERVAL_MS one round of
+  // database_connections into metric_sample of the logs database; a failing
+  // round is skipped and logged by its reason, never stopping the server.
+  const metrics = createMetricsSampling({
+    intervalMs: metricsIntervalMs(process.env),
+    health: databases.health,
+    store: databases.metricSamples,
+  });
+  metrics.start();
+
   // 5. Shutdown (S-1B-c). The first SIGTERM or SIGINT: stop accepting, finish
-  //    the started requests, flush the logs, close the databases, exit 0;
+  //    the started requests, stop metrics (waiting for the round in progress),
+  //    flush the logs, close the databases, exit 0;
   //    whatever is left at the deadline exits 1 (server/http/shutdown.ts).
   type Signal = "SIGTERM" | "SIGINT";
   const signals = {
@@ -126,7 +140,7 @@ async function main(): Promise<void> {
   installShutdown(signals, {
     coordinator: shutdown,
     listener: running,
-    hooks: [FLUSH_LOGS, { name: "databases", run: () => databases.close() }],
+    hooks: serverShutdownHooks({ metrics, databases }),
     exit: (code) => process.exit(code),
   });
 }

@@ -58,7 +58,7 @@ describe("tests that start a server process", () => {
 
   it("the scan finds the known server spawns, line breaks or not", () => {
     expect(flagged(source("server.integration.test.ts"))).toBe(1);
-    expect(flagged(source("server-shutdown.integration.test.ts"))).toBe(2);
+    expect(flagged(source("server-shutdown.integration.test.ts"))).toBe(3);
     expect(
       flagged("spawn(\n  process.execPath,\n  [\n    ...SERVER_NODE_FLAGS,\n    e,\n  ],\n)"),
     ).toBe(1);

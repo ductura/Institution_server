@@ -82,6 +82,18 @@ describe("server/server.ts", () => {
   });
 });
 
+// DAN-834-5a: the order of the shutdown hooks lives in http (serverShutdownHooks,
+// tested there), so the entry hands it over and keeps no list of its own.
+describe("server/server.ts startup and shutdown of metrics", () => {
+  it("checks METRICS_INTERVAL_MS with the environment and takes the hooks from http", () => {
+    expect(ENTRY_TEXT).toMatch(
+      /const problems = \[(?:(?!\n\];)[\s\S])*\.\.\.metricsIntervalProblems\(process\.env\),/u,
+    );
+    expect(ENTRY_TEXT).toMatch(/hooks: serverShutdownHooks\(\{ metrics, databases \}\)/u);
+    expect(ENTRY_TEXT).not.toMatch(/hooks: \[/u);
+  });
+});
+
 describe("entryProblems over a fixture tree", () => {
   const tree = (folders: readonly string[]): string => {
     const root = mkdtempSync(join(tmpdir(), "ductura-entry-"));

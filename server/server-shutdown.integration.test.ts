@@ -169,6 +169,51 @@ describe("server/server.ts shutdown", () => {
   );
 });
 
+// DAN-834-5a: METRICS_INTERVAL_MS is checked with the rest of the environment,
+// and the line names the variable, never the value (invented markers).
+describe("server/server.ts metrics interval", () => {
+  it.each([
+    ["a word", "abc9137"],
+    ["below the minimum", "4999"],
+    ["above the maximum", "3600001"],
+    ["CRLF", "19137\r\n"],
+    ["a leading NBSP", "\u00a019137"],
+    ["a trailing DEL", "19137\u007f"],
+    ["a Windows path", "C:\\x9137"],
+  ])(
+    "does not start with METRICS_INTERVAL_MS as %s",
+    async (_, value) => {
+      const child = spawn(process.execPath, [...SERVER_NODE_FLAGS, SERVER], {
+        cwd: ROOT,
+        env: {
+          PATH: process.env.PATH ?? "",
+          PORT: "0",
+          APP_DATABASE_URL: DATABASE_URL,
+          METRICS_INTERVAL_MS: value,
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      children.push(child);
+      const output: string[] = [];
+      child.stdout?.on("data", (chunk: Buffer) => output.push(String(chunk)));
+      child.stderr?.on("data", (chunk: Buffer) => output.push(String(chunk)));
+      const code = await new Promise<number | null>((resolve) => child.on("exit", resolve));
+      expect(code).toBe(1);
+      expect(output.join("")).toBe(
+        "startup refused: METRICS_INTERVAL_MS is not a whole number from 5000 to 3600000\n",
+      );
+    },
+    20_000,
+  );
+
+  it("starts with the smallest interval and stops on SIGTERM with exit 0", async () => {
+    const server = await start(SERVER, { METRICS_INTERVAL_MS: "5000" });
+    server.child.kill("SIGTERM");
+    expect(await server.exit).toBe(0);
+    expect(server.err()).toBe("");
+  }, 20_000);
+});
+
 describe("shutdown in the middle of a slow request", () => {
   it.each([
     ["SIGTERM", ["SIGTERM"]],
