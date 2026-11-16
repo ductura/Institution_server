@@ -33,9 +33,10 @@ const PGDATA = join(STACK, "pgdata");
 const TAIL = {
   server: [join(ROOT, "dist/server.js"), `--vs1-stack=${STACK}`],
   oidc: [join(ROOT, "packages/test-fakes/oidc/server.ts"), `--vs1-stack=${STACK}`],
+  s3: [join(ROOT, "scripts/stack/local-s3.ts"), `--vs1-stack=${STACK}`],
 };
 process.env.VS1_STACK_DIR = STACK;
-const { down, LOCK, oidcEnv, status, up } = await import("./vs1.ts");
+const { down, localS3Status, LOCK, oidcEnv, stackHealthy, status, up } = await import("./vs1.ts");
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 // Ports no other test uses, so "nothing listens" means the stack started nothing.
@@ -504,4 +505,55 @@ describe("a state copied from another stack (review c.6900962987)", () => {
       rmSync(STATE, { force: true });
     }
   }, 30_000);
+});
+
+describe("status of the local S3 (QA c.6913384896)", () => {
+  it("is not up when its pid does not listen and another process holds its port", async () => {
+    const other = createServer();
+    await new Promise<void>((resolve) => other.listen(4397, "127.0.0.1", resolve));
+    const ours = await sleeper("s3-quiet.log", TAIL.s3);
+    try {
+      const s3 = localS3Status(ours, 4397);
+      expect(s3).toEqual({ up: false, text: `pid ${ours.pid} running, not listening` });
+      expect(stackHealthy({ postgres: true, server: true, oidc: true, s3: s3.up })).toBe(false);
+    } finally {
+      process.kill(-ours.pid, "SIGKILL");
+      await new Promise<void>((resolve) => other.close(() => resolve()));
+    }
+  }, 30_000);
+
+  it("is up only when that very pid listens on its port", async () => {
+    const code = 'require("node:http").createServer().listen(4397, "127.0.0.1")';
+    const ours = await sleeper("s3-listening.log", TAIL.s3, code);
+    try {
+      let s3 = localS3Status(ours, 4397);
+      for (let i = 0; i < 50 && !s3.up; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        s3 = localS3Status(ours, 4397);
+      }
+      expect(s3).toEqual({ up: true, text: `pid ${ours.pid} running, listening` });
+      expect(stackHealthy({ postgres: true, server: true, oidc: true, s3: s3.up })).toBe(true);
+    } finally {
+      process.kill(-ours.pid, "SIGKILL");
+    }
+  }, 30_000);
+
+  it("is not up for a pid of another stack or a missing entry", async () => {
+    const foreign = await sleeper("s3-foreign.log", TAIL.oidc);
+    try {
+      expect(localS3Status(foreign, 4397).up).toBe(false);
+      expect(localS3Status(undefined, 4397)).toEqual({ up: false, text: "not started" });
+    } finally {
+      process.kill(-foreign.pid, "SIGKILL");
+    }
+  }, 30_000);
+
+  it.each([["postgres"], ["server"], ["oidc"], ["s3"]] as const)(
+    "the stack is not healthy when %s is down",
+    (part) => {
+      const parts = { postgres: true, server: true, oidc: true, s3: true };
+      expect(stackHealthy(parts)).toBe(true);
+      expect(stackHealthy({ ...parts, [part]: false })).toBe(false);
+    },
+  );
 });

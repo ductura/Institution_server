@@ -383,7 +383,7 @@ export async function status(get: typeof fetch = fetch): Promise<boolean> {
       ? "dist/server.js matches the recorded sha256"
       : "dist/server.js differs from the recorded sha256";
   const postmaster = ourPostmaster();
-  let ok = postmaster !== null;
+  const healthy = { postgres: postmaster !== null, server: false, oidc: false, s3: false };
   const lines = [
     `VS-1 stack (${read.env}), started ${read.startedAt}`,
     `  repos      server ${rev(repos?.server)}; preloader: ${rev(repos?.preloader)}; web: ${rev(repos?.web)}`,
@@ -406,29 +406,40 @@ export async function status(get: typeof fetch = fetch): Promise<boolean> {
       line = ours
         ? `pid ${entry.pid} running, answers ${answer}`
         : `pid ${entry.pid} not ours or gone`;
-      ok &&= answer === "200";
-    } else ok = false;
+      healthy[name] = answer === "200";
+    }
     lines.push(`  ${name.padEnd(10)} :${port} ${line}`);
   }
-  // The local S3 answers only signed requests: it counts when that very pid listens.
-  const s3 = processes.s3;
-  const s3Ours =
-    s3 !== undefined && ofThisStack("s3", s3.marker) && commandLine(s3.pid) === s3.marker;
-  const s3Up = s3Ours && listensOn(s3.pid, ports.s3);
-  ok &&= s3Up;
-  lines.push(
-    `  ${"s3".padEnd(10)} :${ports.s3} ${
-      s3 === undefined
-        ? "not started"
-        : s3Ours
-          ? `pid ${s3.pid} running, ${s3Up ? "listening" : "not listening"}`
-          : `pid ${s3.pid} not ours or gone`
-    }`,
-  );
+  const s3 = localS3Status(processes.s3, ports.s3);
+  healthy.s3 = s3.up;
+  lines.push(`  ${"s3".padEnd(10)} :${ports.s3} ${s3.text}`);
   lines.push(`  lock       ${lock}`);
   // The state is data: control characters (ANSI escapes, line breaks) never reach the terminal.
   console.log(lines.map((line) => line.replace(/[\u0000-\u001f\u007f]/gu, "?")).join("\n"));
-  return ok;
+  return stackHealthy(healthy);
+}
+
+/** The stack is up only when every one of its four parts is. */
+export function stackHealthy(
+  parts: Readonly<Record<"postgres" | "server" | "oidc" | "s3", boolean>>,
+): boolean {
+  return parts.postgres && parts.server && parts.oidc && parts.s3;
+}
+
+/**
+ * The local S3 answers only signed requests, so it counts as up when its
+ * recorded pid runs exactly the recorded command of this stack and that very
+ * pid listens on its port; another process on the port never counts.
+ */
+export function localS3Status(
+  entry: stateFile.StackProcess | undefined,
+  port: number,
+): { up: boolean; text: string } {
+  if (entry === undefined) return { up: false, text: "not started" };
+  const ours = ofThisStack("s3", entry.marker) && commandLine(entry.pid) === entry.marker;
+  if (!ours) return { up: false, text: `pid ${entry.pid} not ours or gone` };
+  const up = listensOn(entry.pid, port);
+  return { up, text: `pid ${entry.pid} running, ${up ? "listening" : "not listening"}` };
 }
 
 async function main(): Promise<void> {
