@@ -37,7 +37,7 @@ Opseg je gornja granica. Server uz njega uvijek provjerava odnos ili ustanovu ci
 
 ## Vrste računa u bazi
 
-Gdje je koja vrsta u glavnoj bazi (S-1J.1-b, DAN-798; matrica pristupa je `db/main/tests/130-account-kinds.sql`): student u `institution.course_member` (`role = 'student'`), nastavnik i admin ustanove u `institution.institution_role` (`teacher`, `admin`), mrežni inženjer u `identity.network_engineer_appointment`, admin aplikacije u `identity.app_admin`. Nijedna uloga aplikacije ne piše u te dvije nove tablice; `app_admin` upisuje samo vlasnik izvan aplikacije (V-7).
+Gdje je koja vrsta u glavnoj bazi (S-1J.1-b, DAN-798; matrica pristupa je `db/main/tests/130-account-kinds.sql`): student u `institution.course_member` (`role = 'student'`), nastavnik i admin ustanove u `institution.institution_role` (`teacher`, `admin`), mrežni inženjer u `identity.network_engineer_appointment`, admin aplikacije u `identity.app_admin`. U `identity.app_admin` nijedna uloga aplikacije ne piše; upisuje ga samo vlasnik izvan aplikacije (V-7). Mrežnog inženjera imenuje i opoziva samo potvrđeni admin svoje ustanove, kroz `identity.appoint_network_engineer` i `identity.revoke_network_engineer`, s retkom u `audit.network_engineer_event` u istoj naredbi (S-1J-c, DAN-809; `db/main/tests/133-network-engineer-appointment.sql`). Dodjela uloge admina ustanove od admina ustanove (D-297 (2)) je zaseban zadatak; do tada admina imenuje operater.
 
 ## Tablica prava
 
