@@ -138,4 +138,34 @@ describe("health", () => {
     clock += CHECK_REUSE_MS;
     expect((await ask(route)).body.state).toBe("ok");
   });
+
+  // QA (adversarial pass on 6e4f610), F1: a throw while reading the report
+  // left the shared check rejected, and every later request answered 500.
+  it("a report that cannot be read is degraded, and the next check runs again", async () => {
+    let clock = 0;
+    let report: HealthReport | undefined;
+    const route = routeOver(
+      async () => report as HealthReport,
+      () => clock,
+    );
+    expect((await ask(route)).body.state).toBe("degraded");
+    report = UP;
+    clock += CHECK_REUSE_MS;
+    expect((await ask(route)).body.state).toBe("ok");
+  });
+
+  // QA (adversarial pass on 6e4f610), F2: a clock stepped back kept the last
+  // state for as long as the step.
+  it("a clock stepped back does not keep the last state", async () => {
+    let clock = 3_600_000;
+    let report: HealthReport = { ...UP, main: "nedostupno" };
+    const route = routeOver(
+      async () => report,
+      () => clock,
+    );
+    expect((await ask(route)).body.state).toBe("degraded");
+    report = UP;
+    clock -= 3_600_000;
+    expect((await ask(route)).body.state).toBe("ok");
+  });
 });

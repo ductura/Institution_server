@@ -29,13 +29,14 @@ export type HealthOptions = {
   readonly health: Databases["health"];
   /** The version of this build (SERVER_VERSION in server/config). */
   readonly serverVersion: string;
-  /** Milliseconds, for tests; Date.now by default. */
+  /** Milliseconds of a monotonic clock, for tests; performance.now by default. */
   readonly now?: () => number;
 };
 
 /** The health route over `health`: one check at a time, reused for CHECK_REUSE_MS. */
 export function createHealthRoute(options: HealthOptions): Route {
-  const now = options.now ?? Date.now;
+  // Monotonic, so a wall clock stepped back never stretches the reuse.
+  const now = options.now ?? (() => performance.now());
   let running: Promise<HealthState> | undefined;
   let last: { state: HealthState; at: number } | undefined;
 
@@ -46,13 +47,12 @@ export function createHealthRoute(options: HealthOptions): Route {
       timer.unref();
     });
     // Only the word of main counts; logs and legal have no say in health.
-    // A throw is `degraded`; nothing of the error is kept or logged.
+    // Any throw, also while reading the report, is `degraded`; nothing of
+    // the error is kept or logged.
     const report = Promise.resolve()
       .then(async () => options.health())
-      .then(
-        (states): HealthState => (states.main === "ok" ? "ok" : "degraded"),
-        (): HealthState => "degraded",
-      );
+      .then((states): HealthState => (states.main === "ok" ? "ok" : "degraded"))
+      .catch((): HealthState => "degraded");
     try {
       return await Promise.race([report, deadline]);
     } finally {
@@ -61,12 +61,17 @@ export function createHealthRoute(options: HealthOptions): Route {
   };
 
   const state = async (): Promise<HealthState> => {
-    if (last !== undefined && now() - last.at < CHECK_REUSE_MS) return last.state;
-    running ??= check().then((found) => {
-      last = { state: found, at: now() };
-      running = undefined;
-      return found;
-    });
+    // A negative age (a clock that went back) is expired too.
+    const age = last === undefined ? -1 : now() - last.at;
+    if (last !== undefined && age >= 0 && age < CHECK_REUSE_MS) return last.state;
+    running ??= check()
+      .then((found) => {
+        last = { state: found, at: now() };
+        return found;
+      })
+      .finally(() => {
+        running = undefined;
+      });
     return running;
   };
 
