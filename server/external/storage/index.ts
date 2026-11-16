@@ -36,3 +36,9 @@ export {
   type DomainPayloadStore,
 } from "./institution-routed-payload-store.ts";
 export { InMemoryEvidencePayloadStore } from "./in-memory-evidence-payload-store.ts";
+export {
+  guardStorage,
+  STORAGE_DOWN,
+  STORAGE_TIMEOUT,
+  type GuardableStorage,
+} from "./guarded-storage.ts";

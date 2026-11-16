@@ -5,6 +5,10 @@
     "task_missing": "U opisu PR-a nedostaje redak Task:.",
     "risk_below_floor": "Prijavljeni Risk: niži je od najnižeg koji traže promijenjene putanje."
   },
+  "email": {
+    "timeout": "Slanje e-pošte trajalo je predugo, pa nije poznato je li poruka poslana. Pokušaj ponovno kasnije.",
+    "unavailable": "Usluga e-pošte trenutačno nije dostupna. Pokušaj ponovno kasnije."
+  },
   "signing": {
     "access_denied": "Poslužitelj nema dopuštenje za potpisivanje zapisa. Pokušaj ponovno kasnije.",
     "key_not_found": "Ključ za potpisivanje zapisa nije pronađen. Pokušaj ponovno kasnije.",

@@ -45,3 +45,4 @@ export {
   PersistentDevelopmentEd25519SigningKeyProvider,
   type DevelopmentSigningKeyFault,
 } from "./persistent-development-ed25519-signer.ts";
+export { guardKeys } from "./guarded-keys.ts";

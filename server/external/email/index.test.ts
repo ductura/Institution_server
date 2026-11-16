@@ -3,8 +3,15 @@ import * as area from "./index.ts";
 import type { EmailService } from "./index.ts";
 
 describe("server/external/email public interface", () => {
-  it("exports only the empty routes and schemas", () => {
-    expect(Object.keys(area).sort()).toEqual(["EMAIL_ROUTES", "EMAIL_SCHEMAS"]);
+  it("exports the empty routes and schemas and the guarded sender (S-1E-c)", () => {
+    expect(Object.keys(area).sort()).toEqual([
+      "EMAIL_ERRORS",
+      "EMAIL_ROUTES",
+      "EMAIL_SCHEMAS",
+      "EMAIL_TIMEOUT",
+      "EMAIL_UNAVAILABLE",
+      "guardEmail",
+    ]);
     expect(area.EMAIL_ROUTES).toEqual([]);
     expect(area.EMAIL_SCHEMAS).toEqual({});
   });
