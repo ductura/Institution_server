@@ -17,6 +17,7 @@ const TEMPLATE_AREAS = [
   "metrics",
   "settings",
   "external/email",
+  "external/srce-auth",
   "test-server",
   "roles",
   "legal",
