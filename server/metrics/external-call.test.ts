@@ -274,6 +274,45 @@ describe("createExternalCaller", () => {
     expect(caller.availability()).toBe("down");
   });
 
+  it("counts synchronous work inside the service against the deadline (QA c.6915174918, 1)", async () => {
+    const { clock, events, caller } = setup();
+    const pending = caller.call("send", () => {
+      clock.advance(200); // 200 ms of synchronous work before a promise that never settles
+      return new Promise<string>(() => {});
+    });
+    await flush();
+    clock.advance(800);
+    expect(await pending).toEqual({ ok: false, failure: "timeout" });
+    expect(events[0]).toMatchObject({ outcome: "timeout", durationMs: 1000 });
+  });
+
+  it("closes the down window when a call that started earlier succeeds (QA c.6915174918, 2)", async () => {
+    const { clock, caller } = setup({ ...POLICY, downAfter: 1, downForMs: 5000 });
+    let reached = 0;
+    const fail = async (): Promise<string> => {
+      reached += 1;
+      throw new Error("down");
+    };
+    let release: (v: string) => void = () => {};
+    const earlier = caller.call("read", () => new Promise<string>((r) => (release = r)));
+    await flush();
+    await caller.call("read", fail);
+    expect(caller.availability()).toBe("down");
+    release("ok");
+    expect(await earlier).toEqual({ ok: true, value: "ok" });
+    expect(caller.availability()).toBe("available");
+
+    await caller.call("read", fail);
+    expect(caller.availability()).toBe("down");
+    clock.advance(5000);
+    reached = 0;
+    expect(await caller.call("read", fail, { retry: true })).toEqual({
+      ok: false,
+      failure: "failed",
+    });
+    expect(reached).toBe(1);
+  });
+
   it("survives an event sink that throws", async () => {
     const caller = createExternalCaller("keys", POLICY, {
       onEvent: () => {

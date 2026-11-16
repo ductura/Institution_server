@@ -165,6 +165,12 @@ export function createExternalCaller(
     let attempts = 0;
     let answered: { value: T } | undefined;
 
+    // The deadline timer starts before the service is called, so synchronous
+    // work inside `run` counts against the deadline too.
+    const expiry = sleep(policy.timeoutMs, timer.signal).then(
+      (): ExternalCallResult<T> => ({ ok: false, failure: "timeout" }),
+      () => new Promise<never>(() => {}),
+    );
     const tries = (async (): Promise<ExternalCallResult<T>> => {
       for (;;) {
         // The deadline is absolute: no attempt starts at or after it, and an
@@ -184,10 +190,6 @@ export function createExternalCaller(
         await sleep(policy.retryDelayMs, work.signal);
       }
     })();
-    const expiry = sleep(policy.timeoutMs, timer.signal).then(
-      (): ExternalCallResult<T> => ({ ok: false, failure: "timeout" }),
-      () => new Promise<never>(() => {}),
-    );
     const result = await Promise.race([
       tries.catch(() => ({ ok: false, failure: "failed" }) as const),
       expiry,
@@ -195,8 +197,13 @@ export function createExternalCaller(
     timer.abort();
     work.abort();
 
-    if (result.ok) failuresInRow = 0;
-    else if ((failuresInRow += 1) >= policy.downAfter) downUntil = now() + policy.downForMs;
+    // Any answer proves the service is reachable, a call that started before a
+    // down window included: the window closes with the count, so no half state
+    // (count reset, window open) can skip the single probe.
+    if (result.ok) {
+      failuresInRow = 0;
+      downUntil = Number.NEGATIVE_INFINITY;
+    } else if ((failuresInRow += 1) >= policy.downAfter) downUntil = now() + policy.downForMs;
     report(operation, result.ok ? "ok" : result.failure, attempts, start);
     return result;
   }
