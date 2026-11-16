@@ -64,6 +64,13 @@ export type Operations = {
     success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
   };
+  "evidence.replay.post": {
+    params: undefined;
+    query: undefined;
+    body: { "documentId": string; "from": 0 } | { "documentId": string; "from": number; "head": { "segmentHash": string; "segmentCount": number } };
+    success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": { [key: string]: string } }; headers: {  } };
+    errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "record_changed" | "unavailable";
+  };
   "institution.acknowledgment.post": {
     params: { "assignmentId": string };
     query: undefined;

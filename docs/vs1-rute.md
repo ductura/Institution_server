@@ -19,7 +19,7 @@ Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/g
 
 **Napomena o oznaci zadatka.** Ductusov inventar ruta za `evidence/open` i `evidence/commit` piše S-1E-\*. To je Ductusova oznaka. U ovom repou handlere isporučuje S-M-5 kroz uski rez VS-1 (PLAN §5, odluka Ductus#87 c.6880835493). Nesklad ostaje zabilježen dok ga orkestrator ne razriješi u Linearu.
 
-`evidence/replay` (R3) nije dio VS-1. Ostaje u `PENDING` (`server/contracts/inventory.ts`) do svog zadatka (potvrda c.6895833111).
+`evidence/replay` (R3) nije dio VS-1 (potvrda c.6895833111). Ugovor `evidence.replay.post` dodaje DAN-818 (uski rez, korak 4; ugovor Ductus#1836 c.6912301853, potvrda c.6912344496, plan napada ductura/server#136): stranica replaya s provjerenim spremljenim bajtovima segmenata, iste za vlasnika i nastavnika zadatka. Tijelo je `{documentId, from: 0}` ili `{documentId, from, head}`; tuđi rad i stranica iza kraja daju 404, zapis koji više ne završava na `head` daje 409 `record_changed`, a 503 nosi `stage` `context` ili `storage`. Server ne izvodi korake; provjera `removedSha256` (B-12) na serveru je DAN-819. Za razliku od Ductusa ruta traži `ductus-protocol: 1`, kao open i commit.
 
 ## Pravila oblika
 
@@ -36,5 +36,5 @@ Vektori commita grade se iz domenskih golden vektora (`server/domain/forensics/g
 - **Tuđi rad.** Tuđi ili nepostojeći rad daje isti 404 `not_found` s istim tijelom. Nastavnik na `open` također dobiva 404.
 - **202 nije potvrda.** `202` dolazi samo pod `ductus-protocol: 2`, uz `retry-after: 2` i `receipt.status = "pending_signature"`. Klijent šalje isti zahtjev dok ne dobije 200 s potpisanom potvrdom. 200 uvijek nosi `receipt.status = "signed"`.
 - **Zaglavlje `ductus-protocol`.** Ugovor ga zasad navodi u opisu rute i u vektorima. Format ugovora (`RequestSpec`) još nema polje za zaglavlja zahtjeva.
-- **Generirani klijent** (`generated/client.ts`) ne pokriva ove dvije rute. Ne šalje `ductus-protocol`, `Origin` ni kolačić, a od greške čita samo kod, pa gubi stanje rada iz 409 i `stage` iz 503. Klijent evidencije ostaje Ductusov `src/client/evidence-ingest.ts` dok `RequestSpec` ne dobije zaglavlja.
+- **Generirani klijent** (`generated/client.ts`) ne pokriva ove dvije rute. Ne šalje `ductus-protocol`, `Origin` ni kolačić, a od greške čita samo kod, pa gubi stanje rada iz 409 i `stage` iz 503. Klijent evidencije ostaje Ductusov `src/client/evidence-ingest.ts` dok `RequestSpec` ne dobije zaglavlja. Isto vrijedi za replay (`evidence.replay.post`, DAN-818): klijent replaya mora slati `ductus-protocol: 1`, a Ductusov `src/client/replay.ts` ga ne šalje, pa bi doslovni prijenos svaku stranicu dobio kao 426.
 - **`receiptKeys`** može biti prazan popis kad domena nema ključ potvrde. Ruta ga tada šalje uz 200, a klijent rad smatra nedostupnim.

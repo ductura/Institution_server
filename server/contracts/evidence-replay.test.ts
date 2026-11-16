@@ -1,0 +1,177 @@
+// DAN-818 (VS-1 narrow cut, step 4): the contract of evidence/replay, ported
+// from Ductus 333e163 replay-route.ts and replay-reader.ts (attack plan
+// ductura/server#136). Only invented data.
+import { createHash } from "node:crypto";
+
+import { Value } from "@sinclair/typebox/value";
+import { describe, expect, it } from "vitest";
+
+import { answerFake, FAKE_VECTOR_HEADER, VECTORS } from "./generated/fake-server/index.ts";
+import { type Operations, validateInput } from "./generated/index.ts";
+import { ROUTES } from "./index.ts";
+
+const REPLAY = "evidence.replay.post";
+const DOC = "dokument-izmisljeni-zv-1";
+const HEAD = { segmentHash: "a1".repeat(32), segmentCount: 1 };
+
+const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
+const vector = (name: string) => {
+  const found = VECTORS.find((v) => v.route === REPLAY && v.name === name);
+  if (found === undefined) throw new Error(`no vector ${name}`);
+  return found;
+};
+
+describe("evidence/replay contract", () => {
+  it("is a POST under /api/v1 that the owner and the teacher of the course may read", () => {
+    const route = ROUTES.find((r) => r.id === REPLAY);
+    expect(route).toMatchObject({
+      method: "POST",
+      path: "/api/v1/evidence/replay",
+      access: "owner_or_course_teacher",
+    });
+    expect(route?.request.maxBodyBytes).toBe(1024);
+  });
+
+  it.each(VECTORS.filter((v) => v.route === REPLAY).map((v) => [v.name]))(
+    "the fake server answers %s from its vector, never 501",
+    (name) => {
+      const v = vector(name);
+      const answer = answerFake({
+        method: "POST",
+        url: "/api/v1/evidence/replay",
+        headers: { ...v.request.headers, [FAKE_VECTOR_HEADER]: name },
+        body: new TextEncoder().encode(v.request.rawBody ?? JSON.stringify(v.request.body)),
+      });
+      expect(answer.status).not.toBe(501);
+      expect(answer.status).toBe(v.response.status);
+    },
+  );
+
+  it.each([
+    ["the first page", { documentId: DOC, from: 0 }, true],
+    ["a later page with its head", { documentId: DOC, from: 3, head: HEAD }, true],
+    ["an institution in the body", { documentId: DOC, from: 0, institutionId: "u-1" }, false],
+    ["a role in the body", { documentId: DOC, from: 0, role: "teacher" }, false],
+    ["a negative from", { documentId: DOC, from: -1 }, false],
+    ["a fractional from", { documentId: DOC, from: 0.5 }, false],
+    ["from as text", { documentId: DOC, from: "0" }, false],
+    ["no from", { documentId: DOC }, false],
+    ["a later page without its head", { documentId: DOC, from: 1 }, false],
+    ["a first page with a head", { documentId: DOC, from: 0, head: HEAD }, false],
+    ["no document", { from: 0 }, false],
+    [
+      "an uppercase head hash",
+      { documentId: DOC, from: 1, head: { ...HEAD, segmentHash: "A1".repeat(32) } },
+      false,
+    ],
+    [
+      "a short head hash",
+      { documentId: DOC, from: 1, head: { ...HEAD, segmentHash: "a1" } },
+      false,
+    ],
+    ["a head count of 0", { documentId: DOC, from: 1, head: { ...HEAD, segmentCount: 0 } }, false],
+    ["a head with a third key", { documentId: DOC, from: 1, head: { ...HEAD, at: 1 } }, false],
+  ])("%s -> %s", (_, value, valid) => {
+    expect(validateInput(REPLAY, "body", value)).toBe(valid);
+  });
+
+  it("the first page vector is a real record: hashes, chain and start document agree", () => {
+    const page = vector("first-page").response.body as {
+      head: { segmentHash: string; segmentCount: number };
+      segments: string[];
+      startDocument: string;
+      next: number | null;
+    };
+    expect(page.segments).toHaveLength(1);
+    const text = page.segments[0] as string;
+    const segment = JSON.parse(text) as Record<string, unknown>;
+    expect(sha256(text)).toBe(page.head.segmentHash);
+    expect(page.head.segmentCount).toBe(1);
+    expect(segment.documentId).toBe(DOC);
+    expect(segment.predecessorSegmentHash).toBeNull();
+    expect(sha256(page.startDocument)).toBe(segment.initialDocumentHash);
+    expect(page.next).toBeNull();
+  });
+
+  it("every vector refused as invalid has a body the contract refuses too", () => {
+    const invalid = VECTORS.filter((v) => v.route === REPLAY && v.name.startsWith("invalid-"));
+    expect(invalid.length).toBeGreaterThanOrEqual(4);
+    for (const v of invalid) expect(validateInput(REPLAY, "body", v.request.body)).toBe(false);
+  });
+
+  it("a page is its JCS text at every depth, and the fake server sends exactly those bytes", () => {
+    // RFC 8785 order for these ASCII keys; the page holds no number that JCS writes otherwise.
+    const jcs = (value: unknown): string =>
+      Array.isArray(value)
+        ? `[${value.map(jcs).join(",")}]`
+        : value !== null && typeof value === "object"
+          ? `{${Object.keys(value)
+              .sort()
+              .map((k) => `${JSON.stringify(k)}:${jcs((value as Record<string, unknown>)[k])}`)
+              .join(",")}}`
+          : JSON.stringify(value);
+    for (const name of ["first-page", "empty-record"]) {
+      const v = vector(name);
+      const answer = answerFake({
+        method: "POST",
+        url: "/api/v1/evidence/replay",
+        headers: { ...v.request.headers, [FAKE_VECTOR_HEADER]: name },
+        body: new TextEncoder().encode(JSON.stringify(v.request.body)),
+      });
+      expect(JSON.stringify(v.response.body)).toBe(jcs(v.response.body));
+      expect(answer.body).toBe(jcs(v.response.body));
+    }
+  });
+
+  it("the generated page type reads a resume document by its hash (typecheck holds this)", () => {
+    type Page = Operations["evidence.replay.post"]["success"]["body"];
+    const page = vector("first-page").response.body as Page;
+    const byHash: Readonly<Record<string, string>> = page.resumeDocuments;
+    const text: string | undefined = byHash[page.head?.segmentHash ?? ""];
+    expect(text).toBeUndefined();
+  });
+
+  it("only a SHA-256 names a resume document", () => {
+    const schema = ROUTES.find((r) => r.id === REPLAY)?.responses[0]?.body;
+    const page = vector("empty-record").response.body as Record<string, unknown>;
+    expect(schema && Value.Check(schema, page)).toBe(true);
+    for (const resumeDocuments of [
+      { "nije-hash": "x" },
+      { ["A".repeat(64)]: "x" },
+      { ["a".repeat(64)]: 1 },
+    ]) {
+      expect(schema && Value.Check(schema, { ...page, resumeDocuments })).toBe(false);
+    }
+  });
+
+  it("a foreign work is 404 even with a head that is not its own; access comes before the pin", () => {
+    expect(vector("not-found-foreign-work-with-head").response).toMatchObject({
+      status: 404,
+      body: { status: "not_found" },
+    });
+  });
+
+  it("a page past the end, a foreign work and a changed record never carry content", () => {
+    for (const name of [
+      "not-found-foreign-work",
+      "not-found-foreign-work-with-head",
+      "not-found-past-end",
+      "record-changed",
+    ]) {
+      expect(Object.keys(vector(name).response.body as object)).toEqual(["status"]);
+    }
+  });
+
+  it("an unavailable record names only its stage and asks to retry", () => {
+    for (const [name, stage] of [
+      ["unavailable", "context"],
+      ["unavailable-storage", "storage"],
+    ] as const) {
+      expect(vector(name).response).toMatchObject({
+        status: 503,
+        headers: { "retry-after": "5" },
+        body: { status: "unavailable", stage },
+      });
+    }
+  });
+});

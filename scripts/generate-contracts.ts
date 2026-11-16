@@ -63,7 +63,14 @@ function ts(schema: Schema): string {
       const body = props
         .map(([k, v]) => `${JSON.stringify(k)}${required.has(k) ? "" : "?"}: ${ts(v)}`)
         .join("; ");
-      return `{ ${body}${schema.additionalProperties === false ? "" : `${body ? "; " : ""}[key: string]: unknown`} }`;
+      // A map keyed by pattern (Type.Record): TypeScript has no pattern keys, so a
+      // string index with the value types; the validator keeps the pattern.
+      const patterns = Object.values((schema.patternProperties ?? {}) as Record<string, Schema>);
+      const values = patterns.length > 0 ? patterns.map(ts).join(" | ") : null;
+      let rest = "[key: string]: unknown";
+      if (schema.additionalProperties === false)
+        rest = values === null ? "" : `[key: string]: ${values}`;
+      return `{ ${body}${body && rest ? "; " : ""}${rest} }`;
     }
   }
   throw new Error(`unsupported schema: ${JSON.stringify(schema)}`);
@@ -239,6 +246,11 @@ function sharedTable(): string {
  * One request schema as a TypeScript check function expression, compiled
  * ahead of time. Throws for output the cleanup below does not expect.
  */
+/** The TypeScript type `generated/types.ts` writes for `schema`. */
+export function typeScriptOf(schema: TSchema): string {
+  return ts(plain(schema) as Schema);
+}
+
 export function compileValidator(schema: TSchema, where: string): string {
   const raw = TypeCompiler.Code(schema, [], { language: "typescript" }).replace(/^return /, "");
   // TypeBox types the parameter as any. Every check tests for a plain object

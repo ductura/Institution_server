@@ -209,6 +209,24 @@ describe("imports of the packed code", () => {
     expect(importErrors({ "a/index.js": code }, FILES, ["dep"])).toEqual([]);
   });
 
+  it("reads a property named from or import as no import", () => {
+    const code =
+      "const ok = typeof value['from'] === 'number' && value[\"import\"] !== \"x\";\n" +
+      'import { y } from "@sinclair/typebox";';
+    expect(importErrors({ "a/index.js": code }, FILES, ["dep"])).toEqual([
+      "a/index.js imports undeclared @sinclair/typebox",
+    ]);
+  });
+
+  it.each([['x}from"y";'], ['import"y";'], ['export*as"b"from"y";'], ['import{"a"as b}from"y";']])(
+    "still reads the minified import %s",
+    (code) => {
+      expect(importErrors({ "a/index.js": code }, FILES, ["dep"])).toEqual([
+        "a/index.js imports undeclared y",
+      ]);
+    },
+  );
+
   it.each([
     ['export * from "./extra.js";', "a/index.js imports ./extra.js, not in the package"],
     ['import "../../outside.js";', "a/index.js imports ../../outside.js, not in the package"],

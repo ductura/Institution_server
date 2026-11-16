@@ -121,6 +121,5 @@ export const CONTRACT_ONLY: readonly string[] = [
  * list may only shrink: a file moves out of it when its contract lands.
  */
 export const PENDING: readonly string[] = [
-  "app/api/evidence/replay/route.ts",
   "app/api/institution/courses/[courseId]/assignments/route.ts",
 ];

@@ -2039,6 +2039,7 @@ const en = {
     originMissing: "The request does not say which site it comes from.",
     preconditionRequired:
       "The request does not say which version of the work it changes. Load the work again.",
+    recordChanged: "The record of the work has changed in the meantime. Load it again.",
     refused: "The code does not exist or has expired. Check it with your teacher.",
     staleBase: "The work has changed in the meantime. Load the latest version.",
     staleRevision:

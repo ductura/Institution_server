@@ -336,4 +336,77 @@ export const submit = defineRoute({
   ],
 });
 
-export const evidenceRoutes = [open, commit, submit] as const;
+// Port of Ductus src/server/evidence/replay-route.ts and
+// src/application/evidence/replay-reader.ts at 333e163 (DAN-344, route R3;
+// DAN-818): one page of the replay of a work, the exact stored bytes of its
+// segments, the same JCS text for the owner and the teacher of its assignment
+// (PRODUCT §5 rule 5). The server does not run the steps; the reader does
+// (B-12 on the server is DAN-819). Same guards and {status: <code>} answers
+// as open and commit (contract c.6912301853 on Ductus#1836).
+
+/** Ductus MAX_REPLAY_PAGE_SEGMENTS: segments per page. */
+export const MAX_REPLAY_PAGE_SEGMENTS = 256;
+
+/** EvidenceChainHeadV2: the last listed segment and how many there are. */
+const ReplayHead = closed({ segmentHash: Sha256, segmentCount: Positive });
+
+export const replay = defineRoute({
+  id: "evidence.replay.post",
+  method: "POST",
+  path: "/api/v1/evidence/replay",
+  inventory: "app/api/evidence/replay/route.ts",
+  access: "owner_or_course_teacher",
+  summary:
+    "One page of the replay of a work: the verified stored bytes of its segments in chain order, " +
+    "as the JCS text of the page. The body is exactly {documentId, from: 0} for the first page " +
+    "and {documentId, from, head} for every later one, with the head the first page reported; " +
+    "any other shape is 422. Same Origin, `ductus-protocol: 1`. A work the caller may not read, " +
+    "an id that cannot exist or a page past the end is 404. A record that no longer ends at " +
+    "`head` is 409 record_changed (read again from the first page); a record that does not " +
+    "verify is 503, never a partial page.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 1024,
+    // The first page has no head; every later page has the head the first one reported.
+    body: Type.Union([
+      closed({ documentId: Type.String(), from: Type.Literal(0) }),
+      closed({ documentId: Type.String(), from: Positive, head: ReplayHead }),
+    ]),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "one page, its JCS text unchanged",
+      body: closed({
+        replayFormat: Type.Literal("ductus-evidence-replay-v1"),
+        segmentCount: Count,
+        head: Type.Union([ReplayHead, Type.Null()]),
+        from: Count,
+        next: Type.Union([Positive, Type.Null()]),
+        /** Only on the first page: the canonical document before the first change. */
+        startDocument: Type.Union([Type.String(), Type.Null()]),
+        /** Exact canonical segment texts, at least one unless the record is empty. */
+        segments: Type.Array(Type.String(), { maxItems: MAX_REPLAY_PAGE_SEGMENTS }),
+        /** Per chain break on this page: the checkpoint text the replay resumes from. */
+        resumeDocuments: Type.Record(Type.String({ pattern: "^[0-9a-f]{64}$" }), Type.String(), {
+          additionalProperties: false,
+        }),
+      }),
+    },
+  ],
+  errors: [
+    refusal(403, "forbidden"),
+    refusal(426, "upgrade_required"),
+    refusal(415, "unsupported_media_type"),
+    refusal(401, "unauthenticated"),
+    refusal(413, "too_large"),
+    refusal(408, "timeout"),
+    refusal(400, "bad_request"),
+    refusal(422, "invalid"),
+    refusal(404, "not_found"),
+    refusal(409, "record_changed"),
+    unavailable(["context", "storage"]),
+  ],
+});
+
+export const evidenceRoutes = [open, commit, submit, replay] as const;
