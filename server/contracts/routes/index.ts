@@ -17,4 +17,5 @@ export { supportRoutes } from "./support.ts";
 export { collaborationRoutes } from "./collaboration.ts";
 export { projectionRoutes } from "./projection.ts";
 export { liveRoutes } from "./live.ts";
+export { enrollmentRoutes } from "./enrollment.ts";
 export { institutionRoutes } from "./institution.ts";

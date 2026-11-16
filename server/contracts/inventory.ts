@@ -86,6 +86,11 @@ export const SERVER_SOURCES: Readonly<
  */
 export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
+  "institution.enrollments.post",
+  "institution.acknowledgment.post",
+  "institution.work-language.post",
+  "institution.student-work-language.post",
+  "institution.work-work-language.post",
   "institution.courses.post",
   "institution.assignment-versions.post",
   "institution.enrollment-code.post",
@@ -116,11 +121,6 @@ export const CONTRACT_ONLY: readonly string[] = [
  */
 export const PENDING: readonly string[] = [
   "app/api/evidence/replay/route.ts",
-  "app/api/institution/assignments/[assignmentId]/acknowledgment/route.ts",
-  "app/api/institution/assignments/[assignmentId]/students/[studentId]/work-language/route.ts",
-  "app/api/institution/assignments/[assignmentId]/work-language/route.ts",
-  "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts",
   "app/api/institution/courses/[courseId]/assignments/route.ts",
-  "app/api/institution/enrollments/route.ts",
   "app/api/submission/route.ts",
 ];

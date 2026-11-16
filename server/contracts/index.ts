@@ -1,6 +1,7 @@
 import {
   authRoutes,
   collaborationRoutes,
+  enrollmentRoutes,
   evidenceRoutes,
   FALLBACK,
   institutionRoutes,
@@ -61,6 +62,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...projectionRoutes,
   ...collaborationRoutes,
   ...liveRoutes,
+  ...enrollmentRoutes,
   ...institutionRoutes,
   ...teacherRoutes,
   ...settingsRoutes,

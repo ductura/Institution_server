@@ -19,7 +19,7 @@ const Id = Type.String({
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 const END = "(?![\\s\\S])";
 /** isDocumentId: 1 to 256 code points, trimmed, no control character. */
-const WorkId = Type.String({
+export const WorkId = Type.String({
   pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)${END}`,
 });
 /**

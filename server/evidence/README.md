@@ -1,6 +1,6 @@
 # server/evidence
 
-Područje iz [karte servera](../../docs/server-map.md). Mapa za sada ima samo oblik servisa, bez logike (DAN-815 b1); pripremu commita donosi DAN-815 b2.
+Područje iz [karte servera](../../docs/server-map.md). Pripremu commita (DAN-815 b2) prenosi iz Ductusa `src/server/evidence/evidence-commit-request.ts` na `d52a92c3`.
 
 ## Što radi
 
@@ -16,7 +16,8 @@ Objekte segmenata u pohrani; revizije, segmente i potvrde u glavnoj bazi, samo k
 
 ## Što izvozi
 
-- `EvidenceService`: tip servisa bez članova (`service.ts`).
+- `createEvidenceService({ committer, payloads })` i tipovi `EvidenceService`, `EvidenceCommitRequest`, `EvidenceCommitRequestOutcome`, `EvidenceCommitDependencies` (`service.ts`): priprema i commit jednog segmenta; nikad ne baca, kvar je zatvoreni kod;
+- `MAX_COMMIT_REQUEST_BYTES`, `DUCTUS_PROTOCOL_VERSION`, `DUCTUS_ASYNC_COMMIT_PROTOCOL`: granice rute iz `domain`, da ih `http` čita odavde (ista granica na klijentu i serveru).
 
 ## Što ne smije uvoziti
 

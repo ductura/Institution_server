@@ -19,6 +19,11 @@ export {
   type ServerErrorSite,
 } from "./error-catalog.ts";
 export {
+  COMMIT_TIMEOUT_MS,
+  createEvidenceCommitRoute,
+  type EvidenceCommitOptions,
+} from "./evidence-commit.ts";
+export {
   createEvidenceOpenRoute,
   OPEN_MAX_BYTES,
   OPEN_PROTOCOLS,
