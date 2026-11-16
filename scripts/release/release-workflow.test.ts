@@ -68,6 +68,8 @@ const TAG_RE = "(contracts|test-fakes)-v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[
 const VERSION_RE = "v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)";
 /** The lines of the tag run, in this order; every check comes before the key and the network. */
 const TAG_LINES = [
+  // Review on #148 (c.6916680087): a run without `shell:` is `bash -e {0}`, no pipefail.
+  "set -o pipefail",
   '[[ "$SHA" =~ ^[0-9a-f]{40}$ ]]',
   '[[ "$REPO" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]]',
   `releases_re='^(contracts-${VERSION_RE}|test-fakes-${VERSION_RE}|contracts-${VERSION_RE} test-fakes-${VERSION_RE})$'`,
@@ -83,7 +85,12 @@ const TAG_LINES = [
   `echo "${GITHUB_HOST_KEY}" > "$work/known_hosts"`,
   'export GIT_SSH_COMMAND="ssh -F /dev/null -o BatchMode=yes -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519 -o UserKnownHostsFile=$work/known_hosts"',
   'remote="git@github.com:$REPO.git"',
-  'tip="$(git ls-remote "$remote" refs/heads/main | cut -f1)"',
+  'heads="$(git ls-remote --exit-code "$remote" refs/heads/main)"',
+  'tip=""',
+  "while IFS=$'\\t' read -r sha ref; do",
+  '[ "$ref" != refs/heads/main ] || tip="$sha"',
+  'done <<< "$heads"',
+  '[[ "$tip" =~ ^[0-9a-f]{40}$ ]]',
   'if [ "$tip" != "$SHA" ]; then echo "::notice::main moved on; a later run releases"; exit 0; fi',
   'git init -q "$work/repo"',
   'git -C "$work/repo" fetch -q --depth=1 --no-tags "$remote" "$SHA"',
@@ -104,6 +111,13 @@ function tagRunErrors(run: string): string[] {
   }
   for (const line of lines) {
     if (line.includes("DEPLOY_KEY") && !KEY_LINES.has(line)) errors.push(`key used in: ${line}`);
+    // Every git and ssh call is one of the expected lines (no second read of the tip).
+    if (
+      /\b(git|ssh|ssh-add|ssh-agent)\b/u.test(line) &&
+      !line.startsWith("#") &&
+      !TAG_LINES.includes(line)
+    )
+      errors.push(`unexpected call: ${line}`);
     if (/StrictHostKeyChecking=(?!yes\b)|UserKnownHostsFile=\/dev\/null/u.test(line))
       errors.push(`host key not checked: ${line}`);
   }
@@ -169,6 +183,11 @@ export function releaseErrors(text: string): string[] {
   const runs = level.flatMap((s) => (s.run === undefined ? [] : [s.run]));
   if (!same(runs, ["pnpm install --frozen-lockfile", "pnpm release:level"]))
     errors.push(`level runs: ${runs.join(" | ")}`);
+  // Review on #148: a run with a pipe sets pipefail itself (GitHub runs `bash -e`).
+  for (const [name, job] of Object.entries(jobs))
+    for (const step of (job.steps ?? []) as Node[])
+      if (/ \| /u.test(String(step.run ?? "")) && !String(step.run).includes("set -o pipefail\n"))
+        errors.push(`${name}: a pipe without pipefail`);
   errors.push(...tagRunErrors(String(((jobs.tag?.steps ?? []) as Node[])[0]?.run ?? "")));
   // Defence in depth: every value is matched before use, and a stop fails the run.
   const reportRun = String(((jobs.report?.steps ?? []) as Node[])[0]?.run ?? "");
@@ -238,8 +257,8 @@ describe("release.yml", () => {
     ],
     [
       "the ref name in env",
-      "SHA: ${{ github.sha }}\n        run: |\n          [[",
-      "SHA: ${{ github.ref_name }}\n        run: |\n          [[",
+      "SHA: ${{ github.sha }}\n        run: |\n          # Without",
+      "SHA: ${{ github.ref_name }}\n        run: |\n          # Without",
     ],
     ["GITHUB_TOKEN in tag", keyEnv, `${keyEnv}          GH_TOKEN: ${TOKEN}\n`],
     ["the key from another secret", keyEnv, "          DEPLOY_KEY: ${{ secrets.PAT }}\n"],
@@ -264,6 +283,19 @@ describe("release.yml", () => {
     ["a forced push", push, `push --atomic --force "$remote" "\${refs[@]}"`],
     ["a forced refspec", 'refs+=("$SHA:refs', 'refs+=("+$SHA:refs'],
     ["a push without --atomic", push, 'push "$remote" "${refs[@]}"'],
+    ["no pipefail", "          set -o pipefail\n", ""],
+    [
+      "a pipe in report without pipefail",
+      '          [[ "$RUN" =~ ^[0-9]+$ ]]\n',
+      '          [[ "$RUN" =~ ^[0-9]+$ ]]\n          echo "$RUN" | cut -c1\n',
+    ],
+    ["a tip read without --exit-code", "ls-remote --exit-code", "ls-remote"],
+    ["no check of the tip", '          [[ "$tip" =~ ^[0-9a-f]{40}$ ]]\n', ""],
+    [
+      "a tip read through a pipe",
+      'done <<< "$heads"\n',
+      'done <<< "$heads"\n          tip="$(git ls-remote "$remote" refs/heads/main | cut -f1)"\n',
+    ],
     ["a deleting push", push, `${push} --delete`],
     [
       "a dispatch of publish.yml",
@@ -332,7 +364,9 @@ describe("release.yml", () => {
 });
 
 // Review on #93 (c.6906332117): the run blocks are executed, not only read.
-// GitHub runs them with `bash -e`; gh, ssh-agent, ssh-add and ssh are stubs.
+// A run without `shell:` is `bash -e {0}` on GitHub, without pipefail (review
+// on #148, c.6916680087), so the tests run them so too. gh, ssh-agent, ssh-add
+// and ssh are stubs.
 // git is real: ssh runs git-upload-pack and git-receive-pack on a local bare
 // repository, which stands in for GitHub.
 describe("release.yml run blocks under bash", () => {
@@ -371,6 +405,8 @@ describe("release.yml run blocks under bash", () => {
     'echo "ssh $*" >> "$SSH_LOG"',
     '[ -z "${DEPLOY_KEY+set}" ] || echo "ssh sees DEPLOY_KEY" >> "$SSH_LOG"',
     '[ -f "$SSH_AUTH_SOCK" ] || echo "ssh without the agent" >> "$SSH_LOG"',
+    '[ "${SSH_FAIL:-}" != all ] || exit 255',
+    'case "${SSH_FAIL:-}:${@: -1}" in receive:git-receive-pack*) exit 255 ;; esac',
     'cd "$REMOTE_ROOT" && exec sh -c "${@: -1}"',
   ]);
 
@@ -417,25 +453,21 @@ describe("release.yml run blocks under bash", () => {
     writeFileSync(sshLog, "");
     const agent = mkdtempSync(join(dir, "agent-"));
     const temp = mkdtempSync(join(dir, "tmp-"));
-    const result = spawnSync(
-      "bash",
-      ["--noprofile", "--norc", "-eo", "pipefail", "-c", runOf(job)],
-      {
-        encoding: "utf8",
-        env: {
-          ...GIT_ENV,
-          PATH: `${bin}:${process.env.PATH ?? ""}`,
-          ["TMPDIR"]: temp,
-          ["GH_LOG"]: log,
-          ["SSH_LOG"]: sshLog,
-          ["AGENT_DIR"]: agent,
-          ["GH_TOKEN"]: "invented-token",
-          ["REPO"]: "example/repo",
-          ["SHA"]: "d".repeat(40),
-          ...env,
-        },
+    const result = spawnSync("bash", ["--noprofile", "--norc", "-e", "-c", runOf(job)], {
+      encoding: "utf8",
+      env: {
+        ...GIT_ENV,
+        PATH: `${bin}:${process.env.PATH ?? ""}`,
+        ["TMPDIR"]: temp,
+        ["GH_LOG"]: log,
+        ["SSH_LOG"]: sshLog,
+        ["AGENT_DIR"]: agent,
+        ["GH_TOKEN"]: "invented-token",
+        ["REPO"]: "example/repo",
+        ["SHA"]: "d".repeat(40),
+        ...env,
       },
-    );
+    });
     const held = join(agent, "held");
     return {
       status: result.status,
@@ -546,6 +578,56 @@ describe("release.yml run blocks under bash", () => {
     expect(result.stdout).toContain("::notice::main moved on");
     expect(github.tags()).toBe("");
     expect(result.ssh).not.toContain("git-receive-pack");
+    clean(result);
+  });
+
+  // Review on #148 (c.6916680087): a failing read of the tip is a failure,
+  // never "main moved on".
+  it.each([
+    ["ssh refused (key or network)", { ["SSH_FAIL"]: "all" }, false],
+    ["no main on the remote", {}, true],
+  ] as const)("tag fails when the tip of main cannot be read: %s", (_, extra, noMain) => {
+    const github = remote();
+    if (noMain) git(github.bare, "update-ref", "-d", "refs/heads/main");
+    const result = run("tag", {
+      ["RELEASES"]: "contracts-v1.2.0",
+      ["SHA"]: github.tip,
+      ["DEPLOY_KEY"]: KEY,
+      ["REMOTE_ROOT"]: github.root,
+      ...extra,
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).not.toContain("main moved on");
+    expect(result.ssh).not.toContain("git-receive-pack");
+    expect(github.tags()).toBe("");
+    clean(result);
+  });
+
+  it("tag reads only refs/heads/main, not a ref that ends with it", () => {
+    const github = remote();
+    git(github.bare, "update-ref", "refs/heads/a/refs/heads/main", github.older);
+    const result = run("tag", {
+      ["RELEASES"]: "contracts-v1.2.0",
+      ["SHA"]: github.tip,
+      ["DEPLOY_KEY"]: KEY,
+      ["REMOTE_ROOT"]: github.root,
+    });
+    expect(result.status, result.output).toBe(0);
+    expect(github.tags()).toBe(`refs/tags/contracts-v1.2.0 ${github.tip}`);
+    clean(result);
+  });
+
+  it("tag fails when the push is refused", () => {
+    const github = remote();
+    const result = run("tag", {
+      ["RELEASES"]: "contracts-v1.2.0",
+      ["SHA"]: github.tip,
+      ["DEPLOY_KEY"]: KEY,
+      ["REMOTE_ROOT"]: github.root,
+      ["SSH_FAIL"]: "receive",
+    });
+    expect(result.status).not.toBe(0);
+    expect(github.tags()).toBe("");
     clean(result);
   });
 

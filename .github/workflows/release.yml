@@ -65,6 +65,8 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
+          # Without `shell:` GitHub runs `bash -e {0}`: no pipefail of its own.
+          set -o pipefail
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$REPO" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]]
           # In a variable: an unescaped space in a [[ =~ ]] regex is a syntax error.
@@ -85,7 +87,14 @@ jobs:
           echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$work/known_hosts"
           export GIT_SSH_COMMAND="ssh -F /dev/null -o BatchMode=yes -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519 -o UserKnownHostsFile=$work/known_hosts"
           remote="git@github.com:$REPO.git"
-          tip="$(git ls-remote "$remote" refs/heads/main | cut -f1)"
+          # A failed read (key refused, network, no main) fails the job; it is
+          # never "main moved on". Only the exact ref counts, not one ending with it.
+          heads="$(git ls-remote --exit-code "$remote" refs/heads/main)"
+          tip=""
+          while IFS=$'\t' read -r sha ref; do
+            [ "$ref" != refs/heads/main ] || tip="$sha"
+          done <<< "$heads"
+          [[ "$tip" =~ ^[0-9a-f]{40}$ ]]
           if [ "$tip" != "$SHA" ]; then echo "::notice::main moved on; a later run releases"; exit 0; fi
           git init -q "$work/repo"
           git -C "$work/repo" fetch -q --depth=1 --no-tags "$remote" "$SHA"
