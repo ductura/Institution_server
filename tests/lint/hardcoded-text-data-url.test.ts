@@ -173,6 +173,18 @@ const hidden: [what: string, literal: string][] = [
   ["any script body", "data:text/javascript,document.write(1)"],
   ["any script body, alias", "data:application/x-javascript,x"],
   ["windows-1252 byte one layer down", "data:text/plain,%259Aalji"],
+  // Codex P2 on #95: an HTML attribute resolves references before the URL
+  // parser, so a raw reference anywhere in the URL fails, whatever the type.
+  ["reference in a text/plain attribute", "<iframe src='data:text/plain,&#269;ekaj'></iframe>"],
+  ["named reference in a text/plain attribute", "<a href='data:text/plain,&ccaron;ekaj'>x</a>"],
+  ["reference after the fragment mark", "data:text/plain,x&#35;&#269;"],
+  ["reference in the fragment", "data:text/html,&#269;ekaj"],
+  ["reference in the media type", "data:text/plain&#59;base64,xI1la2Fq"],
+  ["scheme spelled with a reference", "<iframe src='&#100;ata:,%C4%8Dekaj'>"],
+  ["scheme letter as a hex reference", "<iframe src='d&#x61;ta:,%C4%8Dekaj'>"],
+  ["scheme colon as a named reference", "<iframe src='data&colon;,%C4%8Dekaj'>"],
+  ["scheme spelled only with references", "&#100;&#97;&#116;&#97;&#58;,%C4%8Dekaj"],
+  ["tab reference inside the scheme", "<a href='d&Tab;ata:,%C4%8Dekaj'>"],
   ["non-UTF-8 byte one layer down", "data:application/json,%25E8ekaj"],
   // base64 is a flag in any parameter position.
   ["base64 before another parameter", "data:text/plain;base64;x=y,xI1la2Fq"],
@@ -221,7 +233,6 @@ describe("data: URL", () => {
       "metadata:,%C4%8Dekaj",
       "data:no-comma-%C4%8Dekaj",
       "data:,x#%C4%8Dekaj",
-      "data:text/html,&#269;ekaj",
       "da\\u000Cta:,%C4%8Dekaj",
       // Binary and markup that is not text (QA on DAN-784).
       "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==",
@@ -229,7 +240,7 @@ describe("data: URL", () => {
       "<img src='data:;base64,aGVsbG8=' alt='ok'>",
       // A reference is read only where the type reads it.
       "data:text/plain,%26eacute",
-      "data:text/plain,&#269;ekaj",
+      "Tom &amp; Jerry, a &lt; b",
       "data:application/json,%7B%22a%22%3A%22%26eacute%22%7D",
       "data:text/css,a%7Bcolor:red%7D",
       "data:text/plain;base64,JmVhY3V0ZQ==",
@@ -325,6 +336,15 @@ describe("fail closed", () => {
     const t0 = performance.now();
     expect(dataUrlFindings("data:,".repeat(10_000)).suspect).not.toBeNull();
     expect(performance.now() - t0).toBeLessThan(5000);
+  });
+
+  it("fails on a JS escape left at the depth limit", () => {
+    // Codex P2 on #95: the JSON string "\\u010d" wrapped in base64 data: URLs.
+    let url = "data:application/json;base64,Ilx1MDEwZCI=";
+    for (let i = 0; i < MAX_DEPTH; i += 1)
+      url = `data:text/plain;base64,${Buffer.from(url).toString("base64")}`;
+    expect(dataUrlProblem(url)).not.toBeNull();
+    expect(dataUrlFindings(url).suspect).toMatch(/encoded more than/u);
   });
 
   it("reads base64 in any parameter position, and the body as it is", () => {

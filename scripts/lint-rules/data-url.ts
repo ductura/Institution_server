@@ -58,12 +58,22 @@ export const MAX_TEXTS = 1024;
 // escape (CSS, PDF) or `&` before a letter or `#`, which HTML, XML or WebVTT
 // may read as a character reference (`&eacute`, `&#154;`); none is decoded.
 const MARKUP = /[<\\]|&[#\p{L}]/u;
+const REFERENCE = /&[#\p{L}]/u;
 // Printable ASCII and tab, LF, FF, CR: a byte outside it lets the reader's
 // charset (a declared one, a BOM, UTF-16, ISO-2022-JP, the locale's fallback
 // such as windows-1252 or windows-1250) decide the letter.
 const PLAIN_BYTE = (b: number): boolean =>
   (b >= 0x20 && b < 0x7f) || b === 0x09 || b === 0x0a || b === 0x0c || b === 0x0d;
-const STILL_ENCODED = /%[0-9a-fA-F]{2}|data:/iu;
+// Encodings the rule reads; one left at the depth limit is unread (Codex P2 on #95).
+const STILL_ENCODED = /%[0-9a-f]{2}|data:|\\u[0-9a-f{]|\\x[0-9a-f]{2}/iu;
+// An HTML reference as an attribute value holds it (named, decimal or hex,
+// `;` optional). Each is replaced by one placeholder, never decoded.
+const HTML_REF = /&[#a-z][a-z0-9]*;?/giu;
+const REF_MARK = "\u0001";
+// `data:` with any letter written as a reference, tab, CR or LF (or their
+// references) between: what an attribute gives the URL parser.
+const SPELLED_SCHEME =
+  /[d\u0001][\t\n\r\u0001]*[a\u0001][\t\n\r\u0001]*[t\u0001][\t\n\r\u0001]*[a\u0001][\t\n\r\u0001]*[:\u0001]/giu;
 // RFC 9110 token characters around a slash, with HTTP whitespace around it
 // (the sets are disjoint, so the match is linear); anything else is unclear.
 const TOKEN = "[!#$%&'*+.^_`|~0-9a-z-]+";
@@ -204,6 +214,13 @@ function collect(text: string, depth: number, state: State): void {
     if (state.suspect !== null) return;
     if (at > 0 && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
     const url = input.slice(at);
+    // In an HTML attribute the parser resolves references before the URL
+    // parser reads the URL (`src='data:text/plain,&#269;ekaj'`, Codex P2 on
+    // #95); a raw reference anywhere in the URL is unread, whatever the type.
+    if (depth === 0 && REFERENCE.test(url)) {
+      flag(state, `an HTML reference in a data: URL: ${url}`);
+      return;
+    }
     // Size bound before any decoding: a longer URL is suspect, not read.
     if (url.length - "data:".length > MAX_URL_LENGTH) {
       flag(state, `data: URL longer than ${MAX_URL_LENGTH} characters`);
@@ -306,6 +323,11 @@ export function dataUrlHeadSplit(parts: readonly string[]): boolean {
 /** Every text the data: URLs in `text` decode to, and why the rule must report unread. */
 export function dataUrlFindings(text: string): DataUrlFindings {
   const state: State = { out: new Set(), suspect: null };
+  // A scheme spelled with references (`&#100;ata:`) is a data: URL to an
+  // attribute but not to the search below, so it is unread.
+  const marked = text.replace(HTML_REF, REF_MARK);
+  for (const match of marked.matchAll(SPELLED_SCHEME))
+    if (match[0].includes(REF_MARK)) flag(state, "an HTML reference that may spell data:");
   collect(text, 0, state);
   return { texts: [...state.out], suspect: state.suspect };
 }
