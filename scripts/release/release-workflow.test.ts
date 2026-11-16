@@ -297,12 +297,12 @@ describe("release.yml run blocks under bash", () => {
     expect(result.calls).not.toContain("git/refs -f");
   });
 
-  it.each(["contracts-v1.2.0;id", "contracts-v01.2.0", "other-v1.0.0"])(
-    "tag refuses RELEASES=%j before creating anything",
+  it.each(["contracts-v1.2.0;id", "contracts-v01.2.0", "other-v1.0.0", "contracts-v1.2.0 x"])(
+    "tag refuses RELEASES=%j before calling gh at all",
     (releases) => {
       const result = run("tag", { ["RELEASES"]: releases });
       expect(result.status).not.toBe(0);
-      expect(result.calls).not.toContain("git/refs -f");
+      expect(result.calls).toBe("");
     },
   );
 });

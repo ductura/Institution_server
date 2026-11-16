@@ -62,10 +62,13 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
+          # Every tag is checked before the first call, so a bad one creates none.
+          for tag in $RELEASES; do
+            [[ "$tag" =~ ^(contracts|test-fakes)-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          done
           tip="$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)"
           if [ "$tip" != "$SHA" ]; then echo "::notice::main moved on; a later run releases"; exit 0; fi
           for tag in $RELEASES; do
-            [[ "$tag" =~ ^(contracts|test-fakes)-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
             gh api -X POST "repos/$REPO/git/refs" -f "ref=refs/tags/$tag" -f "sha=$SHA" > /dev/null
             gh api -X POST "repos/$REPO/actions/workflows/publish.yml/dispatches" -f "ref=$tag"
           done
