@@ -74,7 +74,13 @@ function keyed(nodes: readonly ts.Node[], file: ts.SourceFile): Map<string, ts.N
   const seen = new Map<string, number>();
   for (const node of nodes) {
     const name = (node as { name?: ts.Node }).name;
-    const base = name ? `${ts.SyntaxKind[node.kind]} ${name.getText(file)}` : node.getText(file);
+    // A variable statement by its variable names (review #92): a generated
+    // ROUTE_TABLE with a new route is the same declaration with a new member.
+    const base = ts.isVariableStatement(node)
+      ? `VariableStatement ${namesOf(node).join(",")}`
+      : name
+        ? `${ts.SyntaxKind[node.kind]} ${name.getText(file)}`
+        : node.getText(file);
     const n = seen.get(base) ?? 0;
     seen.set(base, n + 1);
     out.set(`${base}#${n}`, node);
@@ -157,6 +163,8 @@ type Declarations = {
   readonly star: boolean;
   /** Triple-slash directives: trivia to the scanner, but they change a client's types. */
   readonly directives: string;
+  /** Every module the file refers to (import, export from, import type): one may augment. */
+  readonly modules: Set<string>;
 };
 
 const nameOf = (node: ts.Node): string | undefined => {
@@ -181,7 +189,8 @@ function declarations(text: string, path: string): Declarations {
   for (const statement of file.statements) {
     const clause = ts.isExportDeclaration(statement) ? statement.exportClause : undefined;
     if (ts.isExportDeclaration(statement) && clause && ts.isNamedExports(clause)) {
-      const from = statement.moduleSpecifier?.getText(file) ?? "";
+      // Import attributes choose the export condition, so they are part of the key.
+      const from = `${statement.moduleSpecifier?.getText(file) ?? ""}${statement.attributes ? ` ${statement.attributes.getText(file)}` : ""}`;
       // A value that becomes type-only is gone for JavaScript: the key holds the flag.
       for (const spec of clause.elements) {
         const type = statement.isTypeOnly || spec.isTypeOnly ? "type " : "";
@@ -201,7 +210,28 @@ function declarations(text: string, path: string): Declarations {
     refs(file.libReferenceDirectives),
     file.amdDependencies.map((d) => [d.name ?? null, d.path]),
   ]);
-  return { nodes: new Map([...keyed(nodes, file), ...named]), file, names, star, directives };
+  const modules = new Set<string>();
+  const visit = (node: ts.Node): void => {
+    const target =
+      ts.isImportDeclaration(node) || ts.isExportDeclaration(node)
+        ? node.moduleSpecifier
+        : ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)
+          ? node.moduleReference.expression
+          : ts.isImportTypeNode(node)
+            ? node.argument
+            : undefined;
+    if (target) modules.add(target.getText(file));
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return {
+    nodes: new Map([...keyed(nodes, file), ...named]),
+    file,
+    names,
+    star,
+    directives,
+    modules,
+  };
 }
 
 export type Surface = { readonly level: Change; readonly reasons: string[] };
@@ -219,6 +249,9 @@ export function declarationChange(before: string, after: string, path: string): 
     reasons.push(`${path} ${key.replace(/#0$/u, "")}: ${change}`);
   };
   if (old.directives !== now.directives) note("/// directives", "changed");
+  // A module not referred to before may augment what exists (Codex #92): conservative.
+  for (const module of now.modules)
+    if (!old.modules.has(module)) note(`new module reference ${module}`, "changed");
   for (const [key, node] of da) {
     const other = db.get(key);
     note(key, other ? compare(node, other, fa, fb) : "changed");
