@@ -22,6 +22,22 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['returnTo'] !== undefined ? ((typeof value['returnTo'] === 'string')) : true)
     )
   }),
+  "client.context.post:body": (() => {
+  const local0 = /^(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['app'] === 'web')) || ((value['app'] === 'desktop'))) &&
+      (typeof value['appVersion'] === 'string') &&
+      local0.test(value['appVersion']) &&
+      (((value['browser'] === 'chromium')) || ((value['browser'] === 'firefox')) || ((value['browser'] === 'safari')) || ((value['browser'] === 'other'))) &&
+      (((value['device'] === 'desktop')) || ((value['device'] === 'tablet')) || ((value['device'] === 'phone')) || ((value['device'] === 'other'))) &&
+      (((value['os'] === 'windows')) || ((value['os'] === 'macos')) || ((value['os'] === 'linux')) || ((value['os'] === 'android')) || ((value['os'] === 'ios')) || ((value['os'] === 'other'))) &&
+      (((value['screen'] === 'compact')) || ((value['screen'] === 'medium')) || ((value['screen'] === 'expanded'))) &&
+      Object.getOwnPropertyNames(value).length === 6
+    )
+  }
+  })(),
   "collaboration.comments.post:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
