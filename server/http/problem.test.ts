@@ -22,7 +22,7 @@ import {
   SHARED_ERRORS,
 } from "../contracts/index.ts";
 import { sendJson } from "./json.ts";
-import { knownError, problemOf, sendProblem } from "./problem.ts";
+import { knownError, problemOf, sendBareRefusal, sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 
 const ID = "0f0e0d0c-0b0a-4908-8706-050403020100";
@@ -281,5 +281,29 @@ describe("server code", () => {
       );
     });
     expect(old).toEqual([]);
+  });
+});
+
+describe("sendBareRefusal", () => {
+  const route = (id: string) => ROUTES.find((r) => r.id === id)!;
+
+  it.each([...NO_BODY])("answers %s with no body and no-store", (entry) => {
+    const [id, status] = entry.split(" ");
+    const { response, answer } = fakeResponse();
+    sendBareRefusal(response, route(id!), Number(status));
+    expect(answer.status).toBe(Number(status));
+    expect(answer.headers["cache-control"]).toBe("no-store");
+    expect(answer.body).toBeUndefined();
+  });
+
+  it.each([
+    ["auth.backchannel-logout.post", 404],
+    ["auth.logout.post", 403],
+    ["evidence.open.post", 401],
+  ])("answers 500 internal for %s %s, which has no bare error", (id, status) => {
+    const { response, answer } = fakeResponse();
+    sendBareRefusal(response, route(id), status);
+    expect(answer.status).toBe(500);
+    expect(JSON.parse(answer.body ?? "{}")).toMatchObject({ code: INTERNAL.error.code });
   });
 });

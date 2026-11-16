@@ -70,6 +70,18 @@ const HTML_REFUSALS: ReadonlyMap<string, ErrorSpec> = new Map(
   }),
 );
 
+/**
+ * Routes the identity provider calls server to server (contract access
+ * "identity_provider", the back-channel logout): no Origin is sent and no
+ * cookie is read; the signed token is the proof (S-1D-d, DAN-829-3). Ductus
+ * checked origin per route and never on this one.
+ */
+const PROVIDER_ROUTES: ReadonlySet<string> = new Set(
+  ROUTES.filter((route) => route.access === "identity_provider").map(
+    (route) => `${route.method} ${route.path}`,
+  ),
+);
+
 /** Step 7 of the pipeline; null refuses every state-changing request. */
 export function originLayer(
   expectedOrigin: string | null,
@@ -79,6 +91,9 @@ export function originLayer(
     throw new Error("expected origin must be a bare scheme://host[:port]");
   }
   return async (request, response) => {
+    if (PROVIDER_ROUTES.has(`${request.method ?? ""} ${routePath(request.url) ?? ""}`)) {
+      return "next";
+    }
     const check = checkMutationRequest(request, expectedOrigin);
     if (check.ok) return "next";
     // A navigation route's contract gives its own page (vector "forbidden",
