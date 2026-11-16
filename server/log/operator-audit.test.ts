@@ -303,6 +303,15 @@ describe("operator audit: one write attempt with the outcome", () => {
     ]);
   });
 
+  it("checks the record, not permissions: those are server/roles", async () => {
+    const { audited, records } = setup();
+    const engineer = { ...ACTOR, accountKind: "network_engineer" };
+    await expect(
+      audited(engineer, "change_institution_settings", () => ({ ok: true, value: 5 })),
+    ).resolves.toEqual({ ok: true, value: 5 });
+    expect(records).toHaveLength(1);
+  });
+
   it("has a Croatian text for every code it answers with", () => {
     const texts = JSON.parse(
       readFileSync(new URL("../../locales/hr.json", import.meta.url), "utf8"),
