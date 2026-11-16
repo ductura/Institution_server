@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ROUTES } from "../contracts/index.ts";
 import { loadAuthConfig } from "../external/srce-auth/index.ts";
 import {
   failurePage,
@@ -345,6 +346,18 @@ describe("finishLogin when the session ports fail", () => {
 });
 
 describe("failurePage", () => {
+  // S-1E-a (DAN-808): the retry link is the contract path of auth.login.get,
+  // not Ductus /api/auth/login, so a failed login can always be tried again.
+  it("links every status to the login route of the contract", async () => {
+    const login = ROUTES.find((route) => route.id === "auth.login.get");
+    expect(login?.path).toBe("/api/v1/auth/login");
+    for (const status of [400, 403, 503] as const) {
+      const html = await failurePage(status).text();
+      expect(html, String(status)).toContain(`<a href="${login?.path}">Pokušaj ponovno</a>`);
+      expect(html).not.toContain('href="/api/auth/');
+    }
+  });
+
   it("shows one body for 400 and 403, another for 503, and never caches", async () => {
     const [bad, forbidden, down] = [failurePage(400), failurePage(403), failurePage(503)];
     expect(await bad.text()).toBe(await forbidden.text());

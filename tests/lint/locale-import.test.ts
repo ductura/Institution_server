@@ -57,6 +57,16 @@ describe("the locales import of the login page", () => {
     [FLOW, 'import * as m from "../../locales/index.ts";' + use],
     [FLOW, 'import m from "../../locales/index.ts";' + use],
     [FLOW, 'import { "messagesHr" as m } from "../../locales/index.ts";' + use],
+    // Type-only, an inline type, or a default next to the name (samonapad, #104).
+    [FLOW, 'import type { messagesHr as m } from "../../locales/index.ts";' + use],
+    [FLOW, 'import { type messagesHr as m } from "../../locales/index.ts";' + use],
+    [FLOW, 'import { messagesHr as m, default as d } from "../../locales/index.ts";' + use],
+    [FLOW, 'import d, { messagesHr as m } from "../../locales/index.ts";' + use],
+    // Letter case of the file or the folder, and Windows separators.
+    ["server/http/Auth-Flow.ts", 'import { messagesHr as m } from "../../locales/index.ts";' + use],
+    ["server/HTTP/auth-flow.ts", 'import { messagesHr as m } from "../../locales/index.ts";' + use],
+    [FLOW, 'import { messagesHr as m } from "../../Locales/index.ts";' + use],
+    [FLOW, 'import { messagesHr as m } from "..\\\\..\\\\locales\\\\index.ts";' + use],
     // Another module of locales/.
     [FLOW, 'import { messagesHr as m } from "../../locales/hr.ts";' + use],
     // Another spelling of the same path.
