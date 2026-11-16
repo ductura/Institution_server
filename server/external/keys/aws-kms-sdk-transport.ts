@@ -88,11 +88,10 @@ function answersRequest(requested: string, returned: unknown): returned is strin
  */
 export class AwsSdkKmsEd25519Transport implements AwsKmsEd25519Transport {
   private readonly timeoutMs: number;
+  private readonly client: KmsCommandSender;
 
-  constructor(
-    private readonly client: KmsCommandSender,
-    options: { timeoutMs: number },
-  ) {
+  constructor(client: KmsCommandSender, options: { timeoutMs: number }) {
+    this.client = client;
     if (!Number.isSafeInteger(options.timeoutMs) || options.timeoutMs <= 0) {
       throw new Error("aws-kms: timeoutMs must be a positive integer");
     }
