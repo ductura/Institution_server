@@ -2014,6 +2014,8 @@ export const hr = {
     tooManyRequests:
       "Poslano je previše zahtjeva u kratkom vremenu. Pričekajte malo pa pokušajte ponovno.",
     tooLarge: "Zahtjev je prevelik.",
+    tooManyReports:
+      "Iz Vašeg računa u jednom satu može se poslati najviše pet prijava. Pokušajte ponovno kasnije.",
     txidReused: "Ova je izmjena već poslana s drugim sadržajem.",
     unauthenticated: "Prijavite se ponovno.",
     unauthorized: "Prijavite se ponovno.",

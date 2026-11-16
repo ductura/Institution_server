@@ -19,6 +19,7 @@ export const ROUTE_TABLE = {
   "settings.values.get": { method: "GET", path: "/api/v1/settings/values", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
   "settings.values.put": { method: "PUT", path: "/api/v1/settings/values", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"409":["bound_crossed"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "student.assignments.get": { method: "GET", path: "/api/v1/student/assignments", body: null, headers: [], errors: {"401":["unauthorized"],"503":["unavailable"]} },
+  "support.problem-report.post": { method: "POST", path: "/api/v1/support/problem-report", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"429":["too_many_reports"],"503":["unavailable"]} },
   "teacher.courses.get": { method: "GET", path: "/api/v1/teacher/courses", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
   "teacher.fast-path.post": { method: "POST", path: "/api/v1/teacher/fast-path", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "teacher.mentorship.get": { method: "GET", path: "/api/v1/teacher/mentorships/{mentorshipId}", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
@@ -33,6 +34,27 @@ export type Result<Id extends OperationId> =
   | (Operations[Id]["success"] & { ok: true })
   | { ok: false; status: number; code: Operations[Id]["errorCode"] | SharedErrorCode | "unexpected" };
 
+/**
+ * The RFC 8785 (JCS) text of a JSON value: object keys in UTF-16 code unit
+ * order, no white space, numbers and strings as JSON.stringify writes them.
+ * Routes that read canonical JSON (support.problem-report.post) refuse any
+ * other spelling with 422, so every JSON body is sent this way.
+ */
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+export function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item === undefined ? null : item)).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record).sort().filter((key) => record[key] !== undefined);
+    for (const key of keys) canonicalJson(key);
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(",")}}`;
+  }
+  // JCS refuses a lone surrogate (RFC 8785 §3.2.2.2), as Ductus canonicalizeJcs does.
+  if (typeof value === "string" && LONE_SURROGATE.test(value)) throw new TypeError("canonicalJson: lone surrogate");
+  return JSON.stringify(value) ?? "null";
+}
+
 export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   return async function call<Id extends OperationId>(id: Id, input: Input<Id>): Promise<Result<Id>> {
     const route = ROUTE_TABLE[id];
@@ -43,7 +65,7 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     );
     if (query.size > 0) path += `?${query.toString()}`;
     const init: RequestInit = { method: route.method, redirect: "manual" };
-    if (route.body === "application/json") init.body = JSON.stringify(input.body);
+    if (route.body === "application/json") init.body = canonicalJson(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
     if (route.body !== null) init.headers = { "content-type": route.body };
     const res = await fetchImpl(new URL(path, baseUrl), init);

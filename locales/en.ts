@@ -2031,6 +2031,7 @@ const en = {
     timeout: "The request took too long. Please try again.",
     tooManyRequests: "Too many requests were sent in a short time. Wait a moment and try again.",
     tooLarge: "The request is too large.",
+    tooManyReports: "Your account can send at most five reports in one hour. Try again later.",
     txidReused: "This change was already sent with other content.",
     unauthenticated: "Please sign in again.",
     unauthorized: "Please sign in again.",
