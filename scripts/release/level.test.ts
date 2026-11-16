@@ -581,3 +581,34 @@ describe("releaseLevel after the hard cut on new members", () => {
     expect(dts(before, after)).toBe("major");
   });
 });
+
+// Self-attack after the hard cut (#92): directives kept only as flags, a
+// namespace re-export and a nested package.json.
+describe("releaseLevel closes the last directive and manifest gaps", () => {
+  const OPTIONS = "export interface Options { port: number }\n";
+
+  it.each(['/// <reference no-default-lib="true"/>\n', '/// <amd-module name="x" />\n'])(
+    "is major when %j is added or removed",
+    (directive) => {
+      expect(level(fakes(OPTIONS), fakes(`${directive}${OPTIONS}`))).toBe("major");
+      expect(level(fakes(`${directive}${OPTIONS}`), fakes(OPTIONS))).toBe("major");
+    },
+  );
+
+  it("is major for export * as a name the package used", () => {
+    const before = fakes(OPTIONS, { "clock.d.ts": "export type FakeClock = { now(): number };\n" });
+    const after = fakes(`${OPTIONS}export * as FakeClock from "./clock.js";\n`, {
+      "clock.d.ts": "export type FakeClock = { now(): number };\n",
+    });
+    expect(level(before, after)).toBe("major");
+  });
+
+  it("is major for a nested package.json added or changed", () => {
+    const nested = "server/contracts/generated/package.json";
+    expect(level(fakes(OPTIONS), fakes(OPTIONS, { [nested]: '{"type":"commonjs"}' }))).toBe(
+      "major",
+    );
+    const before = fakes(OPTIONS, { [nested]: '{"type":"module"}' });
+    expect(level(before, fakes(OPTIONS, { [nested]: '{"type":"commonjs"}' }))).toBe("major");
+  });
+});
