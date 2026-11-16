@@ -5,13 +5,25 @@ import { connect } from "node:net";
 
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { messageKeyOf, REQUEST_ID_PATTERN, ROUTES } from "../contracts/index.ts";
+import {
+  API_VERSION,
+  messageKeyOf,
+  MIN_CLIENT_VERSION,
+  REQUEST_ID_PATTERN,
+  ROUTES,
+} from "../contracts/index.ts";
 import { createDatabases } from "./databases.ts";
-import { HEALTH_ROUTE } from "./health.ts";
+import { createHealthRoute } from "./health.ts";
 import { createLayers } from "./pipeline.ts";
 import { problemOf, sendProblem } from "./problem.ts";
 import { type Route, sendJson } from "./router.ts";
 import { type Running, startServer } from "./start.ts";
+
+// Health with the main database up: these tests are about the pipeline, not the database.
+const HEALTH_ROUTE = createHealthRoute({
+  health: async () => ({ main: "ok", logs: "ok", legal: "ok" }),
+  serverVersion: "0.0.0",
+});
 
 const ORIGIN = "https://ductura.invalid";
 const CANARY = "made-up-canary-5c1d";
@@ -168,7 +180,13 @@ describe("problem bodies on the wire", () => {
 
   it("a success answer is unchanged: no request id", async () => {
     const response = await fetch(url("/api/v1/health"));
-    expect(await response.json()).toEqual({ status: "ok" });
+    expect(await response.json()).toEqual({
+      status: "ok",
+      state: "ok",
+      apiVersion: API_VERSION,
+      serverVersion: "0.0.0",
+      minClientVersion: MIN_CLIENT_VERSION,
+    });
     expect(response.headers.get("x-request-id")).toBeNull();
   });
 });

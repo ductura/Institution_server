@@ -7,7 +7,7 @@ import { createServer } from "node:net";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { createDatabases } from "./databases.ts";
-import { HEALTH_ROUTE } from "./health.ts";
+import { createHealthRoute } from "./health.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
 
@@ -34,7 +34,7 @@ async function healthBytes(): Promise<{ status: number; headers: string; body: s
     port: 0,
     layers: createLayers({ expectedOrigin: null }),
     databases,
-    routes: [HEALTH_ROUTE],
+    routes: [createHealthRoute({ health: databases.health, serverVersion: "0.0.0" })],
   });
   servers.push(server);
   const response = await fetch(`http://127.0.0.1:${server.port}/api/v1/health`);

@@ -3,6 +3,7 @@
 // wiring of the real entry, and test-support/shutdown-entry for a request that
 // takes time, which the real entry has no route for. Invented values only.
 import { type ChildProcess, spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { connect, type Socket } from "node:net";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -104,6 +105,16 @@ function bodyOf(raw: string): string {
   }
 }
 
+/** Health of test-support/shutdown-entry (main database a stub that is up): the alive-current vector. */
+const HEALTH_BODY = JSON.stringify({
+  ...(
+    JSON.parse(
+      readFileSync(new URL("contracts/vectors/platform.health.get.json", import.meta.url), "utf8"),
+    ) as { vectors: { name: string; response: { body: object } }[] }
+  ).vectors.find((v) => v.name === "alive-current")?.response.body,
+  serverVersion: "0.0.0",
+});
+
 /** The problem body of 503 unavailable (S-1L.3), with a request id of the server's own. */
 const UNAVAILABLE =
   /\{"error":"unavailable","code":"unavailable","messageKey":"errors\.unavailable","status":503,"requestId":"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"\}/u;
@@ -115,7 +126,8 @@ describe("server/server.ts shutdown", () => {
       const server = await start(SERVER);
       const idle = await open(server.port);
       idle.socket.write(GET("/api/v1/health"));
-      await until(() => idle.text().includes('{"status":"ok"}'));
+      // The main database is .invalid here, so health answers `degraded` (S-1M-a).
+      await until(() => idle.text().includes('{"status":"ok","state":"degraded",'));
 
       server.child.kill(signal);
       await idle.closed;
@@ -172,7 +184,7 @@ describe("shutdown in the middle of a slow request", () => {
       for (const signal of signals) server.child.kill(signal);
       await slow.closed;
       expect(statusOf(slow.text())).toBe("HTTP/1.1 200 OK");
-      expect(bodyOf(slow.text())).toBe('{"status":"ok"}');
+      expect(bodyOf(slow.text())).toBe(HEALTH_BODY);
       expect(await server.exit).toBe(0);
       expect(server.err()).toBe("");
     },
@@ -196,7 +208,7 @@ describe("shutdown in the middle of a slow request", () => {
     expect(racing.text().toLowerCase()).toContain("cache-control: no-store");
     expect(bodyOf(racing.text())).toMatch(UNAVAILABLE);
     await slow.closed;
-    expect(bodyOf(slow.text())).toBe('{"status":"ok"}');
+    expect(bodyOf(slow.text())).toBe(HEALTH_BODY);
     expect(await server.exit).toBe(0);
   }, 20_000);
 
