@@ -203,7 +203,7 @@ describe("buildTarball with the tag's version (DAN-804)", () => {
     const result = spawnSync(
       process.execPath,
       ["scripts/release/tarball.ts", "contracts", "test-fakes"],
-      { cwd: ROOT, encoding: "utf8", env: { ...process.env, RELEASE_VERSION: version } },
+      { cwd: ROOT, encoding: "utf8", env: { ...process.env, ["RELEASE_VERSION"]: version } },
     );
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("RELEASE_VERSION is for one package");

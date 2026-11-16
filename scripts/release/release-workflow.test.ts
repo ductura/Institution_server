@@ -243,11 +243,11 @@ describe("release.yml run blocks under bash", () => {
         encoding: "utf8",
         env: {
           PATH: `${dir}:${process.env.PATH ?? ""}`,
-          GH_LOG: log,
-          GH_TOKEN: "invented-token",
-          REPO: "example/repo",
-          SHA,
-          TIP: SHA,
+          ["GH_LOG"]: log,
+          ["GH_TOKEN"]: "invented-token",
+          ["REPO"]: "example/repo",
+          ["SHA"]: SHA,
+          ["TIP"]: SHA,
           ...env,
         },
       },
@@ -263,7 +263,7 @@ describe("release.yml run blocks under bash", () => {
   it.each(["contracts:major", "test-fakes:blocked", "contracts:major test-fakes:blocked"])(
     "report comments on the merged PR and fails for STOPPED=%s",
     (stopped) => {
-      const result = run("report", { STOPPED: stopped, RUN: "123" });
+      const result = run("report", { ["STOPPED"]: stopped, ["RUN"]: "123" });
       expect(result.status).toBe(1);
       expect(result.calls).toContain("repos/example/repo/commits/" + SHA + "/pulls");
       expect(result.calls).toContain("-X POST repos/example/repo/issues/7/comments");
@@ -274,14 +274,14 @@ describe("release.yml run blocks under bash", () => {
   it.each(["contracts:minor", "contracts:major;id", "evil:major", ""])(
     "report refuses STOPPED=%j before calling gh",
     (stopped) => {
-      const result = run("report", { STOPPED: stopped, RUN: "123" });
+      const result = run("report", { ["STOPPED"]: stopped, ["RUN"]: "123" });
       expect(result.status).not.toBe(0);
       expect(result.calls).toBe("");
     },
   );
 
   it("tag creates the tag and dispatches publish.yml on the tip of main", () => {
-    const result = run("tag", { RELEASES: "contracts-v1.2.0 test-fakes-v0.3.1" });
+    const result = run("tag", { ["RELEASES"]: "contracts-v1.2.0 test-fakes-v0.3.1" });
     expect(result.status).toBe(0);
     for (const tag of ["contracts-v1.2.0", "test-fakes-v0.3.1"]) {
       expect(result.calls).toContain(
@@ -292,7 +292,7 @@ describe("release.yml run blocks under bash", () => {
   });
 
   it("tag does nothing when main moved on", () => {
-    const result = run("tag", { RELEASES: "contracts-v1.2.0", TIP: "e".repeat(40) });
+    const result = run("tag", { ["RELEASES"]: "contracts-v1.2.0", ["TIP"]: "e".repeat(40) });
     expect(result.status).toBe(0);
     expect(result.calls).not.toContain("git/refs -f");
   });
@@ -300,7 +300,7 @@ describe("release.yml run blocks under bash", () => {
   it.each(["contracts-v1.2.0;id", "contracts-v01.2.0", "other-v1.0.0"])(
     "tag refuses RELEASES=%j before creating anything",
     (releases) => {
-      const result = run("tag", { RELEASES: releases });
+      const result = run("tag", { ["RELEASES"]: releases });
       expect(result.status).not.toBe(0);
       expect(result.calls).not.toContain("git/refs -f");
     },
