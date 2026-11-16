@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join, posix, resolve, sep, win32 } from "node:path";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { shellViolations } from "./index.ts";
@@ -82,38 +83,41 @@ describe("shellViolations", () => {
   });
 });
 
-/** `path` relative to `root` with `/`, the form EXEMPT and the filters use. */
-function repoPath(root: string, path: string, paths: typeof posix = posix): string {
-  return paths.relative(root, path).split(paths.sep).join("/");
+/**
+ * The files to check among tracked repository paths: every workflow GitHub
+ * reads (directly in .github/workflows) and every action.yml or action.yaml,
+ * wherever it is. Git names paths with `/` on every platform (review cxcrs153).
+ */
+function checkedFiles(paths: readonly string[]): string[] {
+  return paths.filter(
+    (path) =>
+      /^\.github\/workflows\/[^/]+\.ya?ml$/i.test(path) || /(?:^|\/)action\.ya?ml$/i.test(path),
+  );
 }
 
-/** Every action.yml or action.yaml in the repository, outside dependencies. */
-function actions(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory())
-      return ["node_modules", ".git", "dist"].includes(entry.name) ? [] : actions(path);
-    return /^action\.ya?ml$/.test(entry.name) ? [path] : [];
+describe("checkedFiles", () => {
+  // QA cxcqs153: no folder is skipped, a tracked dist/ or node_modules/ included.
+  it("keeps every tracked action and top-level workflow, and nothing else", () => {
+    const actions = [
+      ".github/actions/dist/action.yml",
+      "dist/action.yml",
+      "node_modules/x/action.yaml",
+      ".git-x/action.yml",
+      "action.yml",
+      "a/b/Action.YAML",
+    ];
+    const workflows = [".github/workflows/ci.yml", ".github/workflows/x.YAML"];
+    const other = [".github/workflows/sub/x.yml", "a/action.yml.bak", "a/my-action.yml", "ci.yml"];
+    expect(checkedFiles([...other, ...actions, ...workflows])).toEqual([...actions, ...workflows]);
   });
-}
+});
 
 describe("the workflows and composite actions of this repository", () => {
-  const dir = resolve(ROOT, ".github/workflows");
-  const workflows = readdirSync(dir)
-    .filter((name) => /\.ya?ml$/i.test(name))
-    .map((name) => join(dir, name));
-  const files = [...workflows, ...actions(ROOT)].map((path) =>
-    repoPath(ROOT, path, sep === "/" ? posix : win32),
-  );
+  const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: ROOT, encoding: "utf8" });
+  const files = checkedFiles(tracked.split("\0"));
 
-  // Review cxcrs153: on Windows `relative` gives `\\`, and EXEMPT would not match.
   it("names files with / on every platform", () => {
-    expect(repoPath("D:\\r", "D:\\r\\.github\\workflows\\release.yml", win32)).toBe(
-      ".github/workflows/release.yml",
-    );
-    expect(repoPath("/r", "/r/.github/workflows/release.yml")).toBe(
-      ".github/workflows/release.yml",
-    );
+    for (const file of files) expect(file).not.toContain("\\");
   });
 
   it("finds every workflow", () => {
@@ -132,7 +136,7 @@ describe("the workflows and composite actions of this repository", () => {
   });
 
   // The defaults are what makes them pass: without them each one fails.
-  it.each(files.filter((file) => !EXEMPT.has(file) && file.includes("workflows/")))(
+  it.each(files.filter((file) => !EXEMPT.has(file) && file.startsWith(".github/workflows/")))(
     "%s without its defaults is a violation",
     (file) => {
       const doc = read(readFileSync(resolve(ROOT, file), "utf8")) as Record<string, unknown>;
