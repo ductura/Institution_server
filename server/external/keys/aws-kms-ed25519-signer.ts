@@ -98,11 +98,16 @@ async function call<T>(run: () => Promise<T>): Promise<Result<T>> {
  * would pass.
  */
 export class AwsKmsEd25519SigningKeyProvider implements SigningKeyProvider {
+  private readonly transport: AwsKmsEd25519Transport;
+  private readonly configuredKeyId: string;
+
   constructor(
-    private readonly transport: AwsKmsEd25519Transport,
-    private readonly configuredKeyId: string,
+    transport: AwsKmsEd25519Transport,
+    configuredKeyId: string,
     trustedKeyVersions: readonly string[],
   ) {
+    this.transport = transport;
+    this.configuredKeyId = configuredKeyId;
     if (!configuredKeyId.trim()) {
       throw new Error("aws-kms: key id required");
     }

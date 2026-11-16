@@ -63,6 +63,7 @@ export class InstitutionRoutedPayloadStore
   implements EvidencePayloadStore, EvidencePayloadLocator, InstitutionEvidencePayloadReader
 {
   private readonly domains = new Map<string, Domain>();
+  private readonly warn: Warn;
 
   constructor(
     domains: readonly {
@@ -70,8 +71,9 @@ export class InstitutionRoutedPayloadStore
       institutionId: string;
       store: DomainPayloadStore;
     }[],
-    private readonly warn: Warn = (message, fields) => console.warn(message, fields),
+    warn: Warn = (message, fields) => console.warn(message, fields),
   ) {
+    this.warn = warn;
     for (const { label, institutionId, store } of domains) {
       if (this.domains.has(institutionId)) {
         throw new EvidenceStorageConfigError(

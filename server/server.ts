@@ -17,7 +17,9 @@ import {
   type AreaWithRoutes,
   createAuthRoutes,
   createDatabases,
+  createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
+  evidenceIngestDependencies,
   createLayers,
   createShutdownCoordinator,
   FLUSH_LOGS,
@@ -86,6 +88,12 @@ async function main(): Promise<void> {
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
       createEvidenceOpenRoute(databases.main),
+      // B-8: the development signer only under NODE_ENV development or test;
+      // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise).
+      createEvidenceCommitRouteFor(
+        databases.main,
+        evidenceIngestDependencies(process.env, process.cwd()),
+      ),
       // Login over AAI@EduHr (S-1E-a; D-09: the fake provider only in development and test).
       ...createAuthRoutes(process.env),
       ...routesOf(AREAS),

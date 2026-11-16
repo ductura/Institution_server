@@ -19,6 +19,13 @@ export {
   type ServerErrorSite,
 } from "./error-catalog.ts";
 export {
+  createEvidenceCommitRouteFor,
+  evidenceIngestDependencies,
+  type EvidenceIngestDependencies,
+  REFUSING_SIGNER,
+  STORAGE_NOT_CONFIGURED,
+} from "./evidence-deps.ts";
+export {
   COMMIT_TIMEOUT_MS,
   createEvidenceCommitRoute,
   type EvidenceCommitOptions,

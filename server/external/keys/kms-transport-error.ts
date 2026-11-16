@@ -14,12 +14,19 @@ export type KmsTransportOperation = "sign" | "verify" | "getPublicKey";
  * signer turns it into a result at the port (docs/CODE_STYLE.md §8).
  */
 export class KmsTransportError extends Error {
+  readonly kind: KmsTransportErrorKind;
+  readonly operation: KmsTransportOperation;
+  readonly awsErrorName: string | undefined;
+
   constructor(
-    readonly kind: KmsTransportErrorKind,
-    readonly operation: KmsTransportOperation,
-    readonly awsErrorName?: string,
+    kind: KmsTransportErrorKind,
+    operation: KmsTransportOperation,
+    awsErrorName?: string,
   ) {
     super(`aws-kms: ${operation} ${kind}`);
+    this.kind = kind;
+    this.operation = operation;
+    this.awsErrorName = awsErrorName;
     this.name = "KmsTransportError";
   }
 }
