@@ -9,6 +9,7 @@ Područje domene (karta: [docs/server-map.md](../../docs/server-map.md)): čista
 | [document](document/README.md)           | dio `src/domain/document`         | Kanonski model dokumenta i koraci uređivanja koje forensics provjerava                  |
 | [collaboration](collaboration/README.md) | `src/domain/collaboration/anchor` | Sidro u tekstu koje osnova dokaza koristi                                               |
 | [json](json/README.md)                   | `src/domain/json.ts`              | Zajednički JSON tipovi i provjere                                                       |
+| [settings](settings/README.md)           | — (novo, S-1J-f)                  | Katalog postavki po razinama (D-298) i provjera pisanja                                 |
 
 `result.ts` drži zajedničke tipove `Result<T>` i `AppError` (`{ code, messageKey }`, [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) §8); samo tipove, bez I/O-a.
 

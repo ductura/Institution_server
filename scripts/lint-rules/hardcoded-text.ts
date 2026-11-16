@@ -124,6 +124,7 @@ const CALLBACK_METHODS = ["map", "filter", "some", "every", "find", "findIndex",
 export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   // Request bodies and path segments.
   "server/session/backchannel.ts": ["TextDecoder"],
+  "server/http/evidence-request.ts": ["TextDecoder"],
   "server/session/return-to.ts": ["decodeURIComponent"],
   "server/contracts/work-id.ts": ["decodeURIComponent"],
   // Link targets in the repository's Markdown (a docs check, S-0.x).
