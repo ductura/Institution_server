@@ -100,6 +100,7 @@ describe("createTestDatabase on PGlite", () => {
       database: "ductura_probe",
       migrationsDir: migrations,
       ledger: join(root, "probe", "migrations.sum"),
+      testsDir: join(root, "probe", "tests"),
       migrator: "probe_migrator",
       service: "postgres-main",
     };

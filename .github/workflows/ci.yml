@@ -252,6 +252,23 @@ jobs:
       # above globs only db/tests, so the matrix never runs on its empty database.
       - name: pgTAP glavne baze (pnpm test:db:native)
         run: PATH="$PGBIN:$PATH" pnpm test:db:native
+      # S-1F-d (DAN-797): the pgTAP of the logs and legal databases, each over
+      # its own migrated database from the steps above, as the superuser over
+      # the cluster's socket. scripts/db/pgtap.ts fails the step when a test
+      # file did not run or nothing was tested, so the database job, and with
+      # it ci-ok, cannot pass on an empty or skipped suite.
+      - name: pgTAP baze zapisa (pnpm test:db:logs)
+        env:
+          PGPORT: "54330"
+          PGUSER: ductus
+          PGDATABASE: ductus_logs
+        run: PATH="$PGBIN:$PATH" pnpm test:db:logs
+      - name: pgTAP baze pravnih tekstova (pnpm test:db:legal)
+        env:
+          PGPORT: "54329"
+          PGUSER: ductus
+          PGDATABASE: ductus_legal
+        run: PATH="$PGBIN:$PATH" pnpm test:db:legal
       # DAN-759: the VS-1 stack (scripts/stack) on its own cluster and ports,
       # after every step above, so it weakens none of them. up waits for
       # /api/v1/health; down must leave no port of the stack answering and no

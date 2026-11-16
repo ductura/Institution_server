@@ -91,6 +91,7 @@ describe("a test that ends its own transaction", () => {
     database: `ductura_commit_probe_${process.pid}`,
     migrationsDir: dir,
     ledger: join(dir, "migrations.sum"),
+    testsDir: join(dir, "tests"),
     migrator: "ductus",
     service: "postgres-main",
   };
