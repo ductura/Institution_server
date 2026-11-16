@@ -43,6 +43,13 @@ export type Operations = {
     success: { status: 200; body: { "id": string } | { "comments": ({ "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": null } | { "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": null; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": string })[] }; headers: {  } } | { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "not_found" | "unavailable";
   };
+  "collaboration.revision-requests.post": {
+    params: { "action": "create" | "respond" | "accept" | "reopen" | "rereview" | "withdraw" | "list" };
+    query: undefined;
+    body: { "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "documentId": string; "instruction": string; "requestedRevision": number } | { "expectedSeq": number; "explanation": string; "kind": "done" | "declined"; "requestId": string; "responseRevision": number } | { "acceptedAnchor": null; "acceptedRevision": number; "expectedSeq": number; "rangeHash": null; "requestId": string } | { "acceptedAnchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "acceptedRevision": number; "expectedSeq": number; "rangeHash": string; "requestId": string } | { "expectedSeq": number; "instruction": string; "requestId": string; "requestedRevision": number } | { "expectedSeq": number; "requestId": string } | { "documentId": string };
+    success: { status: 200; body: { "request_id": string; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" } | { "outcome": "applied"; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" } | { "requests": ({ "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": "accepted"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": number; "accepted_range_hash": string | null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": "reopened" | "withdrawn"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": null; "closed_is_own": null; "closed_window": null; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": "accepted"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": number; "accepted_range_hash": string | null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": "reopened" | "withdrawn"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": null; "closed_is_own": null; "closed_window": null; "accepted_revision": null; "accepted_range_hash": null })[] }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_allowed" | "not_found" | "unavailable";
+  };
   "evidence.commit.post": {
     params: undefined;
     query: undefined;
@@ -56,6 +63,41 @@ export type Operations = {
     body: { "assignmentId": string; "start"?: boolean };
     success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
+  };
+  "institution.acknowledgment.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "versionNo": number; "fingerprint": string };
+    success: { status: 200; body: { "acknowledgedAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_assignment_id" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "notice_changed" | "unavailable";
+  };
+  "institution.enrollments.post": {
+    params: undefined;
+    query: undefined;
+    body: { "code": string };
+    success: { status: 200; body: { "courseId": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "refused" | "too_many_attempts" | "forbidden" | "unavailable";
+  };
+  "institution.student-work-language.post": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: { "language": "hr" | "en" | null };
+    success: { status: 200; body: { "language": "hr" | "en" }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "conflict" | "unavailable";
+  };
+  "institution.work-language.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "expectedVersion": number; "language": "hr" | "en" };
+    success: { status: 200; body: { "version": number }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "conflict" | "unavailable";
+  };
+  "institution.work-work-language.post": {
+    params: { "assignmentId": string; "documentId": string };
+    query: undefined;
+    body: { "language": "hr" | "en" | null };
+    success: { status: 200; body: { "language": "hr" | "en" }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "conflict" | "unavailable";
   };
   "live.document.get": {
     params: { "documentId": string };

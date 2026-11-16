@@ -34,6 +34,8 @@ const REQUIRED_AREAS = [
   "backup",
   "deletion",
   "downloads",
+  // PLAN.md §3 area, made by DAN-815 b1 (VS-1 narrow cut, evidence/commit).
+  "evidence",
   "contracts",
   "domain",
   "test-server",
