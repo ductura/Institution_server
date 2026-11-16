@@ -185,6 +185,11 @@ const hidden: [what: string, literal: string][] = [
   ["scheme colon as a named reference", "<iframe src='data&colon;,%C4%8Dekaj'>"],
   ["scheme spelled only with references", "&#100;&#97;&#116;&#97;&#58;,%C4%8Dekaj"],
   ["tab reference inside the scheme", "<a href='d&Tab;ata:,%C4%8Dekaj'>"],
+  // Review FAIL cxcrs95 on #95: a numeric reference without `;` ends at its
+  // last digit, so the scheme letters after it are no part of it.
+  ["decimal reference without a semicolon", "<iframe src='&#100ata:text/plain;base64,xI1la2Fq'>"],
+  ["letter reference without a semicolon", "<iframe src='d&#97ta:,%C4%8Dekaj'>"],
+  ["hex reference without a semicolon", "<iframe src='&#x64&#x61ta:,%C4%8Dekaj'>"],
   ["non-UTF-8 byte one layer down", "data:application/json,%25E8ekaj"],
   // base64 is a flag in any parameter position.
   ["base64 before another parameter", "data:text/plain;base64;x=y,xI1la2Fq"],

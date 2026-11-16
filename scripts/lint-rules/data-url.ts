@@ -66,9 +66,12 @@ const PLAIN_BYTE = (b: number): boolean =>
   (b >= 0x20 && b < 0x7f) || b === 0x09 || b === 0x0a || b === 0x0c || b === 0x0d;
 // Encodings the rule reads; one left at the depth limit is unread (Codex P2 on #95).
 const STILL_ENCODED = /%[0-9a-f]{2}|data:|\\u[0-9a-f{]|\\x[0-9a-f]{2}/iu;
-// An HTML reference as an attribute value holds it (named, decimal or hex,
-// `;` optional). Each is replaced by one placeholder, never decoded.
-const HTML_REF = /&[#a-z][a-z0-9]*;?/giu;
+// An HTML reference as an attribute value holds it, each replaced by one
+// placeholder and never decoded. It spans only what the HTML parser takes:
+// a numeric one ends at its last digit even without `;` (`&#100ata:` is
+// "data:", review FAIL cxcrs95 on #95); a named one without `;` is a legacy
+// Latin-1 one, which gives no ASCII letter, colon or tab, so needs no mark.
+const HTML_REF = /&#[0-9]+;?|&#x[0-9a-f]+;?|&[a-z][a-z0-9]*;/giu;
 const REF_MARK = "\u0001";
 // `data:` with any letter written as a reference, tab, CR or LF (or their
 // references) between: what an attribute gives the URL parser.
