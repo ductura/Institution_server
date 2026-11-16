@@ -8,7 +8,8 @@ import type { Databases } from "./databases.ts";
 import { createPipeline, type Layers } from "./pipeline.ts";
 import { sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
-import { reportServerError } from "./error-catalog.ts";
+import type { LogWriter } from "../log/index.ts";
+import { createServerErrorReporter } from "./error-catalog.ts";
 import { createRouter, type Route } from "./router.ts";
 import { answerInternal, applySecurityHeaders, refuse } from "./security-headers.ts";
 import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
@@ -23,6 +24,11 @@ export type StartOptions = {
   readonly databases: Databases;
   /** Issues a ticket per request; after stop() a request gets 503 (S-1B-c). */
   readonly shutdown?: ShutdownCoordinator;
+  /**
+   * The log service (S-1K.3-a); without it an uncaught error is the stderr
+   * line server_error. Its writes are never awaited by a request (S-1K.3-b).
+   */
+  readonly log?: LogWriter;
 };
 export type Running = Listener & { readonly port: number; close(): Promise<void> };
 
@@ -49,7 +55,8 @@ type Connection = {
 };
 
 export async function startServer(options: StartOptions): Promise<Running> {
-  const handle = createPipeline(options.layers, createRouter(options.routes));
+  const report = createServerErrorReporter(options.log);
+  const handle = createPipeline(options.layers, createRouter(options.routes, report), report);
   const shutdown = options.shutdown ?? createShutdownCoordinator();
   // Node's closeIdleConnections (also run by http.Server.close) counts a
   // connection idle as soon as its response ended, while the body may still be
@@ -168,7 +175,7 @@ export async function startServer(options: StartOptions): Promise<Running> {
     const done = track(socket, exchange, 1, () => ticket.release());
     void handle(request, response)
       .catch((error: unknown) => {
-        reportServerError("request", error, requestIdOf(response));
+        report("request", error, requestIdOf(response));
         answerInternal(response);
       })
       .finally(done);

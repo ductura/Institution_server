@@ -47,8 +47,12 @@ export type AsyncEvidenceStepReplayerV2<TDocument> = Omit<
  * shown to be wrong, only unreadable here. It still fails closed.
  */
 export class EvidenceContentNotSupportedV2 extends Error {
-  constructor(readonly kind: string) {
+  // A declared field, not a parameter property: server.ts runs under Node's
+  // type stripping, which has no parameter properties (DAN-811).
+  readonly kind: string;
+  constructor(kind: string) {
     super(`evidence content not supported: ${kind}`);
+    this.kind = kind;
     this.name = "EvidenceContentNotSupportedV2";
   }
 }

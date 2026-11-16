@@ -6,6 +6,8 @@
 // have their texts under clientErrors. 429 stays generic even when a route
 // answers it with its own code (ROUTE_429_CODES). Also the one record of an uncaught
 // error (server_error), written by the router, the pipeline and the server.
+import type { LogWriter } from "../log/index.ts";
+
 export type CatalogError = {
   readonly status: number;
   readonly code: string;
@@ -150,8 +152,8 @@ export type ServerErrorRecord = {
  * Records an uncaught error as one JSON line on stderr (event server_error):
  * only the site, the closed class, the request id and the route's contract
  * id. Never the message, stack, name of a subclass, URL, headers or body.
- * When the log service exists (S-1K.3-a) this becomes error.unexpected with
- * area "http" and the same errorClass; callers do not change. Never throws.
+ * A server with a log service writes error.unexpected instead
+ * (createServerErrorReporter, S-1K.3-b). Never throws.
  */
 export function reportServerError(
   where: ServerErrorSite,
@@ -171,4 +173,32 @@ export function reportServerError(
   } catch {
     // A broken stderr must not turn the 500 into a crash.
   }
+}
+
+/** How a site of the server records an uncaught error; reportServerError by default. */
+export type ServerErrorReporter = typeof reportServerError;
+
+/**
+ * The reporter of one server (S-1K.3-b, DAN-812). Without a log service it is
+ * reportServerError. With one, an uncaught error becomes error.unexpected
+ * (area "http", the same closed errorClass, the same request id) and the
+ * write is never awaited: the 500 leaves at once whatever state the log
+ * database is in, and `write` itself never throws. A record the log database
+ * does not take goes to the writer's fallback line instead (writer.ts).
+ */
+export function createServerErrorReporter(log?: LogWriter): ServerErrorReporter {
+  if (log === undefined) return reportServerError;
+  return (_where, error, requestId) => {
+    try {
+      void log({
+        time: new Date().toISOString(),
+        event: "error.unexpected",
+        requestId,
+        accountKind: "anonymous",
+        fields: { area: "http", errorClass: serverErrorClass(error) },
+      }).catch(() => {});
+    } catch {
+      // A writer that breaks its promise and throws must not turn the 500 into a crash.
+    }
+  };
 }

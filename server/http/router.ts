@@ -7,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { FALLBACK, METHOD_NOT_ALLOWED, type RouteContract } from "../contracts/index.ts";
 
-import { reportServerError } from "./error-catalog.ts";
+import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
 import { isProblemAnswer, sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 import { answerInternal } from "./security-headers.ts";
@@ -32,7 +32,10 @@ export function routePath(target: string | undefined): string | undefined {
 }
 
 /** Builds the router; two routes on one method and path are a programming error. */
-export function createRouter(routes: readonly Route[]): Router {
+export function createRouter(
+  routes: readonly Route[],
+  report: ServerErrorReporter = reportServerError,
+): Router {
   const byPath = new Map<string, Map<string, Route>>();
   for (const route of routes) {
     const { method, path } = route.contract;
@@ -62,7 +65,7 @@ export function createRouter(routes: readonly Route[]): Router {
     } catch (error) {
       // Only the class of the error: never its message, the request or a token.
       // The request id ties the record to the answer the caller got.
-      reportServerError("route", error, requestIdOf(response), route.contract.id);
+      report("route", error, requestIdOf(response), route.contract.id);
       answerInternal(response);
     }
   };

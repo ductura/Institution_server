@@ -4,6 +4,7 @@ import { createBackchannelLogout, type BackchannelLogout } from "./backchannel-l
 import { createActorReader, type ActorReader } from "./current-actor.ts";
 import { assertNoParameterLogging, withLogCheck } from "./log-settings.ts";
 import { createOpenSession, type OpenSession } from "./open-session.ts";
+import { createWorkOpener, type WorkOpener } from "./open-work.ts";
 import { createRegistry, type HealthReport, type Registry } from "./registry.ts";
 import { createWithActor, type WithActor } from "./with-actor.ts";
 
@@ -14,6 +15,7 @@ export type {
 } from "./backchannel-logout.ts";
 export type { ActorReader, CurrentActor, CurrentActorWithInstitution } from "./current-actor.ts";
 export type { OpenSession, OpenSessionInput, OpenSessionResult } from "./open-session.ts";
+export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
 export type { DatabaseHealth, DatabaseName, HealthReport } from "./registry.ts";
@@ -25,6 +27,7 @@ export { DATABASE_HEALTH_WORDS, handleConnectionErrors } from "./registry.ts";
 export { createBackchannelLogout } from "./backchannel-logout.ts";
 export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
+export { createWorkOpener } from "./open-work.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
@@ -131,6 +134,9 @@ export const withActor: WithActor = async (token, fn) => {
  * Nothing connects until the first call, as with withActor.
  */
 export const actorReader: ActorReader = createActorReader(withActor);
+
+/** Opens the student's work over the application withActor (evidence/open, DAN-811). */
+export const workOpener: WorkOpener = createWorkOpener(withActor);
 
 // AUTH_DATABASE_URL is the login of the login callback and of the
 // back-channel logout route: a member of ductus_auth and nothing else

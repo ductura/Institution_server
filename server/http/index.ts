@@ -7,6 +7,7 @@ export { createDatabases, type Databases } from "./databases.ts";
 export {
   catalogErrorFor,
   catalogErrorOf,
+  createServerErrorReporter,
   ERROR_CATALOG,
   reportServerError,
   SERVER_ERROR_CLASSES,
@@ -14,8 +15,16 @@ export {
   type CatalogError,
   type ServerErrorClass,
   type ServerErrorRecord,
+  type ServerErrorReporter,
   type ServerErrorSite,
 } from "./error-catalog.ts";
+export {
+  createEvidenceOpenRoute,
+  OPEN_MAX_BYTES,
+  OPEN_PROTOCOLS,
+  OPEN_TIMEOUT_MS,
+  type EvidenceOpenOptions,
+} from "./evidence-open.ts";
 export {
   parseClosedObject,
   readEvidenceBody,

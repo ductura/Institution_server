@@ -49,7 +49,9 @@
   },
   "logWriter": {
     "log_redacted": "Zapis sadrži vrijednost koju redakcija uklanja, pa nije upisan.",
-    "log_store_failed": "Baza zapisa nije primila zapis."
+    "log_store_failed": "Baza zapisa nije primila zapis.",
+    "log_store_timeout": "Baza zapisa nije odgovorila na vrijeme, pa je zapis otišao u rezervni zapis.",
+    "log_store_busy": "Previše zapisa čeka bazu zapisa, pa je zapis otišao u rezervni zapis."
   },
   "app": {
     "login_required": "Prijava je obavezna.",
