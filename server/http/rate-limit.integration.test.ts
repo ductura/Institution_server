@@ -325,4 +325,32 @@ describe("the default record of a refusal", () => {
     ]);
     expect(lines.join("\n")).not.toMatch(new RegExp(`127\\.0\\.0\\.1|${TOKEN_A}`, "u"));
   });
+
+  it("does so on the production path too: createLayers() with nothing injected", async () => {
+    const CATALOGUE = "/api/v1/settings/catalogue";
+    const lines: string[] = [];
+    vi.spyOn(console, "error").mockImplementation((line: unknown) => {
+      lines.push(String(line));
+    });
+    server = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      routes: [],
+      databases: createDatabases(),
+    });
+    // Past the default account limit in one pipelined write, so the real clock
+    // refills next to nothing; the 429 closes the connection and ends the run.
+    const cookie = `Cookie: ${SESSION}=${TOKEN_A}`;
+    const count = (DEFAULT_RATE_LIMITS.default.perAccount ?? 0) + 20;
+    const answers = await send(
+      server.port,
+      Array.from({ length: count }, () => request("GET", CATALOGUE, [cookie])),
+    );
+    expect(answers.at(-1)?.status).toBe(429);
+    const records = lines
+      .map((line) => JSON.parse(line) as { event?: string; fields?: unknown })
+      .filter((record) => record.event === "traffic.rate_limited");
+    expect(records.map((r) => r.fields)).toEqual([{ route: CATALOGUE, bucket: "per_account" }]);
+  });
 });
