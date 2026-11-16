@@ -42,7 +42,7 @@ export const problemReportPost = defineRoute({
   inventory: "app/api/support/problem-report/route.ts",
   access: "signed_in",
   summary:
-    "Sends a problem report: the user's description and a closed technical context. The body is the JCS form of the value, at most 8 KiB; the description is 1 to 1000 code points with a visible character and no control or bidi character other than newline and tab (checked by the server, answered 422). At most five reports per account in an hour.",
+    "Sends a problem report: the user's description and a closed technical context. The body is the JCS form of the value, at most 8 KiB; the description is 1 to 1000 code points with a visible character and no control or bidi character other than newline and tab (checked by the server, answered 422). The route is a page template; the server checks it against its closed list of 27 templates and answers 422 otherwise. At most five reports per account in an hour.",
   request: {
     contentType: "application/json",
     maxBodyBytes: 8 * 1024,
