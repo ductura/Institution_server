@@ -32,7 +32,7 @@
 // a computed key, `.source` of a regex fed to a decoder), and English sentences.
 import { posix, win32 } from "node:path";
 import type { Rule, Scope } from "eslint";
-import { dataUrlFindings } from "./data-url.ts";
+import { dataUrlFindings, dataUrlHeadSplit } from "./data-url.ts";
 
 type Node = Rule.Node;
 type Loose = {
@@ -503,8 +503,14 @@ export const noHardcodedText: Rule.RuleModule = {
           .quasis;
         if (quasis.length < 2) return;
         // A data: URL may run across an expression (`data:,${x}%C4%8D`).
-        const joined = quasis.map((q) => q.value.cooked ?? "").join("");
-        if (!quasis.some((q) => dataUrlProblem(q.value.cooked ?? ""))) checkDataUrl(node, joined);
+        const parts = quasis.map((q) => q.value.cooked ?? "");
+        if (dataUrlHeadSplit(parts))
+          context.report({
+            node,
+            messageId: "dataUrl",
+            data: { text: JSON.stringify("an expression before the comma of a data: URL") },
+          });
+        else if (!parts.some((part) => dataUrlProblem(part))) checkDataUrl(node, parts.join(""));
         const text = quasis.map((q) => q.value.cooked ?? "").join(" ");
         if (quasis.some((q) => textProblem(q.value.cooked ?? ""))) return;
         const problem = textProblem(text);

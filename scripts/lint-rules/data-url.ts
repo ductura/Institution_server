@@ -6,9 +6,11 @@
 // ductura/server#64). The body is then decoded (percent and base64).
 //
 // Fail closed (DAN-784 after the cut of ductura/server#82): HTML character
-// references are never decoded. A body whose type reads references (HTML,
-// XML, WebVTT) or whose type is missing or unclear is suspect as soon as a
-// decoded text holds `&` before a letter or `#`. A URL too long, too deeply
+// references are never decoded. A body whose type renders markup (HTML, XML,
+// WebVTT, PDF) or whose type is missing or unclear is suspect as soon as a
+// decoded text holds markup (`<`), an escape (`\`) or `&` before a letter or
+// `#`. A body that is not binary is suspect when a byte is not printable
+// ASCII, since its reader may pick any charset. A URL too long, too deeply
 // encoded or decoding to too many texts is suspect too: the rule reports
 // what it cannot read instead of guessing.
 import { Buffer } from "node:buffer";
@@ -52,9 +54,15 @@ export const MAX_DEPTH = 8;
 export const MAX_URL_LENGTH = 65_536;
 /** Most decoded texts one literal may give; more is suspect. */
 export const MAX_TEXTS = 1024;
-// `&` before a letter or `#` starts what HTML, XML or WebVTT may read as a
-// character reference (`&eacute`, `&#154;`); none is decoded.
-const REFERENCE = /&[#\p{L}]/u;
+// In a strict body: markup (a tag, a style or a script may build text), an
+// escape (CSS, PDF) or `&` before a letter or `#`, which HTML, XML or WebVTT
+// may read as a character reference (`&eacute`, `&#154;`); none is decoded.
+const MARKUP = /[<\\]|&[#\p{L}]/u;
+// Printable ASCII and tab, LF, FF, CR: a byte outside it lets the reader's
+// charset (a declared one, a BOM, UTF-16, ISO-2022-JP, the locale's fallback
+// such as windows-1252 or windows-1250) decide the letter.
+const PLAIN_BYTE = (b: number): boolean =>
+  (b >= 0x20 && b < 0x7f) || b === 0x09 || b === 0x0a || b === 0x0c || b === 0x0d;
 const STILL_ENCODED = /%[0-9a-fA-F]{2}|data:/iu;
 // RFC 9110 token characters around a slash, with HTTP whitespace around it
 // (the sets are disjoint, so the match is linear); anything else is unclear.
@@ -62,19 +70,29 @@ const TOKEN = "[!#$%&'*+.^_`|~0-9a-z-]+";
 const ESSENCE = new RegExp(`^[\\t\\n\\f\\r ]*(${TOKEN})/(${TOKEN})[\\t\\n\\f\\r ]*$`, "u");
 // Types a browser sniffs, and so may render as HTML (WHATWG MIME Sniffing 7.1).
 const SNIFFED = new Set(["unknown/unknown", "application/unknown", "*/*"]);
+const BINARY_TYPES = new Set(["image", "audio", "video", "font"]);
+const BINARY = new Set(["application/octet-stream", "application/wasm", "application/zip"]);
 
-/** True when a media type (ASCII-lowercased, as before the comma) reads references or is unclear. */
-export function isStrictType(mime: string): boolean {
+/** How a body of this media type (ASCII-lowercased, as before the comma) is read. */
+export type TypeKind = "strict" | "text" | "binary";
+
+/** Strict: renders markup or references, or unclear. Binary: no text. Text: the rest. */
+export function typeKind(mime: string): TypeKind {
   const match = ESSENCE.exec(mime.split(";")[0] ?? "");
-  if (!match) return true;
+  if (!match) return "strict";
   const [type, subtype] = [match[1] ?? "", match[2] ?? ""];
-  // HTML, XHTML, XML and its family (`+xml`, XSL) and WebVTT read references.
-  return (
-    SNIFFED.has(`${type}/${subtype}`) ||
+  const essence = `${type}/${subtype}`;
+  // HTML, XHTML, XML and its family (`+xml`, XSL, SVG), WebVTT and PDF.
+  if (
+    SNIFFED.has(essence) ||
     ["html", "xml", "xsl"].some((part) => subtype.includes(part)) ||
-    `${type}/${subtype}` === "text/vtt"
-  );
+    essence === "text/vtt" ||
+    essence === "application/pdf"
+  )
+    return "strict";
+  return BINARY_TYPES.has(type) || BINARY.has(essence) ? "binary" : "text";
 }
+const KIND_RANK: Readonly<Record<TypeKind, number>> = { binary: 0, text: 1, strict: 2 };
 
 type State = { out: Set<string>; suspect: string | null };
 const flag = (state: State, why: string): void => {
@@ -108,8 +126,9 @@ function forgivingBase64(text: string): Uint8Array | null {
 }
 
 // The texts bytes can be read as: UTF-8 (what `Response.text()` gives), the
-// charset the media type names, and Latin-1 when a text body is not UTF-8 (so
-// a legacy single-byte charset never hides a letter as U+FFFD).
+// charset the media type names, UTF-16 after a byte order mark, and Latin-1
+// when a text body is not UTF-8. A body that is not binary is suspect on any
+// byte that is not plain ASCII anyway (readBody).
 function bytesToTexts(bytes: Uint8Array, mime: string): string[] {
   // Lenient UTF-8 as `Response.text()` reads it: one bad byte does not hide
   // the letters after it (QA on DAN-784: `%80%D7%90`).
@@ -130,7 +149,8 @@ function bytesToTexts(bytes: Uint8Array, mime: string): string[] {
     try {
       texts.push(new TextDecoder(charset).decode(bytes));
     } catch {
-      // An unknown label: fetch falls back to UTF-8, read above.
+      // An unknown label: `Response.text()` reads UTF-8, read above; a
+      // browser's fallback is covered by the plain-byte check.
     }
   }
   return texts;
@@ -152,8 +172,9 @@ function unescapeText(text: string): string {
 // A decoded text, and every text it gives when percent-decoded or unescaped
 // again or when it holds a data: URL itself. Each text is read once.
 function layers(text: string, mime: string, strict: boolean, depth: number, state: State): void {
-  if (strict && REFERENCE.test(text)) flag(state, text);
-  if (state.out.has(text)) return;
+  if (strict && MARKUP.test(text)) flag(state, text);
+  // Once the rule reports, nothing more is read (a long literal stays fast).
+  if (state.suspect !== null || state.out.has(text)) return;
   state.out.add(text);
   if (state.out.size > MAX_TEXTS) return flag(state, `more than ${MAX_TEXTS} decoded texts`);
   if (depth >= MAX_DEPTH) {
@@ -172,6 +193,7 @@ function collect(text: string, depth: number, state: State): void {
   // Wherever `data:` starts a scheme: at the start, or after a character no
   // scheme holds (an attribute quote, a space, a control).
   for (let at = folded.indexOf("data:"); at !== -1; at = folded.indexOf("data:", at + 1)) {
+    if (state.suspect !== null) return;
     if (at > 0 && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
     const url = input.slice(at);
     // Size bound before any decoding: a longer URL is suspect, not read.
@@ -217,9 +239,19 @@ function readBody(rest: string, depth: number, state: State): void {
   // The media type is also read percent-decoded, through the same
   // normalization (`%42ase64` is `;Base64`, review FAIL c.6904446769).
   const decodedMime = normalizeUrlInput(Buffer.from(percentDecode(mime)).toString("latin1")).folded;
-  const base64 = [mime, decodedMime].some((m) => /;\s*base64\s*$/u.test(m));
-  // Strict when either reading of the type reads references or is unclear.
-  const strict = isStrictType(mime) || isStrictType(decodedMime);
+  // `base64` in any parameter position (a browser may read it there), not
+  // only last as fetch does; the body is read both ways.
+  const base64 = [mime, decodedMime].some((m) =>
+    m
+      .split(";")
+      .slice(1)
+      .some((p) => p.trim() === "base64"),
+  );
+  // The stricter of the two readings of the type.
+  const kind = [typeKind(mime), typeKind(decodedMime)].reduce((a, b) =>
+    KIND_RANK[a] >= KIND_RANK[b] ? a : b,
+  );
+  const strict = kind === "strict";
   const parts = [body];
   if (base64) {
     // The whole body, and its longest base64 prefix: text after the URL that
@@ -231,13 +263,35 @@ function readBody(rest: string, depth: number, state: State): void {
       if (bytes) parts.push(bytes);
     }
   }
-  for (const bytes of parts) {
-    // A NUL byte in a strict body may be UTF-16, which hides `&` from the
-    // readings above (an XML parser detects it without a label or BOM).
-    if (strict && bytes.includes(0)) flag(state, "NUL byte in an HTML, XML or untyped body");
+  for (const bytes of parts)
     for (const decoded of bytesToTexts(bytes, decodedMime))
       layers(decoded, decodedMime, strict, depth, state);
+  // After the texts are read, so a letter they hold is what the rule names.
+  if (kind !== "binary" && parts.some((bytes) => !bytes.every(PLAIN_BYTE)))
+    flag(state, "a byte that is not printable ASCII in a text body");
+}
+
+/**
+ * True when a template's static parts, joined where its expressions stand,
+ * hold a data: URL with an expression before the first comma: the expression
+ * may set the media type or the comma at run time, so the URL is unread.
+ */
+export function dataUrlHeadSplit(parts: readonly string[]): boolean {
+  const clean = parts.map((part) => part.replace(/[\t\n\r]/gu, ""));
+  const bounds: number[] = [];
+  let joined = "";
+  for (const [i, part] of clean.entries()) {
+    joined += part;
+    if (i < clean.length - 1) bounds.push(joined.length);
   }
+  const folded = asciiLower(joined);
+  for (let at = folded.indexOf("data:"); at !== -1; at = folded.indexOf("data:", at + 1)) {
+    if (at > 0 && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
+    const comma = folded.indexOf(",", at);
+    const end = comma === -1 ? folded.length : comma;
+    if (bounds.some((b) => b > at && b <= end)) return true;
+  }
+  return false;
 }
 
 /** Every text the data: URLs in `text` decode to, and why the rule must report unread. */

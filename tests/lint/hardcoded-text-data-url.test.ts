@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest";
 import {
   dataUrlFindings,
   dataUrlProblem,
-  isStrictType,
   MAX_DEPTH,
   MAX_TEXTS,
   MAX_URL_LENGTH,
   normalizeUrlInput,
+  typeKind,
 } from "../../scripts/lint-rules/index.ts";
 
 // S-1L.2c (DAN-784): interface text hidden in a data: URL. The scheme is found
@@ -18,7 +18,9 @@ import {
 // decoded. Review FAILs c.6896676607 and c.6896957758 on ductura/server#64.
 // Fail closed after the cut of ductura/server#82: HTML references are not
 // decoded; any `&` before a letter or `#` in an HTML, XML or untyped body
-// fails. Every bypass from the reviews of #82 is a row below.
+// fails, and so does markup (`<`) or an escape (a backslash) there; a byte
+// that is not printable ASCII fails in any body that is not binary. Every
+// bypass from the reviews of #82 and from the self-attack on this PR is a row.
 // "xI1la2Fq" is base64 of "čekaj"; "8JCQgA" of U+10400 (a letter, a surrogate
 // pair in UTF-16). All text is invented.
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -143,11 +145,49 @@ const hidden: [what: string, literal: string][] = [
   ["UTF-16 with a byte order mark", "data:text/html,%FE%FF%00%26%00e%00a%00c%00u%00t%00e"],
   ["UTF-16 without a byte order mark", "data:application/xml,%00%26%00e%00a%00c%00u%00t%00e"],
   ["UTF-16 byte order mark over the type", "data:application/json,%FF%FE%0D%01"],
+  // Self-attack on this PR: the reader's charset decides a byte past ASCII.
+  ["windows-1252 fallback of an untyped body", "data:,%9Aalji"],
+  ["windows-1250 fallback of a text body", "data:text/plain,%B9ekaj"],
+  ["valid UTF-8 read as windows-1252", "data:text/plain,%C2%B9"],
+  [
+    "quoted charset parameter",
+    'data:text/plain;x=\\"a;charset=utf-16le\\";charset=windows-1250,%B9%20',
+  ],
+  [
+    "XML encoding declaration",
+    "data:image/svg+xml,<?xml encoding='windows-1250'?><svg>%E8ekaj</svg>",
+  ],
+  ["ISO-2022-JP escape", "data:text/plain,%1B$B$3$s%1B(B"],
+  ["HTML meta charset", "data:text/html,<meta charset=windows-1250>%B9"],
+  // Markup or escapes in a strict body may build text.
+  ["CSS escape in a style", 'data:text/html,<style>b::before{content:\\"\\\\10D ekaj\\"}</style>'],
+  ["script in HTML", "data:text/html,<script>document.write(String.fromCharCode(269))</script>"],
+  ["markup in HTML", "data:text/html,%3Cb%3Eok%3C/b%3E"],
+  ["markup in SVG", "data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22/%3E"],
+  ["markup in a base64 SVG", "data:image/svg+xml;base64,PGI+b2s8L2I+"],
+  ["escape in PDF", "data:application/pdf,(%5C350ekaj)"],
+  ["backslash in an untyped body", "data:,%5C10D"],
+  // base64 is a flag in any parameter position.
+  ["base64 before another parameter", "data:text/plain;base64;x=y,xI1la2Fq"],
+  ["base64 before a charset", "data:text/plain;base64;charset=utf-8,xI1la2Fq"],
 ];
 
 describe("data: URL", () => {
   it.each(hidden)("fails with interface text in the body: %s", async (_what, literal) => {
     expect(await ids(`export const u = "${literal}";`)).toContain("dataUrl");
+  });
+
+  it("fails on an expression before the comma, which may set the type or the comma", async () => {
+    expect(await ids("export const u = (x: string) => `data:${x}%C4%8Dekaj`;")).toContain(
+      "dataUrl",
+    );
+    expect(await ids("export const u = (x: string) => `data:${x}&eacute`;")).toContain("dataUrl");
+    expect(await ids("export const u = (x: string) => `data:te${x}xt/plain,a`;")).toContain(
+      "dataUrl",
+    );
+    expect(await ids("export const u = (x: string) => `da${x}ta:,a`;")).toContain("dataUrl");
+    expect(await ids("export const u = (x: string) => `data:text/plain,${x}ok`;")).toEqual([]);
+    expect(await ids("export const u = (x: string) => `${x} data`;")).toEqual([]);
   });
 
   it("fails in a template, in JSX-free code across an expression and in a regex", async () => {
@@ -163,7 +203,6 @@ describe("data: URL", () => {
       "data:application/json;base64,eyJvayI6dHJ1ZX0=",
       "data:text/plain;charset=utf-8,status%3Dok",
       "DATA:text/plain,%20missing%20index",
-      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22/%3E",
       "metadata:,%C4%8Dekaj",
       "data:no-comma-%C4%8Dekaj",
       "data:,x#%C4%8Dekaj",
@@ -179,12 +218,14 @@ describe("data: URL", () => {
       "data:application/json,%7B%22a%22%3A%22%26eacute%22%7D",
       "data:text/css,a%20%7B%7D%20%26eacute",
       "data:text/plain;base64,JmVhY3V0ZQ==",
-      // HTML and XML with no reference, or `&` before no letter and no `#`.
-      "data:text/html,%3Cb%3Eok%3C/b%3E",
+      // HTML with no markup, or `&` before no letter and no `#`.
+      "data:text/html,ok",
       "data:text/html,a%20%26%20b",
       "data:text/html,a&1",
-      "data:image/svg+xml;base64,PGI+b2s8L2I+",
       "data:text/html,ok&",
+      // A text type keeps markup and escapes as text.
+      "data:text/plain,%3Cb%3E%5C10D",
+      "data:text/css,a::before%7Bcontent:%22%5C2D%22%7D",
     ])
       expect(await ids(`export const u = "${literal}";`), literal).toEqual([]);
   });
@@ -215,13 +256,16 @@ describe("normalizeUrlInput", () => {
 describe("fail closed", () => {
   it("reads the type of the body", () => {
     for (const mime of ["", ";base64", "html", "/a", "text/", "text/html", " text/html ;x=y"])
-      expect(isStrictType(mime), mime).toBe(true);
+      expect(typeKind(mime), mime).toBe("strict");
     for (const mime of ["image/svg+xml", "application/xhtml+xml", "text/xml", "text/xsl"])
-      expect(isStrictType(mime), mime).toBe(true);
+      expect(typeKind(mime), mime).toBe("strict");
     for (const mime of ["text/vtt", "unknown/unknown", "application/unknown", "*/*"])
-      expect(isStrictType(mime), mime).toBe(true);
-    for (const mime of ["text/plain", "application/json", "image/gif", "text/css;charset=utf-8"])
-      expect(isStrictType(mime), mime).toBe(false);
+      expect(typeKind(mime), mime).toBe("strict");
+    expect(typeKind("application/pdf")).toBe("strict");
+    for (const mime of ["text/plain", "application/json", "text/css;charset=utf-8", "x/y"])
+      expect(typeKind(mime), mime).toBe("text");
+    for (const mime of ["image/gif", "audio/ogg", "font/woff2", "application/octet-stream"])
+      expect(typeKind(mime), mime).toBe("binary");
   });
 
   it("names the reference it does not decode", () => {
@@ -247,9 +291,27 @@ describe("fail closed", () => {
 
   it("fails when a body decodes to too many texts", () => {
     // Each layer is a byte that UTF-8, Latin-1 and windows-1250 read apart.
+    // The body itself is encoded once more, so its own bytes are plain ASCII.
     let body = "%E8";
-    for (let i = 0; i < MAX_DEPTH; i += 1) body = `${body.replaceAll("%", "%25")}%E8`;
+    for (let i = 0; i < MAX_DEPTH - 2; i += 1) body = `${body.replaceAll("%", "%25")}%E8`;
+    body = body.replaceAll("%", "%25");
     const findings = dataUrlFindings(`data:text/plain;charset=windows-1250,${body}`);
     expect(findings.suspect).toBe(`more than ${MAX_TEXTS} decoded texts`);
+  });
+
+  it("fails on more data: URLs in a row than the depth limit, and fast", () => {
+    // Each URL's body holds the next one, read as nested.
+    expect(dataUrlFindings("data:,a ".repeat(MAX_DEPTH + 2)).suspect).toMatch(/encoded more/u);
+    expect(dataUrlFindings("data:,a ".repeat(MAX_DEPTH + 1)).suspect).toBeNull();
+    // Self-attack on this PR: 60 000 characters of `data:,` took 99 s.
+    const t0 = performance.now();
+    expect(dataUrlFindings("data:,".repeat(10_000)).suspect).not.toBeNull();
+    expect(performance.now() - t0).toBeLessThan(5000);
+  });
+
+  it("reads base64 in any parameter position, and the body as it is", () => {
+    const { texts } = dataUrlFindings("data:text/plain;base64;x=y,aGVsbG8=");
+    expect(texts).toContain("hello");
+    expect(texts).toContain("aGVsbG8=");
   });
 });

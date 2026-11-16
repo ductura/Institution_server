@@ -42,10 +42,11 @@ export {
 } from "./hardcoded-text.ts";
 export {
   dataUrlFindings,
-  isStrictType,
+  dataUrlHeadSplit,
   MAX_DEPTH,
   MAX_TEXTS,
   MAX_URL_LENGTH,
   normalizeUrlInput,
+  typeKind,
 } from "./data-url.ts";
 export { TEST_ONLY_RE } from "./fake-server-boundary.ts";
