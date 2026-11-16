@@ -128,14 +128,26 @@ describe("problem bodies on the wire", () => {
     },
   );
 
-  it("403 is a oneOf in v1: exactly {error}, the server's id only in X-Request-Id", async () => {
+  // DAN-791: 403 is a oneOf discriminated by the code, so it has the problem body too.
+  it("403 under a oneOf has the problem body, the server's id in both places", async () => {
     const { response, body } = await refusal("/api/v1/health", {
       method: "POST",
       headers: { "x-request-id": FORGED },
     });
-    expect([response.status, body]).toEqual([403, { error: "origin_missing" }]);
+    const code = "origin_missing";
+    expect([response.status, body]).toEqual([
+      403,
+      {
+        error: code,
+        code,
+        messageKey: messageKeyOf(code),
+        status: 403,
+        requestId: expect.any(String),
+      },
+    ]);
     expect(response.headers.get("x-request-id")).toMatch(UUID_V4);
     expect(response.headers.get("x-request-id")).not.toBe(FORGED);
+    expect(body["requestId"]).toBe(response.headers.get("x-request-id"));
   });
 
   it("never takes the request id from the client", async () => {

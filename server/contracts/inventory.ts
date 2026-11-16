@@ -81,6 +81,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "teacher.submissions.get",
   "teacher.mentorships.get",
   "teacher.mentorship.get",
+  "teacher.fast-path.post",
 ];
 
 /**
@@ -109,5 +110,4 @@ export const PENDING: readonly string[] = [
   "app/api/revision-requests/[action]/route.ts",
   "app/api/submission/route.ts",
   "app/api/support/problem-report/route.ts",
-  "app/api/teacher/fast-path/route.ts",
 ];

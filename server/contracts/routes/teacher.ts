@@ -2,6 +2,8 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { Minute as SummaryMinute, ProcessSummaryV1 } from "./process-summary-shape.ts";
+
 // Literal port of Ductus 078c780: src/server/institution/teacher-courses.ts
 // (DAN-230), src/server/evidence/assignment-submissions.ts (DAN-332 R1) and
 // src/server/institution/mentored-works.ts (DAN-477). Who asks comes only from
@@ -163,9 +165,78 @@ export const teacherMentorshipGet = defineRoute({
   errors: [...READ_ERRORS, error(404, "not_found"), error(503, "unavailable")],
 });
 
+/** A student of the fast path (#757): both names null when the account has none. */
+const FastPathStudent = Type.Union([
+  closed({
+    id: Uuid,
+    givenName: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
+    surname: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
+    documentId: Type.Null(),
+    work: Type.Literal("notice_pending"),
+    lastChangeAt: Type.Null(),
+    record: Type.Null(),
+  }),
+  closed({
+    id: Uuid,
+    givenName: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
+    surname: Type.Union([Type.String({ minLength: 1, maxLength: 510 }), Type.Null()]),
+    documentId: WorkId,
+    work: literals(["writing", "submitted"]),
+    lastChangeAt: Type.Union([SummaryMinute, Type.Null()]),
+    record: closed({
+      pastesWithoutSource: Count(0),
+      blocks: Type.Array(
+        closed({
+          kind: literals(["heading", "paragraph", "bulletItem", "quote"]),
+          text: Type.String(),
+        }),
+      ),
+      summary: ProcessSummaryV1,
+    }),
+  }),
+]);
+
+export const teacherFastPathPost = defineRoute({
+  id: "teacher.fast-path.post",
+  method: "POST",
+  path: "/api/v1/teacher/fast-path",
+  inventory: "app/api/teacher/fast-path/route.ts",
+  access: "course_teacher",
+  summary:
+    "The teacher's fast path through the works of one assignment (B-11, #757): per student the state of the work, its text as blocks and the same process summary the student sees. POST so the assignment id never lands in a URL; the body is exactly {assignmentId}, at most 1 KiB. An assignment the caller does not teach, an unknown or a malformed one, is the same empty list, never 403 or 404. Named students by surname, given name (hr) and id, then the unnamed by id.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 1024,
+    body: closed({ assignmentId: Type.String({ minLength: 1 }) }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "the students, possibly none",
+      body: closed({ kind: Type.Literal("ok"), students: Type.Array(FastPathStudent) }),
+    },
+  ],
+  errors: [
+    error(403, "origin_missing"),
+    error(403, "origin_mismatch"),
+    error(403, "cross_site"),
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(413, "body_too_large"),
+    error(408, "body_timeout"),
+    error(400, "content_length_invalid"),
+    error(400, "content_length_mismatch"),
+    error(400, "body_stream_error"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const teacherRoutes = [
   teacherCoursesGet,
   teacherSubmissionsGet,
   teacherMentorshipsGet,
   teacherMentorshipGet,
+  teacherFastPathPost,
 ] as const;

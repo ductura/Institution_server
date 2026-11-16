@@ -6,13 +6,24 @@ import { connect } from "node:net";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ROUTES } from "../contracts/index.ts";
+import { messageKeyOf, ROUTES } from "../contracts/index.ts";
 import { createDatabases } from "./databases.ts";
 import { createHealthRoute } from "./health.ts";
 import { createLayers, type Layers } from "./pipeline.ts";
 import type { Route } from "./router.ts";
 import { SECURITY_HEADERS } from "./security-headers.ts";
 import { type Running, startServer } from "./start.ts";
+
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+
+/** The problem body of a 403 of the mutation guard (DAN-791: a oneOf by the code). */
+const refused = (code: string) => ({
+  error: code,
+  code,
+  messageKey: messageKeyOf(code),
+  status: 403,
+  requestId: expect.stringMatching(UUID_V4),
+});
 
 // Health with the main database up: these tests are about the pipeline, not the database.
 const HEALTH_ROUTE = createHealthRoute({
@@ -129,8 +140,9 @@ describe("pipeline on a real server", () => {
     async (_, lines, code) => {
       handled = 0;
       const answer = await send(server.port, "POST", lines);
-      // 403 is a oneOf in v1 (v1Error): the body stays {error}, the id is in the header.
-      expect([answer.status, JSON.parse(answer.body), handled]).toEqual([403, { error: code }, 0]);
+      const body = JSON.parse(answer.body) as { requestId: string };
+      expect([answer.status, body, handled]).toEqual([403, refused(code), 0]);
+      expect(answer.headers).toContain(`X-Request-Id: ${body.requestId}`);
       expect(answer.headers).toContain("Connection: close");
       expect(answer.headers).toContainEqual(
         expect.stringMatching(
@@ -151,7 +163,7 @@ describe("pipeline on a real server", () => {
     "refuses %s with a foreign Origin before the router",
     async (method) => {
       const answer = await send(server.port, method, ["Origin: https://evil.invalid"]);
-      expect([answer.status, JSON.parse(answer.body)]).toEqual([403, { error: "origin_mismatch" }]);
+      expect([answer.status, JSON.parse(answer.body)]).toEqual([403, refused("origin_mismatch")]);
     },
   );
 
@@ -211,7 +223,7 @@ describe("pipeline on a real server", () => {
       const answer = await send(closed.port, "POST", [`Origin: ${ORIGIN}`]);
       expect([answer.status, JSON.parse(answer.body), handled]).toEqual([
         403,
-        { error: "origin_mismatch" },
+        refused("origin_mismatch"),
         0,
       ]);
     } finally {
