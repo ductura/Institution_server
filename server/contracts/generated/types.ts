@@ -36,6 +36,13 @@ export type Operations = {
     success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "forbidden" | "unavailable";
   };
+  "client.context.post": {
+    params: undefined;
+    query: undefined;
+    body: { "app": "web" | "desktop"; "appVersion": string; "browser": "chromium" | "firefox" | "safari" | "other"; "device": "desktop" | "tablet" | "phone" | "other"; "os": "windows" | "macos" | "linux" | "android" | "ios" | "other"; "screen": "compact" | "medium" | "expanded" };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "collaboration.comments.post": {
     params: { "action": "create" | "reply" | "resolve" | "reopen" | "delete" | "list" };
     query: undefined;

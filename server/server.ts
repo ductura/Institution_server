@@ -16,6 +16,7 @@ import {
 import {
   type AreaWithRoutes,
   createAuthRoutes,
+  createClientContextRoute,
   createDatabases,
   createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
@@ -90,6 +91,9 @@ async function main(): Promise<void> {
     layers: LAYERS,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
+      // The preloader's environment (S-1M-b, D-300); no log writer is wired
+      // into the process yet, so it is checked and answered, not recorded.
+      createClientContextRoute(),
       createEvidenceOpenRoute(databases.main),
       // B-8: the development signer only under NODE_ENV development or test;
       // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise).

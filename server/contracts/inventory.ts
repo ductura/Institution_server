@@ -72,6 +72,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
   },
+  // DAN-846: Ductus has no client context route; the shape is D-300.
+  "app/api/client-context/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus@333e163:docs/DECISIONS.md#D-300",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",

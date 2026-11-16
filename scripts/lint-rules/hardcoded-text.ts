@@ -125,6 +125,8 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   // Request bodies and path segments.
   "server/session/backchannel.ts": ["TextDecoder"],
   "server/http/evidence-request.ts": ["TextDecoder"],
+  // The client context body, strict UTF-8 before JSON.parse (DAN-846).
+  "server/http/client-context.ts": ["TextDecoder"],
   // The verified segment bytes as the text the payload store keeps (DAN-815).
   "server/evidence/service.ts": ["TextDecoder"],
   // The verified stored segment bytes as the text of a replay page (DAN-818).

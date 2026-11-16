@@ -1,5 +1,6 @@
 import {
   authRoutes,
+  clientRoutes,
   collaborationRoutes,
   enrollmentRoutes,
   evidenceRoutes,
@@ -32,7 +33,11 @@ export {
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
 };
-export { MAX_COMMIT_BODY_BYTES } from "./routes/index.ts";
+export {
+  CLIENT_APP_VERSION_PATTERN,
+  CLIENT_CONTEXT_VALUES,
+  MAX_COMMIT_BODY_BYTES,
+} from "./routes/index.ts";
 export { checkInventory } from "./check.ts";
 export {
   CONTRACT_ONLY,
@@ -54,6 +59,7 @@ export { isWorkId, WORK_ID_MAX, workIdFromPath } from "./work-id.ts";
 /** Every route of /api/v1 with a contract. */
 export const ROUTES: readonly RouteContract[] = [
   ...platformRoutes,
+  ...clientRoutes,
   ...authRoutes,
   ...profileRoutes,
   ...evidenceRoutes,

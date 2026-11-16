@@ -244,6 +244,351 @@
     }
   },
   {
+    "route": "client.context.post",
+    "name": "recorded",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "linux",
+        "screen": "expanded"
+      }
+    },
+    "response": {
+      "status": 204
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "recorded-desktop-signed-in",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+      },
+      "body": {
+        "app": "desktop",
+        "appVersion": "2.0.1",
+        "browser": "chromium",
+        "device": "desktop",
+        "os": "windows",
+        "screen": "medium"
+      }
+    },
+    "response": {
+      "status": 204
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "linux",
+        "screen": "expanded"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "linux",
+        "screen": "expanded"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "linux",
+        "screen": "expanded"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"app\":\"web\",\"appVersion\":\"1.4.0\",\"browser\":\"firefox\",\"device\":\"desktop\",\"os\":\"linux\",\"screen\":\"expanded\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"app\":\"web\",\"appVersion\":\"1.4.0\",\"browser\":\"firefox\",\"device\":\"desktop\",\"os\":\"linux\",\"screen\":\"expanded\",\"x\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "106"
+      },
+      "rawBody": "{\"app\":\"web\",\"appVer"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "linux",
+        "screen": "expanded"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "199"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "linux",
+        "screen": "expanded"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "106"
+      },
+      "rawBody": "{\"app"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{app: web}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "haiku",
+        "screen": "expanded"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "unknown-field",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "app": "web",
+        "appVersion": "1.4.0",
+        "browser": "firefox",
+        "device": "desktop",
+        "os": "linux",
+        "screen": "expanded",
+        "screenWidth": 1920
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
+    "route": "client.context.post",
+    "name": "not-canonical",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"app\": \"web\", \"appVersion\": \"1.4.0\", \"browser\": \"firefox\", \"device\": \"desktop\", \"os\": \"linux\", \"screen\": \"expanded\"}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
     "route": "collaboration.comments.post",
     "name": "created",
     "request": {
@@ -10581,7 +10926,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.15.0",
+        "apiVersion": "1.16.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -10597,7 +10942,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.15.0",
+        "apiVersion": "1.16.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

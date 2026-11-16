@@ -213,15 +213,17 @@ export const EVENT_CATALOG = {
       value: COUNT,
     },
   },
-  // Client context (S-1M; no fingerprint).
+  // Client context (S-1M-b, DAN-846; D-300: kinds only, no fingerprint). The
+  // lists equal CLIENT_CONTEXT_VALUES of server/contracts (checked in http).
   "client.context_reported": {
     actors: ANYONE,
     fields: {
       app: code("web", "desktop"),
       appVersion: VERSION,
-      os: code("windows", "macos", "linux", "other"),
-      arch: code("x64", "arm64", "other"),
-      locale: code("hr", "en"),
+      os: code("windows", "macos", "linux", "android", "ios", "other"),
+      browser: code("chromium", "firefox", "safari", "other"),
+      device: code("desktop", "tablet", "phone", "other"),
+      screen: code("compact", "medium", "expanded"),
     },
   },
   // Legal texts (D-301).
