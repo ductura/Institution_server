@@ -57,9 +57,9 @@ function fakeResponse() {
 // tested in server/contracts/message-keys.test.ts (DAN-789 a).
 
 // Bodies that keep a v1 shape the guard does not let change (PR opis, "Poznate
-// granice"): a page for a browser navigation, no body, the code in `status`, or
-// {error: code} under a oneOf (v1Error). A closed list, so a new route with
-// another shape fails here.
+// granice"): a page for a browser navigation, no body, or the code in `status`.
+// Errors under a oneOf have the problem body since DAN-791. A closed list, so a
+// new route with another shape fails here.
 const HTML = new Set([
   "auth.login.get",
   "auth.callback.get",
@@ -75,12 +75,6 @@ const CODE_IN_STATUS = new Set([
   "platform.ready.get",
   "evidence.open.post",
   "evidence.commit.post",
-]);
-const V1_ONE_OF = new Set([
-  "profile.interface-locale.post 400",
-  "profile.interface-locale.post 403",
-  "settings.values.put 400",
-  "settings.values.put 403",
 ]);
 
 function properties(schema: TSchema): Record<string, TSchema> {
@@ -101,10 +95,6 @@ describe("every route in the inventory", () => {
       // The v1 body as it was: the code in `status`, no problem field.
       expect(props["status"]).toMatchObject({ const: code });
       return expect(Object.keys(props)).not.toContain("messageKey");
-    }
-    if (spec.v1 === true) {
-      expect(V1_ONE_OF.has(`${id} ${status}`)).toBe(true);
-      return expect(Object.keys(props)).toEqual(["error"]);
     }
     expect(props["code"]).toMatchObject({ const: code });
     expect(props["messageKey"]).toMatchObject({ const: spec.key });
@@ -162,12 +152,21 @@ describe("problemOf and sendProblem", () => {
     expect(Object.keys(body)).toEqual(["error", "code", "messageKey", "status", "requestId"]);
   });
 
-  it("write {error: code} for an error marked v1, with the request id only in X-Request-Id", () => {
+  // DAN-791: an error under a oneOf (403 of the mutation guard) has the full
+  // problem body too, and its request id is the one in X-Request-Id.
+  it("write the problem body for an error under a oneOf, the id equal to X-Request-Id", () => {
     const { response, answer } = fakeResponse();
     sendProblem(response, 403, "origin_missing");
     expect(answer.status).toBe(403);
-    expect(JSON.parse(answer.body ?? "")).toEqual({ error: "origin_missing" });
-    expect(answer.headers["x-request-id"]).toMatch(UUID_V4);
+    const id = answer.headers["x-request-id"];
+    expect(id).toMatch(UUID_V4);
+    expect(JSON.parse(answer.body ?? "")).toEqual({
+      error: "origin_missing",
+      code: "origin_missing",
+      messageKey: "errors.originMissing",
+      status: 403,
+      requestId: id,
+    });
   });
 
   it("drop what was set before but the security headers, Connection and Retry-After", () => {

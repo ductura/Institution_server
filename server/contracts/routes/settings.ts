@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error, v1Error } from "../schema/index.ts";
+import { closed, defineRoute, error } from "../schema/index.ts";
 
 // Settings by level (S-1J-f, DAN-806; D-298, D-297; contract on Ductus#1836
 // c.6906291102). Born on the server: Ductus has no settings route. Contract
@@ -42,18 +42,19 @@ const Definition = closed({
   values: Type.Optional(Type.Array(Type.String({ maxLength: 256 }), { minItems: 1 })),
 });
 
-// The refusals of the mutation guard and body reader, as profile.ts.
+// The refusals of the mutation guard and body reader, as profile.ts; under
+// 403 and 400 a oneOf discriminated by the code (DAN-791).
 const MUTATION_ERRORS = [
-  v1Error(403, "origin_missing"),
-  v1Error(403, "origin_mismatch"),
-  v1Error(403, "cross_site"),
+  error(403, "origin_missing"),
+  error(403, "origin_mismatch"),
+  error(403, "cross_site"),
   error(415, "unsupported_media_type"),
   error(413, "body_too_large"),
   error(408, "body_timeout"),
-  v1Error(400, "content_length_invalid"),
-  v1Error(400, "content_length_mismatch"),
-  v1Error(400, "body_stream_error"),
-  v1Error(400, "invalid_json"),
+  error(400, "content_length_invalid"),
+  error(400, "content_length_mismatch"),
+  error(400, "body_stream_error"),
+  error(400, "invalid_json"),
 ] as const;
 
 export const settingsCatalogueGet = defineRoute({

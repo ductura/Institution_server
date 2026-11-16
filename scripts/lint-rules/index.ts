@@ -23,7 +23,13 @@ export const localPlugin: ESLint.Plugin = {
   },
 };
 export { databaseBoundaryPlugin, PG_SPECIFIER } from "./database-boundary.ts";
-export { AREA_IMPORTS, areaOf, ENTRY } from "./area-boundary.ts";
+export {
+  AREA_IMPORTS,
+  areaOf,
+  ENTRY,
+  isAllowedLocaleImport,
+  LOCALE_IMPORT_ALLOWED,
+} from "./area-boundary.ts";
 export {
   DYNAMIC_LOAD_ALLOWED,
   IMPORT_META,
@@ -32,6 +38,7 @@ export {
 } from "./dynamic-load.ts";
 export {
   BUILDER_NAMES,
+  dataUrlProblem,
   DECODER_ALLOWED,
   isExempt,
   repoPath,
@@ -39,4 +46,13 @@ export {
   TEXT_TRANSITIONAL,
   textProblem,
 } from "./hardcoded-text.ts";
+export {
+  dataUrlFindings,
+  dataUrlHeadSplit,
+  MAX_DEPTH,
+  MAX_TEXTS,
+  MAX_URL_LENGTH,
+  normalizeUrlInput,
+  typeKind,
+} from "./data-url.ts";
 export { TEST_ONLY_RE } from "./fake-server-boundary.ts";

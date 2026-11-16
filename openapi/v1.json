@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md"
   },
   "x-fallback": {
@@ -2256,6 +2256,22 @@
                         "error": {
                           "const": "content_length_invalid",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthInvalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -2268,6 +2284,22 @@
                       "properties": {
                         "error": {
                           "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -2282,6 +2314,22 @@
                         "error": {
                           "const": "body_stream_error",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.bodyStreamError",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -2294,6 +2342,22 @@
                       "properties": {
                         "error": {
                           "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidJson",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -2355,6 +2419,22 @@
                         "error": {
                           "const": "origin_missing",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -2368,6 +2448,22 @@
                         "error": {
                           "const": "origin_mismatch",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -2380,6 +2476,22 @@
                       "properties": {
                         "error": {
                           "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.crossSite",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -3509,6 +3621,22 @@
                         "error": {
                           "const": "content_length_invalid",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthInvalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -3521,6 +3649,22 @@
                       "properties": {
                         "error": {
                           "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -3535,6 +3679,22 @@
                         "error": {
                           "const": "body_stream_error",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.bodyStreamError",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -3547,6 +3707,22 @@
                       "properties": {
                         "error": {
                           "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidJson",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }
@@ -3608,6 +3784,22 @@
                         "error": {
                           "const": "origin_missing",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -3621,6 +3813,22 @@
                         "error": {
                           "const": "origin_mismatch",
                           "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
                         }
                       }
                     },
@@ -3633,6 +3841,22 @@
                       "properties": {
                         "error": {
                           "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.crossSite",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
                           "type": "string"
                         }
                       }

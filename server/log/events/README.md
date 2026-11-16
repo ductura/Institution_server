@@ -16,7 +16,7 @@ Zatvoren popis vrsta događaja (`EVENT_CATALOG`) i provjera zapisa (`checkEvent`
 
 ## Tko ga zove
 
-Područja koja pišu zapise, kroz `server/log/index.ts` (servis zapisa, S-1K.3-a).
+Servis zapisa `server/log/writer.ts` (S-1K.3-a, DAN-807) prije spremanja; područja zapise pišu kroz njega.
 
 ## Koje podatke dira
 

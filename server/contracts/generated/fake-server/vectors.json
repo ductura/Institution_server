@@ -1643,7 +1643,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.5.0",
+        "apiVersion": "1.6.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -1659,7 +1659,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.5.0",
+        "apiVersion": "1.6.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -2551,7 +2551,11 @@
       "status": 403,
       "contentType": "application/json",
       "body": {
-        "error": "origin_missing"
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },
@@ -2579,7 +2583,11 @@
       "status": 403,
       "contentType": "application/json",
       "body": {
-        "error": "origin_mismatch"
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },
@@ -2607,7 +2615,11 @@
       "status": 403,
       "contentType": "application/json",
       "body": {
-        "error": "cross_site"
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },
@@ -2709,7 +2721,11 @@
       "status": 400,
       "contentType": "application/json",
       "body": {
-        "error": "content_length_invalid"
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },
@@ -2738,7 +2754,11 @@
       "status": 400,
       "contentType": "application/json",
       "body": {
-        "error": "content_length_mismatch"
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },
@@ -2759,7 +2779,11 @@
       "status": 400,
       "contentType": "application/json",
       "body": {
-        "error": "body_stream_error"
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },
@@ -2779,7 +2803,11 @@
       "status": 400,
       "contentType": "application/json",
       "body": {
-        "error": "invalid_json"
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },

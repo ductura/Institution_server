@@ -10,7 +10,9 @@
 //   both only where the base schema put no constraint of its own on that name
 //   (no matching `patternProperties`, no schema in `additionalProperties` or
 //   `unevaluatedProperties`), and only in a positive context: under `not`, `if`,
-//   `oneOf` and the like a looser subschema can reject what was accepted;
+//   `oneOf` and the like a looser subschema can reject what was accepted. A
+//   `oneOf` discriminated in both documents by the same field (discriminator)
+//   counts as positive: no value can match two of its branches (DAN-791);
 //   - a change of `description`, `example`, `examples` or `title`.
 // Nothing is inferred about anyOf, format or bounds: any change there is reported.
 type Obj = Record<string, unknown>;
@@ -70,6 +72,9 @@ const POSITIVE = new Set([
   "unevaluatedItems",
   "unevaluatedProperties",
 ]);
+// Keywords whose subschemas apply to the same object; their properties count as
+// evaluated for an unevaluatedProperties next to them.
+const IN_PLACE = new Set(["allOf", "anyOf", "dependentSchemas", "else", "oneOf", "then"]);
 // OpenAPI objects whose keys are names (status codes, media types, headers), not keywords.
 const NAMED = new Set(["callbacks", "content", "encoding", "headers", "links", "responses"]);
 
@@ -143,11 +148,20 @@ function schema(
   positive = true,
 ): void {
   if (!isObj(a) || !isObj(b)) return r.same(where, ptr, a, b);
+  // unevaluatedProperties here also judges every name a subschema in place
+  // (allOf, oneOf ...) declares, so a field new to one of those is never safe,
+  // however deep it is (Codex c.4581775140).
+  const unevaluated = [own(a, "unevaluatedProperties"), own(b, "unevaluatedProperties")].some(
+    (rest) => rest !== undefined && rest !== true,
+  );
   for (const k of keysOf(a, b)) {
     const p = [...ptr, k];
     const va = own(a, k);
     const vb = own(b, k);
-    const pos = positive && POSITIVE.has(k);
+    const discriminated =
+      k === "oneOf" && discriminatorOf(va) !== null && discriminatorOf(va) === discriminatorOf(vb);
+    const inPlace = IN_PLACE.has(k) && unevaluated;
+    const pos = positive && !inPlace && (POSITIVE.has(k) || discriminated);
     if (k === "properties" && (va === undefined || isObj(va)) && (vb === undefined || isObj(vb))) {
       properties(r, where, p, a, b, dir, pos);
     } else if (va === undefined) r.add(where, p, "added");
@@ -168,6 +182,27 @@ function schema(
     } else if (SUB_ONE.has(k)) schema(r, where, p, va, vb, dir, pos);
     else r.same(where, p, va, vb);
   }
+}
+
+/**
+ * The field that tells the branches of a `oneOf` apart, or null when there is
+ * none: every branch is `type: "object"`, requires that field and gives it a
+ * `const`, and no two branches share the `const`. A value then matches at most
+ * one branch whatever fields the branches gain, so the `oneOf` is an `anyOf`.
+ * Anything else (`$ref`, `enum`, a field not required) has no discriminator.
+ */
+export function discriminatorOf(branches: unknown): string | null {
+  if (!Array.isArray(branches) || branches.length < 2 || !branches.every(isObj)) return null;
+  if (!branches.every((b) => own(b, "type") === "object")) return null;
+  const [first, ...rest] = branches.map((b) => new Set(strings(own(b, "required"))));
+  const shared = [...(first ?? [])].filter((name) => rest.every((names) => names.has(name)));
+  return (
+    shared.sort().find((name) => {
+      const values = branches.map((b) => own(obj(own(b, "properties")), name));
+      if (!values.every((v) => isObj(v) && has(v, "const"))) return false;
+      return new Set(values.map((v) => canonical(obj(v).const))).size === branches.length;
+    }) ?? null
+  );
 }
 
 /** True when a pattern in `patternProperties` matches the name; an unreadable one counts. */

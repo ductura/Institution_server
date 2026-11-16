@@ -7,9 +7,12 @@
 // 1. Direct literals: a string literal, each static piece of a template, a JSX
 //    text and a name (identifier) are interface text when they
 //    hold a letter outside ASCII or a Croatian sentence (textProblem, the
-//    measure of ductura/server#51). Only literal text is read: encoded forms
-//    (`\\u010d` as text, `%C4%8D`, `&#269;`, `data:`, punycode) are DAN-784
-//    (Ductus#87 c.6897002897 and the orchestrator's second cut on #64).
+//    measure of ductura/server#51). A `data:` URL in such a text is also read
+//    decoded, its scheme found as the WHATWG URL parser finds it; an HTML or
+//    XML body with a character reference fails unread (dataUrlProblem,
+//    DAN-784). Other encoded forms (`\\u010d` as text, `%C4%8D` outside a
+//    data: URL, `&#269;`, punycode) are not read (Ductus#87 c.6897002897 and
+//    the orchestrator's second cut on #64).
 // 2. Text builders are not allowed, whatever their arguments: `\u`, `\x` and
 //    `\u{}` escapes that give a non-ASCII character; the names in BUILDER_NAMES
 //    wherever they stand (a reference, a member, a key, an import, a
@@ -29,6 +32,7 @@
 // a computed key, `.source` of a regex fed to a decoder), and English sentences.
 import { posix, win32 } from "node:path";
 import type { Rule, Scope } from "eslint";
+import { dataUrlFindings, dataUrlHeadSplit } from "./data-url.ts";
 
 type Node = Rule.Node;
 type Loose = {
@@ -199,6 +203,16 @@ export function textProblem(text: string): "letter" | "sentence" | null {
   return variants.some(isSentence) ? "sentence" : null;
 }
 
+/**
+ * What a data: URL in `text` hides, or null (DAN-784): a decoded text that is
+ * interface text, or else why the URL cannot be read (fail closed: an HTML
+ * reference, a limit).
+ */
+export function dataUrlProblem(text: string): string | null {
+  const { texts, suspect } = dataUrlFindings(text);
+  return texts.find((decoded) => textProblem(decoded) !== null) ?? suspect;
+}
+
 // Escapes in source text, after an even run of backslashes: their code points.
 const ESCAPE = /(?<!\\)(?:\\\\)*\\(?:u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2}))/gu;
 function escapedCodes(raw: string): number[] {
@@ -273,6 +287,8 @@ export const noHardcodedText: Rule.RuleModule = {
       letter:
         "Text with a non-ASCII letter ({{text}}): move it to locales/ and return a messageKey.",
       sentence: "Croatian sentence ({{text}}): move it to locales/ and return a messageKey.",
+      dataUrl:
+        "A data: URL may hide interface text ({{text}}): move it to locales/ and return a messageKey.",
       builder: "'{{name}}' builds text from codes or bytes; it is not allowed in server code.",
       value:
         "'{{name}}' may only be called or read by a static member here ({{name}}(x), {{name}}.member).",
@@ -283,11 +299,18 @@ export const noHardcodedText: Rule.RuleModule = {
     const file = repoPath(context.cwd, context.filename);
     const allowed = DECODER_ALLOWED[file] ?? [];
 
+    function checkDataUrl(node: Node, text: string): void {
+      const decoded = dataUrlProblem(text);
+      if (decoded !== null)
+        context.report({ node, messageId: "dataUrl", data: { text: JSON.stringify(decoded) } });
+    }
+
     function checkText(node: Node, text: string, raw: string): void {
       const problem = textProblem(text);
       if (problem) {
         context.report({ node, messageId: problem, data: { text: JSON.stringify(text) } });
       }
+      checkDataUrl(node, text);
       // An escape is a builder whatever the character it gives is.
       if (escapedCodes(raw).some((code) => code > 0x7f))
         context.report({ node, messageId: "builder", data: { name: "\\u escape" } });
@@ -479,6 +502,24 @@ export const noHardcodedText: Rule.RuleModule = {
         const quasis = (node as unknown as { quasis: { value: { cooked?: string | null } }[] })
           .quasis;
         if (quasis.length < 2) return;
+        // A data: URL may run across an expression (`data:,${x}%C4%8D`).
+        const parts = quasis.map((q) => q.value.cooked ?? "");
+        if (dataUrlHeadSplit(parts))
+          context.report({
+            node,
+            messageId: "dataUrl",
+            data: { text: JSON.stringify("an expression before the comma of a data: URL") },
+          });
+        else if (!parts.some((part) => dataUrlProblem(part)))
+          // Joined, and from each expression on, since an expression may end
+          // with a space or a quote that starts a scheme (`a${y}data:`).
+          for (const at of parts.keys()) {
+            const joined = parts.slice(at).join("");
+            if (dataUrlProblem(joined) !== null) {
+              checkDataUrl(node, joined);
+              break;
+            }
+          }
         const text = quasis.map((q) => q.value.cooked ?? "").join(" ");
         if (quasis.some((q) => textProblem(q.value.cooked ?? ""))) return;
         const problem = textProblem(text);
@@ -493,6 +534,7 @@ export const noHardcodedText: Rule.RuleModule = {
         const problem = pattern === undefined ? null : textProblem(pattern);
         if (problem)
           context.report({ node, messageId: problem, data: { text: JSON.stringify(pattern) } });
+        if (pattern !== undefined) checkDataUrl(node, pattern);
       },
       TemplateElement(node) {
         checkText(node, node.value.cooked ?? node.value.raw, node.value.raw);
