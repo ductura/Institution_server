@@ -3,6 +3,7 @@ import { appendFileSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { compareVersions, parseVersion } from "./level.ts";
 import { CONTRACTS, TEST_FAKES, type PackageSpec } from "./manifest.ts";
 import { ROOT } from "./stage.ts";
 
@@ -38,8 +39,13 @@ export function checkTag(input: TagInput): "contracts" | "test-fakes" {
   if (input.ref !== `refs/tags/${name}`) throw new Error("tag: GITHUB_REF is not this tag");
   const [, short = "", version = "", major = ""] = match;
   const spec = SPECS[short]!;
-  if (input.version(spec) !== version)
-    throw new Error(`tag: version ${version} is not ${spec.dir}/package.json`);
+  // DAN-804 (b): the tag carries the version; package.json is the floor of its major.
+  const floor = parseVersion(input.version(spec));
+  const tagged = parseVersion(version)!;
+  if (floor === null || floor[0] !== tagged[0] || compareVersions(tagged, floor) < 0)
+    throw new Error(
+      `tag: version ${version} is below or off the major of ${spec.dir}/package.json`,
+    );
   if (spec === CONTRACTS && input.apiVersion.split(".")[0] !== major)
     throw new Error(`tag: major ${major} is not the major of API_VERSION ${input.apiVersion}`);
   const sha = input.sha ?? "";
@@ -72,6 +78,9 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(
     apiVersion: String(readJson(join(ROOT, "openapi", "v1.json")).info?.version),
     onMain: (sha) => isAncestorOfMain(sha),
   });
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `package=${short}\n`);
+  // The version is the tag's, matched by TAG above.
+  const version = String(process.env.GITHUB_REF_NAME).slice(short.length + 2);
+  if (process.env.GITHUB_OUTPUT)
+    appendFileSync(process.env.GITHUB_OUTPUT, `package=${short}\nversion=${version}\n`);
   console.log(`release: tag publishes ${SPECS[short]!.name}`);
 }
