@@ -41,7 +41,10 @@ function validValue(spec: FieldSpec): string | number | boolean {
     case "version":
       return "1.4.0";
     case "route":
+    case "routeOrNone":
       return ROUTE;
+    case "ip":
+      return "192.0.2.1";
   }
 }
 
@@ -96,13 +99,14 @@ describe("event catalog", () => {
   });
 
   it("has no field kind that takes free text", () => {
-    const allowed = new Set(["code", "int", "flag", "id", "version", "route"]);
+    const allowed = new Set(["code", "int", "flag", "id", "version", "route", "routeOrNone", "ip"]);
     for (const kind of EVENT_KINDS) {
       for (const [name, spec] of Object.entries(SPECS[kind].fields)) {
         expect(allowed, `${kind}.${name}`).toContain(spec.kind);
         expect(name, `${kind}.${name}`).toMatch(/^[a-z][a-zA-Z]{1,30}$/);
-        // A name the redactor drops would lose its value in the log line.
-        expect(isSensitiveKey(name), `${kind}.${name}`).toBe(false);
+        // A name the redactor drops would lose its value in the log line; an
+        // address must lose it there (D-303: it goes only to the log database).
+        expect(isSensitiveKey(name), `${kind}.${name}`).toBe(spec.kind === "ip");
         if (spec.kind === "code") {
           expect(spec.values.length).toBeGreaterThan(0);
           for (const value of spec.values) expect(value).toMatch(/^[A-Za-z0-9_]{1,40}$/);
@@ -272,6 +276,56 @@ describe("checkEvent: no text of a work gets through", () => {
       expect(codeOf({ ...record, fields: { ...validFields("traffic.request"), status } })).toBe(
         "BAD_FIELD_VALUE",
       );
+    }
+  });
+});
+
+describe("traffic.request: client IP, route or none, other methods (DAN-831-1)", () => {
+  const traffic = validRecord("traffic.request");
+  const withField = (name: string, value: unknown) =>
+    codeOf({ ...traffic, fields: { ...validFields("traffic.request"), [name]: value } });
+
+  it.each([
+    ...["192.0.2.1\r\n", "192.0.2.1\n", "192.0.2.1\t", "192.0.2.1\u00a0", "192.0.2.1\u007f"],
+    ...[" 192.0.2.1", "192.0.2.01", "192.000.2.1", "2001:DB8::1", "2001:db8:0:0:0:0:0:1"],
+    // A tie compressed second, a single zero compressed, a shorter run compressed.
+    ...["2001:db8:0:0:1::1", "2001:db8::1:1:1:1:1:1", "2001::1:0:0:0:1", "2001:db8:0::1:1:1:1"],
+    ...["2001:db8::1%eth0", "[2001:db8::1]", "[2001:db8::1]:443", "192.0.2.1:80"],
+    ...["::ffff:192.0.2.1", "::ffff:c000:201", "::ffff:0:0", "::192.0.2.1", "2001:db8::0001"],
+    ...["", "None", "none ", "toString", "__proto__", "constructor", "C:\\x\\192.0.2.1"],
+    ...[`2001:db8:${"1:".repeat(40)}1`, "192.0.2.1/32", "1.2.3", "0x7f.0.0.1"],
+  ])("refuses %j as a client IP", (ip) => {
+    expect(withField("ip", ip)).toBe("BAD_FIELD_VALUE");
+  });
+
+  it.each([7, null, undefined, true, {}, ["192.0.2.1"], new String("192.0.2.1")])(
+    "refuses a client IP of type %s",
+    (ip) => expect(withField("ip", ip)).toBe("BAD_FIELD_VALUE"),
+  );
+
+  it.each([
+    ...["192.0.2.1", "203.0.113.255", "0.0.0.0", "none", "2001:db8::1", "2001:db8:0:1::"],
+    ...["::", "::1", "1::", "2001:db8:0:1:1:1:1:1", "2001:db8::1:0:0:1", "::ffff:0:102:304"],
+    ...["::102:304", "2001:0:0:1::1", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"],
+  ])("takes %j as a client IP", (ip) => {
+    expect(withField("ip", ip)).toBe("OK");
+  });
+
+  it("takes none or an inventory template as the route, nothing else", () => {
+    expect(withField("route", "none")).toBe("OK");
+    expect(withField("route", ROUTE)).toBe("OK");
+    for (const route of ["None", "none ", "", "/api/v1/none", "toString", `${ROUTE}?q=x`]) {
+      expect(withField("route", route), route).toBe("BAD_FIELD_VALUE");
+    }
+    const denied = validRecord("authz.origin_rejected");
+    const fields = { ...validFields("authz.origin_rejected"), route: "none" };
+    expect(codeOf({ ...denied, fields })).toBe("BAD_FIELD_VALUE");
+  });
+
+  it("takes OTHER for a method outside the list, never a raw method", () => {
+    expect(withField("method", "OTHER")).toBe("OK");
+    for (const method of ["TRACE", "PROPFIND", "other", "get"]) {
+      expect(withField("method", method), method).toBe("BAD_FIELD_VALUE");
     }
   });
 });
