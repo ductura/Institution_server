@@ -22,7 +22,8 @@ const decode = (c: string | Uint8Array): string =>
 /**
  * Every identifier of an old declaration file (by AST, so a template literal
  * type cannot hide the rest of the file), into `used`; and whether the file
- * types a module namespace (`typeof import(…)`, `import * as`, `export * as`),
+ * types a module namespace (`typeof import(…)`, `import * as`, `export * as`,
+ * `import x = require(…)`),
  * whose type gains a member with every new export (self-attack #92).
  */
 function scanOld(text: string, path: string, used: Set<string>): boolean {
@@ -33,7 +34,9 @@ function scanOld(text: string, path: string, used: Set<string>): boolean {
     if (
       (ts.isImportTypeNode(node) && node.isTypeOf) ||
       ts.isNamespaceImport(node) ||
-      ts.isNamespaceExport(node)
+      ts.isNamespaceExport(node) ||
+      // `import c = require(…)` (and `export import`) binds a namespace too.
+      (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference))
     )
       namespace = true;
     ts.forEachChild(node, visit);

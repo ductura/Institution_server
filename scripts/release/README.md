@@ -20,7 +20,7 @@ Automatska razina izdanja (DAN-804, POTVRDA UGOVORA w804a):
   - ostali bajtovi daju patch;
   - za `contracts` `breakingChanges` nad `openapi/v1.json` daje major, a rast minora ili patcha `info.version` daje minor ili patch. Novi obvezni član generiranog tipa (nova ruta) je minor samo ako je dokument narastao minorom, a `scripts/generate-contracts.ts` nije mijenjan.
   - Datoteke se uspoređuju kao sirovi bajtovi; dekodira se samo ono što se parsira (`.d.ts`, JSON), strogo kao UTF-8 i s BOM-om.
-  - Kad ijedna stara `.d.ts` paketa tipizira prostor imena modula (`typeof import(…)`, `import * as`, `export * as`), nijedno novo izvezeno ime nije minor, jer tom tipu dodaje člana.
+  - Kad ijedna stara `.d.ts` paketa tipizira prostor imena modula (`typeof import(…)`, `import * as`, `export * as`, `import x = require(…)`), nijedno novo izvezeno ime nije minor, jer tom tipu dodaje člana.
   - Nova deklaracija čije se ime pojavljuje kao identifikator (AST) u ijednoj staroj `.d.ts` datoteci paketa (i globalna imena poput `Date`) je major, jer ga može zasjeniti.
   - Što se ne može pouzdano odrediti (neparsabilan `.d.ts`, nečitljiv dokument) je `blocked`, nikad patch.
 - **Prihvaćena granica (ugovor t. 4):** nova ruta u `contracts` je minor iako širi `OperationId` (`keyof Operations`); potrošač s `Record<OperationId, …>` ili iscrpnim `switch` mora dodati granu. To je značenje nove rute u API-ju v1.
