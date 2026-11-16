@@ -2633,7 +2633,7 @@
     "/api/v1/institution/assignments/{assignmentId}/acknowledgment": {
       "post": {
         "operationId": "institution.acknowledgment.post",
-        "summary": "The student acknowledges the notice of an assignment version they were shown. The body is exactly {versionNo, fingerprint}: the version and the SHA-256 the browser computed of the notice text, at most 1 KiB, with no escape and no repeated key. A version that is no longer current is 409 conflict; a stored notice other than the one shown is 409 notice_changed, and nothing is recorded.",
+        "summary": "The student acknowledges the notice of an assignment version they were shown. The body is exactly {versionNo, fingerprint}: the version and the SHA-256 the browser computed of the notice text, at most 1 KiB, sent as application/json (charset utf-8 only), with no escape and no repeated key. A malformed assignment id is 400 invalid_assignment_id, judged before the session. A version that is no longer current is 409 conflict; a stored notice other than the one shown is 409 notice_changed, and nothing is recorded.",
         "x-access": "student_enrolled",
         "x-inventory": "app/api/institution/assignments/[assignmentId]/acknowledgment/route.ts",
         "parameters": [
@@ -4705,7 +4705,7 @@
     "/api/v1/institution/assignments/{assignmentId}/work-language": {
       "post": {
         "operationId": "institution.work-language.post",
-        "summary": "A teacher of the assignment sets the language its works are written in, against the version they saw: {expectedVersion, language}, at most 128 bytes. A malformed assignment id is 422; a stale version or a work already asked to be submitted is 409 conflict. Answers the new version.",
+        "summary": "A teacher of the assignment sets the language its works are written in, against the version they saw: {expectedVersion, language}, at most 128 bytes, sent as application/json (only the media type before any parameter is judged). A malformed assignment id is 422; a stale version or a work already asked to be submitted is 409 conflict. Answers the new version.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/institution/assignments/[assignmentId]/work-language/route.ts",
         "parameters": [
@@ -5365,7 +5365,7 @@
     "/api/v1/institution/assignments/{assignmentId}/works/{documentId}/work-language": {
       "post": {
         "operationId": "institution.work-work-language.post",
-        "summary": "The same exception keyed by the work's document id, so the student's id never reaches the browser; a document that is not a work of this teacher's assignment is refused like another teacher's (403). A malformed document id is 422.",
+        "summary": "The same exception keyed by the work's document id, so the student's id never reaches the browser; a document that is not a work of this teacher's assignment is refused like another teacher's (403). A malformed document id is 422, judged after the content type and the body.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts",
         "parameters": [

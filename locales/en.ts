@@ -2015,7 +2015,7 @@ const en = {
     forbidden: "You do not have access to this action.",
     internal: "An unexpected error occurred on the server. Please try again.",
     invalid: "The data sent is not valid.",
-    invalidAssignmentId: "The assignment is not given correctly.",
+    invalidAssignmentId: "The assignment is not specified correctly.",
     invalidDocument: "The text of the work is not in a valid form.",
     invalidInput: "The data sent is not valid.",
     invalidJson: "The body of the request is not valid JSON.",

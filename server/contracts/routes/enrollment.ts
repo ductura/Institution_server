@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { WorkId } from "./collaboration.ts";
 import { MUTATION_GUARD } from "./shared.ts";
 
 // Literal port of Ductus 078c780: src/server/institution/enrollment-route.ts
@@ -13,11 +14,6 @@ import { MUTATION_GUARD } from "./shared.ts";
 /** A UUID in any case (mutation-route.ts, acknowledgment-route.ts UUID /i). */
 const Uuid = Type.String({
   pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-});
-const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
-/** isDocumentId: 1 to 256 code points, trimmed, no control character. */
-const WorkId = Type.String({
-  pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])`,
 });
 const Language = Type.Union([Type.Literal("hr"), Type.Literal("en")]);
 const Version = Type.Integer({ minimum: 1, maximum: 2_147_483_647 });
@@ -56,7 +52,7 @@ export const acknowledgmentPost = defineRoute({
   inventory: "app/api/institution/assignments/[assignmentId]/acknowledgment/route.ts",
   access: "student_enrolled",
   summary:
-    "The student acknowledges the notice of an assignment version they were shown. The body is exactly {versionNo, fingerprint}: the version and the SHA-256 the browser computed of the notice text, at most 1 KiB, with no escape and no repeated key. A version that is no longer current is 409 conflict; a stored notice other than the one shown is 409 notice_changed, and nothing is recorded.",
+    "The student acknowledges the notice of an assignment version they were shown. The body is exactly {versionNo, fingerprint}: the version and the SHA-256 the browser computed of the notice text, at most 1 KiB, sent as application/json (charset utf-8 only), with no escape and no repeated key. A malformed assignment id is 400 invalid_assignment_id, judged before the session. A version that is no longer current is 409 conflict; a stored notice other than the one shown is 409 notice_changed, and nothing is recorded.",
   request: {
     params: closed({ assignmentId: Type.String({ minLength: 1 }) }),
     contentType: "application/json",
@@ -107,7 +103,7 @@ export const workLanguagePost = defineRoute({
   inventory: "app/api/institution/assignments/[assignmentId]/work-language/route.ts",
   access: "course_teacher",
   summary:
-    "A teacher of the assignment sets the language its works are written in, against the version they saw: {expectedVersion, language}, at most 128 bytes. A malformed assignment id is 422; a stale version or a work already asked to be submitted is 409 conflict. Answers the new version.",
+    "A teacher of the assignment sets the language its works are written in, against the version they saw: {expectedVersion, language}, at most 128 bytes, sent as application/json (only the media type before any parameter is judged). A malformed assignment id is 422; a stale version or a work already asked to be submitted is 409 conflict. Answers the new version.",
   request: {
     params: closed({ assignmentId: Uuid }),
     contentType: "application/json",
@@ -151,7 +147,7 @@ export const workWorkLanguagePost = defineRoute({
     "app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route.ts",
   access: "course_teacher",
   summary:
-    "The same exception keyed by the work's document id, so the student's id never reaches the browser; a document that is not a work of this teacher's assignment is refused like another teacher's (403). A malformed document id is 422.",
+    "The same exception keyed by the work's document id, so the student's id never reaches the browser; a document that is not a work of this teacher's assignment is refused like another teacher's (403). A malformed document id is 422, judged after the content type and the body.",
   request: {
     params: closed({ assignmentId: Uuid, documentId: WorkId }),
     contentType: "application/json",
