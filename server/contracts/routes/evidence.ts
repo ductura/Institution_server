@@ -280,7 +280,7 @@ export const submit = defineRoute({
   access: "student_owner",
   summary:
     "The student submits the revision they saw: exactly {documentId, revision}, at most 1 KiB; " +
-    "no time, document or hash comes from the client. Same Origin, `ductus-protocol: 1`. The " +
+    "no time, text of the work or hash comes from the client. Same Origin, `ductus-protocol: 1`. The " +
     "database clock at the click is the time; the revision is reconstructed and, only when it " +
     "matches, the submission is recorded and its signed receipt returned. The first click binds: " +
     "another revision later is 409 already_requested. Another student's or a missing work is " +
@@ -290,7 +290,8 @@ export const submit = defineRoute({
     maxBodyBytes: 1024,
     body: closed({
       documentId: Type.String({ minLength: 1 }),
-      // Revision 0 is a work with nothing saved: 409 blocked no_evidence.
+      // Revision 0 is a work with nothing saved: 409 blocked no_evidence while the
+      // work has none either, else 409 stale_revision (app.request_submission).
       revision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
     }),
   },

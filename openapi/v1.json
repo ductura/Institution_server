@@ -17386,7 +17386,7 @@
     "/api/v1/submission": {
       "post": {
         "operationId": "submission.submit.post",
-        "summary": "The student submits the revision they saw: exactly {documentId, revision}, at most 1 KiB; no time, document or hash comes from the client. Same Origin, `ductus-protocol: 1`. The database clock at the click is the time; the revision is reconstructed and, only when it matches, the submission is recorded and its signed receipt returned. The first click binds: another revision later is 409 already_requested. Another student's or a missing work is 404. 503 carries the stage and `retry-after: 5`.",
+        "summary": "The student submits the revision they saw: exactly {documentId, revision}, at most 1 KiB; no time, text of the work or hash comes from the client. Same Origin, `ductus-protocol: 1`. The database clock at the click is the time; the revision is reconstructed and, only when it matches, the submission is recorded and its signed receipt returned. The first click binds: another revision later is 409 already_requested. Another student's or a missing work is 404. 503 carries the stage and `retry-after: 5`.",
         "x-access": "student_owner",
         "x-inventory": "app/api/submission/route.ts",
         "requestBody": {
