@@ -89,6 +89,13 @@ export function ensureSeed(file: string, root: string): void {
   } catch (error) {
     if (Reflect.get(error as object, "code") !== "EEXIST") throw error;
   }
+  // The same for the seed itself, new or kept: a regular file of this user,
+  // never a link, and 0600 at most.
+  const seed = lstatSync(file);
+  if (!seed.isFile() || seed.uid !== process.getuid?.()) {
+    throw new Error("the signing seed is not this user's own regular file");
+  }
+  if ((seed.mode & 0o777) !== 0o600) chmodSync(file, 0o600);
 }
 
 /** Fresh credentials for one run of the local S3; they live only in the children's environment. */

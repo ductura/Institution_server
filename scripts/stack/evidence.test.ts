@@ -120,6 +120,33 @@ describe("an existing seed directory (QA c.6913087963)", () => {
     expect(statSync(holder).mode & 0o777).toBe(0o700);
     expect(statSync(join(holder, "signing-seed")).mode & 0o777).toBe(0o600);
   });
+
+  it("is refused when a link stands in its place, and nothing is written there", () => {
+    const target = join(dir, "cilj");
+    mkdirSync(target);
+    symlinkSync(target, join(dir, "veza"));
+    expect(() => ensureSeed(join(dir, "veza", "signing-seed"), ROOT)).toThrow(/own directory/u);
+    expect(readdirSync(target)).toEqual([]);
+  });
+
+  it("keeps an existing seed but narrows its mode to 0600", () => {
+    const seed = join(dir, "s", "signing-seed");
+    ensureSeed(seed, ROOT);
+    const bytes = readFileSync(seed);
+    chmodSync(seed, 0o644);
+    ensureSeed(seed, ROOT);
+    expect(statSync(seed).mode & 0o777).toBe(0o600);
+    expect(readFileSync(seed).equals(bytes)).toBe(true);
+  });
+
+  it("refuses a seed that is a link", () => {
+    const real = join(dir, "pravo");
+    ensureSeed(join(real, "signing-seed"), ROOT);
+    const holder = join(dir, "h");
+    mkdirSync(holder, { mode: 0o700 });
+    symlinkSync(join(real, "signing-seed"), join(holder, "signing-seed"));
+    expect(() => ensureSeed(join(holder, "signing-seed"), ROOT)).toThrow(/regular file/u);
+  });
 });
 
 describe("the local S3 credentials (K3, K4)", () => {
