@@ -653,3 +653,45 @@ describe("releaseLevel with a typed module namespace", () => {
     expect(level(before, after)).toBe("major");
   });
 });
+
+// QA on #92 (c.6907405893): the route exception covers new routes only.
+describe("releaseLevel limits the generated exception to new routes", () => {
+  const route = (props: Record<string, unknown>) => ({
+    get: {
+      responses: {
+        "200": {
+          description: "ok",
+          content: { "application/json": { schema: { type: "object", properties: props } } },
+        },
+      },
+    },
+  });
+  const doc = (version: string, props: Record<string, unknown>) =>
+    JSON.stringify({
+      openapi: "3.1.0",
+      info: { title: "Ductura API", version },
+      paths: { "/health": route(props) },
+    });
+  const types = (body: string) =>
+    `export type Operations = {\n    "platform.health.get": {\n        success: {\n            body: ${body};\n        };\n    };\n};\n`;
+  const contracts = (openapi: string, dts: string) =>
+    files({
+      "package.json": "{}",
+      "openapi/v1.json": openapi,
+      "server/contracts/generated/types.d.ts": dts,
+    });
+
+  it("is major for a new optional response field of an existing route", () => {
+    const before = contracts(
+      doc("1.3.0", { status: { type: "string" } }),
+      types('{\n                "status": "ok";\n            }'),
+    );
+    const after = contracts(
+      doc("1.4.0", { status: { type: "string" }, build: { type: "string" } }),
+      types('{\n                "status": "ok";\n                "build"?: string;\n            }'),
+    );
+    expect(releaseLevel({ short: "contracts", before, after, generatorChanged: false }).level).toBe(
+      "major",
+    );
+  });
+});

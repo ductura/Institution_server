@@ -18,7 +18,7 @@ Automatska razina izdanja (DAN-804, POTVRDA UGOVORA w804a):
   - `.d.ts` se uspoređuje po TypeScript AST-u, bez komentara i rasporeda: samo nova izvezena deklaracija (novo ime) je minor; uklonjeno, promijenjeno i **svaki novi član postojećeg tipa** (i opcionalni) je major. To je tvrdi rez iz naloga orkestratora na #92: novi član suzi `keyof`, `Required`, `implements`, nasljeđivanje, presjek i index signature;
   - `exports` iz `package.json`: dodan je minor, uklonjen ili promijenjen major;
   - ostali bajtovi daju patch;
-  - za `contracts` `breakingChanges` nad `openapi/v1.json` daje major, a rast minora ili patcha `info.version` daje minor ili patch. Novi obvezni član generiranog tipa (nova ruta) je minor samo ako je dokument narastao minorom, a `scripts/generate-contracts.ts` nije mijenjan.
+  - za `contracts` `breakingChanges` nad `openapi/v1.json` daje major, a rast minora ili patcha `info.version` daje minor ili patch. Novi član **na vrhu** generiranog tipa (`Operations`, `ROUTE_TABLE`: nova ruta) je minor samo ako je dokument narastao minorom, a `scripts/generate-contracts.ts` nije mijenjan; novo polje unutar postojeće rute (i opcionalno) je major (QA #92).
   - Datoteke se uspoređuju kao sirovi bajtovi; dekodira se samo ono što se parsira (`.d.ts`, JSON), strogo kao UTF-8 i s BOM-om.
   - Kad ijedna stara `.d.ts` paketa tipizira prostor imena modula (`typeof import(…)`, `import * as`, `export * as`, `import x = require(…)`), nijedno novo izvezeno ime nije minor, jer tom tipu dodaje člana.
   - Nova deklaracija čije se ime pojavljuje kao identifikator (AST) u ijednoj staroj `.d.ts` datoteci paketa (i globalna imena poput `Date`) je major, jer ga može zasjeniti.
