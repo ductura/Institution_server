@@ -475,11 +475,23 @@ describe("the rule covers the whole of server/", () => {
     }
   });
 
-  it("passes on the code in server/ as it is", async () => {
-    const results = await eslint.lintFiles(["server"]);
-    const found = results.flatMap((r) =>
-      r.messages.filter((m) => m.ruleId === RULE).map((m) => `${r.filePath}:${m.line}`),
-    );
-    expect(found).toEqual([]);
-  });
+  // DAN-794: this lints every file in server/ (313 files at a3d28ea) with the
+  // repository config, so its time grows with server/. Measured on 4 cores with
+  // the ESLint instance already warm: about 2-3 s alone, and 5.1 s in a loaded
+  // CI run (43776818601), just over the default 5 s. Nothing here parses
+  // server/ to share, an ESLint ruleFilter saves about 6 %, and worker
+  // concurrency about 20 % while competing with vitest's own workers. So this
+  // one test gets its own budget; the global testTimeout is unchanged.
+  const LINT_SERVER_TIMEOUT_MS = 30_000;
+  it(
+    "passes on the code in server/ as it is",
+    async () => {
+      const results = await eslint.lintFiles(["server"]);
+      const found = results.flatMap((r) =>
+        r.messages.filter((m) => m.ruleId === RULE).map((m) => `${r.filePath}:${m.line}`),
+      );
+      expect(found).toEqual([]);
+    },
+    LINT_SERVER_TIMEOUT_MS,
+  );
 });
