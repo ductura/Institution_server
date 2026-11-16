@@ -681,6 +681,18 @@ describe("releaseLevel limits the generated exception to new routes", () => {
       "server/contracts/generated/types.d.ts": dts,
     });
 
+  it("is major for a new member of any other generated top-level type", () => {
+    const body = (extra: string) => `export type HealthBody = {\n    "status": "ok";${extra}\n};\n`;
+    const before = contracts(doc("1.3.0", { status: { type: "string" } }), body(""));
+    const after = contracts(
+      doc("1.4.0", { status: { type: "string" }, build: { type: "string" } }),
+      body('\n    "build"?: string;'),
+    );
+    expect(releaseLevel({ short: "contracts", before, after, generatorChanged: false }).level).toBe(
+      "major",
+    );
+  });
+
   it("is major for a new optional response field of an existing route", () => {
     const before = contracts(
       doc("1.3.0", { status: { type: "string" } }),
