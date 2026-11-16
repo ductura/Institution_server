@@ -108,6 +108,25 @@ export function releaseErrors(text: string): string[] {
   ])
     if (!tagRun.includes(needed)) errors.push(`tag run without ${needed}`);
   if (/-f "force|PATCH|-X DELETE|git push/u.test(tagRun)) errors.push("tag may move or delete");
+  // Defence in depth: every value is matched before use, and a stop fails the run.
+  const reportRun = String(((jobs.report?.steps ?? []) as Node[])[0]?.run ?? "");
+  for (const [run, needed] of [
+    [tagRun, '[[ "$SHA" =~ ^[0-9a-f]{40}$ ]]'],
+    [
+      tagRun,
+      '[[ "$tag" =~ ^(contracts|test-fakes)-v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$ ]]',
+    ],
+    [reportRun, '[[ "$SHA" =~ ^[0-9a-f]{40}$ ]]'],
+    [reportRun, '[[ "$RUN" =~ ^[0-9]+$ ]]'],
+    [
+      reportRun,
+      '[[ "$STOPPED" =~ ^(contracts|test-fakes):(major|blocked)( (contracts|test-fakes):(major|blocked))?$ ]]',
+    ],
+    [reportRun, 'if [[ "$pr" =~ ^[0-9]+$ ]]; then'],
+    [reportRun, "exit 1"],
+  ] as const)
+    if (!run.split("\n").some((line) => line.trim() === needed || line.trim().startsWith(needed)))
+      errors.push(`run without ${needed}`);
   return errors;
 }
 
@@ -177,6 +196,10 @@ describe("release.yml", () => {
       "    if: needs.level.outputs.releases",
     ],
     ["a duplicate key", "permissions: {}\n", "permissions: {}\npermissions: {}\n"],
+    ["no check of the tag name", '          [[ "$tag" =~', '          echo "$tag" #'],
+    ["no check of STOPPED", '          [[ "$STOPPED" =~', '          echo "$STOPPED" #'],
+    ["no check of the PR number", 'if [[ "$pr" =~ ^[0-9]+$ ]]; then', "if true; then"],
+    ["report that does not fail", "          exit 1\n", "          exit 0\n"],
   ])("refuses %s", (_, from, to) => {
     expect(releaseErrors(replace(from, to))).not.toEqual([]);
   });
