@@ -174,7 +174,7 @@ function routeTable(routes: RouteContract[]): string {
         r.errors.filter((e) => e.status === s).map((e) => e.code),
       ]),
     );
-    return `  ${JSON.stringify(r.id)}: { method: ${JSON.stringify(r.method)}, path: ${JSON.stringify(r.path)}, body: ${JSON.stringify(r.request.contentType ?? null)}, headers: ${JSON.stringify([...new Set(r.responses.flatMap((s) => s.headers ?? []))])}, errors: ${JSON.stringify(codes)} },`;
+    return `  ${JSON.stringify(r.id)}: { method: ${JSON.stringify(r.method)}, path: ${JSON.stringify(r.path)}, body: ${JSON.stringify(r.request.contentType ?? null)}, headers: ${JSON.stringify([...new Set(r.responses.flatMap((s) => s.headers ?? []))])}, success: ${JSON.stringify(r.responses.map((s) => s.status))}, errors: ${JSON.stringify(codes)} },`;
   });
   return `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;\n`;
 }
@@ -347,7 +347,11 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
     const body: unknown = res.headers.get("content-type")?.startsWith("application/json") ? await res.json() : undefined;
-    if (res.status < 400) {
+    // A status the contract lists as an answer is one even at 400 or above
+    // (live.document.put 409 {outcome, token}), unless its body is a problem
+    // body: the same status can also be an error (revision-requests 409).
+    const problem = typeof body === "object" && body !== null && ("error" in body || "code" in body);
+    if (res.status < 400 || ((route.success as readonly number[]).includes(res.status) && !problem)) {
       // The headers the contract says callers rely on (location, set-cookie), nothing else.
       const headers: Record<string, string | string[]> = {};
       for (const name of route.headers as readonly string[]) {

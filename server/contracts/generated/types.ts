@@ -36,6 +36,13 @@ export type Operations = {
     success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "forbidden" | "unavailable";
   };
+  "collaboration.comments.post": {
+    params: { "action": "create" | "reply" | "resolve" | "reopen" | "delete" | "list" };
+    query: undefined;
+    body: { "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "body": string; "documentId": string } | { "body": string; "threadId": string } | { "threadId": string } | { "commentId": string } | { "documentId": string };
+    success: { status: 200; body: { "id": string } | { "comments": ({ "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": null } | { "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": null; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": string })[] }; headers: {  } } | { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "not_found" | "unavailable";
+  };
   "evidence.commit.post": {
     params: undefined;
     query: undefined;
@@ -49,6 +56,20 @@ export type Operations = {
     body: { "assignmentId": string; "start"?: boolean };
     success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
+  };
+  "live.document.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { [key: string]: unknown }; headers: { "etag"?: string } } | { status: 204; body: undefined; headers: {  } } | { status: 304; body: undefined; headers: { "etag"?: string } };
+    errorCode: "forbidden" | "unauthorized" | "not_found" | "invalid_document" | "unavailable";
+  };
+  "live.document.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { [key: string]: unknown };
+    success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
+    errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
   };
   "platform.health.get": {
     params: undefined;
@@ -84,6 +105,13 @@ export type Operations = {
     body: { "locale": "hr" | "en" };
     success: { status: 200; body: { "locale": "hr" | "en" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "invalid_input" | "unavailable";
+  };
+  "projection.process-summary.post": {
+    params: undefined;
+    query: undefined;
+    body: { "documentId": string };
+    success: { status: 200; body: { "summaryFormat": "ductus-process-summary-v1"; "sessions": { "evidenceKind": "observed"; "breakAboveMinutes": number; "count": number; "items": ({ "from": string; "to": string })[] }; "pastes": { "evidenceKind": "observed"; "listedAboveCharacters": number; "listed": ({ "at": { "from": string; "to": string }; "characters": number; "origin": "not_observed" })[]; "smallerCount": number }; "gaps": { "evidenceKind": "observed"; "items": ({ "previousEndedAt": string; "nextStartedAt": string })[] }; "recordState": "complete" | "has_gaps" }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "settings.catalogue.get": {
     params: undefined;

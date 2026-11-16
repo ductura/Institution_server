@@ -1988,6 +1988,7 @@ export const hr = {
     boundCrossed: "Vrijednost je izvan granice koju je postavila viša razina.",
     chainConflict:
       "Zapis rada na poslužitelju razlikuje se od onoga na ovom uređaju. Učitajte rad ponovno.",
+    conflict: "Stanje se u međuvremenu promijenilo. Učitajte ga ponovno.",
     contentLengthInvalid: "Duljina zahtjeva nije ispravno navedena.",
     contentLengthMismatch: "Zahtjev nije jednake duljine kao što je navedeno.",
     crossSite: "Zahtjev s druge stranice nije dopušten.",
@@ -1996,6 +1997,7 @@ export const hr = {
     forbidden: "Nemate pristup ovoj radnji.",
     internal: "Dogodila se neočekivana greška na poslužitelju. Pokušajte ponovno.",
     invalid: "Poslani podaci nisu ispravni.",
+    invalidDocument: "Tekst rada nije u ispravnom obliku.",
     invalidInput: "Poslani podaci nisu ispravni.",
     invalidJson: "Tijelo zahtjeva nije ispravan JSON.",
     invalidLogoutToken: "Zahtjev za odjavu nije ispravan.",
@@ -2009,6 +2011,7 @@ export const hr = {
     notStarted: "Rad još nije započet.",
     originMismatch: "Zahtjev ne dolazi s ove stranice.",
     originMissing: "Zahtjev ne navodi stranicu s koje dolazi.",
+    preconditionRequired: "Zahtjev ne navodi koju verziju rada mijenja. Učitajte rad ponovno.",
     staleBase: "Rad je u međuvremenu promijenjen. Učitajte zadnju verziju.",
     timeout: "Zahtjev je trajao predugo. Pokušajte ponovno.",
     tooLarge: "Zahtjev je prevelik.",
