@@ -6,6 +6,7 @@
 -- The table's constraints answer for the input; their SQLSTATEs map to ZD
 -- codes by constraint name, and anything else is raised unchanged.
 --   no session                                       ZD401
+--   REPEATABLE READ or SERIALIZABLE                  25000
 --   the account holds a credential not revoked       ZD403 second factor required
 --   the account is gone (23503 of the account key)   ZD403 account not found
 --   the credential id exists, revoked or not, any    ZD409
@@ -35,6 +36,11 @@ BEGIN
   SELECT a.user_id, a.institution_id INTO v_user, v_institution FROM app.current_actor() a;
   IF v_user IS NULL THEN
     RAISE EXCEPTION 'not authenticated' USING ERRCODE = 'ZD401';
+  END IF;
+  -- The lock below orders two registrations only if the check after it takes
+  -- a fresh snapshot; under REPEATABLE READ both could miss each other.
+  IF pg_catalog.current_setting('transaction_isolation') NOT IN ('read committed', 'read uncommitted') THEN
+    RAISE EXCEPTION 'read committed required' USING ERRCODE = '25000';
   END IF;
   -- No row is no error here: a missing account answers through 23503 below.
   PERFORM 1 FROM identity.user_account u

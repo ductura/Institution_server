@@ -26,10 +26,10 @@ const app = new pg.Pool({ connectionString: APP_URL, max: 2 });
 
 const ADD = "SELECT identity.add_webauthn_credential($1, '\\x01', 0)";
 
-/** Opens a READ COMMITTED transaction of the test session. */
-async function begin(): Promise<pg.PoolClient> {
+/** Opens a transaction of the test session, READ COMMITTED unless `level` says otherwise. */
+async function begin(level = "READ COMMITTED"): Promise<pg.PoolClient> {
   const client = await app.connect();
-  await client.query("BEGIN ISOLATION LEVEL READ COMMITTED");
+  await client.query(`BEGIN ISOLATION LEVEL ${level}`);
   await client.query("SELECT pg_catalog.set_config('app.session_token', $1, true)", [token]);
   return client;
 }
@@ -95,6 +95,9 @@ describe("identity.add_webauthn_credential under two first registrations of one 
       expect(await late).toBe("ZD403");
       await b.query("ROLLBACK");
     } finally {
+      // A failed wait leaves both transactions open; their locks would block afterAll.
+      await a.query("ROLLBACK").catch(() => undefined);
+      await b.query("ROLLBACK").catch(() => undefined);
       a.release();
       b.release();
     }
@@ -104,4 +107,21 @@ describe("identity.add_webauthn_credential under two first registrations of one 
     );
     expect(rows[0]?.n).toBe("1");
   });
+
+  it.each(["REPEATABLE READ", "SERIALIZABLE"])(
+    "a fixed snapshot (%s) is refused (25000), as the lock could not order it",
+    async (level) => {
+      const client = await begin(level);
+      try {
+        const outcome = await client.query(ADD, [randomBytes(16)]).then(
+          () => "ok",
+          (error: { code?: string }) => error.code,
+        );
+        expect(outcome).toBe("25000");
+      } finally {
+        await client.query("ROLLBACK");
+        client.release();
+      }
+    },
+  );
 });
