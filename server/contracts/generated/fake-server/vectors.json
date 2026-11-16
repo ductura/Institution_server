@@ -2968,8 +2968,8 @@
       "body": {
         "from": 0,
         "head": {
-          "segmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875",
-          "segmentCount": 1
+          "segmentCount": 1,
+          "segmentHash": "235ac97a4b0085e19aaeae36abd7fe38f683e3b35f873ef46f0f198b01771875"
         },
         "next": null,
         "replayFormat": "ductus-evidence-replay-v1",

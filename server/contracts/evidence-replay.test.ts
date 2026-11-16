@@ -7,7 +7,7 @@ import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
 import { answerFake, FAKE_VECTOR_HEADER, VECTORS } from "./generated/fake-server/index.ts";
-import { validateInput } from "./generated/index.ts";
+import { type Operations, validateInput } from "./generated/index.ts";
 import { ROUTES } from "./index.ts";
 
 const REPLAY = "evidence.replay.post";
@@ -99,11 +99,36 @@ describe("evidence/replay contract", () => {
     for (const v of invalid) expect(validateInput(REPLAY, "body", v.request.body)).toBe(false);
   });
 
-  it("a page carries its keys in JCS order, as the route sends its bytes", () => {
+  it("a page is its JCS text at every depth, and the fake server sends exactly those bytes", () => {
+    // RFC 8785 order for these ASCII keys; the page holds no number that JCS writes otherwise.
+    const jcs = (value: unknown): string =>
+      Array.isArray(value)
+        ? `[${value.map(jcs).join(",")}]`
+        : value !== null && typeof value === "object"
+          ? `{${Object.keys(value)
+              .sort()
+              .map((k) => `${JSON.stringify(k)}:${jcs((value as Record<string, unknown>)[k])}`)
+              .join(",")}}`
+          : JSON.stringify(value);
     for (const name of ["first-page", "empty-record"]) {
-      const keys = Object.keys(vector(name).response.body as object);
-      expect(keys).toEqual([...keys].sort());
+      const v = vector(name);
+      const answer = answerFake({
+        method: "POST",
+        url: "/api/v1/evidence/replay",
+        headers: { ...v.request.headers, [FAKE_VECTOR_HEADER]: name },
+        body: new TextEncoder().encode(JSON.stringify(v.request.body)),
+      });
+      expect(JSON.stringify(v.response.body)).toBe(jcs(v.response.body));
+      expect(answer.body).toBe(jcs(v.response.body));
     }
+  });
+
+  it("the generated page type reads a resume document by its hash (typecheck holds this)", () => {
+    type Page = Operations["evidence.replay.post"]["success"]["body"];
+    const page = vector("first-page").response.body as Page;
+    const byHash: Readonly<Record<string, string>> = page.resumeDocuments;
+    const text: string | undefined = byHash[page.head?.segmentHash ?? ""];
+    expect(text).toBeUndefined();
   });
 
   it("only a SHA-256 names a resume document", () => {
