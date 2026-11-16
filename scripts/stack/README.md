@@ -66,11 +66,21 @@ Portovi 3000–3004 se odbijaju.
 - automatski oporavak zaostalog locka (lock ostaje `wx`, oporavak je ručan);
 - preloader (`/`) i web (`/app/`): samo mjesta za priključak (`SLOTS` u `config.ts`), pa ni njihov SHA još nije zapisan.
 
+## Lokalni S3 (DAN-817)
+
+`local-s3.ts` je mali S3-kompatibilan proces za pohranu dokaza na stogu, bez Dockera. Samo lokalno i u CI-ju: odbija start ako `NODE_ENV` nije `development` ili `test`, sluša samo na `127.0.0.1`, a objekte drži kao datoteke u `VS1_S3_ROOT`, pa preživljavaju ponovno pokretanje servera.
+
+- Odgovara samo na ono što traži `S3EvidencePayloadStore`: `GET`, `HEAD` i `PUT` koji samo stvara (`If-None-Match: *`, zapis preko privremene datoteke i tvrde veze, pa postojeći ključ daje 412). Vraća eho `x-amz-checksum-sha256` i `NoSuchKey`.
+- Svaki zahtjev mora biti potpisan SigV4 ključem iz `EVIDENCE_S3_VS1_KEY_ID` i `EVIDENCE_S3_VS1_SECRET`; potpis se računa ponovno, a tijelo se provjerava prema potpisanom hashu i checksumu.
+- Putanja je samo `[A-Za-z0-9._-]` po segmentu, bez `.`, `..`, upita i praznih segmenata; simbolička veza u direktoriju pohrane se ne slijedi.
+- Server do njega dolazi samo kroz `EVIDENCE_STORAGE_DOMAINS` i proizvodni adapter. U produkciji adapter odbija http, pa lokalni S3 nikad nije pohrana produkcije.
+
 ## Testovi
 
 - `config.test.ts`: okruženja, `NODE_ENV`, portovi i dopušteni direktorij stoga.
 - `processes.test.ts`: gašenje samo vlastitih procesa, bez SIGKILL-a preuzetom PID-u, čekanje healtha i slobodan port.
 - `state.test.ts`: SHA, verzije (i PostgreSQL), datoteka 0600, oštećeno stanje i portovi 3000–3004.
+- `local-s3.integration.test.ts`: ugovorni test lokalnog S3 s pravim `S3EvidencePayloadStore` (stored, existing, conflict, čitanje, HEAD, identitet bucketa), odbijeni potpisi, putanje, veze, granica tijela i istodobni zapis, te odbijanje u produkciji (ductura/server#129, S1–S9, P1, P3).
 - `vs1.integration.test.ts`:
   - skripta odbija bez pokretanja ičega;
   - dok lock postoji, `up` odbija i ne dira stanje ni klaster;
