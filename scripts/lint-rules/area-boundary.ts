@@ -37,9 +37,10 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
     ...["external/storage", "external/email"],
   ],
   downloads: ["settings", "log", "metrics", "domain", "contracts", "database", "external/storage"],
+  evidence: ["settings", "log", "metrics", "domain", "database", "external/storage"],
   http: [
     ...["settings", "log", "metrics", "contracts", "traffic", "session", "roles", "legal"],
-    ...["backup", "deletion", "downloads", "database", "external/srce-auth"],
+    ...["backup", "deletion", "downloads", "evidence", "database", "external/srce-auth"],
     ...["external/storage", "external/keys", "external/email"],
   ],
   "test-server": ["http", "settings"],
