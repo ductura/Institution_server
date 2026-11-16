@@ -19,11 +19,17 @@ export type UrlInput = {
 // space, then remove all ASCII tab or newline; the scheme is ASCII-lowercased.
 /** The one normalization of a URL input; every data: URL check reads its result. */
 export function normalizeUrlInput(text: string): UrlInput {
-  const input = text.replace(/^[\u0000- ]+|[\u0000- ]+$/gu, "").replace(/[\t\n\r]/gu, "");
-  const folded = input.replace(/[A-Z]/gu, (c) => c.toLowerCase());
-  return { input, folded };
+  // A loop, not a regex: `[…]+$` is quadratic on a long run of spaces (QA on DAN-784).
+  const c0 = (i: number): boolean => text.charCodeAt(i) <= 0x20;
+  let start = 0;
+  let end = text.length;
+  while (start < end && c0(start)) start += 1;
+  while (end > start && c0(end - 1)) end -= 1;
+  const input = text.slice(start, end).replace(/[\t\n\r]/gu, "");
+  return { input, folded: asciiLower(input) };
 }
 
+const asciiLower = (text: string): string => text.replace(/[A-Z]/gu, (c) => c.toLowerCase());
 const SCHEME_CHAR = /[a-z0-9+.-]/u;
 // A data: URL nested in a decoded body, or a body percent-encoded again,
 // is read up to this many times.
@@ -56,14 +62,18 @@ function forgivingBase64(text: string): Uint8Array | null {
 }
 
 // The texts bytes can be read as: UTF-8 (what `Response.text()` gives), the
-// charset the media type names, and Latin-1 when the bytes are not UTF-8 (so a
-// legacy single-byte charset never hides a letter as U+FFFD).
+// charset the media type names, and Latin-1 when a text body is not UTF-8 (so
+// a legacy single-byte charset never hides a letter as U+FFFD).
 function bytesToTexts(bytes: Uint8Array, mime: string): string[] {
-  const texts: string[] = [];
+  // Lenient UTF-8 as `Response.text()` reads it: one bad byte does not hide
+  // the letters after it (QA on DAN-784: `%80%D7%90`).
+  const texts = [new TextDecoder("utf-8").decode(bytes)];
+  // Latin-1 only for text (a binary image is no interface text).
+  const textual = /^\s*(?:text\/|;|$)/u.test(mime);
   try {
-    texts.push(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
-    texts.push(Buffer.from(bytes).toString("latin1"));
+    if (textual) texts.push(Buffer.from(bytes).toString("latin1"));
   }
   const charset = /;\s*charset\s*=\s*"?([^";]+)/u.exec(mime)?.[1]?.trim();
   if (charset) {
@@ -82,7 +92,10 @@ function bytesToTexts(bytes: Uint8Array, mime: string): string[] {
 // as a letter: the rule keeps no entity table, and `&ccaron;` is "č".
 const JS_ESCAPE = /\\u\{([0-9a-fA-F]{1,6})\}|\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})/gu;
 const ENTITY = /&#(?:([0-9]{1,7})|[xX]([0-9a-fA-F]{1,6}));?|&([A-Za-z][A-Za-z0-9]*);/gu;
-const MARKUP_ENTITIES = new Set(["amp", "lt", "gt", "quot", "apos", "nbsp"]);
+const MARKUP_ENTITIES = new Set([
+  ...["amp", "lt", "gt", "quot", "apos", "nbsp", "copy", "reg", "trade", "mdash", "ndash"],
+  ...["hellip", "laquo", "raquo", "bull", "middot", "times", "divide", "deg", "euro", "shy"],
+]);
 const codeText = (code: number): string =>
   code <= 0x10ffff ? String.fromCodePoint(code) : "\uFFFD";
 function unescapeText(text: string): string {
@@ -118,26 +131,39 @@ function collect(text: string, depth: number, out: Set<string>): void {
   // scheme holds (an attribute quote, a space, a control).
   for (let at = folded.indexOf("data:"); at !== -1; at = folded.indexOf("data:", at + 1)) {
     if (at > 0 && SCHEME_CHAR.test(folded[at - 1] ?? "")) continue;
-    const start = at + "data:".length;
-    // The fragment is no part of the body (fetch, "data: URL processor").
-    const hash = input.indexOf("#", start);
-    const end = hash === -1 ? input.length : hash;
-    const comma = input.indexOf(",", start);
-    if (comma === -1 || comma > end) continue;
-    const mime = folded.slice(start, comma);
-    const body = percentDecode(input.slice(comma + 1, end));
-    // The base64 flag is also read after percent-decoding the media type.
-    const decodedMime = Buffer.from(percentDecode(mime)).toString("latin1");
-    const base64 = [mime, decodedMime].some((m) => /;\s*base64\s*$/u.test(m));
-    const parts = [body];
-    if (base64) {
-      const bytes = forgivingBase64(Buffer.from(body).toString("latin1"));
-      if (bytes) parts.push(bytes);
+    // The raw text after `data:`, and the URL as the parser serializes it,
+    // which drops dot segments (`/a,b/../`) and so may move the first comma.
+    const rests = [input.slice(at + "data:".length)];
+    try {
+      const href = new URL(input.slice(at)).href;
+      if (href.startsWith("data:")) rests.push(href.slice("data:".length));
+    } catch {
+      // No URL to the parser: the raw text is still read.
     }
-    for (const bytes of parts)
-      for (const decoded of bytesToTexts(bytes, decodedMime))
-        layers(decoded, decodedMime, depth, out);
+    for (const rest of rests) readBody(rest, depth, out);
   }
+}
+
+// The media type and body of a data: URL after `data:`, decoded.
+function readBody(rest: string, depth: number, out: Set<string>): void {
+  // The fragment is no part of the body (fetch, "data: URL processor").
+  const hash = rest.indexOf("#");
+  const end = hash === -1 ? rest.length : hash;
+  const comma = rest.indexOf(",");
+  if (comma === -1 || comma > end) return;
+  const mime = asciiLower(rest.slice(0, comma));
+  const body = percentDecode(rest.slice(comma + 1, end));
+  // The base64 flag is also read after percent-decoding the media type.
+  const decodedMime = Buffer.from(percentDecode(mime)).toString("latin1");
+  const base64 = [mime, decodedMime].some((m) => /;\s*base64\s*$/u.test(m));
+  const parts = [body];
+  if (base64) {
+    const bytes = forgivingBase64(Buffer.from(body).toString("latin1"));
+    if (bytes) parts.push(bytes);
+  }
+  for (const bytes of parts)
+    for (const decoded of bytesToTexts(bytes, decodedMime))
+      layers(decoded, decodedMime, depth, out);
 }
 
 /** Every text the data: URLs in `text` decode to; empty when it holds none. */

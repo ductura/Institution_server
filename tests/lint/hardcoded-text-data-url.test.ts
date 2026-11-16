@@ -67,6 +67,12 @@ const hidden: [what: string, literal: string][] = [
   ["nested data: URL", "data:,data:%252C%25C4%258Dekaj"],
   ["fragment after the text", "data:,%C4%8Dekaj#x"],
   ["query in the body", "data:,x?%C4%8Dekaj"],
+  // Adversarial QA on DAN-784: dot segments move the first comma, and a bad
+  // UTF-8 byte before a letter whose Latin-1 reading is no letter.
+  ["dot segments", "data:/a,b/../;base64,xI1la2Fq"],
+  ["encoded dot segments", "data:/a,b/%2e%2E/;base64,xI1la2Fq"],
+  ["invalid UTF-8 before a letter", "data:,%80%D7%90%D7%91"],
+  ["invalid UTF-8 before a letter, base64", "data:;base64,gNeQ15E="],
 ];
 
 describe("data: URL", () => {
@@ -94,6 +100,10 @@ describe("data: URL", () => {
       "data:,x#%C4%8Dekaj",
       "data:text/html,&#269;ekaj",
       "da\\u000Cta:,%C4%8Dekaj",
+      // Binary and markup that is not text (QA on DAN-784).
+      "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==",
+      "data:application/octet-stream,%FF%D8%FF%E0",
+      "data:text/html,&copy; 2026 ACME &mdash; ok",
     ])
       expect(await ids(`export const u = "${literal}";`), literal).toEqual([]);
   });
@@ -109,6 +119,10 @@ describe("normalizeUrlInput", () => {
     expect(normalizeUrlInput("da\u000Cta:").input).toBe("da\u000Cta:");
     // Only ASCII is folded, so indices stay the same (İ would grow).
     expect(normalizeUrlInput("İD").folded).toBe("İd");
+    // Linear on a long run of spaces (the trailing strip is no regex).
+    const t0 = performance.now();
+    expect(normalizeUrlInput(`a${" ".repeat(200_000)}x`).input).toHaveLength(200_002);
+    expect(performance.now() - t0).toBeLessThan(1000);
   });
 
   it("is the one input every check reads", () => {
