@@ -88,6 +88,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
   "projection.process-summary.post",
   "collaboration.comments.post",
+  "collaboration.revision-requests.post",
   "live.document.get",
   "live.document.put",
   "support.problem-report.post",
@@ -121,6 +122,5 @@ export const PENDING: readonly string[] = [
   "app/api/institution/enrollments/route.ts",
   "app/api/institution/teachers/[teacherId]/role-confirmation/route.ts",
   "app/api/institution/teachers/[teacherId]/role-revocation/route.ts",
-  "app/api/revision-requests/[action]/route.ts",
   "app/api/submission/route.ts",
 ];

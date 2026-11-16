@@ -99,12 +99,30 @@ function openapi(routes: RouteContract[]): unknown {
       const errs = r.errors.filter((e) => e.status === status);
       const bodies = errs.map((e) => e.body ?? errorBody(e.code, e.status));
       const json = bodies.filter((b): b is TSchema => typeof b === "object").map(plain);
+      const errorSchema = json.length === 1 ? json[0] : { oneOf: json };
+      // The same status can also be an answer (revision-requests 409 {outcome});
+      // the answer and the errors are then alternatives the body tells apart
+      // (a problem body has `error`), so they meet in an anyOf, not a oneOf.
+      const answer = r.responses.find((a) => a.status === status);
+      if (answer !== undefined) {
+        if (answer.body === undefined || json.length === 0 || bodies.length !== json.length)
+          throw new Error(
+            `${r.id} ${status}: an answer and an error share a status without JSON bodies`,
+          );
+        responses[String(status)] = {
+          description: `${answer.description}; ${errs.map((e) => e.code).join(", ")}`,
+          content: {
+            "application/json": { schema: { anyOf: [plain(answer.body), errorSchema] } },
+          },
+        };
+        continue;
+      }
       responses[String(status)] = {
         description: errs.map((e) => e.code).join(", "),
         ...(json.length
           ? {
               content: {
-                "application/json": { schema: json.length === 1 ? json[0] : { oneOf: json } },
+                "application/json": { schema: errorSchema },
               },
             }
           : {}),

@@ -2023,6 +2023,7 @@ const en = {
     loginRefused: "Signing in was refused.",
     methodNotAllowed: "This action is not available at this address.",
     notAccepting: "The work does not accept changes at the moment.",
+    notAllowed: "This action is not possible in the request's current state.",
     notContinuous:
       "The changes do not continue the last state of the work on the server. Load the work again.",
     notFound: "What you asked for was not found.",

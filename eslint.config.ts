@@ -19,6 +19,13 @@ import {
 // properties, never variables, functions or types.
 const WIRE_NAMES = [
   "logout_token", // OpenID Connect Back-Channel Logout 1.0, section 2.5
+  // The revision-request answer of Ductus 078c780 (src/server/collaboration/
+  // revision-requests.ts), which keeps the column names of the RPCs on the
+  // wire; contract collaboration.revision-requests.post (DAN-803).
+  ...["request_id", "row_seq", "request_state", "request_version", "request_row_seq"],
+  ...["requested_revision", "opened_is_own", "opened_window", "response_kind"],
+  ...["response_explanation", "response_revision", "response_is_own", "response_window"],
+  ...["closed_as", "closed_is_own", "closed_window", "accepted_revision", "accepted_range_hash"],
   // OAuth 2.0 (RFC 6749): authorization request, token request and response, errors.
   "client_id",
   "client_secret",
