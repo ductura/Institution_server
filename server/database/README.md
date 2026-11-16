@@ -60,7 +60,7 @@ Nijedna grupna uloga nema `LOGIN`; prijava je običan član jedne grupe i nema p
 **Iznimka za bazu zapisa (`ductus_logs`)** (odluka orkestratora na ductura/server#159, c.6919879286): za tablice te baze točke 1 i 2 zamjenjuje ovo, jer baza zapisa nema aplikacijsku shemu ni odnos po retku (redak zapisa ili uzorka metrike nema vlasnika, ustanovu ni osobu), pa C-23 nema na čemu suziti pristup.
 
 - Tablica je u shemi `public`, jedinoj koju `20261115120000_roles.sql` otvara grupnim ulogama baze; vlasnik je `ductus_logs_migrator`. Druga shema u ovoj bazi traži zaseban zadatak koji seli sve tablice zajedno.
-- Politika koja propušta sve retke (`true`) smije, osim vlasniku, imenovati samo `ductus_logs_writer` za `INSERT` i `ductus_logs_reader` za `SELECT`; nikad PUBLIC, nikad `UPDATE` ni `DELETE`, nikad drugu ulogu.
+- Politika koja propušta sve retke (`true`) smije, osim vlasniku, imenovati samo `ductus_logs_writer` za `INSERT` i `ductus_logs_reader` za `SELECT`. Na `public.log_entry` čitač nema ni pravo ni politiku, jer bi vidio puni IP; zapise čita samo kroz `operator_log` (SECURITY DEFINER, DAN-835-4); nikad PUBLIC, nikad `UPDATE` ni `DELETE`, nikad drugu ulogu.
 - Pristup tada drže prava, ne redak: pisac ima samo `INSERT` nad navedenim stupcima i nijedan `SELECT`, čitač samo `SELECT`, PUBLIC i ostale uloge ništa; uz to FORCE RLS i okidači `ENABLE ALWAYS` koji odbijaju svaku promjenu mimo dopuštene (na tablicama samo za dopisivanje `UPDATE`, `DELETE` i `TRUNCATE`).
 - pgTAP tablice (`db/logs/tests/`) imenuje točan skup politika i prava po ulozi i stupcu, kao `010-log-entry.sql` (`log_entry`), `020-log-chain.sql` (`log_chain_head`) i `030-metric-sample.sql` (`metric_sample`).
 

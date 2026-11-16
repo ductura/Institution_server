@@ -66,7 +66,7 @@ END
 $$;
 
 
-SELECT plan(75);
+SELECT plan(88);
 
 CREATE TABLE pg_temp.found_before AS SELECT coalesce(max(id), 0) AS id FROM public.log_entry;
 
@@ -110,13 +110,14 @@ CREATE VIEW pg_temp.entry_right AS
          AND has_any_column_privilege(g.rolname, 'public.log_entry'::regclass, p.privilege));
 
 -- The matrix: the owner keeps what it cannot give up (it made the table), the
--- writer only appends, the reader only reads; nobody else holds anything.
+-- writer only appends; nobody else holds anything. The reader (the operator)
+-- reads only through operator_log, which masks the IP (DAN-835-4), so it holds
+-- no right on the table.
 CREATE TABLE pg_temp.expected_entry_right (found text PRIMARY KEY);
 INSERT INTO pg_temp.expected_entry_right VALUES
   ('ductus_logs_migrator: SELECT'), ('ductus_logs_migrator: INSERT'),
   ('ductus_logs_migrator: REFERENCES'), ('ductus_logs_migrator: TRIGGER'),
-  ('ductus_logs_writer: INSERT'),
-  ('ductus_logs_reader: SELECT');
+  ('ductus_logs_writer: INSERT');
 INSERT INTO pg_temp.expected_entry_right
   SELECT 'ductus_logs_migrator: MAINTAIN' WHERE current_setting('server_version_num')::int >= 170000;
 CREATE VIEW pg_temp.entry_drift AS
@@ -148,10 +149,10 @@ SELECT set_eq(
             || ' check ' || coalesce(pg_get_expr(polwithcheck, polrelid), '-')
      FROM pg_policy WHERE polrelid = 'public.log_entry'::regclass $$,
   ARRAY['log_entry_append a true ductus_logs_writer using - check true',
-        'log_entry_read r true ductus_logs_reader using true check -'],
-  'two policies: INSERT for the writer, SELECT for the reader');
+        'log_entry_owner_read r true ductus_logs_migrator using true check -'],
+  'two policies: INSERT for the writer, SELECT for the owner (the SECURITY DEFINER reads); none for the reader');
 SELECT is_empty('SELECT found FROM pg_temp.entry_drift',
-  'the access matrix: the writer only INSERTs, the reader only SELECTs, the owner has no UPDATE, DELETE or TRUNCATE, nobody else (PUBLIC, retention, any other role) holds a right, directly, by membership or SET ROLE');
+  'the access matrix: the writer only INSERTs, the reader holds nothing, the owner has no UPDATE, DELETE or TRUNCATE, nobody else (PUBLIC, retention, any other role) holds a right, directly, by membership or SET ROLE');
 SELECT set_eq(
   $$ SELECT a.attname::text FROM pg_attribute a
      WHERE a.attrelid = 'public.log_entry'::regclass AND a.attnum > 0
@@ -181,14 +182,37 @@ SELECT is((SELECT count(*)::int FROM public.log_entry WHERE id > (SELECT id FROM
 SELECT ok((SELECT bool_and(at IS NOT NULL AND at <= clock_timestamp()) AND count(DISTINCT id) = 2 FROM public.log_entry
            WHERE id > (SELECT id FROM pg_temp.found_before)),
   'the database gives each row its id and time');
-SELECT is(pg_temp.try_as('ductus_logs_reader',
+SELECT is(pg_temp.try_as('ductus_logs_migrator',
   $$ DO $d$ BEGIN
        IF (SELECT array_agg(kind ORDER BY id) FROM public.log_entry WHERE id > $$ || (SELECT id FROM pg_temp.found_before) || $$)
           IS DISTINCT FROM ARRAY['authn.login_started', 'authn.login_succeeded'] THEN
          RAISE EXCEPTION 'unexpected rows' USING ERRCODE = 'P0001';
        END IF;
      END $d$ $$),
-  'ok', 'the reader reads the rows as written');
+  'ok', 'the owner reads the rows as written');
+-- DAN-835-4: the reader no longer reads the table (the payload holds the full
+-- IP); directly or through membership, every form of read is refused.
+CREATE ROLE ductus_app NOLOGIN IN ROLE ductus_logs_reader;
+SELECT is(pg_temp.try_as(w.who, r.sql), '42501', w.who || ' may not read the log table: ' || r.sql)
+FROM unnest(ARRAY['ductus_logs_reader', 'ductus_app']) w (who)
+CROSS JOIN unnest(ARRAY[
+  'SELECT payload FROM public.log_entry',
+  'SELECT count(*) FROM public.log_entry',
+  'TABLE public.log_entry',
+  'SELECT id FROM public.log_entry FOR SHARE',
+  'SELECT 1 FROM public.log_entry WHERE payload -> ''fields'' ->> ''ip'' = ''192.0.2.17'''
+]) r (sql);
+DROP ROLE ductus_app;
+-- Nor through the planner's statistics: pg_stats shows a column only to a
+-- role that may read it.
+ANALYZE public.log_entry;
+SELECT is(pg_temp.try_as('ductus_logs_reader',
+  $$ DO $d$ BEGIN
+       IF EXISTS (SELECT 1 FROM pg_catalog.pg_stats WHERE schemaname = 'public' AND tablename = 'log_entry') THEN
+         RAISE EXCEPTION 'statistics of log_entry are visible' USING ERRCODE = 'P0001';
+       END IF;
+     END $d$ $$),
+  'ok', 'the reader sees no statistics of the log table (pg_stats)');
 
 -- 3. Nobody changes a row: each of the four roles, the superuser, and the
 -- superuser with session_replication_role = replica (which skips ordinary
@@ -224,7 +248,7 @@ FROM unnest(ARRAY[
   'ALTER TABLE public.log_entry DISABLE TRIGGER log_entry_no_change',
   'DROP TRIGGER log_entry_no_truncate ON public.log_entry',
   'ALTER TABLE public.log_entry NO FORCE ROW LEVEL SECURITY',
-  'DROP POLICY log_entry_read ON public.log_entry',
+  'DROP POLICY log_entry_owner_read ON public.log_entry',
   'DROP TABLE public.log_entry'
 ]) w (sql);
 SELECT is(pg_temp.try_as('ductus_logs_reader',
@@ -276,10 +300,17 @@ SELECT set_eq('SELECT found FROM pg_temp.entry_drift', ARRAY['+ductus_app: SELEC
   'a right of the main application role on the log table is caught');
 REVOKE SELECT ON public.log_entry FROM ductus_app;
 GRANT ductus_logs_reader TO ductus_app;
-SELECT set_eq('SELECT found FROM pg_temp.entry_drift', ARRAY['+ductus_app: SELECT', '+ductus_app: SELECT via ductus_logs_reader'],
-  'a right reached through membership of a logs role is caught');
+SELECT is_empty('SELECT found FROM pg_temp.entry_drift', 'membership of the reader gives no right on the log table');
+GRANT SELECT ON public.log_entry TO ductus_logs_reader;
+SELECT set_eq('SELECT found FROM pg_temp.entry_drift', ARRAY['+ductus_logs_reader: SELECT', '+ductus_app: SELECT', '+ductus_app: SELECT via ductus_logs_reader'],
+  'a SELECT given back to the reader is caught, with the membership that reaches it');
+REVOKE SELECT ON public.log_entry FROM ductus_logs_reader;
 REVOKE ductus_logs_reader FROM ductus_app;
 DROP ROLE ductus_app;
+GRANT SELECT (payload) ON public.log_entry TO ductus_logs_reader;
+SELECT set_eq('SELECT found FROM pg_temp.entry_drift', ARRAY['+ductus_logs_reader: SELECT'],
+  'a column SELECT given back to the reader is caught');
+REVOKE SELECT (payload) ON public.log_entry FROM ductus_logs_reader;
 GRANT DELETE ON public.log_entry TO ductus_logs_retention;
 SELECT set_eq('SELECT found FROM pg_temp.entry_drift', ARRAY['+ductus_logs_retention: DELETE'],
   'DELETE for the retention role is caught');

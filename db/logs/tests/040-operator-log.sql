@@ -63,7 +63,7 @@ END
 $$;
 
 
-SELECT plan(38);
+SELECT plan(41);
 
 -- As in 030-metric-sample.sql: runs `sql` as `who`; the SQLSTATE, or 'ok'.
 CREATE FUNCTION pg_temp.try_as(who text, sql text) RETURNS text
@@ -197,6 +197,19 @@ SELECT is((SELECT g.x - 'seq' - 'at' FROM pg_temp.got g WHERE g.x->>'kind' = 'te
 SELECT is((SELECT g.x - 'seq' - 'at' FROM pg_temp.got g WHERE g.x->>'kind' = 'test.shape'),
   '{"kind": "test.shape", "request_id": null, "account_kind": null, "fields": {}}'::jsonb,
   'a request id or account kind out of shape, fields that are no object and other keys give nothing');
+-- DAN-835-4: the reader reads the full IP of that row only masked. The table
+-- itself is closed to it; operator_log reads as its owner, with a search path
+-- that holds no schema a caller could create in.
+SELECT is(pg_temp.try_as('ductus_logs_reader',
+  $$ SELECT payload -> 'fields' ->> 'ip' FROM public.log_entry WHERE kind = 'test.mask_1' $$),
+  '42501', 'the reader cannot read the full IP from the log table itself');
+SELECT is((SELECT g.x -> 'fields' ->> 'ip' FROM pg_temp.got g WHERE g.x->>'kind' = 'test.mask_1'), '192.0.2.0/24',
+  'through operator_log the reader gets the /24 of the same row');
+SELECT is(
+  (SELECT p.proowner::regrole::text || ' ' || p.prosecdef::text || ' ' || array_to_string(p.proconfig, ',')
+   FROM pg_proc p WHERE p.oid = 'public.operator_log(timestamptz, timestamptz, bigint)'::regprocedure),
+  'ductus_logs_migrator true search_path=pg_catalog, pg_temp',
+  'operator_log runs as its owner, the migrator, with the search path pg_catalog, pg_temp');
 
 -- 5. The window is read through log_entry_at, not by a scan of the table or
 -- of another index (K3). enable_seqscan = off shows that the predicate can

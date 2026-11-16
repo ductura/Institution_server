@@ -44,12 +44,15 @@ function append(client: pg.PoolClient, run: string, n: number): Promise<unknown>
   );
 }
 
-/** Reads as the reader, in one transaction: the rows of `run` in chain order, the head and the verification. */
+/**
+ * In one transaction: the rows of `run` in chain order as the owner (the reader
+ * holds no right on log_entry or the head, DAN-835-4) and the head, then the verification as the reader.
+ */
 async function read(run: string) {
   const client = await logs.connect();
   try {
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
-    await client.query("SET LOCAL ROLE ductus_logs_reader");
+    await client.query("SET LOCAL ROLE ductus_logs_migrator");
     const rows = (
       await client.query<Row>(
         "SELECT seq, prev_hash AS \"prevHash\", hash, payload FROM public.log_entry WHERE payload->>'run' = $1 ORDER BY seq",
@@ -58,6 +61,7 @@ async function read(run: string) {
     ).rows;
     const head = (await client.query<{ seq: string }>("SELECT seq FROM public.log_chain_head"))
       .rows[0];
+    await client.query("SET LOCAL ROLE ductus_logs_reader");
     const problems = (await client.query("SELECT seq, problem FROM public.log_chain_verify()"))
       .rows;
     return { rows, head: Number(head?.seq), problems };
