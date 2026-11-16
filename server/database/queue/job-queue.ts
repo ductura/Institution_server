@@ -38,6 +38,7 @@ export type JobQueueErrorCode =
   | "role_not_worker"
   | "queue_mismatch"
   | "definition_unknown"
+  | "handler_invalid"
   | "queue_failed";
 
 /** The message is the code: no connection string and no driver text leaves this file. */
@@ -157,8 +158,29 @@ function validSettings(s: JobQueueSettings): boolean {
     whole(s.deleteAfterSeconds, 1, 365 * DAY) &&
     whole(s.sweepSeconds, 1, 3600) &&
     // DAN-820: no default fence here, so a queue without one never opens.
-    typeof s.fence === "function"
+    typeof s.fence === "function" &&
+    (s.onError === undefined || typeof s.onError === "function")
   );
+}
+
+/**
+ * A definition read once into a frozen copy, with every part of the expected
+ * type, or null. The copy is what the queue keeps: a getter of the caller's
+ * object never runs again.
+ */
+function readDefinition(value: unknown): JobDefinition | null {
+  if (typeof value !== "object" || value === null) return null;
+  const { name, fields, subject } = value as Record<string, unknown>;
+  if (typeof name !== "string" || typeof subject !== "string" || !Array.isArray(fields))
+    return null;
+  const copy: unknown[] = [...(fields as unknown[])];
+  if (!copy.every((field): field is string => typeof field === "string")) return null;
+  const definition: JobDefinition = Object.freeze({
+    name,
+    fields: Object.freeze(copy),
+    subject,
+  });
+  return isJobDefinition(definition) ? definition : null;
 }
 
 /** What the fence factory returned is a fence: both of its methods are there. */
@@ -236,9 +258,22 @@ function affected(response: unknown): number {
  * later failure of the queue is a JobQueueError too (`queue_failed`).
  */
 export async function openJobQueue(settings: JobQueueSettings): Promise<JobQueue> {
+  // DAN-820: a caller from JavaScript can pass any shape. Each one is refused
+  // by its code here, before any connection, never as a TypeError.
+  const input: unknown = settings;
+  if (typeof input !== "object" || input === null) throw new JobQueueError("settings_invalid");
   const definitions = new Map<string, JobDefinition>();
-  for (const definition of settings.definitions) {
-    if (!isJobDefinition(definition) || definitions.has(definition.name))
+  const given: unknown = settings.definitions;
+  if (!Array.isArray(given)) throw new JobQueueError("definition_invalid");
+  for (const value of given as unknown[]) {
+    let definition: JobDefinition | null;
+    try {
+      definition = readDefinition(value);
+    } catch {
+      // Only a getter or a proxy throws here.
+      definition = null;
+    }
+    if (definition === null || definitions.has(definition.name))
       throw new JobQueueError("definition_invalid");
     definitions.set(definition.name, definition);
   }
@@ -353,6 +388,8 @@ export async function openJobQueue(settings: JobQueueSettings): Promise<JobQueue
     runOnce: (name, handler) =>
       closed(async () => {
         const definition = known(name);
+        // Checked before a job is taken: a missing handler would spend an attempt.
+        if (typeof handler !== "function") throw new JobQueueError("handler_invalid");
         const from = performance.now();
         const taken = await fenced(async () => {
           const [job] = await boss.fetch(name, { batchSize: 1 });

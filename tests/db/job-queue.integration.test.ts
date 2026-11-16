@@ -861,13 +861,14 @@ describe("job queue: what it refuses", () => {
   // a login that does not exist the refusal is still settings_invalid, never
   // queue_unreachable. A factory is called only for a worker login, and what
   // it returns must have both arm and close.
+  const LEFT_OUT = Symbol("left out");
   function withFence(
     def: JobDefinition,
     connectionString: string,
     fence: unknown,
   ): JobQueueSettings {
     const base: Record<string, unknown> = { ...settings(def, connectionString, {}) };
-    if (fence === undefined) delete base["fence"];
+    if (fence === LEFT_OUT) delete base["fence"];
     else base["fence"] = fence;
     return base as JobQueueSettings;
   }
@@ -876,7 +877,8 @@ describe("job queue: what it refuses", () => {
   }
 
   it.each<[string, unknown]>([
-    ["left out", undefined],
+    ["left out", LEFT_OUT],
+    ["undefined", undefined],
     ["null", null],
     ["a number", 7],
     ["a fence instead of its factory", { arm: () => () => {}, close: async () => {} }],
@@ -924,6 +926,81 @@ describe("job queue: what it refuses", () => {
     expect(outcome).toEqual(refused("settings_invalid"));
     expect(closed).toBe(1);
   });
+
+  // DAN-820 (orchestrator c.6915887445): the same class for the other inputs
+  // a caller must give. Each wrong shape is a JobQueueError with its code,
+  // never a TypeError, and is refused before any connection.
+  it.each<[string, unknown, string]>([
+    ["no settings", undefined, "settings_invalid"],
+    ["null settings", null, "settings_invalid"],
+    ["settings that are a string", "settings", "settings_invalid"],
+    ["definitions left out", { definitions: LEFT_OUT }, "definition_invalid"],
+    ["null definitions", { definitions: null }, "definition_invalid"],
+    [
+      "definitions that are one definition",
+      { definitions: { name: "x", fields: ["a"], subject: "a" } },
+      "definition_invalid",
+    ],
+    ["a null definition", { definitions: [null] }, "definition_invalid"],
+    [
+      "a definition whose fields are a string",
+      { definitions: [{ name: "jobq_fields", fields: "domainId", subject: "domainId" }] },
+      "definition_invalid",
+    ],
+    [
+      "a definition without fields",
+      { definitions: [{ name: "jobq_nofields", subject: "domainId" }] },
+      "definition_invalid",
+    ],
+    [
+      "a definition whose name is a getter that throws",
+      {
+        definitions: [
+          Object.defineProperty({ fields: ["domainId"], subject: "domainId" }, "name", {
+            enumerable: true,
+            get: () => {
+              throw new Error("synthetic marker 3e7a");
+            },
+          }),
+        ],
+      },
+      "definition_invalid",
+    ],
+    ["an onError that is not a function", { onError: "report" }, "settings_invalid"],
+  ])("W-14: %s refuses the queue by its code before connecting", async (_label, change, code) => {
+    for (const login of [role("workerA"), `it_jobq_${RUN}_nobody`]) {
+      let input: unknown = change;
+      if (typeof change === "object" && change !== null) {
+        const base: Record<string, unknown> = { ...settings(definition(), url(login), {}) };
+        for (const [key, value] of Object.entries(change)) {
+          if (value === LEFT_OUT) delete base[key];
+          else base[key] = value;
+        }
+        input = base;
+      }
+      expect(await refusal(openJobQueue(input as JobQueueSettings))).toEqual(refused(code));
+    }
+  });
+
+  it.each<[string, unknown]>([
+    ["undefined", undefined],
+    ["null", null],
+    ["an object", { ok: true }],
+  ])(
+    "W-14: runOnce with a handler that is %s refuses as handler_invalid and leaves the job waiting",
+    async (_label, handler) => {
+      const def = definition();
+      const queue = await open(def);
+      await queue.enqueue(def.name, body(81));
+      expect(await refusal(queue.runOnce(def.name, handler as JobHandler))).toEqual(
+        refused("handler_invalid"),
+      );
+      expect(await jobs(def.name)).toEqual([
+        { state: "created", retry_count: 0, output: null, data: body(81) },
+      ]);
+      expect(fence.armed).toEqual([]);
+    },
+  );
 
   it("W-14 (control): a factory that returns a fence with arm and close opens the queue", async () => {
     const def = definition();
