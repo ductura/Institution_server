@@ -53,7 +53,7 @@ describe("state", () => {
       repos: { server: { sha: "0".repeat(40), dirty: false }, preloader: null, web: null },
       versions: { node: "v24.0.0" },
       serverBuildSha256: "a".repeat(64),
-      ports: { postgres: 54360, server: 4100, oidc: 4180 },
+      ports: { postgres: 54360, server: 4100, oidc: 4180, s3: 4190 },
       processes: {
         server: { pid: 1234, marker: "/r/dist/server.js" },
         oidc: { pid: 1235, marker: "/r/node /r/packages/test-fakes/oidc/server.ts" },
@@ -72,21 +72,23 @@ describe("state", () => {
     ["null"],
     ["42"],
     ['{"ports": {}, "processes": {}}'],
-    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": null}'],
-    ['{"ports": {"postgres": 54360, "server": "4100", "oidc": 4180}, "processes": {}}'],
+    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4190}, "processes": null}'],
+    ['{"ports": {"postgres": 54360, "server": "4100", "oidc": 4180, "s3": 4190}, "processes": {}}'],
     [
-      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {"server": {"pid": "1"}}}',
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4190}, "processes": {"server": {"pid": "1"}}}',
     ],
     [
-      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {"oidc": {"pid": 1}}}',
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4190}, "processes": {"oidc": {"pid": 1}}}',
     ],
     // DAN-787: a port of another stack is never ours, so status and down never ask it.
-    ['{"ports": {"postgres": 54360, "server": 3000, "oidc": 4180}, "processes": {}}'],
-    ['{"ports": {"postgres": 3004, "server": 4100, "oidc": 4180}, "processes": {}}'],
+    ['{"ports": {"postgres": 54360, "server": 3000, "oidc": 4180, "s3": 4190}, "processes": {}}'],
+    ['{"ports": {"postgres": 3004, "server": 4100, "oidc": 4180, "s3": 4190}, "processes": {}}'],
     // QA c.6900731697: an extra key would be a port down probes.
-    ['{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "web": 3000}, "processes": {}}'],
     [
-      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180}, "processes": {"web": {"pid": 2, "marker": "x"}}}',
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4190, "web": 3000}, "processes": {}}',
+    ],
+    [
+      '{"ports": {"postgres": 54360, "server": 4100, "oidc": 4180, "s3": 4190}, "processes": {"web": {"pid": 2, "marker": "x"}}}',
     ],
   ])("calls the JSON %s unreadable, not a state", (text) => {
     const file = join(dir, "shape.json");

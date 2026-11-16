@@ -8,8 +8,8 @@ export type StackEnv = (typeof STACK_ENVS)[number];
 export type Command = "up" | "down" | "status";
 // Ports 3000 to 3004 belong to other stacks on the same machine; never ours.
 export const FORBIDDEN_PORTS: readonly number[] = [3000, 3001, 3002, 3003, 3004];
-export const DEFAULT_PORTS = { postgres: 54360, server: 4100, oidc: 4180 } as const;
-export type Ports = { postgres: number; server: number; oidc: number };
+export const DEFAULT_PORTS = { postgres: 54360, server: 4100, oidc: 4180, s3: 4190 } as const;
+export type Ports = { postgres: number; server: number; oidc: number; s3: number };
 export type StackConfig = { env: StackEnv; ports: Ports };
 // Same origin: preloader at `/`, web at `/app/`; slots only, filled later.
 export const SLOTS = Object.freeze({
@@ -49,6 +49,7 @@ export function stackPorts(env: Env): Ports {
     postgres: port(env, "VS1_POSTGRES_PORT", DEFAULT_PORTS.postgres),
     server: port(env, "VS1_SERVER_PORT", DEFAULT_PORTS.server),
     oidc: port(env, "VS1_OIDC_PORT", DEFAULT_PORTS.oidc),
+    s3: port(env, "VS1_S3_PORT", DEFAULT_PORTS.s3),
   };
   const values = Object.values(ports);
   if (values.some((value) => FORBIDDEN_PORTS.includes(value))) {

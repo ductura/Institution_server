@@ -41,6 +41,16 @@ import {
   serverReady,
 } from "./processes.ts";
 import * as stateFile from "./state.ts";
+import {
+  ensureBucketIdentity,
+  ensureSeed,
+  newS3Credentials,
+  registerEvidenceKey,
+  S3_BUCKET,
+  S3_REGION,
+  seedFile,
+  serverEvidenceEnv,
+} from "./evidence.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/u, "");
 // VS1_STACK_DIR moves the whole stack (tests use a temporary one); a path
@@ -63,11 +73,18 @@ export const LOCK = join(DIR, "up.lock");
 const PGDATA = join(DIR, "pgdata");
 const SERVER = join(ROOT, "dist", "server.js");
 const OIDC = join(ROOT, "packages", "test-fakes", "oidc", "server.ts");
+const S3 = join(ROOT, "scripts", "stack", "local-s3.ts");
+// Objects of the local S3 (DAN-817): files, so they outlive a restart of the server.
+const S3_ROOT = join(DIR, "s3");
 // The stack directory in argv makes each marker this stack's own. down and
 // status compare it with this DIR, never with what state.json says, so a
 // state copied from another stack never names that stack's processes.
 const TAG = `--vs1-stack=${DIR}`;
-const TAILS = { server: ` ${SERVER} ${TAG}`, oidc: ` ${OIDC} ${TAG}` } as const;
+const TAILS = {
+  server: ` ${SERVER} ${TAG}`,
+  oidc: ` ${OIDC} ${TAG}`,
+  s3: ` ${S3} ${TAG}`,
+} as const;
 const ofThisStack = (name: keyof typeof TAILS, marker: string): boolean =>
   marker.endsWith(TAILS[name]);
 // Children get a fixed environment, never the caller's.
@@ -78,6 +95,15 @@ const base = (): Record<string, string> => ({
 
 async function must(what: string, command: string, args: string[]): Promise<void> {
   if ((await spawnRun(command, args, { env: base() })) !== 0) throw new Error(`${what} failed`);
+}
+
+/** Polls until `pid` itself listens on `port`; the local S3 has no health route. */
+async function listening(pid: number, port: number, timeoutMs: number): Promise<boolean> {
+  for (const end = Date.now() + timeoutMs; Date.now() < end;) {
+    if (listensOn(pid, port)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
 }
 
 /** The pid in postmaster.pid when it is this stack's running postmaster, else null. */
@@ -164,6 +190,17 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
     isRoot: false,
     store: fileStore(join(DIR, "pg-password")),
   });
+  // DAN-817: the invented institutions, the receipt key of demo-fakultet and
+  // its bucket. The seed lies outside the checkout (the signer refuses it inside).
+  const seed = seedFile(DIR, ROOT, process.env.HOME ?? "");
+  ensureSeed(seed);
+  const institutionId = await registerEvidenceKey(
+    { socket: DIR, port: postgres, env: base() },
+    ROOT,
+    seed,
+  );
+  mkdirSync(S3_ROOT, { recursive: true, mode: 0o700 });
+  ensureBucketIdentity(S3_ROOT, institutionId);
   const origin = `http://127.0.0.1:${server}`;
   // D-09: the fake provider runs with NODE_ENV=test from a fixed list, on
   // loopback, sending the browser and logout tokens only to this stack's server.
@@ -181,13 +218,34 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
   if (!(await serverReady(discovery, oidcPid, config.ports.oidc, 30_000))) {
     throw new Error(`the fake OIDC provider is not ready on port ${config.ports.oidc}`);
   }
+  // A new key for each up, only in the children's environment: never on disk or in argv.
+  const credentials = newS3Credentials();
+  const s3Pid = await startDetached(process.execPath, [S3, tag], {
+    cwd: ROOT,
+    log: join(DIR, "s3.log"),
+    env: {
+      ...base(),
+      NODE_ENV: "test",
+      PORT: String(config.ports.s3),
+      VS1_S3_ROOT: S3_ROOT,
+      VS1_S3_BUCKET: S3_BUCKET,
+      VS1_S3_REGION: S3_REGION,
+      EVIDENCE_S3_VS1_KEY_ID: credentials.keyId,
+      EVIDENCE_S3_VS1_SECRET: credentials.secret,
+    },
+  });
+  state.processes.s3 = { pid: s3Pid, marker: `${process.execPath} ${S3} ${tag}` };
+  stateFile.writeState(STATE, state);
+  if (!(await listening(s3Pid, config.ports.s3, 30_000))) {
+    throw new Error(`the local S3 does not listen on port ${config.ports.s3}`);
+  }
   const argv = [...SERVER_NODE_FLAGS, SERVER, tag];
   const pid = await startDetached(process.execPath, argv, {
     cwd: ROOT,
     log: join(DIR, "server.log"),
     env: {
       ...base(),
-      NODE_ENV: "production",
+      ...serverEvidenceEnv({ institutionId, seed }, config.ports.s3, credentials),
       HOST: "127.0.0.1",
       PORT: String(server),
       APP_ORIGIN: origin,
@@ -203,7 +261,7 @@ async function start(config: StackConfig, state: stateFile.StackState): Promise<
     throw new Error(`the server is not healthy, or port ${server} is answered by another process`);
   }
   console.log(
-    `VS-1 stack up (${config.env}): server ${origin}, fake OIDC ${issuer}, PostgreSQL :${postgres}`,
+    `VS-1 stack up (${config.env}): server ${origin}, fake OIDC ${issuer}, local S3 :${config.ports.s3}, PostgreSQL :${postgres}`,
   );
   for (const [name, slot] of Object.entries(SLOTS))
     console.log(`  ${name} at ${slot.path}: not attached`);
@@ -257,7 +315,7 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
   const state = read === "unreadable" ? null : read;
   // A process named by a state of another stack directory: never signalled, and down fails.
   let otherStack = false;
-  for (const name of ["server", "oidc"] as const) {
+  for (const name of ["server", "s3", "oidc"] as const) {
     const entry = state?.processes[name];
     if (entry === undefined) continue;
     if (!ofThisStack(name, entry.marker)) {
@@ -276,7 +334,7 @@ export async function down(given?: stateFile.StackState): Promise<boolean> {
   let free = true;
   // Without a state the configured (or default) ports are checked, so an orphan still shows.
   const ports = state?.ports ?? stackPorts(process.env);
-  for (const name of ["postgres", "server", "oidc"] as const) {
+  for (const name of ["postgres", "server", "oidc", "s3"] as const) {
     const port = ports[name];
     if (await portFree(port)) continue;
     console.error(`port ${port} (${name}) still answers`);
@@ -352,6 +410,21 @@ export async function status(get: typeof fetch = fetch): Promise<boolean> {
     } else ok = false;
     lines.push(`  ${name.padEnd(10)} :${port} ${line}`);
   }
+  // The local S3 answers only signed requests: it counts when that very pid listens.
+  const s3 = processes.s3;
+  const s3Ours =
+    s3 !== undefined && ofThisStack("s3", s3.marker) && commandLine(s3.pid) === s3.marker;
+  const s3Up = s3Ours && listensOn(s3.pid, ports.s3);
+  ok &&= s3Up;
+  lines.push(
+    `  ${"s3".padEnd(10)} :${ports.s3} ${
+      s3 === undefined
+        ? "not started"
+        : s3Ours
+          ? `pid ${s3.pid} running, ${s3Up ? "listening" : "not listening"}`
+          : `pid ${s3.pid} not ours or gone`
+    }`,
+  );
   lines.push(`  lock       ${lock}`);
   // The state is data: control characters (ANSI escapes, line breaks) never reach the terminal.
   console.log(lines.map((line) => line.replace(/[\u0000-\u001f\u007f]/gu, "?")).join("\n"));

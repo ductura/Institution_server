@@ -39,7 +39,12 @@ const { down, LOCK, oidcEnv, status, up } = await import("./vs1.ts");
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 // Ports no other test uses, so "nothing listens" means the stack started nothing.
-const PORTS = { VS1_POSTGRES_PORT: "54397", VS1_SERVER_PORT: "4197", VS1_OIDC_PORT: "4297" };
+const PORTS = {
+  VS1_POSTGRES_PORT: "54397",
+  VS1_SERVER_PORT: "4197",
+  VS1_OIDC_PORT: "4297",
+  VS1_S3_PORT: "4397",
+};
 
 function run(
   args: string[],
@@ -115,7 +120,7 @@ describe("down with a state that names an extra port (QA c.6900731697)", () => {
     let connections = 0;
     other.on("connection", () => (connections += 1));
     mkdirSync(STACK, { recursive: true });
-    const ports = { postgres: 54397, server: 4197, oidc: 4297, web: port };
+    const ports = { postgres: 54397, server: 4197, oidc: 4297, s3: 4397, web: port };
     writeFileSync(STATE, JSON.stringify({ ports, processes: {} }));
     try {
       const result = run(["down"], {});
@@ -145,7 +150,7 @@ describe("down with the state of a failed up", () => {
       repos: { server: { sha: "0".repeat(40), dirty: false }, preloader: null, web: null },
       versions: {},
       serverBuildSha256: "",
-      ports: { postgres: 54397, server: 4197, oidc: 4297 },
+      ports: { postgres: 54397, server: 4197, oidc: 4297, s3: 4397 },
       processes: { server: { pid, marker } },
       pgdata: join(dir, "pgdata"),
     };
@@ -160,11 +165,11 @@ describe("up while another up holds the lock", () => {
     writeFileSync(LOCK, "");
     try {
       await expect(
-        up({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } }),
+        up({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297, s3: 4397 } }),
       ).rejects.toThrow(/up\.lock exists.*pnpm stack:vs1 down, then delete the lock by hand/u);
       expect(existsSync(LOCK)).toBe(true);
       expect(existsSync(STATE)).toBe(false);
-      for (const port of [54397, 4197, 4297]) expect(await portFree(port)).toBe(true);
+      for (const port of [54397, 4197, 4297, 4397]) expect(await portFree(port)).toBe(true);
     } finally {
       rmSync(LOCK, { force: true });
     }
@@ -238,7 +243,7 @@ function stateWith(processes: StackState["processes"], server = 4197): StackStat
     repos: { server: { sha: "a".repeat(40), dirty: false }, preloader: null, web: null },
     versions: { node: "v24.0.0", postgres: "17.2" },
     serverBuildSha256: "0".repeat(64),
-    ports: { postgres: 54397, server, oidc: 4297 },
+    ports: { postgres: 54397, server, oidc: 4297, s3: 4397 },
     processes,
     pgdata: PGDATA,
   };
@@ -426,7 +431,10 @@ describe("the fake OIDC provider of the stack (D-09)", () => {
   it("gets NODE_ENV=test, loopback addresses of this stack, and nothing of the caller", () => {
     process.env.DUCTURA_PROBE_SECRET = "x";
     try {
-      const env = oidcEnv({ env: "ci", ports: { postgres: 54397, server: 4197, oidc: 4297 } });
+      const env = oidcEnv({
+        env: "ci",
+        ports: { postgres: 54397, server: 4197, oidc: 4297, s3: 4397 },
+      });
       expect(Object.keys(env).sort()).toEqual(
         [
           "BACKCHANNEL_LOGOUT_URI",

@@ -51,6 +51,7 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli
 | `VS1_POSTGRES_PORT` | 54360  | PostgreSQL           |
 | `VS1_SERVER_PORT`   | 4100   | server               |
 | `VS1_OIDC_PORT`     | 4180   | lažni OIDC pružatelj |
+| `VS1_S3_PORT`       | 4190   | lokalni S3           |
 
 Portovi 3000–3004 se odbijaju.
 
@@ -66,6 +67,20 @@ Portovi 3000–3004 se odbijaju.
 - automatski oporavak zaostalog locka (lock ostaje `wx`, oporavak je ručan);
 - preloader (`/`) i web (`/app/`): samo mjesta za priključak (`SLOTS` u `config.ts`), pa ni njihov SHA još nije zapisan.
 
+## Dokazi na stogu (DAN-817)
+
+`up` nakon provizije baze priprema pohranu dokaza i ključ potpisa (`evidence.ts`):
+
+- Učitava izmišljene ustanove (`db/main/local/seed.sql`).
+- Stvara razvojno sjeme ključa potpisa (32 bajta, `0600`, nikad se ne prepisuje). Sjeme je izvan checkouta, jer ga potpisnik unutar repozitorija odbija. Kad je stog u `.stack/vs1`, sjeme je u `$HOME/.ductura/stack-vs1-<hash direktorija>/signing-seed`; kad je stog izvan repozitorija (testovi u `/tmp`), sjeme je u direktoriju stoga.
+- Javni ključ registrira kao ključ potvrda domene dokaza ustanove `demo-fakultet` (`db/main/local/evidence-signing-key.sql`, preko socketa stoga).
+- Upisuje oznaku identiteta bucketa u `.stack/vs1/s3/` i pokreće lokalni S3 na `VS1_S3_PORT` (zadano 4190).
+- Za svaki `up` stvara nove S3 vjerodajnice. One su samo u okolini procesa lokalnog S3 i servera, nikad na disku, u `state.json` ni u argv.
+
+Server stoga dobiva `NODE_ENV=development`, `EVIDENCE_STORAGE_DOMAINS`, `EVIDENCE_S3_VS1_KEY_ID`, `EVIDENCE_S3_VS1_SECRET` i `DUCTUS_DEV_SIGNING_KEY_FILE`, a čita ih proizvodnim putem (`server/http/evidence-deps.ts`). Adresu lažnog OIDC-a i dalje ne dobiva. S istim varijablama, a s `NODE_ENV` izvan `development` i `test`, potpisnik odbija potpisivanje i pohrane nema, pa server na `evidence/commit` odgovara 503 (test u `evidence.test.ts`).
+
+`down` gasi i lokalni S3, uz točan marker naredbenog retka. `status` za njega provjerava samo sluša li upravo taj PID na svom portu.
+
 ## Lokalni S3 (DAN-817)
 
 `local-s3.ts` je mali S3-kompatibilan proces za pohranu dokaza na stogu, bez Dockera. Samo lokalno i u CI-ju: odbija start ako `NODE_ENV` nije `development` ili `test`, sluša samo na `127.0.0.1`, a objekte drži kao datoteke u `VS1_S3_ROOT`, pa preživljavaju ponovno pokretanje servera.
@@ -80,6 +95,7 @@ Portovi 3000–3004 se odbijaju.
 - `config.test.ts`: okruženja, `NODE_ENV`, portovi i dopušteni direktorij stoga.
 - `processes.test.ts`: gašenje samo vlastitih procesa, bez SIGKILL-a preuzetom PID-u, čekanje healtha i slobodan port.
 - `state.test.ts`: SHA, verzije (i PostgreSQL), datoteka 0600, oštećeno stanje i portovi 3000–3004.
+- `evidence.test.ts`: sjeme izvan checkouta, `0600` i bez prepisivanja; nove S3 vjerodajnice za svaki `up`; oznaka bucketa; točne varijable servera. Uz produkcijski `NODE_ENV` server ne dobiva ni razvojni potpisnik ni lokalni S3 (503), a nema ni OIDC issuera (D-09).
 - `local-s3.integration.test.ts`: ugovorni test lokalnog S3 s pravim `S3EvidencePayloadStore` (stored, existing, conflict, čitanje, HEAD, identitet bucketa), odbijeni potpisi, putanje, veze, granica tijela i istodobni zapis, te odbijanje u produkciji (ductura/server#129, S1–S9, P1, P3).
 - `vs1.integration.test.ts`:
   - skripta odbija bez pokretanja ičega;

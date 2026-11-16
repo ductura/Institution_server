@@ -101,15 +101,26 @@ describe("stackPorts", () => {
 
   it("refuses one port for two services", () => {
     expect(() => stackPorts({ VS1_SERVER_PORT: "4180" })).toThrow(/differ/u);
+    expect(() => stackPorts({ VS1_S3_PORT: "4100" })).toThrow(/differ/u);
+  });
+
+  it.each(["3000", "3004"])("refuses the reserved port %s for the local S3", (value) => {
+    expect(() => stackPorts({ VS1_S3_PORT: value })).toThrow(/3000-3004/u);
   });
 
   it("takes set ports", () => {
     expect(
-      stackPorts({ VS1_POSTGRES_PORT: "55000", VS1_SERVER_PORT: "4200", VS1_OIDC_PORT: "4280" }),
+      stackPorts({
+        VS1_POSTGRES_PORT: "55000",
+        VS1_SERVER_PORT: "4200",
+        VS1_OIDC_PORT: "4280",
+        VS1_S3_PORT: "4290",
+      }),
     ).toEqual({
       postgres: 55000,
       server: 4200,
       oidc: 4280,
+      s3: 4290,
     });
   });
 });

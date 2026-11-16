@@ -123,7 +123,9 @@ const ENV_NAMES = [
   "HOME",
   // The local S3 of the stack (DAN-817, scripts/stack/local-s3.ts) and the
   // storage variables the server reads (server/external/storage).
+  "VS1_S3_PORT",
   "VS1_S3_ROOT",
+  "DUCTUS_DEV_SIGNING_KEY_FILE",
   "VS1_S3_BUCKET",
   "VS1_S3_REGION",
   "EVIDENCE_STORAGE_DOMAINS",
