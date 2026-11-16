@@ -248,7 +248,9 @@ SELECT bag_eq(
     'work_language(p_assignment_id uuid, p_student_id uuid) definer app',
     'set_work_language(p_assignment_id uuid, p_student_id uuid, p_work_language text) definer app',
     'work_accommodation(p_assignment_id uuid, p_student_id uuid) definer app',
-    'set_work_accommodation(p_assignment_id uuid, p_marked boolean) definer app'
+    'set_work_accommodation(p_assignment_id uuid, p_marked boolean) definer app',
+    'check_admin_event_actor() definer',
+    'admin_appoint_admin(p_user_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

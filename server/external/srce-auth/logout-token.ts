@@ -34,8 +34,13 @@ export type LogoutTokenErrorCode =
   | "jti";
 
 export class LogoutTokenError extends Error {
-  constructor(readonly code: LogoutTokenErrorCode) {
+  // A declared field, not a parameter property: server.ts runs under Node's
+  // type stripping, which accepts only erasable syntax (S-1E-a).
+  readonly code: LogoutTokenErrorCode;
+
+  constructor(code: LogoutTokenErrorCode) {
     super(`logout token rejected: ${code}`);
+    this.code = code;
     this.name = "LogoutTokenError";
   }
 }

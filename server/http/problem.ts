@@ -6,7 +6,9 @@
 // The body never carries an error's message, name, stack or SQL.
 import { type ServerResponse, STATUS_CODES } from "node:http";
 
-import { type ErrorSpec, INTERNAL, SERVER_ERRORS } from "../contracts/index.ts";
+import { Value } from "@sinclair/typebox/value";
+
+import { type ErrorSpec, INTERNAL, type RouteContract, SERVER_ERRORS } from "../contracts/index.ts";
 
 import { writeJson } from "./json.ts";
 import { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
@@ -90,4 +92,79 @@ export function sendProblem(
   const body = problemOfSpec(spec, requestId);
   const extra: Record<string, string> = headers.allow === undefined ? {} : { allow: headers.allow };
   writeJson(response, spec.status, body, extra);
+}
+
+/**
+ * A browser navigation's error page (S-1E-a): the contract error `spec` of
+ * the route, which must have an HTML body, answered with `html`. Only
+ * the kept headers and the given Set-Cookie values (clearing a login
+ * attempt) survive, so a handler's cookie or Location never rides on an
+ * error. Any other spec answers 500 internal, as sendProblem does.
+ */
+export function sendHtmlProblem(
+  response: ServerResponse,
+  spec: ErrorSpec,
+  html: string,
+  setCookies: readonly string[] = [],
+): void {
+  if (spec.body !== "html" || knownError(spec.status, spec.code) === undefined) {
+    sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
+    return;
+  }
+  for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
+  response.addTrailers({});
+  answering.add(response);
+  const headers: Record<string, string | string[]> = {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    "referrer-policy": "no-referrer",
+    "content-length": String(Buffer.byteLength(html)),
+  };
+  requestIdOf(response);
+  if (setCookies.length > 0) headers["set-cookie"] = [...setCookies];
+  response.writeHead(spec.status, STATUS_CODES[spec.status] ?? "", headers);
+  response.end(html);
+}
+
+/**
+ * Answers an error of a route whose contract body is {status, ...} instead of
+ * a problem (the evidence routes, docs/vs1-rute.md, DAN-811). Only an error of
+ * this route's own contract, with a body its schema takes, is answered; any
+ * other status, code or body answers 500 internal. Headers are cleared as by
+ * sendProblem, and a Retry-After set before is dropped too: a 503 must bring
+ * its own (whole seconds) and nothing else may have one.
+ */
+export function sendRouteRefusal(
+  response: ServerResponse,
+  contract: RouteContract,
+  status: number,
+  body: { readonly status: string; readonly [field: string]: unknown },
+  headers: { readonly "retry-after"?: string } = {},
+): void {
+  const spec = contract.errors.find((e) => e.status === status && e.code === body.status);
+  const schema = spec?.body;
+  const retry = headers["retry-after"];
+  if (
+    spec === undefined ||
+    typeof schema !== "object" ||
+    !Value.Check(schema, body) ||
+    (status === 503) !== (retry !== undefined) ||
+    (retry !== undefined && !/^[1-9][0-9]{0,3}$/.test(retry))
+  ) {
+    // A Retry-After set before belongs to no answer of this writer, the 500 included.
+    if (!response.headersSent) response.removeHeader("retry-after");
+    sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
+    return;
+  }
+  if (!response.headersSent) {
+    for (const name of response.getHeaderNames()) {
+      if (!KEPT.has(name) || name === "retry-after") response.removeHeader(name);
+    }
+    response.addTrailers({});
+    response.statusMessage = STATUS_CODES[status] ?? "";
+  }
+  answering.add(response);
+  // The id ties the answer to the server's record, as on a problem body.
+  requestIdOf(response);
+  writeJson(response, status, body, retry === undefined ? {} : { "retry-after": retry });
 }

@@ -31,6 +31,17 @@ export const DAN_803: readonly string[] = [
   "submission.submit.post",
 ];
 
+// The operations of DAN-806 (settings, Ductus#1836 c.6906291102), frozen the
+// same way: contract now, handlers in S-1J-g.
+export const DAN_806: readonly string[] = [
+  "settings.catalogue.get",
+  "settings.values.get",
+  "settings.values.put",
+];
+
+/** Every route a task has put on the list; nothing else may be there. */
+const FROZEN: readonly string[] = [...DAN_803, ...DAN_806];
+
 const mounted = (): string[] => routesOf(AREA_NAMES).map((route) => route.contract.id);
 
 /** Every problem of a CONTRACT_ONLY list against the routes and the mounted ids. */
@@ -42,11 +53,11 @@ export function contractOnlyProblems(
   const problems: string[] = [];
   if (new Set(list).size !== list.length) problems.push("duplicate id");
   for (const id of list) {
-    if (!DAN_803.includes(id)) problems.push(`${id}: not a route of DAN-803`);
+    if (!FROZEN.includes(id)) problems.push(`${id}: not a contract-only route of a task`);
     if (!routeIds.includes(id)) problems.push(`${id}: no contract`);
     if (mountedIds.includes(id)) problems.push(`${id}: mounted`);
   }
-  for (const id of DAN_803)
+  for (const id of FROZEN)
     if (routeIds.includes(id) && !mountedIds.includes(id) && !list.includes(id))
       problems.push(`${id}: contract without a handler, not in CONTRACT_ONLY`);
   return problems;
@@ -55,34 +66,50 @@ export function contractOnlyProblems(
 describe("CONTRACT_ONLY", () => {
   const ids = ROUTES.map((route) => route.id);
 
-  it("is exactly the DAN-803 routes with a contract and no handler", () => {
+  it("is exactly the DAN-803 and DAN-806 routes with a contract and no handler", () => {
     expect(new Set(DAN_803).size).toBe(27);
+    expect(new Set(DAN_806).size).toBe(3);
+    expect(DAN_806.filter((id) => DAN_803.includes(id))).toEqual([]);
     expect(contractOnlyProblems(CONTRACT_ONLY, ids, mounted())).toEqual([]);
   });
 
-  it("refuses a route outside DAN-803, a route without contract, a duplicate and a mounted one", () => {
+  // Fixed inputs, not the live ROUTES, so these stay true as DAN-803 adds routes.
+  const routeIds = ["auth.login.get", "student.assignments.get", "teacher.courses.get"];
+
+  it("refuses a route outside both tasks, a route without contract, a duplicate and a mounted one", () => {
     expect(
       contractOnlyProblems(
-        [...CONTRACT_ONLY, "auth.login.get", "teacher.courses.get", "student.assignments.get"],
-        [...ids, "teacher.courses.get"],
-        ["student.assignments.get"],
+        ["teacher.courses.get", "auth.login.get", "live.document.get", "teacher.courses.get"],
+        routeIds,
+        ["teacher.courses.get", "student.assignments.get"],
       ),
     ).toEqual([
       "duplicate id",
-      "student.assignments.get: mounted",
-      "auth.login.get: not a route of DAN-803",
-      "student.assignments.get: mounted",
-    ]);
-    expect(contractOnlyProblems(["live.document.get"], ids, [])).toEqual([
+      "teacher.courses.get: mounted",
+      "auth.login.get: not a contract-only route of a task",
       "live.document.get: no contract",
-      "student.assignments.get: contract without a handler, not in CONTRACT_ONLY",
+      "teacher.courses.get: mounted",
     ]);
   });
 
-  it("refuses a DAN-803 contract left out of the list", () => {
-    expect(contractOnlyProblems([], [...ids, "teacher.courses.get"], [])).toEqual([
+  it("refuses a DAN-803 or DAN-806 contract left out of the list", () => {
+    expect(contractOnlyProblems([], [...routeIds, "settings.values.put"], [])).toEqual([
       "student.assignments.get: contract without a handler, not in CONTRACT_ONLY",
       "teacher.courses.get: contract without a handler, not in CONTRACT_ONLY",
+      "settings.values.put: contract without a handler, not in CONTRACT_ONLY",
+    ]);
+    expect(
+      contractOnlyProblems(["student.assignments.get", "teacher.courses.get"], routeIds, []),
+    ).toEqual([]);
+    const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
+    expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
+      DAN_806.map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
+    );
+  });
+
+  it("refuses a DAN-806 route that is mounted", () => {
+    expect(contractOnlyProblems(CONTRACT_ONLY, ids, ["settings.values.put"])).toEqual([
+      "settings.values.put: mounted",
     ]);
   });
 });
