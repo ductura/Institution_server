@@ -1,0 +1,118 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { ESLint } from "eslint";
+import { describe, expect, it } from "vitest";
+
+import { dataUrlProblem, normalizeUrlInput } from "../../scripts/lint-rules/index.ts";
+
+// S-1L.2c (DAN-784): interface text hidden in a data: URL. The scheme is found
+// as the WHATWG URL parser finds it (normalizeUrlInput), then the body is
+// decoded. Review FAILs c.6896676607 and c.6896957758 on ductura/server#64.
+// "xI1la2Fq" is base64 of "čekaj"; "8JCQgA" of U+10400 (a letter, a surrogate
+// pair in UTF-16). All text is invented.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const RULE = "local/no-hardcoded-text";
+const eslint = new ESLint({
+  cwd: ROOT,
+  overrideConfigFile: path.join(ROOT, "eslint.config.ts"),
+  flags: ["unstable_native_nodejs_ts_config"],
+});
+
+async function ids(code: string): Promise<string[]> {
+  const [result] = await eslint.lintText(code, { filePath: path.join(ROOT, "server/domain/x.ts") });
+  const fatal = (result?.messages ?? []).filter((m) => m.fatal);
+  if (fatal.length > 0) throw new Error(`parse error: ${fatal[0]?.message ?? ""}`);
+  return (result?.messages ?? []).filter((m) => m.ruleId === RULE).map((m) => m.messageId ?? "");
+}
+
+// Each is a source-code string literal body (escapes as in TypeScript source).
+const hidden: [what: string, literal: string][] = [
+  ["lowercase", "data:text/plain;base64,xI1la2Fq"],
+  ["upper case scheme", "DATA:text/plain;base64,xI1la2Fq"],
+  ["mixed case scheme and flag", "DaTa:text/plain;BaSe64,xI1la2Fq"],
+  ["tab in the scheme", "da\\tta:text/plain;base64,xI1la2Fq"],
+  ["CR in the scheme", "dat\\ra:,%C4%8Dekaj"],
+  ["LF in the scheme", "d\\nata:,%C4%8Dekaj"],
+  ["CR LF before the colon", "data\\r\\n:,%C4%8Dekaj"],
+  ["tab in the flag and body", "data:;base\\t64,xI1\\nla2Fq"],
+  ["leading NUL", "\\u0000data:,%C4%8Dekaj"],
+  ["leading form feed", "\\u000Cdata:,%C4%8Dekaj"],
+  ["leading space and controls", " \\u0001\\u001Fdata:,%C4%8Dekaj"],
+  ["trailing controls", "data:,%C4%8Dekaj\\u0000 "],
+  ["after a markup quote", "<img src='data:,%C4%8Dekaj'>"],
+  ["percent-encoded", "data:,%C4%8Dekaj"],
+  ["percent-encoded lowercase hex", "data:,%c4%8dekaj"],
+  ["double percent-encoded", "data:,%25C4%258Dekaj"],
+  ["triple percent-encoded", "data:,%2525C4%25258Dekaj"],
+  ["percent-encoded base64 body", "data:;base64,xI1la2E%3D"],
+  ["percent-encoded base64 flag", "data:;%62ase64,xI1la2Fq"],
+  ["space before the flag", "data:text/plain; base64,xI1la2Fq"],
+  ["base64 without padding", "data:;base64,xI1la2E"],
+  ["base64 with padding", "data:;base64,xI1la2E="],
+  ["base64 with spaces", "data:;base64,xI1 la2 Fq"],
+  ["base64 with form feed", "data:;base64,xI1\\u000Cla2Fq"],
+  ["base64 with percent spaces", "data:;base64,xI1%20la2Fq"],
+  ["URL-safe base64", "data:;base64,xI1la2F_"],
+  ["sentence", "data:text/plain,Prijava%20je%20obavezna"],
+  ["base64 sentence", "data:;base64,UHJpamF2YSBqZSBvYmF2ZXpuYQ=="],
+  ["surrogate pair, percent-encoded UTF-8", "data:,%F0%90%90%80"],
+  ["surrogate pair, base64 UTF-8", "data:;base64,8JCQgA=="],
+  ["surrogate pair, CESU-8", "data:,%ED%A0%81%ED%B0%80"],
+  ["surrogate pair, JSON escapes", "data:application/json,%22%5CuD801%5CuDC00%22"],
+  ["surrogate pair, raw JSON escapes", 'data:application/json,\\"\\\\uD801\\\\uDC00\\"'],
+  ["HTML character reference", "data:text/html,%26%23269;ekaj"],
+  ["HTML named reference", "data:text/html,&ccaron;ekaj"],
+  ["legacy charset", "data:text/plain;charset=windows-1250,%E8ekaj"],
+  ["UTF-16 charset", "data:text/plain;charset=utf-16le,%0D%01"],
+  ["nested data: URL", "data:,data:%252C%25C4%258Dekaj"],
+  ["fragment after the text", "data:,%C4%8Dekaj#x"],
+  ["query in the body", "data:,x?%C4%8Dekaj"],
+];
+
+describe("data: URL", () => {
+  it.each(hidden)("fails with interface text in the body: %s", async (_what, literal) => {
+    expect(await ids(`export const u = "${literal}";`)).toContain("dataUrl");
+  });
+
+  it("fails in a template, in JSX-free code across an expression and in a regex", async () => {
+    expect(await ids("export const u = `DATA:,%C4%8Dekaj`;")).toContain("dataUrl");
+    expect(await ids("export const u = (x: string) => `data:,${x}%C4%8D`;")).toContain("dataUrl");
+    expect(await ids("export const u = /data:,%C4%8Dekaj/u;")).toContain("dataUrl");
+  });
+
+  it("passes with ASCII content that is not interface text", async () => {
+    for (const literal of [
+      "data:text/plain,hello",
+      "data:,",
+      "data:application/json;base64,eyJvayI6dHJ1ZX0=",
+      "data:text/plain;charset=utf-8,status%3Dok",
+      "DATA:text/plain,%20missing%20index",
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22/%3E",
+      "data:text/html,&lt;b&gt;ok&lt;/b&gt;",
+      "metadata:,%C4%8Dekaj",
+      "data:no-comma-%C4%8Dekaj",
+      "data:,x#%C4%8Dekaj",
+      "data:text/html,&#269;ekaj",
+      "da\\u000Cta:,%C4%8Dekaj",
+    ])
+      expect(await ids(`export const u = "${literal}";`), literal).toEqual([]);
+  });
+});
+
+describe("normalizeUrlInput", () => {
+  it("strips C0 and space at the ends, removes tab and newlines, folds ASCII case", () => {
+    expect(normalizeUrlInput("\u0000 \u001F Da\tT\na\r:X,Y \u0000")).toEqual({
+      folded: "data:x,y",
+      input: "DaTa:X,Y",
+    });
+    // A form feed inside is kept: `da\fta:` is no data: URL.
+    expect(normalizeUrlInput("da\u000Cta:").input).toBe("da\u000Cta:");
+    // Only ASCII is folded, so indices stay the same (İ would grow).
+    expect(normalizeUrlInput("İD").folded).toBe("İd");
+  });
+
+  it("is the one input every check reads", () => {
+    expect(dataUrlProblem("\tDA\nTA\r:;BASE\t64,xI1la2Fq")).toBe("čekaj");
+    expect(dataUrlProblem("data:text/plain,ok")).toBeNull();
+  });
+});

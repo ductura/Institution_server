@@ -32,6 +32,7 @@ export {
 } from "./dynamic-load.ts";
 export {
   BUILDER_NAMES,
+  dataUrlProblem,
   DECODER_ALLOWED,
   isExempt,
   repoPath,
@@ -39,4 +40,5 @@ export {
   TEXT_TRANSITIONAL,
   textProblem,
 } from "./hardcoded-text.ts";
+export { dataUrlTexts, normalizeUrlInput } from "./data-url.ts";
 export { TEST_ONLY_RE } from "./fake-server-boundary.ts";
