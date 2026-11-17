@@ -1,5 +1,7 @@
 import { randomBytes as nodeRandomBytes, timingSafeEqual } from "node:crypto";
 
+import { hashSessionToken } from "./session-token.ts";
+
 // One-time WebAuthn challenges (S-1E-g, DAN-840-2a): 32 random bytes for one
 // ceremony of one session. They live in the memory of this process, on the
 // assumption of one web process (docs/server-map.md, session); a restart
@@ -26,6 +28,11 @@ export type ChallengeStore = {
   /** "ok" once for a live challenge of this session and purpose, else "invalid". */
   take(sessionKey: unknown, purpose: unknown, challenge: unknown): "ok" | "invalid";
 };
+
+/** The key of a session in the store: the base64url SHA-256 of its token, never the token (DAN-840-3c). */
+export function challengeSessionKey(token: string): string {
+  return hashSessionToken(token).toString("base64url");
+}
 
 /** Most challenges held at once; when full, expired ones go first, then the oldest. */
 export const CHALLENGE_CAPACITY = 10_000;
