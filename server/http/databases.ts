@@ -7,10 +7,12 @@ import {
   type ActorReader,
   closePools,
   createSettingsWriter,
+  createWebAuthnCredentials,
   databaseHealth,
   type HealthReport,
   metricSampleStore,
   type SettingsWriter,
+  type WebAuthnCredentials,
   withActor,
   type WithActor,
   workOpener,
@@ -25,6 +27,8 @@ export type Databases = {
     readonly workOpener: WorkOpener;
     /** settings.set_value over the same withActor (DAN-826-2b; PUT /api/v1/settings/values). */
     readonly settingsWriter: SettingsWriter;
+    /** The WebAuthn credential RPCs over the same withActor (DAN-840-3b; the routes of 840-3c and 3d). */
+    readonly webauthnCredentials: WebAuthnCredentials;
   };
   /** The state of main, logs and legal, each apart; the input of readiness (S-1M-a). */
   health(): Promise<HealthReport>;
@@ -36,7 +40,13 @@ export type Databases = {
 
 export function createDatabases(): Databases {
   return {
-    main: { withActor, actorReader, workOpener, settingsWriter: createSettingsWriter(withActor) },
+    main: {
+      withActor,
+      actorReader,
+      workOpener,
+      settingsWriter: createSettingsWriter(withActor),
+      webauthnCredentials: createWebAuthnCredentials(withActor),
+    },
     health: databaseHealth,
     metricSamples: metricSampleStore,
     close: closePools,
