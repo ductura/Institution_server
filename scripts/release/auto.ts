@@ -78,6 +78,38 @@ export function diffStatus(status: number | null): boolean {
   throw new Error(`git diff failed (${String(status)})`);
 }
 
+const GENERATOR = "scripts/generate-contracts.ts";
+/** What the generator writes for @ductura/contracts: everything but the fake server (test-fakes). */
+const CONTRACTS_OUTPUT = [
+  "openapi/v1.json",
+  "server/contracts/generated",
+  ":(exclude)server/contracts/generated/fake-server",
+];
+
+/**
+ * Whether the generator changed what @ductura/contracts holds since `commit`
+ * (DAN-974-4, Codex #282): some commit after it changed the generator and, in
+ * the same commit, a generated contracts file. CI keeps generated = committed
+ * on every commit of main, so a generator commit that rewrote only the fake
+ * server left the contracts output as it was. A merge commit, or any git
+ * failure, counts as changed.
+ */
+export function contractsGeneratorChanged(commit: string, head: string, cwd = ROOT): boolean {
+  const git = (...args: string[]) => spawnSync("git", args, { cwd, encoding: "utf8" });
+  const list = git("rev-list", "--full-history", `${commit}..${head}`, "--", GENERATOR);
+  if (list.status !== 0) throw new Error(`git rev-list failed (${String(list.status)})`);
+  return list.stdout
+    .split("\n")
+    .filter(Boolean)
+    .some((c) => {
+      const parents = git("rev-list", "--parents", "-n", "1", c);
+      if (parents.status !== 0) throw new Error(`git rev-list failed (${String(parents.status)})`);
+      const [, ...ids] = parents.stdout.trim().split(" ");
+      if (ids.length !== 1) return true;
+      return diffStatus(git("diff", "--quiet", ids[0]!, c, "--", ...CONTRACTS_OUTPUT).status);
+    });
+}
+
 function run(cmd: string, args: string[], cwd = ROOT): string {
   const out = spawnSync(cmd, args, { cwd, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
   if (out.status !== 0) throw new Error(`${cmd} ${args[0] ?? ""} failed (${String(out.status)})`);
@@ -128,13 +160,7 @@ function gitIo(head: string): ReleaseIo {
     },
     stagedAt: (commit, short) => readTree(join(stageCommit(commit), short)),
     stagedHead: (short) => readTree(join(headDir, short)),
-    // Any answer but "no difference" counts as changed.
-    generatorChanged: (commit) =>
-      diffStatus(
-        spawnSync("git", ["diff", "--quiet", commit, head, "--", "scripts/generate-contracts.ts"], {
-          cwd: ROOT,
-        }).status,
-      ),
+    generatorChanged: (commit) => contractsGeneratorChanged(commit, head),
     floor: (short) =>
       String(
         (

@@ -76,6 +76,13 @@ const named = (route: string, name: string): FakeVector => {
 };
 
 describe("fake server answers with the vectors", () => {
+  // DAN-974-4 (Codex #282): an unknown id is undefined, inherited names too.
+  it("has no prototype, so an inherited name is not a route", () => {
+    expect(Object.getPrototypeOf(ROUTE_TABLE)).toBeNull();
+    for (const id of ["toString", "constructor", "hasOwnProperty", "__proto__", "valueOf"])
+      expect(ROUTE_TABLE[id]).toBeUndefined();
+  });
+
   it("embeds every vector of every route", () => {
     expect(new Set(VECTORS.map((v) => v.route))).toEqual(new Set(Object.keys(ROUTE_TABLE)));
     expect(VECTORS.length).toBeGreaterThanOrEqual(40);

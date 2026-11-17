@@ -68,6 +68,7 @@ export const ROUTE_TABLE: Readonly<Record<string, FakeRoute>> = {
   "teacher.mentorships.get": { method: "GET", path: "/api/v1/teacher/mentorships", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "teacher.submissions.get": { method: "GET", path: "/api/v1/teacher/assignments/{assignmentId}/submissions", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
 };
+Object.setPrototypeOf(ROUTE_TABLE, null);
 
 /** Answer statuses at 400 or above, by route (generated client). */
 export const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {

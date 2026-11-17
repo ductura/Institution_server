@@ -239,7 +239,8 @@ function routeTable(routes: RouteContract[], declared?: string): string {
     .filter((r) => r.responses.some((s) => s.status >= 400))
     .map((r) => `  ${JSON.stringify(r.id)}: ${JSON.stringify(r.responses.map((s) => s.status))},`);
   const table = declared
-    ? `export const ROUTE_TABLE: ${declared} = {\n${rows.join("\n")}\n};`
+    ? // No prototype, so ROUTE_TABLE["toString"] is undefined like any unknown route.
+      `export const ROUTE_TABLE: ${declared} = {\n${rows.join("\n")}\n};\nObject.setPrototypeOf(ROUTE_TABLE, null);`
     : `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;`;
   return `${table}\n\n/** Answer statuses at 400 or above, by route (generated client). */\nexport const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {\n${answers.join("\n")}\n};\n`;
 }

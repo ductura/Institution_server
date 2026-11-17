@@ -381,11 +381,16 @@ export function declarationChange(
 const FAKE_SERVER_JS = "server/contracts/generated/fake-server/index.js";
 
 /**
- * The rows of the one top-level `ROUTE_TABLE` of a JS file, by route id. Anything
- * else (no table or two, not an object literal, a key that is not a plain
- * string, a spread, a duplicate, `__proto__`, which sets the prototype) throws.
+ * The rows of the one top-level `ROUTE_TABLE` of a JS file, by route id, and
+ * whether a top-level `Object.setPrototypeOf(ROUTE_TABLE, null)` takes its
+ * prototype away. Anything else (no table or two, not an object literal, a key
+ * that is not a plain string, a spread, a duplicate, `__proto__`, which sets
+ * the prototype) throws.
  */
-export function routeRows(text: string, path: string): Map<string, ts.Node> {
+export function routeRows(
+  text: string,
+  path: string,
+): { rows: Map<string, ts.Node>; nullPrototype: boolean } {
   const file = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const tables = file.statements
     .filter(ts.isVariableStatement)
@@ -402,20 +407,29 @@ export function routeRows(text: string, path: string): Map<string, ts.Node> {
     if (id === "__proto__" || rows.has(id)) throw new Error(`${path}: ROUTE_TABLE key ${id}`);
     rows.set(id, row.initializer);
   }
-  return rows;
+  const nullPrototype = file.statements.some(
+    (s) =>
+      ts.isExpressionStatement(s) &&
+      ts.isCallExpression(s.expression) &&
+      s.expression.expression.getText(file) === "Object.setPrototypeOf" &&
+      s.expression.arguments.map((a) => a.getText(file)).join(",") === "ROUTE_TABLE,null",
+  );
+  return { rows, nullPrototype };
 }
 
 /** Routes of the fake server: a new one is minor, a removed or changed one major. */
 function routesLevel(before: string, after: string, raise: (to: Level, why: string) => void) {
   const a = routeRows(before, FAKE_SERVER_JS);
   const b = routeRows(after, FAKE_SERVER_JS);
-  for (const [id, row] of a) {
-    const other = b.get(id);
+  // With a prototype again, ROUTE_TABLE["toString"] is a function, not undefined.
+  if (a.nullPrototype && !b.nullPrototype) raise("major", "ROUTE_TABLE has a prototype again");
+  for (const [id, row] of a.rows) {
+    const other = b.rows.get(id);
     if (other === undefined) raise("major", `route ${id} removed`);
     else if (compare(row, other, row.getSourceFile(), other.getSourceFile()) !== "same")
       raise("major", `route ${id} changed`);
   }
-  for (const id of b.keys()) if (!a.has(id)) raise("minor", `route ${id} added`);
+  for (const id of b.rows.keys()) if (!a.rows.has(id)) raise("minor", `route ${id} added`);
 }
 
 // --- package ----------------------------------------------------------------

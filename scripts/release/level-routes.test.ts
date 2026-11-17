@@ -48,7 +48,7 @@ describe("the test-fakes route table (DAN-974-4)", () => {
   });
 
   it("reads exactly the routes of the real generated table from its compiled JS", () => {
-    expect([...routeRows(js(SOURCE), "index.js").keys()]).toEqual(Object.keys(ROUTE_TABLE));
+    expect([...routeRows(js(SOURCE), "index.js").rows.keys()]).toEqual(Object.keys(ROUTE_TABLE));
   });
 
   // Negative cases first: what must stay major.
@@ -68,11 +68,19 @@ describe("the test-fakes route table (DAN-974-4)", () => {
 
   it("is major from the old declaration with listed keys (the 4.0.0 step itself)", () => {
     const asConst = SOURCE.replace(OPEN, "export const ROUTE_TABLE = {\n").replace(
-      "\n};\n\n/** Answer statuses",
-      "\n} as const;\n\n/** Answer statuses",
+      "\n};\nObject.setPrototypeOf(ROUTE_TABLE, null);\n",
+      "\n} as const;\n",
     );
     expect(dts(asConst)).toContain(JSON.stringify(FIRST));
     expect(level(pkg(SOURCE), pkg(asConst)).level).toBe("major");
+  });
+
+  it("is major when the table gets its prototype back", () => {
+    const withProto = SOURCE.replace("Object.setPrototypeOf(ROUTE_TABLE, null);\n", "");
+    expect(withProto).not.toBe(SOURCE);
+    expect(routeRows(js(SOURCE), "index.js").nullPrototype).toBe(true);
+    expect(level(pkg(withProto)).level).toBe("major");
+    expect(level(pkg(SOURCE), pkg(withProto)).level).toBe("patch");
   });
 
   it.each([
@@ -84,6 +92,7 @@ describe("the test-fakes route table (DAN-974-4)", () => {
     ["a duplicate key", withTable('{ "a.get": {}, "a.get": {} }')],
     ["an identifier key", withTable("{ a: {} }")],
     ["a __proto__ key", withTable('{ "__proto__": {} }')],
+    ["__proto__ with a value", withTable("{ __proto__: null }")],
   ])("is blocked for a table it cannot read: %s", (_, code) => {
     const before = pkg(SOURCE, withTable('{ "a.get": { method: "GET" } }'));
     expect(level(pkg(SOURCE, code), before).level).toBe("blocked");
