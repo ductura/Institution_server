@@ -22,8 +22,11 @@ const hasKeys = (value: Record<string, unknown>, keys: readonly string[]): boole
 };
 
 function readVector(raw: unknown, at: number): Vector | string {
-  const name = isObject(raw) && typeof raw.name === "string" ? raw.name : `#${at}`;
-  if (!isObject(raw)) return `${name}: not an object`;
+  if (!isObject(raw)) return `#${at}: not an object`;
+  // Every field is checked by type before use: a name of another type or an
+  // empty one would otherwise pass under a made-up label (review FAIL c.6949034737).
+  const { name } = raw;
+  if (typeof name !== "string" || name === "") return `#${at}: name is not a non-empty string`;
   const { check, accepted, repeat } = raw;
   if (check !== "isWorkId" && check !== "workIdFromPath") return `${name}: unknown check`;
   if (typeof accepted !== "boolean") return `${name}: accepted is not a boolean`;
@@ -102,6 +105,16 @@ describe("work id vectors: a broken file is refused", () => {
     ...["__proto__", "toString", "constructor", "valueOf", "hasOwnProperty"].map(
       (key): [string, unknown, string] => [`own key ${key}`, file(ownKey(key)), "v: wrong fields"],
     ),
+    ...[7, "", null, true, ["v"], { v: 1 }].map((name): [string, unknown, string] => [
+      `name ${JSON.stringify(name)}`,
+      file({ ...ok, name }),
+      "#0: name is not a non-empty string",
+    ]),
+    [
+      "a missing name",
+      file({ check: "isWorkId", input: "doc", accepted: true }),
+      "#0: name is not a non-empty string",
+    ],
     ["a missing input", file({ name: "v", check: "isWorkId", accepted: true }), "v: wrong fields"],
     ["an unknown check", file({ ...ok, check: "isWorkID" }), "v: unknown check"],
     ["accepted not a boolean", file({ ...ok, accepted: "true" }), "v: accepted is not a boolean"],
