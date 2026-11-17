@@ -213,9 +213,12 @@ describe("operator policy on a real server", () => {
         connection: "close",
       });
       const lines = stderr.mock.calls.map((args) => String(args[0]));
-      expect(lines).toHaveLength(1);
-      expect(JSON.parse(lines[0]!)).toMatchObject({ event: "server_error", where: "layer" });
-      expect(lines[0]).not.toContain(TOKEN);
+      // The fault, and the refusal's own record (DAN-842-3), with the same request id.
+      const events = lines.map((line) => JSON.parse(line) as { event: string; requestId: string });
+      expect(events.map((e) => e.event)).toEqual(["server_error", "authz.operator_denied"]);
+      expect(events[0]).toMatchObject({ where: "layer" });
+      expect(events[1]!.requestId).toBe(events[0]!.requestId);
+      expect(lines.join("\n")).not.toContain(TOKEN);
     } finally {
       stderr.mockRestore();
     }

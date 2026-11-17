@@ -16,6 +16,7 @@ import {
 import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
 import { ipRulesLayer } from "./ip-rules-layer.ts";
 import { originLayer } from "./mutation-request.ts";
+import { createOperatorDenialLog, type OperatorDenialLog } from "./operator-denial-log.ts";
 import {
   NO_SECOND_FACTOR,
   operatorPolicyLayer,
@@ -86,7 +87,8 @@ const pass: Layer = async () => "next";
  * built here has one, so no caller can leave step 4 open. Without
  * allowedNetworks operator paths are open to every network (S-1C.2, DAN-832-1);
  * without secondFactor no session has one, so operator paths answer 401 or
- * 403 and never reach the application (S-1J.2, DAN-842-1).
+ * 403 and never reach the application (S-1J.2, DAN-842-1). Every refusal of
+ * steps 3 and 8 goes to operatorDenialLog, one stderr line by default (DAN-842-3).
  */
 export function createLayers(options: {
   readonly expectedOrigin: string | null;
@@ -95,10 +97,12 @@ export function createLayers(options: {
   readonly rateLimitLog?: RateLimitLog;
   readonly allowedNetworks?: () => AllowedNetworks;
   readonly secondFactor?: SecondFactor;
+  readonly operatorDenialLog?: OperatorDenialLog;
 }): Layers {
+  const denials = options.operatorDenialLog ?? createOperatorDenialLog();
   return Object.freeze({
     clientIp: clientIpLayer(options.trustedProxies ?? NO_TRUSTED_PROXIES),
-    ipRules: ipRulesLayer(options.allowedNetworks ?? (() => NO_ALLOWED_NETWORKS)),
+    ipRules: ipRulesLayer(options.allowedNetworks ?? (() => NO_ALLOWED_NETWORKS), denials),
     rateLimit: rateLimitLayer(
       options.rateLimiter ?? defaultRateLimiter(),
       ...(options.rateLimitLog === undefined ? [] : [options.rateLimitLog]),
@@ -106,7 +110,11 @@ export function createLayers(options: {
     trafficRecord: pass,
     securityHeaders: securityHeadersLayer,
     originCheck: originLayer(options.expectedOrigin),
-    operatorPolicy: operatorPolicyLayer(options.secondFactor ?? NO_SECOND_FACTOR),
+    operatorPolicy: operatorPolicyLayer(
+      options.secondFactor ?? NO_SECOND_FACTOR,
+      reportServerError,
+      denials,
+    ),
   });
 }
 

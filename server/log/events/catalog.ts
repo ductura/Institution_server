@@ -173,6 +173,16 @@ export const EVENT_CATALOG = {
       ),
     },
   },
+  // Step 8 of the pipeline refused an operator path (S-1J.2, DAN-842-3). The
+  // step reads no account, so `anonymous` here means "not resolved in this
+  // step", not "nobody signed in"; route is `none` for a path that is no route.
+  "authz.operator_denied": {
+    actors: ANONYMOUS,
+    fields: {
+      route: ROUTE_OR_NONE,
+      reason: code("not_signed_in", "session_unknown", "second_factor_required", "unavailable"),
+    },
+  },
   "authz.origin_rejected": {
     actors: ANYONE,
     fields: {
@@ -195,9 +205,14 @@ export const EVENT_CATALOG = {
       rateLimit: code("allowed", "limited", "not_checked"),
     },
   },
+  // Step 3 writes operator_only for an operator path (DAN-842-3), which may
+  // be no route yet, so the route may be `none`.
   "traffic.ip_denied": {
     actors: ANYONE,
-    fields: { route: ROUTE, rule: code("blocked_range", "not_in_allowed_ranges", "operator_only") },
+    fields: {
+      route: ROUTE_OR_NONE,
+      rule: code("blocked_range", "not_in_allowed_ranges", "operator_only"),
+    },
   },
   "traffic.rate_limited": {
     actors: ANYONE,
