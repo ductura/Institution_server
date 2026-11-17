@@ -140,6 +140,19 @@ const failing: Case[] = [
     `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void t.terminate;\n  return g;\n}\n`,
     `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void t?.terminate();\n  return g;\n}\n`,
     `import { Worker } from "${WT}";\nexport function f(): void {\n  const { unref } = new Worker(${URL_JS}, { workerData: 1 });\n  void unref;\n}\n`,
+    // Review FAIL on #265 (c.6952523333): a self-import calls the starter on
+    // import. The fence loads no module but its Worker: other imports are
+    // `import type` only, and it re-exports nothing from another module.
+    `import { Worker } from "${WT}";\nimport { f as boot } from "./attempt-fence.ts";\nboot();\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nimport * as self from "./attempt-fence.ts";\nself.f();\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nimport "./attempt-fence.ts";\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nimport { x } from "./y.ts";\nvoid x;\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nimport "./y.ts";\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nimport { type AttemptFence } from "./job-queue.ts";\nexport type A = AttemptFence;\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nimport { createHash } from "node:crypto";\nvoid createHash;\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nexport { x } from "./y.ts";\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nexport * from "./y.ts";\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nexport * as y from "./y.ts";\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
     // Review FAIL on #265 (c.6952102045): a thread that starts on import. Only
     // the body of an exported top-level function the file never calls.
     `import { Worker } from "${WT}";\n{\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
@@ -531,6 +544,7 @@ const passing: Case[] = [
     startWith(`${URL_JS}, { workerData: 1 }`),
     startWith(`${URL_TS}, { workerData: new SharedArrayBuffer(8) }`),
     startWith(`import.meta.url.endsWith(".ts") ? ${URL_TS} : ${URL_JS}, { workerData: 1 }`),
+    `import { Worker } from "${WT}";\nimport type { AttemptFence } from "./job-queue.ts";\nexport type { AttemptFence } from "./job-queue.ts";\nexport type A = AttemptFence;\n${startWith(`${URL_JS}, { workerData: 1 }`).split("\n").slice(1).join("\n")}`,
     `import { Worker } from "${WT}";\nexport async function f(): Promise<void> {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n  void t.terminate();\n  await t.terminate();\n}\n`,
     // A type use of Worker is erased and starts nothing.
     `import { Worker } from "${WT}";\nexport type T = Worker;\nlet w: Worker | undefined;\nvoid w;\n`,

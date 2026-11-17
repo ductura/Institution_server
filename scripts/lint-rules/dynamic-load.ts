@@ -159,7 +159,8 @@ export const NODE_IMPORTS_ALLOWED: Readonly<
  * `new Worker(new URL("<script>", import.meta.url), { workerData })` with the
  * global URL; a conditional whose both branches are such a URL is one too.
  * The thread is the init of a const in the body of an exported top-level
- * function the file never calls (so nothing starts it on import), used only
+ * function the file never calls, and the file loads no module but Worker
+ * (other imports are `import type`), so nothing starts it on import; used only
  * as `thread.unref()` and `thread.terminate()`, and Worker
  * is never a value otherwise (no alias, export or other argument), so no eval,
  * other option or code from a string (DAN-822-5, decision c.6948159989).
@@ -402,6 +403,8 @@ export const noDynamicLoad: Rule.RuleModule = {
 
     // Every value use of Worker is `new Worker(<watch URL>, <options>)`.
     function checkWorker(): void {
+      for (const { node, worker } of loadingNodes)
+        if (!worker) context.report({ node, messageId: "worker" });
       for (const specifier of workerSpecifiers) {
         for (const variable of context.sourceCode.getDeclaredVariables(specifier)) {
           for (const reference of variable.references) {
@@ -433,8 +436,24 @@ export const noDynamicLoad: Rule.RuleModule = {
       }
     }
 
+    // In a file of WORKER_SCRIPTS_ALLOWED, every import and re-export that
+    // loads a module: none may but its Worker (review FAIL on #265, c.6952523333).
+    const loadingNodes: { node: Node; worker: boolean }[] = [];
+
     function checkSource(node: Node, source: Loose | null | undefined, kind?: string): void {
-      if (!source || kind === "type") return;
+      if (!source) return;
+      // `import { type T }` keeps the module as a side-effect import; only a
+      // whole `import type` (or `export type ... from`) loads nothing.
+      if (kind !== "type" && own(WORKER_SCRIPTS_ALLOWED, file) !== undefined) {
+        const declaration = node as unknown as Loose;
+        const worker =
+          declaration.type === "ImportDeclaration" &&
+          source.value === WORKER.spec &&
+          (declaration.specifiers ?? []).length === 1 &&
+          declaration.specifiers?.[0]?.imported?.name === WORKER.name;
+        loadingNodes.push({ node, worker });
+      }
+      if (kind === "type") return;
       const spec = typeof source.value === "string" ? source.value : "";
       if (!allowedModule(spec, node) && !listedImport(node, spec))
         context.report({ node, messageId: "module", data: { spec } });
