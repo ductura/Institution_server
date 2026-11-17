@@ -140,8 +140,10 @@ jobs:
           [ "$(find release -type f | wc -l)" -eq 1 ]
           printf '%s  %s\n' "$SHA256" "release/$FILE" | sha256sum --check --strict -
       # The tag from GITHUB_REF must name the checked file. No --clobber: an
-      # asset that is already there is never replaced, the job fails. Create
-      # takes the file in the same call (immutable releases), on the tag only.
+      # asset that is already there is never replaced. DAN-966-2a: a rerun
+      # downloads its asset; the same sha256 passes without an upload, another
+      # one fails the job. Create takes the file in the same call (immutable
+      # releases), on the tag only; a failed view goes there and fails too.
       - name: Prilaganje
         env:
           FILE: ${{ needs.verify.outputs.file }}
@@ -155,7 +157,14 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           [ "$FILE" = "ductura-$PACKAGE-$VERSION.tgz" ]
           export GH_REPO="$GITHUB_REPOSITORY"
-          if gh release view "$TAG" > /dev/null; then
+          if names="$(gh release view "$TAG" --json assets --jq '.assets[].name')"; then
+            if grep -Fxq -- "$FILE" <<< "$names"; then
+              got="$(mktemp -d)/asset"
+              gh release download "$TAG" --pattern "$FILE" --output "$got"
+              printf '%s  %s\n' "$SHA256" "$got" | sha256sum --check --strict -
+              echo "::notice::$FILE is already attached with the same sha256"
+              exit 0
+            fi
             gh release upload "$TAG" "./release/$FILE"
           else
             gh release create "$TAG" "./release/$FILE" --verify-tag --title "$TAG" --notes "sha256 $SHA256"
