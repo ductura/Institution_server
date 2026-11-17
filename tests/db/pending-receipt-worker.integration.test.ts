@@ -646,3 +646,101 @@ describe("deferred commit: the same key and bytes make one revision and one job 
     expect(signerCalls).toBe(0);
   });
 });
+
+// DAN-821-2 (contract Ductus#1836 c.6943581351): the segment, the revision and
+// the job (the pending receipt) come from one RPC in one transaction, so a
+// fault after the RPC returned leaves none of them, and the same request then
+// makes exactly one of each. ana's revision 1 is signed; this is her segment 2.
+describe("deferred commit: the segment and its job are made together or not at all (DAN-821)", () => {
+  let input: EvidenceCommitInput;
+  beforeAll(() => {
+    const first = firstInputs.ana!;
+    const snapshot = JSON.stringify({ naslov: "Izmišljeni drugi odlomak ana." });
+    const segmentHash = sha256(`segment ${txid("ana")}-2`);
+    input = {
+      ...first,
+      clientTransactionId: `${txid("ana")}-2`,
+      baseRevision: 1,
+      initialDocumentHash: first.finalDocumentHash,
+      finalDocumentHash: sha256(snapshot),
+      descriptor: {
+        ...first.descriptor,
+        segmentId: "segment-ana-2",
+        sequenceFrom: 2,
+        sequenceTo: 2,
+        segmentHash,
+        predecessorSegmentHash: first.descriptor.segmentHash,
+      },
+      storageRef: first.storageRef.replace(first.descriptor.segmentHash, segmentHash),
+      snapshot,
+    };
+  });
+
+  it("A1: a fault in the transaction after the RPC returned leaves no revision, segment or job", async () => {
+    const before = await heldFor(input.documentId);
+    let returned = false;
+    const faulty: WithActor = (who, fn) =>
+      withActor(who, async (tx) => {
+        await fn(tx);
+        returned = true;
+        throw new Error("izmišljeni pad prije COMMIT-a");
+      });
+    expect(
+      await createEvidenceCommitter(faulty, signer).commit(token.ana, input, "deferred"),
+    ).toEqual({
+      status: "unavailable",
+      stage: "repository",
+      code: "commit_failed",
+    });
+    expect(returned).toBe(true);
+    expect(await heldFor(input.documentId)).toStrictEqual(before);
+    expect(signerCalls).toBe(0);
+  });
+
+  it("A2: the commit's own check failing after the RPC leaves no revision, segment or job", async () => {
+    const before = await heldFor(input.documentId);
+    const tampered: WithActor = (who, fn) =>
+      withActor(who, (tx) =>
+        fn({
+          async query<Row extends pg.QueryResultRow>(text: string, values?: readonly unknown[]) {
+            const answer = await tx.query<Row>(text, values);
+            if (!text.includes("app.commit_evidence_segment")) return answer;
+            const rows = answer.rows.map((row) => ({ ...row, receipt_id: randomUUID() }) as Row);
+            return { ...answer, rows };
+          },
+        }),
+      );
+    expect(
+      await createEvidenceCommitter(tampered, signer).commit(token.ana, input, "deferred"),
+    ).toEqual({
+      status: "unavailable",
+      stage: "repository",
+      code: "receipt_mismatch",
+    });
+    expect(await heldFor(input.documentId)).toStrictEqual(before);
+    expect(signerCalls).toBe(0);
+  });
+
+  it("A3: the same request then makes exactly one revision, one segment and one job", async () => {
+    const before = await heldFor(input.documentId);
+    expect(before.queued).toEqual([]);
+    expect(
+      await createEvidenceCommitter(withActor, signer).commit(token.ana, input, "deferred"),
+    ).toEqual({
+      status: "committed_pending",
+      revision: 2,
+    });
+    const after = await heldFor(input.documentId);
+    const plusOne = (value: string | undefined) => String(Number(value) + 1);
+    expect(after.state).toEqual({
+      revision: "2",
+      revisions: plusOne(before.state?.revisions),
+      segments: plusOne(before.state?.segments),
+      receipts: plusOne(before.state?.receipts),
+    });
+    expect(
+      after.queued.map((row) => JSON.parse(row.receiptPayloadText).clientTransactionId),
+    ).toEqual([input.clientTransactionId]);
+    expect(signerCalls).toBe(0);
+  });
+});
