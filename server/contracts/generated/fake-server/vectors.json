@@ -12141,7 +12141,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.18.0",
+        "apiVersion": "1.19.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -12157,7 +12157,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.18.0",
+        "apiVersion": "1.19.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15258,6 +15258,97 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000032"
+      }
+    }
+  },
+  {
+    "route": "teacher.access.get",
+    "name": "allowed",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "access": "allowed",
+        "scope": "79146f0601084d65f1cfeeadcc3aae666aa4ffb42b5611f2bf68b78facbd3112"
+      }
+    }
+  },
+  {
+    "route": "teacher.access.get",
+    "name": "denied",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "access": "denied",
+        "scope": "3e8ae7679c17ac1b17a1f754e033cfebf2507271ffb5910dd754113dd6daf1a3"
+      }
+    }
+  },
+  {
+    "route": "teacher.access.get",
+    "name": "unauthorized",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000002"
+      }
+    }
+  },
+  {
+    "route": "teacher.access.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000003"
+      }
+    }
+  },
+  {
+    "route": "teacher.access.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000004"
       }
     }
   },

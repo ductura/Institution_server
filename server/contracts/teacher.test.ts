@@ -203,3 +203,48 @@ describe("teacher.assignment-submissions.post", () => {
     expect(none.assignments.map((a) => a.submissions)).toEqual([[]]);
   });
 });
+
+// DAN-903-2: teacherPageRead as a route (Ductus#1836 c.6948165042).
+describe("teacher.access.get", () => {
+  const scope = "a".repeat(64);
+  const check = (body: unknown) => Value.Check(success("teacher.access.get"), body);
+
+  it("is exactly allowed or denied, with the principal scope of the same snapshot", () => {
+    expect(check({ access: "allowed", scope })).toBe(true);
+    expect(check({ access: "denied", scope })).toBe(true);
+    expect(check({ access: "allowed" })).toBe(false);
+    expect(check({ scope })).toBe(false);
+  });
+
+  it.each(["signedOut", "unavailable", "Allowed", "", "expired"])(
+    "%j is no answer of 200 (401, 503 or nothing)",
+    (access) => expect(check({ access, scope })).toBe(false),
+  );
+
+  it.each([
+    "A".repeat(64),
+    "a".repeat(63),
+    "a".repeat(65),
+    `${"a".repeat(64)}\n`,
+    `${"a".repeat(64)}\r\n`,
+    `${"a".repeat(64)}\t`,
+    `${"a".repeat(64)} `,
+    `${"a".repeat(64)}\u007f`,
+    `${"a".repeat(63)}g`,
+  ])("refuses the scope %j", (bad) => expect(check({ access: "denied", scope: bad })).toBe(false));
+
+  it("names no course, role or count: any other key is refused", () => {
+    for (const key of ["role", "courses", "toString"])
+      expect(check({ access: "allowed", scope, [key]: [] }), key).toBe(false);
+    expect(check(JSON.parse(`{"access":"allowed","scope":"${scope}","__proto__":{}}`))).toBe(false);
+  });
+
+  it("refuses only as a read: 401, 403 cross-site and 503, never 404", () => {
+    const route = ROUTES.find((r) => r.id === "teacher.access.get");
+    expect(route?.errors.map((e) => `${e.status} ${e.code}`)).toEqual([
+      "401 unauthorized",
+      "403 forbidden",
+      "503 unavailable",
+    ]);
+  });
+});
