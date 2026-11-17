@@ -62,6 +62,19 @@
     "traffic_window_invalid": "Vremenski prozor mora biti cijeli broj minuta, najmanje jedna.",
     "traffic_window_too_large": "Vremenski prozor je predug. Najdulji je 1440 minuta (24 sata)."
   },
+  "institutions": {
+    "institutions_not_object": "Popis ustanova mora biti objekt.",
+    "institutions_fields": "Popis ustanova mora imati točno polja format i institutions.",
+    "institutions_accessor": "Polje popisa ustanova mora biti obična vrijednost.",
+    "institutions_format": "Popis ustanova je u nepoznatom formatu.",
+    "institutions_not_array": "Polje institutions mora biti niz zapisa ustanova.",
+    "institution_not_object": "Zapis ustanove mora biti objekt.",
+    "institution_fields": "Zapis ustanove mora imati točno polja slug i citationStyle.",
+    "institution_accessor": "Polje zapisa ustanove mora biti obična vrijednost.",
+    "institution_slug_malformed": "Oznaka ustanove smije imati samo mala slova, znamenke i crticu, od 2 do 32 znaka.",
+    "institution_slug_duplicate": "Oznaka ustanove ponavlja se u popisu.",
+    "institution_style_unknown": "Stil citiranja ustanove nije poznat."
+  },
   "operatorAudit": {
     "operator_audit_refused": "Radnja nije izvršena jer se za nju ne može napraviti ispravan zapis u revizijskom tragu."
   },
