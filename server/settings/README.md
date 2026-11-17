@@ -10,7 +10,7 @@ Postavke iz okoline i njihova provjera pri pokretanju. Odbija lažni OIDC i razv
 
 ## Tko ga zove
 
-`log`, `metrics`, `database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `http` i `test-server`.
+`log`, `metrics`, `database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `profile`, `http` i `test-server`.
 
 ## Koje podatke dira
 

@@ -25,6 +25,7 @@ const TEMPLATE_AREAS = [
   "deletion",
   "downloads",
   "evidence",
+  "profile",
 ];
 
 const HEADINGS = readmeHeadings(ROOT);
