@@ -9,3 +9,5 @@ export {
   metricsIntervalMs,
   metricsIntervalProblems,
 } from "./metrics-interval.ts";
+export { institutionsProblems, loadInstitutions } from "./institutions.ts";
+export type { InstitutionRecord, InstitutionsResult } from "./institutions.ts";
