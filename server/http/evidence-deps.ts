@@ -5,8 +5,9 @@
 // NODE_ENV development or test (F-020; the adapter refuses otherwise), a
 // refusing signer in every other case (503 signing), and the storage of
 // EVIDENCE_STORAGE_DOMAINS or none at all (503 storage). There is no default
-// or shared bucket and no fake in production. Protocol 2 is not read from the
-// environment here (VS-1b).
+// or shared bucket and no fake in production. Protocol 2 (DAN-518, the
+// worker signs) only under the process's own DUCTUS_EVIDENCE_ASYNC_SIGNING
+// exactly "1" (DAN-821-3); off by default, so no unsigned acceptance.
 import { createEvidenceCommitter } from "../database/index.ts";
 import { createEvidenceService } from "../evidence/index.ts";
 import {
@@ -33,7 +34,12 @@ type Payloads = EvidencePayloadStore & EvidencePayloadLocator & InstitutionEvide
 export type EvidenceIngestDependencies = {
   readonly signer: Pick<SigningKeyProvider, "sign">;
   readonly payloads: Payloads;
+  /** Protocol 2 of the commit route: answered 202 and signed by the worker; absent is off. */
+  readonly asyncSigning?: boolean;
 };
+
+/** The variable that turns protocol 2 on; only the exact value "1" does. */
+export const ASYNC_SIGNING_FLAG = "DUCTUS_EVIDENCE_ASYNC_SIGNING";
 
 const notConfigured = { status: "unavailable", reason: "storage_not_configured" } as const;
 /** No storage domain: every write, name and read is unavailable, never a default bucket. */
@@ -82,7 +88,10 @@ export function evidenceIngestDependencies(
 ): EvidenceIngestDependencies {
   // A copy, as Ductus handed over: later changes of the process environment change nothing.
   const own: Env = { ...env };
-  return { signer: signerOf(own, repositoryRoot), payloads: payloadsOf(own) };
+  // Only the process's own value: Ductus read env.X === "1", which an
+  // inherited value (or a polluted Object.prototype) would also satisfy.
+  const asyncSigning = Object.hasOwn(own, ASYNC_SIGNING_FLAG) && own[ASYNC_SIGNING_FLAG] === "1";
+  return { signer: signerOf(own, repositoryRoot), payloads: payloadsOf(own), asyncSigning };
 }
 
 /** The commit route over the main database and this process's signer and storage. */
@@ -94,6 +103,7 @@ export function createEvidenceCommitRouteFor(
   return createEvidenceCommitRoute({
     actorReader: main.actorReader,
     evidence: createEvidenceService({ committer, payloads: deps.payloads }),
+    asyncSigning: deps.asyncSigning === true,
   });
 }
 
