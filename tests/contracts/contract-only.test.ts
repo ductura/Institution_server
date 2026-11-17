@@ -57,9 +57,12 @@ export const DAN_840: readonly string[] = [
   "auth.webauthn-assertion.post",
 ];
 
-// The operations of DAN-903 (teacher reads, Ductus#1836 c.6947962506: contract
-// now, handlers later), frozen the same way; 903-2 adds its two.
-export const DAN_903: readonly string[] = ["teacher.assignment-submissions.post"];
+// The operations of DAN-903 (teacher reads, Ductus#1836 c.6947962506 and
+// c.6948165042: contract now, handlers later), frozen the same way.
+export const DAN_903: readonly string[] = [
+  "teacher.assignment-submissions.post",
+  "teacher.access.get",
+];
 
 // The operations of DAN-904 (the student's access log, Ductus#1836
 // c.6948327193: contract now, handler later), frozen the same way.

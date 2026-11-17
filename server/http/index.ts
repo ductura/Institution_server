@@ -71,6 +71,11 @@ export {
 export { evidenceSession, type EvidenceRefusal, type EvidenceSession } from "./evidence-session.ts";
 export { CHECK_DEADLINE_MS, createHealthRoute, type HealthState } from "./health.ts";
 export {
+  createInstitutionCourseRoutes,
+  INSTITUTION_BODY_TIMEOUT_MS,
+  type InstitutionCourseRouteOptions,
+} from "./institution-courses.ts";
+export {
   declaredLengthRefusal,
   readBodyWithLimit,
   type LimitedBodyResult,

@@ -89,6 +89,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus@4eaa776:src/server/evidence/assignment-submissions.ts",
   },
+  // DAN-903-2: Ductus reads it in its teacher pages, not in a route.
+  "app/api/teacher/access/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus@4eaa776:src/components/teacher/teacher-access.ts",
+  },
   // DAN-904: Ductus reads it in its page app/rad/[assignmentId]/dnevnik-pristupa;
   // the route names the work by documentId, as the port server/database/my-access-log.ts.
   "app/api/student/works/[documentId]/access-log/route.ts": {
@@ -134,6 +139,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "teacher.mentorship.get",
   "teacher.fast-path.post",
   "teacher.assignment-submissions.post",
+  "teacher.access.get",
   "settings.catalogue.get",
   "settings.values.get",
   "student.access-log.get",

@@ -50,7 +50,7 @@ export const CONTRACTS: PackageSpec = {
 };
 
 const FAKES = "packages/test-fakes";
-const MODULES = ["clock", "fake-server", "fido2", "oidc", "services"] as const;
+const MODULES = ["clock", "fake-server", "fido2", "hostile-inputs", "oidc", "services"] as const;
 
 export const TEST_FAKES: PackageSpec = {
   name: "@ductura/test-fakes",
@@ -73,6 +73,7 @@ export const TEST_FAKES: PackageSpec = {
     ...js(`${GENERATED}/fake-server/index`, `${FAKES}/release`, `${FAKES}/guard/index`),
     ...MODULES.flatMap((name) => js(`${FAKES}/${name}/index`)),
     ...js(`${FAKES}/clock/clock`, `${FAKES}/fido2/authenticator`, `${FAKES}/services/services`),
+    ...js(`${FAKES}/hostile-inputs/hostile-inputs`),
     ...js(
       ...["accounts", "guard", "modes", "redirect-uris", "server"].map((f) => `${FAKES}/oidc/${f}`),
     ),
