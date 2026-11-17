@@ -124,6 +124,14 @@ export {
   MY_ACCESS_LOG_UNAUTHENTICATED,
 } from "./my-access-log.ts";
 export {
+  createMyAssignmentWorkReader,
+  MY_ASSIGNMENT_WORK_DATABASE_ERROR,
+  MY_ASSIGNMENT_WORK_ERRORS,
+  MY_ASSIGNMENT_WORK_ROW_MALFORMED,
+  MY_ASSIGNMENT_WORK_UNAUTHENTICATED,
+} from "./my-assignment-work.ts";
+export type { AssignmentWork, MyAssignmentWorkReader, WorkState } from "./my-assignment-work.ts";
+export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,
   INTERFACE_LOCALE_ERRORS,

@@ -112,6 +112,11 @@
     "row_malformed": "Zapis pristupa trenutačno nije moguće prikazati. Pokušajte ponovno.",
     "database_error": "Zapis pristupa trenutačno nije dostupan. Pokušajte ponovno."
   },
+  "myAssignmentWork": {
+    "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
+    "row_malformed": "Stanje vaših radova trenutačno nije moguće prikazati. Pokušajte ponovno.",
+    "database_error": "Stanje vaših radova trenutačno nije dostupno. Pokušajte ponovno."
+  },
   "problemReport": {
     "unauthenticated": "Niste prijavljeni. Prijavite se ponovno; problem nije poslan.",
     "invalid": "Problem nije poslan. Provjerite opis i pokušajte ponovno.",
