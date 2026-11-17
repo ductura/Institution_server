@@ -9,6 +9,7 @@ import {
   createPendingReceiptStore,
   createWithActor,
   createWorkOpener,
+  type EvidenceCommitInput,
   readReceiptKeys,
   type ReceiptSigner,
   type WithActor,
@@ -183,42 +184,42 @@ async function commitDeferred(who: (typeof students)[number]) {
   const { context } = read;
   const snapshot = JSON.stringify({ naslov: `Izmišljeni odlomak ${who}.` });
   const segmentHash = sha256(`segment ${txid(who)}`);
-  const outcome = await committer.commit(
-    token[who],
-    {
-      context,
+  const input: EvidenceCommitInput = {
+    context,
+    documentId,
+    clientTransactionId: txid(who),
+    baseRevision: 0,
+    initialDocumentHash: documentHash,
+    finalDocumentHash: sha256(snapshot),
+    descriptor: {
+      evidencePackageId: context.evidencePackageId,
       documentId,
-      clientTransactionId: txid(who),
-      baseRevision: 0,
-      initialDocumentHash: documentHash,
-      finalDocumentHash: sha256(snapshot),
-      descriptor: {
-        evidencePackageId: context.evidencePackageId,
-        documentId,
-        sessionId: `sesija-${suffix}`,
-        segmentId: `segment-${who}`,
-        evidenceSchema: "ductus-evidence-segment-v2",
-        canonicalization: "RFC8785-JCS",
-        hashAlgorithm: "sha256",
-        evidenceProfileId: context.evidenceProfileId,
-        sequenceFrom: 1,
-        sequenceTo: 1,
-        eventCount: 1,
-        observedStartedAt: "2026-11-16T06:00:00.000Z",
-        observedEndedAt: "2026-11-16T06:01:00.000Z",
-        segmentHash,
-        predecessorSegmentHash: null,
-        payloadBytes: 321,
-      },
-      storageRef: `local-test:v2/${context.institutionId}/${context.evidencePackageId}/${segmentHash}.json`,
-      snapshot,
+      sessionId: `sesija-${suffix}`,
+      segmentId: `segment-${who}`,
+      evidenceSchema: "ductus-evidence-segment-v2",
+      canonicalization: "RFC8785-JCS",
+      hashAlgorithm: "sha256",
+      evidenceProfileId: context.evidenceProfileId,
+      sequenceFrom: 1,
+      sequenceTo: 1,
+      eventCount: 1,
+      observedStartedAt: "2026-11-16T06:00:00.000Z",
+      observedEndedAt: "2026-11-16T06:01:00.000Z",
+      segmentHash,
+      predecessorSegmentHash: null,
+      payloadBytes: 321,
     },
-    "deferred",
-  );
+    storageRef: `local-test:v2/${context.institutionId}/${context.evidencePackageId}/${segmentHash}.json`,
+    snapshot,
+  };
+  const outcome = await committer.commit(token[who], input, "deferred");
   expect(outcome).toEqual({ status: "committed_pending", revision: 1 });
+  firstInputs[who] = input;
   return documentId;
 }
 
+/** Each first commit's input, for the retries of DAN-821. */
+const firstInputs: Partial<Record<(typeof students)[number], EvidenceCommitInput>> = {};
 let documents: Record<(typeof students)[number], string>;
 /** The pending receipts of the fixture's domain as the administrator reads them, in queue order. */
 let stored: { receiptId: string; receiptPayloadText: string }[];
@@ -468,5 +469,180 @@ describe("the worker attaches a signature over real PostgreSQL (S-1, S-4)", () =
     expect(await statusOf(receiptId)).toBe("signed");
     const left = await createPendingReceiptQueue(worker).pendingReceipts(id.domain, 100, null);
     expect(left).toStrictEqual({ status: "ok", rows: [stored[1]] });
+  });
+});
+
+/** What the database holds for a document, read by the administrator. */
+async function stateOf(documentId: string) {
+  const { rows } = await admin.query<Record<string, string>>(
+    `SELECT d.current_revision::text AS revision,
+            (SELECT count(*) FROM evidence.document_revision r WHERE r.document_id = d.id)::text AS revisions,
+            (SELECT count(*) FROM evidence.segment s WHERE s.document_id = d.id)::text AS segments,
+            (SELECT count(*) FROM evidence.receipt r JOIN evidence.package p ON p.id = r.evidence_package_id
+              WHERE p.document_id = d.id)::text AS receipts
+       FROM evidence.document d WHERE d.id = $1`,
+    [documentId],
+  );
+  return rows[0];
+}
+
+/** The document's jobs in the worker's queue (DAN-820): its pending receipts as the worker reads them. */
+async function queuedFor(documentId: string) {
+  const read = await createPendingReceiptQueue(worker).pendingReceipts(id.domain, 100, null);
+  if (read.status !== "ok") throw new Error(`queue: ${read.reason}`);
+  return read.rows.filter((row) => JSON.parse(row.receiptPayloadText).documentId === documentId);
+}
+const heldFor = async (documentId: string) => ({
+  state: await stateOf(documentId),
+  queued: await queuedFor(documentId),
+});
+
+// DAN-821-1 (contract Ductus#1836 c.6942953478): the same key and the same
+// bytes make one revision and one job in the worker's queue, while the
+// receipt waits and after the worker signed it. Here ana is signed, iva pending.
+describe("deferred commit: the same key and bytes make one revision and one job (DAN-821)", () => {
+  const committer = () => createEvidenceCommitter(withActor, signer);
+
+  it("N1: the same key with another segment while the receipt waits is txid_reused and changes nothing", async () => {
+    const input = firstInputs.iva!;
+    const before = await heldFor(input.documentId);
+    const segmentHash = sha256(`drugi segment ${txid("iva")}`);
+    const other = {
+      ...input,
+      descriptor: { ...input.descriptor, segmentHash },
+      storageRef: input.storageRef.replace(input.descriptor.segmentHash, segmentHash),
+    };
+    expect(await committer().commit(token.iva, other, "deferred")).toEqual({
+      status: "txid_reused",
+    });
+    expect(await heldFor(input.documentId)).toStrictEqual(before);
+    expect(JSON.parse(before.queued[0]!.receiptPayloadText).segmentHash).toBe(
+      input.descriptor.segmentHash,
+    );
+    expect(signerCalls).toBe(0);
+  });
+
+  it("N2: the same request under protocol 1 while the receipt waits is a closed fault and signs nothing", async () => {
+    const input = firstInputs.iva!;
+    const before = await heldFor(input.documentId);
+    expect(await committer().commit(token.iva, input, "inline")).toEqual({
+      status: "unavailable",
+      stage: "repository",
+      code: "duplicate_pending",
+    });
+    expect(await heldFor(input.documentId)).toStrictEqual(before);
+    expect(signerCalls).toBe(0);
+  });
+
+  it("P1: the same request while the receipt waits is duplicate_pending, one revision and one job", async () => {
+    const input = firstInputs.iva!;
+    const queued = await queuedFor(input.documentId);
+    expect(queued).toHaveLength(1);
+    expect(await committer().commit(token.iva, input, "deferred")).toEqual({
+      status: "duplicate_pending",
+      revision: 1,
+    });
+    expect(await stateOf(input.documentId)).toEqual({
+      revision: "1",
+      revisions: "2",
+      segments: "1",
+      receipts: "1",
+    });
+    expect(await queuedFor(input.documentId)).toStrictEqual(queued);
+    expect(signerCalls).toBe(0);
+  });
+
+  it("P2: two identical requests at once make one revision and one job, one committed and one duplicate", async () => {
+    const first = firstInputs.iva!;
+    const snapshot = JSON.stringify({ naslov: "Izmišljeni drugi odlomak iva." });
+    const segmentHash = sha256(`segment ${txid("iva")}-2`);
+    const input: EvidenceCommitInput = {
+      ...first,
+      clientTransactionId: `${txid("iva")}-2`,
+      baseRevision: 1,
+      initialDocumentHash: first.finalDocumentHash,
+      finalDocumentHash: sha256(snapshot),
+      descriptor: {
+        ...first.descriptor,
+        segmentId: "segment-iva-2",
+        sequenceFrom: 2,
+        sequenceTo: 2,
+        segmentHash,
+        predecessorSegmentHash: first.descriptor.segmentHash,
+      },
+      storageRef: first.storageRef.replace(first.descriptor.segmentHash, segmentHash),
+      snapshot,
+    };
+    // The administrator holds the package, so both requests wait in the RPC
+    // and the overlap is made, not left to the scheduler.
+    const holder = await admin.connect();
+    let both: Promise<unknown[]>;
+    try {
+      await holder.query("BEGIN");
+      await holder.query("SELECT 1 FROM evidence.package WHERE document_id = $1 FOR UPDATE", [
+        first.documentId,
+      ]);
+      both = Promise.all([
+        committer().commit(token.iva, input, "deferred"),
+        committer().commit(token.iva, input, "deferred"),
+      ]);
+      let waiting = 0;
+      for (let tries = 0; tries < 100 && waiting < 2; tries += 1) {
+        const row = await admin.query<{ n: number }>(
+          `SELECT count(*)::int AS n FROM pg_catalog.pg_stat_activity
+            WHERE usename = $1 AND wait_event_type = 'Lock'`,
+          [LOGIN.app],
+        );
+        waiting = row.rows[0]!.n;
+        if (waiting < 2) await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      expect(waiting).toBe(2);
+      await holder.query("COMMIT");
+    } catch (error) {
+      await holder.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      holder.release();
+    }
+    const outcomes = (await both) as { status: string; revision: number }[];
+    expect(outcomes.map((o) => o.status).sort()).toEqual([
+      "committed_pending",
+      "duplicate_pending",
+    ]);
+    for (const outcome of outcomes) expect(outcome.revision).toBe(2);
+    expect(await stateOf(first.documentId)).toEqual({
+      revision: "2",
+      revisions: "3",
+      segments: "2",
+      receipts: "2",
+    });
+    const queued = await queuedFor(first.documentId);
+    expect(queued.map((row) => JSON.parse(row.receiptPayloadText).clientTransactionId)).toEqual([
+      txid("iva"),
+      input.clientTransactionId,
+    ]);
+    expect(signerCalls).toBe(0);
+  });
+
+  it("P3: after the worker signed, the same request is the stored signed receipt, under either protocol", async () => {
+    const input = firstInputs.ana!;
+    const { rows } = await admin.query<{ status: string; signature: unknown }>(
+      `SELECT r.status, r.signature FROM evidence.receipt r JOIN evidence.package p ON p.id = r.evidence_package_id
+        WHERE p.document_id = $1`,
+      [input.documentId],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.status).toBe("signed");
+    const before = await heldFor(input.documentId);
+    expect(before.queued).toEqual([]);
+    for (const signing of ["deferred", "inline"] as const) {
+      const again = await committer().commit(token.ana, input, signing);
+      expect(again).toMatchObject({ status: "duplicate", revision: 1 });
+      expect(again.status === "duplicate" && again.signedReceipt.signature).toEqual(
+        rows[0]!.signature,
+      );
+    }
+    expect(await heldFor(input.documentId)).toStrictEqual(before);
+    expect(signerCalls).toBe(0);
   });
 });
