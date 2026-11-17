@@ -57,8 +57,12 @@ export const DAN_840: readonly string[] = [
   "auth.webauthn-assertion.post",
 ];
 
+// The operations of DAN-903 (teacher reads, Ductus#1836 c.6947962506: contract
+// now, handlers later), frozen the same way; 903-2 adds its two.
+export const DAN_903: readonly string[] = ["teacher.assignment-submissions.post"];
+
 /** Every route a task has put on the list; nothing else may be there. */
-const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840];
+const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
 // given (DAN-826-2b): the exact call server/server.ts must hold, and the
@@ -133,7 +137,7 @@ export function contractOnlyProblems(
 describe("CONTRACT_ONLY", () => {
   const ids = ROUTES.map((route) => route.id);
 
-  it("is exactly the DAN-803, DAN-806 and DAN-840 routes with a contract and no handler", () => {
+  it("is exactly the DAN-803, DAN-806, DAN-840 and DAN-903 routes with a contract and no handler", () => {
     expect(new Set(DAN_803).size).toBe(27);
     expect(new Set(DAN_806).size).toBe(3);
     expect(new Set(DAN_840).size).toBe(3);
