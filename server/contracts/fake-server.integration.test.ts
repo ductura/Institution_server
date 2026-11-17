@@ -130,6 +130,39 @@ describe("fake server over HTTP", () => {
     });
   });
 
+  it("the generated client reads the teacher's access (DAN-903-2)", async () => {
+    const route = "teacher.access.get";
+    const vector = (name: string) => {
+      const v = VECTORS.find((x) => x.route === route && x.name === name);
+      if (v === undefined) throw new Error(`no vector ${name}`);
+      return v;
+    };
+    const as = (name: string) =>
+      createClient(`http://127.0.0.1:${port}`, (async (url: URL, init: RequestInit) =>
+        fetch(url, {
+          ...init,
+          headers: { ...vector(name).request.headers, [FAKE_VECTOR_HEADER]: name },
+        })) as typeof fetch);
+    const none = { params: undefined, query: undefined, body: undefined };
+    for (const name of ["allowed", "denied"])
+      expect(await as(name)(route, none)).toEqual({
+        ok: true,
+        status: 200,
+        body: vector(name).response.body,
+        headers: {},
+      });
+    expect(await as("unauthorized")(route, none)).toEqual({
+      ok: false,
+      status: 401,
+      code: "unauthorized",
+    });
+    expect(await as("unavailable")(route, none)).toEqual({
+      ok: false,
+      status: 503,
+      code: "unavailable",
+    });
+  });
+
   it("a health check without a pick gets its success vector", async () => {
     const res = await send("GET", "/api/v1/health");
     expect(res.status).toBe(200);

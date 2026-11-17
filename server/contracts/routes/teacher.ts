@@ -269,10 +269,35 @@ export const teacherFastPathPost = defineRoute({
   ],
 });
 
+// DAN-903-2: Ductus 4eaa776 src/components/teacher/teacher-access.ts
+// (teacherPageRead, B-7), which Ductus reads in its teacher pages, not in a route.
+export const teacherAccessGet = defineRoute({
+  id: "teacher.access.get",
+  method: "GET",
+  path: "/api/v1/teacher/access",
+  inventory: "app/api/teacher/access/route.ts",
+  access: "signed_in",
+  summary:
+    "Whether the caller may see the teacher pages: a confirmed and unrevoked institution role (institution.actor_has_role('teacher')), never the login claims. The session and the role come from one snapshot, so denied is always an open session without the role and allowed always comes with a signed-in principal. scope is principalScope, for the shell of the teacher pages only; it is not the general source of the principal. No session is 401, a database that cannot be asked 503. Names no course, assignment or count: the role alone gives no access to a work (C-23).",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "allowed or denied",
+      body: closed({
+        access: literals(["allowed", "denied"]),
+        scope: Type.String({ pattern: "^[0-9a-f]{64}$" }),
+      }),
+    },
+  ],
+  errors: [...READ_ERRORS, error(503, "unavailable")],
+});
+
 export const teacherRoutes = [
   teacherCoursesGet,
   teacherSubmissionsGet,
   teacherMentorshipsGet,
   teacherMentorshipGet,
   teacherFastPathPost,
+  teacherAccessGet,
 ] as const;
