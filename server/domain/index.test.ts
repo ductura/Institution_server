@@ -62,6 +62,8 @@ describe("server/domain imports nothing outside itself", () => {
       "json",
       "profile",
       "settings",
+      "support",
+      "sync",
     ]);
   });
 

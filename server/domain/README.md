@@ -13,6 +13,8 @@ Područje domene (karta: [docs/server-map.md](../../docs/server-map.md)): čista
 | [jobs](jobs/README.md)                   | `src/application/jobs/job-body`   | Tijelo posla u redu: samo identifikatori (D-74), na `333e163` (DAN-820)                 |
 | [assignment](assignment/README.md)       | `src/domain/assignment`           | Jezik rada: zatvoreni skup i parser, na `4651a25` (DAN-909)                             |
 | [profile](profile/README.md)             | `src/domain/profile`              | Tijelo postavke jezika sučelja: skup i parser, na `51a062e` (DAN-851-1a)                |
+| [support](support/README.md)             | `src/domain/support`              | Prijava problema: zatvorene klase, parser i predložak rute, na `220b5db` (DAN-851-2a2)  |
+| [sync](sync/README.md)                   | dio `src/domain/sync/states.ts`   | Osam stanja sinkronizacije (`SYNC_STATES`), na `220b5db` (DAN-851-2a2)                  |
 
 `result.ts` drži zajedničke tipove `Result<T>` i `AppError` (`{ code, messageKey }`, [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) §8); samo tipove, bez I/O-a.
 
