@@ -10,6 +10,7 @@ import {
   INSTITUTION_SLUG,
   listensOn,
   readState,
+  repoRevision,
   sha256File,
   type StackState,
 } from "../../scripts/stack/index.ts";
@@ -22,7 +23,7 @@ export type Student = { readonly id: string; readonly token: string };
 /**
  * The stack in `stackDir`, once its server is the recorded process, listens
  * on the server port and runs the dist/server.js of `root`, with the line
- * that names the revision.
+ * that names the revision of `root` (and of the stack's `up`, when it differs).
  */
 export function runningStack(stackDir: string, root: string): { state: StackState; run: string } {
   const state = readState(join(stackDir, "state.json"));
@@ -37,8 +38,14 @@ export function runningStack(stackDir: string, root: string): { state: StackStat
   }
   const build = sha256File(join(root, "dist", "server.js"));
   if (build !== state.serverBuildSha256) throw new Error("dist/server.js is not the running build");
-  const { sha, dirty } = state.repos.server;
-  return { state, run: `ductura/server ${sha}${dirty ? " (dirty)" : ""}, dist/server.js ${build}` };
+  // The checkout that runs the test, and the one the stack was brought up
+  // from; in a CI run of a PR both are GitHub's merge commit.
+  const named = ({ sha, dirty }: { sha: string; dirty: boolean }) =>
+    `${sha}${dirty ? " (dirty)" : ""}`;
+  const tested = named(repoRevision(root));
+  const up = named(state.repos.server);
+  const stack = up === tested ? "" : `, stack up at ${up}`;
+  return { state, run: `ductura/server ${tested}${stack}, dist/server.js ${build}` };
 }
 
 /** A course whose teacher is invented with it, and its one assignment, open for 30 days. */

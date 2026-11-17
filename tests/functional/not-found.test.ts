@@ -8,6 +8,10 @@ const ROUTE = "/api/v1/evidence/commit";
 
 describe("notFoundProblem", () => {
   it.each([
+    // The exact body under any other status: the status is checked, not only the body.
+    ["200 with the not_found body", 200, { status: "not_found" }],
+    ["403 with the not_found body", 403, { status: "not_found" }],
+    ["500 with the not_found body", 500, { status: "not_found" }],
     ["200 with the other student's work", 200, { status: "opened", documentId: "d" }],
     ["401", 401, { status: "unauthenticated" }],
     ["403", 403, { status: "forbidden" }],

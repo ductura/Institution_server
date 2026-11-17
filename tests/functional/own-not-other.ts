@@ -1,8 +1,8 @@
 // S-1H.3 (DAN-1003): over dist/server.js on the VS-1 stack, student A opens,
 // commits and replays their own work, and on the work of B, a classmate on the
 // same assignment, the same three routes answer A exactly as for a work that
-// does not exist: the contract's 404 {"status":"not_found"}. The first line of
-// the output names the revision. Local stack and CI only (`pnpm build && pnpm
+// does not exist: the contract's 404 {"status":"not_found"}. The output names
+// the revision of the checkout and of the running stack. Local stack and CI only (`pnpm build && pnpm
 // stack:vs1 up` first):
 //   pnpm test:functional
 import { randomBytes } from "node:crypto";
@@ -57,6 +57,11 @@ export async function check(stackDir: string): Promise<string> {
   // B's work on Z, opened and not committed: the commit below is one B could make now.
   const opened = await as(b, OPEN, { assignmentId: z.assignmentId, start: true });
   succeeded(OPEN, opened, { status: "opened" });
+  // A has a work of their own on Z before any attempt, so no rule of the form
+  // "a work on the same assignment" can let A through unseen.
+  const own = await as(a, OPEN, { assignmentId: z.assignmentId, start: true });
+  succeeded(OPEN, own, { status: "opened" });
+  if (own.body.documentId === opened.body.documentId) throw new Error("A opened B's document");
   const commit = commitRequest(opened.body, `tx-${randomBytes(4).toString("hex")}`);
   const work = { documentId: opened.body.documentId, from: 0 };
   notFound([
@@ -75,10 +80,7 @@ export async function check(stackDir: string): Promise<string> {
     status: "opened",
   });
 
-  // A's own work on Z: open (a document other than B's), commit and replay succeed.
-  const own = await as(a, OPEN, { assignmentId: z.assignmentId, start: true });
-  succeeded(OPEN, own, { status: "opened" });
-  if (own.body.documentId === work.documentId) throw new Error("A opened B's document");
+  // A's own work on Z, opened above as a document other than B's: commit and replay succeed.
   const mine = commitRequest(own.body, `tx-${randomBytes(4).toString("hex")}`);
   succeeded(COMMIT, await as(a, COMMIT, mine), { status: "committed", revision: 1 });
   succeeded(REPLAY, await as(a, REPLAY, { documentId: own.body.documentId, from: 0 }), {
