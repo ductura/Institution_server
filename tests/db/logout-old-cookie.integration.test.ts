@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { Value } from "@sinclair/typebox/value";
+import { createSoftwareAuthenticator } from "@ductura/test-fakes/fido2";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +20,7 @@ import {
   createInterfaceLocaleRoutesFor,
   createLayers,
   createSettingsValuesPutRoute,
+  createWebAuthnRoutesFor,
   evidenceIngestDependencies,
   type Running,
   routesOf,
@@ -102,6 +104,30 @@ const SESSION_ROUTES = {
     body: () => ({ locale: "en" }),
     live: 200,
   },
+  // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
+  // challenge is 400 (the ceremony refuses it); an assertion of a key the
+  // account does not hold is 403. The old cookie's registration carries a
+  // valid ceremony (T1), so its 401 comes from the database, not the check.
+  "auth.webauthn-challenge.post": {
+    path: "/api/v1/auth/webauthn/challenge",
+    body: () => ({ purpose: "assertion" }),
+    live: 200,
+  },
+  "auth.webauthn-registration.post": {
+    path: "/api/v1/auth/webauthn/registration",
+    body: () => ({ clientDataJSON: "AA", authenticatorData: "AA", credentialId: "AA" }),
+    live: 400,
+  },
+  "auth.webauthn-assertion.post": {
+    path: "/api/v1/auth/webauthn/assertion",
+    body: () => ({
+      clientDataJSON: "AA",
+      authenticatorData: "AA",
+      credentialId: "AA",
+      signature: "AA",
+    }),
+    live: 403,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -113,6 +139,7 @@ const FACTORIES = [
   "createEvidenceOpenRoute",
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
+  "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createAuthRoutes",
@@ -125,6 +152,7 @@ const MOUNTED = [
   createEvidenceOpenRoute(databases.main),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
+  ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   ...createAuthRoutes(ENV),
@@ -273,6 +301,20 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
   it("T0, T1: live before logout, then 401 of each route's contract with the old cookie", async () => {
     const [token = ""] = await signIn(1);
     await expectLive(token);
+    // A registration ceremony of this session, signed before logout and sent after it.
+    const issued = await post("/api/v1/auth/webauthn/challenge", token, {
+      purpose: "registration",
+    });
+    const { challenge } = (await issued.json()) as { challenge: string };
+    const made = createSoftwareAuthenticator({
+      rpId: new URL(ORIGIN).hostname,
+      origin: ORIGIN,
+    }).register(Buffer.from(challenge, "base64url"));
+    const registration = {
+      clientDataJSON: made.clientDataJSON.toString("base64url"),
+      authenticatorData: made.authenticatorData.toString("base64url"),
+      credentialId: made.credentialId.toString("base64url"),
+    };
     await expectSignedOut(await post("/api/v1/auth/logout", token));
     expect(await sessionEnd(token)).toMatchObject({ reason: "logout" });
     expect(await savedLocale(token)).toEqual(["en"]);
@@ -280,11 +322,17 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       const answer = await call(
         id,
         token,
-        id === "profile.interface-locale.post" ? { locale: "hr" } : undefined,
+        id === "profile.interface-locale.post"
+          ? { locale: "hr" }
+          : id === "auth.webauthn-registration.post"
+            ? registration
+            : undefined,
       );
       const body: unknown = await answer.json();
       const old =
-        id === "settings.values.put" || id.startsWith("profile.interface-locale.")
+        id === "settings.values.put" ||
+        id.startsWith("profile.interface-locale.") ||
+        id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
       expect([id, answer.status, body]).toEqual([id, 401, old]);

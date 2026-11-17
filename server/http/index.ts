@@ -121,9 +121,11 @@ export {
 } from "./profile-interface-locale.ts";
 export {
   createWebAuthnRoutes,
+  createWebAuthnRoutesFor,
   decodeBase64url,
   WEBAUTHN_BODY_TIMEOUT_MS,
   WEBAUTHN_CHALLENGE_MAX_BYTES,
+  WEBAUTHN_TIMEOUT_MS,
   type WebAuthnRouteOptions,
   WEBAUTHN_FAULTS,
   type WebAuthnFault,
