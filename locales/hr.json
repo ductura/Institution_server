@@ -117,6 +117,8 @@
     "invalid": "Problem nije poslan. Provjerite opis i pokušajte ponovno.",
     "too_many": "Dosegnuli ste najveći broj prijava u jednom satu. Pokušajte ponovno kasnije.",
     "row_malformed": "Prijavu problema trenutačno nije moguće potvrditi. Pokušajte ponovno.",
-    "database_error": "Prijava problema trenutačno nije dostupna. Pokušajte ponovno."
+    "database_error": "Prijava problema trenutačno nije dostupna. Pokušajte ponovno.",
+    "invalid_json": "Problem nije poslan. Zahtjev nije valjan; učitajte stranicu i pokušajte ponovno.",
+    "invalid_body": "Problem nije poslan. Provjerite opis i odabrane podatke pa pokušajte ponovno."
   }
 }

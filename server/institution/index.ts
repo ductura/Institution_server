@@ -6,4 +6,4 @@ export {
   parseCourseBody,
   parseEnrollmentCodeBody,
 } from "./schemas.ts";
-export type { InstitutionService } from "./service.ts";
+export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
