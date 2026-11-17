@@ -267,6 +267,13 @@ export type Operations = {
     success: { status: 200; body: { "key": string; "value": boolean | number | string | null; "bound": { "locked": true } | { "min"?: number; "max"?: number } | null; "changed": boolean }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "not_found" | "bound_crossed" | "invalid_input" | "unavailable";
   };
+  "student.access-log.get": {
+    params: { "documentId": string };
+    query: { "beforeAt"?: string; "beforeId"?: string; [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "student.assignments.get": {
     params: undefined;
     query: undefined;
