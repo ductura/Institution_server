@@ -69,10 +69,12 @@ function windowsOf(
 ): AnalysisFinding[] {
   const found: AnalysisFinding[] = [];
   let i = 0;
+  // `j` never moves back: the window end only grows as `i` grows, so each entry is passed once.
+  let j = 0;
   while (i < times.length) {
     const fromMs = times[i]!;
     const toMs = fromMs + t.windowMs;
-    let j = i;
+    if (j < i) j = i;
     while (j < times.length && times[j]! < toMs) j += 1;
     if (j - i >= t.minCount) {
       found.push(Object.freeze({ rule, fromMs, toMs, count: j - i, minCount: t.minCount }));

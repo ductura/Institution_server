@@ -124,6 +124,20 @@ describe("log analysis: entries that are not counted", () => {
   });
 });
 
+describe("log analysis: work grows linearly with the entries", () => {
+  // Codex ductura/server#280 r4606571759: a dense batch below the threshold
+  // must not rescan the rest of the window for every entry.
+  it("analyses 200 000 entries in one window below the threshold", () => {
+    const n = 200_000;
+    const entries = Array.from({ length: n }, (_, k) => ({
+      timeMs: T0 + (k % 1000),
+      event: "authn.login_failed",
+    }));
+    const big = { ...thresholds, loginFailures: { windowMs: MAX_WINDOW_MS, minCount: n + 1 } };
+    expect(findings(entries, big)).toEqual([]);
+  }, 2000);
+});
+
 describe.each(ANALYSIS_RULES.map((r) => [r.name, r] as const))("rule %s", (name, rule) => {
   const own = { ...thresholds, [name]: { windowMs: WINDOW, minCount: MIN } };
   const [first, second] = rule.events;
