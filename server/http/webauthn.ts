@@ -18,6 +18,8 @@ import {
   type ChallengeStore,
   challengeSessionKey,
   liveSessionTokenFromCookie,
+  coseEs256Key,
+  verifyAssertion,
   verifyRegistration,
 } from "../session/index.ts";
 
@@ -41,6 +43,7 @@ function routeOf(id: string) {
 }
 const CHALLENGE = routeOf("auth.webauthn-challenge.post");
 const REGISTRATION = routeOf("auth.webauthn-registration.post");
+const ASSERTION = routeOf("auth.webauthn-assertion.post");
 
 export const WEBAUTHN_CHALLENGE_MAX_BYTES = CHALLENGE.maxBytes;
 export const WEBAUTHN_BODY_TIMEOUT_MS = 5_000;
@@ -55,7 +58,7 @@ export type WebAuthnRouteOptions = {
   readonly origin: string | null;
   /** What the browser is told; the store's TTL (3f) must be longer. */
   readonly timeoutMs: number;
-  /** Session activity after a registered key (session/recordActivity over the app withActor). */
+  /** Session activity after a registered key or a confirmation (session/recordActivity over the app withActor). */
   readonly recordActivity: (token: string) => Promise<unknown>;
   /** For tests: fixed bytes of userHandle. */
   readonly randomBytes?: (size: number) => Uint8Array;
@@ -84,8 +87,9 @@ export function webauthnRpId(origin: string | null): string | null {
 /**
  * The faults the routes name themselves, each logged as one closed reason
  * (QA on #215): no rpId from the origin, a malformed row or answer of the
- * port, more keys than allowCredentials takes, a failing clock, and a ZD422
- * after a passed ceremony (2c and the table disagree).
+ * port, more keys than allowCredentials takes, a failing clock, a ZD422
+ * after a passed ceremony (2c or 2b and the table disagree), and a stored key
+ * that is not canonical ES256.
  */
 export const WEBAUTHN_FAULTS = [
   "no_rp_id",
@@ -94,6 +98,9 @@ export const WEBAUTHN_FAULTS = [
   "too_many_credentials",
   "clock",
   "add_invalid",
+  "use_malformed",
+  "stored_key_malformed",
+  "use_invalid",
   "unknown",
 ] as const;
 export type WebAuthnFault = (typeof WEBAUTHN_FAULTS)[number];
@@ -117,6 +124,13 @@ function recordFault(record: WebAuthnFaultRecord): void {
 }
 
 /** The refusals of credentials.add that are the caller's (contract errors of the registration route). */
+/** The refusals of credentials.use that are the caller's (contract errors of the assertion route). */
+const ASSERTION_REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
+  ["unauthenticated", [401, "unauthorized"]],
+  ["forbidden", [403, "forbidden"]],
+  ["counter_not_increased", [409, "counter_not_increased"]],
+]);
+
 const REGISTRATION_REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
   ["unauthenticated", [401, "unauthorized"]],
   ["forbidden", [403, "forbidden"]],
@@ -144,7 +158,7 @@ export function decodeBase64url(text: string): Buffer | null {
 type Response = Parameters<Route["handle"]>[1];
 type Intro = { token: string; body: Record<string, string> };
 
-/** The WebAuthn routes: challenge and registration; assertion follows in 3e. */
+/** The WebAuthn routes: challenge, registration and assertion; mounted in 840-3f. */
 export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
   const { credentials, challenges, origin, timeoutMs } = options;
   const random = options.randomBytes ?? nodeRandomBytes;
@@ -160,6 +174,17 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
     recordFault({ event: "webauthn_fault", route: id, reason, requestId: requestIdOf(response) });
     sendProblem(response, 503, "unavailable");
   };
+
+  /** 204 with no body; then the session's activity, whose failure costs only the touch. */
+  async function answered(response: Response, token: string): Promise<void> {
+    response.writeHead(204, { "cache-control": "no-store" });
+    response.end();
+    try {
+      await options.recordActivity(token);
+    } catch {
+      // Activity is best effort, thrown or rejected.
+    }
+  }
 
   /** Token, media type, body, strict JSON and the route's closed schema; null when answered. */
   async function intro(
@@ -250,15 +275,7 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
         return fail(error);
       }
       if (added.status === "added") {
-        response.writeHead(204, { "cache-control": "no-store" });
-        response.end();
-        // Only a registered key counts; a failure costs only the touch, thrown or rejected.
-        try {
-          await options.recordActivity(token);
-        } catch {
-          // Activity is best effort.
-        }
-        return;
+        return answered(response, token);
       }
       const refused = REGISTRATION_REFUSALS.get(added.status);
       if (refused !== undefined) return sendProblem(response, ...refused);
@@ -267,5 +284,64 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
     },
   };
 
-  return [challengeRoute, registrationRoute];
+  const assertionRoute: Route = {
+    contract: ASSERTION.contract,
+    async handle(request, response) {
+      const read = await intro(request, response, ASSERTION);
+      if (read === null) return;
+      const { token, body } = read;
+      const fail = (error: unknown) => unavailable(response, ASSERTION.contract.id, error);
+      const fault = (reason: WebAuthnFault) => faulty(response, ASSERTION.contract.id, reason);
+      const clientDataJSON = decodeBase64url(body.clientDataJSON ?? "");
+      const authenticatorData = decodeBase64url(body.authenticatorData ?? "");
+      const credentialId = decodeBase64url(body.credentialId ?? "");
+      const signature = decodeBase64url(body.signature ?? "");
+      if (!clientDataJSON || !authenticatorData || !credentialId || !signature) {
+        return sendProblem(response, 422, "invalid_input");
+      }
+      if (rpId === null || origin === null) return fault("no_rp_id");
+      // A failing list or a dead session is no attempt: the challenge stays.
+      let listed: Awaited<ReturnType<WebAuthnCredentials["list"]>>;
+      try {
+        listed = await credentials.list(token);
+      } catch (error) {
+        return fail(error);
+      }
+      if (listed.status === "unauthenticated") return sendProblem(response, 401, "unauthorized");
+      if (listed.status !== "listed") return fault(faultOf(listed.reason));
+      const key = challengeSessionKey(token);
+      const stored = listed.credentials.find((c) => c.credentialId.equals(credentialId));
+      if (stored === undefined) {
+        // A foreign, revoked or unknown key is one answer (C-23), and the attempt
+        // spends the challenge: take deletes the entry before any check.
+        challenges.take(key, "assertion", null);
+        return sendProblem(response, 403, "forbidden");
+      }
+      // A stored key that is not canonical ES256 is the database's fault, not the client's.
+      if (coseEs256Key(stored.publicKey) === null) return fault("stored_key_malformed");
+      // 2b reads the client data, then takes the challenge exactly once, before any refusal.
+      const checked = verifyAssertion(
+        { clientDataJSON, authenticatorData, signature },
+        { origin, rpId },
+        stored,
+        (challenge) => challenges.take(key, "assertion", challenge),
+      );
+      if (!checked.ok) {
+        const status = checked.code === "counter_not_increased" ? 409 : 400;
+        return sendProblem(response, status, checked.code);
+      }
+      let used: Awaited<ReturnType<WebAuthnCredentials["use"]>>;
+      try {
+        used = await credentials.use(token, credentialId, checked.signCount);
+      } catch (error) {
+        return fail(error);
+      }
+      if (used.status === "used") return answered(response, token);
+      const refused = ASSERTION_REFUSALS.get(used.status);
+      if (refused !== undefined) return sendProblem(response, ...refused);
+      fault(used.status === "unavailable" ? faultOf(used.reason) : "use_invalid");
+    },
+  };
+
+  return [challengeRoute, registrationRoute, assertionRoute];
 }
