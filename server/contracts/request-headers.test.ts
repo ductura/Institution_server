@@ -25,7 +25,11 @@ describe("ductus-protocol is declared exactly where every success vector carries
         Object.keys(declared.properties).map((name) => [name, v.request.headers?.[name]]),
       );
       expect(Value.Check(declared, given), v.name).toBe(true);
+      // Closed (QA c.6963047958): one more header is refused.
+      const extra = { ...given, cookie: "__Host-ductus_session=izmisljeno" };
+      expect(Value.Check(declared, extra), v.name).toBe(false);
     }
+    expect(declared.additionalProperties).toBe(false);
   });
 
   it("five routes declare it", () => {

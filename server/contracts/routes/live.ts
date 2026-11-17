@@ -6,9 +6,9 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // src/server/collaboration/live-route.ts (B-LIVE, BACKEND 4.12 point 6): the
 // student owner publishes the last state of the work with PUT, and every
 // reader gets it with GET through one function, the same status, bytes and
-// ETag for the owner and the teacher (PRODUCT §5 rule 5). The request headers
-// a route relies on are not in RequestSpec yet, so they are named in the
-// summary and the vectors, as ductus-protocol is for evidence (docs/vs1-rute.md).
+// ETag for the owner and the teacher (PRODUCT §5 rule 5). The GET declares
+// ductus-protocol in RequestSpec.headers (DAN-930-1), as evidence does; the
+// other headers it reads are named in the summary and the vectors.
 // No handler yet (CONTRACT_ONLY).
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
