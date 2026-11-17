@@ -27,7 +27,8 @@ const SAME_ORIGIN = {
 
 /** The request a vector describes, as a client would send it. */
 function requestOf(v: FakeVector, pick = true): FakeRequest {
-  const route = ROUTE_TABLE[v.route as keyof typeof ROUTE_TABLE];
+  const route = ROUTE_TABLE[v.route];
+  if (route === undefined) throw new Error(`no route ${v.route}`);
   const params = v.request.params ?? {};
   const path = route.path.replace(/\{(\w+)\}/g, (_, name: string) =>
     encodeURIComponent(params[name] ?? ""),

@@ -52,7 +52,8 @@ function send(
 }
 
 function sendVector(v: FakeVector): Promise<Reply> {
-  const route = ROUTE_TABLE[v.route as keyof typeof ROUTE_TABLE];
+  const route = ROUTE_TABLE[v.route];
+  if (route === undefined) throw new Error(`no route ${v.route}`);
   const params = v.request.params ?? {};
   let path = route.path.replace(/\{(\w+)\}/g, (_, name: string) =>
     encodeURIComponent(params[name] ?? ""),

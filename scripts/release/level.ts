@@ -375,6 +375,49 @@ export function declarationChange(
   return { level, reasons };
 }
 
+// --- fake-server routes (DAN-974-4) ------------------------------------------
+
+/** The published fake server: its ROUTE_TABLE is typed as a record, so the routes are here. */
+const FAKE_SERVER_JS = "server/contracts/generated/fake-server/index.js";
+
+/**
+ * The rows of the one top-level `ROUTE_TABLE` of a JS file, by route id. Anything
+ * else (no table or two, not an object literal, a key that is not a plain
+ * string, a spread, a duplicate, `__proto__`, which sets the prototype) throws.
+ */
+export function routeRows(text: string, path: string): Map<string, ts.Node> {
+  const file = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const tables = file.statements
+    .filter(ts.isVariableStatement)
+    .flatMap((s) => s.declarationList.declarations)
+    .filter((d) => ts.isIdentifier(d.name) && d.name.text === "ROUTE_TABLE");
+  const table = tables.length === 1 ? tables[0]!.initializer : undefined;
+  if (table === undefined || !ts.isObjectLiteralExpression(table))
+    throw new Error(`${path}: ROUTE_TABLE is not one object literal`);
+  const rows = new Map<string, ts.Node>();
+  for (const row of table.properties) {
+    if (!ts.isPropertyAssignment(row) || !ts.isStringLiteral(row.name))
+      throw new Error(`${path}: a ROUTE_TABLE entry is not a "route": row`);
+    const id = row.name.text;
+    if (id === "__proto__" || rows.has(id)) throw new Error(`${path}: ROUTE_TABLE key ${id}`);
+    rows.set(id, row.initializer);
+  }
+  return rows;
+}
+
+/** Routes of the fake server: a new one is minor, a removed or changed one major. */
+function routesLevel(before: string, after: string, raise: (to: Level, why: string) => void) {
+  const a = routeRows(before, FAKE_SERVER_JS);
+  const b = routeRows(after, FAKE_SERVER_JS);
+  for (const [id, row] of a) {
+    const other = b.get(id);
+    if (other === undefined) raise("major", `route ${id} removed`);
+    else if (compare(row, other, row.getSourceFile(), other.getSourceFile()) !== "same")
+      raise("major", `route ${id} changed`);
+  }
+  for (const id of b.keys()) if (!a.has(id)) raise("minor", `route ${id} added`);
+}
+
 // --- package ----------------------------------------------------------------
 
 export type LevelInput = {
@@ -447,6 +490,13 @@ function packageLevel(input: LevelInput): LevelResult {
     const parsed = path === "package.json" || DECLARATION.test(path);
     const a = rawA === undefined || !parsed ? undefined : decode(rawA);
     const b = rawB === undefined || !parsed ? undefined : decode(rawB);
+    if (
+      input.short === "test-fakes" &&
+      path === FAKE_SERVER_JS &&
+      rawA !== undefined &&
+      rawB !== undefined
+    )
+      routesLevel(decode(rawA), decode(rawB), raise);
     if (!parsed) {
       raise(rawA === undefined ? "patch" : rawB === undefined ? "major" : "patch", path);
       continue;

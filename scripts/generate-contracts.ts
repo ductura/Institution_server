@@ -215,7 +215,13 @@ function types(routes: RouteContract[]): string {
   return `${HEADER}\nexport type Operations = {\n${ops.join("\n")}\n};\n\nexport type OperationId = keyof Operations;\n\n/** Codes any route may answer besides its own (SHARED_ERRORS, e.g. 500 internal). */\nexport type SharedErrorCode = ${shared};\n`;
 }
 
-function routeTable(routes: RouteContract[]): string {
+/**
+ * The route table. The fake server declares it as a record (DAN-974-4), so its
+ * declaration file does not list the routes and a new route does not change the
+ * published types; scripts/release/level.ts reads the routes from its JS. The
+ * client keeps `as const`.
+ */
+function routeTable(routes: RouteContract[], declared?: string): string {
   const rows = routes.map((r) => {
     const codes = Object.fromEntries(
       [...new Set(r.errors.map((e) => e.status))].map((s) => [
@@ -232,7 +238,10 @@ function routeTable(routes: RouteContract[]): string {
   const answers = routes
     .filter((r) => r.responses.some((s) => s.status >= 400))
     .map((r) => `  ${JSON.stringify(r.id)}: ${JSON.stringify(r.responses.map((s) => s.status))},`);
-  return `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;\n\n/** Answer statuses at 400 or above, by route (generated client). */\nexport const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {\n${answers.join("\n")}\n};\n`;
+  const table = declared
+    ? `export const ROUTE_TABLE: ${declared} = {\n${rows.join("\n")}\n};`
+    : `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;`;
+  return `${table}\n\n/** Answer statuses at 400 or above, by route (generated client). */\nexport const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {\n${answers.join("\n")}\n};\n`;
 }
 
 /** The shared errors by status, as the client reads them. */
@@ -347,7 +356,7 @@ export function generate(): Record<string, string> {
     "client.ts": `${HEADER}${CLIENT_PREAMBLE}\n${routeTable(routes)}${sharedTable()}${CLIENT_BODY}`,
     // Its own folder: it needs node:http, and generated/index.ts must load in a
     // browser. It imports nothing outside the folder, so U9 can move it as it is.
-    "fake-server/index.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes)}\nconst FALLBACK_CODE = ${JSON.stringify(FALLBACK.error.code)};\n${FAKE_BODY}`,
+    "fake-server/index.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes, "Readonly<Record<string, FakeRoute>>")}\nconst FALLBACK_CODE = ${JSON.stringify(FALLBACK.error.code)};\n${FAKE_BODY}`,
     "fake-server/vectors.json": fakeVectors(routes),
     "types.ts": types(routes),
     "validate.ts": validators(routes),
@@ -466,6 +475,15 @@ const FAKE_PREAMBLE = `// Fake server from the contracts (U8). A request that ma
 // fallback. Test code only: eslint.config.ts keeps it out of production code.
 import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
+
+/** One route of the fake server. */
+export type FakeRoute = {
+  readonly method: string;
+  readonly path: string;
+  readonly body: string | null;
+  readonly headers: readonly string[];
+  readonly errors: Readonly<Record<string, readonly string[]>>;
+};
 `;
 
 // Written out as it is: no template literals inside, so String.raw keeps every backslash.

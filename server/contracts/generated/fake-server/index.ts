@@ -6,7 +6,16 @@
 import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 
-export const ROUTE_TABLE = {
+/** One route of the fake server. */
+export type FakeRoute = {
+  readonly method: string;
+  readonly path: string;
+  readonly body: string | null;
+  readonly headers: readonly string[];
+  readonly errors: Readonly<Record<string, readonly string[]>>;
+};
+
+export const ROUTE_TABLE: Readonly<Record<string, FakeRoute>> = {
   "auth.backchannel-logout.post": { method: "POST", path: "/api/v1/auth/backchannel-logout", body: "application/x-www-form-urlencoded", headers: [], errors: {"400":["invalid_logout_token"],"503":["unavailable"]} },
   "auth.callback.get": { method: "GET", path: "/api/v1/auth/callback", body: null, headers: ["location","set-cookie"], errors: {"400":["login_failed"],"403":["login_refused"],"503":["unavailable"]} },
   "auth.login.get": { method: "GET", path: "/api/v1/auth/login", body: null, headers: ["location","set-cookie"], errors: {"503":["unavailable"]} },
@@ -58,7 +67,7 @@ export const ROUTE_TABLE = {
   "teacher.mentorship.get": { method: "GET", path: "/api/v1/teacher/mentorships/{mentorshipId}", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
   "teacher.mentorships.get": { method: "GET", path: "/api/v1/teacher/mentorships", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "teacher.submissions.get": { method: "GET", path: "/api/v1/teacher/assignments/{assignmentId}/submissions", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
-} as const;
+};
 
 /** Answer statuses at 400 or above, by route (generated client). */
 export const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {

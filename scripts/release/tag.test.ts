@@ -170,22 +170,21 @@ describe("the repo's own versions", () => {
     },
   );
 
-  // DAN-974 (after DAN-964): the approved test-fakes major. Older lines stop here.
-  // DAN-974-3: test-fakes-v3.0.0 sits on an older commit and tags cannot move
-  // (U10), so 3.0.0 is skipped and 3.0.1 is the floor.
-  it("takes test-fakes-v3.0.1 and refuses 3.0.0 and the 2.x line", () => {
-    expect(() => checkTag(input("test-fakes-v3.0.0", real))).toThrow(/version 3\.0\.0 is below/);
+  // DAN-974-4: 4.0.0 is the last test-fakes major for a growing route table
+  // (the table is typed as a record now); the 3.x line stops here.
+  it("takes test-fakes-v4.0.0 and refuses the 3.x line and 5.0.0", () => {
     for (const name of [
-      "test-fakes-v2.0.0",
+      "test-fakes-v3.0.0",
+      "test-fakes-v3.0.1",
+      "test-fakes-v3.0.2",
       "test-fakes-v2.0.1",
-      "test-fakes-v2.99.0",
-      "test-fakes-v1.99.0",
       "test-fakes-v0.2.1",
     ])
       expect(() => checkTag(input(name, real))).toThrow(/version/);
-    expect(() => checkTag(input("test-fakes-v4.0.0", real))).toThrow(/version 4\.0\.0/);
-    expect(checkTag(input("test-fakes-v3.0.1", real))).toBe("test-fakes");
-    expect(checkTag(input("test-fakes-v3.0.2", real))).toBe("test-fakes");
+    expect(() => checkTag(input("test-fakes-v3.0.1", real))).toThrow(/version 3\.0\.1 is below/);
+    expect(() => checkTag(input("test-fakes-v5.0.0", real))).toThrow(/version 5\.0\.0/);
+    expect(checkTag(input("test-fakes-v4.0.0", real))).toBe("test-fakes");
+    expect(checkTag(input("test-fakes-v4.0.1", real))).toBe("test-fakes");
   });
 });
 
