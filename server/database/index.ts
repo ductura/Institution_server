@@ -44,6 +44,13 @@ export {
 } from "./problem-report.ts";
 export type { ProblemReportStore } from "./problem-report.ts";
 export type {
+  CourseCreateOutcome,
+  CourseInput,
+  EnrollmentCodeIssueOutcome,
+  EnrollmentCodeRevokeOutcome,
+  InstitutionCourses,
+} from "./institution-courses.ts";
+export type {
   AccessLogCursor,
   AccessLogEntry,
   AccessLogRole,
@@ -125,6 +132,7 @@ export { createPendingReceiptStore } from "./pending-receipt-store.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
+export { createInstitutionCourses } from "./institution-courses.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
