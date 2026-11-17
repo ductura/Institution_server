@@ -41,15 +41,20 @@ const UNAVAILABLE: ReadonlySet<unknown> = new Set([
  * answer outside its type is `presence_unavailable`, never `present`.
  */
 export function objectOutcome(object: unknown): SignPendingReceiptOutcome | null {
-  if (!isPlainObject(object) || object.status !== "present") {
-    if (isPlainObject(object) && object.status === "held" && HOLDS.has(object.reason)) {
-      return { status: "held", reason: object.reason as PendingReceiptHold };
-    }
-    const reason =
-      isPlainObject(object) && object.status === "unavailable" && UNAVAILABLE.has(object.reason)
-        ? (object.reason as string)
-        : "presence_unavailable";
-    return { status: "unavailable", stage: "object", reason };
+  // Each field is read once, so a getter cannot show the set one value and
+  // the outcome another (QA of #210).
+  const status: unknown = isPlainObject(object) ? object.status : undefined;
+  const reason: unknown = isPlainObject(object) ? object.reason : undefined;
+  if (status === "present") return null;
+  if (status === "held" && HOLDS.has(reason)) {
+    return { status: "held", reason: reason as PendingReceiptHold };
   }
-  return null;
+  return {
+    status: "unavailable",
+    stage: "object",
+    reason:
+      status === "unavailable" && UNAVAILABLE.has(reason)
+        ? (reason as string)
+        : "presence_unavailable",
+  };
 }

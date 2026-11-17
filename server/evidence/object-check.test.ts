@@ -66,6 +66,32 @@ describe("objectOutcome stops the signing for every answer but present (P-6)", (
   });
 });
 
+describe("each field of the answer is read once (QA of #210)", () => {
+  const shifting = (status: string, first: string) => {
+    let reads = 0;
+    return {
+      status,
+      get reason() {
+        reads += 1;
+        return reads === 1 ? first : "x";
+      },
+    };
+  };
+  it("a held reason that shifts after its check is answered as read", () => {
+    expect(objectOutcome(shifting("held", "object_absent"))).toEqual({
+      status: "held",
+      reason: "object_absent",
+    });
+  });
+  it("an unavailable reason that shifts after its check is answered as read", () => {
+    expect(objectOutcome(shifting("unavailable", "locator_malformed"))).toEqual({
+      status: "unavailable",
+      stage: "object",
+      reason: "locator_malformed",
+    });
+  });
+});
+
 describe("controls", () => {
   it("present lets the signing go on", () => {
     expect(objectOutcome({ status: "present" })).toBeNull();
