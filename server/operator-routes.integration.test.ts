@@ -22,12 +22,29 @@ import {
   startServer as realStart,
 } from "./http/index.ts";
 
+// Counts every listen of a net.Server (http servers are ones) from before the
+// first module of this file loads: vi.hoisted runs ahead of every import, so a
+// listen at module level anywhere in the http graph or the entry is counted
+// too (review on #245 at 60657f1). It stops counting once the entry started.
+const early = vi.hoisted(() => {
+  const { Server } = process.getBuiltinModule("node:net");
+  const original = Server.prototype.listen;
+  const state = { count: 0, counting: true, beforeHttp: false };
+  Server.prototype.listen = function (this: InstanceType<typeof Server>, ...args: unknown[]) {
+    if (state.counting) state.count += 1;
+    return (original as (...a: unknown[]) => InstanceType<typeof Server>).apply(this, args);
+  } as typeof original;
+  return state;
+});
+
 type Running = Awaited<ReturnType<typeof httpModule.startServer>>;
 const started: { options: StartOptions; running: Running }[] = [];
 // Only the start of server/server.ts is recorded, not the servers this test builds.
 let recording = false;
 
 vi.mock("./http/index.ts", async (importOriginal) => {
+  // The http graph loads here, after the counter: a later counter would miss its module-level listens.
+  early.beforeHttp = early.counting;
   const real = await importOriginal<typeof httpModule>();
   return {
     ...real,
@@ -122,9 +139,11 @@ beforeAll(async () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});
   try {
     recording = true;
-    listens = await listensDuring(() => import("./server.ts"));
+    await import("./server.ts");
   } finally {
     recording = false;
+    early.counting = false;
+    listens = early.count;
     log.mockRestore();
   }
 }, 30_000);
@@ -138,7 +157,8 @@ afterAll(async () => {
 });
 
 describe("the real entry point and step 8", () => {
-  it("starts exactly one server and listens exactly once", () => {
+  it("starts exactly one server and listens exactly once, counted from before the http graph loads", () => {
+    expect(early.beforeHttp).toBe(true);
     expect(started).toHaveLength(1);
     expect(listens).toBe(1);
     expect(started[0]!.options.routes.length).toBeGreaterThan(10);
