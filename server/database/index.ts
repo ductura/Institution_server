@@ -4,6 +4,7 @@ import { createBackchannelLogout, type BackchannelLogout } from "./backchannel-l
 import { createActorReader, type ActorReader } from "./current-actor.ts";
 import { assertNoParameterLogging, withLogCheck } from "./log-settings.ts";
 import { createOpenSession, type OpenSession } from "./open-session.ts";
+import { createMyAccessLogReader, type MyAccessLogReader } from "./my-access-log.ts";
 import { createWorkOpener, type WorkOpener } from "./open-work.ts";
 import { createRegistry, type HealthReport, type Registry } from "./registry.ts";
 import { createWithActor, type WithActor } from "./with-actor.ts";
@@ -31,6 +32,14 @@ export type {
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type { InterfaceLocaleStore } from "./interface-locale.ts";
+export type {
+  AccessLogCursor,
+  AccessLogEntry,
+  AccessLogRole,
+  AccessLogSurface,
+  MyAccessLogPage,
+  MyAccessLogReader,
+} from "./my-access-log.ts";
 export type {
   AttachReceiptSignatureCommand,
   AttachReceiptSignatureOutcome,
@@ -77,6 +86,15 @@ export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export { createWorkOpener } from "./open-work.ts";
+export {
+  ACCESS_LOG_PAGE,
+  createMyAccessLogReader,
+  MY_ACCESS_LOG_DATABASE_ERROR,
+  MY_ACCESS_LOG_ERRORS,
+  MY_ACCESS_LOG_NOT_FOUND,
+  MY_ACCESS_LOG_ROW_MALFORMED,
+  MY_ACCESS_LOG_UNAUTHENTICATED,
+} from "./my-access-log.ts";
 export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,
@@ -205,6 +223,9 @@ export const actorReader: ActorReader = createActorReader(withActor);
 
 /** Opens the student's work over the application withActor (evidence/open, DAN-811). */
 export const workOpener: WorkOpener = createWorkOpener(withActor);
+
+/** The student's own access log over the application withActor, main database only (DAN-859-1). */
+export const myAccessLogReader: MyAccessLogReader = createMyAccessLogReader(withActor);
 
 // AUTH_DATABASE_URL is the login of the login callback and of the
 // back-channel logout route: a member of ductus_auth and nothing else

@@ -95,5 +95,11 @@
     "database_error": "Jezik sučelja trenutačno nije dostupan. Pokušajte ponovno.",
     "invalid_json": "Jezik sučelja nije promijenjen. Zahtjev nije valjan; učitajte stranicu i pokušajte ponovno.",
     "invalid_body": "Jezik sučelja nije promijenjen. Odaberite hrvatski ili engleski."
+  },
+  "myAccessLog": {
+    "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
+    "not_found": "Ovaj rad nije pronađen.",
+    "row_malformed": "Zapis pristupa trenutačno nije moguće prikazati. Pokušajte ponovno.",
+    "database_error": "Zapis pristupa trenutačno nije dostupan. Pokušajte ponovno."
   }
 }
