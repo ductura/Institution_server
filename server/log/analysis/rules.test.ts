@@ -196,6 +196,27 @@ describe("log analysis: rules and defaults", () => {
   });
 });
 
+describe("log analysis: both rules in one call", () => {
+  // Codex review c.6963686634: entries at the same millisecond all count, for every rule at once.
+  it("counts every entry at the same millisecond and gives one finding per rule", () => {
+    const same = (event: string, n: number) =>
+      Array.from({ length: n }, () => ({ timeMs: T0, event }));
+    const entries = [
+      ...same("traffic.rate_limited", 25),
+      ...same("authn.login_failed", 10),
+      ...same("traffic.ip_denied", 25),
+      ...same("authn.second_factor_failed", 10),
+    ];
+    expect(analyzeLog(entries)).toEqual({
+      ok: true,
+      value: [
+        { rule: "loginFailures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 },
+        { rule: "trafficRefusals", fromMs: T0, toMs: T0 + 300_000, count: 50, minCount: 50 },
+      ],
+    });
+  });
+});
+
 describe.each(ANALYSIS_RULES.map((r) => [r.name, r] as const))("rule %s", (name, rule) => {
   const own = { ...thresholds, [name]: { windowMs: WINDOW, minCount: MIN } };
   const [first, second] = RULE_EVENTS[name];
