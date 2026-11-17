@@ -176,8 +176,8 @@ const sha256 = (text: string) => createHash("sha256").update(text, "utf8").diges
 /** One deferred commit of a first segment, as the route builds it after checking the bytes. */
 async function commitDeferred(who: (typeof students)[number]) {
   const opened = await createWorkOpener(withActor).openWork(token[who], id.z1, true);
-  if (opened.status !== "opened") throw new Error(`open: ${opened.status}`);
-  const { documentId, documentHash } = opened.work;
+  if (!opened.ok) throw new Error(`open: ${opened.error.code}`);
+  const { documentId, documentHash } = opened.value;
   const committer = createEvidenceCommitter(withActor, signer);
   const read = await committer.readContext(token[who], documentId, txid(who));
   if (read.status !== "ok") throw new Error(`context: ${read.status}`);

@@ -1,8 +1,9 @@
-// The decision after one attempt to sign a pending receipt v2 (DAN-822-1,
-// VS-1b part 3). Port of `signatureRetryDelayMs`, `decideSignatureRetry`, the
-// policy and its caps from Ductus src/application/evidence/signature-retry.ts
-// at b36c82b, word for word. The loop that runs the attempts and waits
-// (`createSignPendingReceiptWithRetry`) comes in 822-2.
+// Signing one pending receipt v2 with retries (DAN-822, VS-1b part 3). Port of
+// Ductus src/application/evidence/signature-retry.ts at b36c82b, word for word
+// except formatting and import paths: the decision and the delay (822-1), then
+// the loop `createSignPendingReceiptWithRetry` that runs the attempts and
+// waits through the caller's `sleep` (822-2).
+import type { PendingReceiptRow } from "../database/index.ts";
 import { isPlainObject } from "../domain/index.ts";
 
 import type { SignPendingReceiptOutcome } from "./settle-attach.ts";
@@ -26,7 +27,7 @@ export type SignatureParkReason =
   | "signer_rejected"
   | "hash"
   | "exhausted"
-  /** The wait of the loop (822-2) was ended: shutdown or abort. */
+  /** The wait of the loop was ended: shutdown or abort. */
   | "interrupted";
 
 export type SignatureRetryDecision =
@@ -35,6 +36,34 @@ export type SignatureRetryDecision =
   | { action: "park"; reason: SignatureParkReason };
 
 type Signed = Extract<SignPendingReceiptOutcome, { status: "signed" | "already_signed" }>;
+type Stage = Extract<SignPendingReceiptOutcome, { status: "unavailable" }>["stage"];
+
+/**
+ * `parked` carries counts and a stage only (no receipt id, text or
+ * signature), so it may be logged; `done` carries the signed receipt.
+ */
+export type SignatureRetryResult =
+  | { status: "done"; outcome: Signed; attempts: number }
+  | { status: "parked"; reason: SignatureParkReason; attempts: number; lastStage: Stage | null };
+
+export type SignatureRetryDeps = {
+  /** `createSignPendingReceipt`: the only way a receipt is signed here. */
+  signPendingReceipt: (row: PendingReceiptRow) => Promise<SignPendingReceiptOutcome>;
+  policy: SignatureRetryPolicy;
+  /** Waits `ms`; a rejection (shutdown, abort) ends the retries. */
+  sleep: (ms: number) => Promise<void>;
+  /** A value in [0, 1) for the jitter. */
+  random: () => number;
+};
+
+const STAGES: ReadonlySet<unknown> = new Set([
+  "hash",
+  "keys",
+  "object",
+  "signing",
+  "verification",
+  "store",
+]);
 
 const TERMINAL: ReadonlySet<unknown> = new Set(["refused", "held", "signer_rejected"]);
 
@@ -106,4 +135,70 @@ export function decideSignatureRetry(
   }
   if (!isSafeIn(attempt, 1, policy.maxAttempts - 1)) return { action: "park", reason: "exhausted" };
   return { action: "retry", delayMs: signatureRetryDelayMs(attempt, policy, random) };
+}
+
+function lastStageOf(reply: unknown): Stage | null {
+  return isPlainObject(reply) && reply.status === "unavailable" && STAGES.has(reply.stage)
+    ? (reply.stage as Stage)
+    : null;
+}
+
+/**
+ * Signs one pending receipt v2 and retries a transient failure with capped
+ * exponential backoff and jitter (Ductus DAN-594, Ductus plan #1021 P-14, Ductus
+ * plan napada #1778). Every attempt goes through `signPendingReceipt` with the
+ * same row, snapshotted at the start, so a retry never makes a new receipt id
+ * or `acceptedAt`: Ed25519 gives the same signature for the same bytes, and the
+ * store's row lock keeps the first one, answering `already_signed` with it
+ * after a lost reply or a second signer. A parked receipt stays pending for
+ * the reconciler (Ductus DAN-593).
+ */
+export function createSignPendingReceiptWithRetry(deps: SignatureRetryDeps) {
+  const { signPendingReceipt, policy, sleep, random } = deps;
+  if (
+    typeof signPendingReceipt !== "function" ||
+    typeof sleep !== "function" ||
+    typeof random !== "function"
+  ) {
+    throw new TypeError("signatureRetry: signPendingReceipt, sleep and random are required");
+  }
+  assertPolicy(policy);
+  const limits: SignatureRetryPolicy = {
+    maxAttempts: policy.maxAttempts,
+    baseDelayMs: policy.baseDelayMs,
+    maxDelayMs: policy.maxDelayMs,
+  };
+
+  return async function signPendingReceiptWithRetry(
+    row: PendingReceiptRow,
+  ): Promise<SignatureRetryResult> {
+    const snapshot = { receiptId: row.receiptId, receiptPayloadText: row.receiptPayloadText };
+    for (let attempt = 1; ; attempt += 1) {
+      let reply: unknown;
+      try {
+        reply = await signPendingReceipt({ ...snapshot });
+      } catch {
+        reply = undefined;
+      }
+      let jitter: number;
+      try {
+        jitter = random();
+      } catch {
+        jitter = Number.NaN;
+      }
+      const decision = decideSignatureRetry(reply, attempt, limits, jitter);
+      if (decision.action === "done") {
+        return { status: "done", outcome: reply as Signed, attempts: attempt };
+      }
+      const lastStage = lastStageOf(reply);
+      if (decision.action === "park") {
+        return { status: "parked", reason: decision.reason, attempts: attempt, lastStage };
+      }
+      try {
+        await sleep(decision.delayMs);
+      } catch {
+        return { status: "parked", reason: "interrupted", attempts: attempt, lastStage };
+      }
+    }
+  };
 }
