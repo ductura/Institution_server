@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, type RunnerTask } from "vitest";
 
 import {
   buildTarball,
@@ -50,6 +50,41 @@ const tarball = (entries: readonly Entry[], end = Buffer.alloc(1024)) =>
 
 let run = 0;
 const dir = () => join(TMP, String((run += 1)));
+
+// DAN-974-2: a test that runs node or npm pack (checkStaged packs with
+// --dry-run) waits for it synchronously; on a slow CI runner the 5 s default
+// failed after the work was done (run 44091908720, 5071 ms). Vitest checks the
+// limit when a synchronous test returns, so it bounds how long the work may
+// take; it cannot stop the work.
+const PROCESS_TIMEOUT = 60_000;
+/** Every test of this file that starts a process, by its full name. */
+const PROCESS_TESTS = [
+  "packTarball refuses a staged package whose version is not the source",
+  "packTarball refuses a staged package whose name is not the source",
+  "buildTarball refuses an extra file in the tarball",
+  "buildTarball refuses a tarball with a private key in a listed file",
+  "buildTarball refuses a test-fakes tarball whose entry loads in production",
+  "buildTarball with the tag's version (DAN-804) names the tarball and its unpacked package.json with the given version",
+  "buildTarball with the tag's version (DAN-804) release:tarball refuses RELEASE_VERSION for two packages",
+];
+
+/** Full name and limit of every test under `tasks`. */
+function limits(tasks: readonly RunnerTask[], path = ""): [string, number | undefined][] {
+  return tasks.flatMap((task) => {
+    const name = path === "" ? task.name : `${path} ${task.name}`;
+    return task.type === "suite" ? limits(task.tasks, name) : [[name, task.timeout]];
+  });
+}
+
+describe("the tests that start a process (DAN-974-2)", () => {
+  it("each has the process limit, and the list names only tests of this file", ({ task }) => {
+    const all = new Map(limits(task.file.tasks));
+    expect(PROCESS_TESTS.filter((name) => !all.has(name))).toEqual([]);
+    expect(PROCESS_TESTS.map((name) => [name, all.get(name)])).toEqual(
+      PROCESS_TESTS.map((name) => [name, PROCESS_TIMEOUT]),
+    );
+  });
+});
 
 describe("readTarball", () => {
   it("reads regular files under package/", () => {
@@ -110,7 +145,7 @@ describe("readTarball", () => {
   });
 });
 
-describe("packTarball", () => {
+describe("packTarball", { timeout: PROCESS_TIMEOUT }, () => {
   it.each([
     ["version", "9.9.9", /npm pack version 9\.9\.9 is not/],
     ["name", "@ductura/other", /npm pack names @ductura\/other/],
@@ -125,7 +160,7 @@ describe("packTarball", () => {
   });
 });
 
-describe("buildTarball", () => {
+describe("buildTarball", { timeout: PROCESS_TIMEOUT }, () => {
   const built = [CONTRACTS, TEST_FAKES].map((spec) => ({ spec, ...buildTarball(spec, TMP) }));
 
   it.each(built.map((b) => [b.spec.name, b] as const))(
@@ -168,7 +203,7 @@ describe("buildTarball", () => {
 });
 
 // QA on #93 (c.6906349844): the tag's version (RELEASE_VERSION) reaches the tarball.
-describe("buildTarball with the tag's version (DAN-804)", () => {
+describe("buildTarball with the tag's version (DAN-804)", { timeout: PROCESS_TIMEOUT }, () => {
   const source = String(
     (
       JSON.parse(readFileSync(join(ROOT, CONTRACTS.dir, "package.json"), "utf8")) as {
