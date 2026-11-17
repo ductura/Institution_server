@@ -58,6 +58,7 @@ export {
   type ChallengePurpose,
   type ChallengeStore,
   type ChallengeStoreOptions,
+  challengeSessionKey,
   createChallengeStore,
   type IssuedChallenge,
   MAX_CHALLENGE_TTL_MS,

@@ -13,6 +13,7 @@ import { sessionTokenFromCookie } from "../session/index.ts";
 import { reportServerError } from "./error-catalog.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
 import { sendProblem } from "./problem.ts";
+import { parseJson } from "./request-json.ts";
 import { requestIdOf } from "./request-id.ts";
 import { type Route, sendJson } from "./router.ts";
 import { refuse } from "./security-headers.ts";
@@ -44,16 +45,6 @@ function isJson(values: readonly string[] | undefined): boolean {
   return (
     values?.length === 1 && values[0]?.split(";")[0]?.trim().toLowerCase() === "application/json"
   );
-}
-
-/** Strict UTF-8 (a byte order mark stays a character) and JSON.parse; a duplicate key keeps its last value. */
-function parseJson(bytes: Uint8Array): { ok: true; value: unknown } | { ok: false } {
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-    return { ok: true, value: JSON.parse(text) as unknown };
-  } catch {
-    return { ok: false };
-  }
 }
 
 export function createSettingsValuesPutRoute(options: SettingsValuesPutOptions): Route {

@@ -119,6 +119,13 @@ export {
   INTERFACE_LOCALE_TIMEOUT_MS,
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
+export {
+  createWebAuthnRoutes,
+  WEBAUTHN_BODY_TIMEOUT_MS,
+  WEBAUTHN_CHALLENGE_MAX_BYTES,
+  type WebAuthnRouteOptions,
+  webauthnRpId,
+} from "./webauthn.ts";
 export { startServer, type Running, type StartOptions } from "./start.ts";
 export {
   createMetricsSampling,
