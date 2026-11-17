@@ -5,13 +5,21 @@ import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { build } from "esbuild";
+import { build, type Plugin } from "esbuild";
 
 export const ENTRY = "server/server.ts";
 export const OUTFILE = "dist/server.js";
 
-/** Bundles the entry into `outfile`; the root is the repository. */
-export async function buildServer(root: string, outfile: string = OUTFILE): Promise<void> {
+/**
+ * Bundles the entry into `outfile`; the root is the repository. `plugins` is
+ * for tests only (DAN-911-2 swaps one module for a broken one); `pnpm build`
+ * passes none.
+ */
+export async function buildServer(
+  root: string,
+  outfile: string = OUTFILE,
+  plugins: readonly Plugin[] = [],
+): Promise<void> {
   await build({
     absWorkingDir: root,
     entryPoints: [ENTRY],
@@ -26,6 +34,7 @@ export async function buildServer(root: string, outfile: string = OUTFILE): Prom
       js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
     },
     logLevel: "warning",
+    plugins: [...plugins],
   });
 }
 

@@ -21,6 +21,7 @@ import {
   createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
+  createSettingsValuesPutRoute,
   evidenceIngestDependencies,
   createLayers,
   createMetricsSampling,
@@ -32,11 +33,16 @@ import {
   serverShutdownHooks,
   startServer,
 } from "./http/index.ts";
-import { metricsIntervalMs, metricsIntervalProblems } from "./settings/index.ts";
+import {
+  institutionsProblems,
+  metricsIntervalMs,
+  metricsIntervalProblems,
+} from "./settings/index.ts";
 
 // 1. Environment. A bad value stops the start before anything listens; the
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
-//    CIDR ranges) is optional; unset, X-Forwarded-For is never read.
+//    CIDR ranges) is optional; unset, X-Forwarded-For is never read. The
+//    institutions file built into the server must pass its schema (DAN-911).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const problems = [
   ...environmentProblems(process.env),
@@ -44,6 +50,7 @@ const problems = [
   ...shutdownProblems(process.env),
   ...originProblems(process.env),
   ...metricsIntervalProblems(process.env),
+  ...institutionsProblems(),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
@@ -98,6 +105,8 @@ async function main(): Promise<void> {
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
       createEvidenceOpenRoute(databases.main),
+      // Settings by level (S-1J-g, DAN-826): the write over settings.set_value.
+      createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
       // B-8: the development signer only under NODE_ENV development or test;
       // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise).
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
