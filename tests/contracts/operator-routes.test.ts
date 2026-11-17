@@ -1,0 +1,282 @@
+// No operator route may go around step 8 of the pipeline (S-1J.2, DAN-842-2;
+// contract Ductus#1836 c.6947114430). Step 8 reads only the request path, so a
+// route bypasses it when its contract path is outside /api/v1/ops, when the
+// entry point builds its layers without createLayers or swaps step 8, when a
+// contract is mounted that is not one of ROUTES, or when another HTTP server
+// serves requests outside startServer. A cross-area test (docs/server-map.md
+// §2), as contract-only.test.ts. The checks are pure functions over text and
+// data; each has failing synthetic inputs next to the live check.
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { IncomingMessage, ServerResponse } from "node:http";
+import { Socket } from "node:net";
+import { dirname, join, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { describe, expect, it } from "vitest";
+
+import { ROUTES } from "../../server/contracts/index.ts";
+import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
+import {
+  AREA_NAMES,
+  createInterfaceLocaleRoutesFor,
+  createLayers,
+  createSettingsValuesPutRoute,
+  createWebAuthnRoutesFor,
+  PIPELINE_STEPS,
+  routesOf,
+} from "../../server/http/index.ts";
+import { isOpsPath } from "../../server/traffic/index.ts";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+
+type RouteLike = { readonly id: string; readonly path: string };
+
+/** An operator route declares itself twice: id area `ops` and a path under /api/v1/ops. */
+export function operatorRouteProblems(routes: readonly RouteLike[]): string[] {
+  return routes.flatMap(({ id, path }) => {
+    const byId = id.split(".", 1)[0] === "ops";
+    const byPath = isOpsPath(path);
+    if (byId && !byPath) return [`${id}: operator route outside /api/v1/ops`];
+    if (!byId && byPath) return [`${id}: ${path} is an operator path, the id is not ops.*`];
+    return [];
+  });
+}
+
+/** Mounted contracts that are not members of ROUTES (by identity). */
+export function strayContracts(mounted: readonly object[], routes: readonly object[]): number {
+  return mounted.filter((contract) => !routes.includes(contract)).length;
+}
+
+/** Whitespace as one space: CRLF, tab and NBSP change nothing. */
+const flat = (text: string): string => text.replace(/[\s ]+/gu, " ");
+const code = (text: string): string => text.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/gu, "");
+const count = (text: string, word: string): number => text.split(word).length - 1;
+
+const LAYERS_INIT =
+  "const LAYERS = createLayers({ expectedOrigin: APP_ORIGIN, trustedProxies: TRUSTED_PROXIES ?? [], });";
+
+/** server/server.ts builds the layers once, through createLayers, and swaps no step. */
+export function entryLayerProblems(entry: string): string[] {
+  const text = flat(code(entry));
+  const problems: string[] = [];
+  if (!text.includes(LAYERS_INIT)) problems.push("LAYERS is not exactly createLayers(…)");
+  if (count(text, "createLayers(") !== 1) problems.push("createLayers( not exactly once");
+  if (count(text, "startServer(") !== 1) problems.push("startServer( not exactly once");
+  if (count(text, "layers:") !== 1 || !text.includes("layers: LAYERS,"))
+    problems.push("layers: not exactly layers: LAYERS");
+  // In the whole text, comments too: the check is coarse on purpose.
+  for (const word of ["operatorPolicy", "secondFactor"])
+    if (flat(entry).includes(word)) problems.push(`${word} in the entry point`);
+  return problems;
+}
+
+// The value imports from node:http and node:net each file under server/ may
+// have, exact. start.ts is the server behind the pipeline; app.ts is the
+// transitional server no entry imports (below); the fake server is generated
+// for clients and never runs in production. Type-only imports are free.
+const SERVER_IMPORTS: Readonly<Record<string, readonly string[]>> = {
+  "server/http/start.ts": ["http createServer", "net Server as NetServer"],
+  "server/app.ts": ["http createServer"],
+  "server/contracts/generated/fake-server/index.ts": ["http createServer"],
+  "server/http/problem.ts": ["http STATUS_CODES"],
+  "server/http/security-headers.ts": ["http STATUS_CODES"],
+  "server/http/webauthn.ts": ["net isIP"],
+  "server/log/events/catalog.ts": ["net isIPv6"],
+  "server/traffic/client-ip.ts": ["net isIPv6"],
+};
+
+const NODE_IMPORT =
+  /\b(import|export)\s+(?!type\s)([^;]*?)\s*from\s*["'](?:node:)?(http|net)["']|\bimport\s*["'](?:node:)?(?:http|net)["']/gu;
+
+/** "module name" for each value a file imports or re-exports from node:http or node:net. */
+export function nodeServerImports(source: string): string[] {
+  const values: string[] = [];
+  for (const match of flat(code(source)).matchAll(NODE_IMPORT)) {
+    const [, , clause, module] = match;
+    if (clause === undefined || module === undefined) {
+      values.push("side-effect import");
+      continue;
+    }
+    const braces = /^\{(.*)\}$/u.exec(clause.trim());
+    if (braces === null) {
+      values.push(`${module} ${clause.trim()}`); // default or namespace: never allowed
+      continue;
+    }
+    for (const item of (braces[1] ?? "").split(",").map((part) => part.trim())) {
+      if (item !== "" && !item.startsWith("type ")) values.push(`${module} ${item}`);
+    }
+  }
+  return values.sort();
+}
+
+/** Files whose value imports differ from SERVER_IMPORTS, and listed files that are gone. */
+export function serverImportProblems(files: ReadonlyMap<string, string>): string[] {
+  const problems: string[] = [];
+  for (const [file, source] of files) {
+    const have = nodeServerImports(source).join(", ");
+    const allowed = [...(SERVER_IMPORTS[file] ?? [])].sort().join(", ");
+    if (have !== allowed)
+      problems.push(`${file}: imports ${have || "none"}, allowed ${allowed || "none"}`);
+  }
+  for (const file of Object.keys(SERVER_IMPORTS))
+    if (!files.has(file)) problems.push(`${file}: listed, not found`);
+  return problems;
+}
+
+/** Files under server/ that import server/app.ts. */
+export function appImporters(files: ReadonlyMap<string, string>): string[] {
+  return [...files].flatMap(([file, source]) =>
+    [...source.matchAll(/\bfrom\s*["'](\.[^"']*)["']|\bimport\s*\(?\s*["'](\.[^"']*)["']/gu)]
+      .map((m) => m[1] ?? m[2] ?? "")
+      .some((spec) => join(dirname(file), spec) === join("server", "app.ts"))
+      ? [file]
+      : [],
+  );
+}
+
+function productionSources(): Map<string, string> {
+  const files = new Map<string, string>();
+  const walk = (dir: string): void => {
+    for (const name of readdirSync(join(ROOT, dir))) {
+      const path = join(dir, name);
+      if (statSync(join(ROOT, path)).isDirectory()) walk(path);
+      else if (name.endsWith(".ts") && !name.endsWith(".test.ts"))
+        files.set(path.split(sep).join("/"), readFileSync(join(ROOT, path), "utf8"));
+    }
+  };
+  walk("server");
+  return files;
+}
+
+describe("operator routes cannot go around step 8", () => {
+  it.each([
+    [{ id: "ops.traffic.get", path: "/api/v1/traffic" }],
+    [{ id: "settings.network.get", path: "/api/v1/ops/network" }],
+    [{ id: "settings.root.get", path: "/api/v1/ops" }],
+    // Not a contract path (check.ts: path === pathOf(inventory)); synthetic only.
+    [{ id: "platform.x.get", path: "/api/v1/OPS/x" }],
+    [{ id: "platform.x.get", path: "//api/v1//ops/x" }],
+  ])("refuses a route that declares itself only once: %o", (route) => {
+    expect(operatorRouteProblems([route])).toHaveLength(1);
+  });
+
+  it.each([
+    [{ id: "ops.traffic.get", path: "/api/v1/ops/traffic" }],
+    [{ id: "opsx.y.get", path: "/api/v1/opsx/y" }],
+    [{ id: "platform.ops.get", path: "/api/v1/health" }],
+  ])("accepts %o", (route) => {
+    expect(operatorRouteProblems([route])).toEqual([]);
+  });
+
+  it("holds for every contract and every mounted route", () => {
+    const actor = { withActor: () => Promise.reject(new Error("no database")) };
+    const writer: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
+    const mounted = [
+      ...routesOf(AREA_NAMES),
+      createSettingsValuesPutRoute({ writer }),
+      ...createInterfaceLocaleRoutesFor(actor),
+      ...createWebAuthnRoutesFor(
+        { ...actor, webauthnCredentials: {} as WebAuthnCredentials },
+        null,
+      ),
+    ].map((route) => route.contract);
+    expect(operatorRouteProblems(ROUTES)).toEqual([]);
+    expect(operatorRouteProblems(mounted)).toEqual([]);
+    expect(strayContracts(mounted, ROUTES)).toBe(0);
+    expect(strayContracts([{ ...ROUTES[0]! }], ROUTES)).toBe(1);
+  });
+
+  const ENTRY = readFileSync(join(ROOT, "server/server.ts"), "utf8");
+  const SWAPS: readonly [string, (text: string) => string][] = [
+    [
+      "a spread with step 8 swapped",
+      (t) => t.replace("const LAYERS = createLayers({", "const LAYERS = { ...createLayers({"),
+    ],
+    [
+      "a computed key",
+      (t) =>
+        t.replace(
+          "trustedProxies: TRUSTED_PROXIES ?? [],",
+          'trustedProxies: TRUSTED_PROXIES ?? [], ["operator" + "Policy"]: pass,',
+        ),
+    ],
+    [
+      "a shorthand port",
+      (t) =>
+        t.replace(
+          "trustedProxies: TRUSTED_PROXIES ?? [],",
+          "trustedProxies: TRUSTED_PROXIES ?? [], secondFactor,",
+        ),
+    ],
+    [
+      "a second createLayers",
+      (t) => `${t}\nconst OTHER = createLayers({ expectedOrigin: null });\n`,
+    ],
+    ["inline layers", (t) => t.replace("layers: LAYERS,", "layers: { ...LAYERS },")],
+    ["a second server", (t) => `${t}\nvoid startServer(options);\n`],
+    ["a comment naming step 8", (t) => `// operatorPolicy is left as is\n${t}`],
+  ];
+  it.each(SWAPS)("refuses an entry point with %s", (_name, swap) => {
+    const changed = swap(ENTRY);
+    expect(changed).not.toBe(ENTRY);
+    expect(entryLayerProblems(changed)).not.toEqual([]);
+  });
+
+  it("accepts server/server.ts, also with CRLF, tabs and NBSP", () => {
+    expect(entryLayerProblems(ENTRY)).toEqual([]);
+    expect(entryLayerProblems(ENTRY.replaceAll("\n", "\r\n").replaceAll("  ", "\t"))).toEqual([]);
+    expect(entryLayerProblems(ENTRY.replace("createLayers({", "createLayers({ "))).toEqual([]);
+  });
+
+  it.each([
+    ["server/x.ts", 'import { createServer } from "node:http";'],
+    ["server/x.ts", 'import { createServer as cs } from "node:http";'],
+    ["server/x.ts", 'import { Server } from "http";'],
+    ["server/x.ts", 'import * as net from "node:net";'],
+    ["server/x.ts", 'import http from "node:http";'],
+    ["server/x.ts", 'export { createServer } from "node:http";'],
+    ["server/x.ts", 'import "node:http";'],
+    ["server/x.ts", 'import {\r\n\ttype IncomingMessage, createServer,\r\n} from "node:http";'],
+    ["server/http/start.ts", 'import { createServer, Server } from "node:http";'],
+  ])("refuses %s with %j", (file, source) => {
+    const problems = serverImportProblems(new Map([...productionSources(), [file, source]]));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(new RegExp(`^${file}: imports (?!none)`, "u"));
+  });
+
+  it("accepts type-only imports", () => {
+    const source =
+      'import type { Server } from "node:http";\nimport { type Socket } from "node:net";';
+    expect(nodeServerImports(source)).toEqual([]);
+  });
+
+  it("holds for every production file under server/, and the list is not stale", () => {
+    const files = productionSources();
+    expect(serverImportProblems(files)).toEqual([]);
+    const without = new Map(files);
+    without.delete("server/app.ts");
+    expect(serverImportProblems(without)).toEqual(["server/app.ts: listed, not found"]);
+  });
+
+  it("no production file imports the transitional server", () => {
+    const files = productionSources();
+    expect(appImporters(files)).toEqual([]);
+    expect(
+      appImporters(new Map([["server/server.ts", 'import { createApp } from "./app.ts";']])),
+    ).toEqual(["server/server.ts"]);
+    expect(appImporters(new Map([["server/http/x.ts", 'export * from "../app.ts";']]))).toEqual([
+      "server/http/x.ts",
+    ]);
+  });
+
+  it("step 8 is in the pipeline and createLayers gives the real layer", async () => {
+    expect(PIPELINE_STEPS).toContain("operatorPolicy");
+    const request = new IncomingMessage(new Socket());
+    request.url = "/api/v1/ops/x";
+    const response = new ServerResponse(request);
+    expect(await createLayers({ expectedOrigin: null }).operatorPolicy(request, response)).toBe(
+      "done",
+    );
+    expect(response.statusCode).toBe(401);
+  });
+});
