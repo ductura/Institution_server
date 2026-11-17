@@ -11,6 +11,7 @@ import {
   KEY_LITERAL_ALLOWED,
   NODE_IMPORTS_ALLOWED,
   TEST_ONLY_RE,
+  WORKER_SCRIPTS_ALLOWED,
 } from "../../scripts/lint-rules/index.ts";
 
 // S-1A-c (DAN-770): server code loads modules only by a static import, through
@@ -53,7 +54,81 @@ const WATCH = "server/database/queue/attempt-fence-watch.ts";
 const WATCH_CODE = readFileSync(path.join(ROOT, WATCH), "utf8");
 const WT = "node:worker_threads";
 
+// DAN-822-5: the fence itself, the one file that may import Worker, and only
+// to start the watch by a listed static URL with workerData as its one option.
+const FENCE = "server/database/queue/attempt-fence.ts";
+const FENCE_CODE = readFileSync(path.join(ROOT, FENCE), "utf8");
+const URL_JS = 'new URL("./attempt-fence-watch.js", import.meta.url)';
+const URL_TS = 'new URL("./attempt-fence-watch.ts", import.meta.url)';
+// The thread is a const inside a function, never a value of the module.
+const startWith = (args: string, head = ""): string =>
+  `import { Worker } from "${WT}";\n${head}export function f(): void {\n  const t = new Worker(${args});\n  t.unref();\n}\n`;
+
 const failing: Case[] = [
+  // The fence's Worker in any other file, the watch's own file included.
+  ...[
+    WATCH,
+    "server/database/queue/Attempt-fence.ts",
+    "server/database/queue/attempt-fence.ts-extra.ts",
+    "server/database/queue/attempt-fence2.ts",
+    "server/database/queue/sub/attempt-fence.ts",
+    "server/database/attempt-fence.ts",
+  ].flatMap((file) => at(file, "module", [FENCE_CODE])),
+  // In the fence: eval, code from a string, any other option, script or form.
+  ...at(FENCE, "worker", [
+    ...[
+      `"process.exit()", { eval: true }`,
+      `"./attempt-fence-watch.js", { workerData: 1 }`,
+      `${URL_JS}, { eval: true }`,
+      `${URL_JS}, { workerData: 1, eval: true }`,
+      `${URL_JS}, { workerData: 1, execArgv: [] }`,
+      `${URL_JS}, { env: {} }`,
+      `${URL_JS}, { argv: [] }`,
+      `${URL_JS}, { ...{ eval: true } }`,
+      `${URL_JS}, { ["eval"]: true }`,
+      `${URL_JS}, { "eval": true }`,
+      `${URL_JS}, { workerData() {} }`,
+      `${URL_JS}, { get workerData() { return 1; } }`,
+      `${URL_JS}`,
+      `${URL_JS}, { workerData: 1 }, 1`,
+      `${URL_JS}, opts`,
+      `new URL("./x.js", import.meta.url), { workerData: 1 }`,
+      `new URL("data:text/javascript,1", import.meta.url), { workerData: 1 }`,
+      `new URL(\`./attempt-fence-watch.js\`, import.meta.url), { workerData: 1 }`,
+      `new URL("./attempt-fence-watch.js"), { workerData: 1 }`,
+      `new URL("./attempt-fence-watch.js", "file:///x/"), { workerData: 1 }`,
+      `new URL("./attempt-fence-watch.js", import.meta.url, 1), { workerData: 1 }`,
+      `URL("./attempt-fence-watch.js", import.meta.url), { workerData: 1 }`,
+      `new globalThis.URL("./attempt-fence-watch.js", import.meta.url), { workerData: 1 }`,
+      `true ? ${URL_JS} : new URL("./x.js", import.meta.url), { workerData: 1 }`,
+      `(${URL_JS} as URL), { workerData: 1 }`,
+      `${URL_JS}, { workerData: 1 } as never`,
+      // Options read through the prototype (attack pass on the contract).
+      `${URL_JS}, { __proto__: { eval: true }, workerData: 1 }`,
+      `${URL_JS}, { workerData: 1, __proto__: opts }`,
+      `${URL_JS}, { "workerData": 1 }`,
+      `new URL("./attempt-fence-watch.js", import.meta?.url), { workerData: 1 }`,
+      `true ? ${URL_JS} : true ? ${URL_TS} : new URL("./x.js", import.meta.url), { workerData: 1 }`,
+    ].map((args) => startWith(args, "const opts = { workerData: 1 };\n")),
+    startWith(`${URL_JS}, { workerData: 1 }`, "class URL {}\nvoid URL;\n"),
+    `import { Worker } from "${WT}";\nconst W = Worker;\nexport const w = W;\n`,
+    `import { Worker } from "${WT}";\nexport { Worker };\n`,
+    `import { Worker } from "${WT}";\nexport default Worker;\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  void Worker(${URL_JS}, { workerData: 1 });\n}\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  void new (Worker as never)(${URL_JS}, { workerData: 1 });\n}\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  void new Worker!(${URL_JS}, { workerData: 1 });\n}\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  void Reflect.construct(Worker, []);\n}\n`,
+    `import { Worker } from "${WT}";\nexport type T = typeof Worker;\n`,
+    // The thread itself never leaves a function as a value of the module.
+    `import { Worker } from "${WT}";\nexport const t = new Worker(${URL_JS}, { workerData: 1 });\n`,
+    `import { Worker } from "${WT}";\nconst t = new Worker(${URL_JS}, { workerData: 1 });\nt.unref();\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  let t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  void new Worker(${URL_JS}, { workerData: 1 });\n}\n`,
+    `import { Worker } from "${WT}";\nexport function f(): unknown {\n  return new Worker(${URL_JS}, { workerData: 1 });\n}\n`,
+    `import { Worker } from "${WT}";\nexport const f = (): unknown => new Worker(${URL_JS}, { workerData: 1 });\n`,
+  ]),
+  // In the fence, the watch's members of process are not allowed.
+  ...at(FENCE, "global", ["process.kill(process.pid);\n", "export const e = process.env;\n"]),
   // The same code in any other file, the fence's own file included.
   ...[
     "server/database/queue/attempt-fence.ts",
@@ -422,6 +497,14 @@ const failing: Case[] = [
 ];
 
 const passing: Case[] = [
+  ...at(FENCE, "", [
+    FENCE_CODE,
+    startWith(`${URL_JS}, { workerData: 1 }`),
+    startWith(`${URL_TS}, { workerData: new SharedArrayBuffer(8) }`),
+    startWith(`import.meta.url.endsWith(".ts") ? ${URL_TS} : ${URL_JS}, { workerData: 1 }`),
+    // A type use of Worker is erased and starts nothing.
+    `import { Worker } from "${WT}";\nexport type T = Worker;\nlet w: Worker | undefined;\nvoid w;\n`,
+  ]),
   ...at(WATCH, "", [WATCH_CODE]),
   ...at(ENV, "", [
     "export function f(env = process.env): unknown {\n  return env;\n}\n",
@@ -542,6 +625,34 @@ describe("the rule covers the whole of server/", () => {
             `${file} ${name}.${member}`,
           ).toBe(true);
         }
+      }
+    }
+  });
+
+  it("lists worker scripts only for the files that import Worker, each a listed watch thread", () => {
+    const withWorker = Object.entries(NODE_IMPORTS_ALLOWED)
+      .filter(([, modules]) => modules["node:worker_threads"]?.includes("Worker") === true)
+      .map(([file]) => file);
+    expect(Object.keys(WORKER_SCRIPTS_ALLOWED).sort()).toEqual(withWorker.sort());
+    for (const [file, scripts] of Object.entries(WORKER_SCRIPTS_ALLOWED)) {
+      expect(tracked, file).toContain(file);
+      const text = readFileSync(path.join(ROOT, file), "utf8");
+      const sources = scripts.filter((script) => script.endsWith(".ts"));
+      expect(sources.length, file).toBeGreaterThan(0);
+      for (const script of scripts) {
+        expect(text, `${file} ${script}`).toContain(`"${script}"`);
+        expect(script, file).toMatch(/^\.\/[a-z0-9-]+\.(?:ts|js)$/u);
+        // A .js script is the built copy of a listed .ts one.
+        if (script.endsWith(".js"))
+          expect(sources, script).toContain(script.replace(/\.js$/u, ".ts"));
+      }
+      // Each source is a tracked file that may import only workerData: a watch thread.
+      for (const script of sources) {
+        const target = path.posix.join(path.posix.dirname(file), script.slice(2));
+        expect(tracked, target).toContain(target);
+        expect(NODE_IMPORTS_ALLOWED[target]?.["node:worker_threads"], target).toEqual([
+          "workerData",
+        ]);
       }
     }
   });

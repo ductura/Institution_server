@@ -73,6 +73,8 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
   // The watch thread of the attempt fence: the monotonic clock, and the kill
   // of its own process (DAN-822-4, Ductus#1836 c.6948159989).
   "server/database/queue/attempt-fence-watch.ts": { process: ["hrtime", "kill", "pid"] },
+  // The fence: the same clock, and the URL of the watch next to it (DAN-822-5).
+  "server/database/queue/attempt-fence.ts": { process: ["hrtime"], [IMPORT_META]: ["url"] },
   // The entry point reads the environment and sets the exit code (S-1B-a, DAN-775).
   // On shutdown it listens to SIGTERM and SIGINT and exits with a code (S-1B-c, DAN-778).
   // The working directory is the repository root the development signer's seed
@@ -148,7 +150,27 @@ export const NODE_IMPORTS_ALLOWED: Readonly<
 > = {
   // The watch thread of the attempt fence takes its shared cell (DAN-822-4).
   "server/database/queue/attempt-fence-watch.ts": { "node:worker_threads": ["workerData"] },
+  // The attempt fence starts that thread (DAN-822-5), only as WORKER_SCRIPTS_ALLOWED says.
+  "server/database/queue/attempt-fence.ts": { "node:worker_threads": ["Worker"] },
 };
+
+/**
+ * The only scripts a file may start a thread from, as
+ * `new Worker(new URL("<script>", import.meta.url), { workerData })` with the
+ * global URL; a conditional whose both branches are such a URL is one too.
+ * The thread is the init of a const in a block (a function body), and Worker
+ * is never a value otherwise (no alias, export or other argument), so no eval,
+ * other option or code from a string (DAN-822-5, decision c.6948159989).
+ */
+export const WORKER_SCRIPTS_ALLOWED: Readonly<Record<string, readonly string[]>> = {
+  // The watch from the source tree (.ts) and next to the built bundle (.js).
+  "server/database/queue/attempt-fence.ts": [
+    "./attempt-fence-watch.ts",
+    "./attempt-fence-watch.js",
+  ],
+};
+// A listed import that may only be a constructor of WORKER_SCRIPTS_ALLOWED.
+const WORKER = { spec: "node:worker_threads", name: "Worker" };
 
 // An own property only, so a key of Object.prototype is never an entry.
 function own<T>(table: Readonly<Record<string, T>> | undefined, key: string): T | undefined {
@@ -212,7 +234,10 @@ export const noDynamicLoad: Rule.RuleModule = {
       importRequire: "`import x = require()` is not allowed in server code (DAN-770).",
       module:
         "'{{spec}}' is not on the allow-list: a relative file in server/, an allowed node: module or a package from dependencies (DAN-770).",
-      nodeExport: "A file that imports under NODE_IMPORTS_ALLOWED exports nothing (DAN-822-4).",
+      worker:
+        "Worker is allowed only as new Worker(new URL(<script of WORKER_SCRIPTS_ALLOWED>, import.meta.url), { workerData }) (DAN-822-5).",
+      nodeExport:
+        "A file that imports under NODE_IMPORTS_ALLOWED exports nothing, unless Worker is its only such import (DAN-822-4, DAN-822-5).",
       key: "'{{key}}' reaches a loader (the Function constructor or a native engine) (DAN-770).",
     },
   },
@@ -245,8 +270,10 @@ export const noDynamicLoad: Rule.RuleModule = {
       );
     }
 
-    // Local names of the imports NODE_IMPORTS_ALLOWED let through.
+    // Local names of the imports NODE_IMPORTS_ALLOWED let through, and the
+    // specifiers of Worker among them.
     const listedImports = new Set<string>();
+    const workerSpecifiers: Node[] = [];
 
     // `import { name } from "<spec>"`, every name on this file's list for spec.
     function listedImport(node: Node, spec: string): boolean {
@@ -265,8 +292,94 @@ export const noDynamicLoad: Rule.RuleModule = {
             s.local?.name === s.imported.name &&
             names.includes(s.imported.name ?? ""),
         );
-      if (ok) for (const s of specifiers) listedImports.add(s.local?.name ?? "");
+      if (ok)
+        for (const s of specifiers) {
+          if (spec === WORKER.spec && s.imported?.name === WORKER.name)
+            workerSpecifiers.push(s as unknown as Node);
+          else listedImports.add(s.local?.name ?? "");
+        }
       return ok;
+    }
+
+    // The global URL: not a binding of this file (a class, an import, a parameter).
+    function isGlobalUrl(callee: Loose): boolean {
+      if (callee.type !== "Identifier" || callee.name !== "URL") return false;
+      const reference = context.sourceCode
+        .getScope(callee as unknown as Node)
+        .references.find((r) => r.identifier === (callee as unknown));
+      return reference !== undefined && (reference.resolved?.defs.length ?? 0) === 0;
+    }
+
+    // new URL("<listed script>", import.meta.url), or a conditional of two.
+    function isWatchUrl(node: Loose | undefined): boolean {
+      const loose = node as (Loose & { consequent?: Loose; alternate?: Loose }) | undefined;
+      if (loose?.type === "ConditionalExpression")
+        return isWatchUrl(loose.consequent) && isWatchUrl(loose.alternate);
+      const [script, base, ...rest] = (loose?.arguments ?? []) as Loose[];
+      const meta = base?.object as Loose | undefined;
+      return (
+        loose?.type === "NewExpression" &&
+        loose.callee !== undefined &&
+        isGlobalUrl(loose.callee) &&
+        rest.length === 0 &&
+        script?.type === "Literal" &&
+        typeof script.value === "string" &&
+        (own(WORKER_SCRIPTS_ALLOWED, file) ?? []).includes(script.value) &&
+        base?.type === "MemberExpression" &&
+        base.computed === false &&
+        base.property?.type === "Identifier" &&
+        base.property.name === "url" &&
+        meta?.type === "MetaProperty" &&
+        meta.meta?.name === "import" &&
+        meta.property?.name === "meta"
+      );
+    }
+
+    // `{ workerData: ... }` and nothing else: no eval, other option, spread or accessor.
+    function isWorkerOptions(node: Loose | undefined): boolean {
+      const properties = (node as { properties?: Loose[] } | undefined)?.properties ?? [];
+      const [only] = properties;
+      return (
+        node?.type === "ObjectExpression" &&
+        properties.length === 1 &&
+        only?.type === "Property" &&
+        only.kind === "init" &&
+        only.computed !== true &&
+        (only as { method?: boolean }).method !== true &&
+        only.key?.type === "Identifier" &&
+        only.key.name === "workerData"
+      );
+    }
+
+    // Every value use of Worker is `new Worker(<watch URL>, <options>)`.
+    function checkWorker(): void {
+      for (const specifier of workerSpecifiers) {
+        for (const variable of context.sourceCode.getDeclaredVariables(specifier)) {
+          for (const reference of variable.references) {
+            if ((reference as { isValueReference?: boolean }).isValueReference === false) continue;
+            const id = reference.identifier as Loose;
+            const call = id.parent;
+            const [url, options, ...rest] = (call?.arguments ?? []) as Loose[];
+            // The thread is the init of a const inside a function: never a
+            // value of the module, so no other file reaches it (or Worker
+            // through its constructor) to start or end a thread.
+            const declarator = call?.parent;
+            const declaration = declarator?.parent;
+            const ok =
+              call?.type === "NewExpression" &&
+              call.callee === id &&
+              declarator?.type === "VariableDeclarator" &&
+              declarator.init === call &&
+              declaration?.type === "VariableDeclaration" &&
+              declaration.kind === "const" &&
+              declaration.parent?.type === "BlockStatement" &&
+              rest.length === 0 &&
+              isWatchUrl(url) &&
+              isWorkerOptions(options);
+            if (!ok) context.report({ node: id as Node, messageId: "worker" });
+          }
+        }
+      }
     }
 
     function checkSource(node: Node, source: Loose | null | undefined, kind?: string): void {
@@ -344,6 +457,7 @@ export const noDynamicLoad: Rule.RuleModule = {
 
     return {
       "Program:exit"() {
+        checkWorker();
         if (listedImports.size > 0)
           for (const node of exportNodes) context.report({ node, messageId: "nodeExport" });
         const globalScope = context.sourceCode.scopeManager?.globalScope;

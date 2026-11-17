@@ -72,7 +72,8 @@ ${body}
   child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
   // A child the watch did not end is stopped with SIGTERM, never SIGKILL, so it
   // cannot pass for one the watch killed.
-  const stop = setTimeout(() => child.kill("SIGTERM"), 5000);
+  // Before vitest's own 5 s timeout, so a hung child shows how it ended.
+  const stop = setTimeout(() => child.kill("SIGTERM"), 4000);
   return new Promise((resolve) => {
     child.on("close", (code, signal) => {
       clearTimeout(stop);
