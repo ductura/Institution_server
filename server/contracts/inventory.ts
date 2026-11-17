@@ -94,6 +94,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@4eaa776:src/components/teacher/teacher-access.ts",
   },
+  // DAN-904: Ductus reads it in its page app/rad/[assignmentId]/dnevnik-pristupa;
+  // the route names the work by documentId, as the port server/database/my-access-log.ts.
+  "app/api/student/works/[documentId]/access-log/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus@4eaa776:src/server/privacy/my-access-log-pages.ts",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -136,6 +142,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "teacher.access.get",
   "settings.catalogue.get",
   "settings.values.get",
+  "student.access-log.get",
 ];
 
 /**

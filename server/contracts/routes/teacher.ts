@@ -24,9 +24,9 @@ const Minute = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.
 // surrogates. Without the u flag (TypeBox compiles `new RegExp(pattern)`) this
 // still counts code points; an engine with full Unicode strings reads the pair
 // branch as never used. A lone surrogate is refused (the database cannot store it).
-const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
+export const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 /** The end of the text: unlike `$`, never before a final line end in any engine. */
-const END = "(?![\\s\\S])";
+export const END = "(?![\\s\\S])";
 
 /**
  * A work id (evidence.document.id, server/contracts/work-id.ts): 1 to 256 code
@@ -36,7 +36,7 @@ const WorkId = Type.String({
   pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)${END}`,
 });
 /** A name of the login claims (isName): 1 to 255 code points. */
-const Name = Type.String({
+export const Name = Type.String({
   pattern: `^(?:${CODE_POINT}|[^\\uD800-\\uDFFF]){1,255}${END}`,
 });
 const Count = (minimum: number) => Type.Integer({ minimum, maximum: Number.MAX_SAFE_INTEGER });
