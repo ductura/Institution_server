@@ -2,6 +2,7 @@ export { authRoutes } from "./auth.ts";
 export { CLIENT_APP_VERSION_PATTERN, CLIENT_CONTEXT_VALUES, clientRoutes } from "./client.ts";
 export { evidenceRoutes, MAX_COMMIT_BODY_BYTES } from "./evidence.ts";
 export {
+  ERROR_CATALOG_DATA,
   FALLBACK,
   INTERNAL,
   METHOD_NOT_ALLOWED,

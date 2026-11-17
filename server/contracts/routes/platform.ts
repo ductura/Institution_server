@@ -1,6 +1,7 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error } from "../schema/index.ts";
+import { closed, defineRoute, error, type ErrorSpec, messageKeyOf } from "../schema/index.ts";
+import catalog from "./error-catalog.json" with { type: "json" };
 
 const CapabilityStatus = Type.Union([
   Type.Literal("ok"),
@@ -108,6 +109,30 @@ export const status = defineRoute({
   errors: [error(503, "unavailable", "none")],
 });
 
+/**
+ * The error catalogue and SHARED_ERRORS as data (DAN-928): the one file the
+ * server reads here and @ductura/contracts publishes as errors/catalog.json.
+ * server/http/error-catalog.ts builds ERROR_CATALOG from `errors`.
+ */
+export const ERROR_CATALOG_DATA: {
+  readonly errors: readonly CatalogEntry[];
+  readonly shared: readonly CatalogEntry[];
+} = Object.freeze({ errors: frozen(catalog.errors), shared: frozen(catalog.shared) });
+
+type CatalogEntry = { readonly status: number; readonly code: string; readonly messageKey: string };
+
+function frozen(entries: readonly CatalogEntry[]): readonly CatalogEntry[] {
+  return Object.freeze(entries.map((entry) => Object.freeze({ ...entry })));
+}
+
+/** A shared error of the data; a missing code or a key other than messageKeyOf fails at load. */
+function sharedError(code: string): ErrorSpec {
+  const entry = catalog.shared.find((shared) => shared.code === code);
+  if (entry === undefined || entry.messageKey !== messageKeyOf(code))
+    throw new Error(`error-catalog.json: shared ${code} is missing or has another key`);
+  return error(entry.status, entry.code);
+}
+
 /** The answer to every /api/v1 path no route handles, for any method (app/api/[...path]). */
 export const FALLBACK = {
   inventory: "app/api/[...path]/route.ts",
@@ -126,7 +151,7 @@ export const METHOD_NOT_ALLOWED = {
  * server but the request id.
  */
 export const INTERNAL = {
-  error: error(500, "internal"),
+  error: sharedError("internal"),
 } as const;
 
 /**
@@ -136,7 +161,7 @@ export const INTERNAL = {
  * codes (server/http/error-catalog.ts, ROUTE_429_CODES) stay apart.
  */
 export const TOO_MANY_REQUESTS = {
-  error: error(429, "too_many_requests"),
+  error: sharedError("too_many_requests"),
   headers: ["retry-after"],
 } as const;
 

@@ -3,6 +3,7 @@ import {
   clientRoutes,
   collaborationRoutes,
   enrollmentRoutes,
+  ERROR_CATALOG_DATA,
   evidenceRoutes,
   FALLBACK,
   institutionRoutes,
@@ -27,6 +28,7 @@ export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 
 export {
+  ERROR_CATALOG_DATA,
   FALLBACK,
   INTERNAL,
   METHOD_NOT_ALLOWED,
