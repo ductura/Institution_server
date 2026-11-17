@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   createActorReader,
+  createSettingsWriter,
   createWithActor,
   createWorkOpener,
 } from "../../server/database/index.ts";
@@ -214,6 +215,7 @@ beforeAll(async () => {
     withActor,
     actorReader: createActorReader(withActor),
     workOpener: createWorkOpener(withActor),
+    settingsWriter: createSettingsWriter(withActor),
   };
   server = await startServer({
     host: "127.0.0.1",

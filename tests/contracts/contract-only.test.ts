@@ -4,10 +4,13 @@
 // it is still listed fails here, so the list cannot claim a route is unserved
 // when it is served. A cross-area test (docs/server-map.md §2), as
 // tests/contracts/evidence-domain.test.ts; outside server/http on purpose.
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
-import { AREA_NAMES, routesOf } from "../../server/http/index.ts";
+import type { SettingsWriter } from "../../server/database/index.ts";
+import { AREA_NAMES, createSettingsValuesPutRoute, routesOf } from "../../server/http/index.ts";
 
 // The operations of DAN-803 (c.6905207008, tables of PR1 to PR6), frozen: the
 // task may add only these to CONTRACT_ONLY, and each of them that has a
@@ -50,7 +53,33 @@ export const DAN_840: readonly string[] = [
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840];
 
-const mounted = (): string[] => routesOf(AREA_NAMES).map((route) => route.contract.id);
+// Routes the entry point mounts itself, over a database the areas cannot be
+// given (DAN-826-2b): the exact call server/server.ts must hold, and the
+// route id its factory gives. A call with another writer, or one commented
+// out, is not a mount.
+const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
+const ENTRY_MOUNTED: readonly { call: string; id: string; route: () => string }[] = [
+  {
+    call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
+    id: "settings.values.put",
+    route: () => createSettingsValuesPutRoute({ writer: NO_WRITER }).contract.id,
+  },
+];
+const ENTRY_TEXT = readFileSync(new URL("../../server/server.ts", import.meta.url), "utf8");
+
+/** The text of an entry point without its comments. */
+const code = (text: string): string => text.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/gu, "");
+
+/** The ids of ENTRY_MOUNTED whose exact call is in the entry text. */
+export function entryMounted(entry: string): string[] {
+  const text = code(entry);
+  return ENTRY_MOUNTED.filter((row) => text.includes(row.call)).map((row) => row.id);
+}
+
+const mounted = (): string[] => [
+  ...routesOf(AREA_NAMES).map((route) => route.contract.id),
+  ...entryMounted(ENTRY_TEXT),
+];
 
 /** Every problem of a CONTRACT_ONLY list against the routes and the mounted ids. */
 export function contractOnlyProblems(
@@ -118,8 +147,36 @@ describe("CONTRACT_ONLY", () => {
   });
 
   it("refuses a DAN-806 route that is mounted", () => {
-    expect(contractOnlyProblems(CONTRACT_ONLY, ids, ["settings.values.put"])).toEqual([
-      "settings.values.put: mounted",
-    ]);
+    expect(contractOnlyProblems(CONTRACT_ONLY, ids, [...mounted(), "settings.values.get"])).toEqual(
+      ["settings.values.get: mounted"],
+    );
+    expect(contractOnlyProblems([...CONTRACT_ONLY, "settings.values.put"], ids, mounted())).toEqual(
+      ["settings.values.put: mounted"],
+    );
+  });
+});
+
+describe("routes the entry point mounts itself", () => {
+  it("server.ts mounts the settings PUT over the database's writer", () => {
+    expect(entryMounted(ENTRY_TEXT)).toEqual(["settings.values.put"]);
+    expect(mounted()).toContain("settings.values.put");
+  });
+
+  it("each factory gives the route id of its row", () => {
+    for (const row of ENTRY_MOUNTED) expect(row.route()).toBe(row.id);
+  });
+
+  it("a call commented out, removed or given another writer is not a mount", () => {
+    const call = "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })";
+    for (const entry of [
+      `// ${call},`,
+      `/* ${call}, */`,
+      "",
+      "createSettingsValuesPutRoute({ writer: fakeWriter }),",
+      "createSettingsValuesPutRoute(),",
+    ]) {
+      expect(entryMounted(entry)).toEqual([]);
+    }
+    expect(entryMounted(`routes: [\n  ${call},\n]`)).toEqual(["settings.values.put"]);
   });
 });
