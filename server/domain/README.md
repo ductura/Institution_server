@@ -24,7 +24,7 @@ Područje iz [karte servera](../../docs/server-map.md).
 
 ## Tko ga zove
 
-`database`, `external/storage`, `external/keys`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence` i `profile` (karta §1). Unakrsni testovi u `tests/contracts` i `tests/db` uvoze ga da dokažu slaganje s ugovorima i migracijama.
+`database`, `external/storage`, `external/keys`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence`, `profile` i `support` (karta §1). Unakrsni testovi u `tests/contracts` i `tests/db` uvoze ga da dokažu slaganje s ugovorima i migracijama.
 
 ## Koje podatke dira
 

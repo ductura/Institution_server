@@ -16,7 +16,7 @@ Brojači i trajanja za nadzor (zahtjevi, odbijanja, trajanje RPC-a).
 
 ## Tko ga zove
 
-`database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `profile` i `http`.
+`database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `profile`, `support` i `http`.
 
 ## Koje podatke dira
 
