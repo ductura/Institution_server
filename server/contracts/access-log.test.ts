@@ -66,6 +66,39 @@ describe("student.access-log.get", () => {
     expect(check(page(entry, { beforeAt: at, beforeId: ROW }))).toBe(false);
   });
 
+  it.each([
+    "2026-99-99T99:10:00.000Z",
+    "2026-00-10T13:10:00.000Z",
+    "2026-13-10T13:10:00.000Z",
+    "2026-11-00T13:10:00.000Z",
+    "2026-11-32T13:10:00.000Z",
+    "2026-11-31T13:10:00.000Z",
+    "2026-04-31T13:10:00.000Z",
+    "2026-02-29T13:10:00.000Z",
+    "1900-02-29T13:10:00.000Z",
+    "2026-02-30T13:10:00.000Z",
+    "2026-11-10T24:00:00.000Z",
+    "2026-11-10T13:60:00.000Z",
+    "0000-01-01T00:00:00.000Z",
+    "0000-02-29T00:00:00.000Z",
+  ])("the instant %j is not on the calendar (QA #256 c.6948938937)", (at) => {
+    expect(check(page({ ...entry, at }))).toBe(false);
+    expect(check(page(entry, { beforeAt: at, beforeId: ROW }))).toBe(false);
+  });
+
+  it("takes every window start Date.toISOString gives from year 1 to 9999, leap days too", () => {
+    const valid = (at: string) => check(page({ ...entry, at }));
+    for (const at of ["2024-02-29", "2000-02-29", "1600-02-29", "0004-02-29", "0001-01-01"])
+      expect(valid(`${at}T00:00:00.000Z`), at).toBe(true);
+    expect(valid("9999-12-31T23:55:00.000Z")).toBe(true);
+    // Every day of 1999 to 2032 (both kinds of leap year rule), at a window start.
+    const step = 24 * 60 * 60_000 + 5 * 60_000;
+    for (let ms = Date.UTC(1999, 0, 1); ms < Date.UTC(2033, 0, 1); ms += step) {
+      const at = new Date(ms).toISOString();
+      expect(valid(at), at).toBe(true);
+    }
+  });
+
   it("refuses any other shape of an entry or the cursor", () => {
     expect(check(page({ ...entry, id: ROW.toUpperCase() }))).toBe(false);
     expect(check(page({ ...entry, role: "admin" }))).toBe(false);

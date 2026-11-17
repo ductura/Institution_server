@@ -52,9 +52,21 @@ export const studentAssignmentsGet = defineRoute({
 // DAN-904: Ductus 4eaa776 src/server/privacy/my-access-log-pages.ts
 // (readMyAccessLogPage), which Ductus reads in a page, not a route; the rows
 // as the port server/database/my-access-log.ts (DAN-859) reads them.
+// A day of the proleptic Gregorian calendar, years 0001 to 9999 (PostgreSQL
+// has no year zero): the days of each month and 29 February only in a leap
+// year (QA #256 c.6948938937).
+const YEAR = "(?!0000)\\d{4}";
+const LEAP_YEAR =
+  "(?!0000)(?:\\d\\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)";
+const MONTH_DAY = [
+  "(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])",
+  "(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)",
+  "02-(?:0[1-9]|1\\d|2[0-8])",
+].join("|");
+const DAY = `(?:${YEAR}-(?:${MONTH_DAY})|${LEAP_YEAR}-02-29)`;
 /** The start of a five-minute window as Date.toISOString gives it. */
 const Window = Type.String({
-  pattern: `^\\d{4}-\\d{2}-\\d{2}T\\d{2}:[0-5][05]:00\\.000Z${END}`,
+  pattern: `^${DAY}T(?:[01]\\d|2[0-3]):[0-5][05]:00\\.000Z${END}`,
 });
 const RowId = Type.String({
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
