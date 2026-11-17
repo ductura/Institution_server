@@ -53,9 +53,10 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.log_chain_base FROM ductus_log
 -- As 20261116170000_log_chain.sql, from the base instead of seq 0 and 32
 -- zero bytes: the first row must follow the base (gap, link), and with no row
 -- left the head must be the base. A base that is not one row is reported as
--- 'base' (seq NULL), and the chain is then verified from the greatest base
--- row, or from seq 0 and 32 zero bytes when there is none, so the
--- verification never fails on it.
+-- 'base' (seq NULL), and the chain is then verified from the base row with
+-- the greatest seq (a NULL seq last), or from seq 0 and 32 zero bytes when
+-- there is none. The gap is compared in numeric, so no stored seq, the
+-- greatest bigint included, makes the verification fail instead of report.
 CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, problem text)
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
   WITH base AS (
@@ -65,7 +66,7 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
       SELECT 0::bigint, pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')
       WHERE NOT EXISTS (SELECT 1 FROM public.log_chain_base)
     ) x
-    ORDER BY x.seq DESC, x.hash
+    ORDER BY x.seq DESC NULLS LAST, x.hash
     LIMIT 1
   ), entry AS (
     SELECT e.seq, e.prev_hash, e.hash,
@@ -85,7 +86,7 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
     SELECT entry.seq, 'link' FROM entry WHERE entry.prev_hash IS DISTINCT FROM entry.before_hash
     UNION ALL
     SELECT entry.seq, 'gap' FROM entry
-    WHERE entry.seq IS DISTINCT FROM (entry.before_seq OPERATOR(pg_catalog.+) 1)
+    WHERE entry.seq::numeric IS DISTINCT FROM (entry.before_seq::numeric OPERATOR(pg_catalog.+) 1)
     UNION ALL
     SELECT h.seq, 'head' FROM public.log_chain_head h, last
     WHERE h.seq IS DISTINCT FROM last.seq OR h.hash IS DISTINCT FROM last.hash

@@ -67,7 +67,7 @@ END
 $$;
 
 
-SELECT plan(143);
+SELECT plan(146);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -211,6 +211,11 @@ SELECT is((SELECT array_agg(seq::text || ' ' || encode(hash, 'hex')) FROM public
 SELECT is((SELECT relowner::regrole::text || ' ' || (relrowsecurity AND relforcerowsecurity)::text
            FROM pg_class WHERE oid = 'public.log_chain_base'::regclass),
   'ductus_logs_migrator true', 'the migrator owns the base; RLS on it is enabled and forced');
+SELECT set_eq(
+  $$ SELECT conname || ' ' || pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.log_chain_base'::regclass $$,
+  ARRAY['log_chain_base_pkey PRIMARY KEY (only_row)', 'log_chain_base_one_row CHECK (only_row)',
+        'log_chain_base_seq CHECK ((seq >= 0))', 'log_chain_base_hash_size CHECK ((octet_length(hash) = 32))'],
+  'the base is one row, its seq at least 0 and its hash 32 bytes');
 SELECT set_eq(
   $$ SELECT polname || ' ' || polcmd::text || ' ' || array_to_string(polroles::regrole[], ',')
             || ' using ' || coalesce(pg_get_expr(polqual, polrelid), '-') || ' check ' || coalesce(pg_get_expr(polwithcheck, polrelid), '-')
@@ -455,13 +460,21 @@ FROM (VALUES
    'a row deleted past the base is found at the next row'),
   (':cut7; UPDATE public.log_chain_base SET seq = seq + 1', ARRAY['7 head'],
    'with no row left, a base past the head is found at the head'),
-  ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_pkey;
-    INSERT INTO public.log_chain_base (seq, hash) VALUES (0, decode(repeat(''00'', 32), ''hex''))', ARRAY['- base'],
-   'a base of two rows is found and does not fail the verification')
+  (':cut7; UPDATE public.log_chain_base SET seq = 9223372036854775807', ARRAY['7 head'],
+   'a base at the greatest bigint does not fail the verification of an empty chain')
 ) t (sql, expected, what);
 SELECT is(pg_temp.tampered('UPDATE public.log_chain_base SET (seq, hash) = (SELECT seq, hash FROM public.log_entry WHERE seq = :base + 2)'),
   ARRAY[(1 - pg_temp.at(0))::text || ' gap', (1 - pg_temp.at(0))::text || ' link'],
   'a base moved on while its rows stay is found at the first row');
+SELECT is(pg_temp.tampered('UPDATE public.log_chain_base SET seq = 9223372036854775807'),
+  ARRAY[(1 - pg_temp.at(0))::text || ' gap'],
+  'a base at the greatest bigint is found at the first row, the verification does not fail');
+SELECT is(pg_temp.tampered('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_pkey,
+      ALTER seq DROP NOT NULL, ALTER hash DROP NOT NULL;
+    INSERT INTO public.log_chain_base (seq, hash) SELECT seq, hash FROM public.log_entry WHERE seq = :base + 2;
+    INSERT INTO public.log_chain_base (seq, hash) VALUES (NULL, NULL)'),
+  ARRAY['- base', (1 - pg_temp.at(0))::text || ' gap', (1 - pg_temp.at(0))::text || ' link'],
+  'a base of three rows is found, the chain is verified from the one with the greatest seq, and nothing fails');
 SELECT is(pg_temp.tampered(':cut2; DELETE FROM public.log_chain_base'),
   ARRAY['- base', (pg_temp.at(3) - pg_temp.at(0))::text || ' gap', '3 link'],
   'a missing base is found, and the cut chain is then verified from seq 0');
