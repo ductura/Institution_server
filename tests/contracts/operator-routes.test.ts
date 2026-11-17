@@ -104,7 +104,24 @@ export function entryRouteFactories(entry: string): string[] {
     } else current += char;
   }
   if (current.trim() !== "") entries.push(current.trim());
-  return entries.map((item) => /^(?:\.\.\.)?([A-Za-z]\w*)\(/u.exec(item)?.[1] ?? item);
+  return entries.map(factoryOf);
+}
+
+/**
+ * The factory an entry calls, when the entry is that call and nothing more:
+ * `f(…)` or `...f(…)`. Anything chained after the call (`.map(…)`, `[0]`)
+ * could change what the factory gives, so the entry is named as itself.
+ */
+function factoryOf(item: string): string {
+  const name = /^(?:\.\.\.)?([A-Za-z]\w*)\(/u.exec(item);
+  if (name === null) return item;
+  let depth = 0;
+  for (let i = name[0].length - 1; i < item.length; i += 1) {
+    if ("([{".includes(item[i]!)) depth += 1;
+    if (")]}".includes(item[i]!)) depth -= 1;
+    if (depth === 0) return i === item.length - 1 ? (name[1] ?? item) : item;
+  }
+  return item;
 }
 
 /** Entries of the routes list this test does not build, so it cannot check their contracts. */
@@ -152,10 +169,13 @@ const SERVER_IMPORTS: Readonly<Record<string, readonly string[]>> = {
 
 const NODE_IMPORT =
   /\b(import|export)\s+(?!type\s)([^;]*?)\s*from\s*["'](?:node:)?(http|net)["']|\bimport\s*["'](?:node:)?(?:http|net)["']/gu;
+// import("node:http") and require("node:http") load every value: never allowed.
+const NODE_LOAD = /\b(?:import|require)\s*\(\s*["'`](?:node:)?(http|net)["'`]/gu;
 
 /** "module name" for each value a file imports or re-exports from node:http or node:net. */
 export function nodeServerImports(source: string): string[] {
   const values: string[] = [];
+  for (const match of flat(code(source)).matchAll(NODE_LOAD)) values.push(`${match[1]} load`);
   for (const match of flat(code(source)).matchAll(NODE_IMPORT)) {
     const [, , clause, module] = match;
     if (clause === undefined || module === undefined) {
@@ -255,6 +275,18 @@ describe("operator routes cannot go around step 8", () => {
     ["a spread list", (t: string) => t.replace("routes: [", "routes: [ ...ROGUE_ROUTES,")],
     ["an inline route", (t: string) => t.replace("routes: [", "routes: [ { contract, handle },")],
     [
+      "a call chained after the factory",
+      (t: string) =>
+        t.replace(
+          "...createAuthRoutes(process.env),",
+          '...createAuthRoutes(process.env).map((r) => ({ ...r, contract: { ...r.contract, id: "ops.x.get" } })),',
+        ),
+    ],
+    [
+      "an index after the factory",
+      (t: string) => t.replace("createClientContextRoute(),", "createClientContextRoute()[0],"),
+    ],
+    [
       "a factory under another name",
       (t: string) => t.replace("...routesOf(AREAS)", "...routesOfAll(AREAS)"),
     ],
@@ -313,6 +345,13 @@ describe("operator routes cannot go around step 8", () => {
     ["server/x.ts", 'import http from "node:http";'],
     ["server/x.ts", 'export { createServer } from "node:http";'],
     ["server/x.ts", 'import "node:http";'],
+    ["server/x.ts", 'const { createServer } = await import("node:http");'],
+    ["server/x.ts", "const http = await import ( 'http' );"],
+    ["server/x.ts", "const net = require(`node:net`);"],
+    [
+      "server/http/start.ts",
+      'import { createServer } from "node:http";\nconst h = await import("node:http");',
+    ],
     ["server/x.ts", 'import {\r\n\ttype IncomingMessage, createServer,\r\n} from "node:http";'],
     ["server/http/start.ts", 'import { createServer, Server } from "node:http";'],
   ])("refuses %s with %j", (file, source) => {
