@@ -10,7 +10,7 @@ Preneseno iz Ductusa `src/server/db/` (`d52a92c3`, S-0.13 i S-0.17, DAN-726 i DA
 
 ## Tko ga zove
 
-`session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence`, `profile`, `support` i `http` (karta servera, §2). Područja osim `http` uvoze `database` samo s `import type` (tip porta), a adapter im predaje sastavljač. Tvornice workera (`createPendingReceiptQueue`, `readReceiptKeys`, `createPendingReceiptStore`, `queue/`) gradi samo proces workera (D-71, D-102); testovi u `tests/db/` grade tvornice nad vlastitim prijavama.
+`session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence`, `profile` i `http` (karta servera, §2). Područja osim `http` uvoze `database` samo s `import type` (tip porta), a adapter im predaje sastavljač. Tvornice workera (`createPendingReceiptQueue`, `readReceiptKeys`, `createPendingReceiptStore`, `queue/`) gradi samo proces workera (D-71, D-102); testovi u `tests/db/` grade tvornice nad vlastitim prijavama.
 
 ## Koje podatke dira
 
