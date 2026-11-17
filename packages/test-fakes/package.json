@@ -11,6 +11,7 @@
     "./clock": "./clock/index.ts",
     "./services": "./services/index.ts",
     "./fido2": "./fido2/index.ts",
+    "./hostile-inputs": "./hostile-inputs/index.ts",
     "./pglite": "./pglite/index.ts"
   },
   "dependencies": {
