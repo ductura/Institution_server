@@ -84,6 +84,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/auth/webauthn/challenge/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },
   "app/api/auth/webauthn/registration/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },
   "app/api/auth/webauthn/assertion/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },
+  // DAN-903-1: Ductus reads it in its teacher page, not in a route.
+  "app/api/teacher/assignment-submissions/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus@4eaa776:src/server/evidence/assignment-submissions.ts",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -123,6 +128,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "teacher.mentorships.get",
   "teacher.mentorship.get",
   "teacher.fast-path.post",
+  "teacher.assignment-submissions.post",
   "settings.catalogue.get",
   "settings.values.get",
 ];
