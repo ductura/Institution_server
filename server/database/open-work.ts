@@ -2,8 +2,12 @@
 // Port of Ductus src/server/evidence/open-route.ts (open) and
 // evidence-domain-keys.ts at 078c780, without a change of logic: every
 // statement runs in one withActor transaction and every row is checked
-// before it leaves this folder; the rows become camelCase only here.
-import { isEvidenceDomainId, isSha256Hex } from "../domain/index.ts";
+// before it leaves this folder; the rows become camelCase only here. The
+// answer is a Result with an AppError (docs/CODE_STYLE.md §8; DAN-859,
+// contract Ductus#1836 c.6946658606; text in locales/hr.json under
+// `openWork`). A thrown error of withActor stays an exception: the route
+// records its closed class, and a bug must not read as a database outage.
+import { type AppError, isEvidenceDomainId, isSha256Hex, type Result } from "../domain/index.ts";
 
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
@@ -34,11 +38,36 @@ export type OpenedWork = {
   submitted: boolean;
 };
 
-export type OpenWorkResult =
-  | { status: "opened"; work: OpenedWork }
-  | { status: "unauthenticated" | "not_found" | "not_accepting" | "not_started" }
-  /** The reason is a closed code for the server's own record, never for the answer. */
-  | { status: "unavailable"; reason: string };
+const error = (code: string, messageKey: string): AppError => ({ code, messageKey });
+
+/** No session behind the token. */
+export const OPEN_WORK_UNAUTHENTICATED = error(
+  "OPEN_WORK_UNAUTHENTICATED",
+  "openWork.unauthenticated",
+);
+/** No such assignment for the caller. */
+export const OPEN_WORK_NOT_FOUND = error("OPEN_WORK_NOT_FOUND", "openWork.not_found");
+/** The assignment takes no work now. */
+export const OPEN_WORK_NOT_ACCEPTING = error("OPEN_WORK_NOT_ACCEPTING", "openWork.not_accepting");
+/** No work yet, and the caller did not ask to start one. */
+export const OPEN_WORK_NOT_STARTED = error("OPEN_WORK_NOT_STARTED", "openWork.not_started");
+/** C8: the assignment has no evidence configuration. */
+export const OPEN_WORK_NOT_CONFIGURED = error(
+  "OPEN_WORK_NOT_CONFIGURED",
+  "openWork.not_configured",
+);
+/** A row of the work, its domain or its keys that is not what the statements return. */
+export const OPEN_WORK_ROW_MALFORMED = error("OPEN_WORK_ROW_MALFORMED", "openWork.row_malformed");
+export const OPEN_WORK_ERRORS: readonly AppError[] = [
+  OPEN_WORK_UNAUTHENTICATED,
+  OPEN_WORK_NOT_FOUND,
+  OPEN_WORK_NOT_ACCEPTING,
+  OPEN_WORK_NOT_STARTED,
+  OPEN_WORK_NOT_CONFIGURED,
+  OPEN_WORK_ROW_MALFORMED,
+];
+
+export type OpenWorkResult = Result<OpenedWork>;
 
 /** The port server/http opens a work through; one call is one transaction. */
 export type WorkOpener = {
@@ -63,9 +92,17 @@ SELECT key_id, key_version, evidence_domain_id::text, purpose, algorithm, key_ba
  WHERE evidence_domain_id = $1::uuid
  ORDER BY valid_from, key_id`;
 
-const REFUSALS = new Set(["unauthenticated", "not_found", "not_accepting", "not_started"]);
+// A Map, not an object: an outcome such as `toString` or `__proto__` is no refusal.
+const REFUSALS = new Map<unknown, AppError>([
+  ["unauthenticated", OPEN_WORK_UNAUTHENTICATED],
+  ["not_found", OPEN_WORK_NOT_FOUND],
+  ["not_accepting", OPEN_WORK_NOT_ACCEPTING],
+  ["not_started", OPEN_WORK_NOT_STARTED],
+  ["not_configured", OPEN_WORK_NOT_CONFIGURED],
+]);
 const text = (value: unknown): value is string => typeof value === "string" && value !== "";
-const unavailable = (reason: string): OpenWorkResult => ({ status: "unavailable", reason });
+const fail = (e: AppError): OpenWorkResult => ({ ok: false, error: e });
+const malformed = (): OpenWorkResult => fail(OPEN_WORK_ROW_MALFORMED);
 
 /** A count as the driver gives a bigint (text) or an integer; anything else is null. */
 export function count(value: unknown): number | null {
@@ -125,14 +162,16 @@ export async function receiptKeys(
   return keys;
 }
 
-async function open(tx: ActorTransaction, assignmentId: string, start: boolean) {
+async function open(
+  tx: ActorTransaction,
+  assignmentId: string,
+  start: boolean,
+): Promise<OpenWorkResult> {
   const { rows } = await tx.query<Row>(OPEN_SQL, [assignmentId, start]);
   const row = rows.length === 1 ? rows[0] : undefined;
   const outcome = row?.outcome;
-  if (typeof outcome === "string" && REFUSALS.has(outcome)) {
-    return { status: outcome } as OpenWorkResult;
-  }
-  if (outcome === "not_configured") return unavailable("work_not_configured");
+  const refusal = REFUSALS.get(outcome);
+  if (refusal !== undefined) return fail(refusal);
   const currentRevision = count(row?.current_revision);
   const lastSequenceTo = count(row?.last_sequence_to);
   if (
@@ -146,21 +185,21 @@ async function open(tx: ActorTransaction, assignmentId: string, start: boolean) 
     !(row.head_segment_hash === null || isSha256Hex(row.head_segment_hash)) ||
     typeof row.snapshot !== "string"
   ) {
-    return unavailable("work_malformed");
+    return malformed();
   }
   // Never false by assumption: an answer that is not a boolean is no answer.
   const submittedRows = await tx.query<Row>(SUBMITTED_SQL, [assignmentId]);
   const submitted = submittedRows.rows.length === 1 ? submittedRows.rows[0]?.submitted : undefined;
-  if (typeof submitted !== "boolean") return unavailable("work_malformed");
+  if (typeof submitted !== "boolean") return malformed();
   const domain = await tx.query<Row>(DOMAIN_SQL, [row.document_id]);
   const domainId = domain.rows[0]?.evidence_domain_id;
   // The id comes from the server's own package row; another form is a fault.
-  if (!isEvidenceDomainId(domainId)) return unavailable("work_malformed");
+  if (!isEvidenceDomainId(domainId)) return malformed();
   const keys = await receiptKeys(tx, domainId);
-  if (keys === null) return unavailable("domain_keys_malformed");
+  if (keys === null) return malformed();
   return {
-    status: "opened",
-    work: {
+    ok: true,
+    value: {
       documentId: row.document_id,
       evidenceProfileId: row.evidence_profile_id,
       currentRevision,
@@ -171,7 +210,7 @@ async function open(tx: ActorTransaction, assignmentId: string, start: boolean) 
       receiptKeys: keys,
       submitted,
     },
-  } satisfies OpenWorkResult;
+  };
 }
 
 /** An opener over `withActor`; the token is only presented, never a parameter. */

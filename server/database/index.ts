@@ -96,7 +96,16 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
-export { createWorkOpener } from "./open-work.ts";
+export {
+  createWorkOpener,
+  OPEN_WORK_ERRORS,
+  OPEN_WORK_NOT_ACCEPTING,
+  OPEN_WORK_NOT_CONFIGURED,
+  OPEN_WORK_NOT_FOUND,
+  OPEN_WORK_NOT_STARTED,
+  OPEN_WORK_ROW_MALFORMED,
+  OPEN_WORK_UNAUTHENTICATED,
+} from "./open-work.ts";
 export {
   ACCESS_LOG_PAGE,
   createMyAccessLogReader,

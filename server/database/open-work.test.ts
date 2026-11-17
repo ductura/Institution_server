@@ -1,10 +1,24 @@
 // DAN-811, plan of attack ductura/server#107 parts D and E: every row the open
 // statements return is checked before it leaves server/database; an
-// unexpected one makes the work unavailable, never a partial answer.
+// unexpected one is OPEN_WORK_ROW_MALFORMED, never a partial answer. The
+// answer is a Result with an AppError (docs/CODE_STYLE.md §8; DAN-859, contract
+// Ductus#1836 c.6946658606).
 // Every identifier, hash and key below is invented.
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
-import { count, createWorkOpener } from "./open-work.ts";
+import {
+  count,
+  createWorkOpener,
+  OPEN_WORK_ERRORS,
+  OPEN_WORK_NOT_ACCEPTING,
+  OPEN_WORK_NOT_CONFIGURED,
+  OPEN_WORK_NOT_FOUND,
+  OPEN_WORK_NOT_STARTED,
+  OPEN_WORK_ROW_MALFORMED,
+  OPEN_WORK_UNAUTHENTICATED,
+} from "./open-work.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 const TOKEN = "izmisljeni-token-evidencije-000000000000001";
@@ -61,15 +75,41 @@ function opener(rows: Rows) {
   return { open: createWorkOpener(withActor), seen };
 }
 
-const UNAVAILABLE = { status: "unavailable", reason: expect.any(String) };
+const failed = (error: unknown) => ({ ok: false, error });
+const ROW_MALFORMED = failed(OPEN_WORK_ROW_MALFORMED);
+
+const catalogue = JSON.parse(
+  readFileSync(new URL("../../locales/hr.json", import.meta.url), "utf8"),
+) as { openWork?: Record<string, unknown> };
+
+describe("open work errors (docs/CODE_STYLE.md §8)", () => {
+  it("has a Croatian text for every key, and no other key in its section", () => {
+    const section = catalogue.openWork ?? {};
+    for (const { messageKey } of OPEN_WORK_ERRORS) {
+      const text = section[messageKey.replace(/^openWork\./, "")];
+      expect(typeof text === "string" && text.trim().length > 0, messageKey).toBe(true);
+    }
+    expect(
+      Object.keys(section)
+        .map((k) => `openWork.${k}`)
+        .sort(),
+    ).toEqual(OPEN_WORK_ERRORS.map((e) => e.messageKey).sort());
+  });
+
+  it("lists six errors with distinct UPPER_SNAKE codes", () => {
+    expect(OPEN_WORK_ERRORS).toHaveLength(6);
+    for (const { code } of OPEN_WORK_ERRORS) expect(code).toMatch(/^OPEN_WORK_[A-Z_]+$/);
+    expect(new Set(OPEN_WORK_ERRORS.map((e) => e.code)).size).toBe(6);
+  });
+});
 
 describe("createWorkOpener", () => {
   it("opens the work in one transaction with the token presented, never a parameter", async () => {
     const { open, seen } = opener({});
     const result = await open.openWork(TOKEN, ASSIGNMENT, true);
     expect(result).toEqual({
-      status: "opened",
-      work: {
+      ok: true,
+      value: {
         documentId: "dokument-izmisljeni-1",
         evidenceProfileId: "standard-v1",
         currentRevision: 0,
@@ -103,21 +143,31 @@ describe("createWorkOpener", () => {
     for (const s of seen) expect(JSON.stringify(s.values)).not.toContain(TOKEN);
   });
 
-  it.each(["unauthenticated", "not_found", "not_accepting", "not_started"])(
-    "passes the refusal %s on and asks nothing more",
+  it.each([
+    ["unauthenticated", OPEN_WORK_UNAUTHENTICATED],
+    ["not_found", OPEN_WORK_NOT_FOUND],
+    ["not_accepting", OPEN_WORK_NOT_ACCEPTING],
+    ["not_started", OPEN_WORK_NOT_STARTED],
+  ])("passes the refusal %s on as its error and asks nothing more", async (outcome, error) => {
+    const { open, seen } = opener({ open: [{ outcome }] });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, false);
+    expect(result).toEqual(failed(error));
+    expect(!result.ok && result.error).toBe(error);
+    expect(seen).toHaveLength(1);
+  });
+
+  it.each(["toString", "__proto__", "constructor", "hasOwnProperty"])(
+    "reads an inherited name %s as an outcome as a malformed row, not a refusal",
     async (outcome) => {
-      const { open, seen } = opener({ open: [{ outcome }] });
-      expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual({ status: outcome });
+      const { open, seen } = opener({ open: [{ ...OPENED, outcome }] });
+      expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual(ROW_MALFORMED);
       expect(seen).toHaveLength(1);
     },
   );
 
-  it("C8: not configured is unavailable", async () => {
+  it("C8: not configured is its own error", async () => {
     const { open } = opener({ open: [{ outcome: "not_configured" }] });
-    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual({
-      status: "unavailable",
-      reason: "work_not_configured",
-    });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(failed(OPEN_WORK_NOT_CONFIGURED));
   });
 
   it.each([
@@ -135,24 +185,24 @@ describe("createWorkOpener", () => {
     ["a revision past 2^53", [{ ...OPENED, current_revision: "9007199254740993" }]],
     ["a fractional sequence", [{ ...OPENED, last_sequence_to: 0.5 }]],
     ["a snapshot that is not text", [{ ...OPENED, snapshot: null }]],
-  ])("E2: %s is unavailable", async (_name, rows) => {
+  ])("E2: %s is a malformed row", async (_name, rows) => {
     const { open } = opener({ open: rows });
-    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(UNAVAILABLE);
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
   });
 
   it.each([
     ["null", [{ submitted: null }]],
     ["text", [{ submitted: "false" }]],
     ["no row", []],
-  ])("E3: submitted as %s is unavailable, never false by assumption", async (_name, rows) => {
+  ])("E3: submitted as %s is a malformed row, never false by assumption", async (_name, rows) => {
     const { open } = opener({ submitted: rows });
-    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(UNAVAILABLE);
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
   });
 
   it("D4: a submitted work says so", async () => {
     const { open } = opener({ submitted: [{ submitted: true }] });
     const result = await open.openWork(TOKEN, ASSIGNMENT, false);
-    expect(result.status === "opened" && result.work.submitted).toBe(true);
+    expect(result.ok && result.value.submitted).toBe(true);
   });
 
   it.each([
@@ -162,12 +212,9 @@ describe("createWorkOpener", () => {
       [{ evidence_domain_id: "00000000-0000-1000-8000-0000000000d1" }],
     ],
     ["a domain id in capitals", [{ evidence_domain_id: DOMAIN.toUpperCase() }]],
-  ])("E4: %s is unavailable before any key is read", async (_name, rows) => {
+  ])("E4: %s is a malformed row before any key is read", async (_name, rows) => {
     const { open, seen } = opener({ domain: rows, keys: [] });
-    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual({
-      status: "unavailable",
-      reason: "work_malformed",
-    });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
     expect(seen.some((s) => s.text.includes("signing_key"))).toBe(false);
   });
 
@@ -181,12 +228,9 @@ describe("createWorkOpener", () => {
     ["no valid_from", { valid_from: null }],
     ["a valid_to that is not text", { valid_to: 1 }],
     ["a revoked_at that is empty", { revoked_at: "" }],
-  ])("E4: a key row with %s makes the whole list unavailable", async (_name, change) => {
+  ])("E4: a key row with %s makes the whole list malformed", async (_name, change) => {
     const { open } = opener({ keys: [KEY, { ...KEY, ...change }] });
-    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual({
-      status: "unavailable",
-      reason: "domain_keys_malformed",
-    });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
   });
 
   it("D2: a checkpoint key is checked but never sent", async () => {
@@ -194,17 +238,16 @@ describe("createWorkOpener", () => {
       keys: [{ ...KEY, purpose: "checkpoint", key_id: "kontrolni" }, KEY],
     });
     const result = await open.openWork(TOKEN, ASSIGNMENT, true);
-    expect(result.status === "opened" && result.work.receiptKeys.map((k) => k.keyId)).toEqual([
-      "kljuc-1",
-    ]);
+    expect(result.ok && result.value.receiptKeys.map((k) => k.keyId)).toEqual(["kljuc-1"]);
   });
 
   it("D3: a domain without a receipt key opens with no keys", async () => {
     const { open } = opener({ keys: [] });
     const result = await open.openWork(TOKEN, ASSIGNMENT, true);
-    expect(result.status === "opened" && result.work.receiptKeys).toEqual([]);
+    expect(result.ok && result.value.receiptKeys).toEqual([]);
   });
 
+  // A thrown error stays an exception: the route records its closed class (contract, "Ne ulazi").
   it("E1: a database error reaches the caller, who answers it", async () => {
     const failing = createWorkOpener((async () => {
       throw new Error("veza prekinuta");

@@ -88,6 +88,14 @@
     "invalid_json": "Tijelo zahtjeva nije ispravan JSON objekt.",
     "body_too_large": "Tijelo zahtjeva je preveliko."
   },
+  "openWork": {
+    "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
+    "not_found": "Ovaj zadatak nije pronađen.",
+    "not_accepting": "Rad za ovaj zadatak trenutačno nije moguće otvoriti.",
+    "not_started": "Rad za ovaj zadatak još nije započet.",
+    "not_configured": "Zadatak još nije spreman za pisanje. Pokušajte kasnije.",
+    "row_malformed": "Rad trenutačno nije moguće otvoriti. Pokušajte ponovno."
+  },
   "interfaceLocale": {
     "unauthenticated": "Prijava nije valjana. Prijavite se ponovno; jezik sučelja nije promijenjen.",
     "invalid": "Jezik sučelja nije promijenjen. Odaberite hrvatski ili engleski.",

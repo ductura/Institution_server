@@ -5,7 +5,15 @@
 // evidence domain. Package and institution never leave the server. Method is
 // the router's and Origin pipeline step 7 (docs/vs1-rute.md).
 import { ROUTES } from "../contracts/index.ts";
-import type { ActorReader, OpenWorkResult, WorkOpener } from "../database/index.ts";
+import {
+  type ActorReader,
+  OPEN_WORK_NOT_ACCEPTING,
+  OPEN_WORK_NOT_FOUND,
+  OPEN_WORK_NOT_STARTED,
+  OPEN_WORK_UNAUTHENTICATED,
+  type OpenWorkResult,
+  type WorkOpener,
+} from "../database/index.ts";
 
 import { reportServerError } from "./error-catalog.ts";
 import {
@@ -45,34 +53,30 @@ const UNAVAILABLE: EvidenceAnswer = {
   headers: { "retry-after": "5" },
 };
 
+/** The refusals the contract names, by the opener's error code; any other error is 503. */
+const REFUSALS = new Map<string, EvidenceAnswer>([
+  [OPEN_WORK_UNAUTHENTICATED.code, answer(401, "unauthenticated")],
+  [OPEN_WORK_NOT_FOUND.code, answer(404, "not_found")],
+  [OPEN_WORK_NOT_ACCEPTING.code, answer(409, "not_accepting")],
+  [OPEN_WORK_NOT_STARTED.code, answer(409, "not_started")],
+]);
+
 function answerOf(opened: OpenWorkResult): EvidenceAnswer | { readonly body: unknown } {
-  switch (opened.status) {
-    case "opened": {
-      const { snapshot, ...work } = opened.work;
-      const body = {
-        status: "opened",
-        documentId: work.documentId,
-        evidenceProfileId: work.evidenceProfileId,
-        currentRevision: work.currentRevision,
-        documentHash: work.documentHash,
-        headSegmentHash: work.headSegmentHash,
-        lastSequenceTo: work.lastSequenceTo,
-        document: Buffer.from(snapshot, "utf8").toString("base64"),
-        receiptKeys: work.receiptKeys,
-        submitted: work.submitted,
-      };
-      return { body };
-    }
-    case "unauthenticated":
-      return answer(401, "unauthenticated");
-    case "not_found":
-      return answer(404, "not_found");
-    case "not_accepting":
-    case "not_started":
-      return answer(409, opened.status);
-    default:
-      return UNAVAILABLE;
-  }
+  if (!opened.ok) return REFUSALS.get(opened.error.code) ?? UNAVAILABLE;
+  const { snapshot, ...work } = opened.value;
+  const body = {
+    status: "opened",
+    documentId: work.documentId,
+    evidenceProfileId: work.evidenceProfileId,
+    currentRevision: work.currentRevision,
+    documentHash: work.documentHash,
+    headSegmentHash: work.headSegmentHash,
+    lastSequenceTo: work.lastSequenceTo,
+    document: Buffer.from(snapshot, "utf8").toString("base64"),
+    receiptKeys: work.receiptKeys,
+    submitted: work.submitted,
+  };
+  return { body };
 }
 
 /** The open route over the main database's actor reader and work opener. */
@@ -108,7 +112,7 @@ export function createEvidenceOpenRoute(options: EvidenceOpenOptions): Route {
       } catch (error) {
         // Only the class of the error: never its message, the request or a token.
         reportServerError("route", error, requestIdOf(response), contract.id);
-        opened = { status: "unavailable", reason: "work_failed" };
+        return refuse(UNAVAILABLE);
       }
       const result = answerOf(opened);
       if ("status" in result) return refuse(result);

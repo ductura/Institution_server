@@ -9,7 +9,17 @@ import { connect } from "node:net";
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorReader, OpenWorkResult, WorkOpener } from "../database/index.ts";
+import {
+  type ActorReader,
+  OPEN_WORK_NOT_ACCEPTING,
+  OPEN_WORK_NOT_CONFIGURED,
+  OPEN_WORK_NOT_FOUND,
+  OPEN_WORK_NOT_STARTED,
+  OPEN_WORK_ROW_MALFORMED,
+  OPEN_WORK_UNAUTHENTICATED,
+  type OpenWorkResult,
+  type WorkOpener,
+} from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
 import { createEvidenceOpenRoute, OPEN_PROTOCOLS } from "./evidence-open.ts";
@@ -28,7 +38,7 @@ const ORIGIN = vectors[0]!.request.headers.origin!;
 const TOKEN = "izmisljeni-token-evidencije-000000000000001";
 const A1 = "00000000-0000-4000-8000-0000000000a1";
 
-let next: () => Promise<OpenWorkResult> = async () => ({ status: "not_found" });
+let next: () => Promise<OpenWorkResult> = async () => ({ ok: false, error: OPEN_WORK_NOT_FOUND });
 const calls: { token: string; assignmentId: string; start: boolean }[] = [];
 const opener: WorkOpener = {
   openWork(token, assignmentId, start) {
@@ -41,6 +51,13 @@ const actors: ActorReader = {
   currentActorWithInstitution: () => Promise.reject(new Error("not used")),
 };
 
+const OPEN_WORK_ERRORS_BY_STATUS = new Map<unknown, typeof OPEN_WORK_NOT_FOUND>([
+  ["unauthenticated", OPEN_WORK_UNAUTHENTICATED],
+  ["not_found", OPEN_WORK_NOT_FOUND],
+  ["not_accepting", OPEN_WORK_NOT_ACCEPTING],
+  ["not_started", OPEN_WORK_NOT_STARTED],
+]);
+
 /** The opener's answer that leads to this vector's response. */
 function outcomeOf(v: Vector): OpenWorkResult {
   const body = v.response.body;
@@ -49,10 +66,10 @@ function outcomeOf(v: Vector): OpenWorkResult {
     const snapshot = Buffer.from(String(work.document), "base64").toString("utf8");
     delete work.status;
     delete work.document;
-    return { status: "opened", work: { ...work, snapshot } } as unknown as OpenWorkResult;
+    return { ok: true, value: { ...work, snapshot } } as unknown as OpenWorkResult;
   }
-  if (v.response.status === 503) return { status: "unavailable", reason: "work_failed" };
-  return { status: body.status } as OpenWorkResult;
+  const error = OPEN_WORK_ERRORS_BY_STATUS.get(body.status) ?? OPEN_WORK_ROW_MALFORMED;
+  return { ok: false, error };
 }
 
 type Answer = { status: number; head: Record<string, string>; body: string };
@@ -107,7 +124,7 @@ beforeAll(async () => {
 afterAll(async () => server.close());
 beforeEach(() => {
   calls.length = 0;
-  next = async () => ({ status: "not_found" });
+  next = async () => ({ ok: false, error: OPEN_WORK_NOT_FOUND });
 });
 
 describe("G. every vector of evidence.open.post", () => {
@@ -198,21 +215,23 @@ describe("E. failures of the opener", () => {
     }
   });
 
-  it.each(["work_malformed", "domain_keys_malformed", "work_not_configured"])(
-    "unavailable (%s) is 503 context, the reason never in the answer",
-    async (reason) => {
-      next = async () => ({ status: "unavailable", reason });
-      const answer = await post(`{"assignmentId":"${A1}"}`);
-      expect(answer.status).toBe(503);
-      expect(answer.body).not.toContain(reason);
-    },
-  );
+  it.each([
+    OPEN_WORK_ROW_MALFORMED,
+    OPEN_WORK_NOT_CONFIGURED,
+    { code: "OPEN_WORK_SOMETHING_NEW", messageKey: "openWork.something_new" },
+  ])("$code is 503 context, the code never in the answer", async (error) => {
+    next = async () => ({ ok: false, error });
+    const answer = await post(`{"assignmentId":"${A1}"}`);
+    expect(answer.status).toBe(503);
+    expect(answer.head["retry-after"]).toBe("5");
+    expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
+  });
 
   it("D1: the snapshot goes out as base64 of its exact UTF-8 bytes", async () => {
     const snapshot = '{"naslov":"Čćžšđ – ✓"}';
     const open = outcomeOf(vectors.find((v) => v.name === "opened")!);
-    if (open.status !== "opened") throw new Error("vector");
-    next = async () => ({ status: "opened", work: { ...open.work, snapshot } });
+    if (!open.ok) throw new Error("vector");
+    next = async () => ({ ok: true, value: { ...open.value, snapshot } });
     const answer = await post(`{"assignmentId":"${A1}"}`);
     expect(Buffer.from(JSON.parse(answer.body).document, "base64").toString("utf8")).toBe(snapshot);
   });
