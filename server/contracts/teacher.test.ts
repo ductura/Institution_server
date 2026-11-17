@@ -146,6 +146,64 @@ describe("work id and name patterns hold the Ductus rules exactly", () => {
   });
 });
 
+// DAN-903-1: readAssignmentSubmissionsMany as a route (Ductus#1836 c.6947962506).
+describe("teacher.assignment-submissions.post", () => {
+  const id = "teacher.assignment-submissions.post";
+  const A = "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01";
+  const body = (assignmentIds: unknown) => validateInput(id, "body", { assignmentIds });
+
+  it("takes 0 to 500 UUIDs in any case, duplicates counted", () => {
+    expect(body([])).toBe(true);
+    expect(body([A, A.toUpperCase(), A])).toBe(true);
+    expect(body(Array.from({ length: 500 }, () => A))).toBe(true);
+    expect(body(Array.from({ length: 501 }, () => A))).toBe(false);
+  });
+
+  it.each(["nije-uuid", "", `${A}\n`, `${A}\r\n`, `${A}\t`, `${A} `, `${A}\u007f`, ` ${A}`])(
+    "refuses the id %j (422 at the server)",
+    (bad) => expect(body([A, bad])).toBe(false),
+  );
+
+  it("refuses any other shape of the body", () => {
+    expect(body(A)).toBe(false);
+    expect(body({ 0: A })).toBe(false);
+    expect(body([A, 1])).toBe(false);
+    expect(body([A, null])).toBe(false);
+    expect(validateInput(id, "body", { assignmentIds: [A], toString: "x" })).toBe(false);
+    expect(validateInput(id, "body", JSON.parse(`{"assignmentIds":[],"__proto__":{}}`))).toBe(
+      false,
+    );
+    expect(validateInput(id, "body", {})).toBe(false);
+  });
+
+  it("has no answer per assignment: no 404 and no 403 but the request origin", () => {
+    const route = ROUTES.find((r) => r.id === id);
+    const codes = route?.errors.map((e) => `${e.status} ${e.code}`) ?? [];
+    expect(codes.filter((c) => c.startsWith("404"))).toEqual([]);
+    expect(codes.filter((c) => c.startsWith("403")).sort()).toEqual([
+      "403 cross_site",
+      "403 origin_mismatch",
+      "403 origin_missing",
+    ]);
+  });
+
+  it("an entry is exactly an assignment and its rows: nothing says why a list is empty", () => {
+    const check = (entry: object) => Value.Check(success(id), { assignments: [entry] });
+    expect(check({ assignmentId: A, submissions: [] })).toBe(true);
+    expect(check({ assignmentId: A, submissions: [], reason: "not_teacher" })).toBe(false);
+    expect(check({ assignmentId: A, submissions: [], found: false })).toBe(false);
+    expect(check({ submissions: [] })).toBe(false);
+    expect(check({ assignmentId: A.toUpperCase(), submissions: [] })).toBe(false);
+  });
+
+  it("an empty entry is the only vector of an assignment the teacher does not have", () => {
+    const vectors = VECTORS.filter((v) => v.route === id && v.response.status === 200);
+    expect(vectors.map((v) => v.name)).toEqual(["submissions", "none-or-not-the-teacher"]);
+    const none = vectors[1]?.response.body as { assignments: { submissions: unknown[] }[] };
+    expect(none.assignments.map((a) => a.submissions)).toEqual([[]]);
+  });
+});
+
 // DAN-903-2: teacherPageRead as a route (Ductus#1836 c.6948165042).
 describe("teacher.access.get", () => {
   const scope = "a".repeat(64);

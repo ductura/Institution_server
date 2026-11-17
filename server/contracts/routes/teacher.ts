@@ -269,6 +269,45 @@ export const teacherFastPathPost = defineRoute({
   ],
 });
 
+/** A UUID in any case, as fast-path; the server reads it in lowercase. */
+const AnyCaseUuid = Type.String({
+  pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+});
+
+// DAN-903-1: Ductus 4eaa776 src/server/evidence/assignment-submissions.ts
+// readAssignmentSubmissionsMany (F-142, R1), which Ductus calls from its
+// teacher page, not from a route. Two deliberate departures (Ductus#1836
+// c.6947962506): a malformed id is 422, not left out, and the list has a bound.
+export const teacherAssignmentSubmissionsPost = defineRoute({
+  id: "teacher.assignment-submissions.post",
+  method: "POST",
+  path: "/api/v1/teacher/assignment-submissions",
+  inventory: "app/api/teacher/assignment-submissions/route.ts",
+  access: "course_teacher",
+  summary:
+    "teacher.submissions.get for many assignments in one snapshot (R1): one entry per distinct id, lowercase, in the order of first appearance. POST so the ids never land in a URL; the body is exactly {assignmentIds}, 0 to 500 UUIDs in any case (duplicates count), at most 32 KiB; any other key or a malformed id is 422 invalid_input. An assignment the caller does not teach, or that does not exist, is the same entry with an empty list, never 403 or 404; proving that over the database belongs to the handler. More than 500 assignments take several reads, each its own snapshot. A row the read cannot vouch for makes the whole answer 503.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 32768,
+    body: closed({ assignmentIds: Type.Array(AnyCaseUuid, { maxItems: 500 }) }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "an entry per assignment, possibly with no rows",
+      body: closed({
+        assignments: Type.Array(
+          closed({
+            assignmentId: Uuid,
+            submissions: Type.Array(Type.Union([NotSubmitted, Submitted])),
+          }),
+        ),
+      }),
+    },
+  ],
+  errors: teacherFastPathPost.errors,
+});
+
 // DAN-903-2: Ductus 4eaa776 src/components/teacher/teacher-access.ts
 // (teacherPageRead, B-7), which Ductus reads in its teacher pages, not in a route.
 export const teacherAccessGet = defineRoute({
@@ -299,5 +338,6 @@ export const teacherRoutes = [
   teacherMentorshipsGet,
   teacherMentorshipGet,
   teacherFastPathPost,
+  teacherAssignmentSubmissionsPost,
   teacherAccessGet,
 ] as const;
