@@ -1,13 +1,14 @@
-// DAN-851-1d2, QA FAIL on ductura/server#206: a request whose Content-Length
-// Node's parser refuses gets the 400 its route's contract promises, over a
-// real socket of startServer; any other parse error keeps Node's own bytes.
+// DAN-851-1d2, QA and review on ductura/server#206: a request whose
+// Content-Length Node's parser refuses gets the 400 its route's contract
+// promises, however its bytes are split into packets, over a real socket of
+// startServer; any other parse error keeps Node's own bytes.
 import { connect } from "node:net";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { ROUTES } from "../contracts/index.ts";
 
-import { contentLengthBody, refusedRequestLine } from "./client-error.ts";
+import { contentLengthAnswerOf, lastRequestLine } from "./client-error.ts";
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import type { Route } from "./router.ts";
@@ -25,7 +26,12 @@ const route = (id: string): Route => ({
     response.writeHead(204).end();
   },
 });
-const ROUTE_LIST = [route("profile.interface-locale.post"), route("evidence.open.post")];
+const ROUTE_LIST = [
+  route("profile.interface-locale.post"),
+  route("evidence.open.post"),
+  route("auth.backchannel-logout.post"),
+  route("auth.logout.post"),
+];
 
 let server: Running;
 beforeAll(async () => {
@@ -104,12 +110,43 @@ describe("a Content-Length Node's parser refuses", () => {
     expect(JSON.parse(parse(text).body)).toEqual({ status: "bad_request" });
   });
 
-  it("is the problem body when the request line came in an earlier packet", async () => {
-    const text = await exchange([
-      "POST /api/v1/evidence/open HTTP/1.1\r\nHost: x\r\n",
-      "Content-Length: -1\r\n\r\n",
-    ]);
-    expect(JSON.parse(parse(text).body)).toMatchObject({ code: "content_length_invalid" });
+  it("is the route's 400 however the request is split into packets", async () => {
+    const split = [
+      ["POST /api/v1/evidence/open HTTP/1.1\r\nHost: x\r\n", "Content-Length: -1\r\n\r\n"],
+      ["POST /api/v1/ev", "idence/open HTTP/1.1\r\nHo", "st: x\r\nContent-Length: 1x\r\n\r\n"],
+      // A request before it on the same connection does not choose its answer.
+      [
+        "GET /api/v1/nowhere HTTP/1.1\r\nHost: x\r\n\r\nPOST /api/v1/evidence/open HTTP/1.1\r\n",
+        "Host: x\r\nContent-Length: -1\r\n\r\n",
+      ],
+    ];
+    for (const chunks of split) {
+      const { line, body } = parse((await exchange(chunks)).split("HTTP/1.1 400").at(-1)!);
+      expect([chunks[0], `HTTP/1.1 400${line}`]).toEqual([chunks[0], "HTTP/1.1 400 Bad Request"]);
+      expect(JSON.parse(body)).toEqual({ status: "bad_request" });
+    }
+  });
+
+  it("has no body where the route's 400 has none (back-channel logout)", async () => {
+    for (const chunks of [
+      [post("/api/v1/auth/backchannel-logout", "-1")],
+      ["POST /api/v1/auth/backchannel-logout HTTP/1.1\r\n", "Content-Length: x\r\n\r\n"],
+    ]) {
+      const { line, headers, body } = parse(await exchange(chunks));
+      expect(line).toBe("HTTP/1.1 400 Bad Request");
+      expect(body).toBe("");
+      expect(headers["content-length"]).toBe("0");
+      expect(headers["content-type"]).toBeUndefined();
+      expect(headers["cache-control"]).toBe("no-store");
+      expect(headers["x-request-id"]).toMatch(UUID);
+      expect(headers["connection"]).toBe("close");
+    }
+  });
+
+  it("is Node's bare 400, as before, where the route's contract has no 400", async () => {
+    expect(await exchange([post("/api/v1/auth/logout", "-1")])).toBe(
+      "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n",
+    );
   });
 
   it("an unknown path or another method gets the problem body", async () => {
@@ -140,32 +177,36 @@ describe("any other parse error", () => {
 
 describe("the route of a refused request", () => {
   const routes = ROUTE_LIST;
-  const error = (text: string, bytesParsed?: number) =>
-    Object.assign(new Error("parse"), { rawPacket: Buffer.from(text, "latin1"), bytesParsed });
+  const bytes = (text: string) => Buffer.from(text, "latin1");
 
-  it("is the last request line before the error", () => {
+  it("is the last request line in the bytes before the error", () => {
     const two = `${post("/api/v1/profile/interface-locale", "2")}POST /api/v1/evidence/open HTTP/1.1\r\n`;
-    expect(refusedRequestLine(error(two))).toEqual({
-      method: "POST",
-      path: "/api/v1/evidence/open",
-    });
-    expect(refusedRequestLine(error(two, 20))).toBeNull();
-    expect(refusedRequestLine(error("Content-Length: -1\r\n\r\n"))).toBeNull();
-    expect(refusedRequestLine(new Error("no packet"))).toBeNull();
+    expect(lastRequestLine(bytes(two))).toEqual({ method: "POST", path: "/api/v1/evidence/open" });
+    expect(lastRequestLine(bytes(two.slice(0, 20)))).toBeNull();
+    expect(lastRequestLine(bytes("Content-Length: -1\r\n\r\n"))).toBeNull();
   });
 
-  it("chooses the body its contract promises; anything else is the problem", () => {
-    const evidence = { method: "POST", path: "/api/v1/evidence/open" };
-    expect(contentLengthBody(routes, evidence, "id")).toEqual({ status: "bad_request" });
+  it("chooses what its contract promises; no route is the problem", () => {
+    const at = (method: string, path: string) => ({ method, path });
+    expect(contentLengthAnswerOf(routes, at("POST", "/api/v1/evidence/open"), "id")).toEqual({
+      kind: "json",
+      body: { status: "bad_request" },
+    });
+    expect(
+      contentLengthAnswerOf(routes, at("POST", "/api/v1/auth/backchannel-logout"), "id"),
+    ).toEqual({ kind: "empty" });
+    expect(contentLengthAnswerOf(routes, at("POST", "/api/v1/auth/logout"), "id")).toEqual({
+      kind: "node",
+    });
     for (const line of [
       null,
-      { method: "POST", path: "/api/v1/profile/interface-locale" },
-      { method: "GET", path: "/api/v1/evidence/open" },
-      { method: "POST", path: "/api/v1/evidence/open/" },
+      at("POST", "/api/v1/profile/interface-locale"),
+      at("GET", "/api/v1/evidence/open"),
+      at("POST", "/api/v1/evidence/open/"),
     ])
-      expect(contentLengthBody(routes, line, "id")).toMatchObject({
-        code: "content_length_invalid",
-        requestId: "id",
+      expect(contentLengthAnswerOf(routes, line, "id")).toEqual({
+        kind: "json",
+        body: expect.objectContaining({ code: "content_length_invalid", requestId: "id" }),
       });
   });
 });
