@@ -75,11 +75,15 @@ let worker: pg.Pool;
 let app: pg.Pool;
 const txid = (who: string) => `tx-${suffix}-${who}`;
 
-function pool(user: string): pg.Pool {
+function urlOf(user: string): string {
   const target = new URL(ADMIN_URL);
   target.username = user;
   target.password = password;
-  const made = new pg.Pool({ connectionString: target.href, max: 2 });
+  return target.href;
+}
+
+function pool(user: string): pg.Pool {
+  const made = new pg.Pool({ connectionString: urlOf(user), max: 2 });
   pools.push(made);
   return made;
 }
@@ -358,6 +362,24 @@ const statusOf = async (receiptId: string) =>
   (await admin.query("SELECT status FROM evidence.receipt WHERE id = $1", [receiptId])).rows[0]
     ?.status;
 
+const ATTACH =
+  "SELECT outcome, signature FROM app.worker_attach_receipt_signature($1::uuid, $2::text, $3::jsonb)";
+
+/** True once the backend waits on a lock; false if it never does within five seconds. */
+async function waitingOnLock(pid: number): Promise<boolean> {
+  for (let tries = 0; tries < 100; tries += 1) {
+    const row = (
+      await admin.query<{ wait: string | null }>(
+        "SELECT wait_event_type AS wait FROM pg_catalog.pg_stat_activity WHERE pid = $1",
+        [pid],
+      )
+    ).rows[0];
+    if (row?.wait === "Lock") return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return false;
+}
+
 describe("the worker attaches a signature over real PostgreSQL (S-1, S-4)", () => {
   it("the web login cannot attach: 42501, and the receipt stays pending", async () => {
     const { payloadDigestSha256, signature } = await signed(stored[0]!, 0);
@@ -397,30 +419,38 @@ describe("the worker attaches a signature over real PostgreSQL (S-1, S-4)", () =
     expect(await statusOf(stored[0]!.receiptId)).toBe("pending_signature");
   });
 
-  it("two attaches at once: one signed, the other already_signed with the first signature", async () => {
+  it("two attaches at once: the second waits on the row lock, then answers already_signed with the first signature", async () => {
     const receiptId = stored[0]!.receiptId;
     const [a, b] = [await signed(stored[0]!, 0), await signed(stored[0]!, 1)];
     expect(a.signature.signatureBase64Url).not.toBe(b.signature.signatureBase64Url);
-    const outcomes = await Promise.all([
-      createPendingReceiptStore(worker).attachSignature({
+    // The first attach runs in a transaction held open, so it keeps the row
+    // lock; the overlap is made, not left to the scheduler.
+    const first = await worker.connect();
+    const second = new pg.Pool({ connectionString: urlOf(LOGIN.worker), max: 1 });
+    pools.push(second);
+    try {
+      await first.query("BEGIN");
+      const held = await first.query(ATTACH, [
         receiptId,
-        payloadDigestSha256: a.payloadDigestSha256,
-        signature: a.signature,
-      }),
-      createPendingReceiptStore(pool(LOGIN.worker)).attachSignature({
+        a.payloadDigestSha256,
+        JSON.stringify(a.signature),
+      ]);
+      expect(held.rows).toEqual([{ outcome: "signed", signature: a.signature }]);
+      const pid = (await second.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]!
+        .pid;
+      const late = createPendingReceiptStore(second).attachSignature({
         receiptId,
         payloadDigestSha256: b.payloadDigestSha256,
         signature: b.signature,
-      }),
-    ]);
-    const won = outcomes.findIndex((o) => o.outcome === "signed");
-    expect(won).toBeGreaterThanOrEqual(0);
-    const winner = [a, b][won]!;
-    expect(outcomes[won]).toStrictEqual({ outcome: "signed", signature: winner.signature });
-    expect(outcomes[1 - won]).toStrictEqual({
-      outcome: "already_signed",
-      signature: winner.signature,
-    });
+      });
+      // The second attach is inside the function and waits on the first one's lock.
+      expect(await waitingOnLock(pid)).toBe(true);
+      await first.query("COMMIT");
+      expect(await late).toStrictEqual({ outcome: "already_signed", signature: a.signature });
+    } finally {
+      first.release();
+    }
+    const winner = a;
     // The stored signature verifies as a protocol 1 receipt under the domain's keys.
     const keys = await readReceiptKeys(worker, id.domain);
     if (keys.status !== "ok") throw new Error(`keys: ${keys.reason}`);
