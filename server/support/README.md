@@ -4,7 +4,7 @@ Područje iz [karte servera](../../docs/server-map.md) (DAN-851-2b). Servis prij
 
 ## Što radi
 
-Prijava problema iz aplikacije (S-M-2, prijenos Ductus `support/problem-report`). Feature područje: servis je u `service.ts`, a ruta `POST /api/v1/support/problem-report` bit će u `server/http` (DAN-851-2d), kao kod `profile`. Servis portu predaje samo tijelo koje je valjan UTF-8 i kanonski JSON (`canonicalizeJcs`) i koje prihvaća `parseProblemReport`, i to točno vrijednost parsera. Veličinu, rok, `Content-Type`, porijeklo i oblik tokena provjerava ruta. Pravila tijela su u domeni, [`server/domain/support`](../domain/support/README.md).
+Prijava problema iz aplikacije (S-M-2, prijenos Ductus `support/problem-report`). Feature područje: servis je u `service.ts`, a ruta `POST /api/v1/support/problem-report` je u `server/http` (`support-problem-report.ts`, DAN-851-2d1; montiranje DAN-851-2d2), kao kod `profile`. Servis portu predaje samo tijelo koje je valjan UTF-8 i kanonski JSON (`canonicalizeJcs`) i koje prihvaća `parseProblemReport`, i to točno vrijednost parsera. Veličinu, rok, `Content-Type`, porijeklo i oblik tokena provjerava ruta. Pravila tijela su u domeni, [`server/domain/support`](../domain/support/README.md).
 
 ## Tko ga zove
 
