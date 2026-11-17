@@ -117,6 +117,8 @@ const ENV_NAMES = [
   "SHUTDOWN_GRACE_MS",
   // The metrics collector interval (S-1K.4-b, DAN-834-4b, server/settings).
   "METRICS_INTERVAL_MS",
+  // The test mode of the server (S-1H.7, DAN-938-1, server/settings).
+  "DUCTURA_MODE",
   // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
   "VS1_POSTGRES_PORT",
   "VS1_SERVER_PORT",
