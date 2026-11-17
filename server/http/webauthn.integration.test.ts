@@ -4,6 +4,7 @@
 // cookies are not tokens, so a valid invented token stands in for them (as in
 // profile-interface-locale.integration.test.ts). No refusal calls issue or
 // spoils a challenge already issued. All values are invented.
+import { createHash, generateKeyPairSync, sign } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { connect } from "node:net";
 
@@ -15,8 +16,14 @@ import type {
   WebAuthnCredential,
   WebAuthnCredentials,
   WebAuthnListOutcome,
+  WebAuthnUseOutcome,
 } from "../database/index.ts";
-import { challengeSessionKey, createChallengeStore, sessionTag } from "../session/index.ts";
+import {
+  challengeSessionKey,
+  createChallengeStore,
+  sessionTag,
+  verifyRegistration,
+} from "../session/index.ts";
 
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
@@ -51,6 +58,8 @@ const reg = {
   add: [] as [string, WebAuthnCredential][],
   activity: [] as boolean[],
   answer: async (): Promise<WebAuthnAddOutcome> => ({ status: "added" }),
+  use: [] as [string, Buffer, number][],
+  useAnswer: async (): Promise<WebAuthnUseOutcome> => ({ status: "used" }),
   activityAnswer: (): Promise<unknown> => Promise.resolve(),
 };
 let clock = 0;
@@ -81,6 +90,10 @@ async function start(
     add: async (token: string, credential: WebAuthnCredential) => {
       reg.add.push([token, credential]);
       return reg.answer();
+    },
+    use: async (token: string, id: Buffer, signCount: number) => {
+      reg.use.push([token, id, signCount]);
+      return reg.useAnswer();
     },
   } as unknown as WebAuthnCredentials;
   let current: { writableEnded: boolean } | undefined;
@@ -117,6 +130,8 @@ afterEach(async () => {
   reg.activity.length = 0;
   reg.answer = async () => ({ status: "added" });
   reg.activityAnswer = () => Promise.resolve();
+  reg.use.length = 0;
+  reg.useAnswer = async () => ({ status: "used" });
   clock = 0;
   vi.restoreAllMocks();
   await server?.close();
@@ -186,6 +201,7 @@ const thrown = (route: string) => ({
 });
 const CHALLENGE_ROUTE = "auth.webauthn-challenge.post";
 const REGISTRATION_ROUTE = "auth.webauthn-registration.post";
+const ASSERTION_ROUTE = "auth.webauthn-assertion.post";
 const take = (purpose: string, challenge: string, token = TOKEN) =>
   store.take(challengeSessionKey(token), purpose, challenge);
 
@@ -602,5 +618,395 @@ describe("registration body validation", () => {
     await start(empty, { fill: () => 1 });
     const text = JSON.stringify(REGISTERED).replace("{", '{"__proto__":{"x":1},');
     expect((await register(text)).status).toBe(422);
+  });
+});
+
+// DAN-840-3e (contract Ductus#1836 c.6941643070): the assertion route.
+const ASSERT_PATH = "/api/v1/auth/webauthn/assertion";
+const ASSERT_VECTORS = (
+  JSON.parse(
+    readFileSync(
+      new URL("../contracts/vectors/auth.webauthn-assertion.post.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { vectors: Vector[] }
+).vectors;
+const CONFIRMED = ASSERT_VECTORS.find((v) => v.name === "confirmed")!.request.body as Record<
+  string,
+  string
+>;
+/** The vectors' key: the COSE key of the registration vector, as 2c reads it. */
+const VECTOR_KEY = (() => {
+  const checked = verifyRegistration(
+    {
+      clientDataJSON: Buffer.from(REGISTERED.clientDataJSON!, "base64url"),
+      authenticatorData: Buffer.from(REGISTERED.authenticatorData!, "base64url"),
+      credentialId: Buffer.from(REGISTERED.credentialId!, "base64url"),
+    },
+    { origin: ORIGIN, rpId: "ductura.example.invalid" },
+    () => "ok",
+  );
+  if (!checked.ok) throw new Error("the registration vector does not verify");
+  return { credentialId: checked.credentialId, publicKey: checked.publicKey };
+})();
+const stored = (signCount: number) => async (): Promise<WebAuthnListOutcome> => ({
+  status: "listed",
+  credentials: [{ ...VECTOR_KEY, signCount }],
+});
+const confirm = (body: unknown, h = headers()) =>
+  send(raw(h, typeof body === "string" ? body : JSON.stringify(body), ASSERT_PATH));
+const assertionKey = () => challengeSessionKey(TOKEN);
+
+describe("assertion vectors", () => {
+  const UNREACHABLE = new Set(["content-length-mismatch", "body-stream-error"]);
+  const KEEPS = new Set([
+    "origin-missing",
+    "origin-mismatch",
+    "cross-site",
+    "unsupported-media-type",
+    "body-too-large",
+    "body-timeout",
+    "content-length-invalid",
+    "invalid-json",
+    "unauthorized",
+    "invalid-input",
+    "unavailable",
+  ]);
+  const BYTE: Record<string, number> = { "client-data-origin-mismatch": 4, "counter-decreased": 6 };
+  it.each(ASSERT_VECTORS.filter((v) => !UNREACHABLE.has(v.name)).map((v) => [v.name, v] as const))(
+    "%s",
+    async (name, v) => {
+      const list =
+        name === "unavailable"
+          ? async (): Promise<WebAuthnListOutcome> => ({
+              status: "unavailable",
+              reason: "list_malformed",
+            })
+          : name === "not-callers-key"
+            ? empty
+            : stored(name === "counter-decreased" ? 4 : 0);
+      await start(list, { fill: () => BYTE[name] ?? 2 });
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const challenge = store.issue(assertionKey(), "assertion")!.challenge;
+      const h = Object.entries(v.request.headers ?? {}).map(
+        ([k, val]) => [k, k === "cookie" ? COOKIE : val] as [string, string],
+      );
+      const body = v.request.rawBody ?? JSON.stringify(v.request.body);
+      if (name === "challenge-replayed")
+        expect((await send(raw(h, body, ASSERT_PATH))).status).toBe(204);
+      if (name === "challenge-expired") clock = 60_000;
+      const got = await send(raw(h, body, ASSERT_PATH));
+      expect(got.status).toBe(v.response.status);
+      if (got.status === 204) {
+        expect([got.body, got.head["content-type"]]).toEqual(["", undefined]);
+        expect(reg.use).toEqual([[TOKEN, VECTOR_KEY.credentialId, 1]]);
+      } else if (name !== "content-length-invalid") {
+        expect(JSON.parse(got.body)).toMatchObject(v.response.body);
+      }
+      const after = store.take(assertionKey(), "assertion", challenge);
+      if (name !== "challenge-expired") expect(after).toBe(KEEPS.has(name) ? "ok" : "invalid");
+    },
+  );
+});
+
+/** The 2b local signer: P-256 over bytes the test chooses, for what the fake cannot (0 to 0). */
+function localSigner() {
+  const keys = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const jwk = keys.publicKey.export({ format: "jwk" });
+  const coord = (value: string | undefined) => Buffer.from(value ?? "", "base64url");
+  const publicKey = Buffer.concat([
+    Buffer.from([0xa5, 0x01, 0x02, 0x03, 0x26, 0x20, 0x01, 0x21, 0x58, 0x20]),
+    coord(jwk.x),
+    Buffer.from([0x22, 0x58, 0x20]),
+    coord(jwk.y),
+  ]);
+  const body = (challenge: string, count: number, { flags = 0x05, size = 37 } = {}) => {
+    const clientDataJSON = Buffer.from(
+      JSON.stringify({ type: "webauthn.get", challenge, origin: ORIGIN, crossOrigin: false }),
+    );
+    const head = Buffer.alloc(37);
+    createHash("sha256").update("ductura.example.invalid").digest().copy(head);
+    head.writeUInt8(flags, 32);
+    head.writeUInt32BE(count, 33);
+    const authenticatorData = Buffer.concat([head, Buffer.alloc(size - 37)]);
+    const hash = createHash("sha256").update(clientDataJSON).digest();
+    const signature = sign("sha256", Buffer.concat([authenticatorData, hash]), keys.privateKey);
+    return { clientDataJSON, authenticatorData, signature };
+  };
+  return { publicKey, body };
+}
+const wire = (
+  id: Buffer,
+  b: { clientDataJSON: Buffer; authenticatorData: Buffer; signature: Buffer },
+) => ({
+  clientDataJSON: b.clientDataJSON.toString("base64url"),
+  authenticatorData: b.authenticatorData.toString("base64url"),
+  credentialId: id.toString("base64url"),
+  signature: b.signature.toString("base64url"),
+});
+
+describe("assertion with the software authenticator", () => {
+  const RP = { rpId: "ductura.example.invalid", origin: ORIGIN };
+  /** A port that keeps what add stores and use counts, read back by list. */
+  async function remembering() {
+    const keys: (WebAuthnCredential & { signCount: number })[] = [];
+    await start(async () => ({ status: "listed", credentials: keys.map((k) => ({ ...k })) }));
+    reg.answer = async () => {
+      const [, credential] = reg.add.at(-1)!;
+      keys.push({ ...credential });
+      return { status: "added" };
+    };
+    reg.useAnswer = async () => {
+      const [, id, count] = reg.use.at(-1)!;
+      const key = keys.find((k) => k.credentialId.equals(id))!;
+      key.signCount = count;
+      return { status: "used" };
+    };
+    return keys;
+  }
+  const registrationOf = (r: {
+    clientDataJSON: Buffer;
+    authenticatorData: Buffer;
+    credentialId: Buffer;
+  }) => ({
+    clientDataJSON: r.clientDataJSON.toString("base64url"),
+    authenticatorData: r.authenticatorData.toString("base64url"),
+    credentialId: r.credentialId.toString("base64url"),
+  });
+  const challengeOf = async (purpose: string) =>
+    Buffer.from(
+      (JSON.parse((await post(`{"purpose":"${purpose}"}`)).body) as { challenge: string })
+        .challenge,
+      "base64url",
+    );
+  const bodyOf = (a: {
+    clientDataJSON: Buffer;
+    authenticatorData: Buffer;
+    signature: Buffer;
+    credentialId: Buffer;
+  }) => wire(a.credentialId, a);
+
+  it("registers, then confirms with the counter of 2b, then records activity", async () => {
+    await remembering();
+    const device = createSoftwareAuthenticator(RP);
+    const made = device.register(await challengeOf("registration"));
+    expect((await register(registrationOf(made))).status).toBe(204);
+    const got = await confirm(bodyOf(device.assert(await challengeOf("assertion"))));
+    expect([got.status, got.body]).toEqual([204, ""]);
+    expect(reg.use).toEqual([[TOKEN, made.credentialId, 1]]);
+    await vi.waitFor(() => expect(reg.activity).toEqual([true, true]));
+  });
+
+  it("a clone behind and an equal counter are 409 without use; use's 409 too", async () => {
+    await remembering();
+    const device = createSoftwareAuthenticator(RP);
+    const made = device.register(await challengeOf("registration"));
+    await register(registrationOf(made));
+    const clone = device.clone();
+    expect((await confirm(bodyOf(device.assert(await challengeOf("assertion"))))).status).toBe(204);
+    const behind = await confirm(bodyOf(clone.assert(await challengeOf("assertion"))));
+    expect([behind.status, codeOf(behind)]).toEqual([409, "counter_not_increased"]);
+    expect(reg.use).toHaveLength(1);
+    reg.useAnswer = async () => ({ status: "counter_not_increased" });
+    const raced = await confirm(bodyOf(device.assert(await challengeOf("assertion"))));
+    expect([raced.status, codeOf(raced)]).toEqual([409, "counter_not_increased"]);
+  });
+
+  it("0 to 0 is confirmed (local signer)", async () => {
+    const signer = localSigner();
+    const id = Buffer.from([0x5a, 0x01]);
+    await start(async () => ({
+      status: "listed",
+      credentials: [{ credentialId: id, publicKey: signer.publicKey, signCount: 0 }],
+    }));
+    const challenge = store.issue(assertionKey(), "assertion")!.challenge;
+    expect((await confirm(wire(id, signer.body(challenge, 0)))).status).toBe(204);
+    expect(reg.use).toEqual([[TOKEN, id, 0]]);
+  });
+
+  it.each([
+    [
+      "a wrong origin",
+      (d: ReturnType<typeof createSoftwareAuthenticator>, c: Buffer) =>
+        bodyOf(d.assert(c, { origin: "https://drugo.example.invalid" })),
+    ],
+    [
+      "another key",
+      (d: ReturnType<typeof createSoftwareAuthenticator>, c: Buffer) =>
+        bodyOf(d.withForeignKey().assert(c)),
+    ],
+    [
+      "a changed signature byte",
+      (d: ReturnType<typeof createSoftwareAuthenticator>, c: Buffer) => {
+        const a = d.assert(c);
+        const signature = Buffer.from(a.signature);
+        signature.writeUInt8(signature.readUInt8(signature.length - 1) ^ 1, signature.length - 1);
+        return bodyOf({ ...a, signature });
+      },
+    ],
+  ])("%s is ceremony_invalid without use", async (_name, build) => {
+    await remembering();
+    const device = createSoftwareAuthenticator(RP);
+    const made = device.register(await challengeOf("registration"));
+    await register(registrationOf(made));
+    const got = await confirm(build(device, await challengeOf("assertion")));
+    expect([got.status, codeOf(got)]).toEqual([400, "ceremony_invalid"]);
+    expect(reg.use).toEqual([]);
+  });
+
+  it.each([
+    ["a raw r||s signature", { raw: true }],
+    ["38 bytes of authenticator data", { size: 38 }],
+    ["the attested data flag", { flags: 0x45 }],
+  ] as [string, { raw?: boolean; size?: number; flags?: number }][])(
+    "%s is ceremony_invalid (local signer)",
+    async (_name, change) => {
+      const signer = localSigner();
+      const id = Buffer.from([0x5a, 0x02]);
+      await start(async () => ({
+        status: "listed",
+        credentials: [{ credentialId: id, publicKey: signer.publicKey, signCount: 0 }],
+      }));
+      const challenge = store.issue(assertionKey(), "assertion")!.challenge;
+      const b = signer.body(challenge, 1, change);
+      if (change.raw === true) b.signature = Buffer.alloc(64, 1);
+      const got = await confirm(wire(id, b));
+      expect([got.status, codeOf(got)]).toEqual([400, "ceremony_invalid"]);
+    },
+  );
+});
+
+describe("assertion refusals around the key and the challenge", () => {
+  it("an unknown or revoked id is 403 and spends the challenge; with none issued, 403 too", async () => {
+    await start(empty, { fill: () => 2 });
+    const got = await confirm(CONFIRMED);
+    expect([got.status, codeOf(got)]).toEqual([403, "forbidden"]);
+    expect(reg.use).toEqual([]);
+    listAnswer = stored(0);
+    const late = await confirm(CONFIRMED);
+    expect([late.status, codeOf(late)]).toEqual([400, "challenge_invalid"]);
+    listAnswer = empty;
+    expect((await confirm(CONFIRMED)).status).toBe(403);
+  });
+
+  it("only the key with the body's id is used: another listed key is 403", async () => {
+    await start(
+      async () => ({
+        status: "listed",
+        credentials: [{ ...VECTOR_KEY, credentialId: Buffer.from([0x5a, 0x09]), signCount: 0 }],
+      }),
+      { fill: () => 2 },
+    );
+    store.issue(assertionKey(), "assertion");
+    expect((await confirm(CONFIRMED)).status).toBe(403);
+    expect(reg.use).toEqual([]);
+  });
+
+  it("an issued challenge is spent by an unknown id", async () => {
+    await start(empty, { fill: () => 2 });
+    const live = store.issue(assertionKey(), "assertion")!.challenge;
+    expect((await confirm(CONFIRMED)).status).toBe(403);
+    expect(store.take(assertionKey(), "assertion", live)).toBe("invalid");
+  });
+
+  it("another session's or purpose's challenge is refused and theirs stays", async () => {
+    await start(stored(0), { fill: () => 2 });
+    const other = store.issue(challengeSessionKey(OTHER), "assertion")!.challenge;
+    const registration = store.issue(assertionKey(), "registration")!.challenge;
+    const got = await confirm(CONFIRMED);
+    expect([got.status, codeOf(got)]).toEqual([400, "challenge_invalid"]);
+    expect(store.take(challengeSessionKey(OTHER), "assertion", other)).toBe("ok");
+    expect(store.take(assertionKey(), "registration", registration)).toBe("ok");
+  });
+
+  it("unreadable client data spends the challenge", async () => {
+    await start(stored(0), { fill: () => 2 });
+    store.issue(assertionKey(), "assertion");
+    const bad = await confirm({
+      ...CONFIRMED,
+      clientDataJSON: Buffer.from([0xff]).toString("base64url"),
+    });
+    expect([bad.status, codeOf(bad)]).toEqual([400, "ceremony_invalid"]);
+    expect(codeOf(await confirm(CONFIRMED))).toBe("challenge_invalid");
+  });
+
+  it("a stored key that is not canonical ES256 is 503, and the challenge stays", async () => {
+    await start(
+      async () => ({
+        status: "listed",
+        credentials: [{ ...VECTOR_KEY, publicKey: Buffer.from([1, 2, 3]), signCount: 0 }],
+      }),
+      { fill: () => 2 },
+    );
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const live = store.issue(assertionKey(), "assertion")!.challenge;
+    expect((await confirm(CONFIRMED)).status).toBe(503);
+    expect(records(error)).toEqual([fault(ASSERTION_ROUTE, "stored_key_malformed")]);
+    expect(store.take(assertionKey(), "assertion", live)).toBe("ok");
+  });
+
+  it.each([
+    ["unauthenticated", async () => ({ status: "unauthenticated" }) as const, 401],
+    ["thrown", () => Promise.reject(new Error(`boom ${TOKEN}`)), 503],
+    [
+      "unavailable",
+      async () => ({ status: "unavailable", reason: "list_malformed" }) as const,
+      503,
+    ],
+  ] as [string, () => Promise<WebAuthnListOutcome>, number][])(
+    "list %s is %s, and the challenge stays",
+    async (_name, list, status) => {
+      await start(list, { fill: () => 2 });
+      const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const live = store.issue(assertionKey(), "assertion")!.challenge;
+      expect((await confirm(CONFIRMED)).status).toBe(status);
+      expect(store.take(assertionKey(), "assertion", live)).toBe("ok");
+      expect(JSON.stringify(error.mock.calls)).not.toContain(TOKEN);
+      const expected: Record<string, unknown[]> = {
+        thrown: [thrown(ASSERTION_ROUTE)],
+        unavailable: [fault(ASSERTION_ROUTE, "list_malformed")],
+      };
+      expect(records(error)).toEqual(expected[_name] ?? []);
+    },
+  );
+
+  it.each([
+    ["unauthenticated", 401],
+    ["forbidden", 403],
+    ["counter_not_increased", 409],
+    ["invalid", 503],
+    ["unavailable", 503],
+    ["thrown", 503],
+  ] as const)("use's %s is %s, without activity", async (status, code) => {
+    await start(stored(0), { fill: () => 2 });
+    store.issue(assertionKey(), "assertion");
+    reg.useAnswer =
+      status === "thrown"
+        ? () => Promise.reject(new Error(`boom ${TOKEN}`))
+        : async () =>
+            (status === "unavailable"
+              ? { status, reason: "use_malformed" }
+              : { status }) as WebAuthnUseOutcome;
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect((await confirm(CONFIRMED)).status).toBe(code);
+    expect(reg.activity).toEqual([]);
+    expect(JSON.stringify(error.mock.calls)).not.toContain(TOKEN);
+    const expected: Record<string, unknown[]> = {
+      invalid: [fault(ASSERTION_ROUTE, "use_invalid")],
+      unavailable: [fault(ASSERTION_ROUTE, "use_malformed")],
+      thrown: [thrown(ASSERTION_ROUTE)],
+    };
+    expect(records(error)).toEqual(expected[status] ?? []);
+  });
+
+  it.each([
+    ["129 characters of signature", { ...CONFIRMED, signature: "A".repeat(129) }],
+    ["a non-canonical signature", { ...CONFIRMED, signature: "A" }],
+    ["an empty signature", { ...CONFIRMED, signature: "" }],
+  ])("%s: 422, the challenge stays", async (_name, body) => {
+    await start(stored(0), { fill: () => 2 });
+    const live = store.issue(assertionKey(), "assertion")!.challenge;
+    expect((await confirm(body)).status).toBe(422);
+    expect(store.take(assertionKey(), "assertion", live)).toBe("ok");
   });
 });
