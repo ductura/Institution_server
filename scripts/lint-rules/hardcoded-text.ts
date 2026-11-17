@@ -186,7 +186,19 @@ const TOKEN = [
   /^[a-z][A-Za-z0-9]*(?:\.[a-z][A-Za-z0-9_]*)+$/u,
 ];
 
+// A page path as a route template (DAN-851-2a1; PAGE_ROUTE of the contract
+// support.problem-report.post): "/" or kebab and [name] segments.
+const PAGE_PATH = /^\/$|^(?:\/(?:[a-z]+(?:-[a-z]+)*|\[[A-Za-z]+\]))+$/u;
+
 function isSentence(text: string): boolean {
+  // A page path is judged as a kebab token; a bracketed name is a word.
+  if (PAGE_PATH.test(text)) {
+    const parts = text
+      .toLowerCase()
+      .split(/[/\[\]-]+/u)
+      .filter((w) => w !== "");
+    return parts.length >= 3 && parts.some((w) => STRONG.has(w));
+  }
   if (TOKEN.some((re) => re.test(text))) {
     const parts = text.toLowerCase().split(/[._-]/u);
     return parts.length >= 3 && parts.some((w) => STRONG.has(w));
