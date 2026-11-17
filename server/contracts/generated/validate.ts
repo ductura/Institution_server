@@ -22,6 +22,57 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['returnTo'] !== undefined ? ((typeof value['returnTo'] === 'string')) : true)
     )
   }),
+  "auth.webauthn-assertion.post:body": (() => {
+  const local0 = /^[A-Za-z0-9_-]+(?![\s\S])/;
+  const local1 = /^[A-Za-z0-9_-]+(?![\s\S])/;
+  const local2 = /^[A-Za-z0-9_-]+(?![\s\S])/;
+  const local3 = /^[A-Za-z0-9_-]+(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['authenticatorData'] === 'string') &&
+      value['authenticatorData'].length <= 1024 &&
+      local0.test(value['authenticatorData']) &&
+      (typeof value['clientDataJSON'] === 'string') &&
+      value['clientDataJSON'].length <= 2048 &&
+      local1.test(value['clientDataJSON']) &&
+      (typeof value['credentialId'] === 'string') &&
+      value['credentialId'].length <= 1364 &&
+      local2.test(value['credentialId']) &&
+      (typeof value['signature'] === 'string') &&
+      value['signature'].length <= 128 &&
+      local3.test(value['signature']) &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }
+  })(),
+  "auth.webauthn-challenge.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['purpose'] === 'registration')) || ((value['purpose'] === 'assertion'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "auth.webauthn-registration.post:body": (() => {
+  const local0 = /^[A-Za-z0-9_-]+(?![\s\S])/;
+  const local1 = /^[A-Za-z0-9_-]+(?![\s\S])/;
+  const local2 = /^[A-Za-z0-9_-]+(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['authenticatorData'] === 'string') &&
+      value['authenticatorData'].length <= 2048 &&
+      local0.test(value['authenticatorData']) &&
+      (typeof value['clientDataJSON'] === 'string') &&
+      value['clientDataJSON'].length <= 2048 &&
+      local1.test(value['clientDataJSON']) &&
+      (typeof value['credentialId'] === 'string') &&
+      value['credentialId'].length <= 1364 &&
+      local2.test(value['credentialId']) &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
   "client.context.post:body": (() => {
   const local0 = /^(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})$/;
   return function check(value: Record<string, unknown>): boolean {

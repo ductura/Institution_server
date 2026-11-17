@@ -36,6 +36,27 @@ export type Operations = {
     success: { status: 303; body: undefined; headers: { "location"?: string; "set-cookie"?: string[] } };
     errorCode: "forbidden" | "unavailable";
   };
+  "auth.webauthn-assertion.post": {
+    params: undefined;
+    query: undefined;
+    body: { "authenticatorData": string; "clientDataJSON": string; "credentialId": string; "signature": string };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable" | "challenge_invalid" | "ceremony_invalid" | "forbidden" | "counter_not_increased";
+  };
+  "auth.webauthn-challenge.post": {
+    params: undefined;
+    query: undefined;
+    body: { "purpose": "registration" | "assertion" };
+    success: { status: 200; body: { "challenge": string; "rpId": string; "timeoutMs": number; "purpose": "registration"; "userHandle": string } | { "challenge": string; "rpId": string; "timeoutMs": number; "purpose": "assertion"; "allowCredentials": (string)[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "auth.webauthn-registration.post": {
+    params: undefined;
+    query: undefined;
+    body: { "authenticatorData": string; "clientDataJSON": string; "credentialId": string };
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable" | "challenge_invalid" | "ceremony_invalid" | "forbidden" | "conflict";
+  };
   "client.context.post": {
     params: undefined;
     query: undefined;
