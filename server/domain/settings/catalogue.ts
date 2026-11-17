@@ -87,6 +87,29 @@ export const SETTINGS_CATALOGUE: readonly SettingDefinition[] = Object.freeze([
   rateLimit("save_per_account", 120),
   rateLimit("default_per_ip", 3000),
   rateLimit("default_per_account", 300),
+  // S-1G-a (DAN-1012-1, Ductus#2028): backup, the system level of the app
+  // admin (D-298). Off by default; the owner turns it on in production (V-6).
+  // A copy is daily at the latest (ARCHITECTURE §9) and at most 30 are kept,
+  // so a setting can shorten how long a copy holds erased data (D-299) but
+  // not lengthen it. Destination and encryption are fixed by BACKEND §4.7,
+  // not settings: a setting must not send or keep a copy elsewhere.
+  define({ key: "backup.enabled", levels: ["system"], kind: "boolean", default: false }),
+  define({
+    key: "backup.interval_hours",
+    levels: ["system"],
+    kind: "integer",
+    default: 24,
+    min: 1,
+    max: 24,
+  }),
+  define({
+    key: "backup.copies",
+    levels: ["system"],
+    kind: "integer",
+    default: 30,
+    min: 1,
+    max: 30,
+  }),
 ]);
 
 const BY_KEY: ReadonlyMap<string, SettingDefinition> = new Map(

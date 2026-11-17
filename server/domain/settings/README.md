@@ -6,6 +6,6 @@ Katalog postavki po razinama (S-1J-f, DAN-806; D-298, ugovor Ductus#1836 c.69062
 - `settingOf`, `defaultOf`: unos i zadana vrijednost ključa; ključ izvan kataloga daje `undefined`, nikad svojstvo prototipa.
 - `checkSettingWrite`: smije li pisanje uopće stići do baze (ključ, razina, vrsta i granice vrijednosti, oblik granice). Tko piše i granice viših razina i dalje odlučuje baza (`settings.set_value`, DAN-801).
 
-Ključ s razinom `network_security` počinje s `network.`, kao u bazi. Novi ključ je minor `@ductura/contracts`: vektor rute `settings.catalogue.get` mora biti jednak katalogu (`tests/contracts/settings-catalogue.test.ts`).
+Ključ s razinom `network_security` počinje s `network.`, kao u bazi. Postavke backupa (`backup.enabled`, `backup.interval_hours`, `backup.copies`; DAN-1012-1) su samo na razini `system` (D-298); zadano je backup isključen. Odredište i šifriranje nisu postavke (BACKEND §4.7). Novi ključ je minor `@ductura/contracts`: vektor rute `settings.catalogue.get` mora biti jednak katalogu (`tests/contracts/settings-catalogue.test.ts`).
 
 Ne uvozi ništa izvan `server/domain`.
