@@ -69,6 +69,26 @@ describe("an accepted manifest url", () => {
     expect(accepts(url)).toBe(false);
   });
 
+  it.each([
+    "https://paketi.localhost/a.msi",
+    "https://a.b.localhost/a.msi",
+    "https://paketi.local/a.msi",
+    "https://paketi.internal/a.msi",
+    "https://paketi.home.arpa/a.msi",
+    "https://a.b.home.arpa/a.msi",
+  ])("never names this machine or the local network: %j", (url) => {
+    expect(accepts(url)).toBe(false);
+  });
+
+  it.each([
+    "https://localhost.example.invalid/a.msi",
+    "https://paketi.localhost-x.invalid/a.msi",
+    "https://paketi.arpa/a.msi",
+    "https://paketi.home.arpa.example.invalid/a.msi",
+  ])("may use those words elsewhere in the name: %j", (url) => {
+    expect(accepts(url)).toBe(true);
+  });
+
   it("never has a host longer than 253 characters", () => {
     const label = "a".repeat(63);
     const host = (last: number) => `${label}.${label}.${label}.${"b".repeat(last)}`;

@@ -25,7 +25,12 @@ const NO_DOTS = `(?![\\s\\S]*(?:%2[eE]|%00|/\\.\\.?(?:[/?]|${END})))`;
 // DNS: the whole name is at most 253 characters (RFC 1035 2.3.4, without
 // the root dot); a host is only [a-z0-9.-] and ends at the first slash.
 const HOST_LENGTH = "(?=[a-z0-9.-]{1,253}/)";
-const URL_PATTERN = `^${NO_DOTS}(?:https://${HOST_LENGTH}${HOST})?/(?![/?])${PCHAR}+${END}`;
+// Never a name of this machine or the local network: .localhost (RFC 6761
+// 6.3), .local (mDNS, RFC 6762), .home.arpa (RFC 8375) and .internal (ICANN
+// private use). .invalid, .test and .example never resolve and stay allowed:
+// the synthetic data of this repository uses them.
+const NOT_LOCAL = "(?![a-z0-9.-]*\\.(?:localhost|local|internal|home\\.arpa)/)";
+const URL_PATTERN = `^${NO_DOTS}(?:https://${HOST_LENGTH}${NOT_LOCAL}${HOST})?/(?![/?])${PCHAR}+${END}`;
 
 const DOWNLOAD_SYSTEMS = ["windows", "macos"] as const;
 const DOWNLOAD_ARCHITECTURES = ["x64", "arm64"] as const;
