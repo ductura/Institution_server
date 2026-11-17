@@ -19,6 +19,7 @@ import {
   createClientContextRoute,
   createDatabases,
   createEvidenceCommitRouteFor,
+  createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createWebAuthnRoutesFor,
@@ -121,6 +122,8 @@ async function main(): Promise<void> {
       ...createInterfaceLocaleRoutesFor(databases.main),
       // The problem report (S-M-2, DAN-851): POST over the support service.
       createProblemReportRouteFor(databases.main),
+      // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
+      ...createInstitutionCourseRoutesFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
       ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;

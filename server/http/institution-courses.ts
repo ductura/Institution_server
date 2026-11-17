@@ -12,10 +12,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { ROUTES, workIdFromPath } from "../contracts/index.ts";
-import type { InstitutionCourses } from "../database/index.ts";
+import { createInstitutionCourses, type InstitutionCourses } from "../database/index.ts";
 import { createInstitutionService } from "../institution/index.ts";
-import { liveSessionTokenFromCookie } from "../session/index.ts";
+import { liveSessionTokenFromCookie, recordActivity } from "../session/index.ts";
 
+import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
 import { sendProblem } from "./problem.ts";
@@ -184,4 +185,18 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
       true,
     ),
   ];
+}
+
+/**
+ * The routes over the main database (DAN-852-5a): the port and the activity
+ * touch both run on main's application withActor, so an answer and its touch
+ * never reach another pool. server/server.ts mounts them.
+ */
+export function createInstitutionCourseRoutesFor(
+  main: Pick<Databases["main"], "withActor">,
+): Route[] {
+  return createInstitutionCourseRoutes({
+    courses: createInstitutionCourses(main.withActor),
+    recordActivity: (token) => recordActivity(token, main.withActor),
+  });
 }
