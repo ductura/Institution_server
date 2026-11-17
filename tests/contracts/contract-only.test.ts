@@ -13,6 +13,7 @@ import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/
 import {
   AREA_NAMES,
   createInterfaceLocaleRoutesFor,
+  createProblemReportRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   routesOf,
@@ -76,6 +77,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createInterfaceLocaleRoutesFor(databases.main)",
     ids: ["profile.interface-locale.get", "profile.interface-locale.post"],
     routes: () => createInterfaceLocaleRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // DAN-851-2d2a: the problem report over the main database.
+    call: "createProblemReportRouteFor(databases.main)",
+    ids: ["support.problem-report.post"],
+    routes: () => [createProblemReportRouteFor(NO_ACTOR).contract.id],
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -165,8 +172,9 @@ describe("CONTRACT_ONLY", () => {
     ).toEqual([]);
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
-      // With nothing mounted, the WebAuthn routes (mounted since 840-3f1) are missing too.
-      [...DAN_806, ...DAN_840].map(
+      // With nothing mounted, the WebAuthn routes (mounted since 840-3f1) and the
+      // problem report (mounted since 851-2d2a) are missing too.
+      ["support.problem-report.post", ...DAN_806, ...DAN_840].map(
         (id) => `${id}: contract without a handler, not in CONTRACT_ONLY`,
       ),
     );
@@ -188,6 +196,7 @@ describe("routes the entry point mounts itself", () => {
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
+      "support.problem-report.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
@@ -195,6 +204,23 @@ describe("routes the entry point mounts itself", () => {
     expect(mounted()).toContain("settings.values.put");
     expect(mounted()).toContain("profile.interface-locale.get");
     expect(mounted()).toContain("profile.interface-locale.post");
+    expect(mounted()).toContain("support.problem-report.post");
+    expect(CONTRACT_ONLY).not.toContain("support.problem-report.post");
+  });
+
+  it("the problem report commented out, over another database or with no argument is not a mount", () => {
+    const call = "createProblemReportRouteFor(databases.main)";
+    for (const entry of [
+      `// ${call},`,
+      `/* ${call}, */`,
+      "",
+      "createProblemReportRouteFor(databases.admin),",
+      "createProblemReportRouteFor(fakeMain),",
+      "createProblemReportRouteFor(),",
+    ]) {
+      expect(entryMounted(entry)).toEqual([]);
+    }
+    expect(entryMounted(`routes: [\n  ${call},\n]`)).toEqual(["support.problem-report.post"]);
   });
 
   it("each factory gives the route ids of its row", () => {

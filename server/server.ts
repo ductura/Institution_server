@@ -20,6 +20,7 @@ import {
   createDatabases,
   createEvidenceCommitRouteFor,
   createInterfaceLocaleRoutesFor,
+  createProblemReportRouteFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
@@ -115,6 +116,8 @@ async function main(): Promise<void> {
       createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
       // The interface language (S-M-1, DAN-851): GET and POST over the profile service.
       ...createInterfaceLocaleRoutesFor(databases.main),
+      // The problem report (S-M-2, DAN-851): POST over the support service.
+      createProblemReportRouteFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
       ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;
