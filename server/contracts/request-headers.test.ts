@@ -109,6 +109,11 @@ describe("the client sends the declared headers and nothing the caller adds", ()
     expect(init?.headers).toEqual({ "ductus-protocol": "1" });
     // @ts-expect-error A route that declares headers needs them.
     await call("live.document.get", input);
+    const none = { params: undefined, query: undefined, body: {} as never };
+    // @ts-expect-error The same for open
+    await call("evidence.open.post", none);
+    // @ts-expect-error and for commit.
+    await call("evidence.commit.post", none);
     await call("platform.health.get", { params: undefined, query: undefined, body: undefined });
     expect(init?.headers).toBeUndefined();
   });
