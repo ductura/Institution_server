@@ -24,7 +24,7 @@ Prema karti (§1): `database`, `external/srce-auth`, `external/storage`, `extern
 
 ## Koje podatke dira
 
-Bazu zapisa, samo preko porta `LogStore` (pravi adapter za `ductus_logs` čeka tablicu, S-1K.2-a), i rezervni redak na konzoli (`consoleSink`). Analiza (`analysis/`) ne dira ništa osim ulaza koji dobije.
+Bazu zapisa, samo preko porta `LogStore` (tablica `public.log_entry` postoji u `db/logs/migrations/`, a adapter porta na nju još nije napisan), i rezervni redak na konzoli (`consoleSink`). Analiza (`analysis/`) ne dira ništa osim ulaza koji dobije.
 
 ## Što izvozi
 

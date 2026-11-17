@@ -167,9 +167,38 @@ describe("log analysis: work grows linearly with the entries", () => {
   }, 2000);
 });
 
+// Written out here, not read from the implementation: dropping an event from a rule must fail a test.
+const RULE_EVENTS = {
+  loginFailures: ["authn.login_failed", "authn.second_factor_failed"],
+  trafficRefusals: ["traffic.rate_limited", "traffic.ip_denied"],
+};
+
+describe("log analysis: rules and defaults", () => {
+  it("has exactly the rules and events of the contract", () => {
+    expect(Object.fromEntries(ANALYSIS_RULES.map((r) => [r.name, [...r.events]]))).toEqual(
+      RULE_EVENTS,
+    );
+  });
+
+  // Codex review c.6963352885 (2): a call with entries only uses the named defaults.
+  it("uses DEFAULT_ANALYSIS_THRESHOLDS when no thresholds are passed", () => {
+    expect(DEFAULT_ANALYSIS_THRESHOLDS).toEqual({
+      loginFailures: { windowMs: 600_000, minCount: 20 },
+      trafficRefusals: { windowMs: 300_000, minCount: 50 },
+    });
+    const run = (n: number) =>
+      Array.from({ length: n }, (_, k) => ({ timeMs: T0 + k, event: "authn.login_failed" }));
+    expect(analyzeLog(run(19))).toEqual({ ok: true, value: [] });
+    expect(analyzeLog(run(20))).toEqual({
+      ok: true,
+      value: [{ rule: "loginFailures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 }],
+    });
+  });
+});
+
 describe.each(ANALYSIS_RULES.map((r) => [r.name, r] as const))("rule %s", (name, rule) => {
   const own = { ...thresholds, [name]: { windowMs: WINDOW, minCount: MIN } };
-  const [first, second] = rule.events;
+  const [first, second] = RULE_EVENTS[name];
 
   it("reads only event kinds from the catalog", () => {
     for (const event of rule.events) expect(Object.hasOwn(EVENT_CATALOG, event)).toBe(true);
@@ -180,7 +209,14 @@ describe.each(ANALYSIS_RULES.map((r) => [r.name, r] as const))("rule %s", (name,
     ["exactly on the threshold", at(first!, 0, 1, WINDOW - 1), [[0, 3]]],
     ["above the threshold", at(first!, 0, 1, 2, 3), [[0, 4]]],
     ["an entry exactly windowMs after the first is outside", at(first!, 0, 1, WINDOW), []],
-    ["every event of the rule counts", [...at(first!, 0, 1), ...at(second ?? first!, 2)], [[0, 3]]],
+    // Codex review c.6963352885 (1): each event alone is needed to reach the threshold.
+    ["the first event reaches the threshold alone", at(first!, 0, 1, 2), [[0, 3]]],
+    ["the second event reaches the threshold alone", at(second!, 0, 1, 2), [[0, 3]]],
+    [
+      "the second event is needed for the threshold",
+      [...at(first!, 0, 1), ...at(second!, 2)],
+      [[0, 3]],
+    ],
     ["other events do not count", [...at(first!, 0, 1), ...at("authn.logout", 2)], []],
     [
       "two bursts windowMs apart give two findings",
