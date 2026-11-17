@@ -17,7 +17,7 @@ import {
 
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const FAKE_DIR = fileURLToPath(new URL("./generated/fake-server/", import.meta.url));
-const COOKIE = "__Host-ductus_session=izmisljeni-token-0001";
+const COOKIE = "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001";
 const SAME_ORIGIN = {
   cookie: COOKIE,
   origin: "https://ductura.example.invalid",

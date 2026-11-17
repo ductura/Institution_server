@@ -19,6 +19,7 @@ import {
   createClientContextRoute,
   createDatabases,
   createEvidenceCommitRouteFor,
+  createInterfaceLocaleRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createSettingsValuesPutRoute,
@@ -107,6 +108,8 @@ async function main(): Promise<void> {
       createEvidenceOpenRoute(databases.main),
       // Settings by level (S-1J-g, DAN-826): the write over settings.set_value.
       createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
+      // The interface language (S-M-1, DAN-851): GET and POST over the profile service.
+      ...createInterfaceLocaleRoutesFor(databases.main),
       // B-8: the development signer only under NODE_ENV development or test;
       // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise).
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),

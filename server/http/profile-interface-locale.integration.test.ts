@@ -1,9 +1,8 @@
 // DAN-851-1d1 (contract Ductus#1836 c.6938624974): GET and POST
 // /api/v1/profile/interface-locale on a real server with the real pipeline,
-// over the real profile service and a fake InterfaceLocaleStore. The vectors'
-// cookies are not tokens yet (851-1d2 gives them one), so a valid invented
-// token stands in for them, as in 826-1b. Every refusal before the port
-// leaves it uncalled. All values are invented.
+// over the real profile service and a fake InterfaceLocaleStore. Every vector
+// is sent as its bytes, cookie included (a valid token since 851-1d2). Every
+// refusal before the port leaves it uncalled. All values are invented.
 import { readFileSync } from "node:fs";
 import { connect } from "node:net";
 
@@ -34,8 +33,9 @@ const load = (file: string) =>
 const GET_VECTORS = load("profile.interface-locale.get.json");
 const POST_VECTORS = load("profile.interface-locale.post.json");
 const ORIGIN = POST_VECTORS.find((v) => v.name === "saved")!.request.headers!.origin!;
-const TOKEN = "Izmisljeni_token-jezika_sucelja_00000000001";
-const COOKIE = `__Host-ductus_session=${TOKEN}`;
+/** The vectors' own cookie; the cases outside the vectors use it too. */
+const COOKIE = GET_VECTORS.find((v) => v.name === "saved")!.request.headers!.cookie!;
+const TOKEN = COOKIE.slice("__Host-ductus_session=".length);
 const PATH = "/api/v1/profile/interface-locale";
 const JSON_TYPE = "application/json";
 
@@ -146,16 +146,11 @@ function plainHeaders(got: Answer) {
   expect(got.head["set-cookie"]).toBeUndefined();
 }
 
-// Not reachable with their own bytes: GET "forbidden" sends a cookie and no
-// sec-fetch-site (case 3 covers 403); a short body under a longer
-// Content-Length is a wait (408) or a client gone on a real socket.
-const UNREACHABLE = new Set(["forbidden", "content-length-mismatch", "body-stream-error"]);
+// A short body under a longer Content-Length is a wait (408) or a client gone
+// on a real socket; the reader's own 400 is mutation-request.test.ts.
+const UNREACHABLE = new Set(["content-length-mismatch", "body-stream-error"]);
 
-function vectorHeaders(v: Vector): [string, string][] {
-  return Object.entries(v.request.headers ?? {}).map(
-    ([k, val]) => [k, k === "cookie" ? COOKIE : val] as [string, string],
-  );
-}
+const vectorHeaders = (v: Vector): [string, string][] => Object.entries(v.request.headers ?? {});
 
 describe("every vector a socket can reach", () => {
   const answerFor = (v: Vector) => {
@@ -173,8 +168,8 @@ describe("every vector a socket can reach", () => {
       plainHeaders(got);
       const body = JSON.parse(got.body) as Record<string, unknown>;
       if (got.status === 200) expect(body).toEqual(v.response.body);
-      else expect(body).toMatchObject({ ...v.response.body, requestId: got.head["x-request-id"] });
-      expect(calls.read).toEqual(v.name === "unauthorized" ? [] : [TOKEN]);
+      else expect(body).toEqual({ ...v.response.body, requestId: got.head["x-request-id"] });
+      expect(calls.read).toEqual(["unauthorized", "forbidden"].includes(v.name) ? [] : [TOKEN]);
     },
   );
   it.each(POST_VECTORS.filter((v) => !UNREACHABLE.has(v.name)).map((v) => [v.name, v] as const))(
@@ -189,7 +184,7 @@ describe("every vector a socket can reach", () => {
       plainHeaders(got);
       const json = JSON.parse(got.body) as Record<string, unknown>;
       if (got.status === 200) expect(json).toEqual(v.response.body);
-      else expect(json).toMatchObject({ ...v.response.body, requestId: got.head["x-request-id"] });
+      else expect(json).toEqual({ ...v.response.body, requestId: got.head["x-request-id"] });
       const reached = ["saved", "unavailable"].includes(v.name);
       expect(calls.save).toEqual(reached ? [[TOKEN, "en"]] : []);
       expect(calls.activity).toEqual(got.status === 200 ? [TOKEN] : []);

@@ -7,12 +7,13 @@
 // GET checks Sec-Fetch-Site itself (the pipeline skips safe methods); POST's
 // Origin is pipeline step 7. The token comes before the media type, as in
 // Ductus. An accepted save counts as session activity (Ductus counted(post)).
-// Mounting and the production port follow in 851-1d2.
+// The entry point mounts them through createInterfaceLocaleRoutesFor (851-1d2).
 import { ROUTES } from "../contracts/index.ts";
-import type { InterfaceLocaleStore } from "../database/index.ts";
+import { createInterfaceLocaleStore, type InterfaceLocaleStore } from "../database/index.ts";
 import { createProfileService } from "../profile/index.ts";
-import { liveSessionTokenFromCookie } from "../session/index.ts";
+import { liveSessionTokenFromCookie, recordActivity } from "../session/index.ts";
 
+import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
 import { sendProblem } from "./problem.ts";
@@ -108,4 +109,18 @@ export function createInterfaceLocaleRoutes(options: InterfaceLocaleRouteOptions
   };
 
   return [getRoute, postRoute];
+}
+
+/**
+ * The routes over the main database (DAN-851-1d2): the port and the activity
+ * touch both run on main's application withActor, so a save and its touch
+ * never reach another pool.
+ */
+export function createInterfaceLocaleRoutesFor(
+  main: Pick<Databases["main"], "withActor">,
+): Route[] {
+  return createInterfaceLocaleRoutes({
+    store: createInterfaceLocaleStore(main.withActor),
+    recordActivity: (token) => recordActivity(token, main.withActor),
+  });
 }

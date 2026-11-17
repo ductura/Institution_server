@@ -4,7 +4,7 @@ Područje iz [karte servera](../../docs/server-map.md) (DAN-851-1b). Servis jezi
 
 ## Što radi
 
-Postavke računa: jezik sučelja (S-M-1, prijenos Ductus `profile/interface-locale`). Feature područje: servis jezika sučelja je u `service.ts`, a ruta dolazi s DAN-851-1d u `server/http`, kao kod `evidence`. Servis portu predaje samo tijelo koje je valjan UTF-8 i kanonski JSON (`canonicalizeJcs`) s točno jednim valjanim `locale`; veličinu, rok i Content-Length tijela provjerava ruta. Pravila tijela su u domeni, [`server/domain/profile`](../domain/profile/README.md).
+Postavke računa: jezik sučelja (S-M-1, prijenos Ductus `profile/interface-locale`). Feature područje: servis jezika sučelja je u `service.ts`, a ruta je u `server/http` (`profile-interface-locale.ts`, DAN-851-1d1) i montira je `server/server.ts` (DAN-851-1d2), kao kod `evidence`. Servis portu predaje samo tijelo koje je valjan UTF-8 i kanonski JSON (`canonicalizeJcs`) s točno jednim valjanim `locale`; veličinu, rok i Content-Length tijela provjerava ruta. Pravila tijela su u domeni, [`server/domain/profile`](../domain/profile/README.md).
 
 ## Tko ga zove
 

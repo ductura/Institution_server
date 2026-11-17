@@ -6,7 +6,7 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001"
         }
       },
       "response": {
@@ -22,7 +22,7 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001"
         }
       },
       "response": {
@@ -42,7 +42,10 @@
         "status": 401,
         "contentType": "application/json",
         "body": {
-          "error": "unauthorized"
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401
         }
       }
     },
@@ -52,14 +55,18 @@
       "code": "forbidden",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-bez-prava"
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
+          "sec-fetch-site": "cross-site"
         }
       },
       "response": {
         "status": 403,
         "contentType": "application/json",
         "body": {
-          "error": "forbidden"
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403
         }
       }
     },
@@ -69,14 +76,17 @@
       "code": "unavailable",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001"
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001"
         }
       },
       "response": {
         "status": 503,
         "contentType": "application/json",
         "body": {
-          "error": "unavailable"
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503
         }
       }
     }

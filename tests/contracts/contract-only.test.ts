@@ -10,7 +10,12 @@ import { describe, expect, it } from "vitest";
 
 import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
 import type { SettingsWriter } from "../../server/database/index.ts";
-import { AREA_NAMES, createSettingsValuesPutRoute, routesOf } from "../../server/http/index.ts";
+import {
+  AREA_NAMES,
+  createInterfaceLocaleRoutesFor,
+  createSettingsValuesPutRoute,
+  routesOf,
+} from "../../server/http/index.ts";
 
 // The operations of DAN-803 (c.6905207008, tables of PR1 to PR6), frozen: the
 // task may add only these to CONTRACT_ONLY, and each of them that has a
@@ -58,11 +63,17 @@ const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840];
 // route id its factory gives. A call with another writer, or one commented
 // out, is not a mount.
 const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
-const ENTRY_MOUNTED: readonly { call: string; id: string; route: () => string }[] = [
+const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
+const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
   {
     call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
-    id: "settings.values.put",
-    route: () => createSettingsValuesPutRoute({ writer: NO_WRITER }).contract.id,
+    ids: ["settings.values.put"],
+    routes: () => [createSettingsValuesPutRoute({ writer: NO_WRITER }).contract.id],
+  },
+  {
+    call: "createInterfaceLocaleRoutesFor(databases.main)",
+    ids: ["profile.interface-locale.get", "profile.interface-locale.post"],
+    routes: () => createInterfaceLocaleRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
 ];
 const ENTRY_TEXT = readFileSync(new URL("../../server/server.ts", import.meta.url), "utf8");
@@ -73,7 +84,7 @@ const code = (text: string): string => text.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*
 /** The ids of ENTRY_MOUNTED whose exact call is in the entry text. */
 export function entryMounted(entry: string): string[] {
   const text = code(entry);
-  return ENTRY_MOUNTED.filter((row) => text.includes(row.call)).map((row) => row.id);
+  return ENTRY_MOUNTED.filter((row) => text.includes(row.call)).flatMap((row) => row.ids);
 }
 
 const mounted = (): string[] => [
@@ -157,13 +168,19 @@ describe("CONTRACT_ONLY", () => {
 });
 
 describe("routes the entry point mounts itself", () => {
-  it("server.ts mounts the settings PUT over the database's writer", () => {
-    expect(entryMounted(ENTRY_TEXT)).toEqual(["settings.values.put"]);
+  it("server.ts mounts the settings PUT and the interface language over the main database", () => {
+    expect(entryMounted(ENTRY_TEXT)).toEqual([
+      "settings.values.put",
+      "profile.interface-locale.get",
+      "profile.interface-locale.post",
+    ]);
     expect(mounted()).toContain("settings.values.put");
+    expect(mounted()).toContain("profile.interface-locale.get");
+    expect(mounted()).toContain("profile.interface-locale.post");
   });
 
-  it("each factory gives the route id of its row", () => {
-    for (const row of ENTRY_MOUNTED) expect(row.route()).toBe(row.id);
+  it("each factory gives the route ids of its row", () => {
+    for (const row of ENTRY_MOUNTED) expect(row.routes()).toEqual(row.ids);
   });
 
   it("a call commented out, removed or given another writer is not a mount", () => {
@@ -178,5 +195,23 @@ describe("routes the entry point mounts itself", () => {
       expect(entryMounted(entry)).toEqual([]);
     }
     expect(entryMounted(`routes: [\n  ${call},\n]`)).toEqual(["settings.values.put"]);
+  });
+
+  it("the interface language commented out or over another database is not a mount", () => {
+    const call = "createInterfaceLocaleRoutesFor(databases.main)";
+    for (const entry of [
+      `// ...${call},`,
+      `/* ...${call}, */`,
+      "",
+      "...createInterfaceLocaleRoutesFor(databases.admin),",
+      "...createInterfaceLocaleRoutesFor(fakeMain),",
+      "...createInterfaceLocaleRoutesFor(),",
+    ]) {
+      expect(entryMounted(entry)).toEqual([]);
+    }
+    expect(entryMounted(`routes: [\n  ...${call},\n]`)).toEqual([
+      "profile.interface-locale.get",
+      "profile.interface-locale.post",
+    ]);
   });
 });

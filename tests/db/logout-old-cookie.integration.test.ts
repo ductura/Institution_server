@@ -16,6 +16,7 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createHealthRoute,
+  createInterfaceLocaleRoutesFor,
   createLayers,
   createSettingsValuesPutRoute,
   evidenceIngestDependencies,
@@ -88,6 +89,19 @@ const SESSION_ROUTES = {
     }),
     live: 404,
   },
+  // DAN-851-1d2: the interface language. A live POST saves `en` for the
+  // account; the old cookie's POST sends `hr`, which must never land.
+  "profile.interface-locale.get": {
+    method: "GET",
+    path: "/api/v1/profile/interface-locale",
+    body: () => undefined,
+    live: 200,
+  },
+  "profile.interface-locale.post": {
+    path: "/api/v1/profile/interface-locale",
+    body: () => ({ locale: "en" }),
+    live: 200,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -98,6 +112,7 @@ const FACTORIES = [
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createSettingsValuesPutRoute",
+  "createInterfaceLocaleRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createAuthRoutes",
@@ -109,6 +124,7 @@ const MOUNTED = [
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
+  ...createInterfaceLocaleRoutesFor(databases.main),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   ...createAuthRoutes(ENV),
@@ -154,10 +170,22 @@ function post(path: string, token: string, body?: unknown, method = "POST"): Pro
   });
 }
 
-const call = (id: SessionRouteId, token: string) => {
+const call = (id: SessionRouteId, token: string, body?: unknown) => {
   const route: { path: string; body: () => unknown; method?: string } = SESSION_ROUTES[id];
-  return post(route.path, token, route.body(), route.method);
+  return post(route.path, token, body ?? route.body(), route.method);
 };
+
+const LOCALE = "/api/v1/profile/interface-locale";
+/** The saved interface language of a session's account, read as the admin. */
+const savedLocale = async (token: string) =>
+  (
+    await admin.query<{ locale: string }>(
+      `SELECT p.interface_locale AS locale FROM identity.user_preference p
+         JOIN identity.session s ON s.user_id = p.user_id
+        WHERE s.token_hash = sha256(convert_to($1, 'UTF8'))`,
+      [token],
+    )
+  ).rows.map((row) => row.locale);
 
 const sessionEnd = async (token: string) =>
   (
@@ -213,7 +241,14 @@ afterAll(async () => {
   await server?.close();
   await databases.close();
   await auth?.end();
-  for (const table of ["person_name", "teacher_eligibility", "session", "user_account"]) {
+  // user_preference refers to user_account, so it goes first.
+  for (const table of [
+    "user_preference",
+    "person_name",
+    "teacher_eligibility",
+    "session",
+    "user_account",
+  ]) {
     await admin.query(`DELETE FROM identity.${table} WHERE institution_id = $1`, [institution]);
   }
   await admin.query("DELETE FROM identity.institution_issuer WHERE institution_id = $1", [
@@ -240,11 +275,16 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     await expectLive(token);
     await expectSignedOut(await post("/api/v1/auth/logout", token));
     expect(await sessionEnd(token)).toMatchObject({ reason: "logout" });
+    expect(await savedLocale(token)).toEqual(["en"]);
     for (const id of SESSION_IDS) {
-      const answer = await call(id, token);
+      const answer = await call(
+        id,
+        token,
+        id === "profile.interface-locale.post" ? { locale: "hr" } : undefined,
+      );
       const body: unknown = await answer.json();
       const old =
-        id === "settings.values.put"
+        id === "settings.values.put" || id.startsWith("profile.interface-locale.")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
       expect([id, answer.status, body]).toEqual([id, 401, old]);
@@ -253,6 +293,19 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       );
       expect(Value.Check(spec?.body as never, body)).toBe(true);
     }
+    expect(await savedLocale(token)).toEqual(["en"]);
+  });
+
+  it("the interface language: POST en, then GET en for the same session; another gets null", async () => {
+    const [token = ""] = await signIn(1);
+    const [other = ""] = await signIn(1);
+    const saved = await post(LOCALE, token, { locale: "en" });
+    expect([saved.status, await saved.json()]).toEqual([200, { locale: "en" }]);
+    const read = await post(LOCALE, token, undefined, "GET");
+    expect([read.status, await read.json()]).toEqual([200, { locale: "en" }]);
+    const elsewhere = await post(LOCALE, other, undefined, "GET");
+    expect([elsewhere.status, await elsewhere.json()]).toEqual([200, { locale: null }]);
+    expect(await savedLocale(other)).toEqual([]);
   });
 
   it("T2, T4: logout again with the old cookie changes nothing; the other session lives", async () => {

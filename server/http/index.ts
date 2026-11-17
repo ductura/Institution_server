@@ -114,6 +114,7 @@ export {
 } from "./settings-values.ts";
 export {
   createInterfaceLocaleRoutes,
+  createInterfaceLocaleRoutesFor,
   INTERFACE_LOCALE_MAX_BYTES,
   INTERFACE_LOCALE_TIMEOUT_MS,
   type InterfaceLocaleRouteOptions,
