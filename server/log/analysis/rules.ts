@@ -22,6 +22,11 @@ export type RuleThreshold = { readonly windowMs: number; readonly minCount: numb
 export type AnalysisThresholds = Readonly<Record<AnalysisRuleName, RuleThreshold>>;
 
 export const MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
+/**
+ * The Date limit (ECMA-262 time value range). An entry time is an integer of at
+ * most this size, so `time + windowMs` stays exact (below 2 ** 53).
+ */
+export const MAX_TIME_MS = 8.64e15;
 
 export const DEFAULT_ANALYSIS_THRESHOLDS: AnalysisThresholds = Object.freeze({
   loginFailures: Object.freeze({ windowMs: 10 * 60 * 1000, minCount: 20 }),
@@ -104,7 +109,11 @@ export function analyzeLog(
         return typeof event === "string" && events.includes(event);
       })
       .map((entry) => ownValue(entry, "timeMs"))
-      .filter((time): time is number => typeof time === "number" && Number.isFinite(time))
+      .filter(
+        (time): time is number =>
+          Number.isSafeInteger(time) && Math.abs(time as number) <= MAX_TIME_MS,
+      )
+      .map((time) => time + 0) // -0 becomes 0
       .sort((a, b) => a - b);
     return windowsOf(times, rule.name, checked[index]!);
   });

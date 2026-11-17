@@ -31,6 +31,7 @@ const TEMPLATE_AREAS = [
   "database",
   "session",
   "domain",
+  "log",
 ];
 
 const HEADINGS = readmeHeadings(ROOT);

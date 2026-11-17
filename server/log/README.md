@@ -1,6 +1,10 @@
 # server/log
 
-Područje zapisa (karta: [docs/server-map.md](../../docs/server-map.md)). Jedan strukturirani zapis web procesa i workera: svaki poziv piše točno jedan JSON redak `{ time, level, event, fields }`, a svaki dio retka prije toga prolazi kroz `redact`. Zapis nikad ne baca grešku pozivatelju.
+Područje zapisa (karta: [docs/server-map.md](../../docs/server-map.md)).
+
+## Što radi
+
+Jedan strukturirani zapis web procesa i workera: svaki poziv piše točno jedan JSON redak `{ time, level, event, fields }`, a svaki dio retka prije toga prolazi kroz `redact`. Zapis nikad ne baca grešku pozivatelju.
 
 - `redact.ts`: `redact(value)` uklanja tajne, tokene, osobne podatke i sadržaj radova iz vrijednosti bilo kojeg oblika (ključevi, tekst, URL-ovi, greške); `redactString`, `stripUrl`, `isSensitiveKey`.
 - `logger.ts`: `createLogger(sink, now)`, `logEvent`, `codesLog` i `consoleSink` (stderr za upozorenja i greške, stdout za ostalo).
@@ -14,4 +18,18 @@ Područje zapisa (karta: [docs/server-map.md](../../docs/server-map.md)). Jedan 
 
 Preneseno iz Ductusa `src/server/log/` (`d52a92c3`, S-0.17, DAN-730) bez promjene logike. Testovi: `redact.test.ts`, `canary.test.ts` i `redact.property.test.ts` (Ductus `tests/property/log-redact.property.test.ts`). Tri slučaja Ductus `canary.test.ts` čekaju kod kroz koji pišu: dokaze (`server/evidence`, S-M-\*) i ulaznu točku (S-1B-a); popis je u komentaru testa.
 
-Mapa ne uvozi ništa iz drugih područja.
+## Tko ga zove
+
+Prema karti (§1): `database`, `external/srce-auth`, `external/storage`, `external/keys`, `external/email`, `traffic`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence`, `profile`, `institution`, `support` i `http`.
+
+## Koje podatke dira
+
+Bazu zapisa, samo preko porta `LogStore` (pravi adapter za `ductus_logs` čeka tablicu, S-1K.2-a), i rezervni redak na konzoli (`consoleSink`). Analiza (`analysis/`) ne dira ništa osim ulaza koji dobije.
+
+## Što izvozi
+
+`index.ts`: logger (`createLogger`, `logEvent`, `codesLog`, `consoleSink`), servis zapisa (`createLogWriter` i njegove konstante i tipove), revizijski trag operatora (`createOperatorAudit`), `redact` i pomoćne funkcije te katalog događaja iz `events/`. Analiza još nije u `index.ts` (nema pozivatelja do S-1K.7-b).
+
+## Što ne smije uvoziti
+
+Smije uvoziti samo `settings` (karta §2). Danas ne uvozi ništa iz drugih područja.

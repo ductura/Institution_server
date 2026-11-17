@@ -10,6 +10,7 @@ import {
   ANALYSIS_RULES,
   analyzeLog,
   DEFAULT_ANALYSIS_THRESHOLDS,
+  MAX_TIME_MS,
   MAX_WINDOW_MS,
   type AnalysisEntry,
   type AnalysisThresholds,
@@ -91,6 +92,34 @@ describe("log analysis: thresholds that are refused", () => {
   });
 });
 
+describe("log analysis: entry times", () => {
+  // Codex review c.6963024962 (1): above 2 ** 53 the window end rounds onto its start.
+  const one = { ...thresholds, loginFailures: { windowMs: 1, minCount: 1 } };
+  const single = (timeMs: number) => findings([{ timeMs, event: "authn.login_failed" }], one);
+
+  it("counts integer times up to the Date limit in both directions", () => {
+    for (const timeMs of [MAX_TIME_MS, -MAX_TIME_MS, 0]) {
+      expect(single(timeMs)).toEqual([
+        { rule: "loginFailures", fromMs: timeMs, toMs: timeMs + 1, count: 1, minCount: 1 },
+      ]);
+    }
+  });
+
+  it("skips times past the Date limit or with a fraction", () => {
+    for (const timeMs of [
+      MAX_TIME_MS + 1,
+      -MAX_TIME_MS - 1,
+      2 ** 53,
+      -(2 ** 53),
+      Number.MAX_VALUE,
+      T0 + 0.5,
+      -0,
+    ]) {
+      expect(single(timeMs), String(timeMs)).toEqual(Object.is(timeMs, -0) ? single(0) : []);
+    }
+  });
+});
+
 describe("log analysis: entries that are not counted", () => {
   it("skips entries without a finite time or a string event, and inherited names", () => {
     const getter = Object.defineProperty({ timeMs: T0 }, "event", {
@@ -165,6 +194,12 @@ describe.each(ANALYSIS_RULES.map((r) => [r.name, r] as const))("rule %s", (name,
       "a finding takes every entry in its window",
       at(first!, 0, 1, 2, WINDOW - 1, WINDOW, WINDOW + 1),
       [[0, 4]],
+    ],
+    // Codex review c.6963024962 (2): a window that fails moves its start by one entry, not past the window.
+    [
+      "a later start finds what the first window misses",
+      at(first!, 0, WINDOW - 1, WINDOW, WINDOW + 1),
+      [[WINDOW - 1, 3]],
     ],
   ])("%s", (_, entries, expected) => {
     const want = expected.map(([from, count]) => ({

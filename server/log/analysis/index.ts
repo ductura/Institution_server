@@ -3,6 +3,7 @@ export {
   ANALYSIS_RULES,
   analyzeLog,
   DEFAULT_ANALYSIS_THRESHOLDS,
+  MAX_TIME_MS,
   MAX_WINDOW_MS,
   type AnalysisEntry,
   type AnalysisError,
