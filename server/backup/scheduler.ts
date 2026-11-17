@@ -1,12 +1,15 @@
 // The backup scheduler (S-1G-a part 2, DAN-1012-2; contract Ductus#2028
 // c.6963924920). One check an hour reads the system settings of DAN-1012-1
-// and starts the job only when backup.enabled is exactly true and at least
-// backup.interval_hours hours have passed since the last start (or since it
-// was turned on). Every other check is skipped with a closed reason. The
-// settings reader, the job and the listener are handed in by the assembler of
-// the background process, which does not exist yet: nothing starts this, so
-// backup stays off (V-6 is the owner's).
-import { fitsDefinition, settingOf, type SettingDefinition } from "../domain/index.ts";
+// and starts the job only when backup.enabled is exactly true and the check
+// is the backup.interval_hours-th since the job last started or backup was
+// last seen off. The hourly timer restarts at both moments, so the hours
+// count from when they happened, not from when the check began: two starts
+// are never closer than interval_hours, however long a read takes. A check
+// that starts nothing for another reason reports it with a closed code; one
+// that only waits for its hour reports nothing. The settings reader, the job
+// and the listener are handed in by the assembler of the background process,
+// which does not exist yet: nothing starts this, so backup stays off (V-6).
+import { defaultOf, fitsDefinition, settingOf, type SettingDefinition } from "../domain/index.ts";
 
 /** Why a check did not start the job; `onSkip` gets only one of these, never a message. */
 export const BACKUP_SKIP_REASONS = Object.freeze([
@@ -48,13 +51,32 @@ function definitionOf(key: string): SettingDefinition {
 
 const ENABLED = definitionOf("backup.enabled");
 const INTERVAL = definitionOf("backup.interval_hours");
-const DEFAULT_INTERVAL = Number(INTERVAL.default);
+const DEFAULT_INTERVAL = defaultOf(INTERVAL.key) as number;
 
-/** Read through Map.prototype.get, so a subclass cannot answer for the Map. */
-const get = (settings: Map<unknown, unknown>, key: string): unknown =>
-  Map.prototype.get.call(settings, key);
-const has = (settings: Map<unknown, unknown>, key: string): boolean =>
-  Map.prototype.has.call(settings, key);
+/**
+ * The interval in hours, or why not to run. Keys are read through
+ * Map.prototype, so a subclass cannot answer for the Map, and anything that
+ * is not a real Map (a Proxy, a bare Map prototype) throws into "unavailable".
+ */
+function decide(settings: unknown): number | BackupSkipReason {
+  try {
+    if (!(settings instanceof Map)) return "settings_unavailable";
+    const has = (key: string): boolean => Map.prototype.has.call(settings, key);
+    const get = (key: string): unknown => Map.prototype.get.call(settings, key);
+    const enabled = get(ENABLED.key);
+    if (enabled !== true) {
+      if (!has(ENABLED.key)) return "enabled_missing";
+      return enabled === false ? "disabled" : "enabled_invalid";
+    }
+    if (!has(INTERVAL.key)) return DEFAULT_INTERVAL;
+    const interval = get(INTERVAL.key);
+    return fitsDefinition(INTERVAL, interval) ? (interval as number) : "interval_invalid";
+  } catch {
+    return "settings_unavailable";
+  }
+}
+
+const OFF: ReadonlySet<unknown> = new Set(["enabled_missing", "enabled_invalid", "disabled"]);
 
 export function createBackupScheduler(options: BackupSchedulerOptions): BackupScheduler {
   const { readSettings, run, onSkip } = options;
@@ -65,7 +87,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   let timer: ReturnType<typeof setInterval> | undefined;
   let stopped = false;
   let check: Promise<void> | undefined;
-  /** Whole hours since the last start, or since backup was last off. */
+  /** Whole hours since the timer last (re)started. */
   let hours = 0;
 
   const skip = (reason: BackupSkipReason): void => {
@@ -76,31 +98,28 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     }
   };
 
-  /** The interval in hours, or the reason not to run; `hours` is reset when backup is off. */
-  const decide = async (): Promise<number | BackupSkipReason> => {
-    let settings: unknown;
-    try {
-      settings = await readSettings();
-    } catch {
-      return "settings_unavailable";
-    }
-    if (!(settings instanceof Map)) return "settings_unavailable";
-    const enabled = get(settings, ENABLED.key);
-    if (enabled !== true) {
-      hours = 0;
-      if (!has(settings, ENABLED.key)) return "enabled_missing";
-      return enabled === false ? "disabled" : "enabled_invalid";
-    }
-    if (!has(settings, INTERVAL.key)) return DEFAULT_INTERVAL;
-    const interval = get(settings, INTERVAL.key);
-    return fitsDefinition(INTERVAL, interval) ? (interval as number) : "interval_invalid";
+  /** Hours count from now: the timer starts again and the count is 0. */
+  const restart = (): void => {
+    clearInterval(timer);
+    hours = 0;
+    if (stopped) return;
+    timer = setInterval(tick, BACKUP_CHECK_MS);
+    // The scheduler alone never keeps the process up.
+    timer.unref();
   };
 
   const once = async (): Promise<void> => {
-    const decision = await decide();
+    let decision: number | BackupSkipReason;
+    try {
+      decision = decide(await readSettings());
+    } catch {
+      decision = "settings_unavailable";
+    }
+    if (stopped) return;
+    if (OFF.has(decision)) restart();
     if (typeof decision === "string") return skip(decision);
     if (hours < decision) return;
-    hours = 0;
+    restart();
     try {
       await run();
     } catch {
@@ -108,18 +127,16 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     }
   };
 
-  const tick = (): void => {
+  function tick(): void {
     hours += 1;
     if (check !== undefined) return skip("busy");
     check = once().finally(() => (check = undefined));
-  };
+  }
 
   return Object.freeze({
     start(): void {
       if (stopped || timer !== undefined) return;
-      timer = setInterval(tick, BACKUP_CHECK_MS);
-      // The scheduler alone never keeps the process up.
-      timer.unref();
+      restart();
     },
     async stop(): Promise<void> {
       stopped = true;

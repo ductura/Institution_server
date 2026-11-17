@@ -8,17 +8,19 @@ Kopije baze i pohrane te mjesečna proba povrata (ARCHITECTURE §9). Feature pod
 
 ## Raspoređivač backupa
 
-`createBackupScheduler` (`scheduler.ts`) jednom na sat čita postavke razine `system` iz kataloga (DAN-1012-1). Posao pokreće samo kad je `backup.enabled` točno `true` i kad je od zadnjeg pokretanja, ili od uključenja, prošlo barem `backup.interval_hours` sati. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
+`createBackupScheduler` (`scheduler.ts`) jednom na sat čita postavke razine `system` iz kataloga (DAN-1012-1). Posao pokreće samo kad je `backup.enabled` točno `true` i kad je to `backup.interval_hours`-ti otkucaj od zadnjeg pokretanja ili od zadnjeg otkucaja na kojem backup nije bio uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
 
-Svaki drugi otkucaj javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
+Satni timer kreće ispočetka u trenutku pokretanja i u trenutku kad se vidi da je backup isključen. Zato sati teku od tog trenutka, a ne od početka otkucaja: dva pokretanja nikad nisu bliže od `interval_hours`, koliko god čitanje trajalo.
 
-- `settings_unavailable`: čitač baci ili ne vrati `Map`;
-- `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; brojač se vraća na 0;
+Otkucaj koji samo čeka svoj sat ne javlja ništa. Svaki drugi otkucaj na kojem se posao ne pokrene javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
+
+- `settings_unavailable`: čitač baci ili ne vrati pravi `Map`;
+- `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; sati se broje ispočetka;
 - `interval_invalid`: interval je izvan kataloga;
 - `busy`: prethodni otkucaj još traje;
 - `run_failed`: posao je bacio.
 
-Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitač, posao i primatelj razloga predaje sastavljač.
+Kod `settings_unavailable` i `interval_invalid` sati se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitanje koje završi nakon `stop()` ne pokreće posao. Čitač, posao i primatelj razloga predaje sastavljač.
 
 Poznate granice:
 

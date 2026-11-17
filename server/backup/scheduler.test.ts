@@ -57,6 +57,7 @@ describe("backup scheduler: backup.enabled that is not exactly true never runs",
       ],
     ),
     ["{}", [["backup.enabled", {}]], "enabled_invalid"],
+    ["undefined (present)", [["backup.enabled", undefined]], "enabled_invalid"],
     [
       "valueOf/toString true",
       [["backup.enabled", { valueOf: () => true, toString: () => "true" }]],
@@ -78,11 +79,16 @@ describe("backup scheduler: backup.enabled that is not exactly true never runs",
     override get(): unknown {
       return true;
     }
+    override has(): boolean {
+      return true;
+    }
   }
   const unavailable: [string, () => unknown][] = [
     ["a plain object", () => ({ "backup.enabled": true, "backup.interval_hours": 1 })],
     ["an inheriting object", () => Object.create({ "backup.enabled": true }) as unknown],
     ["undefined", () => undefined],
+    ["a bare Map prototype", () => Object.create(Map.prototype) as unknown],
+    ["a Proxy of a Map", () => new Proxy(new Map(on(1)), {})],
     [
       "a throw",
       () => {
@@ -99,13 +105,16 @@ describe("backup scheduler: backup.enabled that is not exactly true never runs",
     expect(onSkip.mock.calls).toEqual(Array.from({ length: 48 }, () => ["settings_unavailable"]));
   });
 
-  it("reads a Map subclass by Map.prototype.get, not its own get", async () => {
-    const { run, onSkip } = setup([], {
-      readSettings: () => new LyingMap([["backup.enabled", false]]),
-    });
+  it("reads a Map subclass through Map.prototype, not its own get and has", async () => {
+    const { state, run, onSkip } = setup([]);
+    state.settings = new LyingMap([["backup.enabled", false]]);
     await vi.advanceTimersByTimeAsync(48 * H);
     expect(run).not.toHaveBeenCalled();
     expect(new Set(onSkip.mock.calls.flat())).toEqual(new Set(["disabled"]));
+    // No interval key: the default 24 h, not the subclass's word that one is there.
+    state.settings = new LyingMap([["backup.enabled", true]]);
+    await vi.advanceTimersByTimeAsync(24 * H);
+    expect(run).toHaveBeenCalledTimes(1);
   });
 
   it.each([0, 25, 1.5, -0, "24", NaN, Infinity, true, null])(
@@ -138,14 +147,43 @@ describe("backup scheduler: enabled runs once per interval", () => {
     expect(onSkip).not.toHaveBeenCalled();
   });
 
-  it("turned on after 100 h off, runs only after a full interval", async () => {
-    const { state, run } = setup([["backup.enabled", false]]);
-    await vi.advanceTimersByTimeAsync(100 * H);
-    state.settings = new Map(on(6));
-    await vi.advanceTimersByTimeAsync(6 * H - 1);
-    expect(run).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
+  it.each([
+    ["missing", []],
+    ["false", [["backup.enabled", false]]],
+    ["invalid", [["backup.enabled", "true"]]],
+  ] as [string, [string, unknown][]][])(
+    "turned on after 100 h %s, runs only after a full interval",
+    async (_n, off) => {
+      const { state, run } = setup(off);
+      await vi.advanceTimersByTimeAsync(100 * H);
+      state.settings = new Map(on(6));
+      await vi.advanceTimersByTimeAsync(6 * H - 1);
+      expect(run).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(run).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("an invalid interval keeps counting: the run comes as soon as it is valid", async () => {
+    const { state, run } = setup(on(0));
+    await vi.advanceTimersByTimeAsync(10 * H);
+    state.settings = new Map(on(2));
+    await vi.advanceTimersByTimeAsync(H);
     expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  // Codex on #283: hours count from the start, not from the check that began it.
+  it("a slow read moves the next start: two starts are a full interval apart", async () => {
+    const { readSettings, run } = setup(on(1));
+    readSettings.mockImplementationOnce(
+      () => new Promise((resolve) => setTimeout(() => resolve(new Map(on(1))), 0.75 * H)),
+    );
+    await vi.advanceTimersByTimeAsync(1.75 * H);
+    expect(run).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(H - 1);
+    expect(run).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(run).toHaveBeenCalledTimes(2);
   });
 
   it("turned off, no run from the next hour", async () => {
@@ -188,6 +226,16 @@ describe("backup scheduler: enabled runs once per interval", () => {
     expect(run).toHaveBeenCalledTimes(1);
     expect(readSettings).toHaveBeenCalledTimes(1);
     expect(onSkip.mock.calls).toEqual([["busy"], ["busy"]]);
+    hang.resolve();
+    await vi.advanceTimersByTimeAsync(H);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("busy hours count toward the next interval", async () => {
+    const hang = deferred();
+    const { run } = setup(on(3));
+    run.mockImplementationOnce(() => hang.promise);
+    await vi.advanceTimersByTimeAsync(5 * H);
     hang.resolve();
     await vi.advanceTimersByTimeAsync(H);
     expect(run).toHaveBeenCalledTimes(2);
@@ -272,11 +320,31 @@ describe("backup scheduler: failures, stop and options", () => {
     expect(run).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps no reference on the process", () => {
+  it("a read that ends after stop starts no run", async () => {
+    const read = deferred();
+    const { run, scheduler } = setup(on(1), {
+      readSettings: () => read.promise.then(() => new Map(on(1))),
+    });
+    await vi.advanceTimersByTimeAsync(H);
+    const stopping = scheduler.stop();
+    read.resolve();
+    await stopping;
+    expect(run).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("keeps one timer, never a reference on the process, through every restart", async () => {
     const spy = vi.spyOn(globalThis, "setInterval");
     try {
-      setup(on(1));
-      expect((spy.mock.results[0]?.value as NodeJS.Timeout).hasRef()).toBe(false);
+      const { state } = setup(on(1));
+      await vi.advanceTimersByTimeAsync(3 * H);
+      state.settings = new Map([["backup.enabled", false]]);
+      await vi.advanceTimersByTimeAsync(3 * H);
+      expect(spy.mock.calls.length).toBeGreaterThan(3);
+      for (const result of spy.mock.results) {
+        expect((result.value as NodeJS.Timeout).hasRef()).toBe(false);
+      }
+      expect(vi.getTimerCount()).toBe(1);
     } finally {
       spy.mockRestore();
     }
