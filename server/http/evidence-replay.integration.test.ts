@@ -157,6 +157,8 @@ describe("every vector of evidence.replay.post", () => {
     const body = v.request.rawBody ?? JSON.stringify(v.request.body);
     const answer = await send(request(v.request.headers, body));
     expect(answer.status).toBe(v.response.status);
+    // Content-Length -1 is refused by Node's parser before any route: status only.
+    if (v.name === "bad-request") return;
     expect(answer.head["cache-control"]).toBe("no-store");
     expect(answer.head["set-cookie"]).toBeUndefined();
     if (v.name === "forbidden") return;
