@@ -32,6 +32,17 @@ export type {
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type { InterfaceLocaleStore } from "./interface-locale.ts";
+export {
+  createProblemReportStore,
+  PROBLEM_REPORT_DATABASE_ERROR,
+  PROBLEM_REPORT_ERRORS,
+  PROBLEM_REPORT_INVALID,
+  PROBLEM_REPORT_PARAMETERS,
+  PROBLEM_REPORT_ROW_MALFORMED,
+  PROBLEM_REPORT_TOO_MANY,
+  PROBLEM_REPORT_UNAUTHENTICATED,
+} from "./problem-report.ts";
+export type { ProblemReportStore } from "./problem-report.ts";
 export type {
   AccessLogCursor,
   AccessLogEntry,
