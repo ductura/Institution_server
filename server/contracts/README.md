@@ -37,4 +37,10 @@ Ništa iz drugih područja; od knjižnica samo `@sinclair/typebox` ([karta serve
 
 ## Operatorske rute (DAN-842-2)
 
-Operatorska ruta se izjavljuje dvaput: staza je `/api/v1/ops` ili ispod nje (to čita korak 8 pipelinea, `isOpsPath`), a id je u području `ops` (`ops.<ime>.<metoda>`). Jedno bez drugoga ruši `tests/contracts/operator-routes.test.ts` (S-1J.2, ugovor Ductus#1836 c.6947114430). Isti test traži da je svaki montirani ugovor član `ROUTES`, da `server/server.ts` gradi slojeve točno kroz `createLayers` bez podmetnutog koraka 8 i da nijedna datoteka u `server/` ne uvozi vrijednost iz `node:http` ili `node:net` izvan zamrznutog popisa (jedini poslužitelj je `startServer`; prijelazni `app.ts` ne uvozi nitko). Test provodi samo izjavu rute: ruta izvan `/api/v1/ops` koja mijenja operatorske razine (npr. `settings.values.put`) nije operatorska ruta u tom smislu i nju štiti baza.
+Operatorska ruta se izjavljuje dvaput: staza je `/api/v1/ops` ili ispod nje (to čita korak 8 pipelinea, `isOpsPath`), a id je u području `ops` (`ops.<ime>.<metoda>`). Jedno bez drugoga ruši `tests/contracts/operator-routes.test.ts` (S-1J.2, ugovor Ductus#1836 c.6947114430). Da nijedna montirana ruta ne zaobilazi korak 8 provjerava `server/operator-routes.integration.test.ts` (3. krug na ductura/server#245) bez čitanja izvornog teksta: u procesu pokreće stvarni `server/server.ts` i provjerava sljedeće:
+
+- pokretanje sluša točno jednom;
+- zabilježeni slojevi su točno koraci pipelinea;
+- svaka montirana ruta koja je operatorska po id-u ili po stazi na pokrenutom poslužitelju bez kolačića dobiva 401 koraka 8.
+
+Poslužitelj pokrenut tek nakon pokretanja (na zahtjev ili timer) brojač ne vidi. Test provodi samo izjavu rute: ruta izvan `/api/v1/ops` koja mijenja operatorske razine (npr. `settings.values.put`) nije operatorska ruta u tom smislu i nju štiti baza.
