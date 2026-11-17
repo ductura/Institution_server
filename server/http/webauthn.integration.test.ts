@@ -7,9 +7,15 @@
 import { readFileSync } from "node:fs";
 import { connect } from "node:net";
 
+import { createSoftwareAuthenticator } from "@ductura/test-fakes/fido2";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { WebAuthnCredentials, WebAuthnListOutcome } from "../database/index.ts";
+import type {
+  WebAuthnAddOutcome,
+  WebAuthnCredential,
+  WebAuthnCredentials,
+  WebAuthnListOutcome,
+} from "../database/index.ts";
 import { challengeSessionKey, createChallengeStore, sessionTag } from "../session/index.ts";
 
 import { createDatabases } from "./databases.ts";
@@ -41,13 +47,20 @@ const KEY = { credentialId: KEY_ID, publicKey: Buffer.from([1]), signCount: 0 };
 let server: Running | undefined;
 let store = createChallengeStore({ now: () => 0, ttlMs: 60_000 });
 const calls = { list: [] as string[], issue: 0 };
+const reg = {
+  add: [] as [string, WebAuthnCredential][],
+  activity: [] as boolean[],
+  answer: async (): Promise<WebAuthnAddOutcome> => ({ status: "added" }),
+  activityAnswer: (): Promise<unknown> => Promise.resolve(),
+};
+let clock = 0;
 let listAnswer: () => Promise<WebAuthnListOutcome>;
 
 async function start(
   list: () => Promise<WebAuthnListOutcome> = async () => ({ status: "listed", credentials: [KEY] }),
   {
     origin = ORIGIN,
-    now = () => 0,
+    now = () => clock,
     fill = () => 7,
   }: { origin?: string | null; now?: () => number; fill?: () => number } = {},
 ) {
@@ -65,7 +78,12 @@ async function start(
       calls.list.push(token);
       return listAnswer();
     },
+    add: async (token: string, credential: WebAuthnCredential) => {
+      reg.add.push([token, credential]);
+      return reg.answer();
+    },
   } as unknown as WebAuthnCredentials;
+  let current: { writableEnded: boolean } | undefined;
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
@@ -78,12 +96,28 @@ async function start(
       timeoutMs: 60_000,
       randomBytes: (n) => Buffer.alloc(n, 9),
       bodyTimeoutMs: 300,
-    }),
+      recordActivity: (token) => {
+        expect(token).toBe(TOKEN);
+        reg.activity.push(current?.writableEnded ?? false);
+        return reg.activityAnswer();
+      },
+    }).map((route) => ({
+      ...route,
+      handle: (request, response) => {
+        current = response;
+        return route.handle(request, response);
+      },
+    })),
   });
 }
 afterEach(async () => {
   calls.list.length = 0;
   calls.issue = 0;
+  reg.add.length = 0;
+  reg.activity.length = 0;
+  reg.answer = async () => ({ status: "added" });
+  reg.activityAnswer = () => Promise.resolve();
+  clock = 0;
   vi.restoreAllMocks();
   await server?.close();
   server = undefined;
@@ -119,11 +153,11 @@ function send(raw: Buffer): Promise<Answer> {
     socket.on("close", () => resolve(finish()));
   });
 }
-function raw(headers: [string, string][], body?: string | Buffer): Buffer {
+function raw(headers: [string, string][], body?: string | Buffer, path = PATH): Buffer {
   const all: [string, string][] = [["host", "127.0.0.1"], ...headers];
   if (body !== undefined && !all.some(([k]) => k.toLowerCase() === "content-length"))
     all.push(["content-length", String(Buffer.byteLength(body))]);
-  const head = `POST ${PATH} HTTP/1.1\r\n${all.map(([k, v]) => `${k}: ${v}`).join("\r\n")}\r\n\r\n`;
+  const head = `POST ${path} HTTP/1.1\r\n${all.map(([k, v]) => `${k}: ${v}`).join("\r\n")}\r\n\r\n`;
   return Buffer.concat([Buffer.from(head, "latin1"), Buffer.from(body ?? "")]);
 }
 const headers = (cookie = COOKIE, type = "application/json"): [string, string][] => [
@@ -134,6 +168,24 @@ const headers = (cookie = COOKIE, type = "application/json"): [string, string][]
 ];
 const post = (body: string | Buffer, h = headers()) => send(raw(h, body));
 const codeOf = (got: Answer) => (JSON.parse(got.body) as { code: string }).code;
+/** The JSON lines a spy on console.error saw (QA on #215: each fault names its closed reason). */
+const records = (spy: { mock: { calls: unknown[][] } }) =>
+  spy.mock.calls.map((call) => JSON.parse(String(call[0])) as Record<string, unknown>);
+const fault = (route: string, reason: string) => ({
+  event: "webauthn_fault",
+  route,
+  reason,
+  requestId: expect.any(String),
+});
+const thrown = (route: string) => ({
+  event: "server_error",
+  where: "route",
+  errorClass: "other",
+  requestId: expect.any(String),
+  route,
+});
+const CHALLENGE_ROUTE = "auth.webauthn-challenge.post";
+const REGISTRATION_ROUTE = "auth.webauthn-registration.post";
 const take = (purpose: string, challenge: string, token = TOKEN) =>
   store.take(challengeSessionKey(token), purpose, challenge);
 
@@ -209,7 +261,7 @@ describe("refusals", () => {
     const got = await post('{"purpose":"registration"}');
     expect([got.status, codeOf(got)]).toEqual([503, "unavailable"]);
     expect(calls).toEqual({ list: [], issue: 0 });
-    expect(error).toHaveBeenCalledOnce();
+    expect(records(error)).toEqual([fault(CHALLENGE_ROUTE, "no_rp_id")]);
   });
 
   it.each([
@@ -220,6 +272,11 @@ describe("refusals", () => {
       503,
     ],
     ["a thrown error", () => Promise.reject(new Error(`boom ${TOKEN}`)), 503],
+    [
+      "an unknown reason",
+      async () => ({ status: "unavailable", reason: `x ${TOKEN}` }) as const,
+      503,
+    ],
     [
       "17 keys",
       async () =>
@@ -235,7 +292,13 @@ describe("refusals", () => {
       expect(got.status).toBe(status);
       expect(calls).toEqual({ list: [TOKEN], issue: 0 });
       expect(JSON.stringify(error.mock.calls)).not.toContain(TOKEN);
-      if (status === 503) expect(error).toHaveBeenCalledOnce();
+      const expected: Record<string, unknown[]> = {
+        unavailable: [fault(CHALLENGE_ROUTE, "list_malformed")],
+        "a thrown error": [thrown(CHALLENGE_ROUTE)],
+        "17 keys": [fault(CHALLENGE_ROUTE, "too_many_credentials")],
+        "an unknown reason": [fault(CHALLENGE_ROUTE, "unknown")],
+      };
+      expect(records(error)).toEqual(expected[_name] ?? []);
     },
   );
 
@@ -245,8 +308,9 @@ describe("refusals", () => {
         throw new Error("clock");
       },
     });
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect((await post('{"purpose":"registration"}')).status).toBe(503);
+    expect(records(error)).toEqual([fault(CHALLENGE_ROUTE, "clock")]);
   });
 });
 
@@ -320,5 +384,223 @@ describe("webauthnRpId", () => {
     [null, null],
   ])("%s gives %s", (origin, rpId) => {
     expect(webauthnRpId(origin)).toBe(rpId);
+  });
+});
+
+// DAN-840-3d (contract Ductus#1836 c.6941302150): the registration route.
+const REG_PATH = "/api/v1/auth/webauthn/registration";
+const REG_VECTORS = (
+  JSON.parse(
+    readFileSync(
+      new URL("../contracts/vectors/auth.webauthn-registration.post.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { vectors: Vector[] }
+).vectors;
+const REGISTERED = REG_VECTORS.find((v) => v.name === "registered")!.request.body as Record<
+  string,
+  string
+>;
+const register = (body: unknown, h = headers()) =>
+  send(raw(h, typeof body === "string" ? body : JSON.stringify(body), REG_PATH));
+const empty = async (): Promise<WebAuthnListOutcome> => ({ status: "listed", credentials: [] });
+
+describe("registration vectors", () => {
+  const UNREACHABLE = new Set(["content-length-mismatch", "body-stream-error"]);
+  const BEFORE_CEREMONY = new Set([401, 403, 408, 413, 415, 422]);
+  it.each(REG_VECTORS.filter((v) => !UNREACHABLE.has(v.name)).map((v) => [v.name, v] as const))(
+    "%s",
+    async (name, v) => {
+      const byte = name === "client-data-origin-mismatch" ? 3 : 1;
+      await start(empty, { fill: () => byte });
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      if (name === "already-has-key") reg.answer = async () => ({ status: "forbidden" });
+      if (name === "credential-registered") reg.answer = async () => ({ status: "conflict" });
+      if (name === "unavailable")
+        reg.answer = async () => ({ status: "unavailable", reason: "add_malformed" });
+      const challenge = store.issue(challengeSessionKey(TOKEN), "registration")!.challenge;
+      const h = Object.entries(v.request.headers ?? {}).map(
+        ([k, val]) => [k, k === "cookie" ? COOKIE : val] as [string, string],
+      );
+      const body = v.request.rawBody ?? JSON.stringify(v.request.body);
+      if (name === "challenge-replayed")
+        expect((await send(raw(h, body, REG_PATH))).status).toBe(204);
+      if (name === "challenge-expired") clock = 60_000;
+      const got = await send(raw(h, body, REG_PATH));
+      expect(got.status).toBe(v.response.status);
+      if (got.status === 204) {
+        expect(got.body).toBe("");
+        expect(got.head["content-type"]).toBeUndefined();
+      } else if (name !== "content-length-invalid") {
+        expect(JSON.parse(got.body)).toMatchObject(v.response.body);
+      }
+      if (name !== "content-length-invalid") {
+        expect(got.head["cache-control"]).toBe("no-store");
+        expect(got.head["set-cookie"]).toBeUndefined();
+      }
+      // A refusal before the ceremony leaves the challenge.
+      if (reg.add.length === 0 && BEFORE_CEREMONY.has(got.status))
+        expect(store.take(challengeSessionKey(TOKEN), "registration", challenge)).toBe("ok");
+    },
+  );
+});
+
+describe("registration with the software authenticator", () => {
+  const authenticator = (origin = ORIGIN) =>
+    createSoftwareAuthenticator({ rpId: "ductura.example.invalid", origin });
+  const bodyOf = (r: {
+    clientDataJSON: Buffer;
+    authenticatorData: Buffer;
+    credentialId: Buffer;
+  }) => ({
+    clientDataJSON: r.clientDataJSON.toString("base64url"),
+    authenticatorData: r.authenticatorData.toString("base64url"),
+    credentialId: r.credentialId.toString("base64url"),
+  });
+  const challengeOf = async () => {
+    const got = await post('{"purpose":"registration"}');
+    return Buffer.from((JSON.parse(got.body) as { challenge: string }).challenge, "base64url");
+  };
+
+  it("registers the key from authenticatorData, then records activity after the answer", async () => {
+    await start(empty);
+    const made = authenticator().register(await challengeOf());
+    const got = await register(bodyOf(made));
+    expect([got.status, got.body, got.head["content-type"]]).toEqual([204, "", undefined]);
+    expect(got.head["cache-control"]).toBe("no-store");
+    expect(reg.add).toEqual([
+      [TOKEN, { credentialId: made.credentialId, publicKey: made.cosePublicKey, signCount: 0 }],
+    ]);
+    await vi.waitFor(() => expect(reg.activity).toEqual([true]));
+  });
+
+  it.each([
+    ["a rejected", () => Promise.reject(new Error("touch"))],
+    [
+      "a thrown",
+      () => {
+        throw new Error("touch");
+      },
+    ],
+  ])("%s activity record does not change the 204", async (_name, activity) => {
+    await start(empty);
+    reg.activityAnswer = activity as () => Promise<unknown>;
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const got = await register(bodyOf(authenticator().register(await challengeOf())));
+    expect(got.status).toBe(204);
+    await vi.waitFor(() => expect(reg.activity).toEqual([true]));
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it("another session's or purpose's challenge is refused and theirs stays", async () => {
+    await start(empty, { fill: () => 1 });
+    const other = store.issue(challengeSessionKey(OTHER), "registration")!.challenge;
+    const assertion = store.issue(challengeSessionKey(TOKEN), "assertion")!.challenge;
+    const got = await register(REGISTERED);
+    expect([got.status, codeOf(got)]).toEqual([400, "challenge_invalid"]);
+    expect(store.take(challengeSessionKey(OTHER), "registration", other)).toBe("ok");
+    expect(store.take(challengeSessionKey(TOKEN), "assertion", assertion)).toBe("ok");
+    expect(reg.add).toEqual([]);
+  });
+
+  it("unreadable client data spends the challenge: ceremony_invalid, then challenge_invalid", async () => {
+    await start(empty, { fill: () => 1 });
+    store.issue(challengeSessionKey(TOKEN), "registration");
+    const bad = await register({
+      ...REGISTERED,
+      clientDataJSON: Buffer.from([0xff]).toString("base64url"),
+    });
+    expect([bad.status, codeOf(bad)]).toEqual([400, "ceremony_invalid"]);
+    const late = await register(REGISTERED);
+    expect([late.status, codeOf(late)]).toEqual([400, "challenge_invalid"]);
+  });
+
+  it("a wrong origin and an id one byte off are ceremony_invalid, without the port", async () => {
+    await start(empty);
+    const foreign = authenticator("https://drugo.example.invalid").register(await challengeOf());
+    const wrong = await register(bodyOf(foreign));
+    expect([wrong.status, codeOf(wrong)]).toEqual([400, "ceremony_invalid"]);
+    const made = authenticator().register(await challengeOf());
+    const id = Buffer.from(made.credentialId);
+    id[0] = (id[0] ?? 0) ^ 1;
+    const off = await register({ ...bodyOf(made), credentialId: id.toString("base64url") });
+    expect([off.status, codeOf(off)]).toEqual([400, "ceremony_invalid"]);
+    expect(reg.add).toEqual([]);
+  });
+
+  it("without rpId: 503 before the ceremony, the challenge stays", async () => {
+    await start(empty, { origin: null, fill: () => 1 });
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const live = store.issue(challengeSessionKey(TOKEN), "registration")!.challenge;
+    expect((await register(REGISTERED)).status).toBe(503);
+    expect(store.take(challengeSessionKey(TOKEN), "registration", live)).toBe("ok");
+    expect(records(error)).toEqual([fault(REGISTRATION_ROUTE, "no_rp_id")]);
+  });
+
+  it.each([
+    ["unauthenticated", 401],
+    ["forbidden", 403],
+    ["conflict", 409],
+    ["invalid", 503],
+    ["unavailable", 503],
+    ["thrown", 503],
+  ] as const)("the port's %s is %s, without activity", async (status, code) => {
+    await start(empty, { fill: () => 1 });
+    store.issue(challengeSessionKey(TOKEN), "registration");
+    reg.answer =
+      status === "thrown"
+        ? () => Promise.reject(new Error(`boom ${TOKEN}`))
+        : async () =>
+            (status === "unavailable"
+              ? { status, reason: "add_malformed" }
+              : { status }) as WebAuthnAddOutcome;
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect((await register(REGISTERED)).status).toBe(code);
+    expect(reg.activity).toEqual([]);
+    expect(JSON.stringify(error.mock.calls)).not.toContain(TOKEN);
+    const expected: Record<string, unknown[]> = {
+      invalid: [fault(REGISTRATION_ROUTE, "add_invalid")],
+      unavailable: [fault(REGISTRATION_ROUTE, "add_malformed")],
+      thrown: [thrown(REGISTRATION_ROUTE)],
+    };
+    expect(records(error)).toEqual(expected[status] ?? []);
+  });
+});
+
+describe("registration body validation", () => {
+  const cut = (field: string) => {
+    const copy: Record<string, unknown> = { ...REGISTERED };
+    delete copy[field];
+    return copy;
+  };
+  it.each([
+    ["CRLF", { ...REGISTERED, credentialId: `${REGISTERED.credentialId}\r\n` }],
+    ["a tab", { ...REGISTERED, credentialId: `${REGISTERED.credentialId}\t` }],
+    ["NBSP", { ...REGISTERED, credentialId: `${REGISTERED.credentialId} ` }],
+    ["DEL", { ...REGISTERED, credentialId: `${REGISTERED.credentialId}\u007f` }],
+    ["padding", { ...REGISTERED, credentialId: `${REGISTERED.credentialId}==` }],
+    ["one character", { ...REGISTERED, credentialId: "A" }],
+    ["a stray character", { ...REGISTERED, clientDataJSON: `${REGISTERED.clientDataJSON}Q` }],
+    ["stray trailing bits", { ...REGISTERED, credentialId: "lhCUskcQNi2uECPPWzNFXh" }],
+    ["an empty field", { ...REGISTERED, credentialId: "" }],
+    ["a missing field", cut("credentialId")],
+    ["null", { ...REGISTERED, credentialId: null }],
+    ["a number", { ...REGISTERED, credentialId: 1 }],
+    ["an array", { ...REGISTERED, credentialId: [REGISTERED.credentialId] }],
+    ["2049 characters", { ...REGISTERED, clientDataJSON: "A".repeat(2049) }],
+    ["1365 characters", { ...REGISTERED, credentialId: "A".repeat(1365) }],
+    ["an extra field", { ...REGISTERED, extra: "x" }],
+  ])("%s: 422, the challenge stays", async (_name, body) => {
+    await start(empty, { fill: () => 1 });
+    const live = store.issue(challengeSessionKey(TOKEN), "registration")!.challenge;
+    const got = await register(body);
+    expect([got.status, codeOf(got)]).toEqual([422, "invalid_input"]);
+    expect(store.take(challengeSessionKey(TOKEN), "registration", live)).toBe("ok");
+  });
+
+  it("an own __proto__: 422", async () => {
+    await start(empty, { fill: () => 1 });
+    const text = JSON.stringify(REGISTERED).replace("{", '{"__proto__":{"x":1},');
+    expect((await register(text)).status).toBe(422);
   });
 });
