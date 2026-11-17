@@ -212,7 +212,7 @@ export const noDynamicLoad: Rule.RuleModule = {
       importRequire: "`import x = require()` is not allowed in server code (DAN-770).",
       module:
         "'{{spec}}' is not on the allow-list: a relative file in server/, an allowed node: module or a package from dependencies (DAN-770).",
-      nodeExport: "A name imported under NODE_IMPORTS_ALLOWED is not exported again (DAN-822-4).",
+      nodeExport: "A file that imports under NODE_IMPORTS_ALLOWED exports nothing (DAN-822-4).",
       key: "'{{key}}' reaches a loader (the Function constructor or a native engine) (DAN-770).",
     },
   },
@@ -276,20 +276,10 @@ export const noDynamicLoad: Rule.RuleModule = {
         context.report({ node, messageId: "module", data: { spec } });
     }
 
-    // `export { name }` and `export default name`, checked against the listed
-    // imports at the end, so an export written above its import is seen too.
+    // A file with a listed import exports nothing, so no export, alias,
+    // wrapper (`as`, `satisfies`, `!`) or container carries the name out (review
+    // and QA FAIL on #258). Checked at the end, so an export above the import counts.
     const exportNodes: Node[] = [];
-    function checkReexport(node: Node): void {
-      const declaration = node as unknown as Loose & { declaration?: Loose | null };
-      const names =
-        declaration.type === "ExportDefaultDeclaration"
-          ? [declaration.declaration?.type === "Identifier" ? declaration.declaration.name : ""]
-          : declaration.source
-            ? []
-            : (declaration.specifiers ?? []).map((s) => s.local?.name ?? "");
-      if (names.some((name) => name !== "" && listedImports.has(name ?? "")))
-        context.report({ node, messageId: "nodeExport" });
-    }
 
     function reportGlobal(node: Loose, name: string): void {
       if (inTypeQuery(node) || allowedUse(node, name)) return;
@@ -354,7 +344,8 @@ export const noDynamicLoad: Rule.RuleModule = {
 
     return {
       "Program:exit"() {
-        for (const node of exportNodes) checkReexport(node);
+        if (listedImports.size > 0)
+          for (const node of exportNodes) context.report({ node, messageId: "nodeExport" });
         const globalScope = context.sourceCode.scopeManager?.globalScope;
         if (!globalScope) return;
         for (const reference of globalScope.through) {
@@ -382,6 +373,8 @@ export const noDynamicLoad: Rule.RuleModule = {
         const reference = (node as unknown as Loose).moduleReference;
         if (reference?.type === "TSExternalModuleReference")
           context.report({ node, messageId: "importRequire" });
+        // `export import x = n.a` is an export too.
+        if ((node as unknown as { isExport?: boolean }).isExport === true) exportNodes.push(node);
       },
       ImportDeclaration: (node) =>
         checkSource(node, node.source as Loose, (node as Loose).importKind),
@@ -390,8 +383,11 @@ export const noDynamicLoad: Rule.RuleModule = {
         exportNodes.push(node);
       },
       ExportDefaultDeclaration: (node) => void exportNodes.push(node),
-      ExportAllDeclaration: (node) =>
-        checkSource(node, node.source as Loose, (node as Loose).exportKind),
+      ExportAllDeclaration: (node) => {
+        checkSource(node, node.source as Loose, (node as Loose).exportKind);
+        exportNodes.push(node);
+      },
+      TSExportAssignment: (node: Node) => void exportNodes.push(node),
       // Every name, wherever it stands (DAN-773).
       "Identifier, PrivateIdentifier, JSXIdentifier": checkName,
       Literal(node) {

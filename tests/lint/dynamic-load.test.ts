@@ -92,6 +92,29 @@ const failing: Case[] = [
     `import { workerData } from "${WT}";\nexport { workerData as data };\n`,
     `import { workerData } from "${WT}";\nexport default workerData;\n`,
     `export { workerData };\nimport { workerData } from "${WT}";\n`,
+    // Review and QA FAIL on #258 (c.6949047280, c.6949045980): the name in a
+    // TypeScript wrapper. The whole class: a file with a listed import exports
+    // nothing, so no wrapper, alias or container carries the name out.
+    ...[
+      "export default (workerData as unknown);\n",
+      "export default workerData satisfies unknown;\n",
+      "export default workerData!;\n",
+      "export default <unknown>workerData;\n",
+      "export default (0, workerData);\n",
+      "export default { workerData };\n",
+      "export default [workerData];\n",
+      "export default (): unknown => workerData;\n",
+      "export const d = workerData;\n",
+      "export const d = { data: workerData as unknown };\n",
+      "export function f(): unknown {\n  return workerData;\n}\n",
+      "const w = workerData;\nexport { w };\n",
+      "export = workerData;\n",
+      "void workerData;\nexport const unrelated = 1;\n",
+      "void workerData;\nexport type T = number;\n",
+      'void workerData;\nexport * from "./y.ts";\n',
+      "void workerData;\nexport {};\n",
+      "void workerData;\nnamespace n {\n  export const a = 1;\n}\nexport import m = n.a;\n",
+    ].map((tail) => `import { workerData } from "${WT}";\n${tail}`),
   ]),
   ...at(WATCH, "global", [
     "process.exit(1);\n",

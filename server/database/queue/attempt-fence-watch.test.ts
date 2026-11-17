@@ -40,17 +40,21 @@ async function run(body: string): Promise<Ending> {
     `import { Worker } from "node:worker_threads";
 const later = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const cell = new BigInt64Array(new SharedArrayBuffer(8));
-// Starts the watch and gives it time to park on the cell, so a later write must wake it.
+// Starts the watch and returns once it is parked on the cell: a notify that
+// wakes one waiter proves it (the watch reads 0 again and parks again).
 const start = async (data = cell.buffer) => {
   const thread = new Worker(new URL(${JSON.stringify(watch)}), { workerData: data });
   thread.on("error", (error) => console.log(error.message));
   await new Promise((resolve) => thread.once("online", resolve));
   thread.unref();
-  await later(100);
+  while (Atomics.notify(cell, 0) !== 1) await later(5);
+  await later(50);
 };
-const set = (ms) => {
+// Writes the cell; unless told otherwise, the write must wake the parked
+// watch, or the case says so and cannot pass as a kill.
+const set = (ms, mustWake = true) => {
   Atomics.store(cell, 0, ms === 0 ? 0n : process.hrtime.bigint() + BigInt(ms) * 1_000_000n);
-  Atomics.notify(cell, 0);
+  if (Atomics.notify(cell, 0) !== 1 && mustWake) console.log("not parked");
 };
 ${body}
 `,
@@ -100,7 +104,7 @@ describe("attempt fence watch: misused, it refuses and kills nothing", () => {
     const ending = await run(
       `const data = ${data}; const thread = new Worker(new URL(${JSON.stringify(watch)}), data === undefined ? {} : { workerData: data });
 thread.on("error", (error) => console.log(error.message));
-set(300); await later(800); console.log("alive");`,
+set(300, false); await later(800); console.log("alive");`,
     );
     expect(ending).toMatchObject(survived(`${MISUSED}\nalive\n`));
   });
@@ -130,7 +134,7 @@ describe("attempt fence watch: a time that passes ends the process", () => {
 
   it("kills at once a time already past when written", async () => {
     const ending = await run(
-      `await start(); console.log("armed"); await later(50); Atomics.store(cell, 0, process.hrtime.bigint() - 1n); Atomics.notify(cell, 0); await later(3000); console.log("late");`,
+      `await start(); console.log("armed"); await later(50); Atomics.store(cell, 0, process.hrtime.bigint() - 1n); if (Atomics.notify(cell, 0) !== 1) console.log("not parked"); await later(3000); console.log("late");`,
     );
     expect(ending).toMatchObject(killed);
     expect(ending.afterArmed).toBeLessThan(250);
