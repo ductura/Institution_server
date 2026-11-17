@@ -1,11 +1,15 @@
-// DAN-822-1: the decision after one attempt to sign a pending receipt. Ported
-// from Ductus src/application/evidence/signature-retry.test.ts at b36c82b with
-// the same assertions for the decision and the delay; the loop's cases come
-// with the loop (822-2). The look-alike statuses, the inherited keys and the
-// extra key are new. Every value is invented.
-import { describe, expect, it } from "vitest";
+// DAN-822-1 and 822-2: the decision after one attempt to sign a pending
+// receipt, and the loop that runs the attempts. Ported from Ductus
+// src/application/evidence/signature-retry.test.ts at b36c82b with the same
+// assertions. The look-alike statuses, the inherited keys, the extra keys and
+// a policy changed after the build are new. Every value is invented.
+import { describe, expect, it, vi } from "vitest";
 
+import type { PendingReceiptRow } from "../database/index.ts";
+
+import type { SignPendingReceiptOutcome } from "./settle-attach.ts";
 import {
+  createSignPendingReceiptWithRetry,
   decideSignatureRetry,
   MAX_SIGNATURE_RETRY_ATTEMPTS,
   MAX_SIGNATURE_RETRY_DELAY_MS,
@@ -159,5 +163,148 @@ describe("signatureRetryDelayMs", () => {
     const policy = { maxAttempts: 2, baseDelayMs: 1, maxDelayMs: MAX_SIGNATURE_RETRY_DELAY_MS };
     expect(signatureRetryDelayMs(attempt, policy, 0.999_999)).toBe(1_024);
     expect(signatureRetryDelayMs(attempt, policy, 0)).toBe(512);
+  });
+});
+
+const ROW: PendingReceiptRow = {
+  receiptId: "00000000-0000-4000-8000-0000000000c1",
+  receiptPayloadText: '{"receiptId":"00000000-0000-4000-8000-0000000000c1"}',
+};
+const SIGNED = { status: "signed", signedReceipt: RECEIPT };
+
+type Wait = (ms: number) => Promise<void>;
+function loop(replies: unknown[], sleep = vi.fn<Wait>(async () => {}), policy = POLICY) {
+  const calls: PendingReceiptRow[] = [];
+  const signPendingReceipt = vi.fn(async (row: PendingReceiptRow) => {
+    calls.push(row);
+    const reply = replies[Math.min(calls.length - 1, replies.length - 1)];
+    if (reply instanceof Error) throw reply;
+    return reply as SignPendingReceiptOutcome;
+  });
+  const run = createSignPendingReceiptWithRetry({
+    signPendingReceipt,
+    policy,
+    sleep,
+    random: () => 0.5,
+  });
+  return { run, calls, sleep };
+}
+
+describe("createSignPendingReceiptWithRetry", () => {
+  it.each([
+    ["refused", { status: "refused", reason: "not_canonical" }, null],
+    ["held", { status: "held", reason: "object_absent" }, null],
+    ["signer_rejected", { status: "signer_rejected", reason: "key_scope" }, null],
+    ["hash", unavailable("hash"), "hash"],
+  ])("parks %s after one attempt and never waits", async (reason, reply, stage) => {
+    const { run, calls, sleep } = loop([reply]);
+    expect(await run(ROW)).toEqual({ status: "parked", reason, attempts: 1, lastStage: stage });
+    expect(calls).toHaveLength(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it("parks as exhausted after maxAttempts and maxAttempts - 1 waits", async () => {
+    const { run, calls, sleep } = loop([unavailable("store")]);
+    expect(await run(ROW)).toEqual({
+      status: "parked",
+      reason: "exhausted",
+      attempts: 4,
+      lastStage: "store",
+    });
+    expect(calls).toHaveLength(4);
+    expect(sleep).toHaveBeenCalledTimes(3);
+  });
+
+  it.each([
+    ["rejects", async () => Promise.reject(new Error("aborted"))],
+    [
+      "throws synchronously",
+      (): Promise<void> => {
+        throw new Error("aborted");
+      },
+    ],
+  ])("parks as interrupted when the wait %s, and signs nothing more", async (_, wait) => {
+    const { run, calls } = loop([unavailable("keys")], vi.fn(wait));
+    expect(await run(ROW)).toEqual({
+      status: "parked",
+      reason: "interrupted",
+      attempts: 1,
+      lastStage: "keys",
+    });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("signs the snapshot of the first attempt, a fresh copy each time, without extra keys", async () => {
+    const row = { ...ROW, extra: "x" };
+    const sleep = vi.fn(async () => {
+      row.receiptId = "00000000-0000-4000-8000-0000000000c2";
+      row.receiptPayloadText = "{}";
+    });
+    const { run, calls } = loop([unavailable("object"), SIGNED], sleep);
+    await run(row);
+    expect(calls).toEqual([ROW, ROW]);
+    expect(calls[0]).not.toBe(calls[1]);
+    expect(Object.keys(calls[1] ?? {}).sort()).toEqual(["receiptId", "receiptPayloadText"]);
+  });
+
+  it("a parked result carries no receipt id, text or signature", async () => {
+    const { run } = loop([
+      { status: "unavailable", stage: "store", reason: ROW.receiptPayloadText },
+    ]);
+    const parked = await run(ROW);
+    expect(Object.keys(parked).sort()).toEqual(["attempts", "lastStage", "reason", "status"]);
+    expect(JSON.stringify(parked)).not.toContain(ROW.receiptId);
+  });
+
+  it("retries a signer failure and a throw with backoff, then answers the signed receipt", async () => {
+    const { run, calls, sleep } = loop([unavailable("signing"), new Error("down"), SIGNED]);
+    expect(await run(ROW)).toEqual({ status: "done", outcome: SIGNED, attempts: 3 });
+    expect(calls).toHaveLength(3);
+    expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([75, 150]);
+  });
+
+  it("waits the whole ceiling when the random source throws", async () => {
+    const sleep = vi.fn(async () => {});
+    const run = createSignPendingReceiptWithRetry({
+      signPendingReceipt: vi
+        .fn()
+        .mockResolvedValueOnce(unavailable("signing"))
+        .mockResolvedValueOnce(SIGNED),
+      policy: POLICY,
+      sleep,
+      random: () => {
+        throw new Error("no entropy");
+      },
+    });
+    expect((await run(ROW)).status).toBe("done");
+    expect(sleep).toHaveBeenCalledWith(100);
+  });
+
+  it("keeps the limits of the build when the caller changes its policy afterwards", async () => {
+    const policy = { ...POLICY, maxAttempts: 2 };
+    const { run, calls } = loop([unavailable("store")], undefined, policy);
+    policy.maxAttempts = 10;
+    expect((await run(ROW)).attempts).toBe(2);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("requires a signing function, a wait, a random source and a policy", () => {
+    const base = {
+      signPendingReceipt: async () => unavailable("x") as SignPendingReceiptOutcome,
+      policy: POLICY,
+      sleep: async () => {},
+      random: () => 0,
+    };
+    for (const missing of ["signPendingReceipt", "sleep", "random"] as const) {
+      expect(() =>
+        createSignPendingReceiptWithRetry({ ...base, [missing]: undefined } as never),
+      ).toThrow(TypeError);
+    }
+    expect(() =>
+      createSignPendingReceiptWithRetry({ ...base, policy: undefined } as never),
+    ).toThrow(RangeError);
+    expect(() =>
+      createSignPendingReceiptWithRetry({ ...base, policy: { ...POLICY, maxAttempts: 0 } }),
+    ).toThrow(RangeError);
   });
 });
