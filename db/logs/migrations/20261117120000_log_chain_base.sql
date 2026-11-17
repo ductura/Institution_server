@@ -71,8 +71,8 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
   ), entry AS (
     SELECT e.seq, e.prev_hash, e.hash,
            public.log_entry_digest(e.prev_hash, e.seq, e.id, e.at, e.kind, e.payload) AS computed,
-           coalesce(pg_catalog.lag(e.seq) OVER w, base.seq) AS before_seq,
-           coalesce(pg_catalog.lag(e.hash) OVER w, base.hash) AS before_hash
+           pg_catalog.lag(e.seq, 1, base.seq) OVER w AS before_seq,
+           pg_catalog.lag(e.hash, 1, base.hash) OVER w AS before_hash
     FROM public.log_entry e CROSS JOIN base
     WINDOW w AS (ORDER BY e.seq)
   ), last AS (

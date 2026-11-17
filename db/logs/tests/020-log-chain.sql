@@ -67,7 +67,7 @@ END
 $$;
 
 
-SELECT plan(146);
+SELECT plan(147);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -211,6 +211,12 @@ SELECT is((SELECT array_agg(seq::text || ' ' || encode(hash, 'hex')) FROM public
 SELECT is((SELECT relowner::regrole::text || ' ' || (relrowsecurity AND relforcerowsecurity)::text
            FROM pg_class WHERE oid = 'public.log_chain_base'::regclass),
   'ductus_logs_migrator true', 'the migrator owns the base; RLS on it is enabled and forced');
+SELECT is(
+  (SELECT string_agg(a.attname || ' ' || format_type(a.atttypid, a.atttypmod)
+                     || CASE WHEN a.attnotnull THEN ' not null' ELSE '' END, ', ' ORDER BY a.attnum)
+   FROM pg_attribute a WHERE a.attrelid = 'public.log_chain_base'::regclass AND a.attnum > 0 AND NOT a.attisdropped),
+  'only_row boolean not null, seq bigint not null, hash bytea not null',
+  'log_chain_base holds the seq and hash of the last row cut away');
 SELECT set_eq(
   $$ SELECT conname || ' ' || pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.log_chain_base'::regclass $$,
   ARRAY['log_chain_base_pkey PRIMARY KEY (only_row)', 'log_chain_base_one_row CHECK (only_row)',
@@ -472,7 +478,7 @@ SELECT is(pg_temp.tampered('UPDATE public.log_chain_base SET seq = 9223372036854
 SELECT is(pg_temp.tampered('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_pkey,
       ALTER seq DROP NOT NULL, ALTER hash DROP NOT NULL;
     INSERT INTO public.log_chain_base (seq, hash) SELECT seq, hash FROM public.log_entry WHERE seq = :base + 2;
-    INSERT INTO public.log_chain_base (seq, hash) VALUES (NULL, NULL)'),
+    INSERT INTO public.log_chain_base (seq, hash) VALUES (NULL, decode(repeat(''00'', 32), ''hex''))'),
   ARRAY['- base', (1 - pg_temp.at(0))::text || ' gap', (1 - pg_temp.at(0))::text || ' link'],
   'a base of three rows is found, the chain is verified from the one with the greatest seq, and nothing fails');
 SELECT is(pg_temp.tampered(':cut2; DELETE FROM public.log_chain_base'),
