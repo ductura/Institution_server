@@ -79,26 +79,37 @@ function codeOf(thrown: unknown): unknown {
   }
 }
 
+/** The one row's reference, or null; reading what withActor answered may throw. */
+function referenceOf(result: unknown): string | null {
+  const rows: unknown = (result as { rows?: unknown }).rows;
+  if (!Array.isArray(rows) || rows.length !== 1) return null;
+  const row: unknown = rows[0];
+  if (row === null || typeof row !== "object") return null;
+  const reference: unknown = (row as { reference?: unknown }).reference;
+  return typeof reference === "string" && REFERENCE.test(reference) ? reference : null;
+}
+
 /** The problem report port over a withActor; it never throws. */
 export function createProblemReportStore(withActor: WithActor): ProblemReportStore {
   return {
     async submit(token, report) {
-      let rows: unknown;
+      let result: unknown;
       try {
         const values = PROBLEM_REPORT_PARAMETERS.map((key) => report[key]);
-        const result = await withActor(token, (tx) =>
+        result = await withActor(token, (tx) =>
           tx.query<{ reference: unknown }>(SUBMIT_SQL, values),
         );
-        rows = result.rows;
       } catch (thrown) {
         return fail(KNOWN.get(codeOf(thrown)) ?? PROBLEM_REPORT_DATABASE_ERROR);
       }
-      if (!Array.isArray(rows) || rows.length !== 1) return fail(PROBLEM_REPORT_ROW_MALFORMED);
-      const row: unknown = rows[0];
-      if (row === null || typeof row !== "object") return fail(PROBLEM_REPORT_ROW_MALFORMED);
-      const reference = (row as { reference?: unknown }).reference;
-      if (typeof reference !== "string" || !REFERENCE.test(reference))
-        return fail(PROBLEM_REPORT_ROW_MALFORMED);
+      let reference: string | null;
+      try {
+        // A getter or Proxy in the answer must not escape as a rejected promise.
+        reference = referenceOf(result);
+      } catch {
+        reference = null;
+      }
+      if (reference === null) return fail(PROBLEM_REPORT_ROW_MALFORMED);
       return { ok: true, value: reference };
     },
   };

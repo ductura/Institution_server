@@ -171,6 +171,35 @@ describe("problem report port: rows", () => {
     expect(await submit({ rows })).toEqual(MALFORMED);
   });
 
+  // QA c.6944920837: reading what withActor answered can throw too (a getter
+  // or a Proxy); that is row_malformed, never a rejected promise or a message.
+  const boom = () => {
+    throw new Error(SECRET);
+  };
+  const revoked = Proxy.revocable([], {});
+  revoked.revoke();
+  it.each([
+    ["a throwing reference getter", () => [Object.defineProperty({}, "reference", { get: boom })]],
+    ["a row Proxy with a throwing get", () => [new Proxy({ reference: REFERENCE }, { get: boom })]],
+    ["rows with a throwing length", () => new Proxy([{ reference: REFERENCE }], { get: boom })],
+    ["a revoked rows Proxy", () => revoked.proxy],
+    [
+      "a throwing index getter",
+      () => Object.defineProperty([{ reference: REFERENCE }], 0, { get: boom }),
+    ],
+  ])("%s is row_malformed and nothing is thrown", async (_name, rows) => {
+    const outcome = await submit({ rows: rows() });
+    expect(outcome).toEqual(MALFORMED);
+    expect(JSON.stringify(outcome)).not.toContain(SECRET);
+  });
+
+  it("a result whose rows getter throws, or no result at all, is row_malformed", async () => {
+    for (const result of [Object.defineProperty({}, "rows", { get: boom }), null, undefined]) {
+      const withActor = (async () => result) as unknown as WithActor;
+      expect(await createProblemReportStore(withActor).submit(TOKEN, REPORT)).toEqual(MALFORMED);
+    }
+  });
+
   it.each([
     1234567890,
     null,
