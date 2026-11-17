@@ -84,10 +84,10 @@ describe("my assignment work: refusals", () => {
     ["trailing CRLF", `${TOKEN}\r\n`],
     ["trailing LF", `${TOKEN}\n`],
     ["tab", `${TOKEN.slice(1)}\t`],
-    ["NBSP", `${TOKEN.slice(1)} `],
+    ["NBSP", `${TOKEN.slice(1)}\u00a0`],
     ["DEL", `${TOKEN.slice(1)}\u007f`],
-    ["U+2028", `${TOKEN.slice(1)} `],
-    ["U+2029", `${TOKEN.slice(1)} `],
+    ["U+2028", `${TOKEN.slice(1)}\u2028`],
+    ["U+2029", `${TOKEN.slice(1)}\u2029`],
     ["padding", `${TOKEN.slice(1)}=`],
   ])("refuses a token that is %s before the database", async (_name, token) => {
     const r = reader([row(A)]);
@@ -103,6 +103,17 @@ describe("my assignment work: refusals", () => {
     ["ZD403", sqlError("ZD403")],
     ["no code", new Error("x")],
     ["a numeric code", sqlError(401)],
+    [
+      "a Proxy that throws",
+      new Proxy(new Error("x"), {
+        has() {
+          throw new Error("proxy");
+        },
+        get() {
+          throw new Error("proxy");
+        },
+      }),
+    ],
     [
       "a throwing code getter",
       Object.defineProperty(new Error("x"), "code", {
@@ -130,6 +141,14 @@ describe("my assignment work: refusals", () => {
     },
   );
   const inherited = Object.create(row(A)) as object;
+  const getter = Object.defineProperty(row(B, "d"), "assignment_id", {
+    enumerable: true,
+    get() {
+      throw new Error("getter");
+    },
+  });
+  // JSON.parse makes `__proto__` an own key and keeps Object.prototype; only `inherited`
+  // above proves that a column from the prototype is none.
   const ownProto = JSON.parse(
     `{"__proto__": ${JSON.stringify(row(A))}, "toString": "${A}", "document_id": null, "submitted_revision": null}`,
   ) as object;
@@ -139,7 +158,8 @@ describe("my assignment work: refusals", () => {
     ["a string row", [A]],
     ["a throwing Proxy row", [throwing]],
     ["only inherited columns", [inherited]],
-    ["own __proto__ and toString instead of assignment_id", [ownProto]],
+    ["a throwing assignment_id getter", [getter]],
+    ["own __proto__ and toString keys, no assignment_id", [ownProto]],
     ["no assignment_id", [JSON.parse('{"document_id": null, "submitted_revision": null}')]],
     ...(
       [
@@ -148,10 +168,10 @@ describe("my assignment work: refusals", () => {
         A.toUpperCase(),
         A.replace(/-/g, ""),
         ` ${A}`,
-        ...["\n", "\r\n", "\t", " ", "\u007f", " ", " ", " "].map((s) => A + s),
+        ...["\n", "\r\n", "\t", "\u00a0", "\u007f", "\u2028", "\u2029", " "].map((s) => A + s),
       ] as unknown[]
     ).map((id): [string, unknown] => [`assignment_id ${JSON.stringify(id)}`, [row(id)]]),
-    ...(["", " d", "d ", "d\u0000", "d ", "x".repeat(257), 7, false] as unknown[]).map(
+    ...(["", " d", "d ", "d\u0000", "d\u2028", "x".repeat(257), 7, false] as unknown[]).map(
       (d): [string, unknown] => [`document_id ${JSON.stringify(d)}`, [row(A, d)]],
     ),
     ...(["0", 0, "-1", "+1", "1.0", "01", "9007199254740992", 1.5, true, ""] as unknown[]).map(
@@ -184,6 +204,11 @@ describe("my assignment work: the state per assignment", () => {
   it("gives one state per assignment, ordered by assignmentId", async () => {
     const astral = `${"x".repeat(255)}\u{1f4dd}`;
     const r = reader([row(C, "d3", "4"), row(B, astral), row(A), row(C, "d4", 4), row(B, "d2")]);
+    const first = reader([row(A, "d", "1"), row(A, "e", 1)]);
+    expect(await first.work.read(TOKEN)).toEqual({
+      ok: true,
+      value: [{ assignmentId: A, workState: "submitted" }],
+    });
     expect(await r.work.read(TOKEN)).toEqual({
       ok: true,
       value: [

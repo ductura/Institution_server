@@ -58,7 +58,11 @@ const fail = (e: AppError): { ok: false; error: AppError } => ({ ok: false, erro
 const own = (row: object, key: string): unknown =>
   Object.hasOwn(row, key) ? (row as Record<string, unknown>)[key] : undefined;
 
-/** A document id as `evidence.document` allows it: 1 to 256 code points, trimmed, no control characters. */
+/**
+ * A document id: 1 to 256 code points as `length()` counts, trimmed, no control characters.
+ * Stricter than the CHECK of `evidence.document` (JS trim and C1 controls); ids are
+ * generated uuids, so no real id is refused.
+ */
 function isDocumentId(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -69,17 +73,17 @@ function isDocumentId(value: unknown): value is string {
   );
 }
 
-/** One row as [assignmentId, state], or null when it is not what the function returns. */
-function workOf(row: unknown): [string, WorkState] | null {
+/** One row as [assignmentId, state, revision], or null when it is not what the function returns. */
+function workOf(row: unknown): [string, WorkState, number | null] | null {
   if (typeof row !== "object" || row === null) return null;
   const id = own(row, "assignment_id");
   const document = own(row, "document_id");
   const revision = own(row, "submitted_revision");
   if (typeof id !== "string" || !UUID.test(id)) return null;
   if (document !== null && !isDocumentId(document)) return null;
-  if (revision === null) return [id, document === null ? "not_started" : "in_progress"];
+  if (revision === null) return [id, document === null ? "not_started" : "in_progress", null];
   const n = count(revision);
-  return n !== null && n >= 1 && document !== null ? [id, "submitted"] : null;
+  return n !== null && n >= 1 && document !== null ? [id, "submitted", n] : null;
 }
 
 function codeOf(thrown: unknown): string | undefined {
@@ -94,14 +98,14 @@ function codeOf(thrown: unknown): string | undefined {
 /** The state per assignment; repeated rows (several documents) must agree, else null. */
 function statesOf(rows: unknown): AssignmentWork[] | null {
   if (!Array.isArray(rows)) return null;
-  const states = new Map<string, { state: WorkState; revision: unknown }>();
+  const states = new Map<string, { state: WorkState; revision: number | null }>();
   for (const row of rows) {
     const work = workOf(row);
     if (work === null) return null;
-    const revision = count(own(row as object, "submitted_revision"));
-    const seen = states.get(work[0]);
-    if (seen !== undefined && (seen.state !== work[1] || seen.revision !== revision)) return null;
-    states.set(work[0], { state: work[1], revision });
+    const [id, state, revision] = work;
+    const seen = states.get(id);
+    if (seen !== undefined && (seen.state !== state || seen.revision !== revision)) return null;
+    states.set(id, { state, revision });
   }
   return [...states]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
