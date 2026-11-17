@@ -12,6 +12,7 @@ import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
 import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
 import {
   AREA_NAMES,
+  createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
@@ -24,6 +25,13 @@ import {
 // contract and no handler must be there. After the task the list only shrinks.
 // (`submission.submit.post`: the table's `submission.post` has no name part,
 // which checkRoute refuses.)
+/** The course routes of DAN-852, mounted by the entry point since 852-5a, in DAN_803 order. */
+const INSTITUTION_COURSE_ROUTES = [
+  "institution.courses.post",
+  "institution.enrollment-code.post",
+  "institution.enrollment-code-revocation.post",
+] as const;
+
 export const DAN_803: readonly string[] = [
   "student.assignments.get",
   "support.problem-report.post",
@@ -94,6 +102,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createProblemReportRouteFor(databases.main)",
     ids: ["support.problem-report.post"],
     routes: () => [createProblemReportRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // DAN-852-5a: the three course routes over the main database.
+    call: "createInstitutionCourseRoutesFor(databases.main)",
+    ids: [...INSTITUTION_COURSE_ROUTES],
+    routes: () => createInstitutionCourseRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -183,9 +197,9 @@ describe("CONTRACT_ONLY", () => {
     ).toEqual([]);
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
-      // With nothing mounted, the WebAuthn routes (mounted since 840-3f1) and the
-      // problem report (mounted since 851-2d2a) are missing too.
-      ["support.problem-report.post", ...DAN_806, ...DAN_840].map(
+      // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
+      // problem report (851-2d2a) and the course routes (852-5a) are missing too.
+      ["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840].map(
         (id) => `${id}: contract without a handler, not in CONTRACT_ONLY`,
       ),
     );
@@ -208,6 +222,7 @@ describe("routes the entry point mounts itself", () => {
       "profile.interface-locale.get",
       "profile.interface-locale.post",
       "support.problem-report.post",
+      ...INSTITUTION_COURSE_ROUTES,
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
@@ -217,6 +232,25 @@ describe("routes the entry point mounts itself", () => {
     expect(mounted()).toContain("profile.interface-locale.post");
     expect(mounted()).toContain("support.problem-report.post");
     expect(CONTRACT_ONLY).not.toContain("support.problem-report.post");
+    for (const id of INSTITUTION_COURSE_ROUTES) {
+      expect(mounted()).toContain(id);
+      expect(CONTRACT_ONLY).not.toContain(id);
+    }
+  });
+
+  it("the course routes commented out, over another database or with no argument are not a mount", () => {
+    const call = "createInstitutionCourseRoutesFor(databases.main)";
+    for (const entry of [
+      `// ...${call},`,
+      `/* ...${call}, */`,
+      "",
+      "...createInstitutionCourseRoutesFor(databases.admin),",
+      "...createInstitutionCourseRoutesFor(fakeMain),",
+      "...createInstitutionCourseRoutesFor(),",
+    ]) {
+      expect(entryMounted(entry)).toEqual([]);
+    }
+    expect(entryMounted(`routes: [\n  ...${call},\n]`)).toEqual([...INSTITUTION_COURSE_ROUTES]);
   });
 
   it("the problem report commented out, over another database or with no argument is not a mount", () => {
