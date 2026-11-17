@@ -3,6 +3,11 @@
 // database answers ZD403 for another person's, an unknown or a malformed work
 // alike (pgTAP 115), and the port gives all of them one answer. Negative cases
 // first. Every token, id and name below is invented.
+// Every assertion of Ductus my-access-log.test.ts and access-log-days.test.ts
+// at b36c82b about the first-page read and the row check is kept here. Those
+// about the cursor, the Zagreb days, a repeated id and merging pages move with
+// that code to DAN-859-2; those about console.error do not apply (nothing is
+// logged here, the reason is returned instead).
 import { describe, expect, it } from "vitest";
 
 import { createMyAccessLogReader } from "./my-access-log.ts";
@@ -58,7 +63,7 @@ describe("my access log: refusals", () => {
     ["trailing CRLF", `${TOKEN}\r\n`],
     ["trailing LF", `${TOKEN}\n`],
     ["tab", `${TOKEN.slice(1)}\t`],
-    ["NBSP", `${TOKEN.slice(1)} `],
+    ["NBSP", `${TOKEN.slice(1)}\u00a0`],
     ["DEL", `${TOKEN.slice(1)}\u007f`],
     ["padding", `${TOKEN.slice(1)}=`],
   ];
@@ -72,7 +77,7 @@ describe("my access log: refusals", () => {
     ["empty", ""],
     ["257 characters", "d".repeat(257)],
     ["a space at the edge", ` ${DOC}`],
-    ["NBSP at the edge", `${DOC} `],
+    ["NBSP at the edge", `${DOC}\u00a0`],
     ["a tab", `dokument\t1`],
     ["CR", `dokument\r1`],
     ["LF", `dokument\n1`],
@@ -96,12 +101,43 @@ describe("my access log: refusals", () => {
     ["a microsecond", { opened_at: "2026-11-10T13:10:00.000001Z" }],
     ["half a name", { reader_family_name: null }],
     ["a name over 255 code points", { reader_given_name: "đ".repeat(256) }],
+    // Ductus access-log-days.test.ts cases 4, 8, 9a and 9b at b36c82b.
+    ["minutes off the grid", { opened_at: new Date("2026-11-10T13:07:00Z") }],
+    ["seconds off the grid", { opened_at: new Date("2026-11-10T13:10:30Z") }],
+    ["a millisecond off the grid", { opened_at: new Date("2026-11-10T13:10:00.001Z") }],
+    ["an empty name", { reader_given_name: "" }],
+    ["an id that is no uuid", { entry_id: "abc" }],
+    ["a time that is no instant", { opened_at: "yesterday" }],
+    ["an invalid date", { opened_at: new Date(Number.NaN) }],
+    ["no time", { opened_at: null }],
+    ["a date alone", { opened_at: "2026-11-10" }],
+    ["a time in another format", { opened_at: "Tue, 10 Nov 2026 13:10:00" }],
+    ["999999 microseconds", { opened_at: "2026-11-10T13:09:59.999999Z" }],
+    ["999 microseconds", { opened_at: "2026-11-10T13:10:00.000999Z" }],
+    ["a microsecond with an offset", { opened_at: "2026-11-10T14:10:00.000001+01:00" }],
+    ["nonzero milliseconds as text", { opened_at: "2026-11-10T13:10:00.001Z" }],
   ];
   it.each(rows)("makes the log unavailable for a row with %s", async (_name, change) => {
     const r = reader([{ ...ROW, ...change }]);
     expect(await r.log.read(TOKEN, DOC)).toEqual({
       status: "unavailable",
       reason: "row_malformed",
+    });
+  });
+
+  it("reads another person's work exactly as an unknown work, with no error text", async () => {
+    const canary = "kanarinac-dnevnik-3f9c";
+    const r = reader({
+      thrown: Object.assign(new Error(`do not leak ${canary}`), { code: "ZD403" }),
+    });
+    const foreign = await r.log.read(TOKEN, "rad-tudji-9");
+    expect(await r.log.read(TOKEN, "rad-nepostojeci")).toEqual(foreign);
+    expect(JSON.stringify(foreign)).not.toContain(canary);
+    const odd = await reader({ thrown: sqlError(`bad ${canary}`) }).log.read(TOKEN, DOC);
+    expect(odd).toEqual({ status: "unavailable", reason: "unknown" });
+    expect(await reader({ thrown: sqlError("ZD422") }).log.read(TOKEN, DOC)).toEqual({
+      status: "unavailable",
+      reason: "ZD422",
     });
   });
 
@@ -131,7 +167,7 @@ describe("my access log: refusals", () => {
 describe("my access log: the student's own", () => {
   it("names the caller only through the token, in one statement of one transaction", async () => {
     const r = reader([ROW]);
-    const doc = `d${" ".repeat(2)}${"x".repeat(253)}`;
+    const doc = `d${"\u00a0".repeat(2)}${"x".repeat(253)}`;
     await r.log.read(TOKEN, doc);
     expect(r.transactions()).toBe(1);
     expect(r.seen).toEqual([
@@ -175,6 +211,34 @@ describe("my access log: the student's own", () => {
         },
       ],
       next: null,
+    });
+  });
+
+  it("reads an empty log as ok with no entry, and counts nothing", async () => {
+    expect(await reader([]).log.read(TOKEN, DOC)).toEqual({
+      status: "ok",
+      entries: [],
+      next: null,
+    });
+    const read = await reader([ROW]).log.read(TOKEN, DOC);
+    expect(JSON.stringify(read)).not.toMatch(/"(count|total|duration|visits)"/);
+  });
+
+  // Ductus access-log-days.test.ts cases 7, 9a and 9b at b36c82b.
+  it.each([
+    ["Z", "2026-11-10T13:10:00Z"],
+    ["an offset", "2026-11-10T14:10:00+01:00"],
+    ["a zero fraction", "2026-11-10T13:10:00.0Z"],
+    ["exactly milliseconds", "2026-11-10T13:10:00.000Z"],
+    ["six zero digits", "2026-11-10T13:10:00.000000Z"],
+  ])("reads a time given as text with %s as the same instant", async (_name, openedAt) => {
+    const read = await reader([{ ...ROW, opened_at: openedAt, reader_role: null }]).log.read(
+      TOKEN,
+      DOC,
+    );
+    expect(read.status === "ok" && read.entries[0]).toMatchObject({
+      at: Date.UTC(2026, 10, 10, 13, 10),
+      role: "unknown",
     });
   });
 
