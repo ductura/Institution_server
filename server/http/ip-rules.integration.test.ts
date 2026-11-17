@@ -20,6 +20,7 @@ import type { Route } from "./router.ts";
 import { type Running, startServer } from "./start.ts";
 
 const OPS = "/api/v1/ops/ip-rules";
+const TOKEN = "Izmisljeni_token-pravila_mreze_000000000001";
 const READ = "/api/v1/student/assignments";
 const read = ROUTES.find((route) => route.id === "student.assignments.get");
 if (read === undefined) throw new Error("no contract student.assignments.get");
@@ -50,13 +51,16 @@ async function start(options: { networks: () => AllowedNetworks; trusted?: strin
       trustedProxies: parseTrustedProxies(options.trusted) ?? [],
       rateLimiter: { check: (r) => (limited.push(r.url ?? ""), limiter.check(r)) },
       allowedNetworks: options.networks,
+      // Step 8 (DAN-842-1) is open here, so only step 3 decides.
+      secondFactor: async () => "confirmed",
     }),
     routes: [counting(OPS, calls), counting(READ, calls)],
     databases: createDatabases(),
   });
   const port = server.port;
-  const get = (path: string, headers: Record<string, string> = {}) =>
+  const get = (path: string, extra: Record<string, string> = {}) =>
     new Promise<{ status: number; body: string; connection?: string }>((resolve, reject) => {
+      const headers = { cookie: `__Host-ductus_session=${TOKEN}`, ...extra };
       const req = httpRequest({ host: "127.0.0.1", port, path, headers, agent: false }, (res) => {
         let body = "";
         res.on("data", (chunk: Buffer) => (body += chunk.toString("utf8")));

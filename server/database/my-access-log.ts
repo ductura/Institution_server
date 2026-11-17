@@ -9,7 +9,9 @@
 // (docs/CODE_STYLE.md §8; text in locales/hr.json under `myAccessLog`) instead
 // of Ductus `kind`, nothing is logged and no SQLSTATE leaves the port, a
 // throwing `code` getter is a database error, and the rows stay in the order
-// read; days and the cursor of a continuation come in DAN-859-2.
+// read; the Zagreb days come in DAN-859-2b. A continuation (DAN-859-2a,
+// contract Ductus#1836) takes the cursor of readMyAccessLog and the "older
+// only" filter of readMyAccessLogPage in my-access-log-pages.ts at b36c82b.
 
 import type { AppError, Result } from "../domain/index.ts";
 
@@ -34,9 +36,15 @@ export const MY_ACCESS_LOG_DATABASE_ERROR = error(
   "MY_ACCESS_LOG_DATABASE_ERROR",
   "myAccessLog.database_error",
 );
+/** A cursor that is not an instant on the grid and a lower-case uuid; never sent to the database. */
+export const MY_ACCESS_LOG_CURSOR_INVALID = error(
+  "MY_ACCESS_LOG_CURSOR_INVALID",
+  "myAccessLog.cursor_invalid",
+);
 export const MY_ACCESS_LOG_ERRORS: readonly AppError[] = [
   MY_ACCESS_LOG_UNAUTHENTICATED,
   MY_ACCESS_LOG_NOT_FOUND,
+  MY_ACCESS_LOG_CURSOR_INVALID,
   MY_ACCESS_LOG_ROW_MALFORMED,
   MY_ACCESS_LOG_DATABASE_ERROR,
 ];
@@ -72,7 +80,12 @@ export type AccessLogCursor = { beforeAt: string; beforeId: string };
 export type MyAccessLogPage = { entries: AccessLogEntry[]; next: AccessLogCursor | null };
 
 export type MyAccessLogReader = {
-  read(token: string | undefined, documentId: string): Promise<Result<MyAccessLogPage>>;
+  /** Without a cursor the first page; with one only windows strictly older than `beforeAt`. */
+  read(
+    token: string | undefined,
+    documentId: string,
+    cursor?: AccessLogCursor | null,
+  ): Promise<Result<MyAccessLogPage>>;
 };
 
 type Row = Record<string, unknown>;
@@ -149,6 +162,20 @@ function entryOf(row: Row): AccessLogEntry | null {
   };
 }
 
+/** PostgreSQL has no year zero; past year 9999 toISOString is no longer the RPC's text shape. */
+const FIRST_INSTANT = Date.parse("0001-01-01T00:00:00Z");
+const PAST_LAST_INSTANT = Date.parse("+010000-01-01T00:00:00Z");
+
+/** The cursor as the RPC takes it, an ISO instant on the grid and a lower-case uuid, or null. */
+function beforeOf(cursor: AccessLogCursor): [string, string] | null {
+  const { beforeAt, beforeId } = cursor;
+  if (typeof beforeAt !== "string" || typeof beforeId !== "string") return null;
+  const ms = zonedInstantOf(beforeAt);
+  if (!Number.isFinite(ms) || ms % WINDOW_MS !== 0) return null;
+  if (ms < FIRST_INSTANT || ms >= PAST_LAST_INSTANT || !UUID.test(beforeId)) return null;
+  return [new Date(ms).toISOString(), beforeId];
+}
+
 /** The code of a database error; a getter or Proxy that throws has none. */
 const fail = (e: AppError): { ok: false; error: AppError } => ({ ok: false, error: e });
 
@@ -163,14 +190,16 @@ function codeOf(thrown: unknown): string | undefined {
 
 export function createMyAccessLogReader(withActor: WithActor): MyAccessLogReader {
   return {
-    async read(token, documentId) {
+    async read(token, documentId, cursor) {
       if (token === undefined || !TOKEN.test(token)) return fail(MY_ACCESS_LOG_UNAUTHENTICATED);
       if (!isDocumentId(documentId)) return fail(MY_ACCESS_LOG_NOT_FOUND);
+      const before = cursor === undefined || cursor === null ? [null, null] : beforeOf(cursor);
+      if (before === null) return fail(MY_ACCESS_LOG_CURSOR_INVALID);
       let rows: Row[];
       try {
         rows = await withActor(
           token,
-          async (tx) => (await tx.query<Row>(SQL, [documentId, ACCESS_LOG_PAGE, null, null])).rows,
+          async (tx) => (await tx.query<Row>(SQL, [documentId, ACCESS_LOG_PAGE, ...before])).rows,
         );
       } catch (error) {
         const code = codeOf(error);
@@ -178,11 +207,15 @@ export function createMyAccessLogReader(withActor: WithActor): MyAccessLogReader
         if (code === "ZD403") return fail(MY_ACCESS_LOG_NOT_FOUND);
         return fail(MY_ACCESS_LOG_DATABASE_ERROR);
       }
+      // A continuation shows only windows older than the cursor, as the RPC reads them;
+      // a row that is not (an opening written since, or a repeat) is left out, so
+      // `next` is always strictly older than the cursor and following it never loops.
+      const edge = before[0] === null ? Number.POSITIVE_INFINITY : Date.parse(before[0]);
       const entries: AccessLogEntry[] = [];
       for (const row of rows) {
         const entry = entryOf(row);
         if (entry === null) return fail(MY_ACCESS_LOG_ROW_MALFORMED);
-        entries.push(entry);
+        if (entry.at < edge) entries.push(entry);
       }
       let next: AccessLogCursor | null = null;
       if (entries.length >= ACCESS_LOG_PAGE) {

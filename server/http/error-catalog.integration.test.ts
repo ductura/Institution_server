@@ -68,7 +68,8 @@ beforeAll(async () => {
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
-    layers: { ...createLayers({ expectedOrigin: null }), originCheck: throwingLayer },
+    // The last step, so the router is the next to read the poisoned url.
+    layers: { ...createLayers({ expectedOrigin: null }), operatorPolicy: throwingLayer },
     databases: createDatabases(),
     shutdown: createShutdownCoordinator({ graceMs: 1_000 }),
     routes: [{ contract: HEALTH_ROUTE.contract, handle }],

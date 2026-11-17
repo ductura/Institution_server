@@ -1,4 +1,4 @@
-// Router of /api/v1 (docs/server-map.md §3, step 8). A route is its contract
+// Router of /api/v1 (docs/server-map.md §3, step 9). A route is its contract
 // from server/contracts plus a handler; the method and path come from the
 // contract only. Refusals are problem bodies (problem.ts) of the contract:
 // FALLBACK (404 not_found), METHOD_NOT_ALLOWED (405) and INTERNAL (500). Later steps (session, schema from the contract) attach here with

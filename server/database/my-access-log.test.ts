@@ -13,7 +13,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  ACCESS_LOG_PAGE,
+  type AccessLogCursor,
   createMyAccessLogReader,
+  MY_ACCESS_LOG_CURSOR_INVALID,
   MY_ACCESS_LOG_DATABASE_ERROR,
   MY_ACCESS_LOG_ERRORS,
   MY_ACCESS_LOG_NOT_FOUND,
@@ -77,10 +80,10 @@ describe("my access log errors (docs/CODE_STYLE.md §8)", () => {
     ).toEqual(MY_ACCESS_LOG_ERRORS.map((e) => e.messageKey).sort());
   });
 
-  it("lists four errors with distinct UPPER_SNAKE codes", () => {
-    expect(MY_ACCESS_LOG_ERRORS).toHaveLength(4);
+  it("lists five errors with distinct UPPER_SNAKE codes", () => {
+    expect(MY_ACCESS_LOG_ERRORS).toHaveLength(5);
     for (const { code } of MY_ACCESS_LOG_ERRORS) expect(code).toMatch(/^MY_ACCESS_LOG_[A-Z_]+$/);
-    expect(new Set(MY_ACCESS_LOG_ERRORS.map((e) => e.code)).size).toBe(4);
+    expect(new Set(MY_ACCESS_LOG_ERRORS.map((e) => e.code)).size).toBe(5);
   });
 });
 
@@ -323,5 +326,187 @@ describe("my access log: the student's own", () => {
       beforeAt: "2026-11-10T13:00:00.000Z",
       beforeId: "00000000-0000-4000-8000-000000000102",
     });
+  });
+});
+
+// DAN-859-2a (contract Ductus#1836 c.6946441810): a continuation from a cursor.
+// The cursor is the student's input; it never names whose log is read.
+const AT = "2026-11-10T13:00:00.000Z";
+const at = (beforeAt: string, beforeId = ID): AccessLogCursor => ({ beforeAt, beforeId });
+const CURSOR_INVALID = fail(MY_ACCESS_LOG_CURSOR_INVALID);
+
+describe("my access log: a cursor that is not one", () => {
+  it.each([
+    ...[
+      "",
+      "jucer",
+      "2026-11-10T13:00:00",
+      "2026-02-30T13:00:00Z",
+      "2026-11-09T24:00:00Z",
+      "2026-11-10T13:00:60Z",
+      "2026-11-10T13:00:00.000001Z",
+      "2026-11-10T13:00:00.001Z",
+      "2026-11-10T13:47:00Z",
+      "0000-01-01T00:00:00Z",
+      "0001-01-01T00:00:00+01:00",
+      "9999-12-31T23:55:00-01:00",
+      `${AT}\n`,
+      `${AT}\r\n`,
+      `${AT}\t`,
+      `${AT}\u00a0`,
+      `${AT}\u007f`,
+      ` ${AT}`,
+      "2026-11-10T14:00:00+01",
+    ].map((beforeAt) => at(beforeAt)),
+    ...[
+      ID.toUpperCase(),
+      ID.replace("e1", "g1"),
+      "",
+      ID.slice(1),
+      `${ID}0`,
+      `${ID}\n`,
+      `${ID}\u00a0`,
+      `${ID}\u007f`,
+    ].map((beforeId) => at(AT, beforeId)),
+    { beforeAt: 1, beforeId: ID } as unknown as AccessLogCursor,
+  ])("refuses %j before the database, with no text of it", async (cursor) => {
+    const r = reader([ROW]);
+    expect(await r.log.read(TOKEN, DOC, cursor)).toEqual(CURSOR_INVALID);
+    expect(r.transactions()).toBe(0);
+  });
+
+  it("checks the token and the work before the cursor, and a refusal reads as without one", async () => {
+    const bad = at("jucer");
+    expect(await reader([ROW]).log.read("kratak", DOC, bad)).toEqual(UNAUTHENTICATED);
+    expect(await reader([ROW]).log.read(TOKEN, " ", bad)).toEqual(NOT_FOUND);
+    for (const [code, answer] of [
+      ["ZD403", NOT_FOUND],
+      ["ZD401", UNAUTHENTICATED],
+    ] as const) {
+      expect(await reader({ thrown: sqlError(code) }).log.read(TOKEN, DOC, at(AT))).toEqual(answer);
+    }
+  });
+
+  it("leaves out a row not older than the cursor, and never points next at it", async () => {
+    const page = Array.from({ length: ACCESS_LOG_PAGE }, (_, i) => ({
+      ...ROW,
+      entry_id: `00000000-0000-4000-8000-${String(100 + i).padStart(12, "0")}`,
+      opened_at: new Date(Date.parse(AT) - 300_000 * (i + 1)),
+    }));
+    const newer = [
+      { ...ROW, opened_at: AT },
+      { ...ROW, entry_id: page[0]!.entry_id, opened_at: "2026-11-10T13:05:00Z" },
+    ];
+    const read = await reader([...newer, ...page]).log.read(TOKEN, DOC, at(AT));
+    expect(read.ok && read.value.entries.map((e) => e.id)).toEqual(page.map((r) => r.entry_id));
+    expect(read.ok && read.value.next?.beforeAt).toBe(
+      new Date(Date.parse(AT) - 300_000 * 50).toISOString(),
+    );
+    const short = await reader([newer[0]!, ...page.slice(1)]).log.read(TOKEN, DOC, at(AT));
+    expect(short.ok && short.value.next).toBeNull();
+    const malformed = await reader([{ ...ROW, opened_at: AT, entry_id: "abc" }]).log.read(
+      TOKEN,
+      DOC,
+      at(AT),
+    );
+    expect(malformed).toEqual(ROW_MALFORMED);
+  });
+});
+
+describe("my access log: a continuation", () => {
+  it.each([
+    [AT, AT],
+    ["2026-11-10T14:00:00+01:00", AT],
+    ["2026-11-10T14:00:00+0100", AT],
+    ["2026-11-10t13:00:00z", AT],
+    ["2026-11-10T13:00:00.000000Z", AT],
+    ["0001-01-01T00:00:00Z", "0001-01-01T00:00:00.000Z"],
+    ["9999-12-31T23:55:00Z", "9999-12-31T23:55:00.000Z"],
+    ["2028-02-29T00:00:00Z", "2028-02-29T00:00:00.000Z"],
+  ])("sends %s to the read as %s, the token only to withActor", async (beforeAt, sent) => {
+    const unknownId = "00000000-0000-4000-8000-00000000abcd";
+    const r = reader([]);
+    expect(await r.log.read(TOKEN, DOC, at(beforeAt, unknownId))).toEqual({
+      ok: true,
+      value: { entries: [], next: null },
+    });
+    expect(r.seen).toEqual([
+      {
+        token: TOKEN,
+        text: "SELECT * FROM app.read_my_access_log($1, $2, $3, $4)",
+        values: [DOC, 50, sent, unknownId],
+      },
+    ]);
+    expect(r.transactions()).toBe(1);
+  });
+
+  it("reads a null cursor as the first page", async () => {
+    const r = reader([]);
+    await r.log.read(TOKEN, DOC, null);
+    expect(r.seen[0]?.values).toEqual([DOC, 50, null, null]);
+  });
+
+  /** The read as migration 20261107180000 states it: older windows, the whole edge window. */
+  function rpc(log: Record<string, unknown>[]) {
+    let reads = 0;
+    const withActor = (async (_token, fn) =>
+      fn({
+        async query(_text, values) {
+          reads += 1;
+          const [, limit, beforeAt] = values as [string, number, string | null];
+          const t = (r: Record<string, unknown>) => (r.opened_at as Date).getTime();
+          const mine = log.filter((r) => beforeAt === null || t(r) < Date.parse(beforeAt));
+          const edge =
+            mine
+              .map(t)
+              .sort((a, b) => b - a)
+              .slice(0, limit)
+              .at(-1) ?? Infinity;
+          const rows = mine
+            .filter((r) => t(r) >= edge)
+            .sort(
+              (a, b) => t(b) - t(a) || ((a.entry_id as string) < (b.entry_id as string) ? 1 : -1),
+            );
+          return { rows: rows as never[], rowCount: rows.length };
+        },
+      })) as WithActor;
+    return { log: createMyAccessLogReader(withActor), reads: () => reads };
+  }
+  const row = (n: number, window = n) => ({
+    ...ROW,
+    entry_id: `00000000-0000-4000-8000-${n.toString(16).padStart(12, "0")}`,
+    opened_at: new Date(Date.parse(AT) - window * 300_000),
+  });
+  async function follow(log: Record<string, unknown>[]) {
+    const r = rpc(log);
+    const pages: string[][] = [];
+    let cursor: AccessLogCursor | null = null;
+    do {
+      const read = await r.log.read(TOKEN, DOC, cursor);
+      if (!read.ok) throw new Error(read.error.code);
+      pages.push(read.value.entries.map((e) => e.id));
+      cursor = read.value.next;
+    } while (cursor !== null && pages.length <= log.length);
+    return { pages, reads: r.reads() };
+  }
+
+  it("reaches every one of 1001 openings exactly once by following next", async () => {
+    const log = Array.from({ length: 1001 }, (_, i) => row(i + 1));
+    const { pages, reads } = await follow(log);
+    expect(reads).toBe(Math.ceil(1001 / ACCESS_LOG_PAGE));
+    expect(pages.flat()).toEqual(log.map((r) => r.entry_id));
+  });
+
+  it("takes the whole edge window on the first page and repeats nothing after it", async () => {
+    const log = [
+      ...Array.from({ length: 49 }, (_, i) => row(i + 1)),
+      row(7003, 50),
+      row(7001, 50),
+      row(7002, 50),
+      ...Array.from({ length: 5 }, (_, i) => row(i + 53)),
+    ];
+    const { pages } = await follow(log);
+    expect(pages.map((p) => p.length)).toEqual([52, 5]);
+    expect([...pages.flat()].sort()).toEqual(log.map((r) => r.entry_id).sort());
   });
 });

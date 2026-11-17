@@ -105,6 +105,11 @@ export {
   type Layers,
   type Step,
 } from "./pipeline.ts";
+export {
+  NO_SECOND_FACTOR,
+  operatorPolicyLayer,
+  type SecondFactor,
+} from "./operator-policy-layer.ts";
 export { clientIpOf, parseTrustedProxies, type TrustedProxies } from "../traffic/index.ts";
 export {
   createSettingsValuesPutRoute,
