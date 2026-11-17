@@ -68,13 +68,13 @@ describe("the refusals each route promises", () => {
 });
 
 describe("every route needs a session and takes a closed body", () => {
-  it.each(IDS)("%s is signed_in, a POST with JSON, and has no handler yet", (id) => {
+  it.each(IDS)("%s is signed_in, a POST with JSON, and mounted (840-3f1)", (id) => {
     const r = route(id);
     expect(r.access).toBe("signed_in");
     expect(r.method).toBe("POST");
     expect(r.request.contentType).toBe("application/json");
     expect(r.errors.some((e) => e.status === 401 && e.code === "unauthorized")).toBe(true);
-    expect(CONTRACT_ONLY).toContain(id);
+    expect(CONTRACT_ONLY).not.toContain(id);
   });
 
   const challenge = { purpose: "assertion" };

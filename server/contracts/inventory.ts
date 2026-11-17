@@ -125,9 +125,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "teacher.fast-path.post",
   "settings.catalogue.get",
   "settings.values.get",
-  "auth.webauthn-challenge.post",
-  "auth.webauthn-registration.post",
-  "auth.webauthn-assertion.post",
 ];
 
 /**
