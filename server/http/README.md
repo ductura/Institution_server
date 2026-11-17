@@ -6,6 +6,7 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 
 - `startServer` pokreće `node:http` poslužitelj i propušta zahtjev kroz slojeve (`createPipeline`), zatim kroz router. Vraća stvarni port i `close()`. Greška pri slušanju (npr. `EADDRINUSE`) odbija obećanje s kodom greške.
 - `createRouter` traži rutu po metodi i putanji iz ugovora (`server/contracts`), s točnim podudaranjem i bez upita. Odbijanja imaju oblik ugovora:
+  - parametri putanje (DAN-857-1): segment ugovora `{ime}` hvata točno jedan neprazan segment zahtjeva, kako je poslan (još kodiran). Rukovatelj ga dobiva kao treći argument `params`: zamrznut objekt bez prototipa sa samo imenima iz ugovora (ruta bez parametara dobiva prazan; izravan pozivatelj ga smije izostaviti). Router ništa ne dekodira ni ne provjerava: ruta to radi sama, ID rada samo kroz `workIdFromPath` (`server/contracts`, S-1H.1-c), koji dekodira jednom. Dvije putanje ugovora koje bi isti zahtjev mogao pogoditi greška su pri izgradnji (`overlapping routes`). Točka-segment se odbija samo u poslanom obliku (`%2E%2E` stiže ruti kodiran). Sloj porijekla i ograničenje prometa i dalje traže doslovnu putanju ugovora; test čuva da nijedna putanja s parametrom nije ruta pružatelja identiteta ni ruta s HTML stranicom za 403;
   - nepoznata putanja: 404 `{"error":"not_found"}` (`FALLBACK`);
   - druga metoda: 405 `{"error":"method_not_allowed"}` uz `Allow`;
   - iznimka u rukovatelju: 500 `{"error":"internal"}` (`INTERNAL` iz ugovora, DAN-776), a zapisuje se samo događaj `server_error` (niže).
