@@ -130,6 +130,46 @@ describe("fake server over HTTP", () => {
     });
   });
 
+  it("the generated client reads the student's own access log page by page (DAN-904)", async () => {
+    const route = "student.access-log.get";
+    const vector = (name: string) => {
+      const v = VECTORS.find((x) => x.route === route && x.name === name);
+      if (v === undefined) throw new Error(`no vector ${name}`);
+      return v;
+    };
+    const as = (name: string) =>
+      createClient(`http://127.0.0.1:${port}`, (async (url: URL, init: RequestInit) =>
+        fetch(url, {
+          ...init,
+          headers: { ...vector(name).request.headers, [FAKE_VECTOR_HEADER]: name },
+        })) as typeof fetch);
+    const params = { documentId: "izmisljeni-rad-0001" };
+    const first = await as("first-page")(route, { params, query: {}, body: undefined });
+    expect(first).toEqual({
+      ok: true,
+      status: 200,
+      body: vector("first-page").response.body,
+      headers: {},
+    });
+    // The next page starts from the cursor the first one gave.
+    const next = (first.ok ? first.body.next : null) ?? {};
+    expect(await as("continued")(route, { params, query: next, body: undefined })).toEqual({
+      ok: true,
+      status: 200,
+      body: vector("continued").response.body,
+      headers: {},
+    });
+    for (const [name, status, code] of [
+      ["not-found-or-not-the-owner", 404, "not_found"],
+      ["unauthorized", 401, "unauthorized"],
+    ] as const)
+      expect(await as(name)(route, { params, query: {}, body: undefined })).toEqual({
+        ok: false,
+        status,
+        code,
+      });
+  });
+
   it("a health check without a pick gets its success vector", async () => {
     const res = await send("GET", "/api/v1/health");
     expect(res.status).toBe(200);
