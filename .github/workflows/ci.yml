@@ -340,6 +340,8 @@ jobs:
           # DAN-817 (E1, P6): a real evidence/commit on the stack is 200 with a verified
           # receipt and an object in the local S3; the same build under production is 503.
           PATH="$PGBIN:$PATH" node scripts/stack/vs1-commit-check.ts
+          # DAN-1003 (S-1H.3): own work yes, other's no over the stack's dist/server.js.
+          PATH="$PGBIN:$PATH" pnpm test:functional
           # Health reads no database: check that the server's own login reaches it.
           "$PGBIN/psql" "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54360/ductus" -tAc 'SELECT 1'
       # Also after a failed up, but not when the job stopped before it (then

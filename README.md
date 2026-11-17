@@ -40,7 +40,7 @@ Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm bu
 | `test-support/`     | Ostala pomagala za testove (`test-idp/`, `fake-kms/`, `malformed-signatures/`)                                                                        |
 | `docs/`             | Dokumentacija na hrvatskom; vidi [Pravilnik koda](docs/CODE_STYLE.md) i [Kartu servera](docs/server-map.md) (područja, dopušteni uvozi, tok zahtjeva) |
 | `scripts/`          | Alati repoa (lokalna lint pravila, gate, CI u `scripts/ci/`)                                                                                          |
-| `tests/`            | Testovi alata repoa (lint, formatiranje)                                                                                                              |
+| `tests/`            | Testovi alata repoa (lint, formatiranje) i funkcionalni testovi nad `dist/server.js` (`tests/functional/`)                                            |
 
 ## Lint
 
@@ -78,7 +78,7 @@ Vitest ima pet projekata. Projekt određuje sufiks datoteke, a `database` mapa `
 | `integration-pg` | `**/*.pg.integration.test.ts` (izuzeti iz `integration` i `database`) | Testovi ovlasti i paritet migracija PGlite/PostgreSQL ([test-support/database](test-support/database/README.md)) |
 
 Funkcionalna provjera: korisnik može otvoriti svoj dokument, a pokušaj pristupa tuđem dokumentu bude odbijen.
-Pokriva je `server/app.integration.test.ts`.
+Nad `dist/server.js` na stogu VS-1 pokriva je `pnpm test:functional` ([tests/functional](tests/functional/README.md), S-1H.3); stari kostur i dalje provjerava `server/app.integration.test.ts`.
 
 Svi podaci u testovima su izmišljeni (`student-a@primjer.invalid`).
 

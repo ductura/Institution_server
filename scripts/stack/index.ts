@@ -33,3 +33,6 @@ export {
   writeState,
 } from "./state.ts";
 export type { Repos, Revision, StackProcess, StackState } from "./state.ts";
+// DAN-1003: the functional tests (tests/functional) drive the stack's server as the commit check does.
+export { type Answer, commitRequest, post } from "./client.ts";
+export { INSTITUTION_SLUG } from "./evidence.ts";
