@@ -2,8 +2,8 @@
 // text yields a payload only as a valid v2 payload that is its own JCS form
 // and carries the row's id; anything else is refused with a closed reason.
 // The table "refused" is ported from Ductus sign-pending-receipt.test.ts at
-// 333e163 with the same assertions; the input classes and the property are new.
-import fc from "fast-check";
+// 333e163 with the same assertions; the input classes are new (the property
+// is in pending-receipt-text.property.test.ts).
 import { describe, expect, it } from "vitest";
 
 import { canonicalizeJcs } from "../domain/index.ts";
@@ -96,20 +96,5 @@ describe("controls: the row's own payload", () => {
   });
   it("NBSP in clientTransactionId is no control character", () => {
     expect(parse(RECEIPT, jcs({ clientTransactionId: "tx-1 " }))).toMatchObject({ ok: true });
-  });
-
-  it("a one-character change is refused or reads as another payload, never as the original", () => {
-    fc.assert(
-      fc.property(
-        fc.nat(TEXT.length - 1),
-        fc.constantFrom(...'0123456789abcdef"{}:, -xZ'),
-        (at, ch) => {
-          fc.pre(TEXT[at] !== ch);
-          const read = parse(RECEIPT, TEXT.slice(0, at) + ch + TEXT.slice(at + 1));
-          if (read.ok) expect(read.payload).not.toEqual(PAYLOAD);
-        },
-      ),
-      { numRuns: 300 },
-    );
   });
 });
