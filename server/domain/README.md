@@ -11,6 +11,7 @@ Područje domene (karta: [docs/server-map.md](../../docs/server-map.md)): čista
 | [json](json/README.md)                   | `src/domain/json.ts`              | Zajednički JSON tipovi i provjere                                                       |
 | [settings](settings/README.md)           | — (novo, S-1J-f)                  | Katalog postavki po razinama (D-298) i provjera pisanja                                 |
 | [jobs](jobs/README.md)                   | `src/application/jobs/job-body`   | Tijelo posla u redu: samo identifikatori (D-74), na `333e163` (DAN-820)                 |
+| [assignment](assignment/README.md)       | `src/domain/assignment`           | Jezik rada: zatvoreni skup i parser, na `4651a25` (DAN-909)                             |
 
 `result.ts` drži zajedničke tipove `Result<T>` i `AppError` (`{ code, messageKey }`, [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) §8); samo tipove, bez I/O-a.
 
