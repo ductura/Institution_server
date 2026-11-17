@@ -539,3 +539,25 @@ describe("outcomes of the enrolment code routes", () => {
     expect(calls.activity).toEqual([]);
   });
 });
+
+describe("an outcome never chooses its own answer (QA on #259)", () => {
+  it("a refusal carrying body, ok or a success field is still that refusal on every route", async () => {
+    const extra = { body: { code: CODE, id: ID, revoked: true }, ok: true, code: CODE, id: ID };
+    answer = async () => ({ status: "forbidden", ...extra }) as never;
+    issueAnswer = async () => ({ status: "forbidden", ...extra }) as never;
+    revokeAnswer = async () => ({ status: "forbidden", ...extra, revoked: true }) as never;
+    await start();
+    for (const got of [await post(good()), await issue(UNTIL_BODY), await revoke("{}")]) {
+      expect(codeOf(got)).toEqual([403, "forbidden"]);
+      expect(got.body).not.toContain(CODE);
+      expect(got.body).not.toContain(ID);
+    }
+    for (const status of [undefined, 403, { toString: () => "forbidden" }]) {
+      issueAnswer = async () => ({ status, body: { code: CODE } }) as never;
+      const got = await issue(UNTIL_BODY);
+      expect(codeOf(got)).toEqual([503, "unavailable"]);
+      expect(got.body).not.toContain(CODE);
+    }
+    expect(calls.activity).toEqual([]);
+  });
+});

@@ -105,7 +105,19 @@ async function readInstitutionJson(
   return null;
 }
 
-type Answer = { readonly body: Readonly<Record<string, unknown>> } | { readonly status: string };
+/**
+ * What a route answers, always built here from named fields: a 200 body, or
+ * the status of a refusal, never the outcome object itself, so no field an
+ * outcome carries (body, code, ok …) can choose the answer (QA on #259).
+ */
+type Answer =
+  | { readonly ok: true; readonly body: Readonly<Record<string, unknown>> }
+  | { readonly ok: false; readonly status: unknown };
+/** A refusal of this outcome's own status; a non-string status matches no refusal (503). */
+const refused = (outcome: { readonly status: unknown }): Answer => ({
+  ok: false,
+  status: outcome.status,
+});
 type Run = (token: string, value: unknown, courseId: string) => Promise<Answer>;
 
 /**
@@ -130,8 +142,10 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
         if (empty && !isEmptyObject(input.value)) return sendProblem(response, ...INVALID);
         try {
           const answer = await run(input.token, input.value, ids[0] ?? "");
-          if (!("body" in answer)) {
-            const [status, code] = refusals.get(answer.status) ?? [503, "unavailable"];
+          if (!answer.ok) {
+            const known =
+              typeof answer.status === "string" ? refusals.get(answer.status) : undefined;
+            const [status, code] = known ?? [503, "unavailable"];
             return sendProblem(response, status, code);
           }
           sendJson(response, 200, answer.body);
@@ -148,18 +162,24 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
   return [
     route("institution.courses.post", COURSE_REFUSALS, async (token, value) => {
       const outcome = await service.createCourse(token, value);
-      return outcome.status === "created" ? { body: { id: outcome.id } } : outcome;
+      return outcome.status === "created"
+        ? { ok: true, body: { id: outcome.id } }
+        : refused(outcome);
     }),
     route("institution.enrollment-code.post", CODE_REFUSALS, async (token, value, courseId) => {
       const outcome = await service.issueEnrollmentCode(token, courseId, value);
-      return outcome.status === "issued" ? { body: { code: outcome.code } } : outcome;
+      return outcome.status === "issued"
+        ? { ok: true, body: { code: outcome.code } }
+        : refused(outcome);
     }),
     route(
       "institution.enrollment-code-revocation.post",
       REVOKE_REFUSALS,
       async (token, _value, courseId) => {
         const outcome = await service.revokeEnrollmentCode(token, courseId);
-        return outcome.status === "revoked" ? { body: { revoked: outcome.revoked } } : outcome;
+        return outcome.status === "revoked"
+          ? { ok: true, body: { revoked: outcome.revoked } }
+          : refused(outcome);
       },
       true,
     ),
