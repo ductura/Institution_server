@@ -120,6 +120,10 @@ describe("the client sends the declared headers and nothing the caller adds", ()
     // @ts-expect-error One of the routes declares headers.
     await call(either, input);
     await call(either, { ...input, headers: { "ductus-protocol": "1" } });
+    const open = "evidence.open.post" as "evidence.open.post" | "platform.health.get";
+    // @ts-expect-error The same with open (QA FAIL c.6962480873).
+    await call(open, none);
+    await call(open, { ...none, headers: { "ductus-protocol": "1" } });
     const write = "evidence.open.post" as "evidence.open.post" | "evidence.commit.post";
     // @ts-expect-error "2" is not a protocol of open.
     await call(write, { ...none, headers: { "ductus-protocol": "2" } });
