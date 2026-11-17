@@ -317,7 +317,8 @@ describe("backup settings", () => {
     expect(defaultOf("backup.enabled")).toBe(false);
     expect(settingOf("backup.interval_hours")).toMatchObject({ default: 24, min: 1, max: 24 });
     expect(settingOf("backup.copies")).toMatchObject({ default: 30, min: 1, max: 30 });
-    expect(SETTINGS_CATALOGUE.some((d) => /backup.*(destination|encrypt)/.test(d.key))).toBe(false);
+    const fixed = /destination|target|bucket|storage|encrypt|cipher|cryptography/;
+    expect(SETTINGS_CATALOGUE.filter((d) => fixed.test(d.key))).toEqual([]);
   });
 
   it.each([
@@ -366,10 +367,10 @@ describe("backup settings", () => {
     { value: max },
   ];
   it.each([
-    ...notBoolean.map((value) => ["backup.enabled", value] as const),
-    ...notInteger(24).map((value) => ["backup.interval_hours", value] as const),
-    ...notInteger(30).map((value) => ["backup.copies", value] as const),
-  ])("refuse %s = %j", (key, value) => {
+    ...notBoolean.map((value) => ["backup.enabled", value, typeof value] as const),
+    ...notInteger(24).map((value) => ["backup.interval_hours", value, typeof value] as const),
+    ...notInteger(30).map((value) => ["backup.copies", value, typeof value] as const),
+  ])("refuse %s = %s (%s)", (key, value) => {
     expect(backup(key, value)).toBe("SETTING_INVALID_VALUE");
   });
 
@@ -400,7 +401,7 @@ describe("backup settings", () => {
     ["backup.interval_hours", 24],
     ["backup.copies", 1],
     ["backup.copies", 30],
-  ])("take %s = %j, null as removal and a lock", (key, value) => {
+  ])("take %s = %s, null as removal and a lock", (key, value) => {
     expect(backup(key, value)).toBe(null);
     expect(backup(key, null)).toBe(null);
     expect(backup(key, value, { locked: true })).toBe(null);

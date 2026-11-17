@@ -59,8 +59,9 @@ const rateLimit = (name: string, value: number): SettingDefinition =>
   });
 
 /**
- * The catalogue. Adding a key is a minor change of @ductura/contracts (its
- * vector of settings.catalogue.get must equal this list). The interface
+ * The catalogue. Adding a key changes the vector of settings.catalogue.get,
+ * which must equal this list; the release sees it as a patch of the fake
+ * server (@ductura/test-fakes, scripts/release/level.ts). The interface
  * language is not here: it keeps its own route (profile.interface-locale).
  */
 export const SETTINGS_CATALOGUE: readonly SettingDefinition[] = Object.freeze([
