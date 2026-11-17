@@ -22,7 +22,10 @@ const HOST = `${LABEL}(?:\\.${LABEL})*\\.${NOT_RESERVED}[a-z](?:[a-z0-9-]{0,61}[
 const PCHAR = "(?:[A-Za-z0-9._~!$&'()*+,;=:@/?-]|%[0-9A-Fa-f]{2})";
 // No dot segment, written or encoded (WHATWG reads %2e as a dot), no NUL.
 const NO_DOTS = `(?![\\s\\S]*(?:%2[eE]|%00|/\\.\\.?(?:[/?]|${END})))`;
-const URL_PATTERN = `^${NO_DOTS}(?:https://${HOST})?/(?![/?])${PCHAR}+${END}`;
+// DNS: the whole name is at most 253 characters (RFC 1035 2.3.4, without
+// the root dot); a host is only [a-z0-9.-] and ends at the first slash.
+const HOST_LENGTH = "(?=[a-z0-9.-]{1,253}/)";
+const URL_PATTERN = `^${NO_DOTS}(?:https://${HOST_LENGTH}${HOST})?/(?![/?])${PCHAR}+${END}`;
 
 const DOWNLOAD_SYSTEMS = ["windows", "macos"] as const;
 const DOWNLOAD_ARCHITECTURES = ["x64", "arm64"] as const;

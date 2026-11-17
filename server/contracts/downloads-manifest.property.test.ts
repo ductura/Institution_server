@@ -21,10 +21,13 @@ function accepts(url: string): boolean {
 // Labels built from pieces that hit the edges: the ACE prefix xn--, hyphens,
 // digits, and punycode tails that decode to nothing valid.
 const label = fc
-  .array(fc.constantFrom("xn--", "a", "z", "0", "9", "-", "--", "x", "n", "zz", "ab"), {
-    minLength: 1,
-    maxLength: 6,
-  })
+  .array(
+    fc.constantFrom("xn--", "a", "z", "0", "9", "-", "--", "x", "n", "zz", "ab", "a".repeat(30)),
+    {
+      minLength: 1,
+      maxLength: 6,
+    },
+  )
   .map((parts) => parts.join(""));
 const host = fc.array(label, { minLength: 2, maxLength: 4 }).map((labels) => labels.join("."));
 const segment = fc
@@ -46,6 +49,9 @@ describe("an accepted manifest url", () => {
         expect(opened.protocol).toBe("https:");
         expect(opened.host).toBe(name ?? new URL(BASE).host);
         expect(opened.pathname).toBe(file);
+        // DNS: a name of at most 253 characters, each label at most 63.
+        expect(opened.hostname.length).toBeLessThanOrEqual(253);
+        for (const part of opened.hostname.split(".")) expect(part.length).toBeLessThanOrEqual(63);
       }),
       { numRuns: 2000 },
     );
@@ -61,6 +67,16 @@ describe("an accepted manifest url", () => {
     "https://a.b.xn--p1ai/a.msi",
   ])("never has a reserved label (punycode included): %j", (url) => {
     expect(accepts(url)).toBe(false);
+  });
+
+  it("never has a host longer than 253 characters", () => {
+    const label = "a".repeat(63);
+    const host = (last: number) => `${label}.${label}.${label}.${"b".repeat(last)}`;
+    expect(host(61).length).toBe(253);
+    expect(accepts(`https://${host(61)}/a.msi`)).toBe(true);
+    expect(accepts(`https://${host(62)}/a.msi`)).toBe(false);
+    expect(accepts(`https://${host(63)}/a.msi`)).toBe(false);
+    expect(accepts(`https://${host(61)}.b/a.msi`)).toBe(false);
   });
 
   it.each(["https://a--b.example.invalid/a.msi", "https://abc--d.example.invalid/a.msi"])(
