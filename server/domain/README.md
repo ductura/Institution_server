@@ -1,6 +1,10 @@
 # server/domain
 
-Područje domene (karta: [docs/server-map.md](../../docs/server-map.md)): čista pravila i modeli bez I/O-a, SQL-a i vendor SDK-ova. Prenesen iz Ductusa na `d52a92c3` (S-0.19, DAN-732) bez promjene logike; izmjene su samo uvozi (`.ts`, preko `index.ts`), tipovi pod strožim `tsconfig.json` (`!` gdje Ductus ne traži provjeru indeksa) i imena koja traži lint.
+Područje iz [karte servera](../../docs/server-map.md).
+
+## Što radi
+
+Čista pravila i modeli bez I/O-a, SQL-a i vendor SDK-ova. Preneseno iz Ductusa na `d52a92c3` (S-0.19, DAN-732) bez promjene logike, a kasnije mape na verziji navedenoj u tablici. Izmjene su samo uvozi (`.ts`, preko `index.ts`), tipovi pod strožim `tsconfig.json` (`!` gdje Ductus ne traži provjeru indeksa) i imena koja traži lint.
 
 | Mapa                                     | Iz Ductusa                        | Što je                                                                                  |
 | ---------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
@@ -18,6 +22,18 @@ Područje domene (karta: [docs/server-map.md](../../docs/server-map.md)): čista
 
 `result.ts` drži zajedničke tipove `Result<T>` i `AppError` (`{ code, messageKey }`, [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) §8); samo tipove, bez I/O-a.
 
-`index.ts` izvozi sve mape i `result.ts`. `SourceId` je iz `document`; istoimeni tip osnove dokaza izvozi se kao `EvidenceSourceId`.
+## Tko ga zove
 
-Mapa ne uvozi ništa izvan sebe (karta §2: `domain` → —); uvozi su samo `node:crypto` i, u testovima, `node:fs`, `node:path`, `vitest` i `fast-check`.
+`database`, `external/storage`, `external/keys`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence` i `profile` (karta §1). Unakrsni testovi u `tests/contracts` i `tests/db` uvoze ga da dokažu slaganje s ugovorima i migracijama.
+
+## Koje podatke dira
+
+Ništa: nema I/O-a, SQL-a ni poziva vanjskih usluga.
+
+## Što izvozi
+
+`index.ts` izvozi sve mape i tipove iz `result.ts`. `SourceId` je iz `document`; istoimeni tip osnove dokaza izvozi se kao `EvidenceSourceId`.
+
+## Što ne smije uvoziti
+
+Ništa iz servera (karta §2: `domain` → —). Proizvodni kod smije koristiti samo `node:crypto`, a testovi još `node:fs`, `node:path`, `node:url`, `vitest`, `fast-check` i `@fast-check/vitest`. Provode to `server/domain/index.test.ts` i lint `local/area-boundary`.
