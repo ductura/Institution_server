@@ -12141,7 +12141,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.20.0",
+        "apiVersion": "1.21.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -12157,7 +12157,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.20.0",
+        "apiVersion": "1.21.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -14232,6 +14232,87 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000906"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-work.get",
+    "name": "ready",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "assignments": [
+          {
+            "assignmentId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e01",
+            "workState": "in_progress"
+          },
+          {
+            "assignmentId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02",
+            "workState": "not_started"
+          },
+          {
+            "assignmentId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e03",
+            "workState": "submitted"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.assignment-work.get",
+    "name": "ready-empty",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "assignments": []
+      }
+    }
+  },
+  {
+    "route": "student.assignment-work.get",
+    "name": "signed-out",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "student.assignment-work.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-popisa-radova-000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000001"
       }
     }
   },

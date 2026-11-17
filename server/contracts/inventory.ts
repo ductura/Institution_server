@@ -100,6 +100,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@4eaa776:src/server/privacy/my-access-log-pages.ts",
   },
+  // DAN-989-1: Ductus has no work state per assignment; the set of
+  // assignments is that of my-assignments-read.ts.
+  "app/api/student/assignment-work/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus@9c45857:src/components/student/my-assignments-read.ts",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -140,6 +146,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "settings.catalogue.get",
   "settings.values.get",
   "student.access-log.get",
+  "student.assignment-work.get",
 ];
 
 /**
