@@ -5,6 +5,13 @@ import { createActorReader, type ActorReader } from "./current-actor.ts";
 import { assertNoParameterLogging, withLogCheck } from "./log-settings.ts";
 import { createOpenSession, type OpenSession } from "./open-session.ts";
 import { createMyAccessLogReader, type MyAccessLogReader } from "./my-access-log.ts";
+export {
+  createMyAssignmentWorkReader,
+  MY_ASSIGNMENT_WORK_DATABASE_ERROR,
+  MY_ASSIGNMENT_WORK_ERRORS,
+  MY_ASSIGNMENT_WORK_ROW_MALFORMED,
+  MY_ASSIGNMENT_WORK_UNAUTHENTICATED,
+} from "./my-assignment-work.ts";
 import { createWorkOpener, type WorkOpener } from "./open-work.ts";
 import { createRegistry, type HealthReport, type Registry } from "./registry.ts";
 import { createWithActor, type WithActor } from "./with-actor.ts";
