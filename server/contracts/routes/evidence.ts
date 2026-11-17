@@ -115,6 +115,16 @@ function unavailable(stages: readonly string[]): ErrorSpec {
   });
 }
 
+/** The headers readGuardedBody asks for: the same Origin and `ductus-protocol`. */
+const guarded = (...protocols: string[]) =>
+  closed({
+    origin: Type.String(),
+    "ductus-protocol":
+      protocols.length === 1
+        ? Type.Literal(protocols[0] ?? "")
+        : Type.Union(protocols.map((p) => Type.Literal(p))),
+  });
+
 // readGuardedBody: method and Origin, protocol, media type, cookie, then the body under limits.
 const GUARD_ERRORS = [
   refusal(403, "forbidden"),
@@ -141,6 +151,7 @@ export const open = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     body: closed({
       assignmentId: Type.String({
         pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
@@ -183,6 +194,7 @@ export const commit = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: MAX_COMMIT_BODY_BYTES,
+    headers: guarded("1", "2"),
     body: closed({
       documentId: Type.String(),
       clientTransactionId: TransactionId,
@@ -288,6 +300,7 @@ export const submit = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     body: closed({
       documentId: Type.String({ minLength: 1 }),
       // Revision 0 is a work with nothing saved: 409 blocked no_evidence while the
@@ -367,6 +380,7 @@ export const replay = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     // The first page has no head; every later page has the head the first one reported.
     body: Type.Union([
       closed({ documentId: Type.String(), from: Type.Literal(0) }),

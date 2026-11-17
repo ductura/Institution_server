@@ -7,7 +7,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { TSchema } from "@sinclair/typebox";
+import { Type, type TSchema } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 import {
@@ -209,7 +209,16 @@ function types(routes: RouteContract[]): string {
       .map((s) => `{ status: ${s.status}; body: ${part(s.body)}; headers: ${head(s.headers)} }`)
       .join(" | ");
     const codes = r.errors.map((e) => JSON.stringify(e.code)).join(" | ") || "never";
-    return `  ${JSON.stringify(r.id)}: {\n    params: ${part(r.request.params)};\n    query: ${part(r.request.query)};\n    body: ${part(r.request.body)};\n    success: ${ok};\n    errorCode: ${codes};\n  };`;
+    // The headers the caller gives, only on routes that declare any; the client
+    // sends origin itself (DAN-930).
+    const given = Object.entries(r.request.headers?.properties ?? {}).filter(
+      ([n]) => n !== "origin",
+    );
+    const headers =
+      given.length > 0
+        ? Type.Object(Object.fromEntries(given), { additionalProperties: false })
+        : undefined;
+    return `  ${JSON.stringify(r.id)}: {\n    params: ${part(r.request.params)};\n    query: ${part(r.request.query)};\n    body: ${part(r.request.body)};${headers ? `\n    headers: ${part(headers)};` : ""}\n    success: ${ok};\n    errorCode: ${codes};\n  };`;
   });
   const shared = SHARED_ERRORS.map((e) => JSON.stringify(e.code)).join(" | ") || "never";
   return `${HEADER}\nexport type Operations = {\n${ops.join("\n")}\n};\n\nexport type OperationId = keyof Operations;\n\n/** Codes any route may answer besides its own (SHARED_ERRORS, e.g. 500 internal). */\nexport type SharedErrorCode = ${shared};\n`;
@@ -233,6 +242,23 @@ function routeTable(routes: RouteContract[]): string {
     .filter((r) => r.responses.some((s) => s.status >= 400))
     .map((r) => `  ${JSON.stringify(r.id)}: ${JSON.stringify(r.responses.map((s) => s.status))},`);
   return `export const ROUTE_TABLE = {\n${rows.join("\n")}\n} as const;\n\n/** Answer statuses at 400 or above, by route (generated client). */\nexport const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {\n${answers.join("\n")}\n};\n`;
+}
+
+/**
+ * The request headers by route (DAN-930), in a constant of its own so the rows
+ * of ROUTE_TABLE stay as they were: the names the caller gives, and whether
+ * the client sends the origin of its base URL.
+ */
+function requestHeaders(routes: RouteContract[]): string {
+  const rows = routes.flatMap((r) => {
+    const names = Object.keys(r.request.headers?.properties ?? {});
+    if (names.length === 0) return [];
+    const given = names.filter((n) => n !== "origin");
+    return [
+      `  ${JSON.stringify(r.id)}: { names: ${JSON.stringify(given)}, origin: ${names.includes("origin")} },`,
+    ];
+  });
+  return `\n/** Request headers by route: the names the caller gives, and whether the client sends its origin. */\nexport const REQUEST_HEADERS: Readonly<Record<string, { readonly names: readonly string[]; readonly origin: boolean }>> = {\n${rows.join("\n")}\n};\n`;
 }
 
 /** The shared errors by status, as the client reads them. */
@@ -344,7 +370,7 @@ export const openapiDocument = (): unknown => JSON.parse(openapiJson());
 export function generate(): Record<string, string> {
   const routes = contractRoutes();
   return {
-    "client.ts": `${HEADER}${CLIENT_PREAMBLE}\n${routeTable(routes)}${sharedTable()}${CLIENT_BODY}`,
+    "client.ts": `${HEADER}${CLIENT_PREAMBLE}\n${routeTable(routes)}${requestHeaders(routes)}${sharedTable()}${CLIENT_BODY}`,
     // Its own folder: it needs node:http, and generated/index.ts must load in a
     // browser. It imports nothing outside the folder, so U9 can move it as it is.
     "fake-server/index.ts": `${HEADER}${FAKE_PREAMBLE}\n${routeTable(routes)}\nconst FALLBACK_CODE = ${JSON.stringify(FALLBACK.error.code)};\n${FAKE_BODY}`,
@@ -365,7 +391,9 @@ import type { OperationId, Operations, SharedErrorCode } from "./types.ts";
 `;
 
 const CLIENT_BODY = `
-type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body">;
+// A route that declares headers needs them (DAN-930); on the others they stay out.
+type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body"> &
+  (Operations[Id] extends { headers: infer H } ? { headers: H } : { headers?: undefined });
 export type Result<Id extends OperationId> =
   | (Operations[Id]["success"] & { ok: true })
   | { ok: false; status: number; code: Operations[Id]["errorCode"] | SharedErrorCode | "unexpected" };
@@ -403,7 +431,18 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     const init: RequestInit = { method: route.method, redirect: "manual" };
     if (route.body === "application/json") init.body = canonicalJson(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
-    if (route.body !== null) init.headers = { "content-type": route.body };
+    // A plain object, so a wrapping fetch can spread it. Only declared names, as
+    // own properties, come from the caller; origin is the base URL's (DAN-930).
+    const headers: Record<string, string> = {};
+    if (route.body !== null) headers["content-type"] = route.body;
+    const declared = REQUEST_HEADERS[id];
+    const given = (input.headers ?? {}) as Record<string, unknown>;
+    for (const name of declared?.names ?? []) {
+      const value = Object.hasOwn(given, name) ? given[name] : undefined;
+      if (typeof value === "string") headers[name] = value;
+    }
+    if (declared?.origin === true) headers["origin"] = new URL(baseUrl).origin;
+    if (Object.keys(headers).length > 0) init.headers = headers;
     const res = await fetchImpl(new URL(path, baseUrl), init);
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;

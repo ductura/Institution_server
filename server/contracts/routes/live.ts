@@ -34,7 +34,7 @@ export const liveDocumentGet = defineRoute({
   access: "owner_or_course_teacher",
   summary:
     'The last published state of a work, the same bytes and ETag for the owner and the teacher. The request carries `ductus-protocol: 1` (and Sec-Fetch-Site same-origin when the browser sends it), else 403; a teacher\'s read writes the access log. `If-None-Match: "<etag>"` with the ETag last read answers 304. After the submission the bytes are the submitted revision, marked `ductus-live-state: submitted`. 204 when nothing is published yet.',
-  request: { params },
+  request: { params, headers: closed({ "ductus-protocol": Type.Literal("1") }) },
   responses: [
     {
       status: 200,

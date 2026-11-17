@@ -61,9 +61,20 @@ export const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {
   "live.document.put": [200,409],
 };
 
+/** Request headers by route: the names the caller gives, and whether the client sends its origin. */
+export const REQUEST_HEADERS: Readonly<Record<string, { readonly names: readonly string[]; readonly origin: boolean }>> = {
+  "evidence.commit.post": { names: ["ductus-protocol"], origin: true },
+  "evidence.open.post": { names: ["ductus-protocol"], origin: true },
+  "evidence.replay.post": { names: ["ductus-protocol"], origin: true },
+  "live.document.get": { names: ["ductus-protocol"], origin: false },
+  "submission.submit.post": { names: ["ductus-protocol"], origin: true },
+};
+
 export const SHARED_ERRORS = {"429":["too_many_requests"],"500":["internal"]} as const;
 
-type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body">;
+// A route that declares headers needs them (DAN-930); on the others they stay out.
+type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body"> &
+  (Operations[Id] extends { headers: infer H } ? { headers: H } : { headers?: undefined });
 export type Result<Id extends OperationId> =
   | (Operations[Id]["success"] & { ok: true })
   | { ok: false; status: number; code: Operations[Id]["errorCode"] | SharedErrorCode | "unexpected" };
@@ -101,7 +112,18 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     const init: RequestInit = { method: route.method, redirect: "manual" };
     if (route.body === "application/json") init.body = canonicalJson(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
-    if (route.body !== null) init.headers = { "content-type": route.body };
+    // A plain object, so a wrapping fetch can spread it. Only declared names, as
+    // own properties, come from the caller; origin is the base URL's (DAN-930).
+    const headers: Record<string, string> = {};
+    if (route.body !== null) headers["content-type"] = route.body;
+    const declared = REQUEST_HEADERS[id];
+    const given = (input.headers ?? {}) as Record<string, unknown>;
+    for (const name of declared?.names ?? []) {
+      const value = Object.hasOwn(given, name) ? given[name] : undefined;
+      if (typeof value === "string") headers[name] = value;
+    }
+    if (declared?.origin === true) headers["origin"] = new URL(baseUrl).origin;
+    if (Object.keys(headers).length > 0) init.headers = headers;
     const res = await fetchImpl(new URL(path, baseUrl), init);
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;

@@ -82,6 +82,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "documentId": string; "clientTransactionId": string; "baseRevision": number; "segments": (string)[]; "document": string };
+    headers: { "ductus-protocol": "1" | "2" };
     success: { status: 200; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "signed"; "signedReceipt": { "payload": { "receiptSchema": "ductus-evidence-receipt-v2"; "receiptId": string; "evidencePackageId": string; "documentId": string; "sessionId": string; "segmentId": string; "segmentHash": string; "predecessorSegmentHash": string | null; "previousReceiptId": string | null; "evidenceSchema": "ductus-evidence-segment-v2" | "ductus-evidence-segment-v3"; "evidenceProfileId": string; "sequenceFrom": number; "sequenceTo": number; "eventCount": number; "payloadBytes": number; "acceptedAt": string; "revision": number; "clientTransactionId": string; "evidenceDomainId": string; "principalId": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } } }; headers: {  } } | { status: 202; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "pending_signature" } }; headers: { "retry-after"?: string } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "stale_base" | "chain_conflict" | "not_continuous" | "txid_reused" | "document_mismatch" | "unavailable";
   };
@@ -89,6 +90,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "assignmentId": string; "start"?: boolean };
+    headers: { "ductus-protocol": "1" };
     success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
   };
@@ -96,6 +98,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "documentId": string; "from": 0 } | { "documentId": string; "from": number; "head": { "segmentHash": string; "segmentCount": number } };
+    headers: { "ductus-protocol": "1" };
     success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": { [key: string]: string } }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "record_changed" | "unavailable";
   };
@@ -194,6 +197,7 @@ export type Operations = {
     params: { "documentId": string };
     query: undefined;
     body: undefined;
+    headers: { "ductus-protocol": "1" };
     success: { status: 200; body: { [key: string]: unknown }; headers: { "etag"?: string } } | { status: 204; body: undefined; headers: {  } } | { status: 304; body: undefined; headers: { "etag"?: string } };
     errorCode: "forbidden" | "unauthorized" | "not_found" | "invalid_document" | "unavailable";
   };
@@ -292,6 +296,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "documentId": string; "revision": number };
+    headers: { "ductus-protocol": "1" };
     success: { status: 200; body: { "status": "submitted"; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "blocked" | "stale_revision" | "already_requested" | "not_acknowledged" | "not_open" | "unavailable";
   };

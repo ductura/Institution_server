@@ -59,6 +59,13 @@ export type RequestSpec = {
   readonly body?: TObject | TUnion<TObject[]>;
   readonly contentType?: "application/json" | "application/x-www-form-urlencoded";
   readonly maxBodyBytes?: number;
+  /**
+   * Headers the route does not answer without (DAN-930), a closed object with
+   * lowercase names. The generated client sends them; `origin` is not the
+   * caller's: the client sends the origin of its base URL (a browser drops it
+   * and sends its own). Not in openapi/v1.json: v1 allows no new parameter.
+   */
+  readonly headers?: TObject;
 };
 
 export type RouteContract = {
