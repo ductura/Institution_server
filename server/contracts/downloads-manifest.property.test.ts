@@ -76,6 +76,16 @@ describe("an accepted manifest url", () => {
     "https://paketi.internal/a.msi",
     "https://paketi.home.arpa/a.msi",
     "https://a.b.home.arpa/a.msi",
+    // Third round (Ductus orchestrator c.6962665015): the whole class for each
+    // suffix, the bare name, capitals, a trailing dot and a subdomain.
+    ...["localhost", "local", "internal", "home.arpa"].flatMap((zone) => [
+      `https://${zone}/a.msi`,
+      `https://${zone.toUpperCase()}/a.msi`,
+      `https://${zone}./a.msi`,
+      `https://paketi.${zone}./a.msi`,
+      `https://paketi.${zone.toUpperCase()}/a.msi`,
+      `https://a.b.${zone}/a.msi`,
+    ]),
   ])("never names this machine or the local network: %j", (url) => {
     expect(accepts(url)).toBe(false);
   });

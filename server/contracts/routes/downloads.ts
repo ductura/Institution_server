@@ -29,7 +29,7 @@ const HOST_LENGTH = "(?=[a-z0-9.-]{1,253}/)";
 // 6.3), .local (mDNS, RFC 6762), .home.arpa (RFC 8375) and .internal (ICANN
 // private use). .invalid, .test and .example never resolve and stay allowed:
 // the synthetic data of this repository uses them.
-const NOT_LOCAL = "(?![a-z0-9.-]*\\.(?:localhost|local|internal|home\\.arpa)/)";
+const NOT_LOCAL = "(?!(?:[a-z0-9.-]*\\.)?(?:localhost|local|internal|home\\.arpa)/)";
 const URL_PATTERN = `^${NO_DOTS}(?:https://${HOST_LENGTH}${NOT_LOCAL}${HOST})?/(?![/?])${PCHAR}+${END}`;
 
 const DOWNLOAD_SYSTEMS = ["windows", "macos"] as const;
