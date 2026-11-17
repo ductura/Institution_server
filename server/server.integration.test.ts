@@ -183,6 +183,38 @@ describe("dist/server.js", () => {
       { APP_ORIGIN: `https://${CANARY}.invalid/x` },
       "APP_ORIGIN is not a bare http(s) origin",
     ],
+    // S-1H.7 (DAN-938-1): the test mode never starts in production, and an
+    // unknown mode never starts at all.
+    [
+      "DUCTURA_MODE test and NODE_ENV unset",
+      { DUCTURA_MODE: "test" },
+      "DUCTURA_MODE test is refused in production",
+    ],
+    [
+      "DUCTURA_MODE test and NODE_ENV production",
+      { DUCTURA_MODE: "test", NODE_ENV: "production" },
+      "DUCTURA_MODE test is refused in production",
+    ],
+    [
+      "DUCTURA_MODE test and NODE_ENV empty",
+      { DUCTURA_MODE: "test", NODE_ENV: "" },
+      "DUCTURA_MODE test is refused in production",
+    ],
+    [
+      "DUCTURA_MODE test and NODE_ENV Test",
+      { DUCTURA_MODE: "test", NODE_ENV: "Test" },
+      "DUCTURA_MODE test is refused in production",
+    ],
+    [
+      "DUCTURA_MODE test and NODE_ENV test and a line feed",
+      { DUCTURA_MODE: "test", NODE_ENV: "test\n" },
+      "DUCTURA_MODE test is refused in production",
+    ],
+    [
+      "an unknown DUCTURA_MODE under NODE_ENV test",
+      { NODE_ENV: "test", DUCTURA_MODE: `test${CANARY}` },
+      "DUCTURA_MODE is not a known mode",
+    ],
   ])(
     "does not start with %s and names the variable, never the value",
     async (_, env, problem) => {
@@ -195,6 +227,16 @@ describe("dist/server.js", () => {
     },
     20_000,
   );
+
+  // S-1H.7 (DAN-938-1): the control of the cases above. The same mode under
+  // NODE_ENV test starts and answers, so a refusal there is the guard's.
+  it("starts with DUCTURA_MODE test under NODE_ENV test", async () => {
+    const [server, port] = await start({ DUCTURA_MODE: "test", NODE_ENV: "test" });
+    expect((await fetch(url(port, "/api/v1/health"))).status).toBe(200);
+    server.child.kill("SIGTERM");
+    await server.exit;
+    expect(server.stderr.join("")).not.toContain("startup refused");
+  }, 20_000);
 
   // S-1E-a (DAN-808), D-09: the entry point mounts the login routes over its
   // own process environment. A server started with the fake provider and

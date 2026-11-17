@@ -8,6 +8,8 @@
  *
  * Errors name the variable, never its value, so a secret cannot reach a log.
  */
+import { isNonProductionBuild } from "../../settings/index.ts";
+
 export type AuthProvider = "aai-eduhr" | "fake-oidc";
 
 export type AuthConfig = {
@@ -48,17 +50,9 @@ const RESERVED_SUFFIXES = [
   ".intranet",
   ".onion",
 ];
-// The only environments where the fake provider and plain http may run.
-const NON_PRODUCTION = new Set(["development", "test"]);
-
-/**
- * The deployment gate of everything that exists only locally and in CI: the
- * fake provider here, the development receipt signer of evidence ingest.
- * An allowlist, so an unset, empty or misspelt NODE_ENV is production.
- */
-export function isNonProductionBuild(nodeEnv: string | undefined): boolean {
-  return NON_PRODUCTION.has(nodeEnv ?? "");
-}
+// The deployment gate (an allowlist of NODE_ENV development and test) lives in
+// server/settings since DAN-938-1 and is re-exported here under its old name.
+export { isNonProductionBuild };
 
 export class AuthConfigError extends Error {
   override name = "AuthConfigError";
