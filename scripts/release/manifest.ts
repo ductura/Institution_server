@@ -31,14 +31,23 @@ export const CONTRACTS: PackageSpec = {
   name: "@ductura/contracts",
   dir: "packages/contracts",
   exports: { ".": "packages/contracts/index.ts" },
-  // The contract document itself, info.version included, for clients and tools.
-  dataExports: { "./openapi/v1.json": "./openapi/v1.json" },
-  data: { "openapi/v1.json": "openapi/v1.json", "README.md": "packages/contracts/README.md" },
+  // The contract document itself, info.version included, for clients and tools,
+  // and the work id vectors that clients and the server both pass (DAN-942).
+  dataExports: {
+    "./openapi/v1.json": "./openapi/v1.json",
+    "./vectors/work-id.json": "./vectors/work-id.json",
+  },
+  data: {
+    "openapi/v1.json": "openapi/v1.json",
+    "vectors/work-id.json": "packages/contracts/vectors/work-id.json",
+    "README.md": "packages/contracts/README.md",
+  },
   dependencies: [],
   files: [
     "README.md",
     "openapi/v1.json",
     "package.json",
+    "vectors/work-id.json",
     ...js(
       "packages/contracts/index",
       `${GENERATED}/client`,

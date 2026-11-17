@@ -1,0 +1,153 @@
+{
+  "format": "ductura-work-id-vectors-v1",
+  "vectors": [
+    { "name": "valid id", "check": "isWorkId", "input": "doc-izmisljeni-1", "accepted": true },
+    {
+      "name": "uuid as open_work makes it",
+      "check": "isWorkId",
+      "input": "6f1c2a9e-0b7d-4c1e-9a55-3d2e8f0b1a77",
+      "accepted": true
+    },
+    { "name": "empty", "check": "isWorkId", "input": "", "accepted": false },
+    { "name": "only a space", "check": "isWorkId", "input": " ", "accepted": false },
+    {
+      "name": "exactly 256 code points",
+      "check": "isWorkId",
+      "repeat": { "text": "d", "count": 256 },
+      "accepted": true
+    },
+    {
+      "name": "257 code points",
+      "check": "isWorkId",
+      "repeat": { "text": "d", "count": 257 },
+      "accepted": false
+    },
+    {
+      "name": "256 emoji, 512 UTF-16 units",
+      "check": "isWorkId",
+      "repeat": { "text": "\ud83d\ude00", "count": 256 },
+      "accepted": true
+    },
+    {
+      "name": "257 emoji",
+      "check": "isWorkId",
+      "repeat": { "text": "\ud83d\ude00", "count": 257 },
+      "accepted": false
+    },
+    { "name": "apostrophe as data", "check": "isWorkId", "input": "doc'1", "accepted": true },
+    {
+      "name": "SQL-looking text as data",
+      "check": "isWorkId",
+      "input": "doc';DROP TABLE x;--",
+      "accepted": true
+    },
+    { "name": "control NUL", "check": "isWorkId", "input": "doc\u0000", "accepted": false },
+    { "name": "control tab", "check": "isWorkId", "input": "a\tb", "accepted": false },
+    { "name": "control LF", "check": "isWorkId", "input": "a\nb", "accepted": false },
+    { "name": "control DEL", "check": "isWorkId", "input": "a\u007fb", "accepted": false },
+    { "name": "control U+0085", "check": "isWorkId", "input": "a\u0085b", "accepted": false },
+    { "name": "control U+009F", "check": "isWorkId", "input": "a\u009fb", "accepted": false },
+    { "name": "literal %00 is text", "check": "isWorkId", "input": "%00", "accepted": true },
+    { "name": "../ as data", "check": "isWorkId", "input": "../doc", "accepted": true },
+    { "name": "../../ as data", "check": "isWorkId", "input": "../../etc", "accepted": true },
+    {
+      "name": "Croatian letters",
+      "check": "isWorkId",
+      "input": "rad-\u010d\u0107\u017e\u0161\u0111-\u017d\u0106",
+      "accepted": true
+    },
+    { "name": "Hangul letters", "check": "isWorkId", "input": "\ubb38\uc11c-1", "accepted": true },
+    { "name": "lone high surrogate", "check": "isWorkId", "input": "doc\ud800", "accepted": false },
+    { "name": "lone low surrogate", "check": "isWorkId", "input": "\udc00doc", "accepted": false },
+    { "name": "leading space", "check": "isWorkId", "input": " doc", "accepted": false },
+    { "name": "trailing space", "check": "isWorkId", "input": "doc ", "accepted": false },
+    { "name": "leading NBSP", "check": "isWorkId", "input": "\u00a0doc", "accepted": false },
+    { "name": "trailing U+2028", "check": "isWorkId", "input": "doc\u2028", "accepted": false },
+    { "name": "leading U+3000", "check": "isWorkId", "input": "\u3000doc", "accepted": false },
+    { "name": "not a string: null", "check": "isWorkId", "input": null, "accepted": false },
+    { "name": "not a string: number", "check": "isWorkId", "input": 7, "accepted": false },
+    { "name": "not a string: boolean", "check": "isWorkId", "input": true, "accepted": false },
+    { "name": "not a string: object", "check": "isWorkId", "input": {}, "accepted": false },
+    { "name": "not a string: array", "check": "isWorkId", "input": [], "accepted": false },
+    {
+      "name": "not a string: array of an id",
+      "check": "isWorkId",
+      "input": ["doc"],
+      "accepted": false
+    },
+    {
+      "name": "path: plain id",
+      "check": "workIdFromPath",
+      "input": "doc-izmisljeni-1",
+      "accepted": true,
+      "id": "doc-izmisljeni-1"
+    },
+    {
+      "name": "path: decodes UTF-8",
+      "check": "workIdFromPath",
+      "input": "rad-%C4%8D",
+      "accepted": true,
+      "id": "rad-\u010d"
+    },
+    { "name": "path: %00 is NUL", "check": "workIdFromPath", "input": "%00", "accepted": false },
+    { "name": "path: doc%00", "check": "workIdFromPath", "input": "doc%00", "accepted": false },
+    {
+      "name": "path: decodes once, %2500 is text",
+      "check": "workIdFromPath",
+      "input": "%2500",
+      "accepted": true,
+      "id": "%00"
+    },
+    {
+      "name": "path: broken or empty \"\"",
+      "check": "workIdFromPath",
+      "input": "",
+      "accepted": false
+    },
+    {
+      "name": "path: broken or empty \"%\"",
+      "check": "workIdFromPath",
+      "input": "%",
+      "accepted": false
+    },
+    {
+      "name": "path: broken or empty \"%zz\"",
+      "check": "workIdFromPath",
+      "input": "%zz",
+      "accepted": false
+    },
+    {
+      "name": "path: broken or empty \"%C4\"",
+      "check": "workIdFromPath",
+      "input": "%C4",
+      "accepted": false
+    },
+    {
+      "name": "path: broken or empty \"%ED%A0%80\"",
+      "check": "workIdFromPath",
+      "input": "%ED%A0%80",
+      "accepted": false
+    },
+    { "name": "path: %20doc", "check": "workIdFromPath", "input": "%20doc", "accepted": false },
+    {
+      "name": "path: 257 code points",
+      "check": "workIdFromPath",
+      "repeat": { "text": "d", "count": 257 },
+      "accepted": false
+    },
+    {
+      "name": "path: '; as data",
+      "check": "workIdFromPath",
+      "input": "doc%27%3B",
+      "accepted": true,
+      "id": "doc';"
+    },
+    {
+      "name": "path: ../ as data",
+      "check": "workIdFromPath",
+      "input": "..%2Fdoc",
+      "accepted": true,
+      "id": "../doc"
+    }
+  ]
+}

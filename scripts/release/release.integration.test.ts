@@ -122,7 +122,7 @@ describe("staged packages", () => {
     );
   }, 120_000);
 
-  it("a consumer resolves and loads @ductura/contracts/openapi/v1.json", () => {
+  it("a consumer resolves and loads the OpenAPI document and the work id vectors", () => {
     const consumer = join(TMP, String((run += 1)));
     mkdirSync(join(consumer, "node_modules", "@ductura"), { recursive: true });
     symlinkSync(
@@ -133,13 +133,15 @@ describe("staged packages", () => {
     const code = [
       'const url = import.meta.resolve("@ductura/contracts/openapi/v1.json");',
       'const { default: doc } = await import(url, { with: { type: "json" } });',
-      "console.log(doc.info.version);",
+      'const vectorsUrl = import.meta.resolve("@ductura/contracts/vectors/work-id.json");',
+      'const { default: v } = await import(vectorsUrl, { with: { type: "json" } });',
+      "console.log(doc.info.version, v.format);",
     ].join("\n");
     const loaded = spawnSync(process.execPath, ["--input-type=module", "--eval", code], {
       cwd: consumer,
       encoding: "utf8",
     });
     expect(loaded.stderr).toBe("");
-    expect(loaded.stdout.trim()).toBe(API_VERSION);
+    expect(loaded.stdout.trim()).toBe(`${API_VERSION} ductura-work-id-vectors-v1`);
   }, 60_000);
 });
