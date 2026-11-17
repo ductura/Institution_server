@@ -38,7 +38,10 @@ export type SignatureRetryDecision =
 type Signed = Extract<SignPendingReceiptOutcome, { status: "signed" | "already_signed" }>;
 type Stage = Extract<SignPendingReceiptOutcome, { status: "unavailable" }>["stage"];
 
-/** Counts and a stage only: no receipt id, text or signature, so it may be logged. */
+/**
+ * `parked` carries counts and a stage only (no receipt id, text or
+ * signature), so it may be logged; `done` carries the signed receipt.
+ */
 export type SignatureRetryResult =
   | { status: "done"; outcome: Signed; attempts: number }
   | { status: "parked"; reason: SignatureParkReason; attempts: number; lastStage: Stage | null };

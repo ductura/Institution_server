@@ -180,8 +180,8 @@ const sha256 = (text: string) => createHash("sha256").update(text, "utf8").diges
 type Work = { documentId: string; documentHash: string };
 async function openWork(who: Student): Promise<Work> {
   const opened = await createWorkOpener(withActor).openWork(token[who], id.z1, true);
-  if (opened.status !== "opened") throw new Error(`open: ${opened.status}`);
-  return opened.work;
+  if (!opened.ok) throw new Error(`open: ${opened.error.code}`);
+  return opened.value;
 }
 
 async function contextOf(who: Student, work: Work, txid: string): Promise<EvidenceCommitContext> {

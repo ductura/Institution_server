@@ -79,8 +79,9 @@ describe("fake server over HTTP", () => {
     // Five framing vectors per guarded mutation route: 36 on main, +5 revision-requests, +25 enrolment, notice and work language, +40 institution;
     // the submission and the replay (DAN-818), as the evidence routes, have two each (timeout and bad-request);
     // the client context (DAN-846) has four (no session, so no unauthorized vector);
-    // the three WebAuthn routes (DAN-840-1) have four each, framing only: timeout, length twice, stream.
-    expect(VECTORS.length - overHttp.length).toBe(126);
+    // the three WebAuthn routes (DAN-840-1) have four each, framing only: timeout, length twice, stream;
+    // teacher.assignment-submissions.post (DAN-903-1) five, as the fast path.
+    expect(VECTORS.length - overHttp.length).toBe(131);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
@@ -128,6 +129,38 @@ describe("fake server over HTTP", () => {
       status: 500,
       code: "internal",
     });
+  });
+
+  it("the generated client reads the teacher's submissions of many assignments (DAN-903-1)", async () => {
+    const route = "teacher.assignment-submissions.post";
+    const vector = (name: string) => {
+      const v = VECTORS.find((x) => x.route === route && x.name === name);
+      if (v === undefined) throw new Error(`no vector ${name}`);
+      return v;
+    };
+    // A browser sends the cookie and the origin itself; here the fetch adds them.
+    const as = (name: string) =>
+      createClient(`http://127.0.0.1:${port}`, (async (url: URL, init: RequestInit) =>
+        fetch(url, {
+          ...init,
+          headers: { ...(init.headers as object), ...vector(name).request.headers },
+        })) as typeof fetch);
+    const ok = vector("submissions");
+    expect(
+      await as("submissions")(route, {
+        params: undefined,
+        query: undefined,
+        body: ok.request.body as { assignmentIds: string[] },
+      }),
+    ).toEqual({ ok: true, status: 200, body: ok.response.body, headers: {} });
+    const bad = vector("invalid-input");
+    expect(
+      await as("invalid-input")(route, {
+        params: undefined,
+        query: undefined,
+        body: bad.request.body as { assignmentIds: string[] },
+      }),
+    ).toEqual({ ok: false, status: 422, code: "invalid_input" });
   });
 
   it("the generated client reads the student's own access log page by page (DAN-904)", async () => {

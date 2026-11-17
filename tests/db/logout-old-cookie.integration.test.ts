@@ -19,6 +19,7 @@ import {
   createHealthRoute,
   createInterfaceLocaleRoutesFor,
   createLayers,
+  createProblemReportRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
@@ -104,6 +105,20 @@ const SESSION_ROUTES = {
     body: () => ({ locale: "en" }),
     live: 200,
   },
+  // DAN-851-2d2a: the problem report. The body is its JCS form (keys in
+  // order), which the service asks for; a live report is 201 and stored.
+  "support.problem-report.post": {
+    path: "/api/v1/support/problem-report",
+    body: () => ({
+      appVersion: "1.4.0",
+      browser: { family: "firefox", major: 140 },
+      category: "technical",
+      description: "Izmišljeni opis: gumb za spremanje ne reagira.",
+      route: "/zadaci",
+      syncState: "SYNCED",
+    }),
+    live: 201,
+  },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
   // account does not hold is 403. The old cookie's registration carries a
@@ -139,6 +154,7 @@ const FACTORIES = [
   "createEvidenceOpenRoute",
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
+  "createProblemReportRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -152,6 +168,7 @@ const MOUNTED = [
   createEvidenceOpenRoute(databases.main),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
+  createProblemReportRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
@@ -215,6 +232,19 @@ const savedLocale = async (token: string) =>
     )
   ).rows.map((row) => row.locale);
 
+/** How many problem reports a session's account has stored, read as the admin. */
+const storedReports = async (token: string) =>
+  Number(
+    (
+      await admin.query<{ n: string }>(
+        `SELECT count(*) AS n FROM identity.problem_report r
+           JOIN identity.session s ON s.user_id = r.user_id
+          WHERE s.token_hash = sha256(convert_to($1, 'UTF8'))`,
+        [token],
+      )
+    ).rows[0]?.n,
+  );
+
 const sessionEnd = async (token: string) =>
   (
     await admin.query<{ reason: string | null; closedAt: Date | null }>(
@@ -269,9 +299,10 @@ afterAll(async () => {
   await server?.close();
   await databases.close();
   await auth?.end();
-  // user_preference refers to user_account, so it goes first.
+  // user_preference and problem_report refer to user_account, so they go first.
   for (const table of [
     "user_preference",
+    "problem_report",
     "person_name",
     "teacher_eligibility",
     "session",
@@ -318,6 +349,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     await expectSignedOut(await post("/api/v1/auth/logout", token));
     expect(await sessionEnd(token)).toMatchObject({ reason: "logout" });
     expect(await savedLocale(token)).toEqual(["en"]);
+    expect(await storedReports(token)).toBe(1);
     for (const id of SESSION_IDS) {
       const answer = await call(
         id,
@@ -332,6 +364,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       const old =
         id === "settings.values.put" ||
         id.startsWith("profile.interface-locale.") ||
+        id === "support.problem-report.post" ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
@@ -342,6 +375,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       expect(Value.Check(spec?.body as never, body)).toBe(true);
     }
     expect(await savedLocale(token)).toEqual(["en"]);
+    // The old cookie's report reached no row: still only the live one.
+    expect(await storedReports(token)).toBe(1);
   });
 
   it("the interface language: POST en, then GET en for the same session; another gets null", async () => {

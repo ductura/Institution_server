@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { VECTORS } from "./generated/fake-server/index.ts";
 import { canonicalJson, createClient, validateInput } from "./generated/index.ts";
+import { CONTRACT_ONLY } from "./index.ts";
 
 const vector = (name: string) => {
   const found = VECTORS.find((v) => v.route === "support.problem-report.post" && v.name === name);
@@ -80,5 +81,11 @@ describe("lone surrogates are refused, as Ductus does (review c.6908717137)", ()
     expect(() => canonicalJson({ ["k\uDFFF"]: 1 })).toThrow(/lone surrogate/u);
     expect(() => canonicalJson(["\uD800"])).toThrow(/lone surrogate/u);
     expect(canonicalJson({ d: `a${astral}` })).toBe(`{"d":"a${astral}"}`);
+  });
+});
+
+describe("support.problem-report.post is served", () => {
+  it("is mounted (851-2d2a), so it is no longer contract-only", () => {
+    expect(CONTRACT_ONLY).not.toContain("support.problem-report.post");
   });
 });

@@ -582,6 +582,18 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "teacher.assignment-submissions.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Array.isArray(value['assignmentIds']) &&
+      value['assignmentIds'].length <= 500 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local0.test(value)))) { return false }; return true; })(value['assignmentIds']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "teacher.fast-path.post:body": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {

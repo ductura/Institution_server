@@ -295,6 +295,13 @@ export type Operations = {
     success: { status: 201; body: { "reference": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "too_many_reports" | "unavailable";
   };
+  "teacher.assignment-submissions.post": {
+    params: undefined;
+    query: undefined;
+    body: { "assignmentIds": (string)[] };
+    success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
+  };
   "teacher.courses.get": {
     params: undefined;
     query: undefined;

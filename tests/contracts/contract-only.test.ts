@@ -13,6 +13,7 @@ import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/
 import {
   AREA_NAMES,
   createInterfaceLocaleRoutesFor,
+  createProblemReportRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   routesOf,
@@ -56,12 +57,16 @@ export const DAN_840: readonly string[] = [
   "auth.webauthn-assertion.post",
 ];
 
+// The operations of DAN-903 (teacher reads, Ductus#1836 c.6947962506: contract
+// now, handlers later), frozen the same way; 903-2 adds its two.
+export const DAN_903: readonly string[] = ["teacher.assignment-submissions.post"];
+
 // The operations of DAN-904 (the student's access log, Ductus#1836
 // c.6948327193: contract now, handler later), frozen the same way.
 export const DAN_904: readonly string[] = ["student.access-log.get"];
 
 /** Every route a task has put on the list; nothing else may be there. */
-const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840, ...DAN_904];
+const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
 // given (DAN-826-2b): the exact call server/server.ts must hold, and the
@@ -80,6 +85,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createInterfaceLocaleRoutesFor(databases.main)",
     ids: ["profile.interface-locale.get", "profile.interface-locale.post"],
     routes: () => createInterfaceLocaleRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // DAN-851-2d2a: the problem report over the main database.
+    call: "createProblemReportRouteFor(databases.main)",
+    ids: ["support.problem-report.post"],
+    routes: () => [createProblemReportRouteFor(NO_ACTOR).contract.id],
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -130,7 +141,7 @@ export function contractOnlyProblems(
 describe("CONTRACT_ONLY", () => {
   const ids = ROUTES.map((route) => route.id);
 
-  it("is exactly the DAN-803, DAN-806, DAN-840 and DAN-904 routes with a contract and no handler", () => {
+  it("is exactly the DAN-803, DAN-806, DAN-840, DAN-903 and DAN-904 routes with a contract and no handler", () => {
     expect(new Set(DAN_803).size).toBe(27);
     expect(new Set(DAN_806).size).toBe(3);
     expect(new Set(DAN_840).size).toBe(3);
@@ -169,8 +180,9 @@ describe("CONTRACT_ONLY", () => {
     ).toEqual([]);
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
-      // With nothing mounted, the WebAuthn routes (mounted since 840-3f1) are missing too.
-      [...DAN_806, ...DAN_840].map(
+      // With nothing mounted, the WebAuthn routes (mounted since 840-3f1) and the
+      // problem report (mounted since 851-2d2a) are missing too.
+      ["support.problem-report.post", ...DAN_806, ...DAN_840].map(
         (id) => `${id}: contract without a handler, not in CONTRACT_ONLY`,
       ),
     );
@@ -192,6 +204,7 @@ describe("routes the entry point mounts itself", () => {
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
+      "support.problem-report.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
@@ -199,6 +212,23 @@ describe("routes the entry point mounts itself", () => {
     expect(mounted()).toContain("settings.values.put");
     expect(mounted()).toContain("profile.interface-locale.get");
     expect(mounted()).toContain("profile.interface-locale.post");
+    expect(mounted()).toContain("support.problem-report.post");
+    expect(CONTRACT_ONLY).not.toContain("support.problem-report.post");
+  });
+
+  it("the problem report commented out, over another database or with no argument is not a mount", () => {
+    const call = "createProblemReportRouteFor(databases.main)";
+    for (const entry of [
+      `// ${call},`,
+      `/* ${call}, */`,
+      "",
+      "createProblemReportRouteFor(databases.admin),",
+      "createProblemReportRouteFor(fakeMain),",
+      "createProblemReportRouteFor(),",
+    ]) {
+      expect(entryMounted(entry)).toEqual([]);
+    }
+    expect(entryMounted(`routes: [\n  ${call},\n]`)).toEqual(["support.problem-report.post"]);
   });
 
   it("each factory gives the route ids of its row", () => {
