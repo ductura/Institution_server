@@ -25,6 +25,7 @@ import {
   createHealthRoute,
   createInterfaceLocaleRoutesFor,
   createLayers,
+  createProblemReportRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   PIPELINE_STEPS,
@@ -69,6 +70,7 @@ const ENTRY_FACTORIES: Readonly<Record<string, () => readonly { contract: RouteL
   createEvidenceReplayRouteFor: () => [
     createEvidenceReplayRouteFor(UNUSED as never, UNUSED as never),
   ],
+  createProblemReportRouteFor: () => [createProblemReportRouteFor(UNUSED as never)],
   createAuthRoutes: () => createAuthRoutes({}),
   routesOf: () => routesOf(AREA_NAMES),
 };
