@@ -14,6 +14,11 @@ export {
   type ReplayReadResult,
   type ReplayReaderDeps,
 } from "./replay.ts";
+// The worker's signing of a pending receipt v2 (DAN-820, 820c); only the
+// worker process builds it, over its own store and signer (D-71, D-102).
+export { createSignPendingReceipt, type SignPendingReceiptDeps } from "./sign-pending-receipt.ts";
+export type { PendingReceiptObjectCheck } from "./object-check.ts";
+export type { PendingReceiptHold, SignPendingReceiptOutcome } from "./settle-attach.ts";
 // The wire limits of the commit route, as the domain states them: http may not
 // import domain (docs/server-map.md §2), so it reads them here.
 export {
