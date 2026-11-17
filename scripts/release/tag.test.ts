@@ -170,13 +170,19 @@ describe("the repo's own versions", () => {
     },
   );
 
-  // DAN-964: the approved test-fakes major. Tags of the old major stop here.
-  it("takes test-fakes-v2.0.0 and refuses the 1.x line", () => {
-    for (const name of ["test-fakes-v1.0.2", "test-fakes-v1.99.0", "test-fakes-v0.2.1"])
+  // DAN-974 (after DAN-964): the approved test-fakes major. Older lines stop here.
+  it("takes test-fakes-v3.0.0 and refuses the 2.x line", () => {
+    for (const name of [
+      "test-fakes-v2.0.0",
+      "test-fakes-v2.0.1",
+      "test-fakes-v2.99.0",
+      "test-fakes-v1.99.0",
+      "test-fakes-v0.2.1",
+    ])
       expect(() => checkTag(input(name, real))).toThrow(/version/);
-    expect(() => checkTag(input("test-fakes-v3.0.0", real))).toThrow(/version 3\.0\.0/);
-    expect(checkTag(input("test-fakes-v2.0.0", real))).toBe("test-fakes");
-    expect(checkTag(input("test-fakes-v2.0.1", real))).toBe("test-fakes");
+    expect(() => checkTag(input("test-fakes-v4.0.0", real))).toThrow(/version 4\.0\.0/);
+    expect(checkTag(input("test-fakes-v3.0.0", real))).toBe("test-fakes");
+    expect(checkTag(input("test-fakes-v3.0.1", real))).toBe("test-fakes");
   });
 });
 
