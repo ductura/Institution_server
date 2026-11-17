@@ -39,8 +39,16 @@ export const DAN_806: readonly string[] = [
   "settings.values.put",
 ];
 
+// The operations of DAN-840-1 (WebAuthn, Ductus#1836 c.6934850911: contract
+// now, handlers in 840-3), frozen the same way.
+export const DAN_840: readonly string[] = [
+  "auth.webauthn-challenge.post",
+  "auth.webauthn-registration.post",
+  "auth.webauthn-assertion.post",
+];
+
 /** Every route a task has put on the list; nothing else may be there. */
-const FROZEN: readonly string[] = [...DAN_803, ...DAN_806];
+const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840];
 
 const mounted = (): string[] => routesOf(AREA_NAMES).map((route) => route.contract.id);
 
@@ -66,10 +74,12 @@ export function contractOnlyProblems(
 describe("CONTRACT_ONLY", () => {
   const ids = ROUTES.map((route) => route.id);
 
-  it("is exactly the DAN-803 and DAN-806 routes with a contract and no handler", () => {
+  it("is exactly the DAN-803, DAN-806 and DAN-840 routes with a contract and no handler", () => {
     expect(new Set(DAN_803).size).toBe(27);
     expect(new Set(DAN_806).size).toBe(3);
+    expect(new Set(DAN_840).size).toBe(3);
     expect(DAN_806.filter((id) => DAN_803.includes(id))).toEqual([]);
+    expect(DAN_840.filter((id) => DAN_803.includes(id) || DAN_806.includes(id))).toEqual([]);
     expect(contractOnlyProblems(CONTRACT_ONLY, ids, mounted())).toEqual([]);
   });
 
