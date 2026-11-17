@@ -89,7 +89,9 @@ type First = {
   /** Every byte the connection received, kept or not. */
   seen: number;
   first: boolean;
-  /** A byte after the first line's start was dropped: the line cannot be trusted. */
+  /** A CRLF is kept, so the first line is whole: nothing after it is kept. */
+  lined: boolean;
+  /** The line grew past maxHeaderSize unfinished: it cannot be trusted. */
   cut: boolean;
 };
 
@@ -97,10 +99,11 @@ const isLineBreak = (byte: number) => byte === 0x0d || byte === 0x0a;
 
 /**
  * The connection, request and clientError listeners of the server. Until its
- * first request, a connection's bytes (at most maxHeaderSize) are kept, so the
- * first line is read whatever the packets. They count only when they end
- * exactly where the refused packet starts; any other listener order is the
- * bare 400.
+ * first request, a connection keeps only the bytes of its first line (leading
+ * CR and LF skipped, at most maxHeaderSize), so the line is read whatever the
+ * packets and however long the headers after it. The count of bytes seen must
+ * end exactly where the refused packet starts; any other listener order is
+ * the bare 400.
  */
 export function createClientErrorListeners(routes: readonly Route[]): {
   connection: (socket: Socket) => void;
@@ -110,21 +113,34 @@ export function createClientErrorListeners(routes: readonly Route[]): {
   const states = new WeakMap<Socket, First>();
   return {
     connection: (socket) => {
-      const state: First = { chunks: [], kept: 0, seen: 0, first: true, cut: false };
+      const state: First = {
+        chunks: [],
+        kept: 0,
+        seen: 0,
+        first: true,
+        lined: false,
+        cut: false,
+      };
       states.set(socket, state);
       socket.on("data", (chunk: Buffer) => {
         state.seen += chunk.length;
-        if (!state.first || state.cut) return;
-        // Leading CR and LF are skipped by llhttp outside the head's budget, so
-        // they are not kept: the cap counts only bytes from the first line on.
+        if (!state.first || state.lined || state.cut) return;
+        // Leading CR and LF are skipped by llhttp, so they are not kept.
         let part = chunk;
         if (state.kept === 0) {
           let start = 0;
           while (start < part.length && isLineBreak(part[start] ?? 0)) start += 1;
           part = part.subarray(start);
         }
+        if (part.length === 0) return;
+        // Only the line is needed: stop at the first CRLF kept in one chunk.
+        const end = part.indexOf("\r\n");
+        if (end >= 0) {
+          part = part.subarray(0, end + 2);
+          state.lined = true;
+        }
         if (state.kept + part.length > maxHeaderSize) state.cut = true;
-        else if (part.length > 0) {
+        else {
           state.chunks.push(part);
           state.kept += part.length;
         }

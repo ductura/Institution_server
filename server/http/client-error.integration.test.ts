@@ -112,6 +112,21 @@ describe("a request Node answered itself still counts as the first", () => {
     expect(out.endsWith(BARE)).toBe(true);
   });
 
+  it("headers after the line never change the answer, however they are split", async () => {
+    const line = `POST ${EVIDENCE} HTTP/1.1\r\nHost: x\r\n`;
+    const empties = "X:\r\n".repeat(4096);
+    const refused = "Content-Length: -1\r\n\r\n";
+    for (const chunks of [
+      [line + empties + refused],
+      [line + empties, refused],
+      [line, empties, refused],
+    ])
+      expect([chunks.length, json(await exchange(chunks))]).toEqual([
+        chunks.length,
+        { status: "bad_request" },
+      ]);
+  });
+
   it("CR and LF before the line never push the line out of what is kept", async () => {
     const flood = "\r\n".repeat(maxHeaderSize / 2 + 10);
     const spoof = [
@@ -260,18 +275,28 @@ describe("the listeners on their own", () => {
     }
   });
 
-  it("never trust a capture with a dropped part", () => {
+  it("keep only the first line, and never trust a line cut short", () => {
     const listeners = createClientErrorListeners(ROUTE_LIST);
-    const socket = fake();
-    listeners.connection(socket as unknown as Socket);
+    const packet = "Host: x\r\nContent-Length: -1\r\n\r\n";
+    // Bytes after the line are never kept, however many.
+    const whole = fake();
+    listeners.connection(whole as unknown as Socket);
     const line = Buffer.from(`POST ${EVIDENCE} HTTP/1.1\r\n`, "latin1");
     const big = Buffer.alloc(maxHeaderSize, "a");
-    socket.emit("data", line);
-    socket.emit("data", big);
-    const packet = "Host: x\r\nContent-Length: -1\r\n\r\n";
-    socket.bytesRead = line.length + big.length + packet.length;
-    listeners.clientError(refused(packet), socket as unknown as Socket);
-    expect(socket.written).toEqual([BARE]);
+    whole.emit("data", line);
+    whole.emit("data", big);
+    whole.bytesRead = line.length + big.length + packet.length;
+    listeners.clientError(refused(packet), whole as unknown as Socket);
+    expect(whole.written[0]).toContain("bad_request");
+    // A line longer than maxHeaderSize with no end yet is cut: bare.
+    const long = fake();
+    listeners.connection(long as unknown as Socket);
+    const start = Buffer.from(`POST ${EVIDENCE}?${"a".repeat(maxHeaderSize)}`, "latin1");
+    long.emit("data", start);
+    const rest = ` HTTP/1.1\r\n${packet}`;
+    long.bytesRead = start.length + rest.length;
+    listeners.clientError(refused(rest), long as unknown as Socket);
+    expect(long.written).toEqual([BARE]);
   });
 
   it("read the first line only from the start, after CR and LF", () => {
