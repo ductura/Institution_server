@@ -44,7 +44,7 @@ Ništa iz drugih područja; od knjižnica samo `@sinclair/typebox` ([karta serve
 
 ## Manifest preuzimanja (DAN-931)
 
-`routes/downloads.ts` (S-1H.5): javni `GET /api/v1/downloads/manifest`, bez ulaza. Svaki redak ima sustav (`windows`, `macos`; D-296), arhitekturu (`x64`, `arm64`), verziju `major.minor.patch`, adresu i SHA-256 paketa (64 heks znaka, mala slova). Adresa je putanja na istoj adresi (`/preuzimanje/…`, D-306 t. 1) ili `https://` adresa: mjesto paketa se ovdje ne odlučuje. Uzorak adrese pušta samo znakove putanje i upita iz RFC 3986, bez fragmenta, korisnika, obrnute kose crte i `//` na početku putanje. Najviše četiri retka; da je svaki par sustava i arhitekture najviše jednom, shema ne može izraziti, pa to provjerava test nad vektorima, a provodi handler (DAN-932). `server/downloads` je prazan dok handler ne dođe.
+`routes/downloads.ts` (S-1H.5): javni `GET /api/v1/downloads/manifest`, bez ulaza. Svaki redak ima sustav (`windows`, `macos`; D-296), arhitekturu (`x64`, `arm64`), verziju `major.minor.patch`, adresu i SHA-256 paketa (64 heks znaka, mala slova). Adresa je putanja na istoj adresi (`/preuzimanje/…`, D-306 t. 1) ili `https://` adresa: mjesto paketa se ovdje ne odlučuje. Uzorak adrese pušta samo znakove putanje i upita iz RFC 3986, bez fragmenta, porta, korisnika i obrnute kose crte; putanja ne počinje s `//` ni `?`, nema segmenata `.` i `..` ni `%2e` i `%00`, a oznaka hosta ima najviše 63 znaka. Najviše četiri retka; da je svaki par sustava i arhitekture najviše jednom, shema ne može izraziti, pa to provjerava test nad vektorima, a provodi handler (DAN-932). `server/downloads` je prazan dok handler ne dođe.
 
 ## Operatorske rute (DAN-842-2)
 

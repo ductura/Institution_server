@@ -88,6 +88,14 @@ describe("downloads.manifest.get refuses", () => {
     "https://localhost/a.msi",
     "https://127.0.0.1/a.msi",
     "https://preuzimanje.example.invalid./a.msi",
+    "https://a-.example.invalid/a.msi",
+    "https://preuzimanje.example.b-/a.msi",
+    "https://preuzimanje.example.-b/a.msi",
+    "https://Preuzimanje.example.invalid/a.msi",
+    `https://${"a".repeat(64)}.example.invalid/a.msi`,
+    "/?",
+    "/?x=1",
+    "https://preuzimanje.example.invalid/?x=1",
     "",
     "/",
     `/${"a".repeat(2048)}`,
@@ -130,6 +138,8 @@ describe("downloads.manifest.get accepts", () => {
       "/preuzimanje/ductura/1.0.0/ductura-macos-arm64.dmg",
       "https://preuzimanje.example.invalid/a.msi?v=1&x=%2F",
       "/preuzimanje/.well/a..b.msi",
+      "/preuzimanje/a.msi?x=%2f%c3%a9",
+      `https://${"a".repeat(63)}.example.invalid/a.msi`,
       `/${"a".repeat(2047)}`,
     ])
       expect(accepts("url", url)).toBe(true);
