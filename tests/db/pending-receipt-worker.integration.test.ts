@@ -1,4 +1,4 @@
-import { createHash, generateKeyPairSync, randomBytes, randomUUID } from "node:crypto";
+import { createHash, generateKeyPairSync, randomBytes, randomUUID, sign } from "node:crypto";
 
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -6,13 +6,21 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   createEvidenceCommitter,
   createPendingReceiptQueue,
+  createPendingReceiptStore,
   createWithActor,
   createWorkOpener,
   readReceiptKeys,
   type ReceiptSigner,
   type WithActor,
 } from "../../server/database/index.ts";
-import { canonicalizeJcs, isEvidenceReceiptPayloadV2 } from "../../server/domain/index.ts";
+import {
+  canonicalizeJcs,
+  digestEvidenceReceiptPayloadV2,
+  isEvidenceReceiptPayloadV2,
+  type EvidenceReceiptPayloadV2,
+  type SignatureEnvelope,
+  verifySignedEvidenceReceiptV2,
+} from "../../server/domain/index.ts";
 import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-820 820b-2c-1, plan of attack ductura/server#146 S-1: the worker's
@@ -44,9 +52,12 @@ const token = {
   iva: randomBytes(32).toString("base64url"),
 };
 const KEY_ID = `kljuc-potvrde-${suffix}`;
-const SPKI = generateKeyPairSync("ed25519")
-  .publicKey.export({ type: "spki", format: "der" })
-  .toString("base64url");
+// Two receipt keys of the domain, so the two racing attaches send different signatures.
+const KEYS = [generateKeyPairSync("ed25519"), generateKeyPairSync("ed25519")];
+const KEY_IDS = [KEY_ID, `${KEY_ID}-2`];
+const spki = (k: number) =>
+  KEYS[k]!.publicKey.export({ type: "spki", format: "der" }).toString("base64url");
+const SPKI = spki(0);
 
 // The commit is deferred, so the signer must never be asked.
 let signerCalls = 0;
@@ -64,11 +75,15 @@ let worker: pg.Pool;
 let app: pg.Pool;
 const txid = (who: string) => `tx-${suffix}-${who}`;
 
-function pool(user: string): pg.Pool {
+function urlOf(user: string): string {
   const target = new URL(ADMIN_URL);
   target.username = user;
   target.password = password;
-  const made = new pg.Pool({ connectionString: target.href, max: 2 });
+  return target.href;
+}
+
+function pool(user: string): pg.Pool {
+  const made = new pg.Pool({ connectionString: urlOf(user), max: 2 });
   pools.push(made);
   return made;
 }
@@ -148,8 +163,9 @@ async function fixture(): Promise<void> {
   await q(
     `INSERT INTO evidence.signing_key
        (key_id, key_version, evidence_domain_id, institution_id, purpose, algorithm, key_base64url, valid_from)
-     VALUES ($1, '1', $2, $3, 'receipt', 'Ed25519', $4, date_trunc('minute', now()) - interval '1 day')`,
-    [KEY_ID, id.domain, id.a, SPKI],
+     SELECT k, '1', $2, $3, 'receipt', 'Ed25519', b, date_trunc('minute', now()) - interval '1 day'
+       FROM unnest($1::text[], $4::text[]) AS t(k, b)`,
+    [KEY_IDS, id.domain, id.a, [spki(0), spki(1)]],
   );
   await q("COMMIT");
 }
@@ -310,23 +326,147 @@ describe("the worker login reads the real pending receipts", () => {
     });
   });
 
-  it("the domain's receipt key reads as an EvidenceDomainKey", async () => {
+  it("the domain's receipt keys read as EvidenceDomainKey", async () => {
     const read = await readReceiptKeys(worker, id.domain);
-    expect(read).toMatchObject({
-      status: "ok",
-      keys: [
-        {
-          algorithm: "Ed25519",
-          keyId: KEY_ID,
-          keyVersion: "1",
-          encoding: "spki-der",
-          keyBase64Url: SPKI,
-          evidenceDomainId: id.domain,
-          purpose: "receipt",
-          validTo: null,
-          revokedAt: null,
-        },
-      ],
+    const key = (k: number) => ({
+      algorithm: "Ed25519",
+      keyId: KEY_IDS[k],
+      keyVersion: "1",
+      encoding: "spki-der",
+      keyBase64Url: spki(k),
+      evidenceDomainId: id.domain,
+      purpose: "receipt",
+      validTo: null,
+      revokedAt: null,
     });
+    expect(read).toMatchObject({ status: "ok", keys: [key(0), key(1)] });
+  });
+});
+
+/** The digest and an Ed25519 envelope of a stored pending receipt, under receipt key k. */
+async function signed(row: { receiptPayloadText: string }, k: number) {
+  const payload = JSON.parse(row.receiptPayloadText) as EvidenceReceiptPayloadV2;
+  const digest = await digestEvidenceReceiptPayloadV2(payload);
+  const signature: SignatureEnvelope = {
+    algorithm: "Ed25519",
+    keyId: KEY_IDS[k]!,
+    keyVersion: "1",
+    signatureEncoding: "raw",
+    signatureBase64Url: sign(null, Buffer.from(digest.signingInput), KEYS[k]!.privateKey).toString(
+      "base64url",
+    ),
+  };
+  return { payload, payloadDigestSha256: digest.sha256, signature };
+}
+const statusOf = async (receiptId: string) =>
+  (await admin.query("SELECT status FROM evidence.receipt WHERE id = $1", [receiptId])).rows[0]
+    ?.status;
+
+const ATTACH =
+  "SELECT outcome, signature FROM app.worker_attach_receipt_signature($1::uuid, $2::text, $3::jsonb)";
+
+/** True once the backend waits on a lock; false if it never does within five seconds. */
+async function waitingOnLock(pid: number): Promise<boolean> {
+  for (let tries = 0; tries < 100; tries += 1) {
+    const row = (
+      await admin.query<{ wait: string | null }>(
+        "SELECT wait_event_type AS wait FROM pg_catalog.pg_stat_activity WHERE pid = $1",
+        [pid],
+      )
+    ).rows[0];
+    if (row?.wait === "Lock") return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return false;
+}
+
+describe("the worker attaches a signature over real PostgreSQL (S-1, S-4)", () => {
+  it("the web login cannot attach: 42501, and the receipt stays pending", async () => {
+    const { payloadDigestSha256, signature } = await signed(stored[0]!, 0);
+    await expect(
+      app.query(
+        "SELECT * FROM app.worker_attach_receipt_signature($1::uuid, $2::text, $3::jsonb)",
+        [stored[0]!.receiptId, payloadDigestSha256, JSON.stringify(signature)],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    expect(
+      await createPendingReceiptStore(app).attachSignature({
+        receiptId: stored[0]!.receiptId,
+        payloadDigestSha256,
+        signature,
+      }),
+    ).toStrictEqual({ outcome: "unavailable", reason: "database_error" });
+    expect(await statusOf(stored[0]!.receiptId)).toBe("pending_signature");
+  });
+
+  it("a command the function refuses changes nothing", async () => {
+    const store = createPendingReceiptStore(worker);
+    const { payloadDigestSha256, signature } = await signed(stored[0]!, 0);
+    const base = { receiptId: stored[0]!.receiptId, payloadDigestSha256, signature };
+    // The adapter refuses a wrong digest form; the function refuses a short signature and a stale digest.
+    expect(
+      await store.attachSignature({ ...base, payloadDigestSha256: "AB".repeat(32) }),
+    ).toStrictEqual({ outcome: "invalid" });
+    expect(
+      await store.attachSignature({
+        ...base,
+        signature: { ...signature, signatureBase64Url: "AAAA" },
+      }),
+    ).toStrictEqual({ outcome: "invalid" });
+    expect(
+      await store.attachSignature({ ...base, payloadDigestSha256: "0".repeat(64) }),
+    ).toStrictEqual({ outcome: "digest_mismatch" });
+    expect(await statusOf(stored[0]!.receiptId)).toBe("pending_signature");
+  });
+
+  it("two attaches at once: the second waits on the row lock, then answers already_signed with the first signature", async () => {
+    const receiptId = stored[0]!.receiptId;
+    const [a, b] = [await signed(stored[0]!, 0), await signed(stored[0]!, 1)];
+    expect(a.signature.signatureBase64Url).not.toBe(b.signature.signatureBase64Url);
+    // The first attach runs in a transaction held open, so it keeps the row
+    // lock; the overlap is made, not left to the scheduler.
+    const first = await worker.connect();
+    const second = new pg.Pool({ connectionString: urlOf(LOGIN.worker), max: 1 });
+    pools.push(second);
+    try {
+      await first.query("BEGIN");
+      const held = await first.query(ATTACH, [
+        receiptId,
+        a.payloadDigestSha256,
+        JSON.stringify(a.signature),
+      ]);
+      expect(held.rows).toEqual([{ outcome: "signed", signature: a.signature }]);
+      const pid = (await second.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]!
+        .pid;
+      const late = createPendingReceiptStore(second).attachSignature({
+        receiptId,
+        payloadDigestSha256: b.payloadDigestSha256,
+        signature: b.signature,
+      });
+      // The second attach is inside the function and waits on the first one's lock.
+      expect(await waitingOnLock(pid)).toBe(true);
+      await first.query("COMMIT");
+      expect(await late).toStrictEqual({ outcome: "already_signed", signature: a.signature });
+    } finally {
+      first.release();
+    }
+    const winner = a;
+    // The stored signature verifies as a protocol 1 receipt under the domain's keys.
+    const keys = await readReceiptKeys(worker, id.domain);
+    if (keys.status !== "ok") throw new Error(`keys: ${keys.reason}`);
+    const verified = await verifySignedEvidenceReceiptV2(
+      winner,
+      {
+        documentId: winner.payload.documentId,
+        clientTransactionId: winner.payload.clientTransactionId,
+        revision: 1,
+        evidenceDomainId: id.domain,
+      },
+      keys.keys,
+    );
+    expect(verified.ok).toBe(true);
+    expect(await statusOf(receiptId)).toBe("signed");
+    const left = await createPendingReceiptQueue(worker).pendingReceipts(id.domain, 100, null);
+    expect(left).toStrictEqual({ status: "ok", rows: [stored[1]] });
   });
 });
