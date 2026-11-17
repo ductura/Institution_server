@@ -9,6 +9,7 @@ import {
   DYNAMIC_LOAD_ALLOWED,
   IMPORT_META,
   KEY_LITERAL_ALLOWED,
+  NODE_IMPORTS_ALLOWED,
   TEST_ONLY_RE,
 } from "../../scripts/lint-rules/index.ts";
 
@@ -45,7 +46,85 @@ const importForms = (spec: string): string[] => [
   `export * from "${spec}";\n`,
 ];
 
+// DAN-822-4 (orchestrator decision A, Ductus#1836 c.6948159989): the watch
+// thread of the attempt fence, the one file that may import node:worker_threads
+// (only workerData) and use process.hrtime, kill and pid.
+const WATCH = "server/database/queue/attempt-fence-watch.ts";
+const WATCH_CODE = readFileSync(path.join(ROOT, WATCH), "utf8");
+const WT = "node:worker_threads";
+
 const failing: Case[] = [
+  // The same code in any other file, the fence's own file included.
+  ...[
+    "server/database/queue/attempt-fence.ts",
+    "server/database/queue/Attempt-fence-watch.ts",
+    "server/database/queue/attempt-fence-watch.ts-extra.ts",
+    "server/database/queue/attempt-fence-watch2.ts",
+    "server/database/queue/sub/attempt-fence-watch.ts",
+    "server/database/attempt-fence-watch.ts",
+  ].flatMap((file) => at(file, "module", [WATCH_CODE])),
+  // In that file, every form but `import { workerData }` and its three members.
+  ...at(WATCH, "module", [
+    `import { Worker } from "${WT}";\nexport const w = Worker;\n`,
+    `import { workerData, Worker } from "${WT}";\nexport const w = [workerData, Worker];\n`,
+    `import { type Worker, workerData } from "${WT}";\nexport type W = Worker;\nexport const d = workerData;\n`,
+    `import { workerData as d } from "${WT}";\nexport const x = d;\n`,
+    `import { "workerData" as workerData } from "${WT}";\nexport const x = workerData;\n`,
+    `import * as wt from "${WT}";\nexport const x = wt.workerData;\n`,
+    `import wt from "${WT}";\nexport const x = wt;\n`,
+    `import "${WT}";\n`,
+    `export { workerData } from "${WT}";\n`,
+    `export * from "${WT}";\n`,
+    `export * as wt from "${WT}";\n`,
+    ...[
+      "worker_threads",
+      "node:worker_threads ",
+      "node:\tworker_threads",
+      "node:Worker_threads",
+    ].map((spec) => `import { workerData } from "${spec}";\nexport const x = workerData;\n`),
+    // A key of Object.prototype as the module is not on the table.
+    ...["node:__proto__", "node:toString", "node:hasOwnProperty", "node:constructor"].map(
+      (spec) => `import { workerData } from "${spec}";\nexport const x = workerData;\n`,
+    ),
+  ]),
+  ...at(WATCH, "nodeExport", [
+    `import { workerData } from "${WT}";\nexport { workerData };\n`,
+    `import { workerData } from "${WT}";\nexport { workerData as data };\n`,
+    `import { workerData } from "${WT}";\nexport default workerData;\n`,
+    `export { workerData };\nimport { workerData } from "${WT}";\n`,
+    // Review and QA FAIL on #258 (c.6949047280, c.6949045980): the name in a
+    // TypeScript wrapper. The whole class: a file with a listed import exports
+    // nothing, so no wrapper, alias or container carries the name out.
+    ...[
+      "export default (workerData as unknown);\n",
+      "export default workerData satisfies unknown;\n",
+      "export default workerData!;\n",
+      "export default <unknown>workerData;\n",
+      "export default (0, workerData);\n",
+      "export default { workerData };\n",
+      "export default [workerData];\n",
+      "export default (): unknown => workerData;\n",
+      "export const d = workerData;\n",
+      "export const d = { data: workerData as unknown };\n",
+      "export function f(): unknown {\n  return workerData;\n}\n",
+      "const w = workerData;\nexport { w };\n",
+      "export = workerData;\n",
+      "void workerData;\nexport const unrelated = 1;\n",
+      "void workerData;\nexport type T = number;\n",
+      'void workerData;\nexport * from "./y.ts";\n',
+      "void workerData;\nexport {};\n",
+      "void workerData;\nnamespace n {\n  export const a = 1;\n}\nexport import m = n.a;\n",
+    ].map((tail) => `import { workerData } from "${WT}";\n${tail}`),
+  ]),
+  ...at(WATCH, "global", [
+    "process.exit(1);\n",
+    "export const e = process.env;\n",
+    "export const p = globalThis.process.pid;\n",
+    "const p = process;\np.kill(p.pid);\n",
+    'export const v = eval("1");\n',
+    'export const f = new Function("return 1");\n',
+  ]),
+  ...at(WATCH, "dynamicImport", ['export const m = await import("node:worker_threads");\n']),
   // FAIL c.6888904929: process under another name, destructured loaders.
   {
     file: LOG,
@@ -343,6 +422,7 @@ const failing: Case[] = [
 ];
 
 const passing: Case[] = [
+  ...at(WATCH, "", [WATCH_CODE]),
   ...at(ENV, "", [
     "export function f(env = process.env): unknown {\n  return env;\n}\n",
     "export const p = process.env.PORT ?? process.env?.HOST;\n",
@@ -462,6 +542,17 @@ describe("the rule covers the whole of server/", () => {
             `${file} ${name}.${member}`,
           ).toBe(true);
         }
+      }
+    }
+  });
+
+  it("lists node: imports only for tracked production files, each importing every name it is allowed", () => {
+    for (const [file, modules] of Object.entries(NODE_IMPORTS_ALLOWED)) {
+      expect(tracked, file).toContain(file);
+      expect(file.endsWith(".test.ts"), file).toBe(false);
+      const text = readFileSync(path.join(ROOT, file), "utf8");
+      for (const [spec, names] of Object.entries(modules)) {
+        expect(text, `${file} ${spec}`).toContain(`import { ${names.join(", ")} } from "${spec}";`);
       }
     }
   });

@@ -348,6 +348,9 @@ const ESTREE_NODE_NAMES = [
   "ImportDefaultSpecifier",
   "ImportNamespaceSpecifier",
   "ExportSpecifier",
+  // Exports of a file with a NODE_IMPORTS_ALLOWED import (DAN-822-4).
+  "ExportDefaultDeclaration",
+  "TSExportAssignment",
   "Literal",
   "TemplateElement",
   // local/no-hardcoded-text (DAN-780).
