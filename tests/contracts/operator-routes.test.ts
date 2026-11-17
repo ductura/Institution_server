@@ -79,32 +79,55 @@ const ENTRY_FACTORIES: Readonly<Record<string, () => readonly { contract: RouteL
  */
 export function entryRouteFactories(entry: string): string[] {
   const text = flat(code(entry));
-  const start = text.indexOf("routes: [");
-  if (start < 0) return ["no routes list"];
+  const call = /\bstartServer\(\s*\{/u.exec(text);
+  if (call === null) return ["startServer without an options object"];
+  const open = call.index + call[0].length - 1;
+  const close = closing(text, open);
+  if (!/^\s*\)/u.test(text.slice(close + 1))) return ["startServer with more than the options"];
+  const seen = new Set<string>();
+  let routes: string | undefined;
+  for (const option of topLevel(text.slice(open + 1, close))) {
+    const key = /^([A-Za-z]\w*)(?=\s*(?::|$))/u.exec(option)?.[1];
+    // Only the known options, each once: no spread, computed or repeated key
+    // can replace the list after it is read.
+    if (key === undefined || !START_OPTIONS.has(key) || seen.has(key)) return [`option ${option}`];
+    seen.add(key);
+    if (key === "routes") routes = option.slice(option.indexOf(":") + 1).trim();
+  }
+  // The list itself and nothing more: no .map, .concat or call around it.
+  if (routes === undefined || !routes.startsWith("[") || closing(routes, 0) !== routes.length - 1)
+    return [`routes ${routes ?? "missing"}`];
+  return topLevel(routes.slice(1, -1)).map(factoryOf);
+}
+
+const START_OPTIONS = new Set(["host", "port", "databases", "shutdown", "layers", "routes", "log"]);
+
+/** The index of the bracket that closes the one at `open`, or -1. */
+function closing(text: string, open: number): number {
   let depth = 0;
-  let end = -1;
-  for (let i = start + "routes: ".length; i < text.length; i += 1) {
+  for (let i = open; i < text.length; i += 1) {
     if ("([{".includes(text[i]!)) depth += 1;
     if (")]}".includes(text[i]!)) depth -= 1;
-    if (depth === 0) {
-      end = i;
-      break;
-    }
+    if (depth === 0) return i;
   }
-  const body = text.slice(start + "routes: [".length, end);
-  const entries: string[] = [];
+  return -1;
+}
+
+/** The comma-separated items of a list or object body, at its own level only. */
+function topLevel(body: string): string[] {
+  const items: string[] = [];
   let level = 0;
   let current = "";
   for (const char of body) {
     if ("([{".includes(char)) level += 1;
     if (")]}".includes(char)) level -= 1;
     if (char === "," && level === 0) {
-      entries.push(current.trim());
+      items.push(current.trim());
       current = "";
     } else current += char;
   }
-  if (current.trim() !== "") entries.push(current.trim());
-  return entries.map(factoryOf);
+  if (current.trim() !== "") items.push(current.trim());
+  return items;
 }
 
 /**
@@ -323,6 +346,34 @@ describe("operator routes cannot go around step 8", () => {
       "an index after the factory",
       (t: string) => t.replace("createClientContextRoute(),", "createClientContextRoute()[0],"),
     ],
+    [
+      "a map over the whole list",
+      (t: string) =>
+        t.replace(
+          /routes: \[([\s\S]*?)\n {4}\],/u,
+          'routes: [$1\n    ].map((r) => ({ ...r, contract: { ...r.contract, id: "ops.x.get" } })),',
+        ),
+    ],
+    [
+      "a list wrapped in a call",
+      (t: string) =>
+        t
+          .replace("routes: [", "routes: wrap([")
+          .replace(/(\.\.\.routesOf\(AREAS\),\s*\n {4}\])/u, "$1)"),
+    ],
+    [
+      "a second routes key",
+      (t: string) => t.replace("layers: LAYERS,", "layers: LAYERS,\n    routes: rogue,"),
+    ],
+    [
+      "a spread after the list",
+      (t: string) => t.replace("layers: LAYERS,", "layers: LAYERS,\n    ...override,"),
+    ],
+    [
+      "an unknown option",
+      (t: string) => t.replace("layers: LAYERS,", "layers: LAYERS,\n    extraRoutes: rogue,"),
+    ],
+    ["a second argument", (t: string) => t.replace(/\}\)\.catch\(/u, "}, rogue).catch(")],
     [
       "a list joined after the factory",
       (t: string) => t.replace("...routesOf(AREAS)", "...routesOf(AREAS).concat([rogueRoute])"),
