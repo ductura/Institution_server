@@ -127,6 +127,7 @@
     "invalid_body": "Problem nije poslan. Provjerite opis i odabrane podatke pa pokušajte ponovno."
   },
   "logAnalysis": {
-    "analysis_threshold_invalid": "Prag analize zapisa nije ispravan: prozor i najmanji broj zapisa moraju biti cijeli brojevi veći od nule, a prozor najviše 24 sata."
+    "analysis_threshold_invalid": "Prag analize zapisa nije ispravan: prozor i najmanji broj zapisa moraju biti cijeli brojevi veći od nule, a prozor najviše 24 sata.",
+    "analysis_entries_invalid": "Zapisi za analizu nisu ispravan popis, pa analiza nije pokrenuta."
   }
 }

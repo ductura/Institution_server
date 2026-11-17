@@ -47,7 +47,10 @@ export type AnalysisFinding = {
   readonly minCount: number;
 };
 
-export const ANALYSIS_ERROR_CODES = Object.freeze(["ANALYSIS_THRESHOLD_INVALID"] as const);
+export const ANALYSIS_ERROR_CODES = Object.freeze([
+  "ANALYSIS_THRESHOLD_INVALID",
+  "ANALYSIS_ENTRIES_INVALID",
+] as const);
 export type AnalysisError = {
   readonly code: (typeof ANALYSIS_ERROR_CODES)[number];
   readonly messageKey: string;
@@ -56,11 +59,29 @@ export type AnalysisResult =
   | { readonly ok: true; readonly value: readonly AnalysisFinding[] }
   | { readonly ok: false; readonly error: AnalysisError };
 
-// Own data properties only: a getter, an inherited key or a non-object gives undefined.
+// Own data properties only: a getter, an inherited key, a non-object or a value
+// that throws when read (a revoked Proxy, a throwing trap) gives undefined.
 function ownValue(holder: unknown, key: string): unknown {
   if (typeof holder !== "object" || holder === null) return undefined;
-  const descriptor = Object.getOwnPropertyDescriptor(holder, key);
-  return descriptor && "value" in descriptor ? descriptor.value : undefined;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(holder, key);
+    return descriptor && "value" in descriptor ? descriptor.value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// A plain copy of the list, or null when it is no array or throws when read.
+function readEntries(entries: unknown): readonly unknown[] | null {
+  try {
+    return Array.isArray(entries) ? Array.prototype.slice.call(entries) : null;
+  } catch {
+    return null;
+  }
+}
+
+function refuse(code: AnalysisError["code"]): AnalysisResult {
+  return { ok: false, error: { code, messageKey: `logAnalysis.${code.toLowerCase()}` } };
 }
 
 function readThreshold(thresholds: unknown, key: AnalysisThresholdKey): RuleThreshold | null {
@@ -97,19 +118,21 @@ function windowsOf(
   return found;
 }
 
-/** Runs every rule on `entries`; an invalid threshold refuses the whole run. */
+/**
+ * Runs every rule on `entries`; an invalid threshold or a list it cannot read
+ * refuses the whole run, an entry it cannot read is skipped. Never throws.
+ */
 export function analyzeLog(
   entries: readonly AnalysisEntry[],
   thresholds: AnalysisThresholds = DEFAULT_ANALYSIS_THRESHOLDS,
 ): AnalysisResult {
   const checked = ANALYSIS_RULES.map((rule) => readThreshold(thresholds, rule.key));
-  if (checked.some((t) => t === null)) {
-    const code = ANALYSIS_ERROR_CODES[0];
-    return { ok: false, error: { code, messageKey: `logAnalysis.${code.toLowerCase()}` } };
-  }
+  if (checked.some((t) => t === null)) return refuse("ANALYSIS_THRESHOLD_INVALID");
+  const list = readEntries(entries);
+  if (list === null) return refuse("ANALYSIS_ENTRIES_INVALID");
   const findings = ANALYSIS_RULES.flatMap((rule, index) => {
     const events: readonly string[] = rule.events;
-    const times = entries
+    const times = list
       .filter((entry) => {
         const event = ownValue(entry, "event");
         return typeof event === "string" && events.includes(event);

@@ -179,6 +179,69 @@ describe("log analysis: only own data properties are read", () => {
   });
 });
 
+// Codex review c.6964455683: analyzeLog never throws. An entry it cannot read is
+// skipped, thresholds it cannot read are refused, and a list it cannot read is refused.
+describe("log analysis: input that throws when read", () => {
+  const revoked = (): object => {
+    const { proxy, revoke } = Proxy.revocable({}, {});
+    revoke();
+    return proxy;
+  };
+  const throwing = (): object =>
+    new Proxy(
+      {},
+      {
+        getOwnPropertyDescriptor: () => {
+          throw new Error("trap");
+        },
+        get: () => {
+          throw new Error("trap");
+        },
+      },
+    );
+  const valid = at("authn.login_failed", 0, 1, 2);
+  const entriesFailure = {
+    ok: false,
+    error: { code: "ANALYSIS_ENTRIES_INVALID", messageKey: "logAnalysis.analysis_entries_invalid" },
+  };
+
+  it("skips an entry that throws and still counts the others", () => {
+    for (const odd of [revoked(), throwing()]) {
+      expect(findings([valid[0], odd, valid[1], valid[2]])).toHaveLength(1);
+      expect(findings([valid[0], odd, valid[1]])).toEqual([]);
+    }
+  });
+
+  it("refuses thresholds that throw, at the top or for one rule", () => {
+    for (const odd of [revoked(), throwing()]) {
+      for (const t of [odd, { ...thresholds, trafficRefusals: odd }]) {
+        expect(analyzeLog(valid, t as AnalysisThresholds)).toEqual(failure);
+      }
+    }
+  });
+
+  it("refuses a list of entries that throws or is not an array", () => {
+    const { proxy, revoke } = Proxy.revocable([...valid], {});
+    revoke();
+    const trapped = new Proxy([...valid], {
+      get: () => {
+        throw new Error("trap");
+      },
+    });
+    for (const list of [
+      proxy,
+      trapped,
+      null,
+      undefined,
+      {},
+      "entries",
+      { length: 3, 0: valid[0] },
+    ]) {
+      expect(analyzeLog(list as unknown as AnalysisEntry[], thresholds)).toEqual(entriesFailure);
+    }
+  });
+});
+
 describe("log analysis: entries that are not counted", () => {
   it("skips entries without a finite time or a string event, and inherited names", () => {
     const getter = Object.defineProperty({ timeMs: T0 }, "event", {
