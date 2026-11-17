@@ -1,15 +1,14 @@
-// DAN-851-1b: server/profile is an empty area of the map (docs/server-map.md).
-import { describe, expect, expectTypeOf, it } from "vitest";
+// DAN-851-1c2: the public interface of server/profile (docs/server-map.md).
+import { describe, expect, it } from "vitest";
 import * as area from "./index.ts";
-import type { ProfileService } from "./index.ts";
 
 describe("server/profile public interface", () => {
-  it("exports no values", () => {
-    expect(Object.keys(area)).toEqual([]);
-  });
-
-  it("has a service type without members", () => {
-    expectTypeOf<keyof ProfileService>().toEqualTypeOf<string>();
-    expectTypeOf<ProfileService[string]>().toEqualTypeOf<never>();
+  it("exports the service factory and its errors", () => {
+    expect(Object.keys(area).sort()).toEqual([
+      "INTERFACE_LOCALE_INVALID_BODY",
+      "INTERFACE_LOCALE_INVALID_JSON",
+      "PROFILE_ERRORS",
+      "createProfileService",
+    ]);
   });
 });
