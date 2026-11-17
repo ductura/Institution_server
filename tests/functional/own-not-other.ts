@@ -19,7 +19,7 @@ const OPEN = "/api/v1/evidence/open";
 const COMMIT = "/api/v1/evidence/commit";
 const REPLAY = "/api/v1/evidence/replay";
 /** Every answer the check reads; fewer means it stopped early or skipped one. */
-export const CHECKS = 11;
+export const CHECKS = 12;
 
 /** The whole check against the stack in `stackDir`; returns the revision line, throws on the first broken promise. */
 export async function check(stackDir: string): Promise<string> {
@@ -62,23 +62,26 @@ export async function check(stackDir: string): Promise<string> {
   const own = await as(a, OPEN, { assignmentId: z.assignmentId, start: true });
   succeeded(OPEN, own, { status: "opened" });
   if (own.body.documentId === opened.body.documentId) throw new Error("A opened B's document");
+  // B's work on Y exists before A asks for Y, so open over an existing work of
+  // someone else is checked, not only over an empty assignment.
+  succeeded(OPEN, await as(b, OPEN, { assignmentId: y.assignmentId, start: true }), {
+    status: "opened",
+  });
   const commit = commitRequest(opened.body, `tx-${randomBytes(4).toString("hex")}`);
   const work = { documentId: opened.body.documentId, from: 0 };
   notFound([
     [OPEN, await as(a, OPEN, { assignmentId: y.assignmentId, start: true })],
+    [OPEN, await as(a, OPEN, { assignmentId: y.assignmentId })],
     [COMMIT, await as(a, COMMIT, commit)],
     [REPLAY, await as(a, REPLAY, work)],
   ]);
 
   // Control: B sends the very same commit and it is new (committed, revision
   // 1, not duplicate), so A's request was valid and recorded nothing; B reads
-  // the one segment and A still cannot; Y is open to its member.
+  // the one segment and A still cannot.
   succeeded(COMMIT, await as(b, COMMIT, commit), { status: "committed", revision: 1 });
   succeeded(REPLAY, await as(b, REPLAY, work), { segmentCount: 1 });
   notFound([[REPLAY, await as(a, REPLAY, work)]]);
-  succeeded(OPEN, await as(b, OPEN, { assignmentId: y.assignmentId, start: true }), {
-    status: "opened",
-  });
 
   // A's own work on Z, opened above as a document other than B's: commit and replay succeed.
   const mine = commitRequest(own.body, `tx-${randomBytes(4).toString("hex")}`);
