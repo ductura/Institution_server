@@ -60,6 +60,8 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
  * in INVENTORY, which stays a copy of the 38 files. The key is the route.ts it
  * would be (pathOf gives its path), `source` the Ductus file of its shape.
  */
+const WEBAUTHN_SOURCE = "danielrisavi77-create/Ductus@b36c82b:docs/DECISIONS.md#D-297";
+
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
@@ -77,6 +79,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus@333e163:docs/DECISIONS.md#D-300",
   },
+  // DAN-840: Ductus has no WebAuthn route; the network engineer signs in with
+  // AAI@EduHr and FIDO2 (D-297), the second factor of an AAI@EduHr session.
+  "app/api/auth/webauthn/challenge/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },
+  "app/api/auth/webauthn/registration/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },
+  "app/api/auth/webauthn/assertion/route.ts": { methods: ["POST"], source: WEBAUTHN_SOURCE },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -119,6 +126,9 @@ export const CONTRACT_ONLY: readonly string[] = [
   "settings.catalogue.get",
   "settings.values.get",
   "settings.values.put",
+  "auth.webauthn-challenge.post",
+  "auth.webauthn-registration.post",
+  "auth.webauthn-assertion.post",
 ];
 
 /**

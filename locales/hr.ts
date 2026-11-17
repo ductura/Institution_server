@@ -1988,11 +1988,15 @@ export const hr = {
     bodyTimeout: "Slanje zahtjeva trajalo je predugo. Pokušajte ponovno.",
     bodyTooLarge: "Zahtjev je prevelik.",
     boundCrossed: "Vrijednost je izvan granice koju je postavila viša razina.",
+    ceremonyInvalid: "Sigurnosni ključ nije potvrdio zahtjev. Pokušajte ponovno.",
     chainConflict:
       "Zapis rada na poslužitelju razlikuje se od onoga na ovom uređaju. Učitajte rad ponovno.",
+    challengeInvalid:
+      "Zahtjev za sigurnosni ključ je istekao ili je već iskorišten. Pokušajte ponovno.",
     conflict: "Stanje se u međuvremenu promijenilo. Učitajte ga ponovno.",
     contentLengthInvalid: "Duljina zahtjeva nije ispravno navedena.",
     contentLengthMismatch: "Zahtjev nije jednake duljine kao što je navedeno.",
+    counterNotIncreased: "Sigurnosni ključ nije prihvaćen. Obratite se administratoru.",
     crossSite: "Zahtjev s druge stranice nije dopušten.",
     documentMismatch: "Tekst rada ne odgovara poslanim izmjenama. Učitajte rad ponovno.",
     draining: "Poslužitelj se ponovno pokreće. Pokušajte za nekoliko sekundi.",
