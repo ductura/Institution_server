@@ -3139,6 +3139,75 @@
     }
   },
   {
+    "route": "downloads.manifest.get",
+    "name": "ready",
+    "request": {},
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "packages": [
+          {
+            "system": "macos",
+            "architecture": "arm64",
+            "version": "1.0.0",
+            "url": "https://preuzimanje.example.invalid/ductura/1.0.0/ductura-macos-arm64.dmg",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "system": "macos",
+            "architecture": "x64",
+            "version": "1.0.0",
+            "url": "/preuzimanje/ductura/1.0.0/ductura-macos-x64.dmg",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "system": "windows",
+            "architecture": "arm64",
+            "version": "1.0.0",
+            "url": "https://preuzimanje.example.invalid/ductura/1.0.0/ductura-windows-arm64.msi",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          },
+          {
+            "system": "windows",
+            "architecture": "x64",
+            "version": "1.0.0",
+            "url": "https://preuzimanje.example.invalid/ductura/1.0.0/ductura-windows-x64.msi",
+            "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "downloads.manifest.get",
+    "name": "ready-empty",
+    "request": {},
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "packages": []
+      }
+    }
+  },
+  {
+    "route": "downloads.manifest.get",
+    "name": "unavailable",
+    "request": {},
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
     "route": "evidence.commit.post",
     "name": "committed",
     "request": {
@@ -12141,7 +12210,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.21.0",
+        "apiVersion": "1.22.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -12157,7 +12226,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.21.0",
+        "apiVersion": "1.22.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
