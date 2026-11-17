@@ -2,7 +2,7 @@
 // the commit route on a real server with the real pipeline and router, over
 // a fake evidence service. Every vector of evidence.commit.post is sent as
 // its bytes and answered as the vector says (403 by status only: pipeline
-// step 7; bad-request by status only: Node's parser, docs/vs1-rute.md). The
+// step 7, docs/vs1-rute.md; bad-request is the 400 of client-error.ts). The
 // service is server/evidence/service.test.ts, the database
 // tests/db/evidence-commit.integration.test.ts. Every token and id is invented.
 import { readFileSync } from "node:fs";
@@ -163,7 +163,6 @@ describe("G. every vector of evidence.commit.post", () => {
     const body = v.request.rawBody ?? JSON.stringify(v.request.body);
     const answer = await send(request(v.request.headers, body));
     expect(answer.status).toBe(v.response.status);
-    if (v.name === "bad-request") return;
     expect(answer.head["cache-control"]).toBe("no-store");
     expect(answer.head["set-cookie"]).toBeUndefined();
     if (v.name === "forbidden") return;

@@ -5,6 +5,7 @@ Područje iz [karte servera](../../docs/server-map.md). Jedini sastavljač: HTTP
 ## Što radi
 
 - `startServer` pokreće `node:http` poslužitelj i propušta zahtjev kroz slojeve (`createPipeline`), zatim kroz router. Vraća stvarni port i `close()`. Greška pri slušanju (npr. `EADDRINUSE`) odbija obećanje s kodom greške.
+- `createClientErrorListener(routes)` (`client-error.ts`, DAN-851-1d2, QA na #206) je slušač `clientError` u `startServer`. Kad Nodeov parser odbije `Content-Length` (neispravan ili dvostruk), odgovara 400 kakav obećava ugovor rute: tijelo problema `content_length_invalid` (`MUTATION_GUARD`) ili `{status:"bad_request"}` za rute evidencije, sa sigurnosnim zaglavljima, `X-Request-Id` i `Connection: close`. Rutu prepoznaje po zadnjoj početnoj liniji zahtjeva u bajtovima koje je parser pročitao. Bez nje (linija u ranijem paketu) šalje tijelo problema. Ostale greške parsera dobivaju Nodeov odgovor bajt po bajt (431, 413, 408, inače 400). Kao Node, piše samo dok na vezi nije započet drugi odgovor, a zatim zatvara vezu. Zapis se ne radi, kao ni dosad.
 - `createRouter` traži rutu po metodi i putanji iz ugovora (`server/contracts`), s točnim podudaranjem i bez upita. Odbijanja imaju oblik ugovora:
   - nepoznata putanja: 404 `{"error":"not_found"}` (`FALLBACK`);
   - druga metoda: 405 `{"error":"method_not_allowed"}` uz `Allow`;

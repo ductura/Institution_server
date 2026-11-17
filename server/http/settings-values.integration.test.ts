@@ -121,7 +121,6 @@ describe("every vector of settings.values.put a socket can reach", () => {
       const headers = v.request.headers;
       const got = await send(request(headers, v.request.rawBody ?? JSON.stringify(v.request.body)));
       expect(got.status).toBe(v.response.status);
-      if (v.name === "content-length-invalid") return; // Node's parser answers -1 itself.
       expect(got.head["content-type"]?.split(";")[0]).toBe("application/json");
       expect(got.head["cache-control"]).toBe("no-store");
       expect(got.head["set-cookie"]).toBeUndefined();

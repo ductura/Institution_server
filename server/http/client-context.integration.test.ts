@@ -129,7 +129,6 @@ describe("every vector of client.context.post", () => {
       const body = v.request.rawBody ?? jcs(v.request.body as Record<string, unknown>);
       const answer = await send(request(v.request.headers, body) as unknown as string);
       expect(answer.status).toBe(v.response.status);
-      if (v.name === "content-length-invalid") return; // Node's parser answers -1 itself.
       expect(answer.head["cache-control"]).toBe("no-store");
       expect(answer.head["set-cookie"]).toBeUndefined();
       if (v.response.status === 204) {

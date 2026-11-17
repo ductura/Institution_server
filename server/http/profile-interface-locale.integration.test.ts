@@ -180,7 +180,6 @@ describe("every vector a socket can reach", () => {
       const body = v.request.rawBody ?? JSON.stringify(v.request.body);
       const got = await send(raw("POST", vectorHeaders(v), body));
       expect(got.status).toBe(v.response.status);
-      if (v.name === "content-length-invalid") return; // Node's parser answers it itself.
       plainHeaders(got);
       const json = JSON.parse(got.body) as Record<string, unknown>;
       if (got.status === 200) expect(json).toEqual(v.response.body);
