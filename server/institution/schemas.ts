@@ -35,3 +35,57 @@ export function parseCourseBody(value: unknown): CourseBody | null {
   if (!POLICIES.has(obj.aiPolicy)) return null;
   return { name: obj.name, academicYear: obj.academicYear, aiPolicy: obj.aiPolicy as AiPolicy };
 }
+
+// The enrolment code body of POST /api/v1/institution/courses/{courseId}/enrollment-code
+// (DAN-852-3a; contract Ductus#1836 c.6945059378). Literal port of the body
+// check and validTimestamp of Ductus src/server/institution/enrollment-code-route.ts
+// at 078c780fb0e53ecaa51757d4913508834a0723a1. The only changes are of naming,
+// export and form: the check is a function that returns the body or null (the
+// route's 422) instead of a response; days[month - 1] carries a non-null
+// assertion for noUncheckedIndexedAccess (month is already 1 to 12 there); and
+// prettier wraps the lines.
+
+export type EnrollmentCodeBody = { validUntil: string };
+
+// Keep the caller's timestamp intact (including microseconds). Date.parse alone
+// normalizes impossible dates such as February 30; reject them before the RPC.
+function validTimestamp(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const parts =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-](\d{2}):(\d{2}))$/.exec(
+      value,
+    );
+  if (!parts) return false;
+  const [, y, m, d, h, min, s, zh = "0", zm = "0"] = parts;
+  const year = Number(y),
+    month = Number(m),
+    day = Number(d);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return (
+    year > 0 &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= days[month - 1]! &&
+    Number(h) <= 23 &&
+    Number(min) <= 59 &&
+    Number(s) <= 59 &&
+    Number(zh) <= 15 &&
+    Number(zm) <= 59 &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+
+export function parseEnrollmentCodeBody(value: unknown): EnrollmentCodeBody | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const body = value as Record<string, unknown>;
+  if (
+    Object.keys(body).length !== 1 ||
+    !Object.hasOwn(body, "validUntil") ||
+    !validTimestamp(body.validUntil)
+  ) {
+    return null;
+  }
+  return { validUntil: body.validUntil };
+}
