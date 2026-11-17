@@ -203,3 +203,77 @@ describe("fake server import boundary (eslint.config.ts)", () => {
     expect(result!.messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
   });
 });
+
+// DAN-950: production code binds no import or export to a name of a fake
+// (Fake*, fake*, FAKE_*), whatever module it comes from.
+describe("fake names in production code (fakeName)", () => {
+  async function fakeNames(filePath: string, code: string) {
+    const [result] = await eslint.lintText(code, { filePath });
+    return result!.messages.filter((m) => m.messageId === "fakeName").length;
+  }
+  const INDEX = "./c/index.ts";
+
+  it.each([
+    [
+      "import { FakeEmail }",
+      `import { FakeEmail } from "${INDEX}";\nexport const x = FakeEmail;\n`,
+    ],
+    ["import { a as FakeA }", `import { a as FakeA } from "${INDEX}";\nexport const x = FakeA;\n`],
+    ["import { FakeA as a }", `import { FakeA as a } from "${INDEX}";\nexport const x = a;\n`],
+    ["import a string name", `import { "FakeA" as a } from "${INDEX}";\nexport const x = a;\n`],
+    ["import default", `import fakeClock from "${INDEX}";\nexport const x = fakeClock;\n`],
+    ["import * as", `import * as FAKE_KEYS from "${INDEX}";\nexport const x = FAKE_KEYS;\n`],
+    ["import type", `import type { FakeStore } from "${INDEX}";\nexport type X = FakeStore;\n`],
+    ["inline type", `import { type Fake } from "${INDEX}";\nexport type X = Fake;\n`],
+    ["export from", `export { Fake2 } from "${INDEX}";\n`],
+    ["export as from", `export { a as fake$ } from "${INDEX}";\n`],
+    ["export local as", `const a = 1;\nexport { a as FakeA };\n`],
+    ["export * as", `export * as FAKE from "${INDEX}";\n`],
+    ["import = require", `import FakeA = require("${INDEX}");\nexport const x = FakeA;\n`],
+    [
+      "import = namespace",
+      `namespace N { export const y = 1; }\nimport FakeY = N.y;\nexport const x = FakeY;\n`,
+    ],
+    // review FAIL c.6954717628: the referenced name, not only the local one
+    [
+      "import = a fake member",
+      `namespace N { export class FakeEmail {} }\nimport Email = N.FakeEmail;\nexport const x = new Email();\n`,
+    ],
+    [
+      "import = a member of a fake namespace",
+      `namespace FakeN { export const y = 1; }\nimport Y = FakeN.y;\nexport const x = Y;\n`,
+    ],
+    [
+      "import = a fake namespace",
+      `namespace FakeN { export const y = 1; }\nimport Y = FakeN;\nexport const x = Y.y;\n`,
+    ],
+  ])("rejects %s in server/external/email/example.ts", async (_, code) => {
+    expect(await fakeNames("server/external/email/example.ts", code)).toBe(1);
+    expect(await fakeNames("scripts/example.ts", code)).toBe(1);
+  });
+
+  it.each([
+    ["faker", `import { faker } from "${INDEX}";\nexport const x = faker;\n`],
+    ["FAKER", `import { FAKER } from "${INDEX}";\nexport const x = FAKER;\n`],
+    ["fakeness", `import { fakeness } from "${INDEX}";\nexport const x = fakeness;\n`],
+    ["Fakery", `import { Fakery } from "${INDEX}";\nexport const x = Fakery;\n`],
+    ["isFake", `import { isFake } from "${INDEX}";\nexport const x = isFake;\n`],
+    ["an exported declaration", "export const FakeX = 1;\n"],
+  ])("allows %s in production code", async (_, code) => {
+    expect(await fakeNames("server/external/email/example.ts", code)).toBe(0);
+  });
+
+  it.each(["server/http/example.test.ts", "server/test-server/example.ts", "test-support/x.ts"])(
+    "allows fake names in test code %s",
+    async (filePath) => {
+      const code = `import { FakeEmail } from "${INDEX}";\nexport const x = FakeEmail;\n`;
+      expect(await fakeNames(filePath, code)).toBe(0);
+    },
+  );
+
+  it("reports a fake server import once, as fakeServer, not also as fakeName", async () => {
+    const code = `import { FakeRequest } from "./contracts/generated/fake-server/index.ts";\nexport type X = FakeRequest;\n`;
+    expect(await reported("server/index.ts", code)).toBe(1);
+    expect(await fakeNames("server/index.ts", code)).toBe(0);
+  });
+});

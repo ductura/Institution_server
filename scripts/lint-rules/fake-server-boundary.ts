@@ -6,6 +6,7 @@ import { specifierVisitors } from "./database-boundary.ts";
 
 type Node = Rule.Node;
 type Literal = { type: string; value?: unknown; expressions?: unknown[]; quasis?: unknown[] };
+type Loose = { type?: string; expression?: unknown };
 
 // The generated fake server folder of the contracts (U8), however the path
 // reaches it: either slash, unnormalized segments, a query or fragment suffix,
@@ -19,6 +20,10 @@ export const TEST_ONLY_RE =
   /^(?:test-support|server\/test-server|packages\/test-fakes)(?:\/|$)|\.test\.[cm]?[jt]s$/iu;
 // The test fakes package (U9) by name, with or without a subpath, any case.
 const TEST_FAKES_PACKAGE_RE = /^@ductura\/test-fakes(?:$|[/?#])/iu;
+// A name of a fake (DAN-950): Fake or fake before the end, an uppercase letter,
+// a digit, _ or $ (FakeEmail, fakeClock, Fake2), or FAKE before the end, a digit
+// or _ (FAKE_KEY). faker, FAKER, Fakery and isFake are not.
+const FAKE_NAME_RE = /^(?:[Ff]ake(?=$|[A-Z0-9_$])|FAKE(?=$|[0-9_]))/u;
 // `/// <reference path="..." />` and `/// <reference types="..." />`.
 const REFERENCE_RE = /^\/\s*<reference\s+(?:path|types)\s*=\s*["']([^"']*)["']/u;
 
@@ -126,6 +131,7 @@ export const noFakeServerImport: Rule.RuleModule = {
     messages: {
       fakeServer: "The contract fake server is for tests only.",
       testCode: "Test code is imported only by tests; it may re-export the contract fake server.",
+      fakeName: "'{{name}}' names a fake; production code imports and exports no fakes (DAN-950).",
     },
   },
   create(context) {
@@ -137,7 +143,46 @@ export const noFakeServerImport: Rule.RuleModule = {
       if (fake(specifier)) context.report({ ...where, messageId: "fakeServer" });
       else if (test(specifier)) context.report({ ...where, messageId: "testCode" });
     };
+    // Every name an import or export binds, as written (an identifier or a string).
+    const nameOf = (node: unknown): string | undefined => {
+      const named = node as { type?: string; name?: unknown; value?: unknown } | null | undefined;
+      if (named?.type === "Identifier") return String(named.name);
+      return named?.type === "Literal" && typeof named.value === "string" ? named.value : undefined;
+    };
+    // fakeName, unless the declaration's own module is already reported.
+    const fakeNames = (node: Node, source: unknown, names: unknown[]) => {
+      const specifier = literalText(source as Literal | undefined);
+      if (specifier !== undefined && (fake(specifier) || test(specifier))) return;
+      const found = new Set(names.map(nameOf).filter((name) => name && FAKE_NAME_RE.test(name)));
+      for (const name of found) context.report({ node, messageId: "fakeName", data: { name } });
+    };
+    // Every segment of `N.M.y` in `import X = N.M.y` (review FAIL c.6954717628).
+    const qualifiedNames = (reference: unknown): unknown[] => {
+      const name = reference as { type?: string; left?: unknown; right?: unknown } | undefined;
+      if (name?.type === "TSQualifiedName") return [...qualifiedNames(name.left), name.right];
+      return name?.type === "Identifier" ? [name] : [];
+    };
+    type Specifier = { local?: unknown; imported?: unknown; exported?: unknown };
+    const bindings = (specifiers: Specifier[] | undefined): unknown[] =>
+      (specifiers ?? []).flatMap((s) => [s.local, s.imported, s.exported]);
     return merged(
+      {
+        ImportDeclaration(node: Node & { source?: unknown; specifiers?: Specifier[] }) {
+          fakeNames(node, node.source, bindings(node.specifiers));
+        },
+        ExportNamedDeclaration(node: Node & { source?: unknown; specifiers?: Specifier[] }) {
+          fakeNames(node, node.source, bindings(node.specifiers));
+        },
+        ExportAllDeclaration(node: Node & { source?: unknown; exported?: unknown }) {
+          fakeNames(node, node.source, [node.exported]);
+        },
+        TSImportEqualsDeclaration(node: Node & { id?: unknown; moduleReference?: Loose }) {
+          const reference = node.moduleReference;
+          const source =
+            reference?.type === "TSExternalModuleReference" ? reference.expression : undefined;
+          fakeNames(node, source, [node.id, ...qualifiedNames(reference)]);
+        },
+      } as Rule.RuleListener,
       specifierVisitors(context, fake, "fakeServer"),
       specifierVisitors(context, (s) => !fake(s) && test(s), "testCode"),
       {

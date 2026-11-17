@@ -50,6 +50,13 @@ const failing: Case[] = [
     code: imp("../contracts/generated/fake-server/index.ts"),
     rule: "local/no-fake-server-import",
   },
+  // a fake bound by name in production code (DAN-950; tests/lint/fake-server-boundary.test.ts)
+  {
+    file: AT,
+    code: `${imp("./c/index.ts").replace("{ x }", "{ FakeX }")}export const y = FakeX;\n`,
+    rule: "local/no-fake-server-import",
+    messageId: "fakeName",
+  },
   // area-boundary: areas import each other only as docs/server-map.md §2 allows
   // (S-1A-b; tests/lint/area-boundary.test.ts)
   { file: "server/log/b.ts", code: imp("../database/index.ts"), rule: "local/area-boundary" },
