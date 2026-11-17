@@ -95,5 +95,12 @@
     "database_error": "Jezik sučelja trenutačno nije dostupan. Pokušajte ponovno.",
     "invalid_json": "Jezik sučelja nije promijenjen. Zahtjev nije valjan; učitajte stranicu i pokušajte ponovno.",
     "invalid_body": "Jezik sučelja nije promijenjen. Odaberite hrvatski ili engleski."
+  },
+  "problemReport": {
+    "unauthenticated": "Niste prijavljeni. Prijavite se ponovno; problem nije poslan.",
+    "invalid": "Problem nije poslan. Provjerite opis i pokušajte ponovno.",
+    "too_many": "Dosegnuli ste najveći broj prijava u jednom satu. Pokušajte ponovno kasnije.",
+    "row_malformed": "Prijavu problema trenutačno nije moguće potvrditi. Pokušajte ponovno.",
+    "database_error": "Prijava problema trenutačno nije dostupna. Pokušajte ponovno."
   }
 }
