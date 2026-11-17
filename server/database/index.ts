@@ -56,6 +56,13 @@ export type {
   SettingWriteLevel,
   SettingWriteValue,
 } from "./settings-writer.ts";
+export type {
+  WebAuthnAddOutcome,
+  WebAuthnCredential,
+  WebAuthnCredentials,
+  WebAuthnListOutcome,
+  WebAuthnUseOutcome,
+} from "./webauthn-credentials.ts";
 export type { ActorTransaction, WithActor } from "./with-actor.ts";
 export { connectLockClient } from "./migration-lock.ts";
 export type { DatabaseHealth, DatabaseName, HealthReport } from "./registry.ts";
@@ -88,6 +95,7 @@ export { readReceiptKeys } from "./receipt-keys.ts";
 export { createPendingReceiptStore } from "./pending-receipt-store.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
+export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
