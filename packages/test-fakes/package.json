@@ -1,6 +1,6 @@
 {
   "name": "@ductura/test-fakes",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "Lažne zamjene za testove Ducture (samo lokalno i u CI-ju, D-09)",
   "type": "module",
