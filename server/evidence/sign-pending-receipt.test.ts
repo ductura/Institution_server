@@ -160,4 +160,51 @@ describe("signPendingReceipt", () => {
       ).toThrow(TypeError);
     }
   });
+
+  // Codex review of #211: the object guard of the factory itself, not only
+  // objectOutcome. C1 and C2 of the source, through the factory (P-6).
+  const unsigned: [string, () => Promise<unknown>, SignPendingReceiptOutcome][] = [
+    ...(["not_pending", "locator_mismatch", "object_absent", "object_mismatch"] as const).map(
+      (reason): [string, () => Promise<unknown>, SignPendingReceiptOutcome] => [
+        `held as ${reason}`,
+        async () => ({ status: "held", reason }),
+        { status: "held", reason },
+      ],
+    ),
+    [
+      "unavailable",
+      async () => ({ status: "unavailable", reason: "locator_unavailable" }),
+      { status: "unavailable", stage: "object", reason: "locator_unavailable" },
+    ],
+    [
+      "throws",
+      async () => {
+        throw new Error("down");
+      },
+      { status: "unavailable", stage: "object", reason: "presence_unavailable" },
+    ],
+    [
+      "answers null",
+      async () => null,
+      { status: "unavailable", stage: "object", reason: "presence_unavailable" },
+    ],
+  ];
+  it.each(unsigned)(
+    "C1, C2 an object check that is %s signs and stores nothing",
+    async (_, check, expected) => {
+      const { signer, store, stored, run } = setup(undefined, undefined, check as never);
+      expect(await run(ROW)).toEqual(expected);
+      expect(signer.provider.sign).not.toHaveBeenCalled();
+      expect(store.attachSignature).not.toHaveBeenCalled();
+      expect(stored.size).toBe(0);
+    },
+  );
+
+  it("a check that never settles never lets the signer run", async () => {
+    const { signer, store, run } = setup(undefined, undefined, () => new Promise<never>(() => {}));
+    void run(ROW);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(signer.provider.sign).not.toHaveBeenCalled();
+    expect(store.attachSignature).not.toHaveBeenCalled();
+  });
 });
