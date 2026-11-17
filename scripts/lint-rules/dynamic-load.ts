@@ -158,7 +158,8 @@ export const NODE_IMPORTS_ALLOWED: Readonly<
  * The only scripts a file may start a thread from, as
  * `new Worker(new URL("<script>", import.meta.url), { workerData })` with the
  * global URL; a conditional whose both branches are such a URL is one too.
- * The thread is the init of a const in a block (a function body), used only
+ * The thread is the init of a const in the body of an exported top-level
+ * function the file never calls (so nothing starts it on import), used only
  * as `thread.unref()` and `thread.terminate()`, and Worker
  * is never a value otherwise (no alias, export or other argument), so no eval,
  * other option or code from a string (DAN-822-5, decision c.6948159989).
@@ -354,6 +355,28 @@ export const noDynamicLoad: Rule.RuleModule = {
       );
     }
 
+    // The thread starts only when another module calls the function: its
+    // const is a statement of the body of `export function name()` at the top
+    // of the file, and the file never names that function again (no call,
+    // alias, IIFE, block, static block or nested function runs it on import;
+    // review FAIL on #265, c.6952102045).
+    function inExportedStarter(declaration: Loose): boolean {
+      const body = declaration.parent;
+      const fn = body?.parent;
+      const exported = fn?.parent;
+      return (
+        body?.type === "BlockStatement" &&
+        fn?.type === "FunctionDeclaration" &&
+        (fn as { body?: unknown }).body === body &&
+        fn.id?.type === "Identifier" &&
+        exported?.type === "ExportNamedDeclaration" &&
+        exported.parent?.type === "Program" &&
+        context.sourceCode
+          .getDeclaredVariables(fn as unknown as Node)
+          .every((variable) => variable.references.length === 0)
+      );
+    }
+
     // The thread's const is used only as `t.unref()` or `t.terminate()`: never
     // returned, aliased, passed, stored or read otherwise (Codex P2 on #265).
     function threadStaysInside(declarator: Node): boolean {
@@ -400,7 +423,7 @@ export const noDynamicLoad: Rule.RuleModule = {
               threadStaysInside(declarator as unknown as Node) &&
               declaration?.type === "VariableDeclaration" &&
               declaration.kind === "const" &&
-              declaration.parent?.type === "BlockStatement" &&
+              inExportedStarter(declaration) &&
               rest.length === 0 &&
               isWatchUrl(url) &&
               isWorkerOptions(options);

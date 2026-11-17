@@ -140,6 +140,21 @@ const failing: Case[] = [
     `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void t.terminate;\n  return g;\n}\n`,
     `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void t?.terminate();\n  return g;\n}\n`,
     `import { Worker } from "${WT}";\nexport function f(): void {\n  const { unref } = new Worker(${URL_JS}, { workerData: 1 });\n  void unref;\n}\n`,
+    // Review FAIL on #265 (c.6952102045): a thread that starts on import. Only
+    // the body of an exported top-level function the file never calls.
+    `import { Worker } from "${WT}";\n{\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
+    `import { Worker } from "${WT}";\nclass C {\n  static {\n    const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n  }\n}\nvoid C;\n`,
+    `import { Worker } from "${WT}";\n(function () {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n})();\n`,
+    `import { Worker } from "${WT}";\n(() => {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n})();\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\nf();\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\nexport const g = f;\n`,
+    `import { Worker } from "${WT}";\nfunction f(): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\nexport { f };\n`,
+    `import { Worker } from "${WT}";\nexport const f = (): void => {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n};\n`,
+    `import { Worker } from "${WT}";\nexport const f = function (): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n};\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  if (Math.random() > 2) {\n    const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n  }\n}\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  function g(): void {\n    const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n  }\n  g();\n}\n`,
+    `import { Worker } from "${WT}";\nexport class C {\n  m(): void {\n    const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n  }\n}\n`,
+    `import { Worker } from "${WT}";\nexport default function (): void {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n}\n`,
   ]),
   // In the fence, the watch's members of process are not allowed.
   ...at(FENCE, "global", ["process.kill(process.pid);\n", "export const e = process.env;\n"]),
