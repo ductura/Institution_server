@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import {
   count,
   createWorkOpener,
+  OPEN_WORK_DATABASE_ERROR,
   OPEN_WORK_ERRORS,
   OPEN_WORK_NOT_ACCEPTING,
   OPEN_WORK_NOT_CONFIGURED,
@@ -96,10 +97,10 @@ describe("open work errors (docs/CODE_STYLE.md §8)", () => {
     ).toEqual(OPEN_WORK_ERRORS.map((e) => e.messageKey).sort());
   });
 
-  it("lists six errors with distinct UPPER_SNAKE codes", () => {
-    expect(OPEN_WORK_ERRORS).toHaveLength(6);
+  it("lists seven errors with distinct UPPER_SNAKE codes", () => {
+    expect(OPEN_WORK_ERRORS).toHaveLength(7);
     for (const { code } of OPEN_WORK_ERRORS) expect(code).toMatch(/^OPEN_WORK_[A-Z_]+$/);
-    expect(new Set(OPEN_WORK_ERRORS.map((e) => e.code)).size).toBe(6);
+    expect(new Set(OPEN_WORK_ERRORS.map((e) => e.code)).size).toBe(7);
   });
 });
 
@@ -247,12 +248,49 @@ describe("createWorkOpener", () => {
     expect(result.ok && result.value.receiptKeys).toEqual([]);
   });
 
-  // A thrown error stays an exception: the route records its closed class (contract, "Ne ulazi").
-  it("E1: a database error reaches the caller, who answers it", async () => {
-    const failing = createWorkOpener((async () => {
-      throw new Error("veza prekinuta");
+  // Review FAIL c.6947022168: an operational failure of the database is a Result;
+  // only a programming error stays an exception, which the route records by class.
+  const throwing = (thrown: unknown) =>
+    createWorkOpener((async () => {
+      throw thrown;
     }) as WithActor);
-    await expect(failing.openWork(TOKEN, ASSIGNMENT, true)).rejects.toThrow();
+
+  it.each([
+    [
+      "a refused connection",
+      Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }),
+    ],
+    ["a connection that ends", new Error("Connection terminated unexpectedly")],
+    ["an SQLSTATE", Object.assign(new Error("tekst greške baze"), { code: "57P01" })],
+    ["a session refused by withActor", Object.assign(new Error("x"), { code: "ZD401" })],
+    ["a value that is no Error", "veza prekinuta"],
+    [
+      "an error with a throwing code getter",
+      Object.defineProperty(new Error("x"), "code", {
+        get() {
+          throw new Error("getter");
+        },
+      }),
+    ],
+  ])("E1: %s is OPEN_WORK_DATABASE_ERROR, with no text of it", async (_name, thrown) => {
+    const result = await throwing(thrown).openWork(TOKEN, ASSIGNMENT, true);
+    expect(result).toEqual(failed(OPEN_WORK_DATABASE_ERROR));
+    expect(!result.ok && result.error).toBe(OPEN_WORK_DATABASE_ERROR);
+  });
+
+  it.each([
+    ["a TypeError", new TypeError("x")],
+    ["a RangeError", new RangeError("x")],
+    ["a ReferenceError", new ReferenceError("x")],
+    ["a SyntaxError", new SyntaxError("x")],
+  ])("E1: %s is a programming error and stays an exception", async (_name, thrown) => {
+    await expect(throwing(thrown).openWork(TOKEN, ASSIGNMENT, true)).rejects.toBe(thrown);
+  });
+
+  it("E1: a revoked Proxy, unreadable as an error, stays the same exception", async () => {
+    const { proxy, revoke } = Proxy.revocable({}, {});
+    revoke();
+    await expect(throwing(proxy).openWork(TOKEN, ASSIGNMENT, true)).rejects.toBe(proxy);
   });
 });
 

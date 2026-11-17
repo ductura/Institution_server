@@ -98,6 +98,7 @@ export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export {
   createWorkOpener,
+  OPEN_WORK_DATABASE_ERROR,
   OPEN_WORK_ERRORS,
   OPEN_WORK_NOT_ACCEPTING,
   OPEN_WORK_NOT_CONFIGURED,

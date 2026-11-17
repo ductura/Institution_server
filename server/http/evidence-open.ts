@@ -7,6 +7,7 @@
 import { ROUTES } from "../contracts/index.ts";
 import {
   type ActorReader,
+  OPEN_WORK_DATABASE_ERROR,
   OPEN_WORK_NOT_ACCEPTING,
   OPEN_WORK_NOT_FOUND,
   OPEN_WORK_NOT_STARTED,
@@ -113,6 +114,10 @@ export function createEvidenceOpenRoute(options: EvidenceOpenOptions): Route {
         // Only the class of the error: never its message, the request or a token.
         reportServerError("route", error, requestIdOf(response), contract.id);
         return refuse(UNAVAILABLE);
+      }
+      if (!opened.ok && opened.error.code === OPEN_WORK_DATABASE_ERROR.code) {
+        // The port keeps the database's error; the record is its closed class "other", as before.
+        reportServerError("route", opened.error, requestIdOf(response), contract.id);
       }
       const result = answerOf(opened);
       if ("status" in result) return refuse(result);

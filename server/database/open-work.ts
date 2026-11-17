@@ -5,8 +5,11 @@
 // before it leaves this folder; the rows become camelCase only here. The
 // answer is a Result with an AppError (docs/CODE_STYLE.md §8; DAN-859,
 // contract Ductus#1836 c.6946658606; text in locales/hr.json under
-// `openWork`). A thrown error of withActor stays an exception: the route
-// records its closed class, and a bug must not read as a database outage.
+// `openWork`). An operational failure of withActor (a connection, an
+// SQLSTATE, anything else that is no programming error) is
+// OPEN_WORK_DATABASE_ERROR; a TypeError, RangeError, ReferenceError or
+// SyntaxError stays an exception, so a bug never reads as a database outage
+// (review FAIL c.6947022168 on ductura/server#242).
 import { type AppError, isEvidenceDomainId, isSha256Hex, type Result } from "../domain/index.ts";
 
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
@@ -58,6 +61,11 @@ export const OPEN_WORK_NOT_CONFIGURED = error(
 );
 /** A row of the work, its domain or its keys that is not what the statements return. */
 export const OPEN_WORK_ROW_MALFORMED = error("OPEN_WORK_ROW_MALFORMED", "openWork.row_malformed");
+/** The database could not be reached or answered with an error; its text never leaves. */
+export const OPEN_WORK_DATABASE_ERROR = error(
+  "OPEN_WORK_DATABASE_ERROR",
+  "openWork.database_error",
+);
 export const OPEN_WORK_ERRORS: readonly AppError[] = [
   OPEN_WORK_UNAUTHENTICATED,
   OPEN_WORK_NOT_FOUND,
@@ -65,6 +73,7 @@ export const OPEN_WORK_ERRORS: readonly AppError[] = [
   OPEN_WORK_NOT_STARTED,
   OPEN_WORK_NOT_CONFIGURED,
   OPEN_WORK_ROW_MALFORMED,
+  OPEN_WORK_DATABASE_ERROR,
 ];
 
 export type OpenWorkResult = Result<OpenedWork>;
@@ -214,9 +223,29 @@ async function open(
 }
 
 /** An opener over `withActor`; the token is only presented, never a parameter. */
+/** Whether a thrown value is a programming error; one that cannot be read is treated as one. */
+function isProgrammingError(thrown: unknown): boolean {
+  try {
+    return (
+      thrown instanceof TypeError ||
+      thrown instanceof RangeError ||
+      thrown instanceof ReferenceError ||
+      thrown instanceof SyntaxError
+    );
+  } catch {
+    return true;
+  }
+}
+
 export function createWorkOpener(withActor: WithActor): WorkOpener {
   return {
-    openWork: (token, assignmentId, start) =>
-      withActor(token, (tx) => open(tx, assignmentId, start)),
+    async openWork(token, assignmentId, start) {
+      try {
+        return await withActor(token, (tx) => open(tx, assignmentId, start));
+      } catch (thrown) {
+        if (isProgrammingError(thrown)) throw thrown;
+        return fail(OPEN_WORK_DATABASE_ERROR);
+      }
+    },
   };
 }

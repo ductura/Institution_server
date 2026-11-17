@@ -11,6 +11,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 import {
   type ActorReader,
+  OPEN_WORK_DATABASE_ERROR,
   OPEN_WORK_NOT_ACCEPTING,
   OPEN_WORK_NOT_CONFIGURED,
   OPEN_WORK_NOT_FOUND,
@@ -213,6 +214,31 @@ describe("E. failures of the opener", () => {
       expect(line).not.toContain("kanarinac");
       expect(line).not.toContain(TOKEN);
     }
+  });
+
+  it("E1: a database error is 503 context with one record of class other, nothing else", async () => {
+    const lines: string[] = [];
+    const stderr = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    try {
+      next = async () => ({ ok: false, error: OPEN_WORK_DATABASE_ERROR });
+      const answer = await post(`{"assignmentId":"${A1}"}`);
+      expect(answer.status).toBe(503);
+      expect(answer.head["retry-after"]).toBe("5");
+      expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
+    } finally {
+      stderr.mockRestore();
+    }
+    expect(lines.map((line) => JSON.parse(line) as unknown)).toEqual([
+      {
+        event: "server_error",
+        where: "route",
+        errorClass: "other",
+        requestId: expect.any(String),
+        route: "evidence.open.post",
+      },
+    ]);
   });
 
   it.each([
