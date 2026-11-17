@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   createActorReader,
+  createPendingReceiptStore,
   createSettingsWriter,
   createWebAuthnCredentials,
   createWithActor,
@@ -19,7 +20,9 @@ import {
 } from "../../server/database/index.ts";
 import {
   canonicalizeJcs,
+  digestEvidenceReceiptPayloadV2,
   type EvidenceDomainKey,
+  type EvidenceReceiptPayloadV2,
   verifySignedEvidenceReceiptV2,
 } from "../../server/domain/index.ts";
 import {
@@ -57,11 +60,14 @@ const id = {
   adminA: randomUUID(),
   vesna: randomUUID(),
   ana: randomUUID(),
+  iva: randomUUID(),
   k1: randomUUID(),
   z1: randomUUID(),
   domainA: randomUUID(),
 };
 const token = randomBytes(32).toString("base64url");
+/** iva's session: protocol 2 on the second server (DAN-821-4). */
+const ivaToken = randomBytes(32).toString("base64url");
 // One student per NODE_ENV case of the entry point, each with a session of their own.
 const ENTRY_CASES = ["production", "unset", "staging", "test"] as const;
 const entry = Object.fromEntries(
@@ -96,6 +102,11 @@ const admin = new pg.Pool({ connectionString: ADMIN_URL, max: 2 });
 let app: pg.Pool;
 let appUrl: string;
 let server: Running;
+/** The same routes with protocol 2 on, its own storage and a signer that counts (DAN-821-4). */
+let deferred: Running;
+let webSigns = 0;
+const WORKER_LOGIN = "it_evidence_commit_route_worker";
+let worker: pg.Pool;
 
 async function fixture(): Promise<void> {
   const q = (text: string, values: unknown[] = []) => admin.query(text, values);
@@ -111,7 +122,9 @@ async function fixture(): Promise<void> {
     [id.a],
   );
   const accounts: [string, string][] = [
-    ...(["adminA", "vesna", "ana"] as const).map((name) => [id[name], name] as [string, string]),
+    ...(["adminA", "vesna", "ana", "iva"] as const).map(
+      (name) => [id[name], name] as [string, string],
+    ),
     ...ENTRY_CASES.map((name) => [entry[name].user, `ulaz-${name}`] as [string, string]),
   ];
   for (const [user, name] of accounts) {
@@ -133,6 +146,11 @@ async function fixture(): Promise<void> {
      VALUES (sha256(convert_to($1, 'UTF8')), $2, $3, now() + interval '1 hour')`,
     [token, id.ana, id.a],
   );
+  await q(
+    `INSERT INTO identity.session (token_hash, user_id, institution_id, expires_at)
+     VALUES (sha256(convert_to($1, 'UTF8')), $2, $3, now() + interval '1 hour')`,
+    [ivaToken, id.iva, id.a],
+  );
   await q("SELECT institution.appoint_institution_admin($1, $2)", [id.adminA, `Zahtjev ${suffix}`]);
   await q(
     `INSERT INTO institution.institution_role (institution_id, user_id, role, confirmed_by, confirmed_at)
@@ -147,7 +165,7 @@ async function fixture(): Promise<void> {
   await q(
     `INSERT INTO institution.course_member (course_id, institution_id, user_id, role)
      SELECT $1::uuid, $2::uuid, $3::uuid, 'teacher' UNION ALL SELECT $1::uuid, $2::uuid, unnest($4::uuid[]), 'student'`,
-    [id.k1, id.a, id.vesna, [id.ana, ...ENTRY_CASES.map((name) => entry[name].user)]],
+    [id.k1, id.a, id.vesna, [id.ana, id.iva, ...ENTRY_CASES.map((name) => entry[name].user)]],
   );
   await q(
     `INSERT INTO institution.assignment (id, course_id, institution_id, current_version, created_by)
@@ -164,7 +182,7 @@ async function fixture(): Promise<void> {
   await q(
     `INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
      SELECT $1::uuid, 1, unnest($2::uuid[]), $3::uuid`,
-    [id.z1, [id.ana, ...ENTRY_CASES.map((name) => entry[name].user)], id.a],
+    [id.z1, [id.ana, id.iva, ...ENTRY_CASES.map((name) => entry[name].user)], id.a],
   );
   await q(
     "INSERT INTO evidence.domain (id, institution_id, region) VALUES ($1, $2, 'eu-central-1')",
@@ -212,22 +230,69 @@ beforeAll(async () => {
       createEvidenceCommitRouteFor(main, { signer, payloads }),
     ],
   });
+  const counting = {
+    sign: (message: Uint8Array) => {
+      webSigns += 1;
+      return signer.sign(message);
+    },
+  };
+  deferred = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin: ORIGIN }),
+    databases: createDatabases(),
+    routes: [
+      createEvidenceOpenRoute(main),
+      createEvidenceCommitRouteFor(main, {
+        signer: counting,
+        payloads: new InMemoryEvidencePayloadStore(),
+        asyncSigning: true,
+      }),
+    ],
+  });
+  await admin.query(`DROP ROLE IF EXISTS ${WORKER_LOGIN}`);
+  const role = await admin.query<{ ddl: string }>(
+    "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_worker', $1::text, $2::text) AS ddl",
+    [WORKER_LOGIN, password],
+  );
+  await admin.query(role.rows[0]!.ddl);
+  const workerUrl = new URL(ADMIN_URL);
+  workerUrl.username = WORKER_LOGIN;
+  workerUrl.password = password;
+  worker = new pg.Pool({ connectionString: workerUrl.href, max: 1 });
 });
 
 afterAll(async () => {
   await server?.close();
+  await deferred?.close();
+  await worker?.end();
+  // evidence.receipt is append-only; only this file's pending rows go, so a
+  // failure between 202 and the worker's signature leaves pgTAP 107 true.
+  await admin.query("BEGIN");
+  await admin.query("SET LOCAL session_replication_role = replica");
+  await admin.query(
+    "DELETE FROM evidence.receipt WHERE evidence_domain_id = $1 AND status = 'pending_signature'",
+    [id.domainA],
+  );
+  await admin.query("COMMIT");
+  await admin.query(`DROP ROLE IF EXISTS ${WORKER_LOGIN}`);
   await app?.end();
   await admin.query(`DROP ROLE IF EXISTS ${APP_LOGIN}`);
   await admin.end();
   rmSync(seedDir, { recursive: true, force: true });
 });
 
-type Answer = { status: number; body: Record<string, unknown> & { [key: string]: unknown } };
+type Answer = {
+  status: number;
+  body: Record<string, unknown> & { [key: string]: unknown };
+  headers: Record<string, unknown>;
+};
 function post(
   path: string,
   body: unknown,
   who: string = token,
   port: number = server.port,
+  protocol = "1",
 ): Promise<Answer> {
   const text = JSON.stringify(body);
   return new Promise((resolve, reject) => {
@@ -241,7 +306,7 @@ function post(
           origin: ORIGIN,
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
-          "ductus-protocol": "1",
+          "ductus-protocol": protocol,
           cookie: `__Host-ductus_session=${who}`,
           "content-length": String(Buffer.byteLength(text)),
         },
@@ -249,7 +314,9 @@ function post(
       (res) => {
         let data = "";
         res.on("data", (chunk: Buffer) => (data += chunk.toString("utf8")));
-        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: JSON.parse(data) }));
+        res.on("end", () =>
+          resolve({ status: res.statusCode ?? 0, body: JSON.parse(data), headers: res.headers }),
+        );
       },
     );
     req.on("error", reject);
@@ -336,6 +403,135 @@ describe("evidence/commit through a real server over real PostgreSQL", () => {
       lastSequenceTo: 1,
     });
     expect(Buffer.from(String(reopened.body.document), "base64").toString("utf8")).toBe(document);
+  });
+});
+
+type Vector = { name: string; response: { status: number; headers: Record<string, string> } };
+const { vectors } = JSON.parse(
+  readFileSync(join(ROOT, "server/contracts/vectors/evidence.commit.post.json"), "utf8"),
+) as { vectors: Vector[] };
+/** The status and the headers this route must answer for a named vector. */
+function expectVector(answer: Answer, name: string) {
+  const vector = vectors.find((v) => v.name === name)!;
+  expect(answer.status).toBe(vector.response.status);
+  expect(answer.headers["cache-control"]).toBe(vector.response.headers["cache-control"]);
+  expect(answer.headers["retry-after"]).toBe(vector.response.headers["retry-after"]);
+}
+
+// DAN-821-4 (contract Ductus#1836 c.6944925246): the three protocol 2 vectors
+// on a real server over real PostgreSQL. A 202 never carries a signature and
+// the web process never signs; only the worker's signature, attached through
+// its own login, turns the same request into 200 signed.
+describe("evidence/commit under protocol 2 through a real server over real PostgreSQL", () => {
+  it("202 pending until the worker signs, then 200 with the worker's signature", async () => {
+    const opened = await post(
+      "/api/v1/evidence/open",
+      { assignmentId: id.z1, start: true },
+      ivaToken,
+      deferred.port,
+    );
+    expect(opened.status).toBe(200);
+    const { documentId, documentHash, evidenceProfileId, receiptKeys } = opened.body as {
+      documentId: string;
+      documentHash: string;
+      evidenceProfileId: string;
+      receiptKeys: EvidenceDomainKey[];
+    };
+    const template = chain.segments[0]!.segment;
+    const document = canonicalizeJcs(chain.documentStates[1]!.value);
+    const segment = canonicalizeJcs({
+      ...template,
+      documentId,
+      sessionId: `sesija-${suffix}-iva`,
+      segmentId: `segment-${suffix}-iva-1`,
+      sequenceFrom: 1,
+      sequenceTo: 1,
+      initialDocumentHash: documentHash,
+      finalDocumentHash: sha256(document),
+      predecessorSegmentHash: null,
+      evidenceProfileId,
+      events: [
+        {
+          ...template.events[0],
+          sequence: 1,
+          beforeDocumentHash: documentHash,
+          afterDocumentHash: sha256(document),
+        },
+      ],
+    });
+    const request = {
+      documentId,
+      clientTransactionId: `tx-${suffix}-iva-1`,
+      baseRevision: 0,
+      segments: [Buffer.from(segment, "utf8").toString("base64")],
+      document: Buffer.from(document, "utf8").toString("base64"),
+    };
+    const commit = (protocol: string) =>
+      post("/api/v1/evidence/commit", request, ivaToken, deferred.port, protocol);
+    const stored = async () =>
+      (
+        await admin.query<{ status: string; signature: unknown }>(
+          `SELECT r.status, r.signature FROM evidence.receipt r JOIN evidence.package p ON p.id = r.evidence_package_id
+            WHERE p.document_id = $1`,
+          [documentId],
+        )
+      ).rows;
+    const pending = { receipt: { status: "pending_signature" }, revision: 1 };
+
+    // V0, V1, V2: two 202s with exactly the closed body, no signature anywhere.
+    const first = await commit("2");
+    expectVector(first, "committed-pending-signature");
+    expect(first.body).toStrictEqual({ status: "committed", ...pending });
+    const second = await commit("2");
+    expectVector(second, "duplicate-pending-signature");
+    expect(second.body).toStrictEqual({ status: "duplicate", ...pending });
+    expect(await stored()).toEqual([{ status: "pending_signature", signature: null }]);
+    expect(webSigns).toBe(0);
+
+    // The worker reads the pending receipt and attaches its signature through its own login.
+    const read = await worker.query<{ receipt_id: string; receipt_payload: string }>(
+      "SELECT receipt_id::text AS receipt_id, receipt_payload FROM app.worker_pending_receipts($1::uuid, 100, NULL)",
+      [id.domainA],
+    );
+    const row = read.rows.find((r) => JSON.parse(r.receipt_payload).documentId === documentId)!;
+    const payload = JSON.parse(row.receipt_payload) as EvidenceReceiptPayloadV2;
+    const digest = await digestEvidenceReceiptPayloadV2(payload);
+    const signed = await signer.sign(digest.signingInput);
+    if (!signed.ok) throw new Error("worker signature");
+    expect(
+      await createPendingReceiptStore(worker).attachSignature({
+        receiptId: row.receipt_id,
+        payloadDigestSha256: digest.sha256,
+        signature: signed.value,
+      }),
+    ).toMatchObject({ outcome: "signed" });
+
+    // V3: the same request is 200 with the worker's signature, under either protocol.
+    const after = await commit("2");
+    expectVector(after, "duplicate-signed-after-pending");
+    expect(after.body).toMatchObject({
+      status: "duplicate",
+      revision: 1,
+      receipt: { status: "signed" },
+    });
+    const signedReceipt = (after.body.receipt as { signedReceipt: { signature: unknown } })
+      .signedReceipt;
+    expect(signedReceipt.signature).toStrictEqual(signed.value);
+    const verified = await verifySignedEvidenceReceiptV2(
+      signedReceipt,
+      {
+        documentId,
+        clientTransactionId: request.clientTransactionId,
+        revision: 1,
+        evidenceDomainId: id.domainA,
+      },
+      receiptKeys,
+    );
+    expect(verified.ok).toBe(true);
+    const again = await commit("1");
+    expect(again.status).toBe(200);
+    expect(again.body).toStrictEqual(after.body);
+    expect(webSigns).toBe(0);
   });
 });
 
