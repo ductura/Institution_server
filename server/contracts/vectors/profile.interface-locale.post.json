@@ -6,7 +6,7 @@
       "kind": "success",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json"
@@ -29,7 +29,7 @@
       "code": "origin_missing",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json"
         },
@@ -41,7 +41,10 @@
         "status": 403,
         "contentType": "application/json",
         "body": {
-          "error": "origin_missing"
+          "error": "origin_missing",
+          "code": "origin_missing",
+          "messageKey": "errors.originMissing",
+          "status": 403
         }
       }
     },
@@ -51,7 +54,7 @@
       "code": "origin_mismatch",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://drugo.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json"
@@ -64,7 +67,10 @@
         "status": 403,
         "contentType": "application/json",
         "body": {
-          "error": "origin_mismatch"
+          "error": "origin_mismatch",
+          "code": "origin_mismatch",
+          "messageKey": "errors.originMismatch",
+          "status": 403
         }
       }
     },
@@ -74,7 +80,7 @@
       "code": "cross_site",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "cross-site",
           "content-type": "application/json"
@@ -87,7 +93,10 @@
         "status": 403,
         "contentType": "application/json",
         "body": {
-          "error": "cross_site"
+          "error": "cross_site",
+          "code": "cross_site",
+          "messageKey": "errors.crossSite",
+          "status": 403
         }
       }
     },
@@ -97,7 +106,7 @@
       "code": "unsupported_media_type",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "text/plain"
@@ -108,7 +117,10 @@
         "status": 415,
         "contentType": "application/json",
         "body": {
-          "error": "unsupported_media_type"
+          "error": "unsupported_media_type",
+          "code": "unsupported_media_type",
+          "messageKey": "errors.unsupportedMediaType",
+          "status": 415
         }
       }
     },
@@ -118,7 +130,7 @@
       "code": "body_too_large",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json"
@@ -129,7 +141,10 @@
         "status": 413,
         "contentType": "application/json",
         "body": {
-          "error": "body_too_large"
+          "error": "body_too_large",
+          "code": "body_too_large",
+          "messageKey": "errors.bodyTooLarge",
+          "status": 413
         }
       }
     },
@@ -139,7 +154,7 @@
       "code": "body_timeout",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -151,7 +166,10 @@
         "status": 408,
         "contentType": "application/json",
         "body": {
-          "error": "body_timeout"
+          "error": "body_timeout",
+          "code": "body_timeout",
+          "messageKey": "errors.bodyTimeout",
+          "status": 408
         }
       }
     },
@@ -161,7 +179,7 @@
       "code": "content_length_invalid",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -175,7 +193,10 @@
         "status": 400,
         "contentType": "application/json",
         "body": {
-          "error": "content_length_invalid"
+          "error": "content_length_invalid",
+          "code": "content_length_invalid",
+          "messageKey": "errors.contentLengthInvalid",
+          "status": 400
         }
       }
     },
@@ -185,7 +206,7 @@
       "code": "content_length_mismatch",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -199,7 +220,10 @@
         "status": 400,
         "contentType": "application/json",
         "body": {
-          "error": "content_length_mismatch"
+          "error": "content_length_mismatch",
+          "code": "content_length_mismatch",
+          "messageKey": "errors.contentLengthMismatch",
+          "status": 400
         }
       }
     },
@@ -209,7 +233,7 @@
       "code": "body_stream_error",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -221,7 +245,10 @@
         "status": 400,
         "contentType": "application/json",
         "body": {
-          "error": "body_stream_error"
+          "error": "body_stream_error",
+          "code": "body_stream_error",
+          "messageKey": "errors.bodyStreamError",
+          "status": 400
         }
       }
     },
@@ -231,7 +258,7 @@
       "code": "invalid_json",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json"
@@ -242,7 +269,10 @@
         "status": 400,
         "contentType": "application/json",
         "body": {
-          "error": "invalid_json"
+          "error": "invalid_json",
+          "code": "invalid_json",
+          "messageKey": "errors.invalidJson",
+          "status": 400
         }
       }
     },
@@ -264,7 +294,10 @@
         "status": 401,
         "contentType": "application/json",
         "body": {
-          "error": "unauthorized"
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401
         }
       }
     },
@@ -274,7 +307,7 @@
       "code": "invalid_input",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json"
@@ -287,7 +320,10 @@
         "status": 422,
         "contentType": "application/json",
         "body": {
-          "error": "invalid_input"
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422
         }
       }
     },
@@ -297,7 +333,7 @@
       "code": "unavailable",
       "request": {
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-0001",
+          "cookie": "__Host-ductus_session=izmisljeni_token-jezika_sucelja_00000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json"
@@ -310,7 +346,10 @@
         "status": 503,
         "contentType": "application/json",
         "body": {
-          "error": "unavailable"
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503
         }
       }
     }
