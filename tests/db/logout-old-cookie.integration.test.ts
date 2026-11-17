@@ -17,6 +17,7 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createHealthRoute,
+  createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createLayers,
   createProblemReportRouteFor,
@@ -64,6 +65,8 @@ let server: Running;
 // 404s are reached only with a live actor (the functions check it first).
 // `method` is POST unless given; `old` is the 401 body each contract gives.
 const EVIDENCE_401 = { status: "unauthenticated" };
+/** A course that does not exist: a non-teacher is refused as for any course (C-23). */
+const COURSE = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -119,6 +122,23 @@ const SESSION_ROUTES = {
     }),
     live: 201,
   },
+  // DAN-852-5a: the course routes. The accounts here hold no teacher role and
+  // no course, so a live session is 403 forbidden from each RPC and writes nothing.
+  "institution.courses.post": {
+    path: "/api/v1/institution/courses",
+    body: () => ({ name: "Izmišljeni kolegij", academicYear: "2026/2027", aiPolicy: "encouraged" }),
+    live: 403,
+  },
+  "institution.enrollment-code.post": {
+    path: `/api/v1/institution/courses/${COURSE}/enrollment-code`,
+    body: () => ({ validUntil: "2099-12-31T23:59:59Z" }),
+    live: 403,
+  },
+  "institution.enrollment-code-revocation.post": {
+    path: `/api/v1/institution/courses/${COURSE}/enrollment-code/revocation`,
+    body: () => ({}),
+    live: 403,
+  },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
   // account does not hold is 403. The old cookie's registration carries a
@@ -155,6 +175,7 @@ const FACTORIES = [
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
+  "createInstitutionCourseRoutesFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -169,6 +190,7 @@ const MOUNTED = [
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
+  ...createInstitutionCourseRoutesFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
@@ -365,6 +387,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id === "settings.values.put" ||
         id.startsWith("profile.interface-locale.") ||
         id === "support.problem-report.post" ||
+        id.startsWith("institution.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
