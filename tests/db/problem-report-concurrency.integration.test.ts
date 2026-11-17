@@ -8,7 +8,9 @@ import { type ActorTransaction, createWithActor } from "../../server/database/in
 import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // Literal port of Ductus tests/integration/problem-report-rate-limit.integration.test.ts
-// at 81833ca (DAN-851-2d2b), only the imports changed.
+// at 81833ca (DAN-851-2d2b): only the imports and two non-null assertions on
+// rows[0] (noUncheckedIndexedAccess) change. The invented .example and .test
+// names stay as in Ductus.
 // DAN-431 (contract on #1836, c.6788234570): pgTAP runs in one transaction and
 // cannot race two reports. Here two real connections send a report from the
 // same account at once while it already has four in the hour.
