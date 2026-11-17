@@ -69,8 +69,11 @@ export {
   coseEs256Key,
   type Expected,
   type StoredCredential,
+  type RegistrationInput,
+  type RegistrationOutcome,
   type TakeChallenge,
   verifyAssertion,
+  verifyRegistration,
 } from "./webauthn-ceremony.ts";
 export {
   clearedSessionCookieOptions,

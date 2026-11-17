@@ -2,7 +2,9 @@
 
 Sesija nakon prijave AAI@EduHr, karta: [docs/server-map.md](../../docs/server-map.md). Cijela mapa ima floor `critical`.
 
-Preneseno iz Ductusa `src/server/auth` (`d52a92c3`, S-0.18, DAN-731) bez promjene logike; promijenjeni su samo uvozi, `interface` u `type` i ono što je vezalo kod uz Next.js:
+Preneseno iz Ductusa `src/server/auth` (`d52a92c3`, S-0.18, DAN-731) bez promjene logike; promijenjeni su samo uvozi, `interface` u `type` i ono što je vezalo kod uz Next.js. Datoteke su popisane u odjeljku „Što radi”.
+
+## Što radi
 
 - `session-token.ts`: token sesije (32 nasumična bajta), njegov SHA-256 i opcije kolačića `__Host-`.
 - `principal.ts`: `sessionPrincipal`, `sessionTag`, `principalScope`; identitet uvijek iz baze (`app.current_actor()`), nikad iz zahtjeva.
@@ -19,7 +21,21 @@ Preneseno iz Ductusa `src/server/auth` (`d52a92c3`, S-0.18, DAN-731) bez promjen
 - `webauthn-ceremony.ts` (S-1E-g, DAN-840-2b): `verifyAssertion(input, expected, stored, take)` je čista provjera potvrde WebAuthna. Ulaz su bajtovi `clientDataJSON`, `authenticatorData` i `signature`; `stored` je pohranjeni COSE ključ s brojačem, koji ruta (840-3) čita samo unutar računa sesije.
   - Redoslijed: najprije se čita `clientDataJSON` (strogi UTF-8, BOM se ne preskače, samo vlastita svojstva). Zatim se `take` zove točno jednom, pa je izazov potrošen i kad ostatak nije čitljiv. Slijede `type` `webauthn.get`, točan `origin` i `crossOrigin` odsutan ili `false`. `authenticatorData` mora imati točno 37 bajtova, SHA-256 od `rpId` i zastavicu UP, bez AT i ED; BS bez BE se odbija. Zatim se provjerava potpis ES256 nad `authData ‖ SHA-256(clientDataJSON)`, a brojač tek nakon valjanog potpisa: novi mora biti veći od pohranjenog, ili su oba 0 (pravilo `identity.use_webauthn_credential`).
   - Ishodi su ugovorni kodovi 840-1: `challenge_invalid`, `ceremony_invalid` i `counter_not_increased`. Funkcija ništa ne baca.
-  - `coseEs256Key` čita samo kanonski COSE ključ ES256 od 77 bajtova (CTAP2), uz točku na krivulji, a sve drugo vraća kao `null`. Registracija je 840-2c.
-- `index.ts`: javno sučelje mape; tipove portova `WithActor`, `ActorTransaction` i `BackchannelLogout` prosljeđuje kao `import type` iz `server/database/index.ts`.
+  - `coseEs256Key` čita samo kanonski COSE ključ ES256 od 77 bajtova (CTAP2), uz točku na krivulji, a sve drugo vraća kao `null`.
+  - `verifyRegistration(input, expected, take)` (DAN-840-2c) radi isti redoslijed s tipom `webauthn.create`. `authenticatorData` čita kao `rpIdHash`, zastavice (UP i AT obavezni, bez ED, BS bez BE se odbija), brojač, AAGUID (ne provjerava se, atestacija `none`), duljinu id-a (1 do 1023), id i točno jedan kanonski COSE ključ. Id iz tijela mora biti isti. Vraća id, sirove bajtove COSE ključa i brojač kakav jest, točno ono što prima `identity.add_webauthn_credential`. Potpisa nema; povjerenje nose sesija i jednokratni izazov. ED se odbija, pa ruta (840-3) u `create()` ne traži discoverable ključ ni proširenja.
+
+## Tko ga zove
+
+`http`: tok prijave i odjave, sesijski korak ruta i (840-3) rute WebAuthna. Druga područja mapu ne zovu.
+
+## Koje podatke dira
+
+Tablice sesija u glavnoj bazi, i to samo hash tokena, uvijek kroz portove koje predaje pozivatelj (`WithActor`, RPC-i iz `server/database`). Izazove WebAuthna drži u memoriji procesa (pretpostavka jednog web procesa, [karta](../../docs/server-map.md)). Ključeve WebAuthna ne sprema: provjere vraćaju vrijednosti koje pozivatelj predaje bazi.
+
+## Što izvozi
+
+`index.ts`: javno sučelje mape; tipove portova `WithActor`, `ActorTransaction` i `BackchannelLogout` prosljeđuje kao `import type` iz `server/database/index.ts`. Točan popis je u `index.ts`.
+
+## Što ne smije uvoziti
 
 Mapa uvozi `external/srce-auth` i `log` (kroz njihov `index.ts`) i `node:`; prema karti smije još `settings`, `metrics`, `domain` i `database` (samo tipovi portova). Ne stvara adaptere.
