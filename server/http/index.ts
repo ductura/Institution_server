@@ -106,6 +106,12 @@ export {
   type Step,
 } from "./pipeline.ts";
 export { clientIpOf, parseTrustedProxies, type TrustedProxies } from "../traffic/index.ts";
+export {
+  createSettingsValuesPutRoute,
+  SETTINGS_PUT_MAX_BYTES,
+  SETTINGS_PUT_TIMEOUT_MS,
+  type SettingsValuesPutOptions,
+} from "./settings-values.ts";
 export { startServer, type Running, type StartOptions } from "./start.ts";
 export {
   createMetricsSampling,
