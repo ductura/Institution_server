@@ -129,6 +129,26 @@ jobs:
           # SIGTERM reaches node as PID 1 (exec form) and shuts down cleanly.
           docker stop ductura-web
           [ "$(docker inspect -f '{{.State.ExitCode}}' ductura-web)" = 0 ]
+      - name: Slika testnog servera (DAN-938)
+        run: |
+          docker build -f infra/web/Dockerfile --target test-server -t ductura-test-server:ci .
+          [ "$(docker run --rm --entrypoint find ductura-test-server:ci /app | sort | tr '\n' ' ')" = "/app /app/dist /app/dist/server.js " ]
+          [ "$(docker run --rm --entrypoint id ductura-test-server:ci -u)" != 0 ]
+          docker image inspect ductura-test-server:ci \
+            | jq -e '[.[0].Config.Env[] | select(test("^(PATH|NODE_VERSION|YARN_VERSION)=") | not)] | sort
+                == ["DUCTURA_MODE=test", "HOST=0.0.0.0", "NODE_ENV=test", "PORT=4000"]'
+          trap 'docker logs ductura-test-server' EXIT
+          docker run -d --name ductura-test-server -p 127.0.0.1:4001:4100 -e PORT=4100 \
+            -e APP_DATABASE_URL=postgres://app@db.invalid:5432/ductura ductura-test-server:ci
+          for _ in $(seq 60); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' ductura-test-server)"
+            [ "$status" = starting ] || break
+            sleep 1
+          done
+          [ "$status" = healthy ]
+          curl -fsS "http://127.0.0.1:4001/api/v1/health"
+          docker stop ductura-test-server
+          [ "$(docker inspect -f '{{.State.ExitCode}}' ductura-test-server)" = 0 ]
 
   database:
     name: PostgreSQL i pgTAP
