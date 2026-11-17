@@ -15,9 +15,14 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { ROUTES } from "../../server/contracts/index.ts";
-import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
 import {
   AREA_NAMES,
+  createAuthRoutes,
+  createClientContextRoute,
+  createEvidenceCommitRouteFor,
+  createEvidenceOpenRoute,
+  createEvidenceReplayRouteFor,
+  createHealthRoute,
   createInterfaceLocaleRoutesFor,
   createLayers,
   createSettingsValuesPutRoute,
@@ -45,6 +50,66 @@ export function operatorRouteProblems(routes: readonly RouteLike[]): string[] {
 /** Mounted contracts that are not members of ROUTES (by identity). */
 export function strayContracts(mounted: readonly object[], routes: readonly object[]): number {
   return mounted.filter((contract) => !routes.includes(contract)).length;
+}
+
+// Every factory server/server.ts mounts in its routes list, and how this test
+// builds it: over stand-ins that are never called, since building a route
+// only captures its ports (auth loads its settings on the first request).
+const UNUSED = new Proxy({}, { get: () => () => Promise.reject(new Error("not called")) });
+const ENTRY_FACTORIES: Readonly<Record<string, () => readonly { contract: RouteLike }[]>> = {
+  createHealthRoute: () => [createHealthRoute({ health: UNUSED as never, serverVersion: "0" })],
+  createClientContextRoute: () => [createClientContextRoute()],
+  createEvidenceOpenRoute: () => [createEvidenceOpenRoute(UNUSED as never)],
+  createSettingsValuesPutRoute: () => [createSettingsValuesPutRoute({ writer: UNUSED as never })],
+  createInterfaceLocaleRoutesFor: () => createInterfaceLocaleRoutesFor(UNUSED as never),
+  createWebAuthnRoutesFor: () => createWebAuthnRoutesFor(UNUSED as never, null),
+  createEvidenceCommitRouteFor: () => [
+    createEvidenceCommitRouteFor(UNUSED as never, UNUSED as never),
+  ],
+  createEvidenceReplayRouteFor: () => [
+    createEvidenceReplayRouteFor(UNUSED as never, UNUSED as never),
+  ],
+  createAuthRoutes: () => createAuthRoutes({}),
+  routesOf: () => routesOf(AREA_NAMES),
+};
+
+/**
+ * The factory named by each entry of the routes list of startServer in the
+ * entry text; an entry that is not a call of a factory is named as itself.
+ */
+export function entryRouteFactories(entry: string): string[] {
+  const text = flat(code(entry));
+  const start = text.indexOf("routes: [");
+  if (start < 0) return ["no routes list"];
+  let depth = 0;
+  let end = -1;
+  for (let i = start + "routes: ".length; i < text.length; i += 1) {
+    if ("([{".includes(text[i]!)) depth += 1;
+    if (")]}".includes(text[i]!)) depth -= 1;
+    if (depth === 0) {
+      end = i;
+      break;
+    }
+  }
+  const body = text.slice(start + "routes: [".length, end);
+  const entries: string[] = [];
+  let level = 0;
+  let current = "";
+  for (const char of body) {
+    if ("([{".includes(char)) level += 1;
+    if (")]}".includes(char)) level -= 1;
+    if (char === "," && level === 0) {
+      entries.push(current.trim());
+      current = "";
+    } else current += char;
+  }
+  if (current.trim() !== "") entries.push(current.trim());
+  return entries.map((item) => /^(?:\.\.\.)?([A-Za-z]\w*)\(/u.exec(item)?.[1] ?? item);
+}
+
+/** Entries of the routes list this test does not build, so it cannot check their contracts. */
+export function unknownEntryRoutes(entry: string): string[] {
+  return entryRouteFactories(entry).filter((name) => !Object.hasOwn(ENTRY_FACTORIES, name));
 }
 
 /** Whitespace as one space: CRLF, tab and NBSP change nothing. */
@@ -168,18 +233,15 @@ describe("operator routes cannot go around step 8", () => {
     expect(operatorRouteProblems([route])).toEqual([]);
   });
 
-  it("holds for every contract and every mounted route", () => {
-    const actor = { withActor: () => Promise.reject(new Error("no database")) };
-    const writer: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
-    const mounted = [
-      ...routesOf(AREA_NAMES),
-      createSettingsValuesPutRoute({ writer }),
-      ...createInterfaceLocaleRoutesFor(actor),
-      ...createWebAuthnRoutesFor(
-        { ...actor, webauthnCredentials: {} as WebAuthnCredentials },
-        null,
-      ),
-    ].map((route) => route.contract);
+  it("holds for every contract and every route server/server.ts mounts", () => {
+    const entry = readFileSync(join(ROOT, "server/server.ts"), "utf8");
+    expect(unknownEntryRoutes(entry)).toEqual([]);
+    // Every factory of the list is in the entry, so none is built here for nothing.
+    expect(new Set(entryRouteFactories(entry))).toEqual(new Set(Object.keys(ENTRY_FACTORIES)));
+    const mounted = entryRouteFactories(entry)
+      .flatMap((name) => ENTRY_FACTORIES[name]!())
+      .map((route) => route.contract);
+    expect(mounted.length).toBeGreaterThan(10);
     expect(operatorRouteProblems(ROUTES)).toEqual([]);
     expect(operatorRouteProblems(mounted)).toEqual([]);
     expect(strayContracts(mounted, ROUTES)).toBe(0);
@@ -187,6 +249,21 @@ describe("operator routes cannot go around step 8", () => {
   });
 
   const ENTRY = readFileSync(join(ROOT, "server/server.ts"), "utf8");
+  it.each([
+    ["a new factory", (t: string) => t.replace("routes: [", "routes: [ createRogueRoute(),")],
+    ["a route value", (t: string) => t.replace("routes: [", "routes: [ ROGUE_ROUTE,")],
+    ["a spread list", (t: string) => t.replace("routes: [", "routes: [ ...ROGUE_ROUTES,")],
+    ["an inline route", (t: string) => t.replace("routes: [", "routes: [ { contract, handle },")],
+    [
+      "a factory under another name",
+      (t: string) => t.replace("...routesOf(AREAS)", "...routesOfAll(AREAS)"),
+    ],
+  ])("refuses a mounted route this test cannot check: %s", (_name, swap) => {
+    const changed = swap(ENTRY);
+    expect(changed).not.toBe(ENTRY);
+    expect(unknownEntryRoutes(changed)).toHaveLength(1);
+  });
+
   const SWAPS: readonly [string, (text: string) => string][] = [
     [
       "a spread with step 8 swapped",
