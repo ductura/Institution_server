@@ -34,3 +34,13 @@ Ništa iz drugih područja; od knjižnica samo `@sinclair/typebox` ([karta serve
 
 - `SERVER_SOURCES` (`inventory.ts`) su rute kojima Ductus podatak daje izvan `route.ts`, npr. popis radova studenta (`src/components/student/my-assignments-read.ts`). Ključ je `route.ts` koji bi ruta imala, a `checkInventory` ih prihvaća kao datoteke inventara. `INVENTORY` ostaje kopija 38 Ductusovih datoteka.
 - `CONTRACT_ONLY` je stanje „ugovoreno, nije implementirano”: ruta ima ugovor i vektore, a klijenti rade nad lažnim serverom. Popis smije samo padati. `tests/contracts/contract-only.test.ts` drži zamrznute popise zadataka: 27 ruta DAN-803, 3 rute postavki DAN-806 i 3 rute WebAuthna DAN-840 (opseg Ductus#1836 c.6934850911; montirane od 840-3f1, pa više nisu na popisu). Pada ako je na popisu ruta izvan tih popisa, ruta bez ugovora ili ruta montirana u nekom području, te ako ruta s tih popisa s ugovorom i bez handlera nije na popisu (Ductus#1836 c.6905207008, potvrda c.6905290513).
+
+## Operatorske rute (DAN-842-2)
+
+Operatorska ruta se izjavljuje dvaput: staza je `/api/v1/ops` ili ispod nje (to čita korak 8 pipelinea, `isOpsPath`), a id je u području `ops` (`ops.<ime>.<metoda>`). Jedno bez drugoga ruši `tests/contracts/operator-routes.test.ts` (S-1J.2, ugovor Ductus#1836 c.6947114430). Da nijedna montirana ruta ne zaobilazi korak 8 provjerava `server/operator-routes.integration.test.ts` (3. krug na ductura/server#245) bez čitanja izvornog teksta: u procesu pokreće stvarni `server/server.ts` i provjerava sljedeće:
+
+- pokretanje sluša točno jednom;
+- zabilježeni slojevi su točno koraci pipelinea;
+- svaka montirana ruta koja je operatorska po id-u ili po stazi na pokrenutom poslužitelju bez kolačića dobiva 401 koraka 8.
+
+Poslužitelj pokrenut tek nakon pokretanja (na zahtjev ili timer) brojač ne vidi. Test provodi samo izjavu rute: ruta izvan `/api/v1/ops` koja mijenja operatorske razine (npr. `settings.values.put`) nije operatorska ruta u tom smislu i nju štiti baza.
