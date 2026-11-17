@@ -196,6 +196,40 @@ describe("fake server over HTTP", () => {
     });
   });
 
+  it("the generated client reads the download manifest (DAN-931)", async () => {
+    const route = "downloads.manifest.get";
+    const vector = (name: string) => {
+      const v = VECTORS.find((x) => x.route === route && x.name === name);
+      if (v === undefined) throw new Error(`no vector ${name}`);
+      return v;
+    };
+    const as = (name: string) =>
+      createClient(`http://127.0.0.1:${port}`, (async (url: URL, init: RequestInit) =>
+        fetch(url, { ...init, headers: { [FAKE_VECTOR_HEADER]: name } })) as typeof fetch);
+    const none = { params: undefined, query: undefined, body: undefined };
+    const ready = await as("ready")(route, none);
+    expect(ready).toEqual({
+      ok: true,
+      status: 200,
+      body: vector("ready").response.body,
+      headers: {},
+    });
+    expect(ready.ok ? ready.body.packages.map((p) => `${p.system} ${p.architecture}`) : []).toEqual(
+      ["macos arm64", "macos x64", "windows arm64", "windows x64"],
+    );
+    expect(await as("ready-empty")(route, none)).toEqual({
+      ok: true,
+      status: 200,
+      body: { packages: [] },
+      headers: {},
+    });
+    expect(await as("unavailable")(route, none)).toEqual({
+      ok: false,
+      status: 503,
+      code: "unavailable",
+    });
+  });
+
   it("the generated client reads the state of each own work (DAN-989-1)", async () => {
     const route = "student.assignment-work.get";
     const vector = (name: string) => {

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.21.0",
+    "version": "1.22.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds."
   },
@@ -5844,6 +5844,129 @@
             "code": "not_found",
             "key": "errors.not_found"
           },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/downloads/manifest": {
+      "get": {
+        "operationId": "downloads.manifest.get",
+        "summary": "The desktop packages a client may offer: one row per system and architecture at most, by system then architecture. url is a path on this address or an https address; sha256 is the SHA-256 of the package bytes in lowercase hex, which the client checks before it opens the package. An empty list: no package yet. A manifest the server cannot read makes the answer 503, never a partial list.",
+        "x-access": "anyone",
+        "x-inventory": "app/api/downloads/manifest/route.ts",
+        "responses": {
+          "200": {
+            "description": "manifest (an empty list when there is no package yet)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "packages"
+                  ],
+                  "properties": {
+                    "packages": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "system",
+                          "architecture",
+                          "version",
+                          "url",
+                          "sha256"
+                        ],
+                        "properties": {
+                          "system": {
+                            "anyOf": [
+                              {
+                                "const": "windows",
+                                "type": "string"
+                              },
+                              {
+                                "const": "macos",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "architecture": {
+                            "anyOf": [
+                              {
+                                "const": "x64",
+                                "type": "string"
+                              },
+                              {
+                                "const": "arm64",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "version": {
+                            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?![\\s\\S])",
+                            "type": "string"
+                          },
+                          "url": {
+                            "pattern": "^(?![\\s\\S]*(?:%2[eE]|%00|/\\.\\.?(?:[/?]|(?![\\s\\S]))))(?:https://[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\\.[a-z](?:[a-z0-9-]*[a-z0-9])?)?/(?!/)(?:[A-Za-z0-9._~!$&'()*+,;=:@/?-]|%[0-9A-Fa-f]{2})+(?![\\s\\S])",
+                            "maxLength": 2048,
+                            "type": "string"
+                          },
+                          "sha256": {
+                            "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
           {
             "status": 503,
             "code": "unavailable",

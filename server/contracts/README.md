@@ -39,7 +39,12 @@ Ništa iz drugih područja; od knjižnica samo `@sinclair/typebox` ([karta serve
   - 3 rute WebAuthna DAN-840 (opseg Ductus#1836 c.6934850911; montirane od 840-3f1, pa više nisu na popisu);
   - 2 nastavnička čitanja DAN-903;
   - dnevnik pristupa studenta DAN-904;
-  - stanje rada po zadatku DAN-989 (`student.assignment-work.get`, handler u 989-2). Pada ako je na popisu ruta izvan tih popisa, ruta bez ugovora ili ruta montirana u nekom području, te ako ruta s tih popisa s ugovorom i bez handlera nije na popisu (Ductus#1836 c.6905207008, potvrda c.6905290513).
+  - stanje rada po zadatku DAN-989 (`student.assignment-work.get`, handler u 989-2);
+  - manifest preuzimanja DAN-931 (`downloads.manifest.get`, handler u DAN-932). Pada ako je na popisu ruta izvan tih popisa, ruta bez ugovora ili ruta montirana u nekom području, te ako ruta s tih popisa s ugovorom i bez handlera nije na popisu (Ductus#1836 c.6905207008, potvrda c.6905290513).
+
+## Manifest preuzimanja (DAN-931)
+
+`routes/downloads.ts` (S-1H.5): javni `GET /api/v1/downloads/manifest`, bez ulaza. Svaki redak ima sustav (`windows`, `macos`; D-296), arhitekturu (`x64`, `arm64`), verziju `major.minor.patch`, adresu i SHA-256 paketa (64 heks znaka, mala slova). Adresa je putanja na istoj adresi (`/preuzimanje/…`, D-306 t. 1) ili `https://` adresa: mjesto paketa se ovdje ne odlučuje. Uzorak adrese pušta samo znakove putanje i upita iz RFC 3986, bez fragmenta, korisnika, obrnute kose crte i `//` na početku putanje. Najviše četiri retka; da je svaki par sustava i arhitekture najviše jednom, shema ne može izraziti, pa to provjerava test nad vektorima, a provodi handler (DAN-932). `server/downloads` je prazan dok handler ne dođe.
 
 ## Operatorske rute (DAN-842-2)
 

@@ -2,6 +2,7 @@ import {
   authRoutes,
   clientRoutes,
   collaborationRoutes,
+  downloadsRoutes,
   enrollmentRoutes,
   ERROR_CATALOG_DATA,
   evidenceRoutes,
@@ -76,6 +77,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...institutionRoutes,
   ...teacherRoutes,
   ...settingsRoutes,
+  ...downloadsRoutes,
 ];
 
 /**

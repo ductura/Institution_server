@@ -106,6 +106,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:src/components/student/my-assignments-read.ts",
   },
+  // DAN-931: Ductus has no download route; the place is D-306 t. 1.
+  "app/api/downloads/manifest/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus@9c45857:docs/DECISIONS.md#D-306",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -147,6 +152,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "settings.values.get",
   "student.access-log.get",
   "student.assignment-work.get",
+  "downloads.manifest.get",
 ];
 
 /**

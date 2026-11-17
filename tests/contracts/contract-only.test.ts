@@ -80,10 +80,14 @@ export const DAN_904: readonly string[] = ["student.access-log.get"];
 // c.6956258999: contract now, handler in 989-2), frozen the same way.
 export const DAN_989: readonly string[] = ["student.assignment-work.get"];
 
+// The operation of DAN-931 (the download manifest, Ductus#1836 c.6960799782:
+// contract now, handler in DAN-932), frozen the same way.
+export const DAN_931: readonly string[] = ["downloads.manifest.get"];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...DAN_989,
+  ...[...DAN_989, ...DAN_931],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
@@ -165,7 +169,7 @@ export function contractOnlyProblems(
 describe("CONTRACT_ONLY", () => {
   const ids = ROUTES.map((route) => route.id);
 
-  it("is exactly the DAN-803, DAN-806, DAN-840, DAN-903, DAN-904 and DAN-989 routes with a contract and no handler", () => {
+  it("is exactly the DAN-803, DAN-806, DAN-840, DAN-903, DAN-904, DAN-989 and DAN-931 routes with a contract and no handler", () => {
     expect(new Set(DAN_803).size).toBe(27);
     expect(new Set(DAN_806).size).toBe(3);
     expect(new Set(DAN_840).size).toBe(3);
