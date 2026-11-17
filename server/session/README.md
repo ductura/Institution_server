@@ -6,7 +6,7 @@ Preneseno iz Ductusa `src/server/auth` (`d52a92c3`, S-0.18, DAN-731) bez promjen
 
 - `session-token.ts`: token sesije (32 nasumična bajta), njegov SHA-256 i opcije kolačića `__Host-`.
 - `principal.ts`: `sessionPrincipal`, `sessionTag`, `principalScope`; identitet uvijek iz baze (`app.current_actor()`), nikad iz zahtjeva.
-- `ended-mark.ts`: `liveSessionToken`, kolačić sesije koju je ovaj preglednik završio ne vrijedi.
+- `ended-mark.ts`: `liveSessionToken`, kolačić sesije koju je ovaj preglednik završio ne vrijedi; `liveSessionTokenFromCookie(header)` je isto nad sirovim zaglavljem `Cookie` za rute na `node:http` (DAN-851-1d1): kolačić sesije kao `sessionTokenFromCookie` (točno jedan, ispravan), a oznaka bilo kojeg para s tim imenom, pa druga oznaka sesiju može samo sakriti.
 - `return-to.ts`: `safeReturnTo`, povratna putanja uvijek ostaje na ovom originu.
 - `activity.ts`: `recordActivity`, `pageActivity`, `counted`. U Ductusu su zadane vrijednosti bile Next `after()` i `withActor` iz `src/server/db`; ovdje ih predaje pozivatelj (sastavljač u S-1E-a), pa mapa ne uvozi `next/*` ni adapter baze.
 - `backchannel.ts`: `backchannelLogout`, obrada tokena odjave koji šalje pružatelj (DAN-474).

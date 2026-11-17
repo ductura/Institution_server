@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ENDED_MARK_COOKIE, liveSessionToken } from "./ended-mark.ts";
+import { ENDED_MARK_COOKIE, liveSessionToken, liveSessionTokenFromCookie } from "./ended-mark.ts";
 import { sessionTag } from "./principal.ts";
 import { SESSION_COOKIE_NAME } from "./session-token.ts";
 
@@ -83,5 +83,34 @@ describe("liveSessionToken: input classes", () => {
     });
     expect(asked).toEqual([SESSION_COOKIE_NAME, mark(TAG)]);
     expect(cookies).toEqual({ [SESSION_COOKIE_NAME]: TOKEN, [mark(TAG)]: "1" });
+  });
+});
+
+// DAN-851-1d1 (contract Ductus#1836 c.6938624974): the same rule over a raw
+// Cookie header, as node:http gives it.
+describe("liveSessionTokenFromCookie", () => {
+  const session = `${SESSION_COOKIE_NAME}=${TOKEN}`;
+  it.each<[string, string | readonly string[] | undefined, string | undefined]>([
+    ["no header", undefined, undefined],
+    ["only the session cookie", session, TOKEN],
+    ["a list of headers", ["a=b", session], TOKEN],
+    ["a tab before the pair", `a=b;\t${session}`, TOKEN],
+    ["two session cookies", `${session}; ${session}`, undefined],
+    ["a malformed session cookie", `${SESSION_COOKIE_NAME}=kratko`, undefined],
+    ["its own mark", `${session}; ${mark(TAG)}=1`, undefined],
+    ["its own mark with an empty value", `${mark(TAG)}=; ${session}`, undefined],
+    ["its own mark in a second header", [session, `${mark(TAG)}=1`], undefined],
+    ["another session's mark", `${session}; ${mark(OTHER_TAG)}=1`, TOKEN],
+    ["the old list naming it", `${session}; ${ENDED_MARK_COOKIE}=${OTHER_TAG}.${TAG}`, undefined],
+    ["the old list without it", `${session}; ${ENDED_MARK_COOKIE}=${OTHER_TAG}`, TOKEN],
+    [
+      "a second old list naming it",
+      `${ENDED_MARK_COOKIE}=${OTHER_TAG}; ${session}; ${ENDED_MARK_COOKIE}=${TAG}`,
+      undefined,
+    ],
+    ["a tag only as a prefix in the old list", `${session}; ${ENDED_MARK_COOKIE}=${TAG}x`, TOKEN],
+    ["the mark name upper-cased", `${session}; ${mark(TAG).toUpperCase()}=1`, TOKEN],
+  ])("%s", (_name, header, expected) => {
+    expect(liveSessionTokenFromCookie(header)).toBe(expected);
   });
 });
