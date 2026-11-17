@@ -9,14 +9,14 @@ Funkcionalni testovi nad izgrađenim serverom (`dist/server.js`) na lokalnom sto
   - B otvara svoj rad na Y prije A-ova `open` na Y, pa se `open` provjerava nad postojećim tuđim radom, ne samo nad praznim zadatkom. B isti rad dobiva i bez `start`, pa A-ov 404 bez `start` nije odgovor koji ta grana daje svima.
   - A otvara svoj rad na Z (drugi dokument od B-ova) prije svih pokušaja, a nakon njih ga šalje i reproducira i dobiva 200.
   - Broji pročitane odgovore (`CHECKS`, 13); manje znači da je test stao ili preskočio provjeru.
-  - Provjera se čeka na najvišoj razini modula: provjera koja se nikad ne razriješi završava izlaznim kodom 13, nikad s 0.
+  - Provjera se čeka na najvišoj razini modula: provjera koja se nikad ne razriješi završava izlazom različitim od 0 (pod `tsx` 1, pod `node` 13).
   - Izlaz imenuje SHA checkouta koji pokreće test (i SHA iz `state.json` stoga kad se razlikuje; u CI-ju PR-a to je GitHubov merge commit) i SHA-256 `dist/server.js`. Test pada ako stog ne radi, ako direktorij stoga ne prolazi provjeru samog stoga ili je dosegnut kroz simboličku vezu, ako na portu servera ne sluša zapisani proces upravo tog direktorija s `dist/server.js` ovog checkouta, ako socket ne poslužuje postmaster vlastitog `pgdata` ili ako `dist/server.js` nije izgradnja koja radi.
 - Sesije se upisuju u `identity.session` kako ih ostavlja uspješna prijava (kao `scripts/stack/vs1-commit-check.ts`). Prijava kroz lažni OIDC ovdje nije moguća jer server stoga namjerno ne dobiva adresu issuera (blokada D-09, t. 4 u README-u stoga).
 
 ```bash
 pnpm build
 pnpm stack:vs1 up
-pnpm test:functional   # node tests/functional/own-not-other.ts; VS1_STACK_DIR bira stog
+pnpm test:functional   # tsx tests/functional/own-not-other.ts (CODE_STYLE §12); VS1_STACK_DIR bira stog
 ```
 
 ## Tko ga zove

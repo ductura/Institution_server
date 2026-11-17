@@ -40,7 +40,32 @@ describe("post", () => {
 
   it("rejects when no answer comes within the deadline", async () => {
     const port = await serve(() => undefined);
-    await expect(post(port, "/x", {}, "t", 100)).rejects.toThrow(/no answer/u);
+    await expect(post(port, "/x", {}, "t", 100)).rejects.toThrow(/no complete answer/u);
+  });
+
+  it("rejects an answer that trickles past the deadline, though it never pauses long", async () => {
+    let tick: NodeJS.Timeout | undefined;
+    const port = await serve((_req, res) => {
+      res.writeHead(404, { "content-type": "application/json" });
+      tick = setInterval(() => res.write(" "), 20);
+    });
+    try {
+      await expect(post(port, "/x", {}, "t", 200)).rejects.toThrow(/no complete answer/u);
+    } finally {
+      clearInterval(tick);
+    }
+  });
+
+  it("keeps the exact bytes, a character split across chunks included", async () => {
+    const port = await serve((_req, res) => {
+      res.writeHead(404, { "content-type": "application/json" });
+      const bytes = Buffer.from('{"status":"not_found","x":"č"}', "utf8");
+      const cut = bytes.indexOf(0xc4) + 1;
+      res.write(bytes.subarray(0, cut));
+      setTimeout(() => res.end(bytes.subarray(cut)), 20);
+    });
+    const answer = await post(port, "/x", {}, "t");
+    expect(answer.text).toBe('{"status":"not_found","x":"č"}');
   });
 
   it("resolves a complete answer, and a body that is not JSON as {}", async () => {
@@ -50,8 +75,13 @@ describe("post", () => {
     });
     await expect(post(port, "/json", {}, "t")).resolves.toEqual({
       status: 404,
+      text: '{"status":"not_found"}',
       body: { status: "not_found" },
     });
-    await expect(post(port, "/html", {}, "t")).resolves.toEqual({ status: 404, body: {} });
+    await expect(post(port, "/html", {}, "t")).resolves.toEqual({
+      status: 404,
+      text: "<html>",
+      body: {},
+    });
   });
 });

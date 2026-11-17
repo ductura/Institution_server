@@ -1,4 +1,4 @@
-export { notFoundProblem } from "./not-found.ts";
+export { NOT_FOUND_BODY, notFoundProblem, type RawAnswer } from "./not-found.ts";
 export { check as checkOwnNotOther, CHECKS } from "./own-not-other.ts";
 export {
   acknowledgeNotice,

@@ -21,7 +21,7 @@
     "test:property": "vitest run --project property",
     "test:integration": "vitest run --project integration",
     "test:integration:pg": "vitest run --project integration-pg",
-    "test:functional": "node tests/functional/own-not-other.ts",
+    "test:functional": "tsx tests/functional/own-not-other.ts",
     "test:database": "vitest run --project database && pnpm test:integration:pg",
     "contracts:generate": "tsx scripts/generate-contracts.ts",
     "contracts:breaking": "tsx scripts/check-breaking.ts",

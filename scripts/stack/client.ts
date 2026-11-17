@@ -14,15 +14,17 @@ import { canonicalizeJcs } from "../../server/domain/index.ts";
 const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/u, "");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 
-export type Answer = { status: number; body: Record<string, unknown> };
+/** The status, the body exactly as received (UTF-8) and its JSON, or {} when it is not JSON. */
+export type Answer = { status: number; text: string; body: Record<string, unknown> };
 
-/** How long one request may wait for its whole answer. */
+/** How long one request may take, from sending to the last byte of its answer. */
 export const POST_TIMEOUT_MS = 30_000;
 
 /**
  * One POST as the browser of a signed-in student sends it. It always
- * settles: a response cut before its end, a closed connection and no answer
- * within `timeoutMs` reject.
+ * settles: a response cut before its end, a closed connection and an answer
+ * not complete within `timeoutMs` of the request (a deadline for the whole
+ * exchange, not for a pause between chunks) reject.
  */
 export function post(
   port: number,
@@ -49,25 +51,34 @@ export function post(
         },
       },
       (res) => {
-        let data = "";
+        const chunks: Buffer[] = [];
         res.on("error", reject);
         // After "end" this is a no-op; before it, the body was cut.
         res.on("close", () => {
           if (!res.complete) reject(new Error(`${path}: the answer was cut before its end`));
         });
-        res.on("data", (chunk: Buffer) => (data += chunk.toString("utf8")));
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
         res.on("end", () => {
+          clearTimeout(deadline);
+          // Decoded once, so a character split across chunks stays whole.
+          const data = Buffer.concat(chunks).toString("utf8");
+          const status = res.statusCode ?? 0;
           try {
-            resolve({ status: res.statusCode ?? 0, body: JSON.parse(data) as Answer["body"] });
+            resolve({ status, text: data, body: JSON.parse(data) as Answer["body"] });
           } catch {
-            resolve({ status: res.statusCode ?? 0, body: {} });
+            resolve({ status, text: data, body: {} });
           }
         });
       },
     );
-    req.on("error", reject);
-    req.setTimeout(timeoutMs, () =>
-      req.destroy(new Error(`${path}: no answer in ${timeoutMs} ms`)),
+    req.on("error", (error) => {
+      clearTimeout(deadline);
+      reject(error);
+    });
+    req.on("close", () => clearTimeout(deadline));
+    const deadline = setTimeout(
+      () => req.destroy(new Error(`${path}: no complete answer in ${timeoutMs} ms`)),
+      timeoutMs,
     );
     req.end(text);
   });

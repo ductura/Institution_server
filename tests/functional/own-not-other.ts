@@ -100,8 +100,8 @@ export async function check(given: string): Promise<string> {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.env.VS1_STACK_DIR ?? join(ROOT, ".stack", "vs1");
-  // Awaited at the top level: a check that never settles ends with exit code
-  // 13 (unsettled top-level await), never with 0.
+  // Awaited at the top level: a check that never settles ends with a non-zero
+  // exit code (unsettled top-level await: 1 under tsx, 13 under node), never 0.
   try {
     const run = await check(dir);
     console.log(`S-1H.3 own work yes, other's no: ${CHECKS} answers passed over ${run}`);
