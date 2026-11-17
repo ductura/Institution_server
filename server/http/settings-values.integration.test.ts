@@ -1,8 +1,8 @@
 // S-1J-g (DAN-826-1b; contract Ductus#1836 c.6934961046): PUT
 // /api/v1/settings/values on a real server with the real pipeline, over a
-// fake SettingsWriter. Every vector a socket can reach is sent as its bytes;
-// only the cookie value is replaced by a valid invented token (the vectors'
-// token is fixed in 826-2). Every refusal before the port leaves it uncalled.
+// fake SettingsWriter. Every vector a socket can reach is sent as its bytes,
+// cookie included (its token is valid since DAN-826-2b). Every refusal before
+// the port leaves it uncalled.
 // All values are invented.
 import { readFileSync } from "node:fs";
 import { connect } from "node:net";
@@ -26,8 +26,9 @@ const { vectors } = JSON.parse(
 ) as { vectors: Vector[] };
 const GOOD = vectors.find((v) => v.name === "saved")!.request;
 const ORIGIN = GOOD.headers.origin!;
-const TOKEN = "A".repeat(43);
-const COOKIE = `__Host-ductus_session=${TOKEN}`;
+/** The vectors' own cookie; the cases outside the vectors use it too. */
+const COOKIE = GOOD.headers.cookie!;
+const TOKEN = COOKIE.slice("__Host-ductus_session=".length);
 const BODY = GOOD.body as Record<string, unknown>;
 
 /** What the fake writer answers for a vector that reaches it. */
@@ -117,8 +118,7 @@ describe("every vector of settings.values.put a socket can reach", () => {
     "%s",
     async (_name, v) => {
       await start(() => outcomeOf(v));
-      const headers = { ...v.request.headers };
-      if (headers.cookie !== undefined) headers.cookie = COOKIE;
+      const headers = v.request.headers;
       const got = await send(request(headers, v.request.rawBody ?? JSON.stringify(v.request.body)));
       expect(got.status).toBe(v.response.status);
       if (v.name === "content-length-invalid") return; // Node's parser answers -1 itself.
