@@ -7,6 +7,7 @@ export * from "./evidence/index.ts";
 export * from "./settings/index.ts";
 export * from "./jobs/index.ts";
 export * from "./assignment/index.ts";
+export * from "./profile/index.ts";
 // Both document and evidence name a `SourceId` (Ductus keeps them in separate
 // folders): the document's is the source of a citation, the evidence one the
 // source of an evidence basis. The explicit exports settle which is which.
