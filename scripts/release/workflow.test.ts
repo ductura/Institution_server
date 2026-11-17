@@ -1,7 +1,9 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 // U10-b (DAN-742), invariant 5: publish.yml as GitHub reads it, parsed YAML
@@ -23,6 +25,9 @@ const TAGS = ["contracts-v*.*.*", "test-fakes-v*.*.*"];
 const FILE = "${{ needs.verify.outputs.file }}";
 const TOKEN = "${{ secrets.GITHUB_TOKEN }}";
 const TOKEN_AT = "jobs.publish.steps.3.env.NODE_AUTH_TOKEN";
+// DAN-966: the release job's gh token, the only other place a token may be.
+const GH_TOKEN_AT = "jobs.release.steps.2.env.GH_TOKEN";
+const SHA = "${{ needs.verify.outputs.sha256 }}";
 // Every expression the workflow may hold: where, and exactly what.
 const EXPRESSIONS: Readonly<Record<string, string>> = {
   "concurrency.group": "publish-${{ github.ref }}",
@@ -35,6 +40,11 @@ const EXPRESSIONS: Readonly<Record<string, string>> = {
   "jobs.publish.steps.2.env.SHA256": "${{ needs.verify.outputs.sha256 }}",
   "jobs.publish.steps.3.env.FILE": FILE,
   [TOKEN_AT]: TOKEN,
+  "jobs.release.steps.1.env.FILE": FILE,
+  "jobs.release.steps.1.env.SHA256": SHA,
+  "jobs.release.steps.2.env.FILE": FILE,
+  "jobs.release.steps.2.env.SHA256": SHA,
+  [GH_TOKEN_AT]: TOKEN,
 };
 const VERIFY_RUNS = [
   "pnpm install --frozen-lockfile",
@@ -45,6 +55,22 @@ const VERIFY_RUNS = [
   "pnpm release:check",
   'pnpm release:tarball "$PACKAGE"',
 ];
+const SHA_STEP = {
+  name: "Provjera sha256",
+  env: Object.fromEntries([
+    ["FILE", FILE],
+    ["SHA256", SHA],
+  ]),
+  // DAN-866 (review on #148): a run without `shell:` is `bash -e {0}`, no pipefail.
+  run: [
+    "set -o pipefail",
+    '[[ "$FILE" =~ ^ductura-(contracts|test-fakes)-[0-9]+\\.[0-9]+\\.[0-9]+\\.tgz$ ]]',
+    '[[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]',
+    '[ "$(find release -type f | wc -l)" -eq 1 ]',
+    'printf \'%s  %s\\n\' "$SHA256" "release/$FILE" | sha256sum --check --strict -',
+    "",
+  ].join("\n"),
+};
 // 5f: the job that may write packages, in full. No checkout, no pnpm, no
 // repository code; the sha256 of verify's file, then npm publish of that file.
 const PUBLISH_JOB = {
@@ -65,22 +91,7 @@ const PUBLISH_JOB = {
       },
     },
     { uses: DOWNLOAD, with: { name: "release-tarball", path: "release" } },
-    {
-      name: "Provjera sha256",
-      env: Object.fromEntries([
-        ["FILE", FILE],
-        ["SHA256", "${{ needs.verify.outputs.sha256 }}"],
-      ]),
-      // DAN-866 (review on #148): a run without `shell:` is `bash -e {0}`, no pipefail.
-      run: [
-        "set -o pipefail",
-        '[[ "$FILE" =~ ^ductura-(contracts|test-fakes)-[0-9]+\\.[0-9]+\\.[0-9]+\\.tgz$ ]]',
-        '[[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]',
-        '[ "$(find release -type f | wc -l)" -eq 1 ]',
-        'printf \'%s  %s\\n\' "$SHA256" "release/$FILE" | sha256sum --check --strict -',
-        "",
-      ].join("\n"),
-    },
+    SHA_STEP,
     {
       name: "Objava",
       env: Object.fromEntries([
@@ -88,6 +99,46 @@ const PUBLISH_JOB = {
         ["NODE_AUTH_TOKEN", TOKEN],
       ]),
       run: 'npm publish --ignore-scripts "./release/$FILE"',
+    },
+  ],
+};
+
+// DAN-966: the job that attaches verify's tarball to the public GitHub Release
+// of the tag, in full. Only contents: write, no repository code; the tag comes
+// from $GITHUB_REF (no expression) and must name the verified file.
+const ATTACH = [
+  "set -o pipefail",
+  '[[ "$GITHUB_REF" =~ ^refs/tags/(contracts|test-fakes)-v([0-9]+\\.[0-9]+\\.[0-9]+)$ ]]',
+  'PACKAGE="${BASH_REMATCH[1]}"',
+  'VERSION="${BASH_REMATCH[2]}"',
+  'TAG="${GITHUB_REF#refs/tags/}"',
+  '[ "$FILE" = "ductura-$PACKAGE-$VERSION.tgz" ]',
+  'export GH_REPO="$GITHUB_REPOSITORY"',
+  'if gh release view "$TAG" > /dev/null; then',
+  '  gh release upload "$TAG" "./release/$FILE"',
+  "else",
+  '  gh release create "$TAG" "./release/$FILE" --verify-tag --title "$TAG" --notes "sha256 $SHA256"',
+  "fi",
+  "",
+].join("\n");
+const RELEASE_JOB = {
+  name: "Prilaganje izdanju",
+  needs: "verify",
+  "runs-on": "ubuntu-latest",
+  "timeout-minutes": 10,
+  environment: "packages",
+  permissions: { contents: "write" },
+  steps: [
+    { uses: DOWNLOAD, with: { name: "release-tarball", path: "release" } },
+    SHA_STEP,
+    {
+      name: "Prilaganje",
+      env: Object.fromEntries([
+        ["FILE", FILE],
+        ["SHA256", SHA],
+        ["GH_TOKEN", TOKEN],
+      ]),
+      run: ATTACH,
     },
   ],
 };
@@ -126,7 +177,7 @@ export function publishErrors(text: string): string[] {
     errors.push("trigger is not the two tag patterns and a bare workflow_dispatch");
   // 5b: nothing at the top, read in verify, packages: write only in publish.
   if (!same(doc.permissions, {})) errors.push("top permissions are not {}");
-  if (keys(jobs) !== "verify,publish") errors.push(`jobs: ${keys(jobs)}`);
+  if (keys(jobs) !== "verify,publish,release") errors.push(`jobs: ${keys(jobs)}`);
   if (keys(verify) !== "name,runs-on,timeout-minutes,permissions,outputs,steps")
     errors.push(`verify keys: ${keys(verify)}`);
   if (!same(verify.permissions, { contents: "read" })) errors.push("verify may write");
@@ -135,7 +186,7 @@ export function publishErrors(text: string): string[] {
   for (const [path, value] of strings(doc)) {
     if (value.includes("${{") && EXPRESSIONS[path] !== value)
       errors.push(`expression at ${path}: ${value}`);
-    if (/secrets\.|github\.token/u.test(value) && path !== TOKEN_AT)
+    if (/secrets\.|github\.token/u.test(value) && path !== TOKEN_AT && path !== GH_TOKEN_AT)
       errors.push(`token at ${path}`);
   }
   // 5d: every action pinned to a full SHA, with its version as a comment.
@@ -144,6 +195,8 @@ export function publishErrors(text: string): string[] {
       errors.push(`not pinned: ${uses}`);
   // 5f: publish is exactly PUBLISH_JOB.
   if (!same(jobs.publish, PUBLISH_JOB)) errors.push("publish is not the expected job");
+  // DAN-966: release is exactly RELEASE_JOB.
+  if (!same(jobs.release, RELEASE_JOB)) errors.push("release is not the expected job");
   // DAN-742: npm reads a bare "dir/file.tgz" as the GitHub shorthand owner/repo
   // and tries git over ssh, so every tarball npm publish gets starts with "./".
   for (const [path, value] of strings(jobs.publish, "jobs.publish"))
@@ -191,6 +244,9 @@ describe("publish.yml", () => {
   const publishStep = '        run: npm publish --ignore-scripts "./release/$FILE"\n';
   const sha = "      - name: Provjera sha256\n";
   const tagStep = "        run: pnpm release:tag\n";
+  const rel =
+    "  release:\n    name: Prilaganje izdanju\n    needs: verify\n    runs-on: ubuntu-latest\n    timeout-minutes: 10\n    environment: packages\n";
+  const attach = "      - name: Prilaganje\n";
 
   it.each([
     ["5a pull_request", tags, `${tags}  pull_request:\n`],
@@ -338,6 +394,66 @@ describe("publish.yml", () => {
       `        run: pnpm typecheck\n      - name: Provjera tipova\n${tagStep}`,
     ],
     ["a duplicate key", "permissions: {}\n", "permissions: {}\npermissions: {}\n"],
+    // DAN-966: the release job.
+    ["966 without the release job", "  release:\n", "  release_x:\n"],
+    [
+      "966 packages: write in release",
+      "      contents: write\n",
+      "      contents: write\n      packages: write\n",
+    ],
+    [
+      "966 actions: read in release",
+      "      contents: write\n",
+      "      contents: write\n      actions: read\n",
+    ],
+    [
+      "966 write-all in release",
+      "    permissions:\n      contents: write\n",
+      "    permissions: write-all\n",
+    ],
+    ["966 release after publish", rel, rel.replace("needs: verify", "needs: [verify, publish]")],
+    ["966 release without the environment", rel, rel.replace("    environment: packages\n", "")],
+    ["966 release without a timeout", rel, rel.replace("    timeout-minutes: 10\n", "")],
+    ["966 if: failure() on release", rel, `${rel}    if: failure()\n`],
+    ["966 continue-on-error on release", rel, `${rel}    continue-on-error: true\n`],
+    ["966 a job env in release", rel, `${rel}    env: { A: b }\n`],
+    ["966 self-hosted", rel, rel.replace("ubuntu-latest", "self-hosted")],
+    ["966 checkout in release", attach, `      - uses: ${CHECKOUT} # v7.0.1\n${attach}`],
+    [
+      "966 pnpm install in release",
+      attach,
+      `      - run: pnpm install --frozen-lockfile\n${attach}`,
+    ],
+    [
+      "966 attach without the sha256 check",
+      "sha256sum --check --strict -\n      # The tag",
+      "cat\n      # The tag",
+    ],
+    ["966 continue-on-error on the attach", attach, `${attach}        continue-on-error: true\n`],
+    ["966 a shell on the attach", attach, `${attach}        shell: bash {0}\n`],
+    [
+      "966 --clobber",
+      'upload "$TAG" "./release/$FILE"\n',
+      'upload "$TAG" "./release/$FILE" --clobber\n',
+    ],
+    ["966 create without --verify-tag", " --verify-tag", ""],
+    ["966 create on a target", " --verify-tag", " --target main"],
+    ["966 a draft", " --verify-tag", " --verify-tag --draft"],
+    ["966 every file", 'upload "$TAG" "./release/$FILE"', 'upload "$TAG" ./release/*'],
+    ["966 an unanchored ref", "=~ ^refs/tags/(", "=~ refs/tags/("],
+    ["966 GITHUB_REF_NAME", 'TAG="${GITHUB_REF#refs/tags/}"', 'TAG="$GITHUB_REF_NAME"'],
+    [
+      "966 the tag through an expression",
+      'TAG="${GITHUB_REF#refs/tags/}"',
+      'TAG="${{ github.ref_name }}"',
+    ],
+    ["966 GH_REPO through an expression", '"$GITHUB_REPOSITORY"', '"${{ github.repository }}"'],
+    ["966 github.token", `GH_TOKEN: ${TOKEN}`, "GH_TOKEN: ${{ github.token }}"],
+    [
+      "966 a deleted release",
+      "      - name: Prilaganje\n",
+      "      - run: gh release delete x\n      - name: Prilaganje\n",
+    ],
   ])("refuses %s", (_, from, to) => {
     expect(publishErrors(replace(from, to))).not.toEqual([]);
   });
@@ -350,6 +466,76 @@ describe("publish.yml", () => {
       );
     },
   );
+});
+
+// DAN-966: the attach step run by real bash -e, with a stub gh that logs its calls.
+describe("publish.yml attach step", () => {
+  const dir = mkdtempSync(join(tmpdir(), "dan-966-"));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  const script = join(dir, "attach.sh");
+  writeFileSync(script, ATTACH);
+  const gh = join(dir, "gh");
+  writeFileSync(
+    gh,
+    '#!/bin/sh\necho "$GH_REPO $*" >> "$GH_LOG"\n[ "$2" != view ] || [ -n "$EXISTS" ]\n',
+  );
+  chmodSync(gh, 0o755);
+  const sum = "a".repeat(64);
+  const run = (ref: string, file: string, exists = false) => {
+    const log = join(dir, `log-${Math.random()}`);
+    writeFileSync(log, "");
+    const env = Object.fromEntries([
+      ["PATH", `${dir}:${process.env.PATH ?? ""}`],
+      ["GITHUB_REF", ref],
+      ["GITHUB_REPOSITORY", "ductura/server"],
+      ["FILE", file],
+      ["SHA256", sum],
+      ["GH_LOG", log],
+      ["EXISTS", exists ? "1" : ""],
+    ]);
+    const { status } = spawnSync("bash", ["-e", script], { env });
+    return { status, calls: readFileSync(log, "utf8").split("\n").filter(Boolean) };
+  };
+
+  it("creates the release with the verified file on the existing tag", () => {
+    expect(run("refs/tags/contracts-v2.1.0", "ductura-contracts-2.1.0.tgz")).toEqual({
+      status: 0,
+      calls: [
+        "ductura/server release view contracts-v2.1.0",
+        `ductura/server release create contracts-v2.1.0 ./release/ductura-contracts-2.1.0.tgz --verify-tag --title contracts-v2.1.0 --notes sha256 ${sum}`,
+      ],
+    });
+  });
+
+  it("uploads to an existing release without --clobber", () => {
+    expect(run("refs/tags/test-fakes-v2.0.0", "ductura-test-fakes-2.0.0.tgz", true)).toEqual({
+      status: 0,
+      calls: [
+        "ductura/server release view test-fakes-v2.0.0",
+        "ductura/server release upload test-fakes-v2.0.0 ./release/ductura-test-fakes-2.0.0.tgz",
+      ],
+    });
+  });
+
+  it.each([
+    ["a branch", "refs/heads/main", "ductura-contracts-2.1.0.tgz"],
+    ["another package's file", "refs/tags/contracts-v2.1.0", "ductura-test-fakes-2.1.0.tgz"],
+    ["another version's file", "refs/tags/contracts-v2.1.0", "ductura-contracts-2.1.1.tgz"],
+    ["a suffix", "refs/tags/contracts-v2.1.0-x", "ductura-contracts-2.1.0.tgz"],
+    ["a prefix", "xrefs/tags/contracts-v2.1.0", "ductura-contracts-2.1.0.tgz"],
+    ["a newline", "refs/tags/contracts-v2.1.0\n", "ductura-contracts-2.1.0.tgz"],
+    ["a CR", "refs/tags/contracts-v2.1.0\r", "ductura-contracts-2.1.0.tgz"],
+    ["a tab", "refs/tags/contracts-v2.1.0\t", "ductura-contracts-2.1.0.tgz"],
+    ["an NBSP", "refs/tags/contracts-v2.1.0\u00a0", "ductura-contracts-2.1.0.tgz"],
+    ["a DEL", "refs/tags/contracts-v2.1.0\u007f", "ductura-contracts-2.1.0.tgz"],
+    ["a command", "refs/tags/contracts-v2.1.0;id", "ductura-contracts-2.1.0.tgz"],
+    ["a Windows path", "refs\\tags\\contracts-v2.1.0", "ductura-contracts-2.1.0.tgz"],
+    ["an empty ref", "", "ductura-contracts-2.1.0.tgz"],
+  ])("refuses %s before any gh call", (_, ref, file) => {
+    const result = run(ref, file, true);
+    expect(result.status).not.toBe(0);
+    expect(result.calls).toEqual([]);
+  });
 });
 
 describe("ci.yml", () => {
