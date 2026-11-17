@@ -4,6 +4,7 @@
 // request and any other parse error keep Node's bare answer. Over a real
 // socket of startServer; every value is invented.
 import { EventEmitter } from "node:events";
+import { maxHeaderSize } from "node:http";
 import { connect, type Socket } from "node:net";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -100,6 +101,25 @@ describe("a header or a body never chooses the route", () => {
     ]);
     expect(second.endsWith(BARE)).toBe(true);
     expect(second).not.toContain("bad_request");
+  });
+});
+
+describe("a request Node answered itself still counts as the first", () => {
+  it("after Node's own 417 for an unknown expectation, a refused request is bare", async () => {
+    const expectation = `POST ${BACKCHANNEL} HTTP/1.1\r\nHost: x\r\nExpect: bogus\r\nContent-Length: 0\r\n\r\n`;
+    const out = await exchange([expectation, head(EVIDENCE, "-1")]);
+    expect(out.startsWith("HTTP/1.1 417")).toBe(true);
+    expect(out.endsWith(BARE)).toBe(true);
+  });
+
+  it("CR and LF before the line never push the line out of what is kept", async () => {
+    const flood = "\r\n".repeat(maxHeaderSize / 2 + 10);
+    const spoof = [
+      flood,
+      `POST ${EVIDENCE} HTTP/1.1\r\nX-Note: `,
+      `POST ${BACKCHANNEL} HTTP/1.1\r\nContent-Length: -1\r\n\r\n`,
+    ];
+    expect(json(await exchange(spoof))).toEqual({ status: "bad_request" });
   });
 });
 
@@ -205,6 +225,7 @@ describe("the listeners on their own", () => {
   const fake = (): Fake =>
     Object.assign(new EventEmitter(), {
       bytesRead: 0,
+      bytesWritten: 0,
       writable: true,
       written: [] as string[],
       write(text: string) {
@@ -237,6 +258,20 @@ describe("the listeners on their own", () => {
       expect([bytesRead, socket.written[0]?.includes("bad_request")]).toEqual([bytesRead, shaped]);
       if (!shaped) expect(socket.written).toEqual([BARE]);
     }
+  });
+
+  it("never trust a capture with a dropped part", () => {
+    const listeners = createClientErrorListeners(ROUTE_LIST);
+    const socket = fake();
+    listeners.connection(socket as unknown as Socket);
+    const line = Buffer.from(`POST ${EVIDENCE} HTTP/1.1\r\n`, "latin1");
+    const big = Buffer.alloc(maxHeaderSize, "a");
+    socket.emit("data", line);
+    socket.emit("data", big);
+    const packet = "Host: x\r\nContent-Length: -1\r\n\r\n";
+    socket.bytesRead = line.length + big.length + packet.length;
+    listeners.clientError(refused(packet), socket as unknown as Socket);
+    expect(socket.written).toEqual([BARE]);
   });
 
   it("read the first line only from the start, after CR and LF", () => {

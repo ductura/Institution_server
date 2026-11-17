@@ -82,7 +82,18 @@ function answerStarted(socket: Socket): boolean {
   );
 }
 
-type First = { chunks: Buffer[]; seen: number; first: boolean };
+type First = {
+  chunks: Buffer[];
+  /** Bytes kept from the first byte that is not CR or LF. */
+  kept: number;
+  /** Every byte the connection received, kept or not. */
+  seen: number;
+  first: boolean;
+  /** A byte after the first line's start was dropped: the line cannot be trusted. */
+  cut: boolean;
+};
+
+const isLineBreak = (byte: number) => byte === 0x0d || byte === 0x0a;
 
 /**
  * The connection, request and clientError listeners of the server. Until its
@@ -99,12 +110,24 @@ export function createClientErrorListeners(routes: readonly Route[]): {
   const states = new WeakMap<Socket, First>();
   return {
     connection: (socket) => {
-      const state: First = { chunks: [], seen: 0, first: true };
+      const state: First = { chunks: [], kept: 0, seen: 0, first: true, cut: false };
       states.set(socket, state);
       socket.on("data", (chunk: Buffer) => {
-        if (!state.first) return;
-        if (state.seen < maxHeaderSize) state.chunks.push(chunk);
         state.seen += chunk.length;
+        if (!state.first || state.cut) return;
+        // Leading CR and LF are skipped by llhttp outside the head's budget, so
+        // they are not kept: the cap counts only bytes from the first line on.
+        let part = chunk;
+        if (state.kept === 0) {
+          let start = 0;
+          while (start < part.length && isLineBreak(part[start] ?? 0)) start += 1;
+          part = part.subarray(start);
+        }
+        if (state.kept + part.length > maxHeaderSize) state.cut = true;
+        else if (part.length > 0) {
+          state.chunks.push(part);
+          state.kept += part.length;
+        }
       });
     },
     request: (request) => {
@@ -124,9 +147,14 @@ export function createClientErrorListeners(routes: readonly Route[]): {
         const packet = Buffer.isBuffer(rawPacket) ? rawPacket : Buffer.alloc(0);
         const state = states.get(socket);
         let answer = nodeAnswer(NODE_STATUS.get(name) ?? 400);
+        // First: no request event, nothing written (Node's own 417 or 100
+        // Continue answer a head without one) and no answer assigned.
         if (
           CONTENT_LENGTH_ERRORS.has(name) &&
           state?.first === true &&
+          !state.cut &&
+          socket.bytesWritten === 0 &&
+          Reflect.get(socket, "_httpMessage") == null &&
           state.seen === socket.bytesRead - packet.length
         ) {
           const end = typeof bytesParsed === "number" ? bytesParsed : packet.length;
