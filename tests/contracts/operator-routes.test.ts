@@ -287,6 +287,10 @@ describe("operator routes cannot go around step 8", () => {
       (t: string) => t.replace("createClientContextRoute(),", "createClientContextRoute()[0],"),
     ],
     [
+      "a list joined after the factory",
+      (t: string) => t.replace("...routesOf(AREAS)", "...routesOf(AREAS).concat([rogueRoute])"),
+    ],
+    [
       "a factory under another name",
       (t: string) => t.replace("...routesOf(AREAS)", "...routesOfAll(AREAS)"),
     ],
