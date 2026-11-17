@@ -38,13 +38,20 @@ export async function signWithin(
   timeoutMs: number,
 ): Promise<SignedWithin> {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
   const timeout = new Promise<SignedWithin>((resolve) => {
-    timer = setTimeout(() => resolve({ ok: false, reason: "sign_timeout" }), timeoutMs);
+    timer = setTimeout(() => {
+      timedOut = true;
+      resolve({ ok: false, reason: "sign_timeout" });
+    }, timeoutMs);
   });
-  // The signer gets a copy; a reply after the timeout is dropped unread.
+  // The signer gets a copy; a reply after the timeout is dropped unread: the
+  // race does not cancel the signing, so the flag keeps its getters unrun
+  // (Codex P2 on #204).
   const signing = Promise.resolve()
     .then(() => signer.sign(input.slice()))
     .then((raw): SignedWithin => {
+      if (timedOut) return { ok: false, reason: "sign_timeout" };
       let copy: unknown;
       try {
         copy = structuredClone(raw);

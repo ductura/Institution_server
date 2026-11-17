@@ -101,12 +101,23 @@ describe("signWithin answers a closed reason for every bad reply (P-2)", () => {
     expect(reads).toBe(1);
   });
 
-  it("K8 a signer past the bound answers sign_timeout, and its late reply changes nothing", async () => {
+  it("K8 a signer past the bound answers sign_timeout, and its late reply is never read", async () => {
     vi.useFakeTimers();
     let late: (() => void) | undefined;
+    let reads = 0;
     const slow = signer(
       (input) =>
-        new Promise((resolve) => (late = () => resolve({ ok: true, value: honest(input) }))),
+        new Promise(
+          (resolve) =>
+            (late = () =>
+              resolve({
+                get ok() {
+                  reads += 1;
+                  return true;
+                },
+                value: honest(input),
+              })),
+        ),
     );
     const pending = signWithin(slow, INPUT, 20);
     await vi.advanceTimersByTimeAsync(20);
@@ -115,6 +126,8 @@ describe("signWithin answers a closed reason for every bad reply (P-2)", () => {
     await vi.runAllTimersAsync();
     expect(await pending).toEqual({ ok: false, reason: "sign_timeout" });
     expect(slow.sign).toHaveBeenCalledTimes(1);
+    // Codex P2 on #204: not cloned, so no getter of the late reply runs.
+    expect(reads).toBe(0);
   });
 
   it("a signer just inside the bound is answered", async () => {
