@@ -6,9 +6,11 @@ import {
   actorReader,
   type ActorReader,
   closePools,
+  createSettingsWriter,
   databaseHealth,
   type HealthReport,
   metricSampleStore,
+  type SettingsWriter,
   withActor,
   type WithActor,
   workOpener,
@@ -21,6 +23,8 @@ export type Databases = {
     readonly withActor: WithActor;
     readonly actorReader: ActorReader;
     readonly workOpener: WorkOpener;
+    /** settings.set_value over the same withActor (DAN-826-2b; PUT /api/v1/settings/values). */
+    readonly settingsWriter: SettingsWriter;
   };
   /** The state of main, logs and legal, each apart; the input of readiness (S-1M-a). */
   health(): Promise<HealthReport>;
@@ -32,7 +36,7 @@ export type Databases = {
 
 export function createDatabases(): Databases {
   return {
-    main: { withActor, actorReader, workOpener },
+    main: { withActor, actorReader, workOpener, settingsWriter: createSettingsWriter(withActor) },
     health: databaseHealth,
     metricSamples: metricSampleStore,
     close: closePools,
