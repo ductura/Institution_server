@@ -136,6 +136,16 @@ const failing: Case[] = [
     "../evidence/index.ts",
   ]),
   ...all("server/evidence/x.ts", "edge", ["../profile/index.ts"]),
+  // DAN-852-1: institution reaches neither contracts, http, session nor another
+  // feature area, and only http imports it.
+  ...all("server/institution/x.ts", "edge", [
+    "../contracts/index.ts",
+    "../http/index.ts",
+    "../session/index.ts",
+    "../profile/index.ts",
+  ]),
+  ...all("server/profile/x.ts", "edge", ["../institution/index.ts"]),
+  ...all("server/evidence/x.ts", "edge", ["../institution/index.ts"]),
   ...all("server/x.ts", "edge", ["./database/index.ts"]),
   // Only http and the entry point create adapters; the others take their types.
   ...[
