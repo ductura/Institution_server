@@ -33,7 +33,13 @@ Ništa iz drugih područja; od knjižnica samo `@sinclair/typebox` ([karta serve
 ## Rute koje se rađaju na serveru i rute bez handlera (DAN-803)
 
 - `SERVER_SOURCES` (`inventory.ts`) su rute kojima Ductus podatak daje izvan `route.ts`, npr. popis radova studenta (`src/components/student/my-assignments-read.ts`). Ključ je `route.ts` koji bi ruta imala, a `checkInventory` ih prihvaća kao datoteke inventara. `INVENTORY` ostaje kopija 38 Ductusovih datoteka.
-- `CONTRACT_ONLY` je stanje „ugovoreno, nije implementirano”: ruta ima ugovor i vektore, a klijenti rade nad lažnim serverom. Popis smije samo padati. `tests/contracts/contract-only.test.ts` drži zamrznute popise zadataka: 27 ruta DAN-803, 3 rute postavki DAN-806 i 3 rute WebAuthna DAN-840 (opseg Ductus#1836 c.6934850911; montirane od 840-3f1, pa više nisu na popisu). Pada ako je na popisu ruta izvan tih popisa, ruta bez ugovora ili ruta montirana u nekom području, te ako ruta s tih popisa s ugovorom i bez handlera nije na popisu (Ductus#1836 c.6905207008, potvrda c.6905290513).
+- `CONTRACT_ONLY` je stanje „ugovoreno, nije implementirano”: ruta ima ugovor i vektore, a klijenti rade nad lažnim serverom. Ruta s popisa izlazi kad se montira njezin handler. Nova ruta na popis ulazi samo s novim zamrznutim popisom zadatka. `tests/contracts/contract-only.test.ts` drži zamrznute popise zadataka:
+  - 27 ruta DAN-803;
+  - 3 rute postavki DAN-806;
+  - 3 rute WebAuthna DAN-840 (opseg Ductus#1836 c.6934850911; montirane od 840-3f1, pa više nisu na popisu);
+  - 2 nastavnička čitanja DAN-903;
+  - dnevnik pristupa studenta DAN-904;
+  - stanje rada po zadatku DAN-989 (`student.assignment-work.get`, handler u 989-2). Pada ako je na popisu ruta izvan tih popisa, ruta bez ugovora ili ruta montirana u nekom području, te ako ruta s tih popisa s ugovorom i bez handlera nije na popisu (Ductus#1836 c.6905207008, potvrda c.6905290513).
 
 ## Operatorske rute (DAN-842-2)
 
