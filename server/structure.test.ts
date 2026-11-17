@@ -26,6 +26,7 @@ const TEMPLATE_AREAS = [
   "downloads",
   "evidence",
   "profile",
+  "institution",
   "support",
   "database",
   "session",

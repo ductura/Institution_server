@@ -17,12 +17,15 @@ import {
   type ChallengePurpose,
   type ChallengeStore,
   challengeSessionKey,
+  createChallengeStore,
   liveSessionTokenFromCookie,
+  recordActivity,
   coseEs256Key,
   verifyAssertion,
   verifyRegistration,
 } from "../session/index.ts";
 
+import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
 import { sendProblem } from "./problem.ts";
@@ -47,6 +50,11 @@ const ASSERTION = routeOf("auth.webauthn-assertion.post");
 
 export const WEBAUTHN_CHALLENGE_MAX_BYTES = CHALLENGE.maxBytes;
 export const WEBAUTHN_BODY_TIMEOUT_MS = 5_000;
+/**
+ * timeoutMs of the browser and TTL of the store alike: the contract says a
+ * challenge expires after timeoutMs (840-3f1). At most MAX_CHALLENGE_TTL_MS.
+ */
+export const WEBAUTHN_TIMEOUT_MS = 120_000;
 /** maxItems of allowCredentials in the contract. */
 const MAX_CREDENTIALS = 16;
 const USER_HANDLE_BYTES = 16;
@@ -344,4 +352,24 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
   };
 
   return [challengeRoute, registrationRoute, assertionRoute];
+}
+
+/**
+ * The WebAuthn routes as the entry point mounts them (840-3f1): one challenge
+ * store per process (one web process, docs/server-map.md), the port and the
+ * session activity over the application database, and the origin the
+ * pipeline checks. Date.now is not monotonic: a clock set back spoils live
+ * challenges, and the client asks again.
+ */
+export function createWebAuthnRoutesFor(
+  main: Pick<Databases["main"], "withActor" | "webauthnCredentials">,
+  origin: string | null,
+): Route[] {
+  return createWebAuthnRoutes({
+    credentials: main.webauthnCredentials,
+    challenges: createChallengeStore({ now: Date.now, ttlMs: WEBAUTHN_TIMEOUT_MS }),
+    origin,
+    timeoutMs: WEBAUTHN_TIMEOUT_MS,
+    recordActivity: (token) => recordActivity(token, main.withActor),
+  });
 }

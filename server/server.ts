@@ -20,6 +20,7 @@ import {
   createDatabases,
   createEvidenceCommitRouteFor,
   createInterfaceLocaleRoutesFor,
+  createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createSettingsValuesPutRoute,
@@ -64,8 +65,11 @@ const problems = [
 //    IP rules, rate limit, traffic record, security headers, origin check.
 //    The order is fixed in http (PIPELINE_STEPS); steps 3 and 5 are empty
 //    until wave 5, step 4 limits requests (DAN-814). Without APP_ORIGIN every state-changing request gets 403.
+// One origin for the pipeline's check and for WebAuthn's client data and rpId
+// (DAN-840-3f1), so the two can never differ.
+const APP_ORIGIN = appOrigin(process.env);
 const LAYERS = createLayers({
-  expectedOrigin: appOrigin(process.env),
+  expectedOrigin: APP_ORIGIN,
   trustedProxies: TRUSTED_PROXIES ?? [],
 });
 
@@ -110,6 +114,8 @@ async function main(): Promise<void> {
       createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
       // The interface language (S-M-1, DAN-851): GET and POST over the profile service.
       ...createInterfaceLocaleRoutesFor(databases.main),
+      // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
+      ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;
       // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise).
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),

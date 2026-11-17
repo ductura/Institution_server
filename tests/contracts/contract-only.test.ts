@@ -9,11 +9,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
-import type { SettingsWriter } from "../../server/database/index.ts";
+import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
 import {
   AREA_NAMES,
   createInterfaceLocaleRoutesFor,
   createSettingsValuesPutRoute,
+  createWebAuthnRoutesFor,
   routesOf,
 } from "../../server/http/index.ts";
 
@@ -64,6 +65,7 @@ const FROZEN: readonly string[] = [...DAN_803, ...DAN_806, ...DAN_840];
 // out, is not a mount.
 const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
 const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
+const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
   {
     call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
@@ -74,6 +76,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createInterfaceLocaleRoutesFor(databases.main)",
     ids: ["profile.interface-locale.get", "profile.interface-locale.post"],
     routes: () => createInterfaceLocaleRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
+    call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
+    ids: [
+      "auth.webauthn-challenge.post",
+      "auth.webauthn-registration.post",
+      "auth.webauthn-assertion.post",
+    ],
+    routes: () => createWebAuthnRoutesFor(NO_WEBAUTHN, null).map((route) => route.contract.id),
   },
 ];
 const ENTRY_TEXT = readFileSync(new URL("../../server/server.ts", import.meta.url), "utf8");
@@ -153,7 +165,10 @@ describe("CONTRACT_ONLY", () => {
     ).toEqual([]);
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
-      DAN_806.map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
+      // With nothing mounted, the WebAuthn routes (mounted since 840-3f1) are missing too.
+      [...DAN_806, ...DAN_840].map(
+        (id) => `${id}: contract without a handler, not in CONTRACT_ONLY`,
+      ),
     );
   });
 
@@ -168,11 +183,14 @@ describe("CONTRACT_ONLY", () => {
 });
 
 describe("routes the entry point mounts itself", () => {
-  it("server.ts mounts the settings PUT and the interface language over the main database", () => {
+  it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
+      "auth.webauthn-challenge.post",
+      "auth.webauthn-registration.post",
+      "auth.webauthn-assertion.post",
     ]);
     expect(mounted()).toContain("settings.values.put");
     expect(mounted()).toContain("profile.interface-locale.get");
@@ -195,6 +213,28 @@ describe("routes the entry point mounts itself", () => {
       expect(entryMounted(entry)).toEqual([]);
     }
     expect(entryMounted(`routes: [\n  ${call},\n]`)).toEqual(["settings.values.put"]);
+  });
+
+  it("WebAuthn commented out, over another database or another origin is not a mount", () => {
+    const call = "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)";
+    for (const entry of [
+      `// ...${call},`,
+      `/* ...${call}, */`,
+      "",
+      "...createWebAuthnRoutesFor(fakeMain, APP_ORIGIN),",
+      "...createWebAuthnRoutesFor(databases.main, null),",
+      "...createWebAuthnRoutesFor(databases.main, appOrigin(process.env)),",
+    ]) {
+      expect(entryMounted(entry)).toEqual([]);
+    }
+  });
+
+  it("server.ts reads APP_ORIGIN once and gives it to the pipeline and to WebAuthn", () => {
+    const text = code(ENTRY_TEXT);
+    expect(text.match(/\bappOrigin\(/gu)).toHaveLength(1);
+    expect(text).toContain("const APP_ORIGIN = appOrigin(process.env);");
+    expect(text).toContain("expectedOrigin: APP_ORIGIN");
+    expect(text).toContain("createWebAuthnRoutesFor(databases.main, APP_ORIGIN)");
   });
 
   it("the interface language commented out or over another database is not a mount", () => {
