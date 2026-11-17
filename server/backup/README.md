@@ -1,14 +1,35 @@
 # server/backup
 
-Područje iz [karte servera](../../docs/server-map.md). Mapa je za sada prazna (S-1A-a): ima samo prazne izvoze i tipove, bez logike.
+Područje iz [karte servera](../../docs/server-map.md). Rute, sheme i servis su još prazni (S-1A-a). Jedina logika je raspoređivač backupa (S-1G-a, DAN-1012-2).
 
 ## Što radi
 
 Kopije baze i pohrane te mjesečna proba povrata (ARCHITECTURE §9). Feature područje: logika rute ili posla bit će u `service`.
 
+## Raspoređivač backupa
+
+`createBackupScheduler` (`scheduler.ts`) jednom na sat čita postavke razine `system` iz kataloga (DAN-1012-1). Posao pokreće samo kad je `backup.enabled` točno `true` i kad je od zadnjeg pokretanja, ili od uključenja, prošlo barem `backup.interval_hours` sati. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
+
+Svaki drugi otkucaj javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
+
+- `settings_unavailable`: čitač baci ili ne vrati `Map`;
+- `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; brojač se vraća na 0;
+- `interval_invalid`: interval je izvan kataloga;
+- `busy`: prethodni otkucaj još traje;
+- `run_failed`: posao je bacio.
+
+Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitač, posao i primatelj razloga predaje sastavljač.
+
+Poznate granice:
+
+- Raspoređivač se još nigdje ne pokreće, pa je backup isključen (V-6 je vlasnikov).
+- `settings.read_values` razinu `system` danas nikome ne daje.
+- Više instanci bi svaka pokretale posao.
+- Posao koji ne završi drži `busy`.
+
 ## Tko ga zove
 
-`http` (status za administratora) i planirani posao. Planirani posao je pozadinski proces s vlastitim sastavljačem; dok ga nema, područje zove samo `http`.
+`http` (status za administratora) i planirani posao. Planirani posao je pozadinski proces s vlastitim sastavljačem; dok ga nema, područje zove samo `http`, a raspoređivač nitko.
 
 ## Koje podatke dira
 
@@ -18,7 +39,8 @@ Kopije glavne baze i replika bucketa.
 
 - `BACKUP_ROUTES`: popis ruta, za sada prazan (`routes.ts`);
 - `BACKUP_SCHEMAS`: sheme, za sada prazne (`schemas.ts`);
-- `BackupService`: tip servisa bez članova (`service.ts`).
+- `BackupService`: tip servisa bez članova (`service.ts`);
+- `createBackupScheduler`, `BACKUP_CHECK_MS`, `BACKUP_SKIP_REASONS` i njihovi tipovi: raspoređivač (`scheduler.ts`).
 
 ## Što ne smije uvoziti
 
