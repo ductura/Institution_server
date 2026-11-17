@@ -17,6 +17,7 @@ import {
   createEvidenceReplayRouteFor,
   createHealthRoute,
   createLayers,
+  createSettingsValuesPutRoute,
   evidenceIngestDependencies,
   type Running,
   routesOf,
@@ -57,6 +58,8 @@ let server: Running;
 // The answer of each route that needs a session to a complete, valid request
 // with a live session, so 426, 415 and 422 can never hide the outcome. Both
 // 404s are reached only with a live actor (the functions check it first).
+// `method` is POST unless given; `old` is the 401 body each contract gives.
+const EVIDENCE_401 = { status: "unauthenticated" };
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -69,6 +72,22 @@ const SESSION_ROUTES = {
     body: () => ({ documentId: randomUUID(), from: 0 }),
     live: 404,
   },
+  // DAN-826-2b: a live session that is not a network engineer gets 404 and
+  // writes nothing, so the accounts of this file keep no settings row.
+  "settings.values.put": {
+    method: "PUT",
+    path: "/api/v1/settings/values",
+    body: () => ({
+      level: "network_security",
+      course: null,
+      key: "network.session_idle_minutes",
+      value: 60,
+      locked: false,
+      min: null,
+      max: null,
+    }),
+    live: 404,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -78,6 +97,7 @@ const FACTORIES = [
   "createHealthRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
+  "createSettingsValuesPutRoute",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createAuthRoutes",
@@ -88,6 +108,7 @@ const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
+  createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   ...createAuthRoutes(ENV),
@@ -115,7 +136,7 @@ async function signIn(count: number): Promise<string[]> {
   return tokens;
 }
 
-function post(path: string, token: string, body?: unknown): Promise<Response> {
+function post(path: string, token: string, body?: unknown, method = "POST"): Promise<Response> {
   const headers: Record<string, string> = {
     origin: ORIGIN,
     "sec-fetch-site": "same-origin",
@@ -126,15 +147,17 @@ function post(path: string, token: string, body?: unknown): Promise<Response> {
     headers["ductus-protocol"] = "1";
   }
   return fetch(`http://127.0.0.1:${server.port}${path}`, {
-    method: "POST",
+    method,
     headers,
     redirect: "manual",
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 }
 
-const call = (id: SessionRouteId, token: string) =>
-  post(SESSION_ROUTES[id].path, token, SESSION_ROUTES[id].body());
+const call = (id: SessionRouteId, token: string) => {
+  const route: { path: string; body: () => unknown; method?: string } = SESSION_ROUTES[id];
+  return post(route.path, token, route.body(), route.method);
+};
 
 const sessionEnd = async (token: string) =>
   (
@@ -220,7 +243,11 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     for (const id of SESSION_IDS) {
       const answer = await call(id, token);
       const body: unknown = await answer.json();
-      expect([id, answer.status, body]).toEqual([id, 401, { status: "unauthenticated" }]);
+      const old =
+        id === "settings.values.put"
+          ? expect.objectContaining({ code: "unauthorized" })
+          : EVIDENCE_401;
+      expect([id, answer.status, body]).toEqual([id, 401, old]);
       const spec = MOUNTED.find((r) => r.contract.id === id)?.contract.errors.find(
         (e) => e.status === 401,
       );
