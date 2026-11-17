@@ -107,4 +107,27 @@ describe("controls", () => {
       signedReceipt: { ...own, signature: other.signature },
     });
   });
+
+  it("already_signed with a value that cannot be copied is not answered", async () => {
+    const out = await settle(
+      { outcome: "already_signed", signature: { ...other.signature, f: () => 1 } },
+      own,
+      KEYS,
+    );
+    expect(out).toEqual(unavailable("store", "stored_signature_unverified"));
+  });
+
+  // Codex P2 on #207: what is answered is the snapshot that was verified.
+  it("already_signed answers the signature it verified, even if the store's object changes meanwhile", async () => {
+    const live = { ...other.signature };
+    const pending = settle({ outcome: "already_signed", signature: live }, own, KEYS);
+    live.signatureBase64Url = "A".repeat(86);
+    const out = await pending;
+    expect(out).toEqual({
+      status: "already_signed",
+      signedReceipt: { ...own, signature: other.signature },
+    });
+    const { signedReceipt } = out as { signedReceipt: SignedEvidenceReceiptV2 };
+    expect(signedReceipt.signature).not.toBe(live);
+  });
 });

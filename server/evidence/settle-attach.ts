@@ -74,11 +74,20 @@ export async function settle(
         ? { status: "signed", signedReceipt: own }
         : { status: "unavailable", stage: "store", reason: "stored_signature_mismatch" };
     case "already_signed": {
-      // The stored signature is answered only once it verifies as well.
+      // The stored signature is answered only once it verifies as well. It is
+      // copied first, so the value checked and the value answered are one
+      // snapshot even if the store's object changes meanwhile (Codex P2 on
+      // #207); a value that cannot be copied is no signature.
+      let signature: unknown;
+      try {
+        signature = structuredClone(attached.signature);
+      } catch {
+        return { status: "unavailable", stage: "store", reason: "stored_signature_unverified" };
+      }
       const stored = {
         payload: own.payload,
         payloadDigestSha256: own.payloadDigestSha256,
-        signature: attached.signature,
+        signature,
       } as SignedEvidenceReceiptV2;
       const check = await verifiedReceipt(stored, keys);
       if (check.ok) return { status: "already_signed", signedReceipt: stored };
