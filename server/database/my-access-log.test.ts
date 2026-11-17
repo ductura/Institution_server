@@ -164,6 +164,46 @@ describe("my access log: refusals", () => {
   });
 });
 
+// Ductus access-log-days.test.ts 9c and "calendar validity" at b36c82b, through the port.
+const NOT_AN_INSTANT: [string, string][] = [
+  ["30 February", "2026-02-30T08:00:00Z"],
+  ["29 February of a common year", "2026-02-29T08:00:00Z"],
+  ["29 February of a century not divisible by 400", "1900-02-29T08:00:00Z"],
+  ["31 April", "2026-04-31T08:00:00Z"],
+  ["month 00", "2026-00-10T08:00:00Z"],
+  ["month 13", "2026-13-10T08:00:00Z"],
+  ["day 00", "2026-11-00T08:00:00Z"],
+  ["hour 24", "2026-11-10T24:00:00Z"],
+  ["minute 60", "2026-11-10T08:60:00Z"],
+  ["second 60", "2026-11-10T08:00:60Z"],
+  ["30 February with an offset", "2026-02-30T09:00:00+01:00"],
+  ["four fraction digits", "2026-11-10T13:10:00.0001Z"],
+  ["five fraction digits", "2026-11-10T13:10:00.00001Z"],
+  ["100 microseconds", "2026-11-10T13:10:00.000100Z"],
+  ["seven fraction digits", "2026-11-10T13:10:00.0000000Z"],
+  ["123001 microseconds", "2026-11-10T13:10:00.123001Z"],
+  ["999999 microseconds past", "2026-11-10T13:10:00.999999Z"],
+];
+describe("my access log: a time given as text", () => {
+  it.each(NOT_AN_INSTANT)("refuses %s, beside a valid row (%s)", async (_name, iso) => {
+    const bad = { ...ROW, entry_id: "00000000-0000-4000-8000-0000000000e3", opened_at: iso };
+    expect(await reader([ROW, bad]).log.read(TOKEN, DOC)).toEqual({
+      status: "unavailable",
+      reason: "row_malformed",
+    });
+  });
+
+  it.each([
+    ["29 February of a leap year", "2028-02-29T08:00:00Z", Date.UTC(2028, 1, 29, 8)],
+    ["29 February of a year divisible by 400", "2000-02-29T08:00:00Z", Date.UTC(2000, 1, 29, 8)],
+    ["31 December", "2026-12-31T23:55:00Z", Date.UTC(2026, 11, 31, 23, 55)],
+    ["1 January", "2027-01-01T00:00:00Z", Date.UTC(2027, 0, 1)],
+  ])("reads %s exactly (%s)", async (_name, iso, ms) => {
+    const read = await reader([{ ...ROW, opened_at: iso }]).log.read(TOKEN, DOC);
+    expect(read.status === "ok" && read.entries[0]?.at).toBe(ms);
+  });
+});
+
 describe("my access log: the student's own", () => {
   it("names the caller only through the token, in one statement of one transaction", async () => {
     const r = reader([ROW]);
