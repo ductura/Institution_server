@@ -108,6 +108,12 @@ export {
 export { clientIpOf, parseTrustedProxies, type TrustedProxies } from "../traffic/index.ts";
 export { startServer, type Running, type StartOptions } from "./start.ts";
 export {
+  createMetricsSampling,
+  type MetricsSampling,
+  type MetricsSamplingOptions,
+  serverShutdownHooks,
+} from "./metrics-sampling.ts";
+export {
   createShutdownCoordinator,
   FLUSH_LOGS,
   installShutdown,

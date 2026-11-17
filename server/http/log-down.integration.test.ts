@@ -84,6 +84,7 @@ beforeAll(async () => {
         main: {} as never,
         health: async () => ({ main: "ok", logs: "nedostupno", legal: "ok" }),
         close: async () => {},
+        metricSamples: { query: () => Promise.reject(new Error("not used")) },
       },
       shutdown,
       routes: [{ contract: HEALTH.contract, handle: route }],

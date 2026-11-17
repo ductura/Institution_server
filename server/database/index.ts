@@ -206,6 +206,18 @@ export const backchannelLogout: BackchannelLogout = async (input) => {
 };
 
 /**
+ * The metric_sample port of the metrics collector over the logs database
+ * (LOGS_DATABASE_URL, a login of ductus_logs_writer; DAN-834-5a). The pool
+ * opens on the first write; without the variable, or after closePools, the
+ * write rejects and the collector skips the round as write_failed.
+ */
+export const metricSampleStore = Object.freeze({
+  // async, so a missing variable or a closed registry rejects, never throws.
+  query: async (text: string, values: unknown[]): Promise<unknown> =>
+    registry.pool("logs").query(text, values),
+});
+
+/**
  * The state of each database (main, logs, legal), checked apart and at the
  * same time, in the words of CapabilityStatus; the input of readiness (S-1M-a).
  * A database without its variable is `nije_konfigurirano` and is not dialled.
