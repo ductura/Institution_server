@@ -8,7 +8,12 @@ import { createHash, generateKeyPairSync, sign } from "node:crypto";
 import { createSoftwareAuthenticator } from "@ductura/test-fakes";
 import { describe, expect, it, vi } from "vitest";
 
-import { coseEs256Key, verifyAssertion, type TakeChallenge } from "./webauthn-ceremony.ts";
+import {
+  coseEs256Key,
+  verifyAssertion,
+  verifyRegistration,
+  type TakeChallenge,
+} from "./webauthn-ceremony.ts";
 
 const ORIGIN = "https://ductura.example.invalid";
 const RP_ID = "ductura.example.invalid";
@@ -48,8 +53,11 @@ describe("with the software authenticator", () => {
   it("refuses a cloned key whose counter fell behind, and an equal counter", () => {
     const { authenticator, stored } = setup();
     const clone = authenticator.clone();
+    authenticator.assert(CHALLENGE);
     const original = authenticator.assert(CHALLENGE);
     const behind = clone.assert(CHALLENGE);
+    // QA on #205: the clone really falls behind (1 against 2), not only equal.
+    expect(behind.signCount).toBeLessThan(original.signCount);
     const after = { ...stored, signCount: original.signCount };
     expect(verifyAssertion(behind, EXPECTED, after, ok)).toEqual({
       ok: false,
@@ -236,5 +244,148 @@ describe("coseEs256Key", () => {
     expect(verifyAssertion(build(), EXPECTED, { ...STORED, publicKey: offCurve }, ok)).toEqual(
       refused,
     );
+  });
+});
+
+// DAN-840-2c: registration. The local builder lays out authenticator data as a
+// key does (rpIdHash, flags, counter, AAGUID, id length, id, COSE key), so each
+// case changes one part and keeps the rest valid.
+type Reg = {
+  client?: unknown;
+  raw?: Buffer;
+  flags?: number;
+  count?: number;
+  id?: Buffer;
+  idLength?: number;
+  cose?: Buffer;
+  bodyId?: Buffer;
+};
+function reg({
+  client,
+  raw,
+  flags = 0x45,
+  count = 0,
+  id,
+  idLength,
+  cose = COSE,
+  bodyId,
+}: Reg = {}) {
+  const credentialId = id ?? Buffer.from("izmisljeni-kljuc-01");
+  const head = Buffer.alloc(37);
+  sha256(Buffer.from(RP_ID)).copy(head);
+  head.writeUInt8(flags, 32);
+  head.writeUInt32BE(count, 33);
+  const length = Buffer.alloc(2);
+  length.writeUInt16BE(idLength ?? credentialId.length);
+  const clientDataJSON =
+    raw ??
+    Buffer.from(
+      JSON.stringify(
+        client ?? {
+          type: "webauthn.create",
+          challenge: Buffer.from(CHALLENGE).toString("base64url"),
+          origin: ORIGIN,
+        },
+      ),
+    );
+  return {
+    clientDataJSON,
+    authenticatorData: Buffer.concat([head, Buffer.alloc(16), length, credentialId, cose]),
+    credentialId: bodyId ?? credentialId,
+  };
+}
+const regClient = (fields: Record<string, unknown>) => ({
+  type: "webauthn.create",
+  challenge: "x",
+  origin: ORIGIN,
+  ...fields,
+});
+
+describe("verifyRegistration", () => {
+  it("accepts the unchanged builder and returns the id, the raw COSE key and the counter as sent", () => {
+    expect(verifyRegistration(reg(), EXPECTED, ok)).toEqual({
+      ok: true,
+      credentialId: Buffer.from("izmisljeni-kljuc-01"),
+      publicKey: COSE,
+      signCount: 0,
+    });
+    const global = verifyRegistration(reg({ count: 41 }), EXPECTED, ok);
+    expect(global.ok && global.signCount).toBe(41);
+  });
+
+  it("registers the software key, whose assertion then passes verifyAssertion", () => {
+    const authenticator = createSoftwareAuthenticator({ rpId: RP_ID, origin: ORIGIN });
+    const r = authenticator.register(CHALLENGE);
+    const outcome = verifyRegistration(r, EXPECTED, ok);
+    if (!outcome.ok) throw new Error(outcome.code);
+    expect(outcome.credentialId).toEqual(r.credentialId);
+    const stored = { publicKey: outcome.publicKey, signCount: outcome.signCount };
+    expect(verifyAssertion(authenticator.assert(CHALLENGE), EXPECTED, stored, ok)).toEqual({
+      ok: true,
+      signCount: 1,
+    });
+  });
+
+  it.each([
+    "https://drugo.example.invalid",
+    "http://ductura.example.invalid",
+    "https://DUCTURA.example.invalid",
+    "https://ductura.example.invalid/",
+    "https://ductura.example.invalid:8443",
+  ])("refuses the origin %s", (origin) => {
+    expect(verifyRegistration(reg({ client: regClient({ origin }) }), EXPECTED, ok)).toEqual(
+      refused,
+    );
+  });
+
+  const unsortedCose = Buffer.from(COSE);
+  // {3: -7, 1: 2, ...}: the same key with the first two map entries swapped.
+  unsortedCose.set([0x03, 0x26, 0x01, 0x02], 1);
+  const rs256 = Buffer.from(COSE);
+  rs256.writeUInt8(0x39, 4);
+  const offCurve = Buffer.from(COSE);
+  offCurve.writeUInt8(offCurve.readUInt8(76) ^ 1, 76);
+  const otherId = Buffer.from("izmisljeni-kljuc-01");
+  otherId.writeUInt8(otherId.readUInt8(0) ^ 1, 0);
+
+  it.each([
+    ["type webauthn.get", { client: regClient({ type: "webauthn.get" }) }],
+    ["crossOrigin true", { client: regClient({ crossOrigin: true }) }],
+    ["crossOrigin as text", { client: regClient({ crossOrigin: "true" }) }],
+    ["no user presence", { flags: 0x44 }],
+    ["extension data", { flags: 0xc5 }],
+    ["backed up without backup eligibility", { flags: 0x55 }],
+    ["no AT bit on a full layout", { flags: 0x05 }],
+    ["an id length of 0", { idLength: 0, id: Buffer.alloc(0) }],
+    ["an id length of 1024", { id: Buffer.alloc(1024, 1) }],
+    ["an id length beyond the data", { idLength: 200 }],
+    ["a COSE key one byte short", { cose: COSE.subarray(0, 76) }],
+    ["a byte after the COSE key", { cose: Buffer.concat([COSE, Buffer.from([0])]) }],
+    ["COSE keys in another order", { cose: unsortedCose }],
+    ["another algorithm", { cose: rs256 }],
+    ["a point off the curve", { cose: offCurve }],
+    ["another id in the body", { bodyId: otherId }],
+    ["unreadable client data", { raw: Buffer.from([0xff]) }],
+  ] as const)("refuses %s", (_name, change) => {
+    expect(verifyRegistration(reg(change), EXPECTED, ok)).toEqual(refused);
+  });
+
+  it("refuses only 37 bytes and a key of another rpId", () => {
+    const short = { ...reg(), authenticatorData: reg().authenticatorData.subarray(0, 37) };
+    expect(verifyRegistration(short, EXPECTED, ok)).toEqual(refused);
+    const other = createSoftwareAuthenticator({ rpId: "drugo.example.invalid", origin: ORIGIN });
+    expect(verifyRegistration(other.register(CHALLENGE), EXPECTED, ok)).toEqual(refused);
+  });
+
+  it("takes the challenge exactly once, also when the client data cannot be read", () => {
+    const take = vi.fn<TakeChallenge>(() => "invalid");
+    expect(verifyRegistration(reg(), EXPECTED, take)).toEqual({
+      ok: false,
+      code: "challenge_invalid",
+    });
+    expect(take).toHaveBeenCalledExactlyOnceWith(Buffer.from(CHALLENGE).toString("base64url"));
+    const spent = vi.fn<TakeChallenge>(() => "ok");
+    expect(verifyRegistration(reg({ raw: Buffer.from([0xff]) }), EXPECTED, spent)).toEqual(refused);
+    expect(spent).toHaveBeenCalledExactlyOnceWith(null);
   });
 });
