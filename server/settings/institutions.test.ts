@@ -4,6 +4,12 @@
 // Ductus order, as { code, messageKey } (CODE_STYLE §8); never a value of the input.
 import { readFileSync } from "node:fs";
 
+import {
+  HOSTILE_JSON,
+  HOSTILE_STRINGS,
+  hostileObjects,
+  hostileStrings,
+} from "@ductura/test-fakes/hostile-inputs";
 import { describe, expect, it } from "vitest";
 
 import { INSTITUTIONS_FILE } from "./institutions-file.ts";
@@ -128,5 +134,54 @@ describe("institutions file schema: loaded", () => {
   it("an empty list and slugs at both length limits load", () => {
     expect(institutionsProblems(file())).toEqual([]);
     expect(institutionsProblems(file(entry("ab"), entry("a".repeat(32))))).toEqual([]);
+  });
+});
+
+// DAN-947: the shared hostile inputs of @ductura/test-fakes, in every place of
+// the file. Titles name the case only: formatting a getter or a Proxy would touch it.
+describe("institutions file schema: hostile inputs", () => {
+  const refused = (input: unknown, code: InstitutionsErrorCode): void => {
+    const messageKey = `institutions.${code.toLowerCase()}`;
+    const result = loadInstitutions(input);
+    expect(result.ok ? null : result.error).toStrictEqual({ code, messageKey });
+  };
+  // The one hostile string inside the slug CHECK loads, as in Ductus and the database.
+  const SLUG_CHECKED = ["constructor"];
+  const strings = [...HOSTILE_STRINGS, ...hostileStrings("fpzg"), ...hostileStrings(FORMAT)];
+
+  it.each(strings)("the string $name in slug, citationStyle and format", ({ value }) => {
+    if (SLUG_CHECKED.includes(value)) {
+      expect(loadInstitutions(file(entry(value)))).toStrictEqual({
+        ok: true,
+        value: [{ slug: value, citationStyle: "fpzg" }],
+      });
+    } else refused(file(entry(value)), MALFORMED);
+    refused(file(entry("fpzg", value)), UNKNOWN_STYLE);
+    refused({ format: value, institutions: [] }, NO_FORMAT);
+  });
+
+  it.each(HOSTILE_JSON)("the JSON $name as the root and as the list", ({ text }) => {
+    const list: unknown = JSON.parse(text);
+    refused(list, "INSTITUTIONS_NOT_OBJECT");
+    const input = { format: FORMAT, institutions: list };
+    if (list === null) refused(input, "INSTITUTIONS_NOT_ARRAY");
+    else if (Array.isArray(list) && list.length > 0) refused(input, "INSTITUTION_NOT_OBJECT");
+    else expect(loadInstitutions(input)).toStrictEqual({ ok: true, value: [] });
+  });
+
+  const CODES = {
+    root: { fields: ROOT_FIELDS, accessor: "INSTITUTIONS_ACCESSOR" },
+    record: { fields: RECORD_FIELDS, accessor: "INSTITUTION_ACCESSOR" },
+  } as const;
+  const placed = (at: keyof typeof CODES, valid: Record<string, unknown>) =>
+    hostileObjects(valid).map((variant) => ({ ...variant, at }));
+  const objects = [
+    ...placed("root", { format: FORMAT, institutions: [] }),
+    ...placed("record", { slug: "fpzg", citationStyle: "fpzg" }),
+  ];
+
+  it.each(objects)("the $at object $name, untouched", ({ at, value, refusal, touched }) => {
+    refused(at === "root" ? value : file(value), CODES[at][refusal]);
+    expect(touched()).toBe(0);
   });
 });
