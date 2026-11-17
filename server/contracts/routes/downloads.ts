@@ -8,11 +8,15 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // /preuzimanje/ on the same address), so `url` takes a root path or https now:
 // widening a pattern later is a new major (breaking.ts).
 const END = "(?![\\s\\S])";
-// A DNS label: at most 63 characters, no hyphen at either end.
-const LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+// A DNS label: at most 63 characters, no hyphen at either end, and never a
+// reserved label with "--" at positions 3 and 4 (RFC 5891 4.2.3.1), which
+// covers punycode xn--: parsers disagree on those (Node keeps xn--a, IDNA
+// in a browser or a desktop web view refuses it).
+const NOT_RESERVED = "(?![a-z0-9]{2}--)";
+const LABEL = `${NOT_RESERVED}[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?`;
 // A name with a dot whose last label starts with a letter: no IP, no
 // localhost, no port, no user.
-const HOST = `${LABEL}(?:\\.${LABEL})*\\.[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?`;
+const HOST = `${LABEL}(?:\\.${LABEL})*\\.${NOT_RESERVED}[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?`;
 // RFC 3986 path and query characters; no fragment, no backslash, no space.
 // The path names a file: it does not start with a second slash or a query.
 const PCHAR = "(?:[A-Za-z0-9._~!$&'()*+,;=:@/?-]|%[0-9A-Fa-f]{2})";
