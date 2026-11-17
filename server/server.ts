@@ -61,10 +61,11 @@ const problems = [
 // 2. Databases. Building the registry opens nothing: server/database connects
 //    on first use, one pool per database (main, logs, legal; S-1F-a), so a
 //    database that is down fails only its own calls.
-// 3. Layers, in the order of docs/server-map.md §3, steps 2 to 7: client IP,
-//    IP rules, rate limit, traffic record, security headers, origin check.
-//    The order is fixed in http (PIPELINE_STEPS); steps 3 and 5 are empty
-//    until wave 5, step 4 limits requests (DAN-814). Without APP_ORIGIN every state-changing request gets 403.
+// 3. Layers, in the order of docs/server-map.md §3, steps 2 to 8: client IP,
+//    IP rules, rate limit, traffic record, security headers, origin check,
+//    operator policy. The order is fixed in http (PIPELINE_STEPS); step 5 is
+//    empty until wave 5, step 4 limits requests (DAN-814), and without a
+//    second-factor port step 8 keeps operator paths closed (DAN-842-1). Without APP_ORIGIN every state-changing request gets 403.
 // One origin for the pipeline's check and for WebAuthn's client data and rpId
 // (DAN-840-3f1), so the two can never differ.
 const APP_ORIGIN = appOrigin(process.env);

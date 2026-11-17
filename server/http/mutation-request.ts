@@ -110,7 +110,7 @@ export function originLayer(
   };
 }
 
-// Reading a state-changing body (docs/server-map.md §3, step 9): port of
+// Reading a state-changing body (docs/server-map.md §3, step 10): port of
 // readBodyWithLimit and declaredLengthRefusal from Ductus
 // src/server/http/mutation-request.ts at d52a92c3 (PR #213), on
 // IncomingMessage instead of a Web Request. The body is read as raw bytes
