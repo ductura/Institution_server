@@ -59,6 +59,7 @@ Zaglavlja i tijelo zahtjeva, samo u memoriji. Ništa ne sprema.
 - `evidenceSession`, `EvidenceSession`, `EvidenceRefusal` (`evidence-session.ts`);
 - `createEvidenceOpenRoute`, `OPEN_PROTOCOLS`, `OPEN_MAX_BYTES`, `OPEN_TIMEOUT_MS`, `EvidenceOpenOptions` (`evidence-open.ts`, DAN-811): ruta `POST /api/v1/evidence/open` nad `actorReader` i `workOpener` glavne baze; spaja je `server.ts`;
 - `readEvidenceBody`, `sendEvidenceAnswer`, `parseClosedObject`, `EvidenceAnswer`, `GuardedBody` (`evidence-request.ts`, DAN-811): zaštita ruta evidencije prije tijela (protokol 426, vrsta 415, sesija 401/503, tijelo 413/408/400) i odgovor odbijanja; kad tijelo nije pročitano do kraja, veza se zatvara;
+- `evidenceIngestDependencies`, `createEvidenceCommitRouteFor`, `ASYNC_SIGNING_FLAG` (`evidence-deps.ts`, DAN-815 c, DAN-821-3): potpisnik, spremište i protokol 2 rute `POST /api/v1/evidence/commit` iz okoline procesa. Protokol 2 (`202 pending_signature`, potpisuje worker; DAN-518) uključuje samo vlastita vrijednost `DUCTUS_EVIDENCE_ASYNC_SIGNING` točno `"1"`; sve drugo, naslijeđena vrijednost i izostanak daju 426. Zadano je isključeno dok ne postoji proces workera;
 - `sendRouteRefusal` (`problem.ts`, DAN-811): greška rute čije je tijelo u ugovoru `{status, …}` (rute evidencije); samo greška iz ugovora te rute i tijelo koje njezina shema prima, inače 500 `internal`;
 - `ERROR_CATALOG`, `catalogErrorFor`, `catalogErrorOf`, `SESSION_EXPIRED`, `reportServerError`, `SERVER_ERROR_CLASSES` i tipovi (`error-catalog.ts`);
 - `AREA_NAMES`, `AreaWithRoutes`, `routesOf` (`areas.ts`);

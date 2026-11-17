@@ -20,6 +20,11 @@ import {
 
 import { createDatabases } from "./databases.ts";
 import { createEvidenceCommitRoute } from "./evidence-commit.ts";
+import {
+  ASYNC_SIGNING_FLAG,
+  createEvidenceCommitRouteFor,
+  evidenceIngestDependencies,
+} from "./evidence-deps.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
 
@@ -75,9 +80,9 @@ function outcomeOf(v: Vector): EvidenceCommitRequestOutcome {
 }
 
 type Answer = { status: number; head: Record<string, string>; body: string };
-function send(raw: string, end = true): Promise<Answer> {
+function send(raw: string, end = true, port = server.port): Promise<Answer> {
   return new Promise((resolve, reject) => {
-    const socket = connect(server.port, "127.0.0.1");
+    const socket = connect(port, "127.0.0.1");
     let text = "";
     socket.write(raw);
     if (!end) socket.on("connect", () => undefined);
@@ -379,5 +384,54 @@ describe("E, F4. failures of the service", () => {
     const answer = await post(JSON.stringify(GOOD_BODY));
     expect(answer.status).toBe(code);
     expect(JSON.parse(answer.body)).toEqual({ status });
+  });
+});
+
+// DAN-821-3 (contract Ductus#1836 c.6944230363): the route the process mounts
+// takes protocol 2 only under its own flag exactly "1". The session is signed
+// out, so 426 is the protocol check before any session read and 401 is the
+// session check after it; the database is never reached.
+describe("E8: the mounted route takes protocol 2 only under DUCTUS_EVIDENCE_ASYNC_SIGNING=1", () => {
+  const pending = vectors.find((v) => v.name === "committed-pending-signature")!;
+  async function answers(flag: string | undefined) {
+    const main = { ...createDatabases().main, actorReader: actors };
+    const deps = evidenceIngestDependencies({ NODE_ENV: "test", [ASYNC_SIGNING_FLAG]: flag }, ".");
+    const mounted = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      databases: createDatabases(),
+      routes: [createEvidenceCommitRouteFor(main, deps)],
+    });
+    try {
+      actor = async () => ({ userId: null, institutionId: null });
+      const body = JSON.stringify(pending.request.body);
+      const out: { status: number; actorCalls: number }[] = [];
+      for (const headers of [pending.request.headers, GOOD]) {
+        actorCalls = 0;
+        const answer = await send(request(headers, body), true, mounted.port);
+        out.push({ status: answer.status, actorCalls });
+      }
+      return out;
+    } finally {
+      await mounted.close();
+    }
+  }
+
+  it.each([undefined, "", "true", " 1", "1\n"])(
+    "flag %j: protocol 2 is 426 before the session, protocol 1 is 401",
+    async (flag) => {
+      expect(await answers(flag)).toEqual([
+        { status: 426, actorCalls: 0 },
+        { status: 401, actorCalls: 1 },
+      ]);
+    },
+  );
+
+  it('flag "1": protocol 2 passes the protocol check and is 401 after the session, as protocol 1', async () => {
+    expect(await answers("1")).toEqual([
+      { status: 401, actorCalls: 1 },
+      { status: 401, actorCalls: 1 },
+    ]);
   });
 });

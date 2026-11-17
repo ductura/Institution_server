@@ -117,7 +117,8 @@ async function main(): Promise<void> {
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
       ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;
-      // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise).
+      // storage only from EVIDENCE_STORAGE_DOMAINS (503 otherwise); protocol 2
+      // only under DUCTUS_EVIDENCE_ASYNC_SIGNING=1 (DAN-821-3).
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
       // DAN-818: one replay page, read from the same storage as commit writes.
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
