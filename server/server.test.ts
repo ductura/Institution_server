@@ -92,6 +92,12 @@ describe("server/server.ts startup and shutdown of metrics", () => {
     expect(ENTRY_TEXT).toMatch(/hooks: serverShutdownHooks\(\{ metrics, databases \}\)/u);
     expect(ENTRY_TEXT).not.toMatch(/hooks: \[/u);
   });
+
+  it("announces server.listening only after the signals are handled", () => {
+    const handled = ENTRY_TEXT.indexOf("installShutdown(signals");
+    expect(handled).toBeGreaterThan(0);
+    expect(ENTRY_TEXT.indexOf('event: "server.listening"')).toBeGreaterThan(handled);
+  });
 });
 
 describe("entryProblems over a fixture tree", () => {

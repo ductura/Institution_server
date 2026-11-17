@@ -116,7 +116,6 @@ async function main(): Promise<void> {
     return undefined;
   });
   if (running === undefined) return;
-  console.log(JSON.stringify({ event: "server.listening", host, port: running.port }));
 
   // Metrics (S-1K.4-b, DAN-834-5a): every METRICS_INTERVAL_MS one round of
   // database_connections into metric_sample of the logs database; a failing
@@ -143,6 +142,9 @@ async function main(): Promise<void> {
     hooks: serverShutdownHooks({ metrics, databases }),
     exit: (code) => process.exit(code),
   });
+  // Announced only once the signals are handled: a SIGTERM sent on this line
+  // must reach installShutdown, not the default action that kills the process.
+  console.log(JSON.stringify({ event: "server.listening", host, port: running.port }));
 }
 
 await main();

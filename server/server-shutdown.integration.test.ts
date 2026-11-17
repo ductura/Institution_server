@@ -206,12 +206,34 @@ describe("server/server.ts metrics interval", () => {
     20_000,
   );
 
-  it("starts with the smallest interval and stops on SIGTERM with exit 0", async () => {
+  it("stops on SIGTERM before the first round with exit 0 and nothing on stderr", async () => {
     const server = await start(SERVER, { METRICS_INTERVAL_MS: "5000" });
     server.child.kill("SIGTERM");
     expect(await server.exit).toBe(0);
     expect(server.err()).toBe("");
   }, 20_000);
+
+  // Review on 869426c: the entry starts the collector. Without LOGS_DATABASE_URL
+  // the first round after 5 s is skipped as write_failed, by its reason only.
+  it("runs a round after the interval: write_failed without a logs database, then exit 0", async () => {
+    const server = await start(SERVER, { METRICS_INTERVAL_MS: "5000" });
+    await until(() => server.err().includes("metrics.round_skipped"), 12_000);
+    server.child.kill("SIGTERM");
+    expect(await server.exit).toBe(0);
+    const lines = server
+      .err()
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as object);
+    expect(lines).toEqual([
+      expect.objectContaining({
+        level: "warn",
+        event: "metrics.round_skipped",
+        fields: { reason: "write_failed" },
+      }),
+    ]);
+    expect(server.out() + server.err()).not.toContain(CANARY);
+  }, 30_000);
 });
 
 describe("shutdown in the middle of a slow request", () => {
