@@ -100,3 +100,44 @@ describe("controls: a valid command is a fresh copy in one key order", () => {
     expect(copy?.signature).not.toBe((command as typeof COMMAND).signature);
   });
 });
+
+describe("a Proxy that shifts its values between reads (QA #189)", () => {
+  // Every read through `get` or `getOwnPropertyDescriptor` after the first
+  // answers a bad value, without a throw. The command is read once, so the
+  // copy keeps the first values; a second read of the source would show here.
+  function shifting<T extends object>(target: T, bad: Partial<Record<keyof T, unknown>>) {
+    const seen = new Map<PropertyKey, number>();
+    const nth = (key: PropertyKey) => {
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+      return seen.get(key) ?? 0;
+    };
+    const value = (key: PropertyKey): unknown =>
+      nth(key) > 1 && key in bad ? bad[key as keyof T] : target[key as keyof T];
+    const proxy = new Proxy(target, {
+      get: (_t, key) => value(key),
+      getOwnPropertyDescriptor: (t, key) => {
+        const field = Reflect.getOwnPropertyDescriptor(t, key);
+        return field && { ...field, value: value(key) };
+      },
+    });
+    return { proxy, seen };
+  }
+
+  it("the command and the envelope keep the values of their one read", () => {
+    const envelope = shifting({ ...SIG }, { algorithm: "RSA_PSS_SHA256", keyId: " " });
+    const command = shifting(
+      { ...COMMAND, signature: envelope.proxy },
+      { receiptId: "x", payloadDigestSha256: "x", signature: { ...SIG, keyId: "drugi" } },
+    );
+    const copy = checkedAttachCommand(command.proxy);
+    expect(copy).toStrictEqual(COMMAND);
+    expect(JSON.stringify(copy)).toBe(JSON.stringify(COMMAND));
+    // Each field was read exactly once.
+    expect([...command.seen.values(), ...envelope.seen.values()].every((n) => n === 1)).toBe(true);
+    expect([...command.seen.keys(), ...envelope.seen.keys()]).toHaveLength(8);
+    // Read later, the sources answer the bad values; the copy does not change.
+    expect(command.proxy.receiptId).toBe("x");
+    expect(envelope.proxy.keyId).toBe(" ");
+    expect(copy).toStrictEqual(COMMAND);
+  });
+});
