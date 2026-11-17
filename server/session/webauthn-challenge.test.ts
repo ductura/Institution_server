@@ -142,6 +142,23 @@ describe("memory and options", () => {
     expect(store.take(keys[0], "assertion", a)).toBe("invalid");
   });
 
+  // Review c.6935975815: with a clock that went back, the oldest is not the
+  // first to expire, so expired challenges go before any live one.
+  it("when full, drops an expired challenge before a live older one", () => {
+    let at = 1000;
+    const store = createChallengeStore({ now: () => at, ttlMs: 1000, capacity: 2 });
+    const a = keyOf("izmisljeni-token-a");
+    const b = keyOf("izmisljeni-token-b");
+    const c = keyOf("izmisljeni-token-c");
+    const first = store.issue(a, "assertion")?.challenge; // valid until 2000
+    at = 0;
+    store.issue(b, "assertion"); // valid until 1000
+    at = 1500;
+    const third = store.issue(c, "assertion")?.challenge;
+    expect(store.take(a, "assertion", first)).toBe("ok");
+    expect(store.take(c, "assertion", third)).toBe("ok");
+  });
+
   it.each([0, -1, 1.5, Number.NaN, 600_001])("refuses %j as ttlMs or capacity", (value) => {
     expect(() => createChallengeStore({ now: () => 0, ttlMs: value })).toThrow(RangeError);
     expect(() => createChallengeStore({ now: () => 0, ttlMs: 1, capacity: value })).toThrow(

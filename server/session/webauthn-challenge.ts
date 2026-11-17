@@ -27,7 +27,7 @@ export type ChallengeStore = {
   take(sessionKey: unknown, purpose: unknown, challenge: unknown): "ok" | "invalid";
 };
 
-/** Most challenges held at once; when full, the oldest goes. */
+/** Most challenges held at once; when full, expired ones go first, then the oldest. */
 export const CHALLENGE_CAPACITY = 10_000;
 export const MAX_CHALLENGE_TTL_MS = 600_000;
 const CHALLENGE_BYTES = 32;
@@ -71,8 +71,11 @@ export function createChallengeStore(options: ChallengeStoreOptions): ChallengeS
       if (bytes.length !== CHALLENGE_BYTES) throw new RangeError("randomBytes gave the wrong size");
       const challenge = bytes.toString("base64url");
       entries.delete(key);
-      // One TTL for all, so the oldest is also the first to expire.
-      while (entries.size >= capacity) entries.delete(entries.keys().next().value as string);
+      if (entries.size >= capacity) {
+        // Expired ones first: a clock that went back breaks insertion order as expiry order.
+        for (const [old, entry] of entries) if (at >= entry.expiresAt) entries.delete(old);
+        while (entries.size >= capacity) entries.delete(entries.keys().next().value as string);
+      }
       const expiresAt = at + ttlMs;
       entries.set(key, { text: Buffer.from(challenge, "ascii"), issuedAt: at, expiresAt });
       return { challenge, expiresAt };
