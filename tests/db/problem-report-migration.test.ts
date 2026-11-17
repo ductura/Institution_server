@@ -15,6 +15,7 @@ import {
   PROBLEM_REPORT_ROUTES,
   SYNC_STATES,
 } from "../../server/domain/index.ts";
+import { PROBLEM_REPORT_PARAMETERS } from "../../server/database/index.ts";
 
 const DIRECTORY = new URL("../../db/main/migrations/", import.meta.url);
 const FIRST = "20261112110000_problem_report.sql";
@@ -102,5 +103,29 @@ describe("DAN-431 problem report: migration and domain agree", () => {
     expect(UP).toMatch(
       new RegExp(`description !~ '\\[[^\\]]*${tsBidi?.replace(/\\/g, "\\\\")}\\]'`),
     );
+  });
+});
+
+// DAN-851-2c1 (contract Ductus#1836 c.6944497890): the port sends the report's
+// fields by the names and in the order of the RPC's parameters.
+describe("problem report port and RPC signature agree", () => {
+  const defining = readdirSync(DIRECTORY)
+    .filter((name) => name.endsWith(".sql"))
+    .map((name) => halves(read(name)).up)
+    .filter((up) => up.includes("CREATE FUNCTION identity.submit_problem_report("));
+
+  it("exactly one migration defines identity.submit_problem_report", () => {
+    expect(defining).toHaveLength(1);
+    expect(defining[0]).toBe(UP);
+  });
+
+  it("its parameters, in camelCase, are the fields the port sends, in order", () => {
+    const list = /CREATE FUNCTION identity\.submit_problem_report\(([^)]*)\)/.exec(UP)?.[1];
+    expect(list).toBeDefined();
+    const names = [...(list ?? "").matchAll(/\bp_([a-z_]+) (?:text|integer)\b/g)].map((m) =>
+      (m[1] ?? "").replace(/_([a-z])/g, (_all, letter: string) => letter.toUpperCase()),
+    );
+    expect(names).toHaveLength(7);
+    expect(names).toEqual([...PROBLEM_REPORT_PARAMETERS]);
   });
 });

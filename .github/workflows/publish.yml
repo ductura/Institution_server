@@ -9,6 +9,9 @@ name: Objava paketa
 # the only job that may write packages; it runs no code of this repository,
 # only checks the sha256 of verify's tarball and publishes that file.
 # The tag name never enters a run block through an expression.
+# DAN-966: release attaches the same checked tarball to the public GitHub
+# Release of the tag, so installing needs no token. It only has
+# contents: write and runs no code of this repository either.
 on:
   push:
     tags: ["contracts-v*.*.*", "test-fakes-v*.*.*"]
@@ -109,3 +112,51 @@ jobs:
           FILE: ${{ needs.verify.outputs.file }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm publish --ignore-scripts "./release/$FILE"
+
+  # DAN-966: needs only verify, so a publish that fails (the version is already
+  # on GitHub Packages) does not stop the attach. Same approval as publish.
+  release:
+    name: Prilaganje izdanju
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: packages
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-tarball
+          path: release
+      - name: Provjera sha256
+        env:
+          FILE: ${{ needs.verify.outputs.file }}
+          SHA256: ${{ needs.verify.outputs.sha256 }}
+        # Without `shell:` GitHub runs `bash -e {0}`: no pipefail of its own (DAN-866).
+        run: |
+          set -o pipefail
+          [[ "$FILE" =~ ^ductura-(contracts|test-fakes)-[0-9]+\.[0-9]+\.[0-9]+\.tgz$ ]]
+          [[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [ "$(find release -type f | wc -l)" -eq 1 ]
+          printf '%s  %s\n' "$SHA256" "release/$FILE" | sha256sum --check --strict -
+      # The tag from GITHUB_REF must name the checked file. No --clobber: an
+      # asset that is already there is never replaced, the job fails. Create
+      # takes the file in the same call (immutable releases), on the tag only.
+      - name: Prilaganje
+        env:
+          FILE: ${{ needs.verify.outputs.file }}
+          SHA256: ${{ needs.verify.outputs.sha256 }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          [[ "$GITHUB_REF" =~ ^refs/tags/(contracts|test-fakes)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]
+          PACKAGE="${BASH_REMATCH[1]}"
+          VERSION="${BASH_REMATCH[2]}"
+          TAG="${GITHUB_REF#refs/tags/}"
+          [ "$FILE" = "ductura-$PACKAGE-$VERSION.tgz" ]
+          export GH_REPO="$GITHUB_REPOSITORY"
+          if gh release view "$TAG" > /dev/null; then
+            gh release upload "$TAG" "./release/$FILE"
+          else
+            gh release create "$TAG" "./release/$FILE" --verify-tag --title "$TAG" --notes "sha256 $SHA256"
+          fi

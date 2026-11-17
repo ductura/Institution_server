@@ -101,5 +101,12 @@
     "not_found": "Ovaj rad nije pronađen.",
     "row_malformed": "Zapis pristupa trenutačno nije moguće prikazati. Pokušajte ponovno.",
     "database_error": "Zapis pristupa trenutačno nije dostupan. Pokušajte ponovno."
+  },
+  "problemReport": {
+    "unauthenticated": "Niste prijavljeni. Prijavite se ponovno; problem nije poslan.",
+    "invalid": "Problem nije poslan. Provjerite opis i pokušajte ponovno.",
+    "too_many": "Dosegnuli ste najveći broj prijava u jednom satu. Pokušajte ponovno kasnije.",
+    "row_malformed": "Prijavu problema trenutačno nije moguće potvrditi. Pokušajte ponovno.",
+    "database_error": "Prijava problema trenutačno nije dostupna. Pokušajte ponovno."
   }
 }

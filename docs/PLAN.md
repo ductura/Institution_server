@@ -154,7 +154,7 @@ Vizualni i pristupačnost se ne primjenjuju. **Matrica:** `ubuntu-latest`, Node 
 - **Poslovi** (pozivaju reusable workflowe iz `ductura/.github`): `lint` (s granicama), `format`, `typecheck`, `test-helpers`, `test-functional`, `pgtap-main`, `pgtap-logs`, `pgtap-legal`, `contracts` (generirano = commitano, vektori, lomljenje), `secret-scan`, `dependency-review`, `publish` (na oznaku), `ci-ok`.
 - **Obvezno na `main`:** `ci-ok` i statusi gatea. Akcije prikvačene na SHA.
 - **Gate:** risk floor po putanjama (najmanje `critical` za `server/server.ts`, `server/http/**`, `server/session/**`, `server/external/srce-auth/**`, `server/contracts/**`, migracije, pgTAP, `.github/**`); dvije aplikacije za `critical`; Mergify; botovi. Promjena pravila gatea samo kroz U11 i vlasnikovu potvrdu.
-- **Izdanja:** `@ductura/contracts` i `@ductura/test-fakes` na GitHub Packages (U10). Napomena: npm registar GitHub Packages traži token i za javne pakete; u CI-ju istog organizacijskog računa dovoljan je `GITHUB_TOKEN` s `packages: read` uz dodijeljen pristup repou; lokalno treba osobni token s `read:packages`. Kasnije Docker slika testnog servera (S-1H.7) samo kao izdanje.
+- **Izdanja:** `@ductura/contracts` i `@ductura/test-fakes` na GitHub Packages (U10). Napomena: npm registar GitHub Packages traži token i za javne pakete; u CI-ju istog organizacijskog računa dovoljan je `GITHUB_TOKEN` s `packages: read` uz dodijeljen pristup repou; lokalno treba osobni token s `read:packages`. Zato je svaka verzija i `.tgz` na javnom GitHub Releaseu oznake (`contracts-vX.Y.Z`, `test-fakes-vX.Y.Z`), koji se instalira bez tokena (DAN-966). Kasnije Docker slika testnog servera (S-1H.7) samo kao izdanje.
 - **Vlasničke radnje:** V-0 … V-7; potvrda U11.
 
 ## 8. Kriterij izlaza (prvi val)
