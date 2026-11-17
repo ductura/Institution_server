@@ -36,6 +36,8 @@ const REQUIRED_AREAS = [
   "downloads",
   // PLAN.md §3 area, made by DAN-815 b1 (VS-1 narrow cut, evidence/commit).
   "evidence",
+  // PLAN.md §3 area, made by DAN-851-1b (S-M-1, interface language).
+  "profile",
   "contracts",
   "domain",
   "test-server",
