@@ -158,7 +158,8 @@ export const NODE_IMPORTS_ALLOWED: Readonly<
  * The only scripts a file may start a thread from, as
  * `new Worker(new URL("<script>", import.meta.url), { workerData })` with the
  * global URL; a conditional whose both branches are such a URL is one too.
- * The thread is the init of a const in a block (a function body), and Worker
+ * The thread is the init of a const in a block (a function body), used only
+ * as `thread.unref()` and `thread.terminate()`, and Worker
  * is never a value otherwise (no alias, export or other argument), so no eval,
  * other option or code from a string (DAN-822-5, decision c.6948159989).
  */
@@ -169,6 +170,8 @@ export const WORKER_SCRIPTS_ALLOWED: Readonly<Record<string, readonly string[]>>
     "./attempt-fence-watch.js",
   ],
 };
+// What the fence may do with its thread: let the process exit, end it.
+const THREAD_METHODS: readonly string[] = ["unref", "terminate"];
 // A listed import that may only be a constructor of WORKER_SCRIPTS_ALLOWED.
 const WORKER = { spec: "node:worker_threads", name: "Worker" };
 
@@ -351,6 +354,29 @@ export const noDynamicLoad: Rule.RuleModule = {
       );
     }
 
+    // The thread's const is used only as `t.unref()` or `t.terminate()`: never
+    // returned, aliased, passed, stored or read otherwise (Codex P2 on #265).
+    function threadStaysInside(declarator: Node): boolean {
+      return context.sourceCode.getDeclaredVariables(declarator).every((variable) =>
+        variable.references.every((reference) => {
+          if (reference.init === true) return true;
+          const member = (reference.identifier as Loose).parent;
+          const call = member?.parent;
+          return (
+            member?.type === "MemberExpression" &&
+            member.object === (reference.identifier as unknown) &&
+            member.computed === false &&
+            (member as { optional?: boolean }).optional !== true &&
+            member.property?.type === "Identifier" &&
+            THREAD_METHODS.includes(member.property.name ?? "") &&
+            call?.type === "CallExpression" &&
+            call.callee === member &&
+            (call as { optional?: boolean }).optional !== true
+          );
+        }),
+      );
+    }
+
     // Every value use of Worker is `new Worker(<watch URL>, <options>)`.
     function checkWorker(): void {
       for (const specifier of workerSpecifiers) {
@@ -370,6 +396,8 @@ export const noDynamicLoad: Rule.RuleModule = {
               call.callee === id &&
               declarator?.type === "VariableDeclarator" &&
               declarator.init === call &&
+              declarator.id?.type === "Identifier" &&
+              threadStaysInside(declarator as unknown as Node) &&
               declaration?.type === "VariableDeclaration" &&
               declaration.kind === "const" &&
               declaration.parent?.type === "BlockStatement" &&

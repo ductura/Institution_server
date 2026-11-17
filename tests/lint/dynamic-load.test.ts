@@ -126,6 +126,20 @@ const failing: Case[] = [
     `import { Worker } from "${WT}";\nexport function f(): void {\n  void new Worker(${URL_JS}, { workerData: 1 });\n}\n`,
     `import { Worker } from "${WT}";\nexport function f(): unknown {\n  return new Worker(${URL_JS}, { workerData: 1 });\n}\n`,
     `import { Worker } from "${WT}";\nexport const f = (): unknown => new Worker(${URL_JS}, { workerData: 1 });\n`,
+    // Codex P2 on #265: the thread through its const. Only t.unref() and
+    // t.terminate() are allowed, so it never leaves the function.
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  return t;\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  return { t };\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  box.t = t;\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  const u = t;\n  return u;\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void [t];\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  g(t);\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void (() => t);\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.postMessage(1);\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t["terminate"]();\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void t.terminate;\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport const box: Record<string, unknown> = {};\nconst g = (x: unknown): unknown => x;\nexport function f(): unknown {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  void t?.terminate();\n  return g;\n}\n`,
+    `import { Worker } from "${WT}";\nexport function f(): void {\n  const { unref } = new Worker(${URL_JS}, { workerData: 1 });\n  void unref;\n}\n`,
   ]),
   // In the fence, the watch's members of process are not allowed.
   ...at(FENCE, "global", ["process.kill(process.pid);\n", "export const e = process.env;\n"]),
@@ -502,6 +516,7 @@ const passing: Case[] = [
     startWith(`${URL_JS}, { workerData: 1 }`),
     startWith(`${URL_TS}, { workerData: new SharedArrayBuffer(8) }`),
     startWith(`import.meta.url.endsWith(".ts") ? ${URL_TS} : ${URL_JS}, { workerData: 1 }`),
+    `import { Worker } from "${WT}";\nexport async function f(): Promise<void> {\n  const t = new Worker(${URL_JS}, { workerData: 1 });\n  t.unref();\n  void t.terminate();\n  await t.terminate();\n}\n`,
     // A type use of Worker is erased and starts nothing.
     `import { Worker } from "${WT}";\nexport type T = Worker;\nlet w: Worker | undefined;\nvoid w;\n`,
   ]),
