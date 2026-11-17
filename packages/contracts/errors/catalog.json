@@ -1,0 +1,20 @@
+{
+  "format": "ductura-error-catalog-v1",
+  "errors": [
+    { "status": 400, "code": "bad_request", "messageKey": "errors.badRequest" },
+    { "status": 401, "code": "unauthenticated", "messageKey": "errors.unauthenticated" },
+    { "status": 403, "code": "forbidden", "messageKey": "errors.forbidden" },
+    { "status": 404, "code": "not_found", "messageKey": "errors.notFound" },
+    { "status": 408, "code": "timeout", "messageKey": "errors.timeout" },
+    { "status": 429, "code": "too_many_requests", "messageKey": "errors.tooManyRequests" },
+    { "status": 500, "code": "internal", "messageKey": "errors.internal" },
+    { "status": 502, "code": "bad_gateway", "messageKey": "clientErrors.badGateway" },
+    { "status": 503, "code": "unavailable", "messageKey": "errors.unavailable" },
+    { "status": 504, "code": "gateway_timeout", "messageKey": "clientErrors.gatewayTimeout" },
+    { "status": 401, "code": "session_expired", "messageKey": "clientErrors.sessionExpired" }
+  ],
+  "shared": [
+    { "status": 500, "code": "internal", "messageKey": "errors.internal" },
+    { "status": 429, "code": "too_many_requests", "messageKey": "errors.tooManyRequests" }
+  ]
+}
