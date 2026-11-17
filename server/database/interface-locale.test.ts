@@ -132,6 +132,8 @@ describe("interface language port: rows", () => {
     ["no row", []],
     ["two rows", [{ locale: "hr" }, { locale: "hr" }]],
     ["an undefined row", [undefined]],
+    ["a null row", [null]],
+    ["a string row", ["hr"]],
     ["rows not an array", { 0: { locale: "hr" }, length: 1 }],
     ["rows undefined", undefined],
   ])("%s is row_malformed", async (_name, rows) => {
