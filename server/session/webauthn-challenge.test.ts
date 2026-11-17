@@ -71,6 +71,23 @@ describe("a challenge is refused once used or expired", () => {
     }
   });
 
+  // QA on #192: take itself, not only issue, with each failing clock after a valid issue.
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, "x", "throw"] as const)(
+    "take refuses when the clock gives %j after a valid issue",
+    (broken) => {
+      let failing = false;
+      const now = () => {
+        if (!failing) return 1_000_000;
+        if (broken === "throw") throw new Error("izmisljena greska sata");
+        return broken as number;
+      };
+      const store = createChallengeStore({ now, ttlMs: TTL });
+      const challenge = store.issue(SESSION, "assertion")?.challenge;
+      failing = true;
+      expect(store.take(SESSION, "assertion", challenge)).toBe("invalid");
+    },
+  );
+
   it("belongs to one session and one purpose; a new issue replaces the old one", () => {
     const { store, issue } = setup();
     expect(store.take(OTHER, "assertion", issue())).toBe("invalid");
@@ -98,7 +115,12 @@ describe("a challenge is refused once used or expired", () => {
 
 describe("inputs take refuses", () => {
   const bad: unknown[] = [
-    ...["", "=", "a+b", "a/b", "a\tb", "a\r\nb", "a b", "a\u007fb"],
+    "",
+    // Review on #192: each class inside an otherwise well-formed 43-character value,
+    // so the character is refused and not the length.
+    ...["=", "+", "/", " ", "\t", "\r\n", "\u00a0", "\u007f", "č"].map(
+      (c) => `${"A".repeat(21)}${c}${"A".repeat(43 - 21 - c.length)}`,
+    ),
     ...["A".repeat(42), "A".repeat(44), `${"A".repeat(43)}\n`, `${"A".repeat(42)}=`],
     ...[43, null, undefined, {}, ["A".repeat(43)], "__proto__", "toString"],
   ];

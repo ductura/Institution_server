@@ -58,6 +58,16 @@ export {
   MAX_CHALLENGE_TTL_MS,
 } from "./webauthn-challenge.ts";
 export {
+  type AssertionInput,
+  type AssertionOutcome,
+  type CeremonyCode,
+  coseEs256Key,
+  type Expected,
+  type StoredCredential,
+  type TakeChallenge,
+  verifyAssertion,
+} from "./webauthn-ceremony.ts";
+export {
   clearedSessionCookieOptions,
   hashSessionToken,
   newSessionToken,
