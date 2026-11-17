@@ -87,5 +87,11 @@
     "method_not_allowed": "Metoda nije podržana.",
     "invalid_json": "Tijelo zahtjeva nije ispravan JSON objekt.",
     "body_too_large": "Tijelo zahtjeva je preveliko."
+  },
+  "interfaceLocale": {
+    "unauthenticated": "Prijava nije valjana. Prijavite se ponovno; jezik sučelja nije promijenjen.",
+    "invalid": "Jezik sučelja nije promijenjen. Odaberite hrvatski ili engleski.",
+    "row_malformed": "Jezik sučelja trenutačno nije moguće potvrditi. Pokušajte ponovno.",
+    "database_error": "Jezik sučelja trenutačno nije dostupan. Pokušajte ponovno."
   }
 }
