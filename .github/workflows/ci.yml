@@ -165,18 +165,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # DAN-953: one retry for this step only, 30 s after a failed attempt.
+      # The commands are chained with && because bash ignores set -e inside
+      # `f || ...`. A retry overwrites what the first attempt wrote (curl -o,
+      # install -D, tee without -a). Tested in scripts/ci/pgdg-retry.test.ts.
       - name: Instalacija PostgreSQL-a (PGDG)
         env:
           PGDG_KEY_FINGERPRINT: B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/pgdg.asc" https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          gpg --show-keys --with-colons "$RUNNER_TEMP/pgdg.asc" | grep -qx "fpr:::::::::$PGDG_KEY_FINGERPRINT:"
-          sudo install -D -m 0644 "$RUNNER_TEMP/pgdg.asc" /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          . /etc/os-release
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
-            | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends postgresql-17 postgresql-17-pgtap libtap-parser-sourcehandler-pgtap-perl
+          pgdg_install() {
+            curl -fsSL -o "$RUNNER_TEMP/pgdg.asc" https://www.postgresql.org/media/keys/ACCC4CF8.asc &&
+              gpg --show-keys --with-colons "$RUNNER_TEMP/pgdg.asc" | grep -qx "fpr:::::::::$PGDG_KEY_FINGERPRINT:" &&
+              sudo install -D -m 0644 "$RUNNER_TEMP/pgdg.asc" /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc &&
+              . /etc/os-release &&
+              echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+                | sudo tee /etc/apt/sources.list.d/pgdg.list &&
+              sudo apt-get update -q &&
+              sudo apt-get install -y -q --no-install-recommends postgresql-17 postgresql-17-pgtap libtap-parser-sourcehandler-pgtap-perl
+          }
+          pgdg_install || { echo "::warning::PGDG install failed, retrying once in 30 s"; sleep 30; pgdg_install; }
       - name: Pokretanje baze
         run: |
           echo "PGHOST=$RUNNER_TEMP" >> "$GITHUB_ENV"
