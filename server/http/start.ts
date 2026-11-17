@@ -17,7 +17,7 @@ import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } fr
 export type StartOptions = {
   readonly host: string;
   readonly port: number;
-  /** One layer per step of docs/server-map.md §3, 2 to 7; the order is the pipeline's. */
+  /** One layer per step of docs/server-map.md §3, 2 to 8; the order is the pipeline's. */
   readonly layers: Layers;
   readonly routes: readonly Route[];
   /** Handed to the services of the areas when they get routes (S-M); nothing reads it yet. */
