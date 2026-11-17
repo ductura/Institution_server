@@ -208,6 +208,43 @@ export function serverImportProblems(files: ReadonlyMap<string, string>): string
   return problems;
 }
 
+// How often each file that may build a server names what builds or binds
+// one, outside its imports and comments, exact: a second server inside an
+// allowed file (a second createServer, an alias of it, a second listen, the
+// router served without the pipeline) changes a count.
+const SERVER_USES: Readonly<Record<string, Readonly<Record<string, number>>>> = {
+  "server/http/start.ts": { createServer: 1, ["NetServer"]: 1, listen: 1, createRouter: 1 },
+  "server/app.ts": { createServer: 1, listen: 0 },
+  "server/contracts/generated/fake-server/index.ts": { createServer: 1, listen: 0 },
+};
+// The one place start.ts may name the router: inside the pipeline.
+const PIPELINE_CALL =
+  "createPipeline(options.layers, createRouter(options.routes, report), report)";
+
+/** Counts of SERVER_USES that differ, and a router outside the pipeline in start.ts. */
+export function serverUseProblems(files: ReadonlyMap<string, string>): string[] {
+  const problems: string[] = [];
+  for (const [file, uses] of Object.entries(SERVER_USES)) {
+    const source = files.get(file);
+    if (source === undefined) {
+      problems.push(`${file}: listed, not found`);
+      continue;
+    }
+    const body = flat(code(source)).replace(
+      /\b(?:import|export)\s[^;]*?\sfrom\s*["'][^"']*["'];?/gu,
+      "",
+    );
+    for (const [word, expected] of Object.entries(uses)) {
+      const found = body.match(new RegExp(`\\b${word}\\b`, "gu"))?.length ?? 0;
+      if (found !== expected)
+        problems.push(`${file}: ${word} ${found} times, expected ${expected}`);
+    }
+    if (file === "server/http/start.ts" && !body.includes(PIPELINE_CALL))
+      problems.push(`${file}: the router is not served through the pipeline`);
+  }
+  return problems;
+}
+
 /** Files under server/ that import server/app.ts. */
 export function appImporters(files: ReadonlyMap<string, string>): string[] {
   return [...files].flatMap(([file, source]) =>
@@ -368,6 +405,73 @@ describe("operator routes cannot go around step 8", () => {
     const source =
       'import type { Server } from "node:http";\nimport { type Socket } from "node:net";';
     expect(nodeServerImports(source)).toEqual([]);
+  });
+
+  const START = readFileSync(join(ROOT, "server/http/start.ts"), "utf8");
+  it.each([
+    [
+      "a second server over the bare router",
+      (t: string) =>
+        t.replace(
+          "  const shutdown = options.shutdown",
+          "  createServer(createRouter(options.routes, report)).listen(0, options.host).unref();\n  const shutdown = options.shutdown",
+        ),
+    ],
+    [
+      "an alias of createServer",
+      (t: string) =>
+        t.replace(
+          "  const shutdown = options.shutdown",
+          "  const cs = createServer;\n  const shutdown = options.shutdown",
+        ),
+    ],
+    [
+      "a second listen",
+      (t: string) =>
+        t.replace(
+          "  const shutdown = options.shutdown",
+          "  void handle;\n  net.listen(1);\n  const shutdown = options.shutdown",
+        ),
+    ],
+    [
+      "the router outside the pipeline",
+      (t: string) =>
+        t.replace(
+          PIPELINE_CALL,
+          "createPipeline(options.layers, async () => {}, report); const r = createRouter(options.routes, report)",
+        ),
+    ],
+    [
+      "a second NetServer",
+      (t: string) =>
+        t.replace(
+          "  const shutdown = options.shutdown",
+          "  new NetServer().listen(0);\n  const shutdown = options.shutdown",
+        ),
+    ],
+  ])("refuses start.ts with %s", (_name, swap) => {
+    const changed = swap(START);
+    expect(changed).not.toBe(START);
+    const files = new Map(productionSources());
+    files.set("server/http/start.ts", changed);
+    expect(serverUseProblems(files)).not.toEqual([]);
+    expect(serverImportProblems(files)).toEqual([]);
+  });
+
+  it("refuses a second server in another allowed file", () => {
+    const files = new Map(productionSources());
+    files.set(
+      "server/app.ts",
+      `${files.get("server/app.ts")!}\nexport const other = () => createServer(() => {}).listen(0);\n`,
+    );
+    expect(serverUseProblems(files)).toEqual([
+      "server/app.ts: createServer 2 times, expected 1",
+      "server/app.ts: listen 1 times, expected 0",
+    ]);
+  });
+
+  it("counts every server use in the allowed files exactly", () => {
+    expect(serverUseProblems(productionSources())).toEqual([]);
   });
 
   it("holds for every production file under server/, and the list is not stale", () => {
