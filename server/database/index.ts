@@ -80,6 +80,9 @@ export { createInterfaceLocaleStore } from "./interface-locale.ts";
 export { createPendingReceiptQueue } from "./pending-receipt-queue.ts";
 // The worker's read of a domain's receipt keys (820b-2a), same login and owner.
 export { readReceiptKeys } from "./receipt-keys.ts";
+// The worker's receipt store: the key read and the attach of a signature
+// (820b-2b-2), same login and owner.
+export { createPendingReceiptStore } from "./pending-receipt-store.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
