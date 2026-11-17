@@ -120,4 +120,44 @@ export const studentAccessLogGet = defineRoute({
   ],
 });
 
-export const studentRoutes = [studentAssignmentsGet, studentAccessLogGet] as const;
+// DAN-989-1 (Ductus#1836 UGOVOR w989a): the state of the caller's own work
+// per assignment, a route of its own because a new member of
+// student.assignments.get is a major release of @ductura/contracts
+// (scripts/release/README.md, QA #92). The words are those of
+// teacher.mentorships.get. The client joins it to student.assignments.get
+// by assignments[].id = assignmentId, both lowercase (PostgreSQL's uuid text).
+const LowerUuid = Type.String({
+  pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}${END}`,
+});
+
+export const studentAssignmentWorkGet = defineRoute({
+  id: "student.assignment-work.get",
+  method: "GET",
+  path: "/api/v1/student/assignment-work",
+  inventory: "app/api/student/assignment-work/route.ts",
+  access: "signed_in",
+  summary:
+    "The state of the caller's own work for every assignment student.assignments.get would list at the same instant: one row per assignment, by assignmentId (lowercase). submitted: the caller has a recorded submission for the assignment, of any of its versions; in_progress: the caller has a work for it (one per student and assignment) and no recorded submission; not_started: no work. The two reads are separate, so a client joins them by lowercase id and shows no state for an assignment without a row on both sides. The identity comes from the session only. A row the read cannot vouch for makes the whole answer 503, never a partial list.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "ready (an empty list when the student has no course)",
+      body: closed({
+        assignments: Type.Array(
+          closed({
+            assignmentId: LowerUuid,
+            workState: oneOf(["not_started", "in_progress", "submitted"]),
+          }),
+        ),
+      }),
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(503, "unavailable")],
+});
+
+export const studentRoutes = [
+  studentAssignmentsGet,
+  studentAccessLogGet,
+  studentAssignmentWorkGet,
+] as const;
