@@ -327,6 +327,48 @@ describe("textProblem", () => {
   });
 });
 
+// DAN-851-2a1 (Ductus#1836 c.6939709307): a page path is a machine token,
+// judged as a kebab token: a sentence only with three or more words and a
+// strong one. A bracketed name is a word.
+const PROBLEM_REPORT_ROUTES = [
+  ...["/", "/kako-radi", "/nastavnik", "/nastavnik/brz-put", "/nastavnik/kolegiji"],
+  ...["/nastavnik/mentorstva", "/nastavnik/rad/[id]", "/nastavnik/rad/[id]/reprodukcija"],
+  "/nastavnik/zadatak/[assignmentId]/rad/[documentId]/jezik",
+  ...["/nastavnik/zadatak/[assignmentId]/uredi", "/nastavnik/zadatak/novi", "/prijava", "/rad"],
+  ...["/rad/[assignmentId]/dnevnik-pristupa", "/rad/[assignmentId]/predaja"],
+  ...["/rad/[assignmentId]/reprodukcija", "/stanje", "/upis", "/upis/kolegij/[courseId]"],
+  ...["/ustanova", "/ustanova/kolegiji", "/ustanova/korisnici", "/ustanova/pravila"],
+  ...["/zadaci", "/zadaci/kolegiji", "/zadaci/radovi", "/zadatak/[id]"],
+];
+
+describe("a page path", () => {
+  it("stays a sentence with three words and a strong one, or when it is no path", () => {
+    for (const text of [
+      ...["/nema-vise-prijava", "/ovaj/rad/je", "/x/je/se"],
+      ...["/[kako]/[je]/[nije]", "/rad/[kako]/je"],
+      ...["/Kako radi", "/kako radi", "/kako-radi.", "/kako-radi/"],
+      ...["/kako-radi?x=1", "/kako-radi#a", "//kako-radi", "/kako--radi", "/[kako] radi"],
+      ...["/kako-radi\u200B", "/kako\u00A0radi", "/kako\tradi"],
+    ])
+      expect([text, textProblem(text)]).toEqual([text, "sentence"]);
+    expect(textProblem("/kak\u00F3-radi")).toBe("letter");
+  });
+
+  it("is no sentence with two words or no strong one", () => {
+    expect(PROBLEM_REPORT_ROUTES).toHaveLength(27);
+    for (const text of [
+      ...["/kako-radi", "/je-se", "/ka\u200Bko-radi", "/", "/rad/[assignmentId]/predaja"],
+      ...PROBLEM_REPORT_ROUTES,
+    ])
+      expect([text, textProblem(text)]).toEqual([text, null]);
+  });
+
+  it("is judged so by the rule over source", async () => {
+    expect(await ids('export const r = ["/kako-radi"];', "server/x.ts")).toEqual([]);
+    expect(await ids('export const r = "/ovaj/rad/je";', "server/x.ts")).toContain("sentence");
+  });
+});
+
 describe("paths", () => {
   it("are the same on Windows and on posix", () => {
     expect(repoPath("/repo", "/repo/server/log/leak.ts")).toBe("server/log/leak.ts");
