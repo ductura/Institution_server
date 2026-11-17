@@ -28,6 +28,7 @@ const TEMPLATE_AREAS = [
   "profile",
   "database",
   "session",
+  "domain",
 ];
 
 const HEADINGS = readmeHeadings(ROOT);
