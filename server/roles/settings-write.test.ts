@@ -179,3 +179,69 @@ describe("createSettingsService passes a valid write on once", () => {
     }
   });
 });
+
+// DAN-1012-1 (Ductus#2028): a wrong backup setting never reaches the port.
+// Only cases a JSON body can carry; the catalogue's own table is in
+// server/domain/settings/catalogue.test.ts.
+describe("backup settings at the write service", () => {
+  const backup = (fields: Record<string, unknown>) =>
+    body({ level: "system", key: "backup.enabled", value: true, ...fields });
+
+  it.each([
+    ["a string for a boolean", backup({ value: "true" }), "SETTING_INVALID_VALUE"],
+    ["a number for a boolean", backup({ value: 1 }), "SETTING_INVALID_VALUE"],
+    ["minus zero", backup({ key: "backup.copies", value: -0 }), "SETTING_INVALID_VALUE"],
+    [
+      "a string for hours",
+      backup({ key: "backup.interval_hours", value: "24" }),
+      "SETTING_INVALID_VALUE",
+    ],
+    [
+      "more than daily",
+      backup({ key: "backup.interval_hours", value: 25 }),
+      "SETTING_INVALID_VALUE",
+    ],
+    ["more than 30 copies", backup({ key: "backup.copies", value: 31 }), "SETTING_INVALID_VALUE"],
+    ["no copy", backup({ key: "backup.copies", value: 0 }), "SETTING_INVALID_VALUE"],
+    ["the network level", backup({ level: "network_security" }), "SETTING_LEVEL_NOT_ALLOWED"],
+    ["the institution level", backup({ level: "institution" }), "SETTING_LEVEL_NOT_ALLOWED"],
+    ["the personal level", backup({ level: "personal" }), "SETTING_LEVEL_NOT_ALLOWED"],
+    ["a key under network.", backup({ key: "network.backup.enabled" }), "SETTING_UNKNOWN_KEY"],
+    [
+      "a destination",
+      backup({ key: "backup.destination", value: "elsewhere" }),
+      "SETTING_UNKNOWN_KEY",
+    ],
+    ["a range on a boolean", backup({ value: null, min: 1 }), "SETTING_INVALID_BOUND"],
+    [
+      "min above max",
+      backup({ key: "backup.copies", value: null, min: 9, max: 3 }),
+      "SETTING_INVALID_BOUND",
+    ],
+    [
+      "a range past 30",
+      backup({ key: "backup.copies", value: null, max: 31 }),
+      "SETTING_INVALID_BOUND",
+    ],
+    ["a key with NBSP", backup({ key: "backup.enabled " }), "SETTING_INVALID_BODY"],
+    ["a key with CRLF", backup({ key: "backup.enabled\r\n" }), "SETTING_INVALID_BODY"],
+    ["an extra field", backup({ destination: "elsewhere" }), "SETTING_INVALID_BODY"],
+  ])("refuses %s", async (_name, input, code) => {
+    expect(await refused(input)).toBe(code);
+  });
+
+  it("passes a valid backup setting to the port once", async () => {
+    const { calls, service } = harness();
+    const input = backup({ key: "backup.copies", value: 14, min: 7, max: 30 });
+    expect(await service.put(TOKEN, input)).toEqual({ ok: true, value: SAVED });
+    expect(calls.map((call) => call.write)).toEqual([
+      {
+        level: "system",
+        course: null,
+        key: "backup.copies",
+        value: 14,
+        bound: { min: 7, max: 30 },
+      },
+    ]);
+  });
+});

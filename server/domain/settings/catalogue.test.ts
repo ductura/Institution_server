@@ -300,3 +300,115 @@ describe("checkWriteOf: kinds the catalogue does not hold yet", () => {
     );
   });
 });
+
+// DAN-1012-1 (Ductus#2028): backup settings, only at the system level (D-298).
+// Every class of a wrong write is refused; a bound case keeps the value null,
+// because the value is checked first.
+describe("backup settings", () => {
+  const backup = (key: unknown, value: unknown, bound: unknown = null, level: unknown = "system") =>
+    codeOf({ level, key, value, bound });
+  const KEYS = ["backup.enabled", "backup.interval_hours", "backup.copies"];
+  const ODD = ["\t", "\r\n", "\u00a0", "\u007f", " "];
+
+  it("are three keys, only at system, with backup off by default", () => {
+    const inCatalogue = SETTINGS_CATALOGUE.filter((d) => d.key.startsWith("backup."));
+    expect(inCatalogue.map((d) => d.key)).toEqual(KEYS);
+    for (const definition of inCatalogue) expect(definition.levels).toEqual(["system"]);
+    expect(defaultOf("backup.enabled")).toBe(false);
+    expect(settingOf("backup.interval_hours")).toMatchObject({ default: 24, min: 1, max: 24 });
+    expect(settingOf("backup.copies")).toMatchObject({ default: 30, min: 1, max: 30 });
+    const fixed = /destination|target|bucket|storage|encrypt|cipher|cryptography/;
+    expect(SETTINGS_CATALOGUE.filter((d) => fixed.test(d.key))).toEqual([]);
+  });
+
+  it.each([
+    "network.backup.enabled",
+    "backup",
+    "backup.unknown",
+    "backup.Enabled",
+    "backup.enabled.",
+    "backup.destination",
+    "backup.encryption",
+    "__proto__",
+    "toString",
+    "constructor",
+    ...ODD.flatMap((odd) => [`backup.enabled${odd}`, `${odd}backup.enabled`]),
+  ])("know no key %j", (key) => {
+    expect(backup(key, false)).toBe("SETTING_UNKNOWN_KEY");
+  });
+
+  it.each([
+    "personal",
+    "course",
+    "institution",
+    "network_security",
+    "system\u00a0",
+    "System",
+    "toString",
+    null,
+  ])("refuse the level %j", (level) => {
+    for (const key of KEYS)
+      expect(backup(key, settingOf(key)?.default, null, level)).toBe("SETTING_LEVEL_NOT_ALLOWED");
+  });
+
+  const notBoolean = [0, 1, "true", "false", "", [], {}, [true], new Boolean(true)];
+  const notInteger = (max: number) => [
+    0,
+    max + 1,
+    -0,
+    1.5,
+    -1,
+    String(max),
+    Number.NaN,
+    Infinity,
+    2 ** 53,
+    true,
+    [max],
+    { value: max },
+  ];
+  it.each([
+    ...notBoolean.map((value) => ["backup.enabled", value, typeof value] as const),
+    ...notInteger(24).map((value) => ["backup.interval_hours", value, typeof value] as const),
+    ...notInteger(30).map((value) => ["backup.copies", value, typeof value] as const),
+  ])("refuse %s = %s (%s)", (key, value) => {
+    expect(backup(key, value)).toBe("SETTING_INVALID_VALUE");
+  });
+
+  it.each([
+    ["backup.enabled", { min: 1 }],
+    ["backup.copies", { min: 0 }],
+    ["backup.copies", { max: 31 }],
+    ["backup.interval_hours", { max: 25 }],
+    ["backup.copies", { min: 10, max: 5 }],
+    ["backup.interval_hours", { min: 1, max: 24, step: 1 }],
+    ["backup.interval_hours", { locked: false }],
+    ["backup.interval_hours", { locked: true, max: 24 }],
+    ["backup.interval_hours", {}],
+    ["backup.interval_hours", []],
+    ["backup.interval_hours", Object.assign(Object.create({ min: 1 }), { max: 24 })],
+  ])("refuse the bound %s %j", (key, bound) => {
+    expect(backup(key, null, bound)).toBe("SETTING_INVALID_BOUND");
+  });
+
+  it("refuse a value outside its own bound", () => {
+    expect(backup("backup.copies", 20, { max: 14 })).toBe("SETTING_INVALID_BOUND");
+  });
+
+  it.each([
+    ["backup.enabled", true],
+    ["backup.enabled", false],
+    ["backup.interval_hours", 1],
+    ["backup.interval_hours", 24],
+    ["backup.copies", 1],
+    ["backup.copies", 30],
+  ])("take %s = %s, null as removal and a lock", (key, value) => {
+    expect(backup(key, value)).toBe(null);
+    expect(backup(key, null)).toBe(null);
+    expect(backup(key, value, { locked: true })).toBe(null);
+  });
+
+  it("take a range on a number key inside its hard limits", () => {
+    expect(backup("backup.copies", 7, { min: 7, max: 30 })).toBe(null);
+    expect(backup("backup.interval_hours", null, { min: 1, max: 24 })).toBe(null);
+  });
+});
