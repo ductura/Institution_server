@@ -32,11 +32,16 @@ import {
   serverShutdownHooks,
   startServer,
 } from "./http/index.ts";
-import { metricsIntervalMs, metricsIntervalProblems } from "./settings/index.ts";
+import {
+  institutionsProblems,
+  metricsIntervalMs,
+  metricsIntervalProblems,
+} from "./settings/index.ts";
 
 // 1. Environment. A bad value stops the start before anything listens; the
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
-//    CIDR ranges) is optional; unset, X-Forwarded-For is never read.
+//    CIDR ranges) is optional; unset, X-Forwarded-For is never read. The
+//    institutions file built into the server must pass its schema (DAN-911).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const problems = [
   ...environmentProblems(process.env),
@@ -44,6 +49,7 @@ const problems = [
   ...shutdownProblems(process.env),
   ...originProblems(process.env),
   ...metricsIntervalProblems(process.env),
+  ...institutionsProblems(),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
