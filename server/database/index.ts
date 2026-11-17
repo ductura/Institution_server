@@ -30,11 +30,7 @@ export type {
   ReceiptSigner,
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
-export type {
-  InterfaceLocaleRead,
-  InterfaceLocaleSave,
-  InterfaceLocaleStore,
-} from "./interface-locale.ts";
+export type { InterfaceLocaleStore } from "./interface-locale.ts";
 export type {
   AttachReceiptSignatureCommand,
   AttachReceiptSignatureOutcome,
@@ -74,7 +70,14 @@ export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export { createWorkOpener } from "./open-work.ts";
-export { createInterfaceLocaleStore } from "./interface-locale.ts";
+export {
+  createInterfaceLocaleStore,
+  INTERFACE_LOCALE_DATABASE_ERROR,
+  INTERFACE_LOCALE_ERRORS,
+  INTERFACE_LOCALE_INVALID,
+  INTERFACE_LOCALE_ROW_MALFORMED,
+  INTERFACE_LOCALE_UNAUTHENTICATED,
+} from "./interface-locale.ts";
 // The worker's read of the pending receipts, over the worker's own login;
 // only the worker process builds it (D-71, D-102).
 export { createPendingReceiptQueue } from "./pending-receipt-queue.ts";

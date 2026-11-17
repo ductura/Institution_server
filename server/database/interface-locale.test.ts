@@ -2,9 +2,19 @@
 // turns every outcome of identity.interface_locale() and
 // identity.set_interface_locale() into a closed result and never throws.
 // Every token and value below is invented.
+import { readFileSync } from "node:fs";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createInterfaceLocaleStore, type InterfaceLocaleStore } from "./interface-locale.ts";
+import {
+  createInterfaceLocaleStore,
+  INTERFACE_LOCALE_DATABASE_ERROR,
+  INTERFACE_LOCALE_ERRORS,
+  INTERFACE_LOCALE_INVALID,
+  INTERFACE_LOCALE_ROW_MALFORMED,
+  INTERFACE_LOCALE_UNAUTHENTICATED,
+  type InterfaceLocaleStore,
+} from "./interface-locale.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 const TOKEN = "izmisljeni-token-jezika-0000000000000000001";
@@ -45,32 +55,62 @@ const spies = () => [
 ];
 afterEach(() => vi.restoreAllMocks());
 
+const fail = (error: unknown) => ({ ok: false, error });
+const UNAUTHENTICATED = fail(INTERFACE_LOCALE_UNAUTHENTICATED);
+const DATABASE = fail(INTERFACE_LOCALE_DATABASE_ERROR);
+
+const catalogue: unknown = JSON.parse(
+  readFileSync(new URL("../../locales/hr.json", import.meta.url), "utf8"),
+);
+const lookup = (key: string): unknown =>
+  key
+    .split(".")
+    .reduce<unknown>(
+      (node, part) =>
+        node && typeof node === "object" ? (node as Record<string, unknown>)[part] : undefined,
+      catalogue,
+    );
+
+describe("interface language port errors (docs/CODE_STYLE.md §8)", () => {
+  it("has a Croatian text in locales/hr.json for every messageKey", () => {
+    for (const error of INTERFACE_LOCALE_ERRORS) {
+      const text = lookup(error.messageKey);
+      expect(typeof text === "string" && text.trim().length > 0, error.messageKey).toBe(true);
+    }
+  });
+
+  it("lists four errors with distinct UPPER_SNAKE codes and keys", () => {
+    expect(INTERFACE_LOCALE_ERRORS).toHaveLength(4);
+    for (const { code } of INTERFACE_LOCALE_ERRORS)
+      expect(code).toMatch(/^INTERFACE_LOCALE_[A-Z]+(?:_[A-Z]+)*$/);
+    expect(new Set(INTERFACE_LOCALE_ERRORS.map((e) => e.code)).size).toBe(4);
+    expect(new Set(INTERFACE_LOCALE_ERRORS.map((e) => e.messageKey)).size).toBe(4);
+  });
+});
+
 describe("interface language port: refusals", () => {
   it("ZD401 is unauthenticated for read and save", async () => {
     const { port } = store({ throws: dbError("ZD401") });
-    for (const outcome of await Promise.all(both(port)))
-      expect(outcome).toEqual({ status: "unauthenticated" });
+    for (const outcome of await Promise.all(both(port))) expect(outcome).toEqual(UNAUTHENTICATED);
   });
 
   it("ZD422 is invalid for save and unavailable for read", async () => {
     const { port } = store({ throws: dbError("ZD422") });
-    expect(await port.save(TOKEN, "en")).toEqual({ status: "invalid" });
-    expect(await port.read(TOKEN)).toEqual({ status: "unavailable", reason: "ZD422" });
+    expect(await port.save(TOKEN, "en")).toEqual(fail(INTERFACE_LOCALE_INVALID));
+    expect(await port.read(TOKEN)).toEqual(DATABASE);
   });
 
   it.each([["zd401"], ["ZD401 "], ["ZD4011"], ["zd401 "]])(
-    "%j is not ZD401: unknown",
+    "%j is not ZD401: a database error",
     async (code) => {
       const { port } = store({ throws: dbError(code) });
-      for (const outcome of await Promise.all(both(port)))
-        expect(outcome).toEqual({ status: "unavailable", reason: "unknown" });
+      for (const outcome of await Promise.all(both(port))) expect(outcome).toEqual(DATABASE);
     },
   );
 
-  it("another SQLSTATE is unavailable with that code", async () => {
+  it("another SQLSTATE is a database error", async () => {
     const { port } = store({ throws: dbError("57014") });
-    for (const outcome of await Promise.all(both(port)))
-      expect(outcome).toEqual({ status: "unavailable", reason: "57014" });
+    for (const outcome of await Promise.all(both(port))) expect(outcome).toEqual(DATABASE);
   });
 
   const throwingGetter = Object.defineProperty(new Error(SECRET), "code", {
@@ -105,28 +145,26 @@ describe("interface language port: refusals", () => {
     ["throwing code getter", throwingGetter],
     ["Proxy with a throwing has", throwingHas],
     ["Proxy with a throwing get", throwingGet],
-  ])("%s is unavailable with unknown and nothing is thrown", async (_name, thrown) => {
+  ])("%s is a database error and nothing is thrown", async (_name, thrown) => {
     const { port } = store({ throws: thrown });
-    for (const outcome of await Promise.all(both(port)))
-      expect(outcome).toEqual({ status: "unavailable", reason: "unknown" });
+    for (const outcome of await Promise.all(both(port))) expect(outcome).toEqual(DATABASE);
   });
 
   it("an inherited ZD401 code counts, as Ductus `in` reads it", async () => {
     const { port } = store({ throws: Object.create({ code: "ZD401" }) as object });
-    expect(await port.read(TOKEN)).toEqual({ status: "unauthenticated" });
+    expect(await port.read(TOKEN)).toEqual(UNAUTHENTICATED);
   });
 
-  it("a throw from withActor itself is unavailable", async () => {
+  it("a throw from withActor itself is a database error", async () => {
     const { port } = store({ actorThrows: dbError("08006") });
-    for (const outcome of await Promise.all(both(port)))
-      expect(outcome).toEqual({ status: "unavailable", reason: "08006" });
+    for (const outcome of await Promise.all(both(port))) expect(outcome).toEqual(DATABASE);
     const { port: bare } = store({ actorThrows: new Error(SECRET) });
-    expect(await bare.read(TOKEN)).toEqual({ status: "unavailable", reason: "unknown" });
+    expect(await bare.read(TOKEN)).toEqual(DATABASE);
   });
 });
 
 describe("interface language port: rows", () => {
-  const malformed = { status: "unavailable", reason: "row_malformed" };
+  const malformed = fail(INTERFACE_LOCALE_ROW_MALFORMED);
 
   it.each([
     ["no row", []],
@@ -165,13 +203,16 @@ describe("interface language port: rows", () => {
 
 describe("interface language port: success and calls", () => {
   it.each(["hr", "en", null])("read answers %j", async (locale) => {
-    expect(await store({ rows: [{ locale }] }).port.read(TOKEN)).toEqual({ status: "ok", locale });
+    expect(await store({ rows: [{ locale }] }).port.read(TOKEN)).toEqual({
+      ok: true,
+      value: locale,
+    });
   });
 
   it.each(["hr", "en"] as const)("save answers the saved %s", async (locale) => {
     expect(await store({ rows: [{ locale }] }).port.save(TOKEN, locale)).toEqual({
-      status: "ok",
-      locale,
+      ok: true,
+      value: locale,
     });
   });
 

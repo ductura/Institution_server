@@ -5,33 +5,58 @@
 // before it leaves this folder. Who the caller is comes from the session token
 // inside identity.interface_locale() and identity.set_interface_locale(),
 // never from a parameter. Unlike open-work.ts and replay-source.ts, which
-// throw other errors on, this port is Ductus rpc(): every error becomes an
-// outcome, and nothing is logged here; the reason is a closed code for the
-// route's own record (DAN-851-1d), never for the answer.
-import { INTERFACE_LOCALE_SETTING_VALUES, type InterfaceLocale } from "../domain/index.ts";
+// throw other errors on, this port is Ductus rpc(): every error becomes a
+// Result with an AppError (docs/CODE_STYLE.md §8; text in locales/hr.json under
+// `interfaceLocale`), and nothing is logged here. The SQLSTATE of a database
+// error does not leave the port: its code is the closed DATABASE_ERROR.
+import {
+  type AppError,
+  INTERFACE_LOCALE_SETTING_VALUES,
+  type InterfaceLocale,
+  type Result,
+} from "../domain/index.ts";
 
 import type { WithActor } from "./with-actor.ts";
 
-type Refusal =
-  | { status: "unauthenticated" }
-  /** The reason is row_malformed, a SQLSTATE or unknown; never a message. */
-  | { status: "unavailable"; reason: string };
+const error = (code: string, messageKey: string): AppError => ({ code, messageKey });
 
-export type InterfaceLocaleRead = { status: "ok"; locale: InterfaceLocale | null } | Refusal;
-export type InterfaceLocaleSave =
-  { status: "ok"; locale: InterfaceLocale } | { status: "invalid" } | Refusal;
+/** ZD401: no live session behind the token. */
+export const INTERFACE_LOCALE_UNAUTHENTICATED = error(
+  "INTERFACE_LOCALE_UNAUTHENTICATED",
+  "interfaceLocale.unauthenticated",
+);
+/** ZD422 on a save: the database refused the value. */
+export const INTERFACE_LOCALE_INVALID = error(
+  "INTERFACE_LOCALE_INVALID",
+  "interfaceLocale.invalid",
+);
+/** Not exactly one row, or a value outside the set (or not the one sent). */
+export const INTERFACE_LOCALE_ROW_MALFORMED = error(
+  "INTERFACE_LOCALE_ROW_MALFORMED",
+  "interfaceLocale.row_malformed",
+);
+/** Any other error of the database or of withActor. */
+export const INTERFACE_LOCALE_DATABASE_ERROR = error(
+  "INTERFACE_LOCALE_DATABASE_ERROR",
+  "interfaceLocale.database_error",
+);
+export const INTERFACE_LOCALE_ERRORS: readonly AppError[] = [
+  INTERFACE_LOCALE_UNAUTHENTICATED,
+  INTERFACE_LOCALE_INVALID,
+  INTERFACE_LOCALE_ROW_MALFORMED,
+  INTERFACE_LOCALE_DATABASE_ERROR,
+];
 
 /** The port the interface language route reads and saves through. */
 export type InterfaceLocaleStore = {
-  read(token: string): Promise<InterfaceLocaleRead>;
-  save(token: string, locale: InterfaceLocale): Promise<InterfaceLocaleSave>;
+  read(token: string): Promise<Result<InterfaceLocale | null>>;
+  save(token: string, locale: InterfaceLocale): Promise<Result<InterfaceLocale>>;
 };
 
 // Spelled out in full, as in Ductus, so a search for "identity.<name>(" finds them.
 const READ_SQL = "SELECT identity.interface_locale() AS locale";
 const SET_SQL = "SELECT identity.set_interface_locale($1) AS locale";
-const SQLSTATE = /^[0-9A-Z]{5}$/;
-const MALFORMED = { status: "unavailable", reason: "row_malformed" } as const;
+const fail = (e: AppError): { ok: false; error: AppError } => ({ ok: false, error: e });
 
 function isLocale(value: unknown): value is InterfaceLocale {
   return (
@@ -41,39 +66,38 @@ function isLocale(value: unknown): value is InterfaceLocale {
 }
 
 /** The code of a database error; a getter or Proxy that throws has none. */
-function codeOf(error: unknown): unknown {
+function codeOf(thrown: unknown): unknown {
   try {
-    return error && typeof error === "object" && "code" in error ? error.code : undefined;
+    return thrown && typeof thrown === "object" && "code" in thrown ? thrown.code : undefined;
   } catch {
     return undefined;
   }
 }
 
-type Outcome = { ok: true; value: unknown } | { ok: false; code: unknown };
-
+/** The one row's locale, or the error of the call; never throws. */
 async function rpc(
   withActor: WithActor,
   token: string,
   sql: string,
   params: unknown[],
-): Promise<Outcome> {
+): Promise<Result<unknown> | { ok: false; code: unknown }> {
   try {
     const result = await withActor(token, (tx) => tx.query<{ locale: unknown }>(sql, params));
     const rows: unknown = result.rows;
-    if (!Array.isArray(rows) || rows.length !== 1) return { ok: false, code: MALFORMED };
+    if (!Array.isArray(rows) || rows.length !== 1) return fail(INTERFACE_LOCALE_ROW_MALFORMED);
     const row: unknown = rows[0];
-    if (row === null || typeof row !== "object") return { ok: false, code: MALFORMED };
+    if (row === null || typeof row !== "object") return fail(INTERFACE_LOCALE_ROW_MALFORMED);
     return { ok: true, value: (row as { locale?: unknown }).locale };
-  } catch (error) {
-    return { ok: false, code: codeOf(error) };
+  } catch (thrown) {
+    return { ok: false, code: codeOf(thrown) };
   }
 }
 
-function refusal(code: unknown): Refusal {
-  if (code === MALFORMED) return MALFORMED;
-  if (code === "ZD401") return { status: "unauthenticated" };
-  const reason = typeof code === "string" && SQLSTATE.test(code) ? code : "unknown";
-  return { status: "unavailable", reason };
+function failure(outcome: { ok: false; error: AppError } | { ok: false; code: unknown }) {
+  if ("error" in outcome) return fail(outcome.error);
+  return fail(
+    outcome.code === "ZD401" ? INTERFACE_LOCALE_UNAUTHENTICATED : INTERFACE_LOCALE_DATABASE_ERROR,
+  );
 }
 
 /** The interface language port over a withActor; it never throws. */
@@ -81,16 +105,20 @@ export function createInterfaceLocaleStore(withActor: WithActor): InterfaceLocal
   return {
     async read(token) {
       const read = await rpc(withActor, token, READ_SQL, []);
-      if (!read.ok) return refusal(read.code);
-      if (read.value !== null && !isLocale(read.value)) return MALFORMED;
-      return { status: "ok", locale: read.value };
+      if (!read.ok) return failure(read);
+      if (read.value !== null && !isLocale(read.value)) return fail(INTERFACE_LOCALE_ROW_MALFORMED);
+      return { ok: true, value: read.value };
     },
     async save(token, locale) {
       const saved = await rpc(withActor, token, SET_SQL, [locale]);
-      if (!saved.ok) return saved.code === "ZD422" ? { status: "invalid" } : refusal(saved.code);
+      if (!saved.ok) {
+        if ("code" in saved && saved.code === "ZD422") return fail(INTERFACE_LOCALE_INVALID);
+        return failure(saved);
+      }
       // What the database saved must be what was sent; null or another value is not "saved".
-      if (saved.value !== locale || !isLocale(saved.value)) return MALFORMED;
-      return { status: "ok", locale };
+      if (saved.value !== locale || !isLocale(saved.value))
+        return fail(INTERFACE_LOCALE_ROW_MALFORMED);
+      return { ok: true, value: locale };
     },
   };
 }
