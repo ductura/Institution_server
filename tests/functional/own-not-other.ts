@@ -95,12 +95,14 @@ export async function check(stackDir: string): Promise<string> {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = process.env.VS1_STACK_DIR ?? join(ROOT, ".stack", "vs1");
-  check(dir).then(
-    (run) => console.log(`S-1H.3 own work yes, other's no: ${CHECKS} answers passed over ${run}`),
-    (error: unknown) => {
-      const message = error instanceof Error ? error.message : "failed";
-      console.error(`S-1H.3 own work yes, other's no: ${message}`);
-      process.exitCode = 1;
-    },
-  );
+  // Awaited at the top level: a check that never settles ends with exit code
+  // 13 (unsettled top-level await), never with 0.
+  try {
+    const run = await check(dir);
+    console.log(`S-1H.3 own work yes, other's no: ${CHECKS} answers passed over ${run}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "failed";
+    console.error(`S-1H.3 own work yes, other's no: ${message}`);
+    process.exitCode = 1;
+  }
 }

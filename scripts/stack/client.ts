@@ -1,6 +1,8 @@
 // The requests of a signed-in student's browser to the stack's server, shared
 // by the commit check (DAN-817) and the functional tests (tests/functional,
-// DAN-1003). Moved unchanged from vs1-commit-check.ts. Every value is invented.
+// DAN-1003). Moved from vs1-commit-check.ts; since then `post` also settles a
+// response cut after its headers and a missing answer (QA on #276). Every
+// value is invented.
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { request } from "node:http";
@@ -14,8 +16,21 @@ const sha256 = (text: string) => createHash("sha256").update(text, "utf8").diges
 
 export type Answer = { status: number; body: Record<string, unknown> };
 
-/** One POST as the browser of a signed-in student sends it. */
-export function post(port: number, path: string, body: unknown, token: string): Promise<Answer> {
+/** How long one request may wait for its whole answer. */
+export const POST_TIMEOUT_MS = 30_000;
+
+/**
+ * One POST as the browser of a signed-in student sends it. It always
+ * settles: a response cut before its end, a closed connection and no answer
+ * within `timeoutMs` reject.
+ */
+export function post(
+  port: number,
+  path: string,
+  body: unknown,
+  token: string,
+  timeoutMs = POST_TIMEOUT_MS,
+): Promise<Answer> {
   const text = JSON.stringify(body);
   return new Promise((resolve, reject) => {
     const req = request(
@@ -35,6 +50,11 @@ export function post(port: number, path: string, body: unknown, token: string): 
       },
       (res) => {
         let data = "";
+        res.on("error", reject);
+        // After "end" this is a no-op; before it, the body was cut.
+        res.on("close", () => {
+          if (!res.complete) reject(new Error(`${path}: the answer was cut before its end`));
+        });
         res.on("data", (chunk: Buffer) => (data += chunk.toString("utf8")));
         res.on("end", () => {
           try {
@@ -46,6 +66,9 @@ export function post(port: number, path: string, body: unknown, token: string): 
       },
     );
     req.on("error", reject);
+    req.setTimeout(timeoutMs, () =>
+      req.destroy(new Error(`${path}: no answer in ${timeoutMs} ms`)),
+    );
     req.end(text);
   });
 }

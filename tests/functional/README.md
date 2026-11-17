@@ -9,6 +9,7 @@ Funkcionalni testovi nad izgrađenim serverom (`dist/server.js`) na lokalnom sto
   - B otvara svoj rad na Y prije A-ova `open` na Y, pa se `open` provjerava nad postojećim tuđim radom, ne samo nad praznim zadatkom.
   - A otvara svoj rad na Z (drugi dokument od B-ova) prije svih pokušaja, a nakon njih ga šalje i reproducira i dobiva 200.
   - Broji pročitane odgovore (`CHECKS`, 12); manje znači da je test stao ili preskočio provjeru.
+  - Provjera se čeka na najvišoj razini modula: provjera koja se nikad ne razriješi završava izlaznim kodom 13, nikad s 0.
   - Izlaz imenuje SHA checkouta koji pokreće test (i SHA iz `state.json` stoga kad se razlikuje; u CI-ju PR-a to je GitHubov merge commit) i SHA-256 `dist/server.js`. Test pada ako stog ne radi, ako na portu servera ne sluša zapisani proces ili ako `dist/server.js` nije izgradnja koja radi.
 - Sesije se upisuju u `identity.session` kako ih ostavlja uspješna prijava (kao `scripts/stack/vs1-commit-check.ts`). Prijava kroz lažni OIDC ovdje nije moguća jer server stoga namjerno ne dobiva adresu issuera (blokada D-09, t. 4 u README-u stoga).
 
