@@ -6,12 +6,14 @@
 // pipeline step 7. Deviations from Ductus, as in DAN-851-1d1: the token is
 // liveSessionToken (a session this browser ended reads as none), activity is
 // counted after the 201 is written, and a 503 is logged with a closed reason,
-// never a SQLSTATE. Not mounted yet (DAN-851-2d2).
+// never a SQLSTATE. server/server.ts mounts it over the main database through
+// createProblemReportRouteFor (DAN-851-2d2a).
 import { ROUTES } from "../contracts/index.ts";
-import type { ProblemReportStore } from "../database/index.ts";
-import { liveSessionTokenFromCookie } from "../session/index.ts";
+import { createProblemReportStore, type ProblemReportStore } from "../database/index.ts";
+import { liveSessionTokenFromCookie, recordActivity } from "../session/index.ts";
 import { createSupportService } from "../support/index.ts";
 
+import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
 import { sendProblem } from "./problem.ts";
@@ -73,7 +75,7 @@ function isJson(values: readonly string[] | undefined): boolean {
   );
 }
 
-/** POST of a problem report over the support service; not mounted until DAN-851-2d2. */
+/** POST of a problem report over the support service. */
 export function createProblemReportRoute(options: ProblemReportRouteOptions): Route {
   const service = createSupportService({ store: options.store });
   const timeoutMs = options.timeoutMs ?? PROBLEM_REPORT_TIMEOUT_MS;
@@ -110,4 +112,16 @@ export function createProblemReportRoute(options: ProblemReportRouteOptions): Ro
       void options.recordActivity(token).catch(() => undefined);
     },
   };
+}
+
+/**
+ * The route over the main database (DAN-851-2d2a): the port and the activity
+ * touch both run on main's application withActor, so a report and its touch
+ * never reach another pool.
+ */
+export function createProblemReportRouteFor(main: Pick<Databases["main"], "withActor">): Route {
+  return createProblemReportRoute({
+    store: createProblemReportStore(main.withActor),
+    recordActivity: (token) => recordActivity(token, main.withActor),
+  });
 }

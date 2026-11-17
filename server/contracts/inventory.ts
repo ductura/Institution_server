@@ -117,7 +117,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "collaboration.revision-requests.post",
   "live.document.get",
   "live.document.put",
-  "support.problem-report.post",
   "teacher.courses.get",
   "teacher.submissions.get",
   "teacher.mentorships.get",
