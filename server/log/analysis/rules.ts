@@ -9,17 +9,23 @@ import type { EventKind } from "../events/index.ts";
 /** A local log entry: only the time (epoch ms) and the event kind. */
 export type AnalysisEntry = { readonly timeMs: number; readonly event: string };
 
-const rule = <const N extends string>(name: N, events: readonly EventKind[]) =>
-  Object.freeze({ name, events: Object.freeze([...events]) });
+// `name` is the rule name of the contract, in findings; `key` is its threshold
+// key, in camelCase because object keys follow CODE_STYLE §2.
+const rule = <const N extends string, const K extends string>(
+  name: N,
+  key: K,
+  events: readonly EventKind[],
+) => Object.freeze({ name, key, events: Object.freeze([...events]) });
 
 export const ANALYSIS_RULES = Object.freeze([
-  rule("loginFailures", ["authn.login_failed", "authn.second_factor_failed"]),
-  rule("trafficRefusals", ["traffic.rate_limited", "traffic.ip_denied"]),
+  rule("login_failures", "loginFailures", ["authn.login_failed", "authn.second_factor_failed"]),
+  rule("traffic_refusals", "trafficRefusals", ["traffic.rate_limited", "traffic.ip_denied"]),
 ]);
 
 export type AnalysisRuleName = (typeof ANALYSIS_RULES)[number]["name"];
+export type AnalysisThresholdKey = (typeof ANALYSIS_RULES)[number]["key"];
 export type RuleThreshold = { readonly windowMs: number; readonly minCount: number };
-export type AnalysisThresholds = Readonly<Record<AnalysisRuleName, RuleThreshold>>;
+export type AnalysisThresholds = Readonly<Record<AnalysisThresholdKey, RuleThreshold>>;
 
 export const MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
 /**
@@ -57,8 +63,8 @@ function ownValue(holder: unknown, key: string): unknown {
   return descriptor && "value" in descriptor ? descriptor.value : undefined;
 }
 
-function readThreshold(thresholds: unknown, rule: AnalysisRuleName): RuleThreshold | null {
-  const own = ownValue(thresholds, rule);
+function readThreshold(thresholds: unknown, key: AnalysisThresholdKey): RuleThreshold | null {
+  const own = ownValue(thresholds, key);
   const windowMs = ownValue(own, "windowMs");
   const minCount = ownValue(own, "minCount");
   const valid = (n: unknown): n is number => Number.isSafeInteger(n) && (n as number) > 0;
@@ -96,7 +102,7 @@ export function analyzeLog(
   entries: readonly AnalysisEntry[],
   thresholds: AnalysisThresholds = DEFAULT_ANALYSIS_THRESHOLDS,
 ): AnalysisResult {
-  const checked = ANALYSIS_RULES.map((rule) => readThreshold(thresholds, rule.name));
+  const checked = ANALYSIS_RULES.map((rule) => readThreshold(thresholds, rule.key));
   if (checked.some((t) => t === null)) {
     const code = ANALYSIS_ERROR_CODES[0];
     return { ok: false, error: { code, messageKey: `logAnalysis.${code.toLowerCase()}` } };

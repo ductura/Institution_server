@@ -10,6 +10,7 @@ export {
   type AnalysisFinding,
   type AnalysisResult,
   type AnalysisRuleName,
+  type AnalysisThresholdKey,
   type AnalysisThresholds,
   type RuleThreshold,
 } from "./rules.ts";

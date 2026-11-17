@@ -76,6 +76,24 @@ describe("log analysis: thresholds that are refused", () => {
     }
   });
 
+  // Codex review c.6963971482 (2): each field of a rule threshold must be an own data property.
+  it("refuses a windowMs or minCount that is inherited or a getter", () => {
+    for (const key of ["windowMs", "minCount"] as const) {
+      const { [key]: value, ...restOfRule } = SMALL.loginFailures;
+      const inherited = Object.assign(Object.create({ [key]: value }) as object, restOfRule);
+      const getter = Object.defineProperty({ ...restOfRule }, key, {
+        get: () => value,
+        enumerable: true,
+      });
+      for (const rule of [inherited, getter]) {
+        expect(
+          analyzeLog([], { ...thresholds, loginFailures: rule } as AnalysisThresholds),
+          key,
+        ).toEqual(failure);
+      }
+    }
+  });
+
   it("has a Croatian text for every code and no other key", () => {
     const texts = JSON.parse(
       readFileSync(new URL("../../../locales/hr.json", import.meta.url), "utf8"),
@@ -100,7 +118,7 @@ describe("log analysis: entry times", () => {
   it("counts integer times up to the Date limit in both directions", () => {
     for (const timeMs of [MAX_TIME_MS, -MAX_TIME_MS, 0]) {
       expect(single(timeMs)).toEqual([
-        { rule: "loginFailures", fromMs: timeMs, toMs: timeMs + 1, count: 1, minCount: 1 },
+        { rule: "login_failures", fromMs: timeMs, toMs: timeMs + 1, count: 1, minCount: 1 },
       ]);
     }
   });
@@ -168,16 +186,15 @@ describe("log analysis: work grows linearly with the entries", () => {
 });
 
 // Written out here, not read from the implementation: dropping an event from a rule must fail a test.
-const RULE_EVENTS = {
-  loginFailures: ["authn.login_failed", "authn.second_factor_failed"],
-  trafficRefusals: ["traffic.rate_limited", "traffic.ip_denied"],
-};
+// Rule name of the contract (Ductus#2028 c.6962315424), threshold key, events.
+const RULE_EVENTS: [string, string, string[]][] = [
+  ["login_failures", "loginFailures", ["authn.login_failed", "authn.second_factor_failed"]],
+  ["traffic_refusals", "trafficRefusals", ["traffic.rate_limited", "traffic.ip_denied"]],
+];
 
 describe("log analysis: rules and defaults", () => {
   it("has exactly the rules and events of the contract", () => {
-    expect(Object.fromEntries(ANALYSIS_RULES.map((r) => [r.name, [...r.events]]))).toEqual(
-      RULE_EVENTS,
-    );
+    expect(ANALYSIS_RULES.map((r) => [r.name, r.key, [...r.events]])).toEqual(RULE_EVENTS);
   });
 
   // Codex review c.6963352885 (2): a call with entries only uses the named defaults.
@@ -191,7 +208,7 @@ describe("log analysis: rules and defaults", () => {
     expect(analyzeLog(run(19))).toEqual({ ok: true, value: [] });
     expect(analyzeLog(run(20))).toEqual({
       ok: true,
-      value: [{ rule: "loginFailures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 }],
+      value: [{ rule: "login_failures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 }],
     });
   });
 });
@@ -210,16 +227,16 @@ describe("log analysis: both rules in one call", () => {
     expect(analyzeLog(entries)).toEqual({
       ok: true,
       value: [
-        { rule: "loginFailures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 },
-        { rule: "trafficRefusals", fromMs: T0, toMs: T0 + 300_000, count: 50, minCount: 50 },
+        { rule: "login_failures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 },
+        { rule: "traffic_refusals", fromMs: T0, toMs: T0 + 300_000, count: 50, minCount: 50 },
       ],
     });
   });
 });
 
 describe.each(ANALYSIS_RULES.map((r) => [r.name, r] as const))("rule %s", (name, rule) => {
-  const own = { ...thresholds, [name]: { windowMs: WINDOW, minCount: MIN } };
-  const [first, second] = RULE_EVENTS[name];
+  const own = { ...thresholds, [rule.key]: { windowMs: WINDOW, minCount: MIN } };
+  const [first, second] = RULE_EVENTS.find(([contract]) => contract === name)![2];
 
   it("reads only event kinds from the catalog", () => {
     for (const event of rule.events) expect(Object.hasOwn(EVENT_CATALOG, event)).toBe(true);
@@ -280,6 +297,8 @@ describe.each(ANALYSIS_RULES.map((r) => [r.name, r] as const))("rule %s", (name,
   });
 
   it("has a name with no forbidden term in either language", () => {
-    expect(findForbiddenTerms(name.replace(/([A-Z])/g, " $1"))).toEqual([]);
+    for (const text of [name.replaceAll("_", " "), rule.key.replace(/([A-Z])/g, " $1")]) {
+      expect(findForbiddenTerms(text)).toEqual([]);
+    }
   });
 });
