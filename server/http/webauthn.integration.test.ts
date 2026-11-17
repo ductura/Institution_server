@@ -168,6 +168,24 @@ const headers = (cookie = COOKIE, type = "application/json"): [string, string][]
 ];
 const post = (body: string | Buffer, h = headers()) => send(raw(h, body));
 const codeOf = (got: Answer) => (JSON.parse(got.body) as { code: string }).code;
+/** The JSON lines a spy on console.error saw (QA on #215: each fault names its closed reason). */
+const records = (spy: { mock: { calls: unknown[][] } }) =>
+  spy.mock.calls.map((call) => JSON.parse(String(call[0])) as Record<string, unknown>);
+const fault = (route: string, reason: string) => ({
+  event: "webauthn_fault",
+  route,
+  reason,
+  requestId: expect.any(String),
+});
+const thrown = (route: string) => ({
+  event: "server_error",
+  where: "route",
+  errorClass: "other",
+  requestId: expect.any(String),
+  route,
+});
+const CHALLENGE_ROUTE = "auth.webauthn-challenge.post";
+const REGISTRATION_ROUTE = "auth.webauthn-registration.post";
 const take = (purpose: string, challenge: string, token = TOKEN) =>
   store.take(challengeSessionKey(token), purpose, challenge);
 
@@ -243,7 +261,7 @@ describe("refusals", () => {
     const got = await post('{"purpose":"registration"}');
     expect([got.status, codeOf(got)]).toEqual([503, "unavailable"]);
     expect(calls).toEqual({ list: [], issue: 0 });
-    expect(error).toHaveBeenCalledOnce();
+    expect(records(error)).toEqual([fault(CHALLENGE_ROUTE, "no_rp_id")]);
   });
 
   it.each([
@@ -254,6 +272,11 @@ describe("refusals", () => {
       503,
     ],
     ["a thrown error", () => Promise.reject(new Error(`boom ${TOKEN}`)), 503],
+    [
+      "an unknown reason",
+      async () => ({ status: "unavailable", reason: `x ${TOKEN}` }) as const,
+      503,
+    ],
     [
       "17 keys",
       async () =>
@@ -269,7 +292,13 @@ describe("refusals", () => {
       expect(got.status).toBe(status);
       expect(calls).toEqual({ list: [TOKEN], issue: 0 });
       expect(JSON.stringify(error.mock.calls)).not.toContain(TOKEN);
-      if (status === 503) expect(error).toHaveBeenCalledOnce();
+      const expected: Record<string, unknown[]> = {
+        unavailable: [fault(CHALLENGE_ROUTE, "list_malformed")],
+        "a thrown error": [thrown(CHALLENGE_ROUTE)],
+        "17 keys": [fault(CHALLENGE_ROUTE, "too_many_credentials")],
+        "an unknown reason": [fault(CHALLENGE_ROUTE, "unknown")],
+      };
+      expect(records(error)).toEqual(expected[_name] ?? []);
     },
   );
 
@@ -279,8 +308,9 @@ describe("refusals", () => {
         throw new Error("clock");
       },
     });
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect((await post('{"purpose":"registration"}')).status).toBe(503);
+    expect(records(error)).toEqual([fault(CHALLENGE_ROUTE, "clock")]);
   });
 });
 
@@ -504,7 +534,7 @@ describe("registration with the software authenticator", () => {
     const live = store.issue(challengeSessionKey(TOKEN), "registration")!.challenge;
     expect((await register(REGISTERED)).status).toBe(503);
     expect(store.take(challengeSessionKey(TOKEN), "registration", live)).toBe("ok");
-    expect(error).toHaveBeenCalledOnce();
+    expect(records(error)).toEqual([fault(REGISTRATION_ROUTE, "no_rp_id")]);
   });
 
   it.each([
@@ -527,12 +557,13 @@ describe("registration with the software authenticator", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect((await register(REGISTERED)).status).toBe(code);
     expect(reg.activity).toEqual([]);
-    if (code === 503) {
-      expect(error).toHaveBeenCalledOnce();
-      const logged = JSON.stringify(error.mock.calls);
-      expect(logged).toContain("auth.webauthn-registration.post");
-      expect(logged).not.toContain(TOKEN);
-    }
+    expect(JSON.stringify(error.mock.calls)).not.toContain(TOKEN);
+    const expected: Record<string, unknown[]> = {
+      invalid: [fault(REGISTRATION_ROUTE, "add_invalid")],
+      unavailable: [fault(REGISTRATION_ROUTE, "add_malformed")],
+      thrown: [thrown(REGISTRATION_ROUTE)],
+    };
+    expect(records(error)).toEqual(expected[status] ?? []);
   });
 });
 

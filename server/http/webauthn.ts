@@ -81,6 +81,41 @@ export function webauthnRpId(origin: string | null): string | null {
   return url.protocol === "http:" && host === "localhost" ? host : null;
 }
 
+/**
+ * The faults the routes name themselves, each logged as one closed reason
+ * (QA on #215): no rpId from the origin, a malformed row or answer of the
+ * port, more keys than allowCredentials takes, a failing clock, and a ZD422
+ * after a passed ceremony (2c and the table disagree).
+ */
+export const WEBAUTHN_FAULTS = [
+  "no_rp_id",
+  "list_malformed",
+  "add_malformed",
+  "too_many_credentials",
+  "clock",
+  "add_invalid",
+  "unknown",
+] as const;
+export type WebAuthnFault = (typeof WEBAUTHN_FAULTS)[number];
+/** A reason of the port, kept only when it is on the closed list. */
+const faultOf = (reason: string): WebAuthnFault =>
+  (WEBAUTHN_FAULTS as readonly string[]).includes(reason) ? (reason as WebAuthnFault) : "unknown";
+
+export type WebAuthnFaultRecord = {
+  readonly event: "webauthn_fault";
+  readonly route: string;
+  readonly reason: WebAuthnFault;
+  readonly requestId: string;
+};
+/** One JSON line on stderr, as reportServerError writes; never throws. */
+function recordFault(record: WebAuthnFaultRecord): void {
+  try {
+    console.error(JSON.stringify(record));
+  } catch {
+    // A broken stderr must not turn the 503 into a crash.
+  }
+}
+
 /** The refusals of credentials.add that are the caller's (contract errors of the registration route). */
 const REGISTRATION_REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
   ["unauthenticated", [401, "unauthorized"]],
@@ -115,8 +150,14 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
   const random = options.randomBytes ?? nodeRandomBytes;
   const bodyTimeoutMs = options.bodyTimeoutMs ?? WEBAUTHN_BODY_TIMEOUT_MS;
   const rpId = webauthnRpId(origin);
+  /** A thrown error: the closed class only (reportServerError never reads the message). */
   const unavailable = (response: Response, id: string, error: unknown) => {
     reportServerError("route", error, requestIdOf(response), id);
+    sendProblem(response, 503, "unavailable");
+  };
+  /** A fault this code names itself: one line with its closed reason, then 503. */
+  const faulty = (response: Response, id: string, reason: WebAuthnFault) => {
+    recordFault({ event: "webauthn_fault", route: id, reason, requestId: requestIdOf(response) });
     sendProblem(response, 503, "unavailable");
   };
 
@@ -149,9 +190,10 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
       if (read === null) return;
       const { token } = read;
       const fail = (error: unknown) => unavailable(response, CHALLENGE.contract.id, error);
+      const fault = (reason: WebAuthnFault) => faulty(response, CHALLENGE.contract.id, reason);
       const purpose = read.body.purpose as ChallengePurpose;
       // Defensive: without APP_ORIGIN pipeline step 7 already answers 403.
-      if (rpId === null) return fail(new Error("webauthn: no rpId"));
+      if (rpId === null) return fault("no_rp_id");
       let listed: Awaited<ReturnType<WebAuthnCredentials["list"]>>;
       try {
         listed = await credentials.list(token);
@@ -159,13 +201,13 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
         return fail(error);
       }
       if (listed.status === "unauthenticated") return sendProblem(response, 401, "unauthorized");
-      if (listed.status !== "listed") return fail(new Error(listed.reason));
+      if (listed.status !== "listed") return fault(faultOf(listed.reason));
       // For a registration the list only proves a live session.
       if (purpose === "assertion" && listed.credentials.length > MAX_CREDENTIALS) {
-        return fail(new Error("too_many_credentials"));
+        return fault("too_many_credentials");
       }
       const issued = challenges.issue(challengeSessionKey(token), purpose);
-      if (issued === null) return fail(new Error("clock"));
+      if (issued === null) return fault("clock");
       const common = { purpose, challenge: issued.challenge, rpId, timeoutMs };
       if (purpose === "registration") {
         const userHandle = Buffer.from(random(USER_HANDLE_BYTES)).toString("base64url");
@@ -183,6 +225,7 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
       if (read === null) return;
       const { token, body } = read;
       const fail = (error: unknown) => unavailable(response, REGISTRATION.contract.id, error);
+      const fault = (reason: WebAuthnFault) => faulty(response, REGISTRATION.contract.id, reason);
       const clientDataJSON = decodeBase64url(body.clientDataJSON ?? "");
       const authenticatorData = decodeBase64url(body.authenticatorData ?? "");
       const credentialId = decodeBase64url(body.credentialId ?? "");
@@ -190,9 +233,9 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
         return sendProblem(response, 422, "invalid_input");
       }
       // Defensive, as in the challenge route; the challenge is not taken.
-      if (rpId === null || origin === null) return fail(new Error("webauthn: no rpId"));
+      if (rpId === null || origin === null) return fault("no_rp_id");
       const key = challengeSessionKey(token);
-      // 2c takes the challenge exactly once, before it reads the client data.
+      // 2c reads the client data, then takes the challenge exactly once, before any refusal.
       const checked = verifyRegistration(
         { clientDataJSON, authenticatorData, credentialId },
         { origin, rpId },
@@ -220,7 +263,7 @@ export function createWebAuthnRoutes(options: WebAuthnRouteOptions): Route[] {
       const refused = REGISTRATION_REFUSALS.get(added.status);
       if (refused !== undefined) return sendProblem(response, ...refused);
       // invalid after a passed 2c check means 2c and the table disagree: a fault, not a bad request.
-      fail(new Error(added.status === "unavailable" ? added.reason : "add_invalid"));
+      fault(added.status === "unavailable" ? faultOf(added.reason) : "add_invalid");
     },
   };
 

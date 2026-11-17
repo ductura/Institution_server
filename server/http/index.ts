@@ -125,6 +125,9 @@ export {
   WEBAUTHN_BODY_TIMEOUT_MS,
   WEBAUTHN_CHALLENGE_MAX_BYTES,
   type WebAuthnRouteOptions,
+  WEBAUTHN_FAULTS,
+  type WebAuthnFault,
+  type WebAuthnFaultRecord,
   webauthnRpId,
 } from "./webauthn.ts";
 export { startServer, type Running, type StartOptions } from "./start.ts";
