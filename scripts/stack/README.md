@@ -83,7 +83,7 @@ Server stoga dobiva `NODE_ENV=development`, `EVIDENCE_STORAGE_DOMAINS`, `EVIDENC
 
 `node scripts/stack/vs1-commit-check.ts` (nakon `up`; CI ga pokreće u koraku „Stog VS-1”) upisuje izmišljenog studenta, kolegij i zadatak u demo-fakultet, zatim `evidence/open` i `evidence/commit` na serveru stoga traže 200 s potpisanom potvrdom koja prolazi provjeru ključevima iz `open` i novim objektom u lokalnom S3; isti `dist/server.js` s istim varijablama i `NODE_ENV=production` mora dati 503 i ne smije ništa spremiti.
 
-Zahtjeve prijavljenog studenta (`post`, `commitRequest`) provjera dijeli s funkcionalnim testovima ([tests/functional](../../tests/functional/README.md), DAN-1003) iz `client.ts`. `post` se uvijek razriješi: odgovor prekinut prije kraja, zatvorena veza i odgovor koji ne stigne u 30 s odbijaju (`client.test.ts`).
+Zahtjeve prijavljenog studenta (`post`, `commitRequest`) provjera dijeli s funkcionalnim testovima ([tests/functional](../../tests/functional/README.md), DAN-1003) iz `client.ts`. `post` se uvijek razriješi: odgovor prekinut prije kraja, zatvorena veza i odgovor koji nije potpun u 30 s od slanja (jedan rok za cijelu razmjenu, ne za stanku) odbijaju, a tijelo vraća i kao točan tekst (`client.test.ts`).
 
 `down` gasi i lokalni S3, uz točan marker naredbenog retka. `status` za njega provjerava samo sluša li upravo taj PID na svom portu.
 
