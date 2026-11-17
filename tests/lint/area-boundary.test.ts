@@ -146,6 +146,17 @@ const failing: Case[] = [
   ]),
   ...all("server/profile/x.ts", "edge", ["../institution/index.ts"]),
   ...all("server/evidence/x.ts", "edge", ["../institution/index.ts"]),
+  // DAN-851-2b: support has the same edges as profile; its domain rules are
+  // reached only through the domain index.
+  ...all("server/support/x.ts", "edge", [
+    "../contracts/index.ts",
+    "../http/index.ts",
+    "../session/index.ts",
+    "../profile/index.ts",
+  ]),
+  ...all("server/profile/x.ts", "edge", ["../support/index.ts"]),
+  ...all("server/evidence/x.ts", "edge", ["../support/index.ts"]),
+  ...all("server/support/x.ts", "public", ["../domain/support/problem-report.ts"]),
   ...all("server/x.ts", "edge", ["./database/index.ts"]),
   // Only http and the entry point create adapters; the others take their types.
   ...[
@@ -159,6 +170,7 @@ const failing: Case[] = [
   ].map((code) => ({ file: "server/session/x.ts", code, messageId: "typeOnly" })),
   // Package self-reference or subpath imports cannot stand in for a path.
   { file: "server/profile/x.ts", code: imp("../database/index.ts"), messageId: "typeOnly" },
+  { file: "server/support/x.ts", code: imp("../database/index.ts"), messageId: "typeOnly" },
   ...all("server/session/x.ts", "alias", [
     "@ductura/server",
     "@ductura/server/server/domain/forensics/jcs.ts",
@@ -243,6 +255,12 @@ const passing: { file: string; code: string }[] = [
   },
   { file: "server/http/x.ts", code: imp("../profile/index.ts") },
   { file: "server/profile/x.test.ts", code: imp("../database/index.ts") },
+  {
+    file: "server/support/x.ts",
+    code: imp("../domain/index.ts") + 'import type { WithActor } from "../database/index.ts";\n',
+  },
+  { file: "server/http/x.ts", code: imp("../support/index.ts") },
+  { file: "server/support/x.test.ts", code: imp("../database/index.ts") },
   { file: "server/domain/forensics/golden-vectors/load.ts", code: imp("node:fs") },
   { file: "server/domain/x.test.ts", code: imp("vitest") + imp("node:fs") },
   {

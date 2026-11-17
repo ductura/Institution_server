@@ -40,6 +40,8 @@ const REQUIRED_AREAS = [
   "profile",
   // PLAN.md §3 area, made by DAN-852-1 (S-M-2a, courses and enrolment codes).
   "institution",
+  // PLAN.md §3 area, made by DAN-851-2b (S-M-2, problem report).
+  "support",
   "contracts",
   "domain",
   "test-server",
