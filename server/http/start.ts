@@ -4,6 +4,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { Server as NetServer, type Socket } from "node:net";
 
+import { createClientErrorListeners } from "./client-error.ts";
 import type { Databases } from "./databases.ts";
 import { createPipeline, type Layers } from "./pipeline.ts";
 import { sendProblem } from "./problem.ts";
@@ -185,6 +186,12 @@ export async function startServer(options: StartOptions): Promise<Running> {
   // appended after forged ones (Codex on DAN-790). Without a count only the
   // byte limit (maxHeaderSize, 431) bounds the headers, and none is dropped.
   server.maxHeadersCount = 0;
+  // A request the parser refuses (DAN-851-1d3a): the first on a connection
+  // gets its route's 400 for a bad Content-Length; anything else is Node's.
+  const parseErrors = createClientErrorListeners(options.routes);
+  server.on("connection", parseErrors.connection);
+  server.on("request", parseErrors.request);
+  server.on("clientError", parseErrors.clientError);
   server.on("connection", (socket: Socket) => {
     connections.set(socket, { open: [], served: false, refused: 0, final: null, marked: null });
     socket.once("close", () => {
