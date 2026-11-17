@@ -41,7 +41,7 @@ export const CONTRACTS: PackageSpec = {
   },
   data: {
     "openapi/v1.json": "openapi/v1.json",
-    "errors/catalog.json": "packages/contracts/errors/catalog.json",
+    "errors/catalog.json": "server/contracts/routes/error-catalog.json",
     "vectors/work-id.json": "packages/contracts/vectors/work-id.json",
     "README.md": "packages/contracts/README.md",
   },

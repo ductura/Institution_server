@@ -7,6 +7,9 @@
 // rate limit (DAN-814) even when a route answers it with its own code
 // (ROUTE_429_CODES). Also the one record of an uncaught
 // error (server_error), written by the router, the pipeline and the server.
+// The entries are data (DAN-928): server/contracts/routes/error-catalog.json,
+// which @ductura/contracts publishes as errors/catalog.json.
+import { ERROR_CATALOG_DATA } from "../contracts/index.ts";
 import type { LogWriter } from "../log/index.ts";
 
 export type CatalogError = {
@@ -18,23 +21,19 @@ export type CatalogError = {
 const entry = (status: number, code: string, messageKey: string): CatalogError =>
   Object.freeze({ status, code, messageKey });
 
-const BAD_REQUEST = entry(400, "bad_request", "errors.badRequest");
-const INTERNAL = entry(500, "internal", "errors.internal");
-
 /** Every entry: ten statuses and session_expired (a 401 picked by code, not by status). */
-export const ERROR_CATALOG: readonly CatalogError[] = Object.freeze([
-  BAD_REQUEST,
-  entry(401, "unauthenticated", "errors.unauthenticated"),
-  entry(403, "forbidden", "errors.forbidden"),
-  entry(404, "not_found", "errors.notFound"),
-  entry(408, "timeout", "errors.timeout"),
-  entry(429, "too_many_requests", "errors.tooManyRequests"),
-  INTERNAL,
-  entry(502, "bad_gateway", "clientErrors.badGateway"),
-  entry(503, "unavailable", "errors.unavailable"),
-  entry(504, "gateway_timeout", "clientErrors.gatewayTimeout"),
-  entry(401, "session_expired", "clientErrors.sessionExpired"),
-]);
+export const ERROR_CATALOG: readonly CatalogError[] = Object.freeze(
+  ERROR_CATALOG_DATA.errors.map(({ status, code, messageKey }) => entry(status, code, messageKey)),
+);
+
+function entryOf(code: string): CatalogError {
+  const found = ERROR_CATALOG.find((error) => error.code === code);
+  if (found === undefined) throw new Error(`error-catalog.json: no ${code}`);
+  return found;
+}
+
+const BAD_REQUEST = entryOf("bad_request");
+const INTERNAL = entryOf("internal");
 
 /**
  * The 429 codes a route of the contract may answer (DAN-803, Ductus#1836

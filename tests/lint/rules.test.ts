@@ -30,6 +30,8 @@ const SCRIPT = "scripts/a/b.ts";
 const imp = (spec: string): string => `import { x } from "${spec}";\n`;
 
 const BOUNDARY = "local/import-boundary";
+const PLATFORM = "server/contracts/routes/platform.ts";
+const CATALOG_IMPORT = 'import data from "./error-catalog.json" with { type: "json" };\n';
 const NAMING = "@typescript-eslint/naming-convention";
 const RENAMED = "local/renamed-import-name";
 
@@ -115,6 +117,30 @@ const failing: Case[] = [
     messageId: "dynamic",
   },
   { file: AT, code: 'const d = "sub";\nconst m = await import(`./${d}/c.ts`);\n', rule: BOUNDARY },
+  // DAN-928: the one JSON import is a named file and specifier, never a pattern
+  ...[
+    { file: PLATFORM, code: CATALOG_IMPORT.replace("error-catalog", "other") },
+    { file: "server/contracts/routes/health.ts", code: CATALOG_IMPORT },
+    { file: "server/contracts/b.ts", code: CATALOG_IMPORT },
+    { file: PLATFORM, code: 'import data from "./error-catalog.json";\n' },
+    { file: PLATFORM, code: CATALOG_IMPORT.replace('type: "json"', 'type: "text"') },
+    { file: PLATFORM, code: CATALOG_IMPORT.replace('type: "json"', 'type: "json", x: "y"') },
+    {
+      file: PLATFORM,
+      code: 'export { default } from "./error-catalog.json" with { type: "json" };\n',
+    },
+    {
+      file: PLATFORM,
+      code: 'const m = await import("./error-catalog.json", { with: { type: "json" } });\n',
+    },
+    { file: PLATFORM, code: 'const m = require("./error-catalog.json");\n' },
+  ].map((fixture) => ({ ...fixture, rule: BOUNDARY, messageId: "extension" })),
+  // no-dynamic-load (DAN-770) is unchanged: a JSON outside server/ still fails
+  {
+    file: PLATFORM,
+    code: 'import data from "../../../openapi/v1.json" with { type: "json" };\n',
+    rule: "local/no-dynamic-load",
+  },
   // inline directives cannot switch the boundary rule off
   { file: AT, code: `// eslint-disable-next-line ${BOUNDARY}\n${imp("../c.ts")}`, rule: BOUNDARY },
   { file: AT, code: `/* eslint-disable */\n${imp("../c.ts")}`, rule: BOUNDARY },
@@ -211,6 +237,7 @@ const failing: Case[] = [
 ];
 
 const passing: Fixture[] = [
+  { file: PLATFORM, code: `${CATALOG_IMPORT}export const d = data;\n` },
   {
     file: "server/database/b.ts",
     code: "export const row = { user_id: 1, statement_timeout: 0 };\n",

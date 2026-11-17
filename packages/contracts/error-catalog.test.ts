@@ -6,8 +6,9 @@ import { SHARED_ERRORS } from "../../server/contracts/index.ts";
 import { ERROR_CATALOG } from "../../server/http/index.ts";
 
 // DAN-928: the error catalogue and SHARED_ERRORS as data in @ductura/contracts
-// (errors/catalog.json), for clients that must not load server code. The server
-// code stays the one source; this test keeps the file equal to it.
+// (errors/catalog.json), for clients that must not load server code. The file is
+// server/contracts/routes/error-catalog.json, the one the server itself reads;
+// this test reads it strictly and checks what the server built from it.
 const FORMAT = "ductura-error-catalog-v1";
 const CODE = /^[a-z][a-z0-9_]*$/u;
 const KEY = /^[a-z][A-Za-z]*\.[a-z][A-Za-z0-9]*$/u;
@@ -62,7 +63,10 @@ const SERVER: Catalog = {
   errors: ERROR_CATALOG.map(({ status, code, messageKey }) => ({ status, code, messageKey })),
   shared: SHARED_ERRORS.map(({ status, code, key }) => ({ status, code, messageKey: key })),
 };
-const FILE = readFileSync(new URL("./errors/catalog.json", import.meta.url), "utf8");
+const FILE = readFileSync(
+  new URL("../../server/contracts/routes/error-catalog.json", import.meta.url),
+  "utf8",
+);
 const RAW = JSON.parse(FILE) as { format: string; errors: Entry[]; shared: Entry[] };
 const copy = (): typeof RAW => structuredClone(RAW);
 

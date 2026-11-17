@@ -20,6 +20,27 @@ function staticText(source: Source | null | undefined): string | null {
 }
 
 /**
+ * The one JSON import (DAN-928): the error catalogue that @ductura/contracts
+ * publishes as data and the server reads, imported only by this file, with this
+ * exact specifier and the single attribute `type: "json"`. A named pair, never a
+ * pattern; no-dynamic-load (DAN-770) still checks the same import on its own.
+ */
+export const JSON_IMPORTS: Readonly<Record<string, string>> = Object.freeze({
+  "server/contracts/routes/platform.ts": "./error-catalog.json",
+});
+
+type Attribute = { key?: { name?: string; value?: unknown }; value?: { value?: unknown } };
+
+function isJsonImport(node: Node, file: string, spec: string): boolean {
+  if (node.type !== "ImportDeclaration" || !Object.hasOwn(JSON_IMPORTS, file)) return false;
+  if (JSON_IMPORTS[file] !== spec) return false;
+  const attributes = (node as { attributes?: Attribute[] }).attributes ?? [];
+  const [only] = attributes;
+  const key = only?.key?.name ?? only?.key?.value;
+  return attributes.length === 1 && key === "type" && only?.value?.value === "json";
+}
+
+/**
  * A relative import that leaves the importing file's folder must name exactly
  * `<folder>/index.ts`: another folder is reached only through its index.
  * Package and `node:` imports are not checked. A dynamic import whose source
@@ -39,6 +60,7 @@ export const importBoundary: Rule.RuleModule = {
   },
   create(context) {
     const from = path.dirname(context.filename);
+    const file = path.relative(context.cwd, context.filename).split(path.sep).join("/");
 
     function check(node: Node, spec: string): void {
       // Node and TypeScript read "\\" as "/" and strip "?" and "#"; path.resolve does not.
@@ -49,6 +71,7 @@ export const importBoundary: Rule.RuleModule = {
         return;
       }
       if (!relative) return;
+      if (isJsonImport(node, file, spec)) return;
       if (!spec.endsWith(".ts")) {
         context.report({ node, messageId: "extension", data: { spec } });
         return;
