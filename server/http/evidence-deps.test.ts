@@ -17,6 +17,7 @@ import {
 } from "../external/storage/index.ts";
 
 import {
+  ASYNC_SIGNING_FLAG,
   evidenceIngestDependencies,
   REFUSING_SIGNER,
   STORAGE_NOT_CONFIGURED,
@@ -190,5 +191,49 @@ describe("evidenceIngestDependencies: the storage", () => {
       ROOT,
     );
     expect(payloads).toBeInstanceOf(InstitutionRoutedPayloadStore);
+  });
+});
+
+// DAN-821-3 (contract Ductus#1836 c.6944230363): protocol 2 only for the
+// process's own value exactly "1"; anything else, or no value, keeps it off.
+describe("evidenceIngestDependencies: protocol 2 (asynchronous signing)", () => {
+  const flag = (env: Record<string, string | undefined>) =>
+    evidenceIngestDependencies({ NODE_ENV: "test", ...env }, ROOT).asyncSigning;
+
+  it.each([
+    undefined,
+    "",
+    "0",
+    "true",
+    "TRUE",
+    "yes",
+    "01",
+    "1.0",
+    " 1",
+    "1 ",
+    "\t1",
+    "1\n",
+    "1\r\n",
+    "1\u00a0",
+    "1\u007f",
+    "\uff11",
+  ])("%j is off", (value) => {
+    expect(flag({ [ASYNC_SIGNING_FLAG]: value })).toBe(false);
+  });
+
+  it("a value only inherited, from the environment's prototype or Object.prototype, is off", () => {
+    const inherited = Object.create({ [ASYNC_SIGNING_FLAG]: "1" }) as Record<string, string>;
+    expect(evidenceIngestDependencies(inherited, ROOT).asyncSigning).toBe(false);
+    const proto = Object.prototype as Record<string, unknown>;
+    proto[ASYNC_SIGNING_FLAG] = "1";
+    try {
+      expect(flag({})).toBe(false);
+    } finally {
+      delete proto[ASYNC_SIGNING_FLAG];
+    }
+  });
+
+  it('the process\'s own value exactly "1" is on', () => {
+    expect(flag({ [ASYNC_SIGNING_FLAG]: "1" })).toBe(true);
   });
 });

@@ -190,6 +190,12 @@ const DATABASE_NAMES = [
   "server_version",
   "token_set",
   "user_id",
+  // Result columns of the access log read (my-access-log.ts, DAN-859-1) and its tests.
+  "entry_id",
+  "opened_at",
+  "reader_role",
+  "reader_given_name",
+  "reader_family_name",
   // Result columns of the work opener (open-work.ts, DAN-811) and its tests.
   "current_revision",
   "document_hash",

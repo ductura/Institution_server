@@ -45,7 +45,7 @@ const BASE64 = /^[A-Za-z0-9+/]*={0,2}$/;
 export type EvidenceCommitOptions = {
   readonly actorReader: ActorReader;
   readonly evidence: EvidenceService;
-  /** Protocol 2, signed by the worker; only `true` turns it on (off in VS-1). */
+  /** Protocol 2, signed by the worker; only `true` turns it on (DUCTUS_EVIDENCE_ASYNC_SIGNING, DAN-821-3). */
   readonly asyncSigning?: boolean;
   /** For tests: a shorter body deadline. */
   readonly timeoutMs?: number;
