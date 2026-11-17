@@ -10,7 +10,12 @@ export {
 } from "./backchannel.ts";
 export { clearedSessionSetCookie, previousSessionToken, sessionSetCookie } from "./login-cookie.ts";
 export { sessionTokenFromCookie } from "./cookie.ts";
-export { ENDED_MARK_COOKIE, liveSessionToken, type CookieReader } from "./ended-mark.ts";
+export {
+  ENDED_MARK_COOKIE,
+  liveSessionToken,
+  liveSessionTokenFromCookie,
+  type CookieReader,
+} from "./ended-mark.ts";
 export type {
   ActorReader,
   ActorTransaction,

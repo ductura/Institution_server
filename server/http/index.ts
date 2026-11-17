@@ -112,6 +112,12 @@ export {
   SETTINGS_PUT_TIMEOUT_MS,
   type SettingsValuesPutOptions,
 } from "./settings-values.ts";
+export {
+  createInterfaceLocaleRoutes,
+  INTERFACE_LOCALE_MAX_BYTES,
+  INTERFACE_LOCALE_TIMEOUT_MS,
+  type InterfaceLocaleRouteOptions,
+} from "./profile-interface-locale.ts";
 export { startServer, type Running, type StartOptions } from "./start.ts";
 export {
   createMetricsSampling,
