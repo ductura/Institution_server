@@ -9,7 +9,13 @@ import { liveSessionTokenFromCookie } from "../session/index.ts";
 import { isOpsPath } from "../traffic/index.ts";
 
 import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
+import {
+  createOperatorDenialLog,
+  type OperatorDenialLog,
+  type OperatorDenialReason,
+} from "./operator-denial-log.ts";
 import { requestIdOf } from "./request-id.ts";
+import { routePath } from "./router.ts";
 import { refuse } from "./security-headers.ts";
 
 /**
@@ -23,33 +29,52 @@ export type SecondFactor = (
 /** Until a source of confirmations exists, no session has one: operator paths stay closed. */
 export const NO_SECOND_FACTOR: SecondFactor = async () => "unconfirmed";
 
+const defaultDenialLog: OperatorDenialLog = createOperatorDenialLog();
+
+/**
+ * Records one refusal after refuse() answered: the request id exists only from
+ * then on (sendProblem), and is the one of X-Request-Id. Never throws.
+ */
+export function recordDenial(
+  log: OperatorDenialLog,
+  request: IncomingMessage,
+  response: ServerResponse,
+  reason: OperatorDenialReason,
+): void {
+  try {
+    const route = routePath(request.url);
+    log({ requestId: requestIdOf(response), ...(route === undefined ? {} : { route }), reason });
+  } catch {
+    // A record that cannot be written must not change the answer.
+  }
+}
+
 export function operatorPolicyLayer(
   secondFactor: SecondFactor,
   report: ServerErrorReporter = reportServerError,
+  log: OperatorDenialLog = defaultDenialLog,
 ) {
   return async (request: IncomingMessage, response: ServerResponse): Promise<"next" | "done"> => {
     if (!isOpsPath(request.url)) return "next";
-    const token = liveSessionTokenFromCookie(request.headers.cookie);
-    if (token === undefined) {
-      refuse(response, 401, "unauthenticated");
+    const deny = (status: number, code: string, reason: OperatorDenialReason): "done" => {
+      refuse(response, status, code);
+      recordDenial(log, request, response, reason);
       return "done";
-    }
+    };
+    const token = liveSessionTokenFromCookie(request.headers.cookie);
+    if (token === undefined) return deny(401, "unauthenticated", "not_signed_in");
     let outcome: unknown;
     try {
       outcome = await secondFactor(token);
     } catch (error) {
       report("layer", error, requestIdOf(response));
-      refuse(response, 503, "unavailable");
-      return "done";
+      return deny(503, "unavailable", "unavailable");
     }
     // Compared with ===, never looked up: "toString" or "__proto__" is no answer.
     if (outcome === "confirmed") return "next";
-    if (outcome === "unconfirmed") refuse(response, 403, "forbidden");
-    else if (outcome === "unauthenticated") refuse(response, 401, "unauthenticated");
-    else {
-      report("layer", new Error("second factor port: no known outcome"), requestIdOf(response));
-      refuse(response, 503, "unavailable");
-    }
-    return "done";
+    if (outcome === "unconfirmed") return deny(403, "forbidden", "second_factor_required");
+    if (outcome === "unauthenticated") return deny(401, "unauthenticated", "session_unknown");
+    report("layer", new Error("second factor port: no known outcome"), requestIdOf(response));
+    return deny(503, "unavailable", "unavailable");
   };
 }

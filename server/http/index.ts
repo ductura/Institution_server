@@ -111,6 +111,13 @@ export {
   type Step,
 } from "./pipeline.ts";
 export {
+  createOperatorDenialLog,
+  OPERATOR_DENIAL_REASONS,
+  operatorDenialRecord,
+  type OperatorDenialLog,
+  type OperatorDenialReason,
+} from "./operator-denial-log.ts";
+export {
   NO_SECOND_FACTOR,
   operatorPolicyLayer,
   type SecondFactor,
