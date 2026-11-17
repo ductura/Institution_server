@@ -138,6 +138,47 @@ describe("log analysis: entry times", () => {
   });
 });
 
+// Codex review c.6964260032: every value the analysis reads must be an own data
+// property. One table covers each read site (entry event and time, the rule key in
+// the thresholds, windowMs, minCount) with a getter and with an inherited value;
+// in each row the rest of the input is valid and would otherwise give a finding.
+describe("log analysis: only own data properties are read", () => {
+  const getterOf = (base: object, key: string, value: unknown): object =>
+    Object.defineProperty({ ...base }, key, { get: () => value, enumerable: true });
+  const inheritedOf = (base: object, key: string, value: unknown): object => {
+    const rest: Record<string, unknown> = { ...base };
+    delete rest[key];
+    return Object.assign(Object.create({ [key]: value }) as object, rest);
+  };
+  const ways = [
+    ["a getter", getterOf],
+    ["inherited", inheritedOf],
+  ] as const;
+  const valid = at("authn.login_failed", 0, 1, 2);
+
+  it.each(ways)("skips an entry whose event or timeMs is %s", (_, make) => {
+    expect(findings(valid)).toHaveLength(1);
+    for (const key of ["event", "timeMs"] as const) {
+      const odd = make(valid[2]!, key, valid[2]![key]);
+      expect(findings([valid[0], valid[1], odd]), key).toEqual([]);
+    }
+  });
+
+  it.each(ways)("refuses thresholds whose rule key, windowMs or minCount is %s", (_, make) => {
+    for (const ruleKey of ["loginFailures", "trafficRefusals"] as const) {
+      const rule = thresholds[ruleKey];
+      const cases = [
+        make(thresholds, ruleKey, rule),
+        { ...thresholds, [ruleKey]: make(rule, "windowMs", rule.windowMs) },
+        { ...thresholds, [ruleKey]: make(rule, "minCount", rule.minCount) },
+      ];
+      for (const t of cases) {
+        expect(analyzeLog(valid, t as AnalysisThresholds), ruleKey).toEqual(failure);
+      }
+    }
+  });
+});
+
 describe("log analysis: entries that are not counted", () => {
   it("skips entries without a finite time or a string event, and inherited names", () => {
     const getter = Object.defineProperty({ timeMs: T0 }, "event", {
