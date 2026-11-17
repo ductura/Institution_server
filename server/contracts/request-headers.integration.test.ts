@@ -17,7 +17,8 @@ beforeAll(async () => {
 afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
 const SITE = "https://ductura.example.invalid";
-type Route = "evidence.open.post" | "evidence.commit.post";
+type Route =
+  "evidence.open.post" | "evidence.commit.post" | "evidence.replay.post" | "submission.submit.post";
 const vector = (route: Route, name: string) => {
   const v = VECTORS.find((x) => x.route === route && x.name === name);
   if (v === undefined) throw new Error(`no vector ${name}`);
@@ -94,6 +95,25 @@ describe("the generated client sends them and reaches the vector", () => {
       { "content-type": "application/json", "ductus-protocol": "1", origin: SITE },
     ]);
   });
+
+  it.each([
+    ["evidence.replay.post", "first-page", "1"],
+    ["submission.submit.post", "submitted", "1"],
+    ["evidence.commit.post", "committed", "1"],
+    ["evidence.commit.post", "committed-pending-signature", "2"],
+    ["evidence.commit.post", "duplicate-signed-after-pending", "2"],
+  ] as [Route, string, string][])(
+    "%s %s answers with protocol %s",
+    async (route, name, protocol) => {
+      const v = vector(route, name);
+      const seen: Record<string, string>[] = [];
+      const result = await browser(route, name, seen)(route, input(route, name, protocol));
+      expect(result).toMatchObject({ ok: true, status: v.response.status, body: v.response.body });
+      expect(seen).toEqual([
+        { "content-type": "application/json", "ductus-protocol": protocol, origin: SITE },
+      ]);
+    },
+  );
 
   it("a wrong protocol is sent as given: 426 for the vector that has it, no 409 or 503", async () => {
     const open = browser("evidence.open.post", "upgrade-required");

@@ -85,6 +85,16 @@ describe("the client sends the declared headers and nothing the caller adds", ()
     });
   });
 
+  it.each([1, null, true, ["1"], { value: "1" }])(
+    "a protocol that is not a string (%j) is not sent",
+    async (value) => {
+      expect(await sent("https://ductura.example.invalid", { "ductus-protocol": value })).toEqual({
+        "content-type": "application/json",
+        origin: "https://ductura.example.invalid",
+      });
+    },
+  );
+
   it("an inherited protocol is not sent", async () => {
     const inherited = Object.create({ "ductus-protocol": "1" }) as Record<string, unknown>;
     expect(await sent("https://ductura.example.invalid", inherited)).toEqual({
