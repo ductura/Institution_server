@@ -19,11 +19,11 @@ const OPEN = "/api/v1/evidence/open";
 const COMMIT = "/api/v1/evidence/commit";
 const REPLAY = "/api/v1/evidence/replay";
 /** Every answer the check reads; fewer means it stopped early or skipped one. */
-export const CHECKS = 12;
+export const CHECKS = 13;
 
-/** The whole check against the stack in `stackDir`; returns the revision line, throws on the first broken promise. */
-export async function check(stackDir: string): Promise<string> {
-  const { state, run } = runningStack(stackDir, ROOT);
+/** The whole check against the stack in `given`; returns the revision line, throws on the first broken promise. */
+export async function check(given: string): Promise<string> {
+  const { dir, state, run } = runningStack(given, ROOT);
   console.log(`S-1H.3 over ${run}`);
   const { server, postgres } = state.ports;
   let checked = 0;
@@ -48,11 +48,11 @@ export async function check(stackDir: string): Promise<string> {
   // A and B are classmates on assignment Z, each with a work of their own; B
   // alone is also in course Y, whose notice A has acknowledged, so A lacks
   // only the membership. All in demo-fakultet, so no institution filter helps.
-  const z = seedCourse(stackDir, postgres);
-  const y = seedCourse(stackDir, postgres);
-  const a = seedStudent(stackDir, postgres, [z]);
-  const b = seedStudent(stackDir, postgres, [z, y]);
-  acknowledgeNotice(stackDir, postgres, a, y);
+  const z = seedCourse(dir, postgres);
+  const y = seedCourse(dir, postgres);
+  const a = seedStudent(dir, postgres, [z]);
+  const b = seedStudent(dir, postgres, [z, y]);
+  acknowledgeNotice(dir, postgres, a, y);
 
   // B's work on Z, opened and not committed: the commit below is one B could make now.
   const opened = await as(b, OPEN, { assignmentId: z.assignmentId, start: true });
@@ -64,8 +64,13 @@ export async function check(stackDir: string): Promise<string> {
   if (own.body.documentId === opened.body.documentId) throw new Error("A opened B's document");
   // B's work on Y exists before A asks for Y, so open over an existing work of
   // someone else is checked, not only over an empty assignment.
-  succeeded(OPEN, await as(b, OPEN, { assignmentId: y.assignmentId, start: true }), {
+  const theirs = await as(b, OPEN, { assignmentId: y.assignmentId, start: true });
+  succeeded(OPEN, theirs, { status: "opened" });
+  // Control for open without start: B gets that very work back, so A's 404
+  // below is not what open without start answers everyone.
+  succeeded(OPEN, await as(b, OPEN, { assignmentId: y.assignmentId }), {
     status: "opened",
+    documentId: theirs.body.documentId,
   });
   const commit = commitRequest(opened.body, `tx-${randomBytes(4).toString("hex")}`);
   const work = { documentId: opened.body.documentId, from: 0 };

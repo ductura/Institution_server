@@ -3,15 +3,18 @@
 // person, course and text is invented; session tokens are random.
 import { execFileSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
+import { readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 
 import {
   commandLine,
   INSTITUTION_SLUG,
+  isStackPostmaster,
   listensOn,
   readState,
   repoRevision,
   sha256File,
+  stackDir,
   type StackState,
 } from "../../scripts/stack/index.ts";
 
@@ -21,20 +24,36 @@ export type Course = { readonly id: string; readonly assignmentId: string };
 export type Student = { readonly id: string; readonly token: string };
 
 /**
- * The stack in `stackDir`, once its server is the recorded process, listens
- * on the server port and runs the dist/server.js of `root`, with the line
+ * The stack in `given`, bound to this checkout: the directory passes the
+ * stack's own check (scripts/stack config) and is named without a link, its
+ * server is the recorded process of this very directory, listens on the server
+ * port and runs the dist/server.js of `root`, and its socket is served by the
+ * postmaster of its own pgdata. Returns the directory, the state and the line
  * that names the revision of `root` (and of the stack's `up`, when it differs).
  */
-export function runningStack(stackDir: string, root: string): { state: StackState; run: string } {
-  const state = readState(join(stackDir, "state.json"));
+export function runningStack(
+  given: string,
+  root: string,
+): { dir: string; state: StackState; run: string } {
+  const dir = stackDir(root, { VS1_STACK_DIR: given }, "/tmp", realpathSync);
+  if (realpathSync(dir) !== dir) throw new Error("the stack directory is reached through a link");
+  const state = readState(join(dir, "state.json"));
   if (state === null || state === "unreadable") throw new Error("the stack is not up");
   const server = state.processes.server;
   if (
     server === undefined ||
+    !server.marker.endsWith(` ${join(root, "dist", "server.js")} --vs1-stack=${dir}`) ||
     commandLine(server.pid) !== server.marker ||
     !listensOn(server.pid, state.ports.server)
   ) {
-    throw new Error("the stack's server port is not served by the recorded process");
+    throw new Error("the server port is not served by this stack's recorded process");
+  }
+  // postmaster.pid: the pid on line 1; the fixtures go over this socket only.
+  const pgdata = join(dir, "pgdata");
+  const postmaster = Number(readFileSync(join(pgdata, "postmaster.pid"), "utf8").split("\n")[0]);
+  const line = commandLine(postmaster) ?? "";
+  if (!isStackPostmaster(line, pgdata, dir, state.ports.postgres)) {
+    throw new Error("the stack's socket is not served by its own postmaster");
   }
   const build = sha256File(join(root, "dist", "server.js"));
   if (build !== state.serverBuildSha256) throw new Error("dist/server.js is not the running build");
@@ -45,7 +64,7 @@ export function runningStack(stackDir: string, root: string): { state: StackStat
   const tested = named(repoRevision(root));
   const up = named(state.repos.server);
   const stack = up === tested ? "" : `, stack up at ${up}`;
-  return { state, run: `ductura/server ${tested}${stack}, dist/server.js ${build}` };
+  return { dir, state, run: `ductura/server ${tested}${stack}, dist/server.js ${build}` };
 }
 
 /** A course whose teacher is invented with it, and its one assignment, open for 30 days. */
