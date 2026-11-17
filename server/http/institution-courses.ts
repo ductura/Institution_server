@@ -1,6 +1,8 @@
-// POST /api/v1/institution/courses (DAN-852-4a; contract Ductus#1836
-// c.6947710352). Port of the HTTP edge of Ductus create-course.ts and the
-// shared front readJsonMutation (src/server/institution/mutation-route.ts)
+// POST /api/v1/institution/courses, …/{courseId}/enrollment-code and its
+// revocation (DAN-852-4a, 4b; contracts Ductus#1836 c.6947710352,
+// c.6949068519). Port of the HTTP edge of Ductus create-course.ts,
+// enrollment-code-route.ts, enrollment-code-revocation-route.ts and the
+// shared front readJsonMutation and readEmptyMutation (mutation-route.ts)
 // at 078c780, over the institution service (server/institution). Changes:
 // the token is liveSessionToken, as profile-interface-locale.ts; origin is
 // pipeline step 7; a byte order mark stays a character (readJsonMutation,
@@ -9,7 +11,7 @@
 // the profile route (Ductus counted awaited it). Who may do what is the RPC's.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { ROUTES } from "../contracts/index.ts";
+import { ROUTES, workIdFromPath } from "../contracts/index.ts";
 import type { InstitutionCourses } from "../database/index.ts";
 import { createInstitutionService } from "../institution/index.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
@@ -22,7 +24,6 @@ import { parseJson } from "./request-json.ts";
 import { type Route, sendJson } from "./router.ts";
 import { refuse } from "./security-headers.ts";
 
-const COURSES = ROUTES.find((route) => route.id === "institution.courses.post")!;
 export const INSTITUTION_BODY_TIMEOUT_MS = 5_000;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
@@ -34,14 +35,40 @@ export type InstitutionCourseRouteOptions = {
   readonly timeoutMs?: number;
 };
 
-/** The refusal of each closed outcome; anything else is 503 unavailable. */
-const REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
-  ["unauthenticated", [401, "unauthorized"]],
-  ["forbidden", [403, "forbidden"]],
+/** The refusals of each route's closed outcomes; anything else is 503 unavailable. */
+type Refusal = readonly [number, string];
+type Refusals = ReadonlyMap<string, Refusal>;
+const UNAUTHORIZED: [string, Refusal] = ["unauthenticated", [401, "unauthorized"]];
+const FORBIDDEN: [string, Refusal] = ["forbidden", [403, "forbidden"]];
+const INVALID = [422, "invalid_input"] as const;
+const COURSE_REFUSALS: Refusals = new Map<string, Refusal>([
+  UNAUTHORIZED,
+  FORBIDDEN,
   ["conflict", [409, "conflict"]],
-  ["invalid", [422, "invalid_input"]],
-  ["invalid_input", [422, "invalid_input"]],
+  ["invalid", INVALID],
+  ["invalid_input", INVALID],
 ]);
+const CODE_REFUSALS: Refusals = new Map<string, Refusal>([
+  UNAUTHORIZED,
+  FORBIDDEN,
+  ["invalid", INVALID],
+  ["invalid_input", INVALID],
+]);
+const REVOKE_REFUSALS: Refusals = new Map<string, Refusal>([UNAUTHORIZED, FORBIDDEN]);
+
+/**
+ * A path segment decoded exactly once, through the one decoder of the
+ * contracts (workIdFromPath: every UUID is a valid work id). Broken encoding
+ * or a control character is "", which is never a UUID.
+ */
+const decodeOnce = (segment: string | undefined): string => workIdFromPath(segment ?? "") ?? "";
+
+/** Ductus readEmptyMutation: a non-null object, not an array, with no own enumerable key. */
+const isEmptyObject = (value: unknown): boolean =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.keys(value).length === 0;
 
 type Input = { readonly token: string; readonly value: unknown };
 
@@ -78,37 +105,83 @@ async function readInstitutionJson(
   return null;
 }
 
-/** The institution course routes over the service; 852-4b adds the enrolment code. */
+/**
+ * What a route answers, always built here from named fields: a 200 body, or
+ * the status of a refusal, never the outcome object itself, so no field an
+ * outcome carries (body, code, ok …) can choose the answer (QA on #259).
+ */
+type Answer =
+  | { readonly ok: true; readonly body: Readonly<Record<string, unknown>> }
+  | { readonly ok: false; readonly status: unknown };
+/** A refusal of this outcome's own status; a non-string status matches no refusal (503). */
+const refused = (outcome: { readonly status: unknown }): Answer => ({
+  ok: false,
+  status: outcome.status,
+});
+type Run = (token: string, value: unknown, courseId: string) => Promise<Answer>;
+
+/**
+ * The institution course routes over the service (852-4a, 4b): the course,
+ * its enrolment code and the code's revocation. A 200 body is built here from
+ * named fields only, so no other field of an outcome ever leaves.
+ */
 export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOptions): Route[] {
   const service = createInstitutionService({ courses: options.courses });
   const timeoutMs = options.timeoutMs ?? INSTITUTION_BODY_TIMEOUT_MS;
 
-  const coursesRoute: Route = {
-    contract: COURSES,
-    async handle(request, response) {
-      const input = await readInstitutionJson(
-        request,
-        response,
-        [],
-        COURSES.request.maxBodyBytes ?? 2048,
-        timeoutMs,
-      );
-      if (input === null) return;
-      try {
-        const outcome = await service.createCourse(input.token, input.value);
-        if (outcome.status !== "created") {
-          const [status, code] = REFUSALS.get(outcome.status) ?? [503, "unavailable"];
-          return sendProblem(response, status, code);
+  const route = (id: string, refusals: Refusals, run: Run, empty = false): Route => {
+    const contract = ROUTES.find((found) => found.id === id)!;
+    const withId = contract.request.params !== undefined;
+    return {
+      contract,
+      async handle(request, response, params) {
+        const ids = withId ? [decodeOnce(params?.courseId)] : [];
+        const maxBytes = contract.request.maxBodyBytes ?? 64;
+        const input = await readInstitutionJson(request, response, ids, maxBytes, timeoutMs);
+        if (input === null) return;
+        if (empty && !isEmptyObject(input.value)) return sendProblem(response, ...INVALID);
+        try {
+          const answer = await run(input.token, input.value, ids[0] ?? "");
+          if (!answer.ok) {
+            const known =
+              typeof answer.status === "string" ? refusals.get(answer.status) : undefined;
+            const [status, code] = known ?? [503, "unavailable"];
+            return sendProblem(response, status, code);
+          }
+          sendJson(response, 200, answer.body);
+        } catch (error) {
+          reportServerError("route", error, requestIdOf(response), contract.id);
+          return sendProblem(response, 503, "unavailable");
         }
-        sendJson(response, 200, { id: outcome.id });
-      } catch (error) {
-        reportServerError("route", error, requestIdOf(response), COURSES.id);
-        return sendProblem(response, 503, "unavailable");
-      }
-      // Only an accepted answer counts, once written; a failure costs only the touch.
-      void options.recordActivity(input.token).catch(() => undefined);
-    },
+        // Only an accepted answer counts, once written; a failure costs only the touch.
+        void options.recordActivity(input.token).catch(() => undefined);
+      },
+    };
   };
 
-  return [coursesRoute];
+  return [
+    route("institution.courses.post", COURSE_REFUSALS, async (token, value) => {
+      const outcome = await service.createCourse(token, value);
+      return outcome.status === "created"
+        ? { ok: true, body: { id: outcome.id } }
+        : refused(outcome);
+    }),
+    route("institution.enrollment-code.post", CODE_REFUSALS, async (token, value, courseId) => {
+      const outcome = await service.issueEnrollmentCode(token, courseId, value);
+      return outcome.status === "issued"
+        ? { ok: true, body: { code: outcome.code } }
+        : refused(outcome);
+    }),
+    route(
+      "institution.enrollment-code-revocation.post",
+      REVOKE_REFUSALS,
+      async (token, _value, courseId) => {
+        const outcome = await service.revokeEnrollmentCode(token, courseId);
+        return outcome.status === "revoked"
+          ? { ok: true, body: { revoked: outcome.revoked } }
+          : refused(outcome);
+      },
+      true,
+    ),
+  ];
 }
