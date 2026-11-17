@@ -3,13 +3,16 @@ import * as area from "./index.ts";
 import type { SettingsService } from "./index.ts";
 
 describe("server/settings public interface", () => {
-  it("exports the empty routes and schemas and the metrics interval", () => {
+  it("exports the empty routes and schemas, the metrics interval and the institutions check", () => {
     expect(Object.keys(area).sort()).toEqual([
       "DEFAULT_METRICS_INTERVAL_MS",
+      "INSTITUTIONS_ERROR_CODES",
       "METRICS_INTERVAL_MAX_MS",
       "METRICS_INTERVAL_MIN_MS",
       "SETTINGS_ROUTES",
       "SETTINGS_SCHEMAS",
+      "institutionsProblems",
+      "loadInstitutions",
       "metricsIntervalMs",
       "metricsIntervalProblems",
     ]);

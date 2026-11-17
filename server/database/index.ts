@@ -31,11 +31,14 @@ export type {
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type {
+  AttachReceiptSignatureCommand,
+  AttachReceiptSignatureOutcome,
   PendingBacklogRead,
   PendingBacklogRow,
   PendingReceiptQueue,
   PendingReceiptRow,
   PendingReceiptsRead,
+  PendingReceiptStore,
   ReceiptKeysRead,
 } from "./pending-receipt-signing.ts";
 export type {
@@ -72,6 +75,7 @@ export { createPendingReceiptQueue } from "./pending-receipt-queue.ts";
 // The worker's read of a domain's receipt keys (820b-2a), same login and owner.
 export { readReceiptKeys } from "./receipt-keys.ts";
 export { createReplaySource } from "./replay-source.ts";
+export { createSettingsWriter } from "./settings-writer.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
