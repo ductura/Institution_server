@@ -173,6 +173,17 @@ export const EVENT_CATALOG = {
       ),
     },
   },
+  // A refusal of step 8 (S-1J.2, DAN-842-3): before the router no account is
+  // resolved, so the record is anonymous even when a session is live (as
+  // session.cookie_rejected), and no action is known; the route only as a
+  // contract path.
+  "authz.operator_refused": {
+    actors: ANONYMOUS,
+    fields: {
+      route: ROUTE_OR_NONE,
+      reason: code("not_signed_in", "second_factor_required", "second_factor_unavailable"),
+    },
+  },
   "authz.origin_rejected": {
     actors: ANYONE,
     fields: {

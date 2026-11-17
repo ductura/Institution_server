@@ -15,6 +15,7 @@ Zatvoren popis vrsta događaja (`EVENT_CATALOG`) i provjera zapisa (`checkEvent`
 - IP klijenta bilježi se samo u bazi zapisa (D-303). Polje se zove `ip`, ključ koji `redact` uvijek briše, pa adresa nikad ne ide u redak konzole; servis zapisa to polje izostavlja iz svoje druge provjere `redact`.
 - Poznata granica: brojčana polja, UUID i verzija mogu nositi nekoliko bajtova proizvoljnih znamenki, ali ne čitljiv tekst.
 - Pozadinski posao bez prijavljene osobe (raspored backupa, brisanje po roku, metrika, upozorenja) bilježi se kao `anonymous`.
+- Sloj prije routera ne razrješava račun, pa i njegov zapis je `anonymous`, čak i kad je sesija živa: odbijanje operatorske staze u koraku 8 (`authz.operator_refused`, S-1J.2, DAN-842-3; razlog `not_signed_in`, `second_factor_required` ili `second_factor_unavailable`, ruta samo kao predložak iz inventara ili `none`).
 
 ## Tko ga zove
 

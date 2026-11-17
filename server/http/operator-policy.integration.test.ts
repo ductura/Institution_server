@@ -55,6 +55,7 @@ type Answer = { status: number; code?: string; connection?: string };
 async function start(options: { networks: () => AllowedNetworks; secondFactor?: SecondFactor }) {
   const calls: string[] = [];
   const tokens: string[] = [];
+  const ids: string[] = [];
   const port: SecondFactor | undefined =
     options.secondFactor &&
     ((token) => (tokens.push(token), (options.secondFactor as SecondFactor)(token)));
@@ -89,6 +90,7 @@ async function start(options: { networks: () => AllowedNetworks; secondFactor?: 
           res.on("end", () => {
             const code = body === "" ? undefined : (JSON.parse(body) as { code?: string }).code;
             const connection = res.headers.connection;
+            ids.push(String(res.headers["x-request-id"]));
             resolve({
               status: res.statusCode ?? 0,
               ...(code === undefined ? {} : { code }),
@@ -100,7 +102,7 @@ async function start(options: { networks: () => AllowedNetworks; secondFactor?: 
       req.on("error", reject);
       req.end();
     });
-  return { get, calls, tokens };
+  return { get, calls, tokens, ids };
 }
 
 const answers =
@@ -212,10 +214,41 @@ describe("operator policy on a real server", () => {
         code: "unavailable",
         connection: "close",
       });
+      // The fault, then the refusal it caused (DAN-842-3); neither holds the token.
       const lines = stderr.mock.calls.map((args) => String(args[0]));
-      expect(lines).toHaveLength(1);
-      expect(JSON.parse(lines[0]!)).toMatchObject({ event: "server_error", where: "layer" });
-      expect(lines[0]).not.toContain(TOKEN);
+      const records = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+      expect(records).toHaveLength(2);
+      expect(records.find((r) => r.event === "server_error")).toMatchObject({ where: "layer" });
+      expect(records.find((r) => r.event === "authz.operator_refused")).toMatchObject({
+        fields: { route: "none", reason: "second_factor_unavailable" },
+      });
+      for (const line of lines) expect(line).not.toContain(TOKEN);
+    } finally {
+      stderr.mockRestore();
+    }
+    expect(calls).toEqual([]);
+  });
+
+  it("records each refusal once, with the request id of its answer", async () => {
+    const { get, calls, ids } = await start({
+      networks: INSIDE,
+      secondFactor: answers("unconfirmed"),
+    });
+    const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const answers = [await get(OPS), await get(OPS, COOKIE)];
+      expect(answers.map((answer) => answer.status)).toEqual([401, 403]);
+      const records = stderr.mock.calls.map(
+        (args) => JSON.parse(String(args[0])) as Record<string, unknown>,
+      );
+      expect(records.map((record) => record.event)).toEqual(
+        Array(2).fill("authz.operator_refused"),
+      );
+      expect(records.map((record) => record.requestId)).toEqual(ids);
+      expect(records.map((record) => (record.fields as { reason: string }).reason)).toEqual([
+        "not_signed_in",
+        "second_factor_required",
+      ]);
     } finally {
       stderr.mockRestore();
     }

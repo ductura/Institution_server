@@ -330,6 +330,34 @@ describe("traffic.request: client IP, route or none, other methods (DAN-831-1)",
   });
 });
 
+describe("checkEvent: a refusal of step 8 (DAN-842-3)", () => {
+  const record = validRecord("authz.operator_refused");
+
+  it("is anonymous, with a route or none and a closed reason", () => {
+    expect(check(record)).toMatchObject({ ok: true });
+    expect(
+      check({ ...record, fields: { route: ROUTE, reason: "second_factor_unavailable" } }),
+    ).toMatchObject({ ok: true });
+    for (const kind of LOG_ACCOUNT_KINDS) {
+      expect(codeOf({ ...record, accountKind: kind }), kind).toBe("ACCOUNT_KIND_NOT_ALLOWED");
+    }
+    for (const reason of [
+      "SECOND_FACTOR_REQUIRED",
+      "toString",
+      "__proto__",
+      "second_factor_required ",
+    ]) {
+      expect(codeOf({ ...record, fields: { route: "none", reason } }), reason).toBe(
+        "BAD_FIELD_VALUE",
+      );
+    }
+    for (const extra of ["ip", "token", "action"]) {
+      const fields = { route: "none", reason: "not_signed_in", [extra]: "x" };
+      expect(codeOf({ ...record, fields }), extra).toBe("UNKNOWN_FIELD");
+    }
+  });
+});
+
 describe("checkEvent: shape", () => {
   const good = validRecord("session.created");
 
