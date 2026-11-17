@@ -18,6 +18,16 @@ export {
 // worker process builds it, over its own store and signer (D-71, D-102).
 export { createSignPendingReceipt, type SignPendingReceiptDeps } from "./sign-pending-receipt.ts";
 export type { PendingReceiptObjectCheck } from "./object-check.ts";
+// What the worker does after one attempt (DAN-822-1); the loop is 822-2.
+export {
+  decideSignatureRetry,
+  MAX_SIGNATURE_RETRY_ATTEMPTS,
+  MAX_SIGNATURE_RETRY_DELAY_MS,
+  signatureRetryDelayMs,
+  type SignatureParkReason,
+  type SignatureRetryDecision,
+  type SignatureRetryPolicy,
+} from "./signature-retry.ts";
 export type { PendingReceiptHold, SignPendingReceiptOutcome } from "./settle-attach.ts";
 // The wire limits of the commit route, as the domain states them: http may not
 // import domain (docs/server-map.md §2), so it reads them here.

@@ -12,6 +12,16 @@ Lažne zamjene za testove servera i klijenata (U9, DAN-741). **Samo lokalno i u 
 | `@ductura/test-fakes/pglite`      | `createPgliteDatabase`: migrirana baza po imenu iz `scripts/db/databases.ts` (`main`, `logs`, `legal`) u PGlite-u, nova po pozivu; `createFakeLogDatabase`: lažna baza zapisa, samo dopisivanje | novo (U9-b)                                                                    |
 | `@ductura/test-fakes`             | sve gore                                                                                                                                                                                        |                                                                                |
 
+## Instalacija bez tokena (DAN-966)
+
+Svaka objavljena verzija je i `.tgz` na javnom GitHub Releaseu oznake `test-fakes-v2.0.0`, pa instalacija ne traži token (GitHub Packages ga traži i za javne pakete):
+
+```sh
+pnpm add -D https://github.com/ductura/server/releases/download/test-fakes-v2.0.0/ductura-test-fakes-2.0.0.tgz
+```
+
+Tarball je isti onaj koji je `publish.yml` provjerio i objavio; njegov sha256 je u bilješci izdanja.
+
 ## PGlite (U9-b)
 
 - **PGlite ne zamjenjuje pgTAP ni pravi PostgreSQL ni u jednom CI koraku.** Služi samo unit i brzim integracijskim testovima. Ovlasti, RLS, SECURITY DEFINER, pgTAP, utrke i pg-boss ostaju na pravom PostgreSQL-u (S-0.3, Ductus#2003, `spikes/pglite/NALAZI.md` §5).

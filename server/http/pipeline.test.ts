@@ -65,12 +65,13 @@ describe("PIPELINE_STEPS", () => {
       "trafficRecord",
       "securityHeaders",
       "originCheck",
+      "operatorPolicy",
     ]);
     expect(Object.isFrozen(PIPELINE_STEPS)).toBe(true);
   });
 
-  // The whole table, not a sample: rows 2 to 7 of docs/server-map.md §3 are the steps, in order.
-  it("matches steps 2 to 7 of docs/server-map.md §3", () => {
+  // The whole table, not a sample: rows 2 to 8 of docs/server-map.md §3 are the steps, in order.
+  it("matches steps 2 to 8 of docs/server-map.md §3", () => {
     const NAMES = new Map<string, Step>([
       ["IP", "clientIp"],
       ["IP prava", "ipRules"],
@@ -78,13 +79,14 @@ describe("PIPELINE_STEPS", () => {
       ["Zapis prometa", "trafficRecord"],
       ["Sigurnosna zaglavlja", "securityHeaders"],
       ["Zaštita porijekla", "originCheck"],
+      ["Operatorska pravila", "operatorPolicy"],
     ]);
     const map = readFileSync(new URL("../../docs/server-map.md", import.meta.url), "utf8");
     const section = map.slice(map.indexOf("## 3."), map.indexOf("### Gdje se piše"));
     const rows = [...section.matchAll(/^\| (\d+)\s+\| ([^|]+?)\s+\|/gmu)]
       .map(([, number, name]) => [Number(number), (name ?? "").replaceAll("`", "")] as const)
-      .filter(([number]) => number >= 2 && number <= 7);
-    expect(rows.map(([number]) => number)).toEqual([2, 3, 4, 5, 6, 7]);
+      .filter(([number]) => number >= 2 && number <= 8);
+    expect(rows.map(([number]) => number)).toEqual([2, 3, 4, 5, 6, 7, 8]);
     expect(rows.map(([, name]) => NAMES.get(name))).toEqual([...PIPELINE_STEPS]);
   });
 });

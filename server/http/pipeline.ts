@@ -1,4 +1,4 @@
-// The layers before the application (docs/server-map.md §3, steps 2 to 7),
+// The layers before the application (docs/server-map.md §3, steps 2 to 8),
 // S-1B-b (DAN-777). The order lives only in PIPELINE_STEPS: callers hand over
 // one layer per step by name, never a list, so they cannot reorder, skip or
 // add a step. The pipeline fails closed: anything but "next" from a layer
@@ -16,6 +16,11 @@ import {
 import { reportServerError, type ServerErrorReporter } from "./error-catalog.ts";
 import { ipRulesLayer } from "./ip-rules-layer.ts";
 import { originLayer } from "./mutation-request.ts";
+import {
+  NO_SECOND_FACTOR,
+  operatorPolicyLayer,
+  type SecondFactor,
+} from "./operator-policy-layer.ts";
 import { defaultRateLimiter, type RateLimitLog, rateLimitLayer } from "./rate-limit-layer.ts";
 import { requestIdOf } from "./request-id.ts";
 import { answerInternal, refuse, securityHeadersLayer } from "./security-headers.ts";
@@ -27,6 +32,7 @@ export const PIPELINE_STEPS = Object.freeze([
   "trafficRecord",
   "securityHeaders",
   "originCheck",
+  "operatorPolicy",
 ] as const);
 export type Step = (typeof PIPELINE_STEPS)[number];
 
@@ -78,7 +84,9 @@ const pass: Layer = async () => "next";
  * the client IP is the direct peer (S-1C.1, DAN-790). Without rateLimiter
  * the limit has the catalogue's defaults (S-1C.3, DAN-814); every server
  * built here has one, so no caller can leave step 4 open. Without
- * allowedNetworks operator paths are open to every network (S-1C.2, DAN-832-1).
+ * allowedNetworks operator paths are open to every network (S-1C.2, DAN-832-1);
+ * without secondFactor no session has one, so operator paths answer 401 or
+ * 403 and never reach the application (S-1J.2, DAN-842-1).
  */
 export function createLayers(options: {
   readonly expectedOrigin: string | null;
@@ -86,6 +94,7 @@ export function createLayers(options: {
   readonly rateLimiter?: RateLimiter;
   readonly rateLimitLog?: RateLimitLog;
   readonly allowedNetworks?: () => AllowedNetworks;
+  readonly secondFactor?: SecondFactor;
 }): Layers {
   return Object.freeze({
     clientIp: clientIpLayer(options.trustedProxies ?? NO_TRUSTED_PROXIES),
@@ -97,6 +106,7 @@ export function createLayers(options: {
     trafficRecord: pass,
     securityHeaders: securityHeadersLayer,
     originCheck: originLayer(options.expectedOrigin),
+    operatorPolicy: operatorPolicyLayer(options.secondFactor ?? NO_SECOND_FACTOR),
   });
 }
 

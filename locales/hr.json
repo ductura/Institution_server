@@ -108,6 +108,7 @@
   "myAccessLog": {
     "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
     "not_found": "Ovaj rad nije pronađen.",
+    "cursor_invalid": "Starije zapise nije moguće prikazati s ove adrese. Otvorite zapis pristupa ponovno.",
     "row_malformed": "Zapis pristupa trenutačno nije moguće prikazati. Pokušajte ponovno.",
     "database_error": "Zapis pristupa trenutačno nije dostupan. Pokušajte ponovno."
   },
