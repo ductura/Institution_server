@@ -127,6 +127,8 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/http/evidence-request.ts": ["TextDecoder"],
   // The client context body, strict UTF-8 before JSON.parse (DAN-846).
   "server/http/client-context.ts": ["TextDecoder"],
+  // WebAuthn clientDataJSON, strict UTF-8 before JSON.parse (DAN-840-2b).
+  "server/session/webauthn-ceremony.ts": ["TextDecoder"],
   // The settings write body, strict UTF-8 before JSON.parse (DAN-826-1b).
   "server/http/settings-values.ts": ["TextDecoder"],
   // The interface language body, strict UTF-8 before JSON.parse (DAN-851-1c2).
