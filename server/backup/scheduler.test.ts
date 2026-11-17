@@ -186,6 +186,22 @@ describe("backup scheduler: enabled runs once per interval", () => {
     expect(run).toHaveBeenCalledTimes(2);
   });
 
+  it("a slow read that sees backup off: hours count from the end of that read", async () => {
+    const { state, readSettings, run } = setup([["backup.enabled", false]]);
+    readSettings.mockImplementationOnce(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve(new Map([["backup.enabled", false]])), 0.75 * H),
+        ),
+    );
+    await vi.advanceTimersByTimeAsync(1.75 * H);
+    state.settings = new Map(on(2));
+    await vi.advanceTimersByTimeAsync(2 * H - 1);
+    expect(run).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
   it("turned off, no run from the next hour", async () => {
     const { state, run } = setup(on(1));
     await vi.advanceTimersByTimeAsync(3 * H);
@@ -320,6 +336,26 @@ describe("backup scheduler: failures, stop and options", () => {
     expect(run).toHaveBeenCalledTimes(1);
   });
 
+  it("an interval key present with the value undefined is interval_invalid", async () => {
+    const { run, onSkip } = setup([
+      ["backup.enabled", true],
+      ["backup.interval_hours", undefined],
+    ]);
+    await vi.advanceTimersByTimeAsync(48 * H);
+    expect(run).not.toHaveBeenCalled();
+    expect(new Set(onSkip.mock.calls.flat())).toEqual(new Set(["interval_invalid"]));
+  });
+
+  it("stop does not wait for a settings read that never ends", async () => {
+    const { scheduler, onSkip } = setup(on(1), {
+      readSettings: () => new Promise(() => undefined),
+    });
+    await vi.advanceTimersByTimeAsync(3 * H);
+    expect(onSkip.mock.calls).toEqual([["busy"], ["busy"]]);
+    await expect(scheduler.stop()).resolves.toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("a read that ends after stop starts no run", async () => {
     const read = deferred();
     const { run, scheduler } = setup(on(1), {
@@ -329,6 +365,7 @@ describe("backup scheduler: failures, stop and options", () => {
     const stopping = scheduler.stop();
     read.resolve();
     await stopping;
+    await vi.advanceTimersByTimeAsync(10 * H);
     expect(run).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
   });

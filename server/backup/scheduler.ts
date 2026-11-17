@@ -1,12 +1,14 @@
 // The backup scheduler (S-1G-a part 2, DAN-1012-2; contract Ductus#2028
-// c.6963924920). One check an hour reads the system settings of DAN-1012-1
-// and starts the job only when backup.enabled is exactly true and the check
-// is the backup.interval_hours-th since the job last started or backup was
-// last seen off. The hourly timer restarts at both moments, so the hours
-// count from when they happened, not from when the check began: two starts
-// are never closer than interval_hours, however long a read takes. A check
-// that starts nothing for another reason reports it with a closed code; one
-// that only waits for its hour reports nothing. The settings reader, the job
+// c.6963924920). An hourly check reads the system settings of DAN-1012-1 and
+// starts the job only when backup.enabled is exactly true and at least
+// backup.interval_hours checks have come since start(), the last start of the
+// job or the last time backup was seen off. The hourly timer starts again at
+// each of those moments, after the read, so the hours count from then: two
+// starts are never closer than interval_hours, and each start comes that much
+// plus the time of its read after the one before. A busy check reads nothing.
+// A check that starts nothing for a reason reports it with a closed code; one
+// that only waits for its hour reports nothing. The job must not await
+// stop(), which waits for the job. The settings reader, the job
 // and the listener are handed in by the assembler of the background process,
 // which does not exist yet: nothing starts this, so backup stays off (V-6).
 import { defaultOf, fitsDefinition, settingOf, type SettingDefinition } from "../domain/index.ts";
@@ -38,7 +40,7 @@ export type BackupSchedulerOptions = {
 export type BackupScheduler = {
   /** Starts the hourly check; a second call, or a call after stop, does nothing. */
   readonly start: () => void;
-  /** Stops for good and waits for the check in progress; never rejects. */
+  /** Stops for good and waits for the job in progress, not for a settings read; never rejects. */
   readonly stop: () => Promise<void>;
 };
 
@@ -87,6 +89,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   let timer: ReturnType<typeof setInterval> | undefined;
   let stopped = false;
   let check: Promise<void> | undefined;
+  let job: Promise<void> | undefined;
   /** Whole hours since the timer last (re)started. */
   let hours = 0;
 
@@ -120,11 +123,15 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     if (typeof decision === "string") return skip(decision);
     if (hours < decision) return;
     restart();
-    try {
-      await run();
-    } catch {
-      skip("run_failed");
-    }
+    job = (async () => {
+      try {
+        await run();
+      } catch {
+        skip("run_failed");
+      }
+    })();
+    await job;
+    job = undefined;
   };
 
   function tick(): void {
@@ -141,7 +148,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     async stop(): Promise<void> {
       stopped = true;
       clearInterval(timer);
-      await check;
+      await job;
     },
   });
 }

@@ -8,9 +8,9 @@ Kopije baze i pohrane te mjesečna proba povrata (ARCHITECTURE §9). Feature pod
 
 ## Raspoređivač backupa
 
-`createBackupScheduler` (`scheduler.ts`) jednom na sat čita postavke razine `system` iz kataloga (DAN-1012-1). Posao pokreće samo kad je `backup.enabled` točno `true` i kad je to `backup.interval_hours`-ti otkucaj od zadnjeg pokretanja ili od zadnjeg otkucaja na kojem backup nije bio uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
+`createBackupScheduler` (`scheduler.ts`) na satnom otkucaju čita postavke razine `system` iz kataloga (DAN-1012-1); otkucaj `busy` ne čita ništa. Posao pokreće samo kad je `backup.enabled` točno `true` i kad je prošlo barem `backup.interval_hours` otkucaja od `start()`, od zadnjeg pokretanja ili od zadnjeg otkucaja na kojem backup nije bio uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
 
-Satni timer kreće ispočetka u trenutku pokretanja i u trenutku kad se vidi da je backup isključen. Zato sati teku od tog trenutka, a ne od početka otkucaja: dva pokretanja nikad nisu bliže od `interval_hours`, koliko god čitanje trajalo.
+Satni timer kreće ispočetka u svakom od tih trenutaka, i to nakon čitanja, pa se sati broje od tada. Dva pokretanja zato nikad nisu bliže od `interval_hours`, koliko god čitanje trajalo. Svako pokretanje dolazi interval i trajanje svojeg čitanja nakon prethodnog, pa raspored kasni za trajanje čitanja po pokretanju.
 
 Otkucaj koji samo čeka svoj sat ne javlja ništa. Svaki drugi otkucaj na kojem se posao ne pokrene javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
 
@@ -20,7 +20,7 @@ Otkucaj koji samo čeka svoj sat ne javlja ništa. Svaki drugi otkucaj na kojem 
 - `busy`: prethodni otkucaj još traje;
 - `run_failed`: posao je bacio.
 
-Kod `settings_unavailable` i `interval_invalid` sati se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitanje koje završi nakon `stop()` ne pokreće posao. Čitač, posao i primatelj razloga predaje sastavljač.
+Kod `settings_unavailable` i `interval_invalid` sati se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
 
 Poznate granice:
 
