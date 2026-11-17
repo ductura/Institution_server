@@ -234,6 +234,19 @@ describe("fake names in production code (fakeName)", () => {
       "import = namespace",
       `namespace N { export const y = 1; }\nimport FakeY = N.y;\nexport const x = FakeY;\n`,
     ],
+    // review FAIL c.6954717628: the referenced name, not only the local one
+    [
+      "import = a fake member",
+      `namespace N { export class FakeEmail {} }\nimport Email = N.FakeEmail;\nexport const x = new Email();\n`,
+    ],
+    [
+      "import = a member of a fake namespace",
+      `namespace FakeN { export const y = 1; }\nimport Y = FakeN.y;\nexport const x = Y;\n`,
+    ],
+    [
+      "import = a fake namespace",
+      `namespace FakeN { export const y = 1; }\nimport Y = FakeN;\nexport const x = Y.y;\n`,
+    ],
   ])("rejects %s in server/external/email/example.ts", async (_, code) => {
     expect(await fakeNames("server/external/email/example.ts", code)).toBe(1);
     expect(await fakeNames("scripts/example.ts", code)).toBe(1);

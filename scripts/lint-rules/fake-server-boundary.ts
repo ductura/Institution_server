@@ -156,6 +156,12 @@ export const noFakeServerImport: Rule.RuleModule = {
       const found = new Set(names.map(nameOf).filter((name) => name && FAKE_NAME_RE.test(name)));
       for (const name of found) context.report({ node, messageId: "fakeName", data: { name } });
     };
+    // Every segment of `N.M.y` in `import X = N.M.y` (review FAIL c.6954717628).
+    const qualifiedNames = (reference: unknown): unknown[] => {
+      const name = reference as { type?: string; left?: unknown; right?: unknown } | undefined;
+      if (name?.type === "TSQualifiedName") return [...qualifiedNames(name.left), name.right];
+      return name?.type === "Identifier" ? [name] : [];
+    };
     type Specifier = { local?: unknown; imported?: unknown; exported?: unknown };
     const bindings = (specifiers: Specifier[] | undefined): unknown[] =>
       (specifiers ?? []).flatMap((s) => [s.local, s.imported, s.exported]);
@@ -174,7 +180,7 @@ export const noFakeServerImport: Rule.RuleModule = {
           const reference = node.moduleReference;
           const source =
             reference?.type === "TSExternalModuleReference" ? reference.expression : undefined;
-          fakeNames(node, source, [node.id]);
+          fakeNames(node, source, [node.id, ...qualifiedNames(reference)]);
         },
       } as Rule.RuleListener,
       specifierVisitors(context, fake, "fakeServer"),
