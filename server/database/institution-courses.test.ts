@@ -171,3 +171,115 @@ describe("issueEnrollmentCode success", () => {
     expect(calls.fnRejected).toBe(0);
   });
 });
+
+// DAN-852-2b: createCourse and revokeEnrollmentCode over the same call.
+const COURSE_SQL = "SELECT institution.create_course($1, $2, $3) AS id";
+const REVOKE_SQL = "SELECT institution.revoke_enrollment_code($1) AS revoked";
+const BODY = {
+  name: "Izmišljeni kolegij",
+  academicYear: "2026/2027",
+  aiPolicy: "encouraged",
+} as const;
+const NEW_ID = "0000000a-000b-4000-8000-0000000000cd";
+
+const create = (answer: Answer) => {
+  const p = port(answer);
+  return { result: p.courses.createCourse(TOKEN, BODY), calls: p.calls };
+};
+const revoke = (answer: Answer) => {
+  const p = port(answer);
+  return { result: p.courses.revokeEnrollmentCode(TOKEN, COURSE), calls: p.calls };
+};
+const OUTSIDE = [
+  dbError("ZD500"),
+  dbError("23505"),
+  dbError("22P02"),
+  new Error(SECRET),
+  null,
+  SECRET,
+];
+
+describe("createCourse", () => {
+  it.each([
+    ["ZD401", "unauthenticated"],
+    ["ZD403", "forbidden"],
+    ["ZD409", "conflict"],
+    ["ZD422", "invalid"],
+  ])("%s is %s", async (code, status) => {
+    const outcome = await create({ throws: dbError(code) }).result;
+    expect(outcome).toEqual({ status });
+    expectNothingLeaks(outcome);
+  });
+
+  it.each(OUTSIDE.map((thrown) => [String(thrown), thrown]))(
+    "%s is unavailable without detail",
+    async (_name, thrown) => {
+      const outcome = await create({ throws: thrown }).result;
+      expect(outcome).toEqual(DATABASE);
+      expectNothingLeaks(outcome);
+    },
+  );
+
+  it.each([
+    ["no rows", []],
+    ["two rows", [{ id: NEW_ID }, { id: NEW_ID }]],
+    ["a null row", [null]],
+    ["an inherited id", [Object.create({ id: NEW_ID }) as object]],
+    ["a trailing LF", [{ id: `${NEW_ID}\n` }]],
+    ["a trailing NBSP", [{ id: `${NEW_ID} ` }]],
+    ["no dashes", [{ id: NEW_ID.replaceAll("-", "") }]],
+    ["a letter outside hex", [{ id: NEW_ID.replace("a", "g") }]],
+    ["a number", [{ id: 852 }]],
+    ["a null id", [{ id: null }]],
+  ])("%s is create_malformed and rolls back", async (_name, rows) => {
+    const { result, calls } = create({ rows });
+    expect(await result).toEqual({ status: "unavailable", reason: "create_malformed" });
+    expect(calls.fnRejected).toBe(1);
+  });
+
+  it("returns the id, also in upper case, with the exact statement and parameters", async () => {
+    for (const id of [NEW_ID, NEW_ID.toUpperCase()]) {
+      const { result, calls } = create({ rows: [{ id }] });
+      expect(await result).toEqual({ status: "created", id });
+      expect(calls.queries).toEqual([
+        { text: COURSE_SQL, values: [BODY.name, BODY.academicYear, BODY.aiPolicy], token: TOKEN },
+      ]);
+    }
+  });
+});
+
+describe("revokeEnrollmentCode", () => {
+  it.each([
+    ["ZD401", "unauthenticated"],
+    ["ZD403", "forbidden"],
+  ])("%s is %s", async (code, status) => {
+    expect(await revoke({ throws: dbError(code) }).result).toEqual({ status });
+  });
+
+  it.each(
+    [...OUTSIDE, dbError("ZD409"), dbError("ZD422")].map((thrown) => [String(thrown), thrown]),
+  )("%s (ZD409 and ZD422 included) is unavailable without detail", async (_name, thrown) => {
+    const outcome = await revoke({ throws: thrown }).result;
+    expect(outcome).toEqual(DATABASE);
+    expectNothingLeaks(outcome);
+  });
+
+  it.each([
+    ["no rows", []],
+    ["two rows", [{ revoked: true }, { revoked: true }]],
+    ["an inherited column", [Object.create({ revoked: true }) as object]],
+    ["the string true", [{ revoked: "true" }]],
+    ["the number 1", [{ revoked: 1 }]],
+    ["null", [{ revoked: null }]],
+  ])("%s is revoke_malformed and rolls back", async (_name, rows) => {
+    const { result, calls } = revoke({ rows });
+    expect(await result).toEqual({ status: "unavailable", reason: "revoke_malformed" });
+    expect(calls.fnRejected).toBe(1);
+  });
+
+  it.each([true, false])("returns revoked %s with the exact statement", async (revoked) => {
+    const { result, calls } = revoke({ rows: [{ revoked }] });
+    expect(await result).toEqual({ status: "revoked", revoked });
+    expect(calls.queries).toEqual([{ text: REVOKE_SQL, values: [COURSE], token: TOKEN }]);
+  });
+});
