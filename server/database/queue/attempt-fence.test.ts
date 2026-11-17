@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { SERVER_NODE_FLAGS } from "../../../scripts/build/index.ts";
 
@@ -69,6 +69,51 @@ ${body}
 
 const killed = { code: null, signal: "SIGKILL", stdout: "armed\n", stderr: "" };
 const survived = (stdout: string): object => ({ code: 0, signal: null, stdout, stderr: "" });
+
+// Orchestrator contract cut on #265 (c.6962135782): that loading the fence
+// starts no thread is proven at run time, not by lint. node:worker_threads is
+// replaced by a recorder for this one import; nothing here arms a fence, so
+// the vitest worker is never at risk.
+describe("attempt fence: loading the module starts no thread", () => {
+  it("constructs no Worker on import, and exactly one on startAttemptFence()", async () => {
+    const started: { script: unknown; options: unknown }[] = [];
+    const calls: string[] = [];
+    vi.resetModules();
+    class Worker {
+      constructor(script: unknown, options: unknown) {
+        started.push({ script, options });
+      }
+      unref(): void {
+        calls.push("unref");
+      }
+      async terminate(): Promise<number> {
+        calls.push("terminate");
+        return 0;
+      }
+    }
+    // The mock module's one export, under the name of the class it replaces
+    // (a PascalCase key, which the naming rule allows only as data).
+    vi.doMock("node:worker_threads", () => Object.fromEntries([["Worker", Worker]]));
+    try {
+      const fence = await import("./attempt-fence.ts");
+      expect(started).toEqual([]);
+      const handle = fence.startAttemptFence();
+      expect(started).toHaveLength(1);
+      expect(String(started[0]?.script)).toBe(
+        pathToFileURL(path.join(here, "attempt-fence-watch.ts")).href,
+      );
+      const options = started[0]?.options as { workerData?: unknown };
+      expect(Object.keys(options)).toEqual(["workerData"]);
+      expect(options.workerData).toBeInstanceOf(SharedArrayBuffer);
+      expect(calls).toEqual(["unref"]);
+      await handle.close();
+      expect(calls).toEqual(["unref", "terminate"]);
+    } finally {
+      vi.doUnmock("node:worker_threads");
+      vi.resetModules();
+    }
+  });
+});
 
 describe("attempt fence: it refuses to arm what it cannot fence", () => {
   it.each<[string, string]>([

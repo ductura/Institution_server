@@ -164,6 +164,13 @@ export const NODE_IMPORTS_ALLOWED: Readonly<
  * as `thread.unref()` and `thread.terminate()`, and Worker
  * is never a value otherwise (no alias, export or other argument), so no eval,
  * other option or code from a string (DAN-822-5, decision c.6948159989).
+ *
+ * Known limit (orchestrator contract cut on #265, c.6962135782): this guards
+ * against mistakes, not against code written to get round it. A global
+ * overwritten at run time (`URL = class extends URL {...}`) or the module
+ * reached under another binding cannot be seen statically; review is the
+ * barrier there. That loading the fence starts no thread is proven at run time
+ * by server/database/queue/attempt-fence.test.ts, not by this rule.
  */
 export const WORKER_SCRIPTS_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   // The watch from the source tree (.ts) and next to the built bundle (.js).
