@@ -31,11 +31,14 @@ export type {
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
 export type {
+  AttachReceiptSignatureCommand,
+  AttachReceiptSignatureOutcome,
   PendingBacklogRead,
   PendingBacklogRow,
   PendingReceiptQueue,
   PendingReceiptRow,
   PendingReceiptsRead,
+  PendingReceiptStore,
   ReceiptKeysRead,
 } from "./pending-receipt-signing.ts";
 export type {

@@ -29,7 +29,8 @@ const PENDING_SQL = `SELECT receipt_id::text AS receipt_id, receipt_payload
 /** A receipt id as the database writes a uuid: lowercase, any version. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-const isUuid = (value: unknown): value is string => typeof value === "string" && UUID.test(value);
+export const isUuid = (value: unknown): value is string =>
+  typeof value === "string" && UUID.test(value);
 /** A real instant written back unchanged; a time that does not parse is false, never a throw. */
 function isTime(value: unknown): value is string {
   if (typeof value !== "string" || !TIME.test(value)) return false;
