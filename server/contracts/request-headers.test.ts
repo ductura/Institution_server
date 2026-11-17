@@ -114,6 +114,16 @@ describe("the client sends the declared headers and nothing the caller adds", ()
     await call("evidence.open.post", none);
     // @ts-expect-error and for commit.
     await call("evidence.commit.post", none);
+    // A route id known only as a union (review FAIL c.6962469723): headers are
+    // needed when any route of it declares them, and fit every one of them.
+    const either = "live.document.get" as "live.document.get" | "platform.health.get";
+    // @ts-expect-error One of the routes declares headers.
+    await call(either, input);
+    await call(either, { ...input, headers: { "ductus-protocol": "1" } });
+    const write = "evidence.open.post" as "evidence.open.post" | "evidence.commit.post";
+    // @ts-expect-error "2" is not a protocol of open.
+    await call(write, { ...none, headers: { "ductus-protocol": "2" } });
+    await call(write, { ...none, headers: { "ductus-protocol": "1" } });
     await call("platform.health.get", { params: undefined, query: undefined, body: undefined });
     expect(init?.headers).toBeUndefined();
   });

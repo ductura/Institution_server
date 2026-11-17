@@ -73,8 +73,12 @@ export const REQUEST_HEADERS: Readonly<Record<string, { readonly names: readonly
 export const SHARED_ERRORS = {"429":["too_many_requests"],"500":["internal"]} as const;
 
 // A route that declares headers needs them (DAN-930); on the others they stay out.
+// For an id known only as a union, they are needed when any of its routes
+// declares them, and must fit every one of them (review c.6962469723).
+type HeadersOf<Id extends OperationId> = Id extends OperationId ? (Operations[Id] extends { headers: infer H } ? H : never) : never;
+type Every<U> = (U extends unknown ? (u: U) => void : never) extends (i: infer I) => void ? I : never;
 type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body"> &
-  (Operations[Id] extends { headers: infer H } ? { headers: H } : { headers?: undefined });
+  ([HeadersOf<Id>] extends [never] ? { headers?: undefined } : { headers: Every<HeadersOf<Id>> });
 export type Result<Id extends OperationId> =
   | (Operations[Id]["success"] & { ok: true })
   | { ok: false; status: number; code: Operations[Id]["errorCode"] | SharedErrorCode | "unexpected" };
