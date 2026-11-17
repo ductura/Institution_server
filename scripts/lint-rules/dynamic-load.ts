@@ -43,6 +43,8 @@ type Loose = {
   quasis?: { value: { cooked?: string | null } }[];
   source?: Loose | null;
   importKind?: string;
+  specifiers?: Loose[];
+  local?: Loose;
   exportKind?: string;
   moduleReference?: Loose;
   imported?: Loose;
@@ -68,6 +70,9 @@ export const IMPORT_META = "import.meta";
 export const DYNAMIC_LOAD_ALLOWED: Readonly<
   Record<string, Readonly<Record<string, readonly string[]>>>
 > = {
+  // The watch thread of the attempt fence: the monotonic clock, and the kill
+  // of its own process (DAN-822-4, Ductus#1836 c.6948159989).
+  "server/database/queue/attempt-fence-watch.ts": { process: ["hrtime", "kill", "pid"] },
   // The entry point reads the environment and sets the exit code (S-1B-a, DAN-775).
   // On shutdown it listens to SIGTERM and SIGINT and exits with a code (S-1B-c, DAN-778).
   // The working directory is the repository root the development signer's seed
@@ -130,6 +135,26 @@ export const NODE_MODULES: readonly string[] = [
   // write a body (server/http/start.ts, S-1B-c, DAN-778); it loads no code.
   "net",
 ];
+/**
+ * node: modules outside NODE_MODULES that one exact file may import, each only
+ * as `import { name } from "<spec>"` with the names listed: no alias, no
+ * namespace, default or bare import, no `export ... from`, and the name is never
+ * exported again. Keys are exact repository paths and full specifiers, read as
+ * own properties only (orchestrator decision A on DAN-822, Ductus#1836
+ * c.6948159989).
+ */
+export const NODE_IMPORTS_ALLOWED: Readonly<
+  Record<string, Readonly<Record<string, readonly string[]>>>
+> = {
+  // The watch thread of the attempt fence takes its shared cell (DAN-822-4).
+  "server/database/queue/attempt-fence-watch.ts": { "node:worker_threads": ["workerData"] },
+};
+
+// An own property only, so a key of Object.prototype is never an entry.
+function own<T>(table: Readonly<Record<string, T>> | undefined, key: string): T | undefined {
+  return table !== undefined && Object.hasOwn(table, key) ? table[key] : undefined;
+}
+
 // A package subpath: plain segments, no ".", ".." or empty segment.
 const SUBPATH_RE = /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)*$/u;
 
@@ -187,6 +212,7 @@ export const noDynamicLoad: Rule.RuleModule = {
       importRequire: "`import x = require()` is not allowed in server code (DAN-770).",
       module:
         "'{{spec}}' is not on the allow-list: a relative file in server/, an allowed node: module or a package from dependencies (DAN-770).",
+      nodeExport: "A name imported under NODE_IMPORTS_ALLOWED is not exported again (DAN-822-4).",
       key: "'{{key}}' reaches a loader (the Function constructor or a native engine) (DAN-770).",
     },
   },
@@ -219,10 +245,50 @@ export const noDynamicLoad: Rule.RuleModule = {
       );
     }
 
+    // Local names of the imports NODE_IMPORTS_ALLOWED let through.
+    const listedImports = new Set<string>();
+
+    // `import { name } from "<spec>"`, every name on this file's list for spec.
+    function listedImport(node: Node, spec: string): boolean {
+      const names = own(own(NODE_IMPORTS_ALLOWED, file), spec);
+      const declaration = node as unknown as Loose;
+      const specifiers = declaration.specifiers ?? [];
+      const ok =
+        names !== undefined &&
+        declaration.type === "ImportDeclaration" &&
+        specifiers.length > 0 &&
+        specifiers.every(
+          (s) =>
+            s.type === "ImportSpecifier" &&
+            s.importKind !== "type" &&
+            s.imported?.type === "Identifier" &&
+            s.local?.name === s.imported.name &&
+            names.includes(s.imported.name ?? ""),
+        );
+      if (ok) for (const s of specifiers) listedImports.add(s.local?.name ?? "");
+      return ok;
+    }
+
     function checkSource(node: Node, source: Loose | null | undefined, kind?: string): void {
       if (!source || kind === "type") return;
       const spec = typeof source.value === "string" ? source.value : "";
-      if (!allowedModule(spec, node)) context.report({ node, messageId: "module", data: { spec } });
+      if (!allowedModule(spec, node) && !listedImport(node, spec))
+        context.report({ node, messageId: "module", data: { spec } });
+    }
+
+    // `export { name }` and `export default name`, checked against the listed
+    // imports at the end, so an export written above its import is seen too.
+    const exportNodes: Node[] = [];
+    function checkReexport(node: Node): void {
+      const declaration = node as unknown as Loose & { declaration?: Loose | null };
+      const names =
+        declaration.type === "ExportDefaultDeclaration"
+          ? [declaration.declaration?.type === "Identifier" ? declaration.declaration.name : ""]
+          : declaration.source
+            ? []
+            : (declaration.specifiers ?? []).map((s) => s.local?.name ?? "");
+      if (names.some((name) => name !== "" && listedImports.has(name ?? "")))
+        context.report({ node, messageId: "nodeExport" });
     }
 
     function reportGlobal(node: Loose, name: string): void {
@@ -288,6 +354,7 @@ export const noDynamicLoad: Rule.RuleModule = {
 
     return {
       "Program:exit"() {
+        for (const node of exportNodes) checkReexport(node);
         const globalScope = context.sourceCode.scopeManager?.globalScope;
         if (!globalScope) return;
         for (const reference of globalScope.through) {
@@ -318,8 +385,11 @@ export const noDynamicLoad: Rule.RuleModule = {
       },
       ImportDeclaration: (node) =>
         checkSource(node, node.source as Loose, (node as Loose).importKind),
-      ExportNamedDeclaration: (node) =>
-        checkSource(node, node.source as Loose | null, (node as Loose).exportKind),
+      ExportNamedDeclaration: (node) => {
+        checkSource(node, node.source as Loose | null, (node as Loose).exportKind);
+        exportNodes.push(node);
+      },
+      ExportDefaultDeclaration: (node) => void exportNodes.push(node),
       ExportAllDeclaration: (node) =>
         checkSource(node, node.source as Loose, (node as Loose).exportKind),
       // Every name, wherever it stands (DAN-773).
