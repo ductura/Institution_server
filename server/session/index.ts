@@ -49,6 +49,15 @@ export {
 } from "./state.ts";
 export { DEFAULT_RETURN_TO, safeReturnTo } from "./return-to.ts";
 export {
+  CHALLENGE_CAPACITY,
+  type ChallengePurpose,
+  type ChallengeStore,
+  type ChallengeStoreOptions,
+  createChallengeStore,
+  type IssuedChallenge,
+  MAX_CHALLENGE_TTL_MS,
+} from "./webauthn-challenge.ts";
+export {
   clearedSessionCookieOptions,
   hashSessionToken,
   newSessionToken,
