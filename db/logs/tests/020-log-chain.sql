@@ -67,7 +67,7 @@ END
 $$;
 
 
-SELECT plan(147);
+SELECT plan(149);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -466,6 +466,10 @@ FROM (VALUES
    'a row deleted past the base is found at the next row'),
   (':cut7; UPDATE public.log_chain_base SET seq = seq + 1', ARRAY['7 head'],
    'with no row left, a base past the head is found at the head'),
+  (':cut7; UPDATE public.log_chain_base SET hash = decode(repeat(''ee'', 32), ''hex'')', ARRAY['7 head'],
+   'with no row left, a base with another digest than the head is found at the head'),
+  ('DELETE FROM public.log_chain_base', ARRAY['- base'],
+   'a missing base under an uncut chain is found alone: the chain is verified from seq 0 and 32 zero bytes'),
   (':cut7; UPDATE public.log_chain_base SET seq = 9223372036854775807', ARRAY['7 head'],
    'a base at the greatest bigint does not fail the verification of an empty chain')
 ) t (sql, expected, what);
