@@ -88,6 +88,15 @@
     "invalid_json": "Tijelo zahtjeva nije ispravan JSON objekt.",
     "body_too_large": "Tijelo zahtjeva je preveliko."
   },
+  "openWork": {
+    "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
+    "not_found": "Ovaj zadatak nije pronađen.",
+    "not_accepting": "Rad za ovaj zadatak trenutačno nije moguće otvoriti.",
+    "not_started": "Rad za ovaj zadatak još nije započet.",
+    "not_configured": "Zadatak još nije spreman za pisanje. Pokušajte kasnije.",
+    "row_malformed": "Rad trenutačno nije moguće otvoriti. Pokušajte ponovno.",
+    "database_error": "Rad trenutačno nije dostupan. Pokušajte ponovno."
+  },
   "interfaceLocale": {
     "unauthenticated": "Prijava nije valjana. Prijavite se ponovno; jezik sučelja nije promijenjen.",
     "invalid": "Jezik sučelja nije promijenjen. Odaberite hrvatski ili engleski.",
@@ -99,6 +108,7 @@
   "myAccessLog": {
     "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
     "not_found": "Ovaj rad nije pronađen.",
+    "cursor_invalid": "Starije zapise nije moguće prikazati s ove adrese. Otvorite zapis pristupa ponovno.",
     "row_malformed": "Zapis pristupa trenutačno nije moguće prikazati. Pokušajte ponovno.",
     "database_error": "Zapis pristupa trenutačno nije dostupan. Pokušajte ponovno."
   },
@@ -107,6 +117,8 @@
     "invalid": "Problem nije poslan. Provjerite opis i pokušajte ponovno.",
     "too_many": "Dosegnuli ste najveći broj prijava u jednom satu. Pokušajte ponovno kasnije.",
     "row_malformed": "Prijavu problema trenutačno nije moguće potvrditi. Pokušajte ponovno.",
-    "database_error": "Prijava problema trenutačno nije dostupna. Pokušajte ponovno."
+    "database_error": "Prijava problema trenutačno nije dostupna. Pokušajte ponovno.",
+    "invalid_json": "Problem nije poslan. Zahtjev nije valjan; učitajte stranicu i pokušajte ponovno.",
+    "invalid_body": "Problem nije poslan. Provjerite opis i odabrane podatke pa pokušajte ponovno."
   }
 }

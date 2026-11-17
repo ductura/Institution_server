@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -114,7 +115,17 @@ const ATTACH = [
   'TAG="${GITHUB_REF#refs/tags/}"',
   '[ "$FILE" = "ductura-$PACKAGE-$VERSION.tgz" ]',
   'export GH_REPO="$GITHUB_REPOSITORY"',
-  'if gh release view "$TAG" > /dev/null; then',
+  // DAN-966-2a: a rerun finds its own asset. The same sha256 passes without an
+  // upload; another one fails before any upload. A failed view goes to create,
+  // which fails on an existing release, so it never leads to upload.
+  'if names="$(gh release view "$TAG" --json assets --jq \'.assets[].name\')"; then',
+  '  if grep -Fxq -- "$FILE" <<< "$names"; then',
+  '    got="$(mktemp -d)/asset"',
+  '    gh release download "$TAG" --pattern "$FILE" --output "$got"',
+  '    printf \'%s  %s\\n\' "$SHA256" "$got" | sha256sum --check --strict -',
+  '    echo "::notice::$FILE is already attached with the same sha256"',
+  "    exit 0",
+  "  fi",
   '  gh release upload "$TAG" "./release/$FILE"',
   "else",
   '  gh release create "$TAG" "./release/$FILE" --verify-tag --title "$TAG" --notes "sha256 $SHA256"',
@@ -450,6 +461,19 @@ describe("publish.yml", () => {
     ["966 GH_REPO through an expression", '"$GITHUB_REPOSITORY"', '"${{ github.repository }}"'],
     ["966 github.token", `GH_TOKEN: ${TOKEN}`, "GH_TOKEN: ${{ github.token }}"],
     [
+      "966-2a no sha256 check of the attached asset",
+      '      printf \'%s  %s\\n\' "$SHA256" "$got" | sha256sum --check --strict -\n',
+      "",
+    ],
+    ["966-2a a download that may fail", '--output "$got"\n', '--output "$got" || true\n'],
+    ["966-2a exit 0 before the check", '    got="$(mktemp', '    exit 0\n    got="$(mktemp'],
+    ["966-2a a partial name match", "grep -Fxq --", "grep -Fq --"],
+    [
+      "966-2a an upload after the check",
+      "    exit 0\n",
+      '    gh release upload "$TAG" "./release/$FILE" --clobber\n    exit 0\n',
+    ],
+    [
       "966 a deleted release",
       "      - name: Prilaganje\n",
       "      - run: gh release delete x\n      - name: Prilaganje\n",
@@ -469,6 +493,7 @@ describe("publish.yml", () => {
 });
 
 // DAN-966: the attach step run by real bash -e, with a stub gh that logs its calls.
+// DAN-966-2a: view prints ASSETS; download writes REMOTE to its --output.
 describe("publish.yml attach step", () => {
   const dir = mkdtempSync(join(tmpdir(), "dan-966-"));
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -477,62 +502,142 @@ describe("publish.yml attach step", () => {
   const gh = join(dir, "gh");
   writeFileSync(
     gh,
-    '#!/bin/sh\necho "$GH_REPO $*" >> "$GH_LOG"\n[ "$2" != view ] || [ -n "$EXISTS" ]\n',
+    [
+      "#!/bin/sh",
+      'echo "$GH_REPO $*" >> "$GH_LOG"',
+      'case "$2" in',
+      '  view) [ -n "$EXISTS" ] && printf "%s" "$ASSETS" ;;',
+      '  download) [ -z "$DL_FAIL" ] || exit 1; [ -n "$DL_NONE" ] || printf "%s" "$REMOTE" > "$7" ;;',
+      '  create) [ -z "$CREATE_FAIL" ] ;;',
+      "esac",
+      "",
+    ].join("\n"),
   );
   chmodSync(gh, 0o755);
-  const sum = "a".repeat(64);
-  const run = (ref: string, file: string, exists = false) => {
+  const bytes = "verified tarball bytes";
+  const sum = createHash("sha256").update(bytes).digest("hex");
+  type Remote = {
+    exists?: boolean;
+    assets?: string;
+    remote?: string;
+    dlFail?: boolean;
+    dlNone?: boolean;
+    createFail?: boolean;
+  };
+  let raw: string[] = [];
+  const run = (ref: string, file: string, remote: Remote = {}) => {
     const log = join(dir, `log-${Math.random()}`);
     writeFileSync(log, "");
     const env = Object.fromEntries([
       ["PATH", `${dir}:${process.env.PATH ?? ""}`],
+      ["TMPDIR", dir],
       ["GITHUB_REF", ref],
       ["GITHUB_REPOSITORY", "ductura/server"],
       ["FILE", file],
       ["SHA256", sum],
       ["GH_LOG", log],
-      ["EXISTS", exists ? "1" : ""],
+      ["EXISTS", remote.exists === true ? "1" : ""],
+      ["ASSETS", remote.assets ?? ""],
+      ["REMOTE", remote.remote ?? bytes],
+      ["DL_FAIL", remote.dlFail === true ? "1" : ""],
+      ["DL_NONE", remote.dlNone === true ? "1" : ""],
+      ["CREATE_FAIL", remote.createFail === true ? "1" : ""],
     ]);
     const { status } = spawnSync("bash", ["-e", script], { env });
-    return { status, calls: readFileSync(log, "utf8").split("\n").filter(Boolean) };
+    const calls = readFileSync(log, "utf8").split("\n").filter(Boolean);
+    raw = calls;
+    return { status, calls: calls.map((call) => call.replace(/--output \S+/u, "--output <tmp>")) };
   };
+  const C = "ductura-contracts-2.1.0.tgz";
+  const VIEW = "ductura/server release view contracts-v2.1.0 --json assets --jq .assets[].name";
+  const DOWNLOAD_C = `ductura/server release download contracts-v2.1.0 --pattern ${C} --output <tmp>`;
+
+  // Negative cases first: the same name with other bytes never passes or uploads.
+  it.each([
+    ["other bytes", { remote: "other bytes" }],
+    ["an empty asset", { remote: "" }],
+    ["a failed download", { dlFail: true }],
+    ["a download that writes nothing", { dlNone: true }],
+  ])("fails on %s under the same name, before any upload", (_, remote) => {
+    expect(run("refs/tags/contracts-v2.1.0", C, { exists: true, assets: C, ...remote })).toEqual({
+      status: 1,
+      calls: [VIEW, DOWNLOAD_C],
+    });
+  });
+
+  it("never uploads after a failed view: create fails on the existing release", () => {
+    const result = run("refs/tags/contracts-v2.1.0", C, { createFail: true });
+    expect(result.status).not.toBe(0);
+    expect(result.calls.filter((call) => call.includes(" upload "))).toEqual([]);
+  });
+
+  it("passes a rerun with the same sha256, without an upload", () => {
+    const assets = `notes.txt\n${C}\n`;
+    expect(run("refs/tags/contracts-v2.1.0", C, { exists: true, assets })).toEqual({
+      status: 0,
+      calls: [VIEW, DOWNLOAD_C],
+    });
+  });
+
+  it("downloads into a fresh folder, never into ./release", () => {
+    expect(run("refs/tags/contracts-v2.1.0", C, { exists: true, assets: C }).status).toBe(0);
+    const output = /--output (\S+)$/u.exec(raw[1] ?? "")?.[1] ?? "";
+    expect(output).toMatch(new RegExp(`^${dir}/tmp\\.[A-Za-z0-9]+/asset$`, "u"));
+    expect(readFileSync(output, "utf8")).toBe(bytes);
+  });
 
   it("creates the release with the verified file on the existing tag", () => {
-    expect(run("refs/tags/contracts-v2.1.0", "ductura-contracts-2.1.0.tgz")).toEqual({
+    expect(run("refs/tags/contracts-v2.1.0", C)).toEqual({
       status: 0,
       calls: [
-        "ductura/server release view contracts-v2.1.0",
-        `ductura/server release create contracts-v2.1.0 ./release/ductura-contracts-2.1.0.tgz --verify-tag --title contracts-v2.1.0 --notes sha256 ${sum}`,
+        VIEW,
+        `ductura/server release create contracts-v2.1.0 ./release/${C} --verify-tag --title contracts-v2.1.0 --notes sha256 ${sum}`,
       ],
     });
   });
 
   it("uploads to an existing release without --clobber", () => {
-    expect(run("refs/tags/test-fakes-v2.0.0", "ductura-test-fakes-2.0.0.tgz", true)).toEqual({
+    const file = "ductura-test-fakes-2.0.0.tgz";
+    expect(run("refs/tags/test-fakes-v2.0.0", file, { exists: true })).toEqual({
       status: 0,
       calls: [
-        "ductura/server release view test-fakes-v2.0.0",
-        "ductura/server release upload test-fakes-v2.0.0 ./release/ductura-test-fakes-2.0.0.tgz",
+        "ductura/server release view test-fakes-v2.0.0 --json assets --jq .assets[].name",
+        `ductura/server release upload test-fakes-v2.0.0 ./release/${file}`,
       ],
     });
   });
 
   it.each([
-    ["a branch", "refs/heads/main", "ductura-contracts-2.1.0.tgz"],
+    ["a longer name", `${C}.bak`],
+    ["a prefix", `x-${C}`],
+    ["a CR", `${C}\r`],
+    ["a tab", `${C}\t`],
+    ["an NBSP", `${C} `],
+    ["a DEL", `${C}\u007f`],
+    ["a Windows path", `release\\${C}`],
+  ])("reads an asset with %s as another asset: one upload, no download", (_, name) => {
+    expect(run("refs/tags/contracts-v2.1.0", C, { exists: true, assets: name })).toEqual({
+      status: 0,
+      calls: [VIEW, `ductura/server release upload contracts-v2.1.0 ./release/${C}`],
+    });
+  });
+
+  it.each([
+    ["a branch", "refs/heads/main", C],
     ["another package's file", "refs/tags/contracts-v2.1.0", "ductura-test-fakes-2.1.0.tgz"],
     ["another version's file", "refs/tags/contracts-v2.1.0", "ductura-contracts-2.1.1.tgz"],
-    ["a suffix", "refs/tags/contracts-v2.1.0-x", "ductura-contracts-2.1.0.tgz"],
-    ["a prefix", "xrefs/tags/contracts-v2.1.0", "ductura-contracts-2.1.0.tgz"],
-    ["a newline", "refs/tags/contracts-v2.1.0\n", "ductura-contracts-2.1.0.tgz"],
-    ["a CR", "refs/tags/contracts-v2.1.0\r", "ductura-contracts-2.1.0.tgz"],
-    ["a tab", "refs/tags/contracts-v2.1.0\t", "ductura-contracts-2.1.0.tgz"],
-    ["an NBSP", "refs/tags/contracts-v2.1.0\u00a0", "ductura-contracts-2.1.0.tgz"],
-    ["a DEL", "refs/tags/contracts-v2.1.0\u007f", "ductura-contracts-2.1.0.tgz"],
-    ["a command", "refs/tags/contracts-v2.1.0;id", "ductura-contracts-2.1.0.tgz"],
-    ["a Windows path", "refs\\tags\\contracts-v2.1.0", "ductura-contracts-2.1.0.tgz"],
-    ["an empty ref", "", "ductura-contracts-2.1.0.tgz"],
+    ["a suffix", "refs/tags/contracts-v2.1.0-x", C],
+    ["a prefix", "xrefs/tags/contracts-v2.1.0", C],
+    ["a newline", "refs/tags/contracts-v2.1.0\n", C],
+    ["a CR", "refs/tags/contracts-v2.1.0\r", C],
+    ["a tab", "refs/tags/contracts-v2.1.0\t", C],
+    ["an NBSP", "refs/tags/contracts-v2.1.0 ", C],
+    ["a DEL", "refs/tags/contracts-v2.1.0\u007f", C],
+    ["a command", "refs/tags/contracts-v2.1.0;id", C],
+    ["a Windows path", "refs\\tags\\contracts-v2.1.0", C],
+    ["an empty ref", "", C],
   ])("refuses %s before any gh call", (_, ref, file) => {
-    const result = run(ref, file, true);
+    const result = run(ref, file, { exists: true, assets: C });
     expect(result.status).not.toBe(0);
     expect(result.calls).toEqual([]);
   });

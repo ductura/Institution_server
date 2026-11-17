@@ -44,6 +44,13 @@ export {
 } from "./problem-report.ts";
 export type { ProblemReportStore } from "./problem-report.ts";
 export type {
+  CourseCreateOutcome,
+  CourseInput,
+  EnrollmentCodeIssueOutcome,
+  EnrollmentCodeRevokeOutcome,
+  InstitutionCourses,
+} from "./institution-courses.ts";
+export type {
   AccessLogCursor,
   AccessLogEntry,
   AccessLogRole,
@@ -96,7 +103,17 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
-export { createWorkOpener } from "./open-work.ts";
+export {
+  createWorkOpener,
+  OPEN_WORK_DATABASE_ERROR,
+  OPEN_WORK_ERRORS,
+  OPEN_WORK_NOT_ACCEPTING,
+  OPEN_WORK_NOT_CONFIGURED,
+  OPEN_WORK_NOT_FOUND,
+  OPEN_WORK_NOT_STARTED,
+  OPEN_WORK_ROW_MALFORMED,
+  OPEN_WORK_UNAUTHENTICATED,
+} from "./open-work.ts";
 export {
   ACCESS_LOG_PAGE,
   createMyAccessLogReader,
@@ -125,6 +142,7 @@ export { createPendingReceiptStore } from "./pending-receipt-store.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
+export { createInstitutionCourses } from "./institution-courses.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the

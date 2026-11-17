@@ -125,6 +125,15 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export {
+  createProblemReportRoute,
+  createProblemReportRouteFor,
+  PROBLEM_REPORT_MAX_BYTES,
+  PROBLEM_REPORT_TIMEOUT_MS,
+  type ProblemReportFault,
+  type ProblemReportFaultRecord,
+  type ProblemReportRouteOptions,
+} from "./support-problem-report.ts";
+export {
   createWebAuthnRoutes,
   createWebAuthnRoutesFor,
   decodeBase64url,

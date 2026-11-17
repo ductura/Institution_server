@@ -10,6 +10,7 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - `clientErrors.*` (u `hr.ts` i `en.ts`): tekstovi kataloga grešaka za preloader koje ugovor servera ne odgovara (429, 502, 504, `session_expired`; `server/http/error-catalog.ts`, DAN-802). Test `server/http/error-catalog.test.ts` provjerava da svaki ključ kataloga ima tekst u oba jezika i da sekcija nema drugih ključeva.
 - `trafficSummary.*`: greške prozora zbrojeva prometa (`server/traffic/traffic-summary.ts`, DAN-836-1). Test `server/traffic/traffic-summary.test.ts` provjerava da svaki kod ima tekst i da sekcija nema drugih ključeva.
 - `institutions.*`: greške provjere popisa ustanova (`server/settings/institutions.ts`, DAN-911). Test `server/settings/institutions.test.ts` provjerava da svaki kod ima tekst i da sekcija nema drugih ključeva.
+- `openWork.*`: greške porta kojim ruta `evidence/open` otvara rad studenta (`server/database/open-work.ts`, DAN-859). Ruta ih ne šalje (odgovara samo `{status}`); test `server/database/open-work.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija nema drugih ključeva.
 - `myAccessLog.*`: greške porta studentovog zapisa pristupa (`server/database/my-access-log.ts`, DAN-859-1). Test `server/database/my-access-log.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija nema drugih ključeva.
 - `app.*`: greške prijelaznog poslužitelja `server/app.ts` (DAN-782; `APP_ERRORS`, odgovor `{ code, messageKey }`). Test `server/app.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija `app` nema drugih ključeva.
 
