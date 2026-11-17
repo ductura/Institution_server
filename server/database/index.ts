@@ -37,7 +37,7 @@ export type {
   AccessLogEntry,
   AccessLogRole,
   AccessLogSurface,
-  MyAccessLogRead,
+  MyAccessLogPage,
   MyAccessLogReader,
 } from "./my-access-log.ts";
 export type {
@@ -86,7 +86,15 @@ export { createOpenSession } from "./open-session.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export { createWorkOpener } from "./open-work.ts";
-export { ACCESS_LOG_PAGE, createMyAccessLogReader } from "./my-access-log.ts";
+export {
+  ACCESS_LOG_PAGE,
+  createMyAccessLogReader,
+  MY_ACCESS_LOG_DATABASE_ERROR,
+  MY_ACCESS_LOG_ERRORS,
+  MY_ACCESS_LOG_NOT_FOUND,
+  MY_ACCESS_LOG_ROW_MALFORMED,
+  MY_ACCESS_LOG_UNAUTHENTICATED,
+} from "./my-access-log.ts";
 export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,

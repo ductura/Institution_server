@@ -7,10 +7,19 @@
 // at b36c82b about the first-page read and the row check is kept here. Those
 // about the cursor, the Zagreb days, a repeated id and merging pages move with
 // that code to DAN-859-2; those about console.error do not apply (nothing is
-// logged here, the reason is returned instead).
+// logged here, docs/CODE_STYLE.md §8: the answer is a Result with an AppError).
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
-import { createMyAccessLogReader } from "./my-access-log.ts";
+import {
+  createMyAccessLogReader,
+  MY_ACCESS_LOG_DATABASE_ERROR,
+  MY_ACCESS_LOG_ERRORS,
+  MY_ACCESS_LOG_NOT_FOUND,
+  MY_ACCESS_LOG_ROW_MALFORMED,
+  MY_ACCESS_LOG_UNAUTHENTICATED,
+} from "./my-access-log.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 const TOKEN = "izmisljeni-token-zapisa-pristupa-0000000001";
@@ -42,17 +51,48 @@ function reader(answer: Record<string, unknown>[] | { thrown: unknown }) {
   return { log: createMyAccessLogReader(withActor), seen, transactions: () => transactions };
 }
 
+const fail = (error: unknown) => ({ ok: false, error });
+const UNAUTHENTICATED = fail(MY_ACCESS_LOG_UNAUTHENTICATED);
+const NOT_FOUND = fail(MY_ACCESS_LOG_NOT_FOUND);
+const ROW_MALFORMED = fail(MY_ACCESS_LOG_ROW_MALFORMED);
+const DATABASE_ERROR = fail(MY_ACCESS_LOG_DATABASE_ERROR);
+
 const sqlError = (code: unknown) => Object.assign(new Error("tekst greške baze"), { code });
+
+const catalogue = JSON.parse(
+  readFileSync(new URL("../../locales/hr.json", import.meta.url), "utf8"),
+) as { myAccessLog?: Record<string, unknown> };
+
+describe("my access log errors (docs/CODE_STYLE.md §8)", () => {
+  it("has a Croatian text for every key, and no other key in its section", () => {
+    const section = catalogue.myAccessLog ?? {};
+    for (const { messageKey } of MY_ACCESS_LOG_ERRORS) {
+      const text = section[messageKey.replace(/^myAccessLog\./, "")];
+      expect(typeof text === "string" && text.trim().length > 0, messageKey).toBe(true);
+    }
+    expect(
+      Object.keys(section)
+        .map((k) => `myAccessLog.${k}`)
+        .sort(),
+    ).toEqual(MY_ACCESS_LOG_ERRORS.map((e) => e.messageKey).sort());
+  });
+
+  it("lists four errors with distinct UPPER_SNAKE codes", () => {
+    expect(MY_ACCESS_LOG_ERRORS).toHaveLength(4);
+    for (const { code } of MY_ACCESS_LOG_ERRORS) expect(code).toMatch(/^MY_ACCESS_LOG_[A-Z_]+$/);
+    expect(new Set(MY_ACCESS_LOG_ERRORS.map((e) => e.code)).size).toBe(4);
+  });
+});
 
 describe("my access log: refusals", () => {
   it("answers not_found, and nothing else, when the database refuses the work (ZD403)", async () => {
     const r = reader({ thrown: sqlError("ZD403") });
-    expect(await r.log.read(TOKEN, DOC)).toEqual({ status: "not_found" });
+    expect(await r.log.read(TOKEN, DOC)).toEqual(NOT_FOUND);
   });
 
   it("answers unauthenticated when the database finds no session (ZD401)", async () => {
     const r = reader({ thrown: sqlError("ZD401") });
-    expect(await r.log.read(TOKEN, DOC)).toEqual({ status: "unauthenticated" });
+    expect(await r.log.read(TOKEN, DOC)).toEqual(UNAUTHENTICATED);
   });
 
   const tokens: [string, string | undefined][] = [
@@ -69,7 +109,7 @@ describe("my access log: refusals", () => {
   ];
   it.each(tokens)("refuses a token that is %s before the database", async (_name, token) => {
     const r = reader([ROW]);
-    expect(await r.log.read(token, DOC)).toEqual({ status: "unauthenticated" });
+    expect(await r.log.read(token, DOC)).toEqual(UNAUTHENTICATED);
     expect(r.transactions()).toBe(0);
   });
 
@@ -88,7 +128,7 @@ describe("my access log: refusals", () => {
     "answers not_found for a work id with %s, before the database",
     async (_n, doc) => {
       const r = reader([ROW]);
-      expect(await r.log.read(TOKEN, doc)).toEqual({ status: "not_found" });
+      expect(await r.log.read(TOKEN, doc)).toEqual(NOT_FOUND);
       expect(r.transactions()).toBe(0);
     },
   );
@@ -119,10 +159,7 @@ describe("my access log: refusals", () => {
   ];
   it.each(rows)("makes the log unavailable for a row with %s", async (_name, change) => {
     const r = reader([{ ...ROW, ...change }]);
-    expect(await r.log.read(TOKEN, DOC)).toEqual({
-      status: "unavailable",
-      reason: "row_malformed",
-    });
+    expect(await r.log.read(TOKEN, DOC)).toEqual(ROW_MALFORMED);
   });
 
   it("reads another person's work exactly as an unknown work, with no error text", async () => {
@@ -134,33 +171,25 @@ describe("my access log: refusals", () => {
     expect(await r.log.read(TOKEN, "rad-nepostojeci")).toEqual(foreign);
     expect(JSON.stringify(foreign)).not.toContain(canary);
     const odd = await reader({ thrown: sqlError(`bad ${canary}`) }).log.read(TOKEN, DOC);
-    expect(odd).toEqual({ status: "unavailable", reason: "unknown" });
-    expect(await reader({ thrown: sqlError("ZD422") }).log.read(TOKEN, DOC)).toEqual({
-      status: "unavailable",
-      reason: "ZD422",
-    });
+    expect(odd).toEqual(DATABASE_ERROR);
+    expect(await reader({ thrown: sqlError("ZD422") }).log.read(TOKEN, DOC)).toEqual(
+      DATABASE_ERROR,
+    );
   });
 
   it("keeps only a closed code of any other error, never its text", async () => {
-    expect(await reader({ thrown: sqlError("57014") }).log.read(TOKEN, DOC)).toEqual({
-      status: "unavailable",
-      reason: "57014",
-    });
+    expect(await reader({ thrown: sqlError("57014") }).log.read(TOKEN, DOC)).toEqual(
+      DATABASE_ERROR,
+    );
     for (const thrown of [new Error("bez koda"), sqlError("ne kod"), "string"]) {
-      expect(await reader({ thrown }).log.read(TOKEN, DOC)).toEqual({
-        status: "unavailable",
-        reason: "unknown",
-      });
+      expect(await reader({ thrown }).log.read(TOKEN, DOC)).toEqual(DATABASE_ERROR);
     }
     const getter = Object.defineProperty(new Error("x"), "code", {
       get() {
         throw new Error("getter");
       },
     });
-    expect(await reader({ thrown: getter }).log.read(TOKEN, DOC)).toEqual({
-      status: "unavailable",
-      reason: "unknown",
-    });
+    expect(await reader({ thrown: getter }).log.read(TOKEN, DOC)).toEqual(DATABASE_ERROR);
   });
 });
 
@@ -187,10 +216,7 @@ const NOT_AN_INSTANT: [string, string][] = [
 describe("my access log: a time given as text", () => {
   it.each(NOT_AN_INSTANT)("refuses %s, beside a valid row (%s)", async (_name, iso) => {
     const bad = { ...ROW, entry_id: "00000000-0000-4000-8000-0000000000e3", opened_at: iso };
-    expect(await reader([ROW, bad]).log.read(TOKEN, DOC)).toEqual({
-      status: "unavailable",
-      reason: "row_malformed",
-    });
+    expect(await reader([ROW, bad]).log.read(TOKEN, DOC)).toEqual(ROW_MALFORMED);
   });
 
   it.each([
@@ -200,7 +226,7 @@ describe("my access log: a time given as text", () => {
     ["1 January", "2027-01-01T00:00:00Z", Date.UTC(2027, 0, 1)],
   ])("reads %s exactly (%s)", async (_name, iso, ms) => {
     const read = await reader([{ ...ROW, opened_at: iso }]).log.read(TOKEN, DOC);
-    expect(read.status === "ok" && read.entries[0]?.at).toBe(ms);
+    expect(read.ok && read.value.entries[0]?.at).toBe(ms);
   });
 });
 
@@ -233,32 +259,36 @@ describe("my access log: the student's own", () => {
       reader_family_name: null,
     };
     expect(await reader([ROW, odd]).log.read(TOKEN, DOC)).toEqual({
-      status: "ok",
-      entries: [
-        {
-          id: ID,
-          at: Date.UTC(2026, 10, 10, 13, 10),
-          role: "mentor",
-          surface: "live_view",
-          reader: { givenName: "Izmišljena", familyName: "Mentorica" },
-        },
-        {
-          id: older.entry_id,
-          at: Date.UTC(2026, 10, 9, 8, 0),
-          role: "unknown",
-          surface: "unknown",
-          reader: null,
-        },
-      ],
-      next: null,
+      ok: true,
+      value: {
+        entries: [
+          {
+            id: ID,
+            at: Date.UTC(2026, 10, 10, 13, 10),
+            role: "mentor",
+            surface: "live_view",
+            reader: { givenName: "Izmišljena", familyName: "Mentorica" },
+          },
+          {
+            id: older.entry_id,
+            at: Date.UTC(2026, 10, 9, 8, 0),
+            role: "unknown",
+            surface: "unknown",
+            reader: null,
+          },
+        ],
+        next: null,
+      },
     });
   });
 
   it("reads an empty log as ok with no entry, and counts nothing", async () => {
     expect(await reader([]).log.read(TOKEN, DOC)).toEqual({
-      status: "ok",
-      entries: [],
-      next: null,
+      ok: true,
+      value: {
+        entries: [],
+        next: null,
+      },
     });
     const read = await reader([ROW]).log.read(TOKEN, DOC);
     expect(JSON.stringify(read)).not.toMatch(/"(count|total|duration|visits)"/);
@@ -276,7 +306,7 @@ describe("my access log: the student's own", () => {
       TOKEN,
       DOC,
     );
-    expect(read.status === "ok" && read.entries[0]).toMatchObject({
+    expect(read.ok && read.value.entries[0]).toMatchObject({
       at: Date.UTC(2026, 10, 10, 13, 10),
       role: "unknown",
     });
@@ -289,7 +319,7 @@ describe("my access log: the student's own", () => {
       opened_at: new Date(Date.UTC(2026, 10, 10, 13, 10) - (i % 3) * 300_000),
     }));
     const read = await reader(page).log.read(TOKEN, DOC);
-    expect(read.status === "ok" && read.next).toEqual({
+    expect(read.ok && read.value.next).toEqual({
       beforeAt: "2026-11-10T13:00:00.000Z",
       beforeId: "00000000-0000-4000-8000-000000000102",
     });
