@@ -61,14 +61,17 @@ const DEFAULT_INTERVAL = defaultOf(INTERVAL.key) as number;
 
 /**
  * The interval in hours, or why not to run. Keys are read through
- * Map.prototype, so a subclass cannot answer for the Map, and anything that
- * is not a real Map (a Proxy, a bare Map prototype) throws into "unavailable".
+ * Map.prototype, a brand check: a real Map from any realm is read (no
+ * instanceof, QA FAIL on #289), a subclass cannot answer for the Map, and
+ * anything that is not a real Map (an object, a Proxy, a bare Map prototype,
+ * undefined) throws into "unavailable".
  */
 function decide(settings: unknown): number | BackupSkipReason {
   try {
-    if (!(settings instanceof Map)) return "settings_unavailable";
-    const has = (key: string): boolean => Map.prototype.has.call(settings, key);
-    const get = (key: string): unknown => Map.prototype.get.call(settings, key);
+    const has = (key: string): boolean =>
+      Map.prototype.has.call(settings as Map<unknown, unknown>, key);
+    const get = (key: string): unknown =>
+      Map.prototype.get.call(settings as Map<unknown, unknown>, key);
     const enabled = get(ENABLED.key);
     if (enabled !== true) {
       if (!has(ENABLED.key)) return "enabled_missing";

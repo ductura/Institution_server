@@ -1,6 +1,8 @@
 // S-1G-a part 2 (DAN-1012-2a; contract Ductus#2028 c.6965270952): the backup
 // scheduler on a fake clock. Negative cases first: the job never runs unless
 // backup.enabled is exactly true.
+import { runInNewContext } from "node:vm";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -40,6 +42,20 @@ const deferred = () => {
   let resolve!: () => void;
   const promise = new Promise<void>((r) => (resolve = r));
   return { promise, resolve };
+};
+
+/** Records the time of each call of run(), in hours from now on the fake clock. */
+const callTimes = (run: { mockImplementation: (fn: () => unknown) => unknown }) => {
+  const calls: number[] = [];
+  const t0 = performance.now();
+  return {
+    calls,
+    record: (fn: () => unknown = () => undefined) =>
+      run.mockImplementation(() => {
+        calls.push((performance.now() - t0) / H);
+        return fn();
+      }),
+  };
 };
 
 describe("backup scheduler: backup.enabled that is not exactly true never runs", () => {
@@ -103,6 +119,21 @@ describe("backup scheduler: backup.enabled that is not exactly true never runs",
     await vi.advanceTimersByTimeAsync(48 * H);
     expect(run).not.toHaveBeenCalled();
     expect(onSkip.mock.calls).toEqual(Array.from({ length: 48 }, () => ["settings_unavailable"]));
+  });
+
+  // QA FAIL on #289 (7d37ecf): a real Map from another realm is a Map.
+  it("accepts a real Map from another VM context", async () => {
+    const foreign = runInNewContext(
+      'new Map([["backup.enabled", true], ["backup.interval_hours", 1]])',
+    ) as unknown;
+    expect(foreign instanceof Map).toBe(false);
+    const { state, run, onSkip } = setup([]);
+    state.settings = foreign;
+    const { calls, record } = callTimes(run);
+    record();
+    await vi.advanceTimersByTimeAsync(3 * H);
+    expect(calls).toEqual([1, 2, 3]);
+    expect(onSkip).not.toHaveBeenCalled();
   });
 
   it("reads a Map subclass through Map.prototype, not its own get and has", async () => {
@@ -174,18 +205,6 @@ describe("backup scheduler: enabled runs once per interval", () => {
 
   // DAN-1012-2a (option A, Ductus#2028 c.6965242237): run() is called on a
   // fixed hourly grid from start(); the job's own timing never moves it.
-  const callTimes = (run: { mockImplementation: (fn: () => unknown) => unknown }) => {
-    const calls: number[] = [];
-    const t0 = performance.now();
-    return {
-      calls,
-      record: (fn: () => unknown = () => undefined) =>
-        run.mockImplementation(() => {
-          calls.push((performance.now() - t0) / H);
-          return fn();
-        }),
-    };
-  };
 
   it.each([1, 5, 24])("interval %s: every call is on the grid", async (interval) => {
     const { run } = setup(on(interval));

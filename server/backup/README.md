@@ -16,7 +16,7 @@ Zato se `run()` poziva najviše jednom po intervalu mreže, a točno jednom kad 
 
 Točka koja samo čeka svoj sat ne javlja ništa. Svaka druga točka na kojoj se posao ne pokrene javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
 
-- `settings_unavailable`: čitač baci, ne vrati pravi `Map` ili ne završi prije sljedeće točke;
+- `settings_unavailable`: čitač baci, ne vrati pravi `Map` (provjera kroz `Map.prototype`, pa vrijedi i `Map` iz drugog realma) ili ne završi prije sljedeće točke;
 - `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; točke se broje ispočetka;
 - `interval_invalid`: interval je izvan kataloga;
 - `busy`: točka je dospjela dok je prethodna provjera ili posao još trajao (jednom za svaku točku), i kad njezin povratni poziv stigne tek nakon sinkronog posla;
