@@ -1,7 +1,7 @@
 /**
- * Log analysis rules (S-1K.7-a, DAN-1010-1a to 1d; contracts Ductus#2028
- * c.6964677996, c.6967029458, c.6980590578 and c.6981110138): pure functions
- * that count system events in a time window.
+ * Log analysis rules (S-1K.7-a, DAN-1010-1a to 1e; contracts Ductus#2028
+ * c.6964677996, c.6967029458, c.6980590578, c.6981110138 and c.6982169225):
+ * pure functions that count system events in a time window.
  * A finding is about the system only: it holds no account, address or person,
  * so it is never a statement about a student and goes to no teacher.
  */
@@ -29,6 +29,12 @@ export const ANALYSIS_RULES = Object.freeze([
     "authz.operator_denied",
     "authz.origin_rejected",
   ]),
+  // Failed calls and backups only; warning.raised is the analysis' own output (D-298).
+  rule("operation_failures", "operationFailures", [
+    "external.call_failed",
+    "backup.failed",
+    "backup.restore_failed",
+  ]),
 ]);
 
 export type AnalysisRuleName = (typeof ANALYSIS_RULES)[number]["name"];
@@ -49,6 +55,8 @@ export const DEFAULT_ANALYSIS_THRESHOLDS: AnalysisThresholds = Object.freeze({
   sessionRejections: Object.freeze({ windowMs: 5 * 60 * 1000, minCount: 100 }),
   // Provisional: only authz.operator_denied is written yet (contract 1d, c.6981110138).
   authzDenials: Object.freeze({ windowMs: 10 * 60 * 1000, minCount: 50 }),
+  // Provisional: none of the three events is written yet (contract 1e, c.6982169225).
+  operationFailures: Object.freeze({ windowMs: 10 * 60 * 1000, minCount: 20 }),
 });
 
 export type AnalysisFinding = {
