@@ -27,6 +27,9 @@
 --   so no child table adds to it.
 -- - The gap is compared in numeric: no stored seq, the greatest bigint of a
 --   base included, makes the verification fail instead of report.
+-- - A NULL seq or hash in the base is a gap or a link of the first row
+--   whatever that row holds, so a base damaged like the row cannot hide the
+--   row's damage. The zero base holds no NULL, so uncut nothing changes.
 DO $$
 BEGIN
   IF current_user <> 'ductus_logs_migrator' OR current_database() <> 'ductus_logs' THEN
@@ -50,7 +53,8 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
     SELECT e.seq, e.prev_hash, e.hash,
            public.log_entry_digest(e.prev_hash, e.seq, e.id, e.at, e.kind, e.payload) AS computed,
            pg_catalog.lag(e.seq, 1, (SELECT b.seq FROM base b)) OVER w AS before_seq,
-           pg_catalog.lag(e.hash, 1, (SELECT b.hash FROM base b)) OVER w AS before_hash
+           pg_catalog.lag(e.hash, 1, (SELECT b.hash FROM base b)) OVER w AS before_hash,
+           pg_catalog.row_number() OVER w OPERATOR(pg_catalog.=) 1 AS first
     FROM public.log_entry e
     WINDOW w AS (ORDER BY e.seq)
   ), last AS (
@@ -61,10 +65,12 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
   SELECT x.seq, x.problem FROM (
     SELECT entry.seq, 'hash' AS problem FROM entry WHERE entry.hash IS DISTINCT FROM entry.computed
     UNION ALL
-    SELECT entry.seq, 'link' FROM entry WHERE entry.prev_hash IS DISTINCT FROM entry.before_hash
+    SELECT entry.seq, 'link' FROM entry
+    WHERE entry.prev_hash IS DISTINCT FROM entry.before_hash OR (entry.first AND entry.before_hash IS NULL)
     UNION ALL
     SELECT entry.seq, 'gap' FROM entry
     WHERE entry.seq::numeric IS DISTINCT FROM (entry.before_seq::numeric OPERATOR(pg_catalog.+) 1)
+       OR (entry.first AND entry.before_seq IS NULL)
     UNION ALL
     SELECT h.seq, 'head' FROM public.log_chain_head h, last
     WHERE h.seq IS DISTINCT FROM last.seq OR h.hash IS DISTINCT FROM last.hash

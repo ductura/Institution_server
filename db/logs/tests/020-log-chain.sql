@@ -70,7 +70,7 @@ END
 $$;
 
 
-SELECT plan(237);
+SELECT plan(239);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -730,7 +730,16 @@ FROM (VALUES
   ('ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL',
    ARRAY[(1 - pg_temp.at(0))::text || ' gap'], 'a base of one row with a NULL seq is found at the first row, not taken as seq 0'),
   ('ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; UPDATE public.log_chain_base SET hash = NULL',
-   ARRAY[(1 - pg_temp.at(0))::text || ' link'], 'a base of one row with a NULL digest is found at the first row, not taken as 32 zero bytes')
+   ARRAY[(1 - pg_temp.at(0))::text || ' link'], 'a base of one row with a NULL digest is found at the first row, not taken as 32 zero bytes'),
+  -- A base damaged like the first row does not hide the row's damage.
+  ('ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; UPDATE public.log_chain_base SET hash = NULL;
+    ALTER TABLE public.log_entry ALTER prev_hash DROP NOT NULL; UPDATE public.log_entry SET prev_hash = NULL WHERE seq = 1',
+   ARRAY[(1 - pg_temp.at(0))::text || ' hash', (1 - pg_temp.at(0))::text || ' link'],
+   'a NULL base digest and a NULL link of the first row give the link, as a valid base does'),
+  (':cut6; ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL;
+    ALTER TABLE public.log_entry ALTER seq DROP NOT NULL; UPDATE public.log_entry SET seq = NULL WHERE seq = :base + 7',
+   ARRAY['- gap', '- hash', '7 head'],
+   'a NULL base seq and a NULL seq of the only row left give the gap, as a valid base does')
 ) t (sql, expected, what);
 SELECT is(pg_temp.tampered('UPDATE public.log_chain_base SET (seq, hash) = (SELECT seq, hash FROM public.log_entry WHERE seq = :base + 2)'),
   ARRAY[(1 - pg_temp.at(0))::text || ' gap', (1 - pg_temp.at(0))::text || ' link'],
