@@ -18,7 +18,11 @@ import { isIPv4, isIPv6, Socket } from "node:net";
 import { describe, expect, it } from "vitest";
 
 import { ROUTES } from "../../server/contracts/index.ts";
-import { operatorPolicyLayer, type SecondFactor } from "../../server/http/index.ts";
+import {
+  operatorPolicyLayer,
+  type OperatorList,
+  type SecondFactor,
+} from "../../server/http/index.ts";
 import { checkEvent } from "../../server/log/index.ts";
 import { sessionTokenFromCookie } from "../../server/session/index.ts";
 import {
@@ -51,15 +55,19 @@ const vector = (name: string): Vector => {
   return found;
 };
 
+/** A port that throws, or answers what no port may. */
+type Fault = "throws" | "toString";
+
 /**
  * Step 8 over one vector's request: the operator list answers `listed`, the
- * second factor `outcome`; "throws" makes that port fail. `seen` records each port's token; `body` is the
+ * second factor `outcome`; "throws" makes that port fail, "toString" is an
+ * answer no port may give. `seen` records each port's token; `body` is the
  * answer step 8 wrote, if any.
  */
 async function step8(
   request: Vector["request"],
-  outcome: Awaited<ReturnType<SecondFactor>> | "throws",
-  listed: "listed" | "not_listed" | "throws" = "listed",
+  outcome: Awaited<ReturnType<SecondFactor>> | Fault,
+  listed: Awaited<ReturnType<OperatorList>> | Fault = "listed",
 ) {
   const message = new IncomingMessage(new Socket());
   message.method = "GET";
@@ -78,14 +86,14 @@ async function step8(
     async (token) => {
       seen.push(`factor:${token}`);
       if (outcome === "throws") throw new Error("invented: the factor port is down");
-      return outcome;
+      return outcome as Awaited<ReturnType<SecondFactor>>;
     },
     () => undefined,
     () => undefined,
     async (token) => {
       seen.push(`listed:${token}`);
       if (listed === "throws") throw new Error("invented: the operator list is down");
-      return listed;
+      return listed as Awaited<ReturnType<OperatorList>>;
     },
   );
   const result = await layer(message, response);
@@ -139,18 +147,35 @@ describe("every request of ops.events.get through step 8", () => {
     },
   );
 
-  // QA self-check on #328: step 8 answers 503 itself when a port fails, so
-  // the unavailable vector is also its answer.
-  it.each(ofStatus(503))(
-    "%s: 503 as its vector shows when the operator list or the factor cannot be asked",
+  // QA self-check on #328: step 8 answers 503 itself when a port cannot
+  // answer (it throws, says unavailable, or gives no known answer), so the
+  // unavailable vector is also its answer.
+  it.each(
+    ofStatus(503).flatMap((name) =>
+      (["throws", "unavailable", "toString"] as const).map((fault) => [name, fault] as const),
+    ),
+  )("%s: 503 as its vector shows when a port %s", async (name, fault) => {
+    const { request, response } = vector(name);
+    const listFails = await step8(request, "confirmed", fault);
+    expect([listFails.result, listFails.seen.length]).toEqual(["done", 1]);
+    expectAnswer(listFails, response);
+    const factorFails = await step8(request, fault);
+    expect([factorFails.result, factorFails.seen.length]).toEqual(["done", 2]);
+    expectAnswer(factorFails, response);
+  });
+
+  // A cookie of a session that ended: either port says unauthenticated, and
+  // step 8 answers the 401 of the no-session vector.
+  it.each(ofStatus(200, 403, 422, 503))(
+    "%s: a session the ports no longer know is the 401 of the vectors",
     async (name) => {
-      const { request, response } = vector(name);
-      const listFails = await step8(request, "confirmed", "throws");
-      expect([listFails.result, listFails.seen.length]).toEqual(["done", 1]);
-      expectAnswer(listFails, response);
-      const factorFails = await step8(request, "throws");
-      expect([factorFails.result, factorFails.seen.length]).toEqual(["done", 2]);
-      expectAnswer(factorFails, response);
+      const want = vector(ofStatus(401)[0]!).response;
+      const offList = await step8(vector(name).request, "confirmed", "unauthenticated");
+      expect([offList.result, offList.seen.length]).toEqual(["done", 1]);
+      expectAnswer(offList, want);
+      const offFactor = await step8(vector(name).request, "unauthenticated");
+      expect([offFactor.result, offFactor.seen.length]).toEqual(["done", 2]);
+      expectAnswer(offFactor, want);
     },
   );
 
@@ -252,8 +277,17 @@ function maskValue(key: string, value: unknown): unknown {
 // operator_log keeps requestId and accountKind only in these shapes, else null.
 const REQUEST_ID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const ACCOUNT_KIND_SHAPE = /^[a-z_]{1,32}$/u;
-const shaped = (value: unknown, shape: RegExp): string | null =>
-  typeof value === "string" && shape.test(value) ? value : null;
+/** payload ->> key: a string as it is, a number or flag as its text, else null. */
+const asText = (value: unknown): string | null =>
+  typeof value === "string"
+    ? value
+    : typeof value === "number" || typeof value === "boolean"
+      ? String(value)
+      : null;
+const shaped = (value: unknown, shape: RegExp): string | null => {
+  const text = asText(value);
+  return text !== null && shape.test(text) ? text : null;
+};
 
 function asOperatorLogRow(
   record: { event: string; requestId: unknown; accountKind: unknown; fields: object },
@@ -357,6 +391,44 @@ describe("the page vector is what the log flow writes and operator_log returns",
       expect(asOperatorLogRow(checked.value, row.seq, row.at)).toEqual(row);
     },
   );
+
+  // A status the route declares, or one the pipeline gives on any route:
+  // 403 (step 3), 405, 429, 499 (closed early) and 500.
+  it("every traffic.request status is one its route can answer", () => {
+    const pipeline = [403, 405, 429, 499, 500];
+    for (const row of rows.filter(
+      (r) => r.kind === "traffic.request" && r.fields.route !== "none",
+    )) {
+      const route = ROUTES.find(
+        (r) => r.path === row.fields.route && r.method === row.fields.method,
+      );
+      const declared = [...(route?.responses ?? []), ...(route?.errors ?? [])].map((r) => r.status);
+      expect([...declared, ...pipeline], `seq ${row.seq}`).toContain(row.fields.status);
+    }
+  });
+
+  // Rows with one request id are one request: its traffic.request comes last,
+  // and every other row falls inside that request, from its start (at minus
+  // durationMs, less the lag of the clock above) to its end.
+  it("rows of one request id are one request", () => {
+    const kindRoutes: Readonly<Record<string, readonly string[]>> = {
+      "authn.login_started": ["/api/v1/auth/login"],
+      "authn.login_failed": ["/api/v1/auth/login", "/api/v1/auth/callback"],
+    };
+    for (const traffic of rows.filter((r) => r.kind === "traffic.request")) {
+      const same = rows.filter((r) => r.requestId === traffic.requestId && r !== traffic);
+      const end = Date.parse(traffic.at);
+      const start = end - 1000 - Number(traffic.fields.durationMs);
+      for (const row of same) {
+        expect(row.seq, `seq ${row.seq}`).toBeLessThan(traffic.seq);
+        expect(Date.parse(row.at), `seq ${row.seq}`).toBeGreaterThanOrEqual(start);
+        expect(Date.parse(row.at), `seq ${row.seq}`).toBeLessThanOrEqual(end);
+        const routes = kindRoutes[row.kind];
+        if (routes !== undefined) expect(routes, `seq ${row.seq}`).toContain(traffic.fields.route);
+      }
+    }
+    expect(rows.filter((r) => r.requestId === rows[0]!.requestId).length).toBeGreaterThan(1);
+  });
 
   it("traffic.request with route none answered as the router's fallback does", () => {
     for (const row of rows.filter((r) => r.kind === "traffic.request" && r.fields.route === "none"))

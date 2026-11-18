@@ -205,7 +205,7 @@ describe("ops.events.get refuses the 200 body", () => {
     { "1a": "x" },
     { "": "x" },
     { "a\n": "x" },
-    { "a ": "x" },
+    { ["a\u00a0"]: "x" },
     { a: { b: 1 } },
     { a: [1] },
   ])("fields %j", (fields) => expect(withFields(fields)).toBe(false));
