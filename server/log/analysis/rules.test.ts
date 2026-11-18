@@ -81,6 +81,38 @@ const UNREADABLE: [string, (holder: object, key: string, value: unknown) => obje
   ["a function holding the same keys", (h) => Object.assign(() => undefined, h)],
 ];
 
+// Codex review c.6966404366: the bounds of the contract written out as numbers,
+// not read from the constants the code uses, so changing a constant fails here.
+describe("log analysis: the contract's fixed bounds", () => {
+  const DAY_MS = 86_400_000;
+  const DATE_LIMIT_MS = 8_640_000_000_000_000;
+  const one = (windowMs: number) => ({ loginFailures: { windowMs, minCount: 1 } });
+
+  it("has the bounds of the contract", () => {
+    expect([MAX_WINDOW_MS, MAX_TIME_MS, MAX_ENTRIES]).toEqual([DAY_MS, DATE_LIMIT_MS, 1_000_000]);
+  });
+
+  it("accepts a window of 24 h and refuses one millisecond more", () => {
+    expect(run(at(FAILED, 0), one(DAY_MS))).toMatchObject({ ok: true });
+    expect(run(at(FAILED, 0), one(DAY_MS + 1))).toEqual(BAD_THRESHOLD);
+  });
+
+  it("counts times up to the Date limit and skips one millisecond past it", () => {
+    for (const t of [DATE_LIMIT_MS, -DATE_LIMIT_MS]) {
+      expect(run([{ timeMs: t, event: FAILED }], one(1))).toEqual({
+        ok: true,
+        value: [{ rule: "login_failures", fromMs: t, toMs: t + 1, count: 1, minCount: 1 }],
+      });
+    }
+    for (const t of [DATE_LIMIT_MS + 1, -DATE_LIMIT_MS - 1]) {
+      expect(run([{ timeMs: t, event: FAILED }], one(1)), String(t)).toEqual({
+        ok: true,
+        value: [],
+      });
+    }
+  });
+});
+
 describe("log analysis: thresholds that are refused", () => {
   const bad: unknown[] = [0, -0, -1, 1.5, Number.NaN, Infinity, Number.MAX_SAFE_INTEGER + 1];
   bad.push("3", " 3\r\n", null, undefined, 3n, new Number(3), { valueOf: () => 3 });
