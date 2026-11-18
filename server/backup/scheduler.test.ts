@@ -855,6 +855,105 @@ describe("backup scheduler: failures, stop and options", () => {
     }
   });
 
+  // QA FAIL on #306 (dfca637), DAN-1012-2d: the end of a synchronous job is
+  // recorded at its return, not after unrelated microtasks queued ahead of
+  // the await.
+  it("a synchronous job that ends before point 2 is not busy behind a 20 ms microtask", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      // Point 2's callback comes 15 ms late, after the 20 ms microtask.
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 15 : ms);
+    }) as never);
+    try {
+      const { readSettings, run, onSkip } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record();
+      // Point 1's read resolves 10 ms before point 2, then other code holds
+      // the thread for 20 ms in a microtask queued right after it.
+      readSettings.mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            fakeSetTimeout(() => {
+              resolve(new Map(on(1)));
+              queueMicrotask(() => vi.advanceTimersByTime(20));
+            }, H - 10),
+          ),
+      );
+      await advance(2.5 * H);
+      expect(calls.map((at) => Math.round(at * 1000) / 1000)).toEqual([2, 2]);
+      expect(onSkip).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  // DAN-1012-2d: a job's promise that settles 10 ms before point 2 records its
+  // end in its first reaction, ahead of a 20 ms microtask queued after it.
+  it("a job promise that settles before point 2 is not busy behind a later microtask", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 15 : ms);
+    }) as never);
+    try {
+      const { run, onSkip } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record(() =>
+        calls.length === 1
+          ? new Promise<void>((resolve) =>
+              fakeSetTimeout(() => {
+                resolve();
+                queueMicrotask(() => vi.advanceTimersByTime(20));
+              }, H - 10),
+            )
+          : undefined,
+      );
+      await advance(2.5 * H);
+      expect(calls.map((at) => Math.round(at * 1000) / 1000)).toEqual([1, 2]);
+      expect(onSkip).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  // The negative of the case above: a job that really ends after point 2
+  // keeps that point busy.
+  it("a job that really ends 10 ms after point 2 keeps point 2 busy", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 15 : ms);
+    }) as never);
+    try {
+      const { readSettings, run, onSkip } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record(() => {
+        if (calls.length === 1) vi.advanceTimersByTime(20);
+      });
+      readSettings.mockImplementationOnce(
+        () => new Promise((resolve) => fakeSetTimeout(() => resolve(new Map(on(1))), H - 10)),
+      );
+      await advance(3.5 * H);
+      expect(calls.map((at) => Math.round(at * 1000) / 1000)).toEqual([2, 3]);
+      expect(onSkip.mock.calls).toEqual([["busy"]]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("stop waits for the run in progress and leaves no timer", async () => {
     const hang = deferred();
     const { run, scheduler } = setup(on(1));

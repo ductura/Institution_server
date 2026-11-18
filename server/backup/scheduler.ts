@@ -113,6 +113,16 @@ function ignoreRejection(value: unknown): void {
   }
 }
 
+/** Has a then method, read once; a getter that throws counts as not one. */
+function isThenable(value: unknown): boolean {
+  if ((typeof value !== "object" || value === null) && typeof value !== "function") return false;
+  try {
+    return typeof (value as { then?: unknown }).then === "function";
+  } catch {
+    return false;
+  }
+}
+
 const OFF: ReadonlySet<unknown> = new Set(["enabled_missing", "enabled_invalid", "disabled"]);
 
 export function createBackupScheduler(options: BackupSchedulerOptions): BackupScheduler {
@@ -178,18 +188,37 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     // still waits for it (Review FAIL on #283).
     let finished!: () => void;
     job = new Promise<void>((resolve) => (finished = resolve));
+    // The end is recorded when the job ends (DAN-1012-2d, QA on #306): at the
+    // return of a synchronous run(), in the first reaction to a promise. Not
+    // after the await, behind microtasks other code queued in between.
+    let ended = false;
+    const end = (): void => {
+      if (ended) return;
+      ended = true;
+      jobEnded = performance.now();
+    };
     let running: unknown;
     try {
       running = run();
     } catch (error: unknown) {
+      end();
       running = Promise.reject(error);
+    }
+    if (types.isPromise(running)) {
+      try {
+        void Promise.prototype.then.call(running, end, end);
+      } catch {
+        // A hostile constructor: the end is recorded after the await below.
+      }
+    } else if (!isThenable(running)) {
+      end();
     }
     try {
       await running;
     } catch {
       skip("run_failed");
     } finally {
-      jobEnded = performance.now();
+      end();
       job = undefined;
       finished();
     }
