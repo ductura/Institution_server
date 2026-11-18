@@ -126,7 +126,9 @@ describe("log analysis: thresholds that are refused", () => {
   });
 
   it("reports the threshold error first when the entries are bad too", () => {
-    expect(run(null, null)).toEqual(BAD_THRESHOLD);
+    for (const list of [null, revoked(), trap([])]) {
+      expect(run(list, null)).toEqual(BAD_THRESHOLD);
+    }
   });
 });
 
@@ -374,15 +376,24 @@ describe("log analysis: entries that are skipped or refused", () => {
     const entry = counted("e", { timeMs: T0, event: FAILED });
     const rule = counted("r", { windowMs: W, minCount: 1 });
     run(counted("list", [entry]), counted("t", { loginFailures: rule }));
-    expect(reads.sort()).toEqual([
+    // In the contract's order: thresholds first, then the list, then each entry.
+    expect(reads).toEqual([
+      "t.loginFailures",
+      "r.windowMs",
+      "r.minCount",
+      "list.length",
+      "list.0",
       "e.event",
       "e.timeMs",
-      "list.0",
-      "list.length",
-      "r.minCount",
-      "r.windowMs",
-      "t.loginFailures",
     ]);
+
+    // Codex review c.6966142677: with a bad threshold the list is never read.
+    reads.length = 0;
+    const bad = counted("r", { windowMs: 0, minCount: 1 });
+    expect(run(counted("list", [entry]), counted("t", { loginFailures: bad }))).toEqual(
+      BAD_THRESHOLD,
+    );
+    expect(reads.filter((r) => !r.startsWith("t.") && !r.startsWith("r."))).toEqual([]);
   });
 
   it("analyses 400 000 entries in one window below the threshold in linear time", () => {
