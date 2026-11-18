@@ -42,7 +42,7 @@ const events = (count: number) =>
   Array.from({ length: count }, (_, i) => ({ ...EVENT, seq: i + 1 }));
 
 // A character around a value: line ends, tab, space, NBSP, DEL, NUL.
-const AROUND = ["\n", "\r\n", "\r", "\t", " ", " ", "\u007f", "\u0000"];
+const AROUND = ["\n", "\r\n", "\r", "\t", " ", "\u00a0", "\u007f", "\u0000"];
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 
 describe("ops.events.get refuses the query", () => {
@@ -155,6 +155,8 @@ describe("ops.events.get refuses the 200 body", () => {
     "0000-02-29T09:15:00.123Z",
     "0000-01-01T09:15:00.123Z",
     "2026-04-31T09:15:00.123Z",
+    "2026-06-31T09:15:00.123Z",
+    "2026-09-31T09:15:00.123Z",
     "2026-11-31T09:15:00.123Z",
     "2026-11-32T09:15:00.123Z",
     "2026-11-00T09:15:00.123Z",

@@ -77,13 +77,13 @@ Poslužitelj pokrenut tek nakon pokretanja (na zahtjev ili timer) brojač ne vid
 - `kind` je kao provjera `log_entry_kind_shape`;
 - `fields` je zatvoren rječnik skalarnih vrijednosti (`additionalProperties: false`, jer ga TypeBox inače ne zatvara).
 
-Svaki uzorak je samo ASCII (`[0-9]`, nikad `\d`, ni u klasi) i završava s `(?![\s\S])`. `ops-events.test.ts` provjerava i to, uz svaki dan od 1999. do 2032. i rubove kalendara iz QA #256. Ostalo kaže sažetak, a provodi handler u 843-2: `from` < `to`, granica od 24 h, 422 za ponovljen ili nepoznat parametar i 503 za cijelu stranicu zbog jednog neprovjerenog retka. `access` je `signed_in`, jer `ACCESS` još nema `operator`. Pristup odlučuje pipeline: korak 3 (mreža) i korak 8 (živa sesija, serverski popis operatora i potvrđen drugi faktor, tim redom; DAN-1092-1).
+Svaki uzorak je samo ASCII (`[0-9]`, nikad `\d`, ni u klasi) i završava s `(?![\s\S])`. `ops-events.test.ts` provjerava i to, uz svaki dan od 1999. do 2032. i rubove kalendara iz QA #256. Ostalo kaže sažetak, a provodi handler u 843-2: `from` < `to`, granica od 24 h, 422 za ponovljen ili nepoznat parametar i 503 za cijelu stranicu zbog jednog neprovjerenog retka. `access` je `signed_in`, jer `ACCESS` još nema `operator`. Pristup odlučuje pipeline: korak 3 (mreža) i korak 8 (živa sesija, serverski popis operatora i potvrđen drugi faktor, tim redom; DAN-1092-1). Kad korak 8 ne može pitati popis operatora ili drugi faktor, vraća 503, pa vektor `unavailable` daje i on, ne samo handler.
 
 Vektori su zahtjevi i odgovori koje stvarni server može dati (DAN-843-1b, Ductus#2028 c.6981773723). `tests/contracts/ops-events-step-8.test.ts` provjerava sljedeće:
 
 - svaki vektor prolazi stvarni korak 8, a oba porta dobivaju token koji `server/session` čita iz kolačića;
-- 401 i 403 tijela su ona koja korak 8 piše;
-- svaki redak vektora `page` je zapis koji katalog zapisa propušta, maskiran kao u `operator_log`;
+- 401, 403 i 503 tijela su ona koja korak 8 piše;
+- svaki redak vektora `page` je zapis koji katalog zapisa propušta, maskiran kao u `operator_log`, a `seq` stranice ide bez rupa, jer lanac zapisa ne preskače `seq`;
 - redak `traffic.request` je ono što piše `createTrafficRecorder` (`anonymous`, `not_checked`, `requestId` kao UUID v4).
 
 TS preslika maske provjerava se na svih 14 slučajeva pgTAP 040. Poznata granica: uzorak `requestId` u tijelima grešaka je zajednički `REQUEST_ID_PATTERN` i završava s `$` (DAN-1098). Test uzoraka ga izuzima samo po točnom tekstu.

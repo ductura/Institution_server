@@ -53,13 +53,13 @@ const vector = (name: string): Vector => {
 
 /**
  * Step 8 over one vector's request: the operator list answers `listed`, the
- * second factor `outcome`. `seen` records each port's token; `body` is the
+ * second factor `outcome`; "throws" makes that port fail. `seen` records each port's token; `body` is the
  * answer step 8 wrote, if any.
  */
 async function step8(
   request: Vector["request"],
-  outcome: Awaited<ReturnType<SecondFactor>>,
-  listed: "listed" | "not_listed" = "listed",
+  outcome: Awaited<ReturnType<SecondFactor>> | "throws",
+  listed: "listed" | "not_listed" | "throws" = "listed",
 ) {
   const message = new IncomingMessage(new Socket());
   message.method = "GET";
@@ -77,12 +77,14 @@ async function step8(
   const layer = operatorPolicyLayer(
     async (token) => {
       seen.push(`factor:${token}`);
+      if (outcome === "throws") throw new Error("invented: the factor port is down");
       return outcome;
     },
     () => undefined,
     () => undefined,
     async (token) => {
       seen.push(`listed:${token}`);
+      if (listed === "throws") throw new Error("invented: the operator list is down");
       return listed;
     },
   );
@@ -134,6 +136,21 @@ describe("every request of ops.events.get through step 8", () => {
       const offList = await step8(request, "confirmed", "not_listed");
       expect([offList.result, offList.seen.length]).toEqual(["done", 1]);
       expectAnswer(offList, response);
+    },
+  );
+
+  // QA self-check on #328: step 8 answers 503 itself when a port fails, so
+  // the unavailable vector is also its answer.
+  it.each(ofStatus(503))(
+    "%s: 503 as its vector shows when the operator list or the factor cannot be asked",
+    async (name) => {
+      const { request, response } = vector(name);
+      const listFails = await step8(request, "confirmed", "throws");
+      expect([listFails.result, listFails.seen.length]).toEqual(["done", 1]);
+      expectAnswer(listFails, response);
+      const factorFails = await step8(request, "throws");
+      expect([factorFails.result, factorFails.seen.length]).toEqual(["done", 2]);
+      expectAnswer(factorFails, response);
     },
   );
 
@@ -232,8 +249,14 @@ function maskValue(key: string, value: unknown): unknown {
 }
 
 /** One checked record as operator_log returns it at `seq` and `at`. */
+// operator_log keeps requestId and accountKind only in these shapes, else null.
+const REQUEST_ID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+const ACCOUNT_KIND_SHAPE = /^[a-z_]{1,32}$/u;
+const shaped = (value: unknown, shape: RegExp): string | null =>
+  typeof value === "string" && shape.test(value) ? value : null;
+
 function asOperatorLogRow(
-  record: { event: string; requestId: string; accountKind: string; fields: object },
+  record: { event: string; requestId: unknown; accountKind: unknown; fields: object },
   seq: number,
   at: string,
 ): Row {
@@ -246,8 +269,8 @@ function asOperatorLogRow(
     seq,
     at,
     kind: record.event,
-    requestId: record.requestId,
-    accountKind: record.accountKind,
+    requestId: shaped(record.requestId, REQUEST_ID_SHAPE),
+    accountKind: shaped(record.accountKind, ACCOUNT_KIND_SHAPE),
     fields,
   };
 }
@@ -346,8 +369,12 @@ describe("the page vector is what the log flow writes and operator_log returns",
     const after = Number(query.after ?? "0");
     let seq = after;
     let at = from;
-    for (const row of rows) {
+    // The chain gives seq without gaps (log_chain: head.seq + 1 under a
+    // lock, log_entry append only), and operator_log returns every row of
+    // the window after `after`: the rows of one page follow each other.
+    for (const [i, row] of rows.entries()) {
       expect(row.seq).toBeGreaterThan(seq);
+      if (i > 0) expect(row.seq).toBe(seq + 1);
       expect(Date.parse(row.at)).toBeGreaterThanOrEqual(at);
       expect(Date.parse(row.at)).toBeLessThan(to);
       seq = row.seq;
@@ -367,7 +394,6 @@ describe("the page vector is what the log flow writes and operator_log returns",
     const base = rows.find((r) => r.kind === "traffic.request")!;
     const row: Row = { ...base, ...top, fields: { ...base.fields, ...fields } };
     const passes = async () => {
-      if (row.requestId === null) return false;
       const checked = checkEvent(await recorded(row), { routes: CONTRACT_PATHS });
       return (
         checked.ok &&
@@ -406,6 +432,16 @@ describe("the copy of operator_log's mask", () => {
   it("reads all 14 cases", () =>
     expect(cases.map((c) => c.n)).toEqual(Array.from({ length: 14 }, (_, i) => i + 1)));
 
+  it("the shape case: a request id or account kind out of shape gives null", () => {
+    expect(sql).toContain(`'{"requestId": "0B7E-not-a-uuid", "accountKind": "Anonymous "`);
+    const row = asOperatorLogRow(
+      { event: "x", requestId: "0B7E-not-a-uuid", accountKind: "Anonymous ", fields: {} },
+      1,
+      "",
+    );
+    expect([row.requestId, row.accountKind]).toEqual([null, null]);
+  });
+
   it.each(cases.map((c) => [c.n, c.why, c] as const))("case %d: %s", (_n, _why, c) => {
     const row = asOperatorLogRow(
       { event: "x", requestId: "y", accountKind: "z", fields: c.fields },
@@ -429,6 +465,7 @@ function summaryMisses(summary: string): string[] {
   const words = ["step 3", "live session", "operator list", "second factor", "403", "401"];
   return [
     ...words.filter((w) => !summary.includes(w)),
+    ...(summary.includes("503 unavailable when step 8 cannot ask") ? [] : ["step 8 503"]),
     ...(summary.includes("a shorter one such as /8 stays") ? [] : ["shorter mask"]),
     ...(/only as its \/24 or \/48/u.test(summary) ? ["only /24 or /48"] : []),
   ];
@@ -439,7 +476,9 @@ function sectionMisses(section: string): string[] {
   const words = ["korak 3", "živa sesija", "popis operatora", "drugi faktor", "/24", "/48"];
   return [
     ...words.filter((w) => !section.includes(w)),
-    ...["Kraća maska ostaje", "10.0.0.0/8"].filter((w) => !section.includes(w)),
+    ...["Kraća maska ostaje", "10.0.0.0/8", "korak 8 ne može pitati"].filter(
+      (w) => !section.includes(w),
+    ),
     ...(/samo kao mreža \/24 ili \/48/u.test(section) ? ["samo /24 ili /48"] : []),
     ...(section.slice(3).includes("\n## ") ? ["not the last section"] : []),
   ];
@@ -461,11 +500,17 @@ describe("the summary of ops.events.get and its README section", () => {
   it("both checks refuse the text of #320 at fc6432b", () => {
     expect(summaryMisses(OLD_SUMMARY)).toEqual([
       "operator list",
+      "step 8 503",
       "shorter mask",
       "only /24 or /48",
     ]);
     expect(sectionMisses(OLD_README)).toEqual(
-      expect.arrayContaining(["popis operatora", "Kraća maska ostaje", "samo /24 ili /48"]),
+      expect.arrayContaining([
+        "popis operatora",
+        "Kraća maska ostaje",
+        "korak 8 ne može pitati",
+        "samo /24 ili /48",
+      ]),
     );
     expect(sectionMisses(`${OLD_README}\n## Next\n`)).toContain("not the last section");
   });
