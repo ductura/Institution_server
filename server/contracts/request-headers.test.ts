@@ -33,6 +33,8 @@ const literals = (s: TSchema | undefined): unknown[] =>
   Array.isArray(s?.["anyOf"]) ? (s["anyOf"] as TSchema[]).flatMap(literals) : [s?.["const"]];
 
 const SITE = "https://ductura.example.invalid";
+// Values that are not text (orchestrator c.6966397404).
+const NOT_TEXT = [null, true, false, 1, 0, {}, { value: "1" }, [], undefined];
 const BAD_PROTOCOL = [
   "0",
   "3",
@@ -44,8 +46,7 @@ const BAD_PROTOCOL = [
   "\t1",
   "1\u00a0",
   "1\u007f",
-  1,
-  null,
+  ...NOT_TEXT,
   ["1"],
 ];
 // None is canonical (new URL(o).origin !== o): the server can never be set to it.
@@ -66,6 +67,8 @@ const BAD_ORIGIN = [
   ...["http://127.1:3000", "http://0x7f.0.0.1", "http://010.0.0.1", "http://999", "http://a.09"],
   ...["http://1.2.3", "http://256.0.0.1", "http://1.2.3.4.5", "http://1.2.3.04", "http://0x10"],
   ...["http://0xa", "http://a.0xff", "https://0", "http://a.0x", "http://1.2.3.4.", "http://a.1."],
+  ...NOT_TEXT,
+  [SITE],
 ];
 // Each is canonical, so the server could be set to it (review FAIL c.6965388921).
 const GOOD_ORIGIN = [
@@ -206,6 +209,7 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
       for (let length = 1; start + length <= 8; length++)
         literals.push(["a", "b", "c", "d", "e", "f", "1", "2"].fill("0", start, start + length));
     literals.push(Array.from({ length: 8 }, () => "ffff"));
+    literals.push(["2001", "db8", "1", "2", "3", "4", "5", "6"]);
     for (const groups of literals) {
       const origin = new URL(`https://[${groups.join(":")}]:8443`).origin;
       if (schema && !Value.Check(schema, { ...full, origin })) wrong.push(origin);
