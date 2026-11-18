@@ -269,6 +269,61 @@ describe("what still leaves as 200: the snapshot, exactly", () => {
   });
 });
 
+// QA FAIL c.6973700421 (#317): JSON.stringify in writeJson reads an inherited toJSON on
+// every object of the 200 body; what leaves is still exactly the checked snapshot. Each
+// planted toJSON touches only its target, so fetch and the report spy stay intact.
+describe("an inherited toJSON never changes the 200 body", () => {
+  const FORGED = [{ ...BAD, studentId: OTHER }];
+  const has = (o: unknown, key: string) =>
+    typeof o === "object" && o !== null && Object.hasOwn(o, key);
+  const list = (o: unknown) => Array.isArray(o) && has(o[0], "assignmentId");
+  const forging = (target: (o: unknown) => boolean): PropertyDescriptor => ({
+    value(this: unknown) {
+      return target(this) ? FORGED : this;
+    },
+  });
+  it.each([
+    ["Array.prototype.toJSON on the list", Array.prototype, forging(list)],
+    [
+      "Object.prototype.toJSON on an item",
+      Object.prototype,
+      forging((o) => has(o, "assignmentId")),
+    ],
+    [
+      "Object.prototype.toJSON on the body",
+      Object.prototype,
+      forging((o) => has(o, "assignments")),
+    ],
+    [
+      "a throwing toJSON getter on Array.prototype",
+      Array.prototype,
+      {
+        get(this: unknown) {
+          if (list(this)) throw new TypeError("tajna");
+          return undefined;
+        },
+      },
+    ],
+    [
+      "a toJSON getter on Object.prototype for the list",
+      Object.prototype,
+      {
+        get(this: unknown) {
+          return list(this) ? () => FORGED : undefined;
+        },
+      },
+    ],
+  ] as [string, object, PropertyDescriptor][])("%s", async (_name, proto, field) => {
+    await stub(ok([GOOD]));
+    let got: Answer | undefined;
+    await planted(proto, "toJSON", field, async () => {
+      got = await get();
+    });
+    expect([got!.status, got!.body]).toEqual([200, { assignments: [GOOD] }]);
+    expect(lines).toEqual([]);
+  });
+});
+
 describe("the reader's own answers", () => {
   const code = (c: string) => () => ({ ok: false, error: { code: c, messageKey: "x.y" } });
   it("UNAUTHENTICATED is 401", async () => {

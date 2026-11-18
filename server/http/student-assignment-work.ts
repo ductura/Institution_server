@@ -52,6 +52,21 @@ function bodyOf(snapshot: unknown): { assignments: unknown[] } | null {
   return typeof BODY === "object" && Value.Check(BODY, body) ? body : null;
 }
 
+/**
+ * The checked body with no prototype on the wrapper, the list or any item (QA FAIL
+ * c.6973700421 on #317): JSON.stringify in writeJson then finds no inherited toJSON,
+ * so what leaves is exactly what the schema checked. Own data is unchanged, and a
+ * null-prototype array is still an array.
+ */
+function withoutPrototypes(body: { assignments: unknown[] }): { assignments: unknown[] } {
+  const list = body.assignments;
+  for (let index = 0; index < list.length; index += 1) Object.setPrototypeOf(list[index], null);
+  Object.setPrototypeOf(list, null);
+  const wrapper = { assignments: list };
+  Object.setPrototypeOf(wrapper, null);
+  return wrapper;
+}
+
 /** The snapshot, or one fixed Error (class other) whatever the clone threw. */
 function snapshotOf<T>(value: T): T {
   try {
@@ -90,7 +105,7 @@ export function createStudentAssignmentWorkRoute(
         }
         const body = bodyOf(ownField(read, "value"));
         if (body === null) throw new TypeError("assignment work outside the contract");
-        sendJson(response, 200, body);
+        sendJson(response, 200, withoutPrototypes(body));
       } catch (error) {
         reportServerError("route", error, requestIdOf(response), CONTRACT.id);
         sendProblem(response, 503, "unavailable");
