@@ -28,8 +28,9 @@
 -- - The gap is compared in numeric: no stored seq, the greatest bigint of a
 --   base included, makes the verification fail instead of report.
 -- - A NULL seq or hash in the base is a gap or a link of the first row
---   whatever that row holds, so a base damaged like the row cannot hide the
---   row's damage. The zero base holds no NULL, so uncut nothing changes.
+--   whatever that row holds, and a head finding where the base stands in for
+--   the last row, so a base damaged like the row or the head cannot hide
+--   their damage. The zero base holds no NULL, so uncut nothing changes.
 DO $$
 BEGIN
   IF current_user <> 'ductus_logs_migrator' OR current_database() <> 'ductus_logs' THEN
@@ -57,10 +58,13 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
            pg_catalog.row_number() OVER w OPERATOR(pg_catalog.=) 1 AS first
     FROM public.log_entry e
     WINDOW w AS (ORDER BY e.seq)
+  ), last_row AS (
+    SELECT (SELECT pg_catalog.max(e.seq) FROM public.log_entry e) AS seq,
+           (SELECT x.hash FROM public.log_entry x ORDER BY x.seq DESC LIMIT 1) AS hash
   ), last AS (
-    SELECT coalesce((SELECT pg_catalog.max(e.seq) FROM public.log_entry e), base.seq) AS seq,
-           coalesce((SELECT x.hash FROM public.log_entry x ORDER BY x.seq DESC LIMIT 1), base.hash) AS hash
-    FROM base
+    SELECT coalesce(r.seq, base.seq) AS seq, coalesce(r.hash, base.hash) AS hash,
+           (r.seq IS NULL AND base.seq IS NULL) OR (r.hash IS NULL AND base.hash IS NULL) AS base_null
+    FROM last_row r CROSS JOIN base
   )
   SELECT x.seq, x.problem FROM (
     SELECT entry.seq, 'hash' AS problem FROM entry WHERE entry.hash IS DISTINCT FROM entry.computed
@@ -73,7 +77,7 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
        OR (entry.first AND entry.before_seq IS NULL)
     UNION ALL
     SELECT h.seq, 'head' FROM public.log_chain_head h, last
-    WHERE h.seq IS DISTINCT FROM last.seq OR h.hash IS DISTINCT FROM last.hash
+    WHERE h.seq IS DISTINCT FROM last.seq OR h.hash IS DISTINCT FROM last.hash OR last.base_null
     UNION ALL
     SELECT NULL::bigint, 'head' WHERE (SELECT pg_catalog.count(*) FROM public.log_chain_head) OPERATOR(pg_catalog.<>) 1
     UNION ALL

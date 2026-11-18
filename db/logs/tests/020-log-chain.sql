@@ -70,7 +70,7 @@ END
 $$;
 
 
-SELECT plan(239);
+SELECT plan(242);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -739,8 +739,25 @@ FROM (VALUES
   (':cut6; ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL;
     ALTER TABLE public.log_entry ALTER seq DROP NOT NULL; UPDATE public.log_entry SET seq = NULL WHERE seq = :base + 7',
    ARRAY['- gap', '- hash', '7 head'],
-   'a NULL base seq and a NULL seq of the only row left give the gap, as a valid base does')
+   'a NULL base seq and a NULL seq of the only row left give the gap, as a valid base does'),
+  (':cut7; ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; UPDATE public.log_chain_base SET hash = NULL;
+    ALTER TABLE public.log_chain_head ALTER hash DROP NOT NULL; UPDATE public.log_chain_head SET hash = NULL',
+   ARRAY['7 head'], 'with no row left, a NULL base digest and a NULL head digest give the head, as a valid base does'),
+  (':cut7; ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL;
+    ALTER TABLE public.log_chain_head ALTER seq DROP NOT NULL; UPDATE public.log_chain_head SET seq = NULL',
+   ARRAY['- head'], 'with no row left, a NULL base seq and a NULL head seq give the head, as a valid base does')
 ) t (sql, expected, what);
+-- Repeated places on a chain large enough for the window sort to spill at
+-- 4MB of work_mem: the order of the repeated rows, and so their link
+-- findings, is what it was before the base.
+SELECT is(r[1], r[2], 'as before the base: a place repeated in a chain of 20000 rows sorted on disk')
+FROM (SELECT pg_temp.versus($$
+  SET LOCAL work_mem = '4MB';
+  ALTER TABLE public.log_entry DROP CONSTRAINT log_entry_seq_unique, DROP CONSTRAINT log_entry_prev_hash_unique;
+  DELETE FROM public.log_entry;
+  INSERT INTO public.log_entry (seq, prev_hash, hash, kind, payload)
+    SELECT g, sha256(int8send(g - 1)), sha256(int8send(g)), 'authn.logout', '{}' FROM generate_series(1, 20000) g;
+  UPDATE public.log_entry SET seq = 3 WHERE seq = 4 $$) AS r) v;
 SELECT is(pg_temp.tampered('UPDATE public.log_chain_base SET (seq, hash) = (SELECT seq, hash FROM public.log_entry WHERE seq = :base + 2)'),
   ARRAY[(1 - pg_temp.at(0))::text || ' gap', (1 - pg_temp.at(0))::text || ' link'],
   'a base moved on while its rows stay is found at the first row');
