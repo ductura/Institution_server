@@ -12,8 +12,9 @@
 --     a view of the database whose definition names either), closed over, so
 --     app.current_actor and whatever calls it, at any depth and through views,
 --     are in. A name counts as a whole word, with or without "(" after it,
---     so a comment between a name and its bracket, (r).name or a name in a
---     comment are caught too (more is caught, never less).
+--     so a comment between a name and its bracket, t.name, or a name in a
+--     comment or a string count too: the closure may hold too much, never
+--     too little (test 2).
 --   * the calls: every function (funcid) and operator (opno, by its oprcode)
 --     in the stored node tree of pg_policy.polqual and polwithcheck, by oid,
 --     whatever the search path, quoting or overloading. Each call counts.
@@ -32,7 +33,7 @@
 --   * institution.work_accommodation_read calls institution.work_accommodation
 --     (assignment_id, student_id) once per row, a plpgsql reader of the row
 --     left out of DAN-51 (20261108140000_actor_scope_initplan); its rewrite
---     needs a migration and a proof of equal rows, a task of its own.
+--     with a migration and a proof of equal rows is DAN-1088.
 --
 -- The databases logs and legal have no identity function; their policies are
 -- by role. The negative controls are made inside the transaction and roll back.
@@ -63,6 +64,8 @@ CREATE FUNCTION test_dan1066.via_view() RETURNS uuid LANGUAGE plpgsql STABLE
   AS $$ BEGIN RETURN (SELECT id FROM test_dan1066.actor_v); END $$;
 CREATE FUNCTION test_dan1066.cmt() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id/* /* */ */() $$;
 CREATE FUNCTION test_dan1066.cr() RETURNS uuid LANGUAGE sql STABLE AS E'SELECT app.current_user_id -- x\r()';
+CREATE FUNCTION test_dan1066.mentions() RETURNS text LANGUAGE sql IMMUTABLE
+  AS $$ SELECT 'app.current_user_id' /* current_actor */ $$;
 CREATE FUNCTION test_dan1066.loud() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT APP.CURRENT_USER_ID() $$;
 CREATE FUNCTION test_dan1066.show_all() RETURNS int LANGUAGE sql STABLE AS $$ SELECT count(*)::int FROM pg_show_all_settings() $$;
 CREATE FUNCTION test_dan1066."who[1]"() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id() $$;
@@ -242,8 +245,9 @@ SELECT ok(
     'test_dan1066.f1()', 'test_dan1066.f2()', 'test_dan1066.mine(uuid,uuid)',
     'test_dan1066.token()', 'test_dan1066.via_token()', 'test_dan1066.via_view()',
     'test_dan1066.cmt()', 'test_dan1066.is_me(uuid,uuid)', 'test_dan1066.any_mine(uuid)', 'test_dan1066.cr()',
-    'test_dan1066.loud()', 'test_dan1066.show_all()', 'test_dan1066.bracket()', 'test_dan1066.wrap(test_dan1066.tag)'],
-  'the identity functions include the session readers and whatever calls them, at any depth'
+    'test_dan1066.loud()', 'test_dan1066.show_all()', 'test_dan1066.bracket()', 'test_dan1066.wrap(test_dan1066.tag)',
+    'test_dan1066.mentions()'],
+  'the identity functions include the session readers and whatever calls them, at any depth, and a name in a string or comment errs towards more'
 );
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM identity_fn WHERE oid = 'test_dan1066.shout(text)'::regprocedure),
@@ -282,7 +286,7 @@ DROP TABLE t1066_n_temp;
 SELECT set_eq(
   $$ SELECT nsp || '.' || found FROM per_row_call $$,
   ARRAY['institution.work_accommodation.work_accommodation_read: institution.work_accommodation(uuid,uuid)'],
-  'no policy of the database calls an identity function per row, but the one named exception'
+  'no policy of the database calls an identity function per row, but the one named exception (DAN-1088)'
 );
 SELECT cmp_ok(
   (SELECT count(DISTINCT p.oid)::int FROM pg_policy p,
