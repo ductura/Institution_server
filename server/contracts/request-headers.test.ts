@@ -161,6 +161,13 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
       expect(canonical(origin), origin).toBe(true);
       expect(check({ ...full, origin }), origin).toBe(true);
     }
+    // Every port, and every one with a leading zero (QA FAIL c.6965391343).
+    const wrong: string[] = [];
+    for (let port = 0; port <= 65536; port++)
+      for (const origin of [`${SITE}:${port}`, `${SITE}:0${port}`])
+        if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
+          wrong.push(origin);
+    expect(wrong).toEqual([]);
     // Every printable ASCII code point inside a host: the schema agrees with URL.
     for (let code = 0x20; code < 0x7f; code++) {
       const origin = `https://a${String.fromCharCode(code)}b`;
