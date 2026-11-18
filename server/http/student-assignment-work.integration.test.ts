@@ -95,6 +95,21 @@ async function get(cookie: string | null = COOKIE, query = "", extra = {}): Prom
     body: (await response.json()) as Record<string, unknown>,
   };
 }
+/** Every console.error line from now on. */
+const logged = () => {
+  const lines: string[] = [];
+  vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+    lines.push(JSON.stringify(args));
+  });
+  return lines;
+};
+/** Neither the body nor any log line holds the token or the database's message. */
+const noLeak = (got: Answer, lines: readonly string[]) => {
+  for (const text of [JSON.stringify(got.body), ...lines]) {
+    expect(text).not.toContain(TOKEN);
+    expect(text).not.toContain("tajna");
+  }
+};
 const problem = (got: Answer) => [got.status, got.body.code, Object.keys(got.body).sort()];
 const PROBLEM_KEYS = ["code", "error", "messageKey", "requestId", "status"];
 
@@ -108,17 +123,42 @@ describe("no session: 401 and the reader is never asked", () => {
     ["two session cookies", `${COOKIE}; __Host-ductus_session=${OTHER}`],
     ["the same one twice", `${COOKIE}; ${COOKIE}`],
     ["an ended session", `${COOKIE}; ductus-ended-${sessionTag(TOKEN)!}=1`],
-  ])("%s", async (_name, cookie) => {
-    await startRows(READY);
-    expect(problem(await get(cookie))).toEqual([401, "unauthorized", PROBLEM_KEYS]);
-    expect(tokens).toEqual([]);
+    ["only ductus_session", `ductus_session=${OTHER}`],
+    ["only __Secure-ductus_session", `__Secure-ductus_session=${OTHER}`],
+    ["only a query", null, `?studentId=${A1}`],
+    ["only a header", null, "", { "x-student-id": A1, authorization: `Bearer ${OTHER}` }],
+  ] as [string, string | null, string?, Record<string, string>?][])(
+    "%s",
+    async (_name, cookie, query = "", extra = {}) => {
+      await startRows(READY);
+      expect(problem(await get(cookie, query, extra))).toEqual([401, "unauthorized", PROBLEM_KEYS]);
+      expect(tokens).toEqual([]);
+    },
+  );
+
+  it("the port itself is never asked without a session", async () => {
+    let reads = 0;
+    await start({
+      read: async () => {
+        reads += 1;
+        return { ok: true, value: [] };
+      },
+    });
+    for (const cookie of [
+      null,
+      `__Host-ductus_session=${TOKEN.slice(1)}`,
+      `ductus_session=${OTHER}`,
+    ])
+      expect((await get(cookie)).status).toBe(401);
+    expect(reads).toBe(0);
   });
 
   it("ZD401 from the database reads as the same 401", async () => {
+    const lines = logged();
     await startRows(thrown("ZD401"));
     const got = await get();
     expect(problem(got)).toEqual([401, "unauthorized", PROBLEM_KEYS]);
-    expect(JSON.stringify(got.body)).not.toContain("tajna");
+    noLeak(got, lines);
     expect(tokens).toEqual([TOKEN]);
   });
 });
@@ -157,35 +197,56 @@ describe("one row the reader cannot vouch for: 503 and no partial list", () => {
       ]),
     ],
   ])("%s", async (_name, bad) => {
+    const lines = logged();
     await startRows([...READY, bad]);
     const got = await get();
     expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
     for (const id of [A1, A2, A3]) expect(JSON.stringify(got.body)).not.toContain(id);
+    noLeak(got, lines);
+    expect(tokens).toEqual([TOKEN]);
   });
 
   it("any other database error is 503 without its message", async () => {
+    const lines = logged();
     await startRows(thrown("08006"));
     const got = await get();
     expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
-    expect(JSON.stringify(got.body)).not.toContain("tajna");
+    noLeak(got, lines);
+    expect(tokens).toEqual([TOKEN]);
   });
 });
 
 describe("a reader that answers something else", () => {
   const stub = (read: MyAssignmentWorkReader["read"]) => start({ read });
-  const logged = () => {
-    const lines: string[] = [];
-    vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
-      lines.push(JSON.stringify(args));
+  /** The one report: a route server_error of this route, nothing else. */
+  const oneReport = (lines: readonly string[]) => {
+    expect(lines.length).toBe(1);
+    const [record] = JSON.parse(lines[0]!) as [string];
+    expect(JSON.parse(record)).toMatchObject({
+      event: "server_error",
+      where: "route",
+      route: "student.assignment-work.get",
     });
-    return lines;
   };
 
   it("a field beyond assignmentId and workState never leaves", async () => {
     await stub(async () => {
       const item = { assignmentId: A1, workState: "submitted" as const, studentId: OTHER };
-      return Object.assign({ ok: true as const, value: [item] }, { extra: OTHER });
+      const value = Object.assign([item], { extra: OTHER });
+      return Object.assign({ ok: true as const, value }, { extra: OTHER });
     });
+    const got = await get();
+    expect([got.status, got.body]).toEqual([
+      200,
+      { assignments: [{ assignmentId: A1, workState: "submitted" }] },
+    ]);
+  });
+
+  it("an own map on the value is never called", async () => {
+    const value = Object.assign([{ assignmentId: A1, workState: "submitted" as const }], {
+      map: () => [{ studentId: OTHER }],
+    });
+    await stub(async () => ({ ok: true, value }));
     const got = await get();
     expect([got.status, got.body]).toEqual([
       200,
@@ -213,18 +274,39 @@ describe("a reader that answers something else", () => {
     await stub(read as MyAssignmentWorkReader["read"]);
     const got = await get();
     expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
-    expect(lines.length).toBe(1);
-    for (const text of [JSON.stringify(got.body), ...lines]) {
-      expect(text).not.toContain("tajna");
-      expect(text).not.toContain(TOKEN);
-    }
+    oneReport(lines);
+    noLeak(got, lines);
+  });
+
+  const item = (fields: object) => [fields];
+  it.each([
+    ["not an array", { assignmentId: A1, workState: "submitted" }],
+    [
+      "inherited fields",
+      item(Object.create({ assignmentId: A1, workState: "submitted" }) as object),
+    ],
+    ["a state outside the contract", item({ assignmentId: A1, workState: "graded" })],
+    ["an uppercase id", item({ assignmentId: A1.toUpperCase(), workState: "submitted" })],
+    ["a hole", [, { assignmentId: A1, workState: "submitted" }]],
+  ])("a value with %s is 503 with one report, never a 200", async (_name, value) => {
+    const lines = logged();
+    await stub(async () => ({ ok: true, value: value as never }));
+    const got = await get();
+    expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
+    expect(JSON.stringify(got.body)).not.toContain(OTHER);
+    oneReport(lines);
   });
 });
 
 describe("identity only from the session cookie", () => {
   it.each([
     ["a query", `?studentId=${A1}`, {}, COOKIE],
-    ["an encoded, repeated query", `?studentId=%31c2d&studentId=${A2}`, {}, COOKIE],
+    [
+      "an encoded, repeated query",
+      `?studentId=${encodeURIComponent(A2).replace(/./g, (c) => `%${c.charCodeAt(0).toString(16)}`)}&studentId=${A2}`,
+      {},
+      COOKIE,
+    ],
     ["a header", "", { "x-student-id": A1 }, COOKIE],
     [
       "cookies of other names",
