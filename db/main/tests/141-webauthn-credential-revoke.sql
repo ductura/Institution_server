@@ -16,7 +16,7 @@ SELECT no_plan();
 -- a second live credential, so a revocation of more than the named row shows.
 INSERT INTO identity.webauthn_credential (user_id, institution_id, credential_id, public_key, sign_count, revoked_at)
 SELECT p.id, p.institution_id, v.credential, '\x01', v.count, CASE WHEN v.revoked THEN statement_timestamp() END
-  FROM (VALUES ('ana', '\xa1'::bytea, 5::bigint, false), ('ana', '\xa2', 2, false), ('ana', '\xa3', 1, true), ('dora', '\xd1', 1, false),
+  FROM (VALUES ('ana', '\xa1'::bytea, 5::bigint, false), ('ana', '\xa2', 2, false), ('ana', '\xa3', 1, true), ('ana', '\xa4', 0, true), ('dora', '\xd1', 1, false),
                ('tomo', '\xb1', 1, false), ('marko', '\x31', 4, false), ('boris', '\x41', 0, false),
                ('petra', '\x91', 0, false), ('iva', '\x51', 4294967294, false), ('lea', '\x81', 4294967295, false))
        AS v (who, credential, count, revoked)
@@ -60,11 +60,11 @@ BEGIN
     PERFORM set_config('session_replication_role', 'replica', true);
     EXECUTE p_change;
     v_after := pg_temp.snapshot();
-    RAISE EXCEPTION 'undo';
-  EXCEPTION WHEN raise_exception THEN
+    RAISE EXCEPTION 'undo' USING ERRCODE = 'ZT001';
+  EXCEPTION WHEN SQLSTATE 'ZT001' THEN
     NULL;
   END;
-  RETURN v_after IS DISTINCT FROM v_before;
+  RETURN v_after IS NOT NULL AND v_after <> v_before;
 END
 $$;
 CREATE TEMP TABLE before AS SELECT pg_temp.snapshot() AS v;
@@ -95,20 +95,25 @@ CROSS JOIN unnest(ARRAY[0, 6, 4294967295, -1, 4294967296, NULL]::bigint[]) AS c 
 SELECT is(pg_temp.revoke('anon', NULL, NULL), 'ZD401: not authenticated', 'the session is checked before the input');
 SELECT is(pg_temp.snapshot(), (SELECT v FROM before), 'block 1 left the table as it was');
 
--- The credentials Ana may not revoke: another account's, unknown, her revoked one.
+-- The credentials Ana may not revoke: another account's, unknown, her revoked
+-- ones; with stored counters 5, 1 and 0, so the "0 and 0" rule is tried too.
 CREATE TEMP TABLE barred (who, credential, what) AS
 VALUES ('dora', '\xa1'::bytea, 'another account of the institution'),
        ('tomo', '\xa1', 'an account of another institution'),
        ('ana', '\xd1', 'Ana with Dora''s credential'),
        ('ana', '\xb1', 'Ana with a credential of fak-b'),
+       ('ana', '\x41', 'Ana with Boris''s credential without a counter'),
+       ('ana', '\x91', 'Ana with a credential of fak-b without a counter'),
        ('ana', '\xff', 'a credential nobody has'),
        ('ana', '\x', 'an empty credential id'),
        ('ana', decode(repeat('ab', 1024), 'hex'), 'a credential id of 1024 bytes'),
-       ('ana', '\xa3', 'Ana''s own revoked credential');
+       ('ana', '\xa3', 'Ana''s own revoked credential'),
+       ('ana', '\xa4', 'Ana''s own revoked credential without a counter');
 
 -- 2. One answer for every barred credential, whatever the counter: 0, below
 -- the stored one, equal to it (stale), one above it, above it and the largest
--- (stored 5 for Ana's, 1 for Dora's, Tomo's and the revoked one).
+-- (stored 5 for Ana's; 1 for Dora's, Tomo's and \xa3; 0 for Boris's, Petra's
+-- and \xa4, where counter 0 is the "0 and 0" pair).
 SELECT is(pg_temp.revoke(b.who, b.credential, c.count), 'ZD403: not allowed', b.what || ', counter ' || c.count)
 FROM barred b CROSS JOIN unnest(ARRAY[0, 1, 2, 5, 6, 99, 4294967295]::bigint[]) AS c (count);
 SELECT is(pg_temp.snapshot(), (SELECT v FROM before), 'block 2 left the table as it was');
@@ -169,7 +174,7 @@ SELECT is((SELECT (revoked_at = created_at AND last_used_at = created_at)::text
   'true', 'and its revocation and last use are not earlier than the credential');
 SELECT is((SELECT string_agg(encode(credential_id, 'hex') || ' ' || sign_count, ', ' ORDER BY credential_id)
              FROM identity.webauthn_credential WHERE revoked_at IS NOT NULL),
-  '31 5, 41 0, 51 4294967295, 71 3, 91 1, a1 6, a3 1', 'exactly the revoked rows, with the counters of their assertions');
+  '31 5, 41 0, 51 4294967295, 71 3, 91 1, a1 6, a3 1, a4 0', 'exactly the revoked rows, with the counters of their assertions');
 
 -- 7. The function from the catalogue; only the web role calls it.
 SELECT is(
@@ -185,6 +190,10 @@ SELECT bag_eq(
                             UNION ALL SELECT 'public') AS r
       WHERE has_function_privilege(r.rolname, 'identity.revoke_webauthn_credential(bytea, bigint)', 'EXECUTE') $$,
   ARRAY['ductus_app', 'ductus_identity'], 'only the web role and the owner may call it');
+SELECT is((SELECT string_agg(a.grantee::regrole::text, ' ' ORDER BY a.grantee::regrole::text)
+             FROM pg_proc p, aclexplode(p.proacl) a
+            WHERE p.oid = 'identity.revoke_webauthn_credential(bytea, bigint)'::regprocedure AND a.privilege_type = 'EXECUTE'),
+  'ductus_app ductus_identity', 'no other role, login roles included, holds a grant of its own');
 SELECT is(pg_temp.ask_as('ductus_auth', 'dora', 'SELECT ''ok'' FROM identity.revoke_webauthn_credential(''\xd1'', 99)'),
   '42501: permission denied for function revoke_webauthn_credential', 'the login role cannot call it');
 SELECT is(pg_temp.ask('dora', 'UPDATE identity.webauthn_credential SET revoked_at = created_at'),
