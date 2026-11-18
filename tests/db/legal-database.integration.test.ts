@@ -62,7 +62,16 @@ const MAIN_POLICY: AccessPolicy = {
     temporary: ["ductus_migrator"],
   },
 };
-const LEGAL_POLICY = databasePolicy("ductus_legal", "ductus_legal_migrator", ["ductus_legal_app"]);
+// S-1N-a (DAN-847-1): the application schema legal. Its owner, the migrator,
+// alone creates in it; the app only resolves names (its rights on the tables
+// are in db/legal/tests); the built-in roles use every schema by definition.
+const LEGAL_POLICY: AccessPolicy = {
+  ...databasePolicy("ductus_legal", "ductus_legal_migrator", ["ductus_legal_app"]),
+  "schema:ductus_legal.legal": {
+    usage: ["ductus_legal_migrator", "ductus_legal_app", "pg_read_all_data", "pg_write_all_data"],
+    create: ["ductus_legal_migrator"],
+  },
+};
 
 const suffix = randomBytes(4).toString("hex");
 const password = randomBytes(18).toString("base64url");
