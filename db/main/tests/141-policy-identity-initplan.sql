@@ -21,7 +21,8 @@
 --     function over constants only. Anything else is a call per row.
 --   * what a node tree does not show: an operator, cast or domain CHECK that
 --     reads the session, or a view read by a policy; none may exist (4).
--- Left to review: a name built at run time for EXECUTE, SHOW, C functions.
+-- Left to review: a name built at run time for EXECUTE, SHOW, C functions,
+-- a name in a body written with quotes around a part of it.
 -- Stricter than the planner: (SELECT g(app.current_user_id())) and
 -- (SELECT (app.current_actor()).user_id) are InitPlans but are caught.
 --
@@ -59,12 +60,24 @@ CREATE FUNCTION test_dan1066.via_token() RETURNS text LANGUAGE sql STABLE AS $$ 
 CREATE VIEW test_dan1066.actor_v AS SELECT app.current_user_id() AS id;
 CREATE FUNCTION test_dan1066.via_view() RETURNS uuid LANGUAGE plpgsql STABLE
   AS $$ BEGIN RETURN (SELECT id FROM test_dan1066.actor_v); END $$;
+CREATE FUNCTION test_dan1066.cmt() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id/**/() $$;
+CREATE FUNCTION test_dan1066.is_me(a uuid, b uuid DEFAULT app.current_user_id()) RETURNS boolean
+  LANGUAGE sql STABLE AS $$ SELECT $1 = $2 $$;
+CREATE FUNCTION test_dan1066.sf(boolean, uuid) RETURNS boolean LANGUAGE sql STABLE
+  AS $$ SELECT coalesce($1, false) OR $2 = app.current_user_id() $$;
+CREATE AGGREGATE test_dan1066.any_mine(uuid) (SFUNC = test_dan1066.sf, STYPE = boolean);
 
--- Readers are functions and views; a function is matched by name and "(",
--- a view by its name alone.
+-- Readers are functions and views; a function is matched by name and "("
+-- (comments between allowed), a view by its name alone. A function's text is
+-- its body, its argument defaults and, for an aggregate, its support functions.
 CREATE TEMP TABLE identity_reader AS
   WITH RECURSIVE obj (kind, oid, name, body) AS (
-    SELECT 'f', p.oid, p.proname::text, coalesce(pg_get_function_sqlbody(p.oid), p.prosrc) FROM pg_proc p WHERE p.oid >= 16384
+    SELECT 'f', p.oid, p.proname::text,
+           concat_ws(' ', coalesce(pg_get_function_sqlbody(p.oid), p.prosrc), pg_get_function_arguments(p.oid),
+                     (SELECT string_agg(s.proname || '()', ' ') FROM pg_aggregate a, pg_proc s
+                      WHERE a.aggfnoid = p.oid AND s.oid IN (a.aggtransfn, a.aggfinalfn, a.aggcombinefn,
+                        a.aggserialfn, a.aggdeserialfn, a.aggmtransfn, a.aggminvtransfn, a.aggmfinalfn)))
+    FROM pg_proc p WHERE p.oid >= 16384
     UNION ALL
     SELECT 'v', c.oid, c.relname::text, pg_get_viewdef(c.oid) FROM pg_class c WHERE c.oid >= 16384 AND c.relkind = 'v'
   ), r (kind, oid, name) AS (
@@ -73,7 +86,8 @@ CREATE TEMP TABLE identity_reader AS
     UNION SELECT 'v', 'pg_catalog.pg_settings'::regclass::oid, 'pg_settings'
     UNION
     SELECT o.kind, o.oid, o.name FROM obj o, r
-    WHERE o.body ~* ('\m' || regexp_replace(r.name, '\$', '\\$', 'g') || CASE r.kind WHEN 'f' THEN '"?\s*\(' ELSE '\M' END)
+    WHERE o.body ~* ('\m' || regexp_replace(r.name, '(\W)', '\\\1', 'g')
+                     || CASE r.kind WHEN 'f' THEN '"?(\s|/\*([^*]|\*+[^*/])*\*+/|--[^\n]*\n)*\(' ELSE '\M' END)
   )
   SELECT kind, oid FROM r;
 CREATE TEMP VIEW identity_fn AS SELECT oid FROM identity_reader WHERE kind = 'f';
@@ -93,7 +107,7 @@ CREATE TEMP VIEW per_row_call AS
     ' [^{}]*\}\) [^{}]*\} [^{}]*\}',
     '', 'g') AS rest
   CROSS JOIN LATERAL (
-    SELECT m[1]::oid AS fn FROM regexp_matches(rest, ':funcid (\d+)', 'g') m
+    SELECT m[1]::oid AS fn FROM regexp_matches(rest, ':(?:funcid|aggfnoid|winfnoid) (\d+)', 'g') m
     UNION ALL
     SELECT o.oprcode::oid FROM regexp_matches(rest, ':opno (\d+)', 'g') m JOIN pg_operator o ON o.oid = m[1]::oid
   ) x
@@ -117,6 +131,13 @@ INSERT INTO probe_case VALUES
   ('n_case', 'USING', 'CASE WHEN label = ''x'' THEN owner = app.current_institution_id() END'),
   ('n_depth', 'USING', 'owner = test_dan1066.f2()'),
   ('n_view', 'USING', 'owner = test_dan1066.via_view()'),
+  ('n_comment', 'USING', 'owner = test_dan1066.cmt()'),
+  ('n_default', 'USING', 'test_dan1066.is_me(owner)'),
+  ('n_aggregate', 'USING', '(SELECT test_dan1066.any_mine(x) FROM unnest(ARRAY[owner]) x)'),
+  ('n_having', 'USING', 'owner = (SELECT app.current_user_id() HAVING label IS NOT NULL)'),
+  ('n_limit', 'USING', 'owner = (SELECT app.current_user_id() LIMIT CASE WHEN label IS NULL THEN 0 END)'),
+  ('n_offset', 'USING', 'owner = (SELECT app.current_user_id() OFFSET CASE WHEN label IS NULL THEN 1 END)'),
+  ('n_cte', 'USING', 'owner = (WITH w AS (SELECT label) SELECT app.current_user_id())'),
   ('n_operator', 'USING', 'owner OPERATOR(test_dan1066.===) owner'),
   ('n_restrictive', 'AS RESTRICTIVE USING', 'owner = app.current_user_id()'),
   ('n_twice', 'USING', 'owner = (SELECT app.current_user_id()) OR owner = app.current_user_id()'),
@@ -154,6 +175,13 @@ SELECT set_eq(
         't1066_n_case.n_case: app.current_institution_id()',
         't1066_n_depth.n_depth: test_dan1066.f2()',
         't1066_n_view.n_view: test_dan1066.via_view()',
+        't1066_n_comment.n_comment: test_dan1066.cmt()',
+        't1066_n_default.n_default: test_dan1066.is_me(uuid,uuid)',
+        't1066_n_aggregate.n_aggregate: test_dan1066.any_mine(uuid)',
+        't1066_n_having.n_having: app.current_user_id()',
+        't1066_n_limit.n_limit: app.current_user_id()',
+        't1066_n_offset.n_offset: app.current_user_id()',
+        't1066_n_cte.n_cte: app.current_user_id()',
         't1066_n_operator.n_operator: test_dan1066.mine(uuid,uuid)',
         't1066_n_restrictive.n_restrictive: app.current_user_id()',
         't1066_n_twice.n_twice: app.current_user_id()',
@@ -168,7 +196,8 @@ SELECT ok(
     'institution.actor_has_role(text)', 'institution.actor_course_ids(text[])',
     'institution.actor_assignment_ids(text[])', 'institution.work_accommodation(uuid,uuid)',
     'test_dan1066.f1()', 'test_dan1066.f2()', 'test_dan1066.mine(uuid,uuid)',
-    'test_dan1066.token()', 'test_dan1066.via_token()', 'test_dan1066.via_view()'],
+    'test_dan1066.token()', 'test_dan1066.via_token()', 'test_dan1066.via_view()',
+    'test_dan1066.cmt()', 'test_dan1066.is_me(uuid,uuid)', 'test_dan1066.any_mine(uuid)'],
   'the identity functions include the session readers and whatever calls them, at any depth'
 );
 SELECT ok(
