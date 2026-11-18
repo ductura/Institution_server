@@ -17064,7 +17064,7 @@
     "/api/v1/ops/events": {
       "get": {
         "operationId": "ops.events.get",
-        "summary": "The operator's read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator read (operator_log) masks it (an address only as a network: the host part is always cut, a mask longer than /24 for IPv4 or /48 for IPv6 is cut to it, a shorter one such as /8 stays; no token, cookie or session value; a value the read cannot vouch for is \"hidden\"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3), or for an account not on the operator list of the server or without a confirmed second factor (step 8); 401 unauthenticated without a live session (step 8). from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), at most 2^53-1. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.",
+        "summary": "The operator's read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator read (operator_log) masks it (an address only as a network: the host part is always cut, a mask longer than /24 for IPv4 or /48 for IPv6 is cut to it, a shorter one such as /8 stays; no token, cookie or session value; a value the read cannot vouch for is \"hidden\"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3), or for an account not on the operator list of the server or without a confirmed second factor (step 8); 401 unauthenticated without a live session (step 8). from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), a decimal of 0 to 2^53-1 without a leading zero. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.",
         "x-access": "signed_in",
         "x-inventory": "app/api/ops/events/route.ts",
         "parameters": [
@@ -17091,7 +17091,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "pattern": "^(?:0|[1-9][0-9]{0,15})(?![\\s\\S])",
+              "pattern": "^(?:0|[1-9][0-9]{0,14}|[1-8][0-9]{15}|900[0-6][0-9]{12}|90070[0-9]{11}|90071[0-8][0-9]{10}|900719[0-8][0-9]{9}|9007199[0-1][0-9]{8}|90071992[0-4][0-9]{7}|900719925[0-3][0-9]{6}|9007199254[0-6][0-9]{5}|90071992547[0-3][0-9]{4}|9007199254740[0-8][0-9]{2}|90071992547409[0-8][0-9]|9007199254740990|9007199254740991)(?![\\s\\S])",
               "type": "string"
             }
           }

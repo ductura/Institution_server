@@ -1,5 +1,5 @@
-// DAN-843-1 (S-1K.5-b, UGOVOR Ductus#2028): the operator's read of events as
-// a contract and vectors only; the handler is 843-2. Closed tables over the
+// DAN-843-1b (S-1K.5-b, OPSEG Ductus#2028 c.6981773723): the operator's read
+// of events as a contract and vectors only; the handler is 843-2. Closed tables over the
 // query and the 200 body, the refusals first: each case changes one place of
 // an input that passes unchanged.
 import { readFileSync } from "node:fs";
@@ -8,6 +8,7 @@ import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
 import { ROUTES } from "./index.ts";
+import { REQUEST_ID_PATTERN } from "./schema/index.ts";
 
 const ID = "ops.events.get";
 const route = ROUTES.find((r) => r.id === ID);
@@ -79,6 +80,8 @@ describe("ops.events.get refuses the query", () => {
     "2026-11-18T00:00:0０Z",
     ...AROUND.map((c) => `2026-11-18T00:00:00Z${c}`),
     ...AROUND.map((c) => `${c}2026-11-18T00:00:00Z`),
+    ...AROUND.map((c) => `2026-11-18${c}T00:00:00Z`),
+    ...AROUND.map((c) => `2026-11-18T00:00:00${c}Z`),
   ])("from or to %j", (time) => {
     expect(withQuery("from", time)).toBe(false);
     expect(withQuery("to", time)).toBe(false);
@@ -94,9 +97,16 @@ describe("ops.events.get refuses the query", () => {
     "1.0",
     "+1",
     "12345678901234567",
+    // One over 2^53-1, and the largest 16 digits: seq is at most 2^53-1.
+    "9007199254740992",
+    "9007199254741000",
+    "9007199254750991",
+    "9100000000000000",
+    "9999999999999999",
     "١",
     ...AROUND.map((c) => `41${c}`),
     ...AROUND.map((c) => `${c}41`),
+    ...AROUND.map((c) => `4${c}1`),
   ])("after %j", (after) => expect(withQuery("after", after)).toBe(false));
 
   it.each([41, null, true])("after as a non-string %j", (after) =>
@@ -105,10 +115,10 @@ describe("ops.events.get refuses the query", () => {
 
   it.each(["from", "to"])("without %s", (key) => expect(queryOk(without(QUERY, key))).toBe(false));
 
-  it.each(["kind", "limit", "toString", "constructor", "From", "after "])(
-    "an unknown parameter %j",
-    (key) => expect(withQuery(key, "1")).toBe(false),
-  );
+  it.each([
+    ...["kind", "limit", "toString", "constructor", "hasOwnProperty", "From", "after "],
+    ...AROUND.flatMap((c) => [`from${c}`, `${c}from`, `af${c}ter`]),
+  ])("an unknown parameter %j", (key) => expect(withQuery(key, "1")).toBe(false));
 
   it("an own __proto__ parameter", () => {
     const query = JSON.parse(`{"from":"${QUERY.from}","to":"${QUERY.to}","__proto__":"1"}`);
@@ -206,9 +216,18 @@ describe("ops.events.get refuses the 200 body", () => {
     expect(withFields(fields)).toBe(false);
   });
 
+  it("an own __proto__ in an event or in the body", () => {
+    const event = JSON.parse(`{"__proto__":"x",${JSON.stringify(EVENT).slice(1)}`);
+    expect(Object.keys(event)).toContain("__proto__");
+    expect(bodyOk({ ...PAGE, events: [event] })).toBe(false);
+    const body = JSON.parse('{"events":[],"next":null,"__proto__":{"next":null}}');
+    expect(Object.keys(body)).toContain("__proto__");
+    expect(bodyOk(body)).toBe(false);
+  });
+
   it("1001 events", () => expect(bodyOk({ events: events(1001), next: 1001 })).toBe(false));
 
-  it.each([0, -1, 1.5, MAX_SAFE + 1, "1000"])("next %j", (next) =>
+  it.each([0, -1, 1.5, MAX_SAFE + 1, 2 ** 53, "1000", `${MAX_SAFE}`])("next %j", (next) =>
     expect(bodyOk({ ...PAGE, next })).toBe(false),
   );
 
@@ -231,17 +250,49 @@ describe("ops.events.get accepts", () => {
     "2026-01-31T00:00:00Z",
     "2026-10-31T00:00:00Z",
     "2000-02-29T00:00:00Z",
+    "2024-02-29T00:00:00Z",
     "0001-01-01T00:00:00Z",
   ])("from and to %j", (time) => {
     expect(withQuery("from", time)).toBe(true);
     expect(withQuery("to", time)).toBe(true);
   });
 
-  it.each(["0", "1", "9007199254740991", "9".repeat(16)])("after %j", (after) =>
-    expect(withQuery("after", after)).toBe(true),
-  );
+  it.each([
+    ...["0", "1", "9", "10", "999999999999999", "1000000000000000", "8999999999999999"],
+    ...["9006999999999999", "9007099999999999", "9007199254739999", "9007199254740989"],
+    ...["9007199254740990", "9007199254740991"],
+  ])("after %j", (after) => expect(withQuery("after", after)).toBe(true));
 
   it("no after", () => expect(queryOk(without(QUERY, "after"))).toBe(true));
+
+  // The schema against an oracle on the edges of 2^53-1: each digit moved by
+  // one, every length to 17 digits, leading zeros and signs.
+  it("after exactly when it is a decimal of 0 to 2^53-1 without a leading zero", () => {
+    const max = String(MAX_SAFE);
+    const oracle = (s: string) => /^(?:0|[1-9][0-9]*)$/u.test(s) && BigInt(s) <= BigInt(MAX_SAFE);
+    const inputs = new Set(["", "0", "00", "01", "+1", "-0", "-1", max, `0${max}`, `${max}0`]);
+    for (const [i, digit] of [...max].entries())
+      for (const step of [-1, 1]) {
+        const d = Number(digit) + step;
+        if (d < 0 || d > 9) continue;
+        inputs.add(`${max.slice(0, i)}${d}${max.slice(i + 1)}`);
+        inputs.add(`${max.slice(0, i)}${d}${"9".repeat(max.length - 1 - i)}`);
+        inputs.add(`${max.slice(0, i)}${d}${"0".repeat(max.length - 1 - i)}`);
+      }
+    for (let n = 1; n <= 17; n += 1) {
+      inputs.add("9".repeat(n));
+      inputs.add(`1${"0".repeat(n - 1)}`);
+      inputs.add(max.slice(0, n));
+    }
+    for (const delta of [-2n, -1n, 1n, 2n, 1000n]) inputs.add(String(BigInt(max) + delta));
+    let accepted = 0;
+    for (const after of inputs) {
+      expect(withQuery("after", after), after).toBe(oracle(after));
+      if (oracle(after)) accepted += 1;
+    }
+    expect(accepted).toBeGreaterThan(40);
+    expect(inputs.size - accepted).toBeGreaterThan(20);
+  });
 
   // Every day of 1999 to 2032 (both leap year rules), as the query and as at.
   it("every day Date.toISOString gives from 1999 to 2032", () => {
@@ -278,6 +329,16 @@ describe("ops.events.get accepts", () => {
     expect(withEvent("kind", `a.${"b".repeat(62)}`)).toBe(true);
   });
 
+  // QA on #320 at b777a70: a full page ending at the largest seq. A bound of
+  // 1000 on next alone (a mutant) refuses it.
+  it("a full page whose last seq, and so next, is 2^53-1", () => {
+    const last = Array.from({ length: 1000 }, (_, i) => ({ ...EVENT, seq: MAX_SAFE - 999 + i }));
+    expect(last.at(-1)?.seq).toBe(MAX_SAFE);
+    expect(bodyOk({ events: last, next: MAX_SAFE })).toBe(true);
+    expect(bodyOk({ events: last, next: MAX_SAFE - 1 })).toBe(true);
+    expect(bodyOk({ events: [], next: MAX_SAFE })).toBe(true);
+  });
+
   it("the field names and values operator_log gives", () => {
     expect(withFields({})).toBe(true);
     expect(withFields({ toString: "hidden", a1: null, b: 1.5, c: true, d: "none" })).toBe(true);
@@ -289,6 +350,10 @@ describe("ops.events.get accepts", () => {
 // $ and \d mean other things outside JavaScript ($ before a final LF, \d any
 // Unicode digit), so a client validator in another language would accept
 // more: every pattern of the route ends at the end of the input, ASCII only.
+// The query, the 200 body and every error body are walked. The one exception
+// is REQUEST_ID_PATTERN of the shared problem body (schema/index.ts), which
+// ends with $ for every route: a known limit, DAN-1098 (QA on #320 at
+// 221669b, point 2). It is exempt by its exact text, so nothing else is.
 describe("ops.events.get patterns", () => {
   const END = "(?![\\s\\S])";
   const patterns = (node: unknown): string[] =>
@@ -302,16 +367,77 @@ describe("ops.events.get patterns", () => {
                 ...patterns(value),
               ],
         );
-  const all = [...patterns(schemaOf("query")), ...patterns(schemaOf("body"))];
+  const own = [...patterns(schemaOf("query")), ...patterns(schemaOf("body"))];
+  const ofErrors = (route?.errors ?? []).flatMap((e) => patterns(e.body));
 
-  it.each(all)("%s", (pattern) => {
+  /** A | outside any group or class, and a . outside a class, each unescaped. */
+  const topLevel = (pattern: string) => {
+    let depth = 0;
+    let inClass = false;
+    const found = { alternation: false, dot: false };
+    for (let i = 0; i < pattern.length; i += 1) {
+      const c = pattern[i];
+      if (c === "\\") i += 1;
+      else if (inClass) inClass = c !== "]";
+      else if (c === "[") inClass = true;
+      else if (c === "(") depth += 1;
+      else if (c === ")") depth -= 1;
+      else if (c === "|" && depth === 0) found.alternation = true;
+      else if (c === ".") found.dot = true;
+    }
+    return found;
+  };
+
+  it.each(own)("%s", (pattern) => {
     expect(pattern.startsWith("^")).toBe(true);
     expect(pattern.endsWith(END)).toBe(true);
-    // Without the end, no shorthand class anywhere, inside [] or out.
-    expect(pattern.slice(0, -END.length)).not.toMatch(/\\[dDwWsS]/u);
+    const body = pattern.slice(0, -END.length);
+    // Before the end, no shorthand class or word boundary, inside [] or out.
+    expect(body).not.toMatch(/\\[dDwWsSbB]/u);
+    expect(topLevel(body)).toEqual({ alternation: false, dot: false });
   });
 
-  it("are all found", () => expect(all.length).toBe(8));
+  it("the scan sees an alternation at the top and a bare dot", () => {
+    expect(topLevel("^a|b")).toEqual({ alternation: true, dot: false });
+    expect(topLevel("^(?:a|b)[.|]\\.")).toEqual({ alternation: false, dot: false });
+    expect(topLevel("^a.b")).toEqual({ alternation: false, dot: true });
+  });
+
+  it("are all found", () => expect(own.length).toBe(8));
+
+  it("of the error bodies are only the exempt request id, DAN-1098", () => {
+    expect(route?.errors.map((e) => e.status)).toEqual([401, 403, 422, 503]);
+    expect(ofErrors).toEqual(Array<string>(4).fill(REQUEST_ID_PATTERN));
+    expect(REQUEST_ID_PATTERN).toBe(
+      "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    );
+  });
+});
+
+// TypeBox closes an object only with additionalProperties: false, and a
+// Record only when asked (fields). Every object of the query and the 200
+// body is closed, so a key beside the contract, own __proto__ included, is
+// refused by any validator that reads the document.
+describe("ops.events.get objects are closed", () => {
+  const objects = (node: unknown, path: string): [string, Record<string, unknown>][] => {
+    if (node === null || typeof node !== "object") return [];
+    const here: [string, Record<string, unknown>][] =
+      (node as { type?: unknown }).type === "object"
+        ? [[path, node as Record<string, unknown>]]
+        : [];
+    return [
+      ...here,
+      ...Object.entries(node).flatMap(([key, value]) => objects(value, `${path}/${key}`)),
+    ];
+  };
+  const all = [...objects(schemaOf("query"), "query"), ...objects(schemaOf("body"), "body")];
+
+  it("finds the query, the body, the event and fields", () => expect(all).toHaveLength(4));
+
+  it.each(all.map(([path, node]) => [path, node] as const))(
+    "%s has additionalProperties false",
+    (_path, node) => expect(node.additionalProperties).toBe(false),
+  );
 });
 
 // The 422 vector proves the 24-hour bound only if its query passes the schema
