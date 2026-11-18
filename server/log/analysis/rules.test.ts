@@ -182,6 +182,36 @@ describe("log analysis: entries that are skipped or refused", () => {
   // going through Array.prototype, so read-only indexes there change nothing.
   // Codex review c.6965474040 (1): an accessor stays unreadable even when
   // Object.prototype carries a `value` that a descriptor would inherit.
+  // Codex review c.6965854147: every field a property descriptor can carry,
+  // inherited from Object.prototype at once; the analysis must still give the
+  // right findings and never throw.
+  it("gives the right findings with descriptor fields on Object.prototype", () => {
+    const fields = {
+      get: () => FAILED,
+      set: () => undefined,
+      value: FAILED,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    };
+    let result: unknown;
+    try {
+      for (const [key, value] of Object.entries(fields)) {
+        // A prototype-free descriptor, so the fields already set do not leak into it.
+        const descriptor = Object.create(null) as PropertyDescriptor;
+        descriptor.value = value;
+        descriptor.configurable = true;
+        descriptor.writable = true;
+        Object.defineProperty(Object.prototype, key, descriptor);
+      }
+      result = run(at(FAILED, 0, 1, 2, W, W + 1, W + 2));
+    } finally {
+      for (const key of Object.keys(fields))
+        delete (Object.prototype as Record<string, unknown>)[key];
+    }
+    expect(result).toEqual({ ok: true, value: [found(0, 3), found(W, 3)] });
+  });
+
   it("skips a getter entry field when Object.prototype has a value", () => {
     for (const [key, polluted] of [
       ["event", FAILED],

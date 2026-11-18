@@ -84,12 +84,14 @@ type ReadEntry = { readonly time: number; readonly event: string };
 // Adds an own index to a list built here. `push` and index assignment would go
 // through Array.prototype, where a read-only index makes them throw.
 function append<T>(list: T[], value: T): void {
-  Object.defineProperty(list, list.length, {
-    value,
-    writable: true,
-    enumerable: true,
-    configurable: true,
-  });
+  // The descriptor has no prototype, so `get` or `set` on Object.prototype
+  // cannot turn it into an accessor descriptor.
+  const descriptor = Object.create(null) as PropertyDescriptor;
+  descriptor.value = value;
+  descriptor.writable = true;
+  descriptor.enumerable = true;
+  descriptor.configurable = true;
+  Object.defineProperty(list, list.length, descriptor);
 }
 
 // The list index by index; an index or entry that cannot be read is skipped.
