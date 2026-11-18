@@ -18,6 +18,8 @@ const work = mkdtempSync(path.join(tmpdir(), "ductura-fence-"));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
 const fenceModule = pathToFileURL(path.join(here, "attempt-fence.ts")).href;
 let scripts = 0;
+// Milliseconds from the child's first output to its end, for the last run.
+let afterFirstOutput = -1;
 
 type Ending = {
   code: number | null;
@@ -44,7 +46,11 @@ ${body}
   });
   let stdout = "";
   let stderr = "";
-  child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
+  let firstAt = -1;
+  child.stdout.on("data", (chunk: Buffer) => {
+    if (firstAt === -1) firstAt = Date.now();
+    stdout += chunk.toString();
+  });
   child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
   // A child the fence did not end is stopped with SIGTERM, never SIGKILL, so
   // it cannot pass for one the fence killed; before vitest's own 5 s timeout.
@@ -52,6 +58,7 @@ ${body}
   return new Promise((resolve) => {
     child.on("close", (code, signal) => {
       clearTimeout(stop);
+      afterFirstOutput = firstAt === -1 ? -1 : Date.now() - firstAt;
       resolve({ code, signal, stdout, stderr });
     });
   });
@@ -73,6 +80,11 @@ describe("startAttemptFence: a real process", () => {
         `const release = fence.arm(1000); console.log("armed"); late(); console.log("before release"); release(); console.log("after release");`,
       ),
     ).toEqual({ code: null, signal: "SIGKILL", stdout: "armed\nbefore release\n", stderr: "" });
+    // QA FAIL on #296 (c.6966517620): the kill lands at the real deadline, not
+    // at the release. "armed" is written right after arm(1000); the parent
+    // sees it no earlier, so this bound can only be loose by pipe latency.
+    expect(afterFirstOutput).toBeGreaterThanOrEqual(900);
+    expect(afterFirstOutput).toBeLessThan(3000);
   });
 
   it("close does not end the watch under a live attempt: a late release after close is killed", async () => {
