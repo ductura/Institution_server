@@ -192,16 +192,24 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
         if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
           wrong.push(origin);
       }
-    // IPv6: every canonical literal is accepted (its interior is a known limit).
-    for (const digit of "0123456789abcdefABCDEF")
-      for (const literal of [
-        `${digit}::1`,
-        `2001:db8::${digit}${digit}`,
-        `::ffff:c000:2${digit}`,
-      ]) {
-        const origin = new URL(`https://[${literal}]:8443`).origin;
-        if (schema && !Value.Check(schema, { ...full, origin })) wrong.push(origin);
+    // IPv6 (QA c.6966049680, review c.6966316345): eight groups with each hex
+    // digit in each place, and a zero run at every start and length (none
+    // included), as URL writes them, compressed or not, are all accepted.
+    const literals: string[][] = [];
+    for (const digit of "0123456789abcdef")
+      for (let place = 0; place < 8; place++) {
+        const groups = ["2001", "db8", "1", "2", "3", "4", "5", "6"];
+        groups[place] = `${digit}${digit}`;
+        literals.push(groups);
       }
+    for (let start = 0; start < 8; start++)
+      for (let length = 1; start + length <= 8; length++)
+        literals.push(["a", "b", "c", "d", "e", "f", "1", "2"].fill("0", start, start + length));
+    literals.push(Array.from({ length: 8 }, () => "ffff"));
+    for (const groups of literals) {
+      const origin = new URL(`https://[${groups.join(":")}]:8443`).origin;
+      if (schema && !Value.Check(schema, { ...full, origin })) wrong.push(origin);
+    }
     expect(schema).toBeDefined();
     expect(wrong).toEqual([]);
   });
