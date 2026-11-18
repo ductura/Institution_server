@@ -118,6 +118,8 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
     ...ASCII.flatMap((c) => [`${c}a.invalid`, `a${c}b`, `a.invalid${c}`]),
     `${"a".repeat(250)}.invalid`,
     `${"a.".repeat(120)}invalid`,
+    `${"b".repeat(1000)}.invalid`,
+    ...["a..b", "a...b", "{}", "1-23"],
   ],
   // every octet 0-256 in every place, with and without a leading zero;
   ipv4: Array.from({ length: 257 }, (_, n) => [`${n}`, `0${n}`])
@@ -125,11 +127,13 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
     .flatMap((octet) => [0, 1, 2, 3].map((place) => ipv4(octet, place))),
   // a last label that is or is not a number, after zero to three labels,
   // before one trailing dot or not;
-  numeric: ["0", "1", "09", "256", "0x", "0x10", "0xa", "0xg", "1a", "1-", "a"].flatMap((last) =>
-    ["", "a.", "1.", "127.", "1.2.", "1.2.3."].flatMap((head) => [
-      `${head}${last}`,
-      `${head}${last}.`,
-    ]),
+  numeric: [
+    ...["0", "1", "09", "256", "0x", "0x10", "0xa", "0xg", "1a", "1-", "a", "4294967296"],
+    ...["00000000001", "0x100000000", "0x0123456789abcdef", "0x23456789bcde", "0x1g"],
+  ].flatMap((last) =>
+    ["", "a.", "1.", "127.", "1.2.", "1.2.3.", "a_b.", "!.", "{}.", "a-.", ".", "a..b."].flatMap(
+      (head) => [`${head}${last}`, `${head}${last}.`],
+    ),
   ),
   // each hex digit in each of eight groups, a zero run at every start and
   // length (compressed or not, as URL writes it) and the longest literal;
@@ -148,14 +152,23 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
     ),
     ipv6(Array.from({ length: 8 }, () => "ffff")),
     ipv6(["2001", "db8", "1", "2", "3", "4", "5", "6"]),
+    ...["::ffff:c000:22a", "::ffff:cb00:7103", "64:ff9b::c000:22a"].map((v) => ipv6([v])),
     ...["[A::1]", "[]", "[::1", "[::FFFF:1]", "[::ffff:1.2.3.4]"],
   ],
 };
 // Every host of every kind takes each of these ports.
-const PORTS = ["", ":", ":0", ":00", ":01", ":1", ":80", ":443", ":1234", ":65535", ":65536"];
+const PORTS = [
+  ...["", ":", ":0", ":00", ":01", ":1", ":80", ":443", ":1234", ":8080", ":54321"],
+  ...[":65534", ":65535", ":65536", ":99999"],
+];
 // A few hosts of each kind also take each of these around them.
 const HEADS = ["", "\t", " ", "u:p@", "U"];
-const TAILS = ["", "/", "/put", "?a", "#a", ".", ":100000", "\r\n", "\t", " ", "\u00a0", "\u007f"];
+const TAILS = [
+  ...["", "/", "/put", "?a", "#a", ".", ":100000", "\r\n", "\n", "\r", "\t", " "],
+  ...["\u00a0", "\u007f", "\u2028", "\ufeff"],
+];
+// The same few hosts also take each of these before the scheme.
+const LEADS = ["\n", "\r\n", " ", "\t", "\ufeff", "x"];
 
 const project = (names: readonly string[], headers: Readonly<Record<string, string>> = {}) =>
   Object.fromEntries(names.flatMap((n) => (Object.hasOwn(headers, n) ? [[n, headers[n]]] : [])));
@@ -243,6 +256,8 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
           for (const head of HEADS)
             for (const tail of TAILS)
               for (const port of ["", ":1"]) agree(`${scheme}${head}${host}${port}${tail}`);
+        for (const host of [...hosts.slice(0, 3), ...hosts.slice(-2)])
+          for (const lead of LEADS) agree(`${lead}${scheme}${host}`);
       }
       listed.forEach((rest) => agree(`${scheme}${rest}`));
       for (let port = 0; port <= 65536; port++) {
