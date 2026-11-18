@@ -38,8 +38,8 @@ export const DEFAULT_MAX_BUCKETS = 50_000;
 /**
  * The exact paths of a class; any other spelling (a trailing slash, another
  * case, an encoded slash) falls into default, which has a limit too (N11).
- * Enrolment has no route in this repository yet; it gets its path when the
- * route is ported.
+ * Enrolment is the path of the contract institution.enrollments.post
+ * (DAN-853-1a); server/http tests it against that contract.
  */
 const CLASS_ROUTES: ReadonlyMap<string, RateLimitClass> = new Map([
   ["GET /api/v1/auth/login", "login"],
@@ -47,6 +47,7 @@ const CLASS_ROUTES: ReadonlyMap<string, RateLimitClass> = new Map([
   ["GET /api/v1/auth/callback", "login"],
   ["HEAD /api/v1/auth/callback", "login"],
   ["POST /api/v1/evidence/commit", "save"],
+  ["POST /api/v1/institution/enrollments", "enroll"],
 ]);
 
 export type RateLimitDecision =
