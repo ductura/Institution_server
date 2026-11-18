@@ -14,7 +14,8 @@ SELECT no_plan();
 INSERT INTO identity.webauthn_credential (user_id, institution_id, credential_id, public_key, sign_count, revoked_at)
 SELECT p.id, p.institution_id, v.credential, '\x01', v.count, CASE WHEN v.revoked THEN statement_timestamp() END
   FROM (VALUES ('ana', '\xa1'::bytea, 5::bigint, false), ('ana', '\xa3', 1, true), ('dora', '\xd1', 1, false),
-               ('tomo', '\xb1', 1, false), ('marko', '\x31', 4, false), ('boris', '\x41', 0, false))
+               ('tomo', '\xb1', 1, false), ('marko', '\x31', 4, false), ('boris', '\x41', 0, false),
+               ('iva', '\x51', 4294967294, false))
        AS v (who, credential, count, revoked)
   JOIN person p ON p.name = v.who;
 -- Nina's credential is dated an hour ahead: the revocation must not precede it.
@@ -86,13 +87,14 @@ SELECT is(pg_temp.ask('ana', 'SELECT count(*)::text FROM identity.webauthn_crede
 -- 5. The other accepted assertions.
 SELECT is(pg_temp.revoke('marko', '\x31', 5), 'ok', 'a higher counter revokes');
 SELECT is(pg_temp.revoke('boris', '\x41', 0), 'ok', 'an authenticator without a counter (0 and 0) revokes');
+SELECT is(pg_temp.revoke('iva', '\x51', 4294967295), 'ok', 'the largest 32-bit counter revokes');
 SELECT is(pg_temp.revoke('nina', '\x71', 3), 'ok', 'a credential dated ahead of the call revokes');
 SELECT is((SELECT (revoked_at = created_at AND last_used_at = created_at)::text
              FROM identity.webauthn_credential WHERE credential_id = '\x71'),
   'true', 'and its revocation and last use are not earlier than the credential');
 SELECT is((SELECT string_agg(encode(credential_id, 'hex') || ' ' || sign_count, ', ' ORDER BY credential_id)
              FROM identity.webauthn_credential WHERE revoked_at IS NOT NULL),
-  '31 5, 41 0, 71 3, a1 6, a3 1', 'exactly the revoked rows, with the counters of their assertions');
+  '31 5, 41 0, 51 4294967295, 71 3, a1 6, a3 1', 'exactly the revoked rows, with the counters of their assertions');
 
 -- 6. The function from the catalogue; only the web role calls it.
 SELECT is(
