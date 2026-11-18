@@ -125,8 +125,9 @@ describe("no session: 401 and the reader is never asked", () => {
     ["an ended session", `${COOKIE}; ductus-ended-${sessionTag(TOKEN)!}=1`],
     ["only ductus_session", `ductus_session=${OTHER}`],
     ["only __Secure-ductus_session", `__Secure-ductus_session=${OTHER}`],
-    ["only a query", null, `?studentId=${A1}`],
-    ["only a header", null, "", { "x-student-id": A1, authorization: `Bearer ${OTHER}` }],
+    // A token's shape, so the reader's own token check cannot hide a fallback.
+    ["only a query", null, `?studentId=${OTHER}&token=${OTHER}`],
+    ["only a header", null, "", { "x-student-id": OTHER, authorization: `Bearer ${OTHER}` }],
   ] as [string, string | null, string?, Record<string, string>?][])(
     "%s",
     async (_name, cookie, query = "", extra = {}) => {
@@ -150,6 +151,7 @@ describe("no session: 401 and the reader is never asked", () => {
       `ductus_session=${OTHER}`,
     ])
       expect((await get(cookie)).status).toBe(401);
+    expect((await get(null, `?studentId=${OTHER}`, { "x-student-id": OTHER })).status).toBe(401);
     expect(reads).toBe(0);
   });
 
@@ -217,16 +219,25 @@ describe("one row the reader cannot vouch for: 503 and no partial list", () => {
 });
 
 describe("a reader that answers something else", () => {
-  const stub = (read: MyAssignmentWorkReader["read"]) => start({ read });
-  /** The one report: a route server_error of this route, nothing else. */
-  const oneReport = (lines: readonly string[]) => {
+  /** A stub reader whose calls `tokens` counts. */
+  const stub = (read: MyAssignmentWorkReader["read"]) =>
+    start({
+      read: (token) => {
+        tokens.push(token);
+        return read(token);
+      },
+    });
+  /** The one report: a route server_error of this route and class, nothing else. */
+  const oneReport = (lines: readonly string[], errorClass: string) => {
     expect(lines.length).toBe(1);
     const [record] = JSON.parse(lines[0]!) as [string];
     expect(JSON.parse(record)).toMatchObject({
       event: "server_error",
       where: "route",
+      errorClass,
       route: "student.assignment-work.get",
     });
+    expect(tokens).toEqual([TOKEN]);
   };
 
   it("a field beyond assignmentId and workState never leaves", async () => {
@@ -259,6 +270,7 @@ describe("a reader that answers something else", () => {
     await stub(async () => ({ ok: false, error: { code: "SOMETHING_ELSE", messageKey: "x.y" } }));
     expect(problem(await get())).toEqual([503, "unavailable", PROBLEM_KEYS]);
     expect(lines).toEqual([]);
+    expect(tokens).toEqual([TOKEN]);
   });
 
   it.each([
@@ -274,7 +286,7 @@ describe("a reader that answers something else", () => {
     await stub(read as MyAssignmentWorkReader["read"]);
     const got = await get();
     expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
-    oneReport(lines);
+    oneReport(lines, "other");
     noLeak(got, lines);
   });
 
@@ -294,7 +306,7 @@ describe("a reader that answers something else", () => {
     const got = await get();
     expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
     expect(JSON.stringify(got.body)).not.toContain(OTHER);
-    oneReport(lines);
+    oneReport(lines, "type_error");
   });
 });
 
