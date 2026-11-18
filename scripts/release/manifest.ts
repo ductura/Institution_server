@@ -92,7 +92,9 @@ export const TEST_FAKES: PackageSpec = {
     ...js(`${FAKES}/clock/clock`, `${FAKES}/fido2/authenticator`, `${FAKES}/services/services`),
     ...js(`${FAKES}/hostile-inputs/hostile-inputs`),
     ...js(
-      ...["accounts", "guard", "modes", "redirect-uris", "server"].map((f) => `${FAKES}/oidc/${f}`),
+      ...["accounts", "guard", "modes", "redirect-uris", "server", "simulated-accounts"].map(
+        (f) => `${FAKES}/oidc/${f}`,
+      ),
     ),
   ].sort(),
 };

@@ -20,6 +20,14 @@ import {
   loopbackIssuer,
   redirectUriList,
 } from "./redirect-uris.ts";
+import {
+  readSimulatedAccountsFile,
+  SIMULATED_ROLES,
+  simulatedAccountFromForm,
+  simulatedAccountId,
+  simulatedClaimsFor,
+  type SimulatedAccount,
+} from "./simulated-accounts.ts";
 
 export type FakeOidcOptions = {
   readonly issuer: string;
@@ -27,6 +35,12 @@ export type FakeOidcOptions = {
   readonly postLogoutRedirectUris: readonly string[];
   readonly backchannelLogoutUri: string;
   readonly mode: FakeOidcMode;
+  /**
+   * Named accounts of any institution's domain (simulated-accounts.ts), shown
+   * as buttons beside the demo accounts. Any domain can also be typed into
+   * the login page's form, with or without them.
+   */
+  readonly accounts?: readonly SimulatedAccount[];
 };
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -80,6 +94,8 @@ export function fakeOidcConfigFromEnv(env: Env): {
         env.BACKCHANNEL_LOGOUT_URI ?? "http://localhost:3000/api/auth/backchannel-logout",
       ).href,
       mode: fakeOidcMode(env.FAKE_OIDC_MODE),
+      // Ductus#2028: the named accounts of `pnpm lokalno` (.local/oidc-racuni.json).
+      accounts: readSimulatedAccountsFile(env.FAKE_OIDC_ACCOUNTS_FILE),
     },
   };
 }
@@ -157,7 +173,7 @@ function providerConfiguration(options: FakeOidcOptions): Configuration {
       return grant;
     },
     findAccount(ctx, id) {
-      const claims = demoAccountClaims(id);
+      const claims = demoAccountClaims(id) ?? simulatedClaimsFor(id, options.accounts ?? []);
       if (!claims) return undefined;
       return {
         accountId: id,
@@ -194,19 +210,31 @@ main { width: min(430px, 100%); box-sizing: border-box; padding: 30px 30px 24px;
 h1 { margin: 12px 0 8px; font-size: 24px; font-weight: 400; }
 p { margin: 0 0 20px; font-size: 13px; color: #dedbd3; }
 form { display: grid; gap: 10px; }
+h2 { margin: 24px 0 6px; font-size: 17px; font-weight: 400; }
+label { display: grid; gap: 4px; text-align: left; font-size: 13px; color: #dedbd3; }
+input, select { min-height: 40px; padding: 8px 10px; border: 1px solid #8c887f; border-radius: 4px;
+  background: #242422; color: #faf9f5; font: inherit; }
+input:focus-visible, select:focus-visible { outline: 3px solid #faf9f5; outline-offset: 2px; }
 button { min-height: 48px; padding: 12px 18px; border: 0; border-radius: 4px;
   background: #c8aa6e; color: #242422; font: inherit; font-weight: 600; cursor: pointer; }
 button:hover { background: #dcc28a; }
 button:focus-visible { outline: 3px solid #faf9f5; outline-offset: 4px; }
 `;
 
-function loginPage(uid: string): string {
-  const buttons = Object.entries(ACCOUNTS)
-    .map(
-      ([id, account]) =>
-        `<button type="submit" name="account" value="${escapeHtml(id)}">${escapeHtml(account.name)}</button>`,
-    )
-    .join("\n");
+const button = (id: string, label: string): string =>
+  `<button type="submit" name="account" value="${escapeHtml(id)}">${escapeHtml(label)}</button>`;
+
+function loginPage(uid: string, accounts: readonly SimulatedAccount[]): string {
+  const buttons = [
+    ...Object.entries(ACCOUNTS).map(([id, account]) => button(id, account.name)),
+    ...accounts.map((account) =>
+      button(
+        simulatedAccountId(account),
+        `${account.givenName} ${account.familyName} (${account.domain}, ${account.role})`,
+      ),
+    ),
+  ].join("\n");
+  const action = `/interaction/${escapeHtml(uid)}/login`;
   return `<!doctype html>
 <html lang="hr">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -216,8 +244,20 @@ function loginPage(uid: string): string {
 <span class="tag">Samo lokalno i CI</span>
 <h1>Demo prijava</h1>
 <p>Ovo nije AAI@EduHr. Lažni pružatelj prijave za lokalni rad i CI; računi su izmišljeni.</p>
-<form method="post" action="/interaction/${escapeHtml(uid)}/login">
+<form method="post" action="${action}">
 ${buttons}
+</form>
+<h2>Račun bilo koje ustanove</h2>
+<p>Domena je AAI@EduHr domena ustanove (hrEduPersonHomeOrg), npr. fpzg.hr.</p>
+<form method="post" action="${action}">
+<label>Domena ustanove <input name="domena" required autocomplete="off" placeholder="fpzg.hr"></label>
+<label>Uloga <select name="uloga">
+${Object.keys(SIMULATED_ROLES)
+  .map((role) => `<option value="${role}">${role}</option>`)
+  .join("")}
+</select></label>
+<label>Korisničko ime (neobavezno) <input name="korisnik" autocomplete="off" placeholder="student"></label>
+<button type="submit">Prijavi se</button>
 </form>
 </main>
 </body>
@@ -244,6 +284,23 @@ ${form}
 <script>document.querySelector('button[name="logout"]').click();</script>
 </body>
 </html>`;
+}
+
+/**
+ * The account a login form names: a demo account or a simulated one by its
+ * button, else the account the domain, role and user name fields make.
+ */
+function accountOf(
+  form: URLSearchParams,
+  accounts: readonly SimulatedAccount[],
+): string | undefined {
+  const chosen = form.get("account");
+  if (chosen !== null) {
+    if (isDemoAccountId(chosen)) return chosen;
+    return simulatedClaimsFor(chosen, accounts) === undefined ? undefined : chosen;
+  }
+  const typed = simulatedAccountFromForm(form);
+  return typed === undefined ? undefined : simulatedAccountId(typed);
 }
 
 async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
@@ -279,13 +336,13 @@ export function createFakeOidc(options: FakeOidcOptions, env?: Env): Server {
     const details = await provider.interactionDetails(req, res);
     if (req.method === "GET") {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-      res.end(loginPage(details.uid));
+      res.end(loginPage(details.uid, options.accounts ?? []));
       return;
     }
-    const accountId = (await readForm(req)).get("account");
-    if (req.method !== "POST" || !isDemoAccountId(accountId)) {
+    const accountId = accountOf(await readForm(req), options.accounts ?? []);
+    if (req.method !== "POST" || accountId === undefined) {
       res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
-      res.end("Nepoznat demo račun.");
+      res.end("Nepoznat demo račun ili neispravna domena, uloga ili korisničko ime.");
       return;
     }
     // Mode `refuse`: the provider answers as one that declined the sign-in.

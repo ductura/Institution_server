@@ -1,0 +1,209 @@
+// The configuration of `pnpm lokalno` (Ductus#2028, contract §1 and §3.2).
+// No PostgreSQL: the database steps are run by hand (docs/LOKALNO.md).
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { afterEach, describe, expect, it } from "vitest";
+
+import { loadAuthConfig } from "../../server/external/srce-auth/index.ts";
+import {
+  adminTarget,
+  assertLocal,
+  baseEnv,
+  ensureSecrets,
+  ISSUER,
+  loginUrl,
+  oidcEnv,
+  seedStatements,
+  serverEnv,
+  stackOptions,
+  TOKEN_FILE,
+} from "./config.ts";
+import { localLogins } from "./database.ts";
+import { databaseUrl, parseFlags } from "./lokalno.ts";
+
+const ROOT = fileURLToPath(new URL("../..", import.meta.url));
+const SECRETS = {
+  appPassword: "a".repeat(40),
+  authPassword: "b".repeat(40),
+  provisioningToken: "c".repeat(43),
+};
+
+let dir: string | undefined;
+afterEach(() => {
+  if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
+  dir = undefined;
+});
+const tempDir = (): string => (dir = mkdtempSync(join(tmpdir(), "lokalno-")));
+
+describe("contract §1: ports, issuer and origin", () => {
+  it("the provider and the server agree on the issuer and the callback of the edge origin", () => {
+    const options = stackOptions(false);
+    const oidc = oidcEnv(options);
+    const server = serverEnv(options, { host: "localhost", port: "5432" }, SECRETS);
+    expect(oidc).toMatchObject({
+      NODE_ENV: "development",
+      PORT: "8090",
+      ISSUER: "http://localhost:8090",
+      REDIRECT_URI: "http://localhost:8000/api/v1/auth/callback",
+      POST_LOGOUT_REDIRECT_URI: "http://localhost:8000/",
+      BACKCHANNEL_LOGOUT_URI: "http://127.0.0.1:4000/api/v1/auth/backchannel-logout",
+    });
+    expect(oidc).not.toHaveProperty("FAKE_OIDC_ACCOUNTS_FILE");
+    expect(server).toMatchObject({
+      NODE_ENV: "development",
+      HOST: "127.0.0.1",
+      PORT: "4000",
+      APP_ORIGIN: "http://localhost:8000",
+      DUCTUS_AUTH_PROVIDER: "fake-oidc",
+      OIDC_ISSUER: "http://localhost:8090",
+      OIDC_REDIRECT_URI: "http://localhost:8000/api/v1/auth/callback",
+      DUCTURA_PROVISIONING_TOKEN: SECRETS.provisioningToken,
+    });
+    // The server's own check accepts the configuration.
+    expect(loadAuthConfig(server).redirectUri.origin).toBe("http://localhost:8000");
+  });
+
+  it("--izravno moves only the origin, to the server itself", () => {
+    const options = stackOptions(true, "/x/oidc-racuni.json");
+    expect(oidcEnv(options)).toMatchObject({
+      REDIRECT_URI: "http://localhost:4000/api/v1/auth/callback",
+      FAKE_OIDC_ACCOUNTS_FILE: "/x/oidc-racuni.json",
+    });
+    expect(serverEnv(options, { host: "127.0.0.1", port: "5432" }, SECRETS).APP_ORIGIN).toBe(
+      "http://localhost:4000",
+    );
+    expect(parseFlags(["--izravno"])).toEqual({ direct: true });
+    expect(parseFlags([])).toEqual({ direct: false });
+    expect(() => parseFlags(["--x"])).toThrow("usage");
+  });
+
+  it("the logins are the local app and auth roles of the database ductus", () => {
+    const server = serverEnv(stackOptions(false), { host: "[::1]", port: "5433" }, SECRETS);
+    const app = new URL(server.APP_DATABASE_URL ?? "");
+    const auth = new URL(server.AUTH_DATABASE_URL ?? "");
+    expect([app.username, app.hostname, app.port, app.pathname]).toEqual([
+      "ductus_app_local",
+      "[::1]",
+      "5433",
+      "/ductus",
+    ]);
+    expect([auth.username, auth.password]).toEqual(["ductus_auth_local", SECRETS.authPassword]);
+    expect(localLogins(SECRETS).map(([login, group]) => [login, group])).toEqual([
+      ["ductus_app_local", "ductus_app"],
+      ["ductus_auth_local", "ductus_auth"],
+    ]);
+  });
+
+  it("db/main/local/seed.sql stores the simulator's issuer and loses only its psql guard", () => {
+    const seed = readFileSync(join(ROOT, "db/main/local/seed.sql"), "utf8");
+    const plain = seedStatements(seed);
+    expect(plain).toContain(`SELECT id, '${ISSUER}'`);
+    expect(plain).not.toMatch(/^\s*\\/mu);
+    expect(plain).toContain("INSERT INTO identity.institution (slug, aai_home_org)");
+    expect(() => seedStatements("SELECT 1;\n")).toThrow("guard");
+    expect(() => seedStatements("\\set ON_ERROR_STOP on\n\\if x\n\\endif\n\\gset\n")).toThrow(
+      "psql command",
+    );
+  });
+});
+
+describe("DATABASE_URL", () => {
+  it("names a superuser on this machine; the database is always ductus", () => {
+    expect(adminTarget("postgres://postgres:p%40ss@localhost/ductus")).toEqual({
+      host: "localhost",
+      port: "5432",
+      user: "postgres",
+      password: "p@ss",
+    });
+    expect(adminTarget("postgresql://u@127.0.0.1:5433/postgres?sslmode=disable").port).toBe("5433");
+    expect(adminTarget("postgres://u:p@[::1]:5432").host).toBe("[::1]");
+  });
+
+  it.each([
+    [undefined, "not set"],
+    [" ", "not set"],
+    ["nije url", "not a URL"],
+    ["mysql://u:p@localhost/ductus", "not a postgres URL"],
+    ["postgres://u:p@db.example.org/ductus", "localhost"],
+    ["postgres://u:p@10.0.0.2/ductus", "localhost"],
+    ["postgres://u:p@localhost/drugo", "the database ductus"],
+    ["postgres://u:p@localhost/ductus?host=/tmp", "only sslmode"],
+    ["postgres://localhost/ductus", "no user"],
+  ])("refuses %j without echoing it", (raw, message) => {
+    let error: unknown;
+    try {
+      adminTarget(raw);
+    } catch (caught) {
+      error = caught;
+    }
+    expect((error as Error).message).toContain(message);
+    if (raw !== undefined && raw.trim() !== "") expect((error as Error).message).not.toContain(raw);
+  });
+
+  it("comes from the environment, else from .local/database-url", () => {
+    const local = tempDir();
+    expect(databaseUrl({}, local)).toBeUndefined();
+    writeFileSync(join(local, "database-url"), "postgres://u:p@localhost/ductus\n");
+    expect(databaseUrl({}, local)).toBe("postgres://u:p@localhost/ductus");
+    expect(databaseUrl({ DATABASE_URL: "postgres://e@localhost" }, local)).toBe(
+      "postgres://e@localhost",
+    );
+  });
+
+  it("loginUrl escapes the user and the password", () => {
+    const url = new URL(
+      loginUrl({ host: "localhost", port: "5432" }, "a b", "p:@/", "ductus", "r"),
+    );
+    expect(decodeURIComponent(url.password)).toBe("p:@/");
+    expect(url.searchParams.get("role")).toBe("r");
+  });
+});
+
+describe("local secrets and environment", () => {
+  it("are made once, kept, 0600, and the token is also one line of its own", () => {
+    const local = tempDir();
+    const first = ensureSecrets(local);
+    expect(first.provisioningToken.length).toBeGreaterThanOrEqual(32);
+    expect(new Set(Object.values(first)).size).toBe(3);
+    expect(ensureSecrets(local)).toEqual(first);
+    expect(readFileSync(join(local, TOKEN_FILE), "utf8")).toBe(`${first.provisioningToken}\n`);
+    if (process.platform !== "win32") {
+      expect(statSync(join(local, "lokalno-tajne.json")).mode & 0o777).toBe(0o600);
+    }
+    writeFileSync(join(local, "lokalno-tajne.json"), '{"appPassword":"kratka"}');
+    expect(() => ensureSecrets(local)).toThrow("damaged");
+  });
+
+  it("children never take the caller's database, login or listener variables", () => {
+    // Names as the environment spells them, so built from pairs.
+    const caller = Object.fromEntries([
+      ["PATH", "/bin"],
+      ["SystemRoot", "C:\\Windows"],
+      ["PGPASSWORD", "x"],
+      ["DATABASE_URL", "x"],
+      ["APP_DATABASE_URL", "x"],
+      ["OIDC_ISSUER", "x"],
+      ["DUCTUS_AUTH_PROVIDER", "x"],
+      ["DUCTURA_PROVISIONING_TOKEN", "x"],
+      ["NODE_ENV", "production"],
+      ["NODE_OPTIONS", "--require x"],
+      ["PORT", "1"],
+      ["FAKE_OIDC_MODE", "refuse"],
+    ]);
+    const base = baseEnv(caller);
+    expect(Object.entries(base)).toEqual([
+      ["PATH", "/bin"],
+      ["SystemRoot", "C:\\Windows"],
+    ]);
+  });
+
+  it("runs only for local development (D-09)", () => {
+    expect(() => assertLocal({})).not.toThrow();
+    expect(() => assertLocal({ NODE_ENV: "development" })).not.toThrow();
+    expect(() => assertLocal({ NODE_ENV: "production" })).toThrow("NODE_ENV");
+    expect(() => assertLocal({ NODE_ENV: "staging" })).toThrow("NODE_ENV");
+  });
+});

@@ -141,6 +141,12 @@ const ENV_NAMES = [
   "REDIRECT_URI",
   "POST_LOGOUT_REDIRECT_URI",
   "BACKCHANNEL_LOGOUT_URI",
+  // `pnpm lokalno` (Ductus#2028, scripts/lokalno): the login of the login
+  // callback (server/database), the provisioning token of contract §2 and the
+  // simulator's named accounts (packages/test-fakes/oidc).
+  "AUTH_DATABASE_URL",
+  "DUCTURA_PROVISIONING_TOKEN",
+  "FAKE_OIDC_ACCOUNTS_FILE",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported
