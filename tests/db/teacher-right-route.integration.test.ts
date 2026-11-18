@@ -314,6 +314,11 @@ describe("DAN-1056-1: the teacher route only for a confirmed teacher of the acco
       ],
     });
     await expectRefused(who.revoked, "Tečaj N4");
+    // The very request that was answered before: no earlier course answers it now.
+    expect(await create(who.revoked, "Tečaj N4 prije")).toEqual([403, "forbidden"]);
+    expect((await courses("Tečaj N4 prije")).rows).toEqual([
+      { institution: inst.a.id, creator: who.revoked.userId },
+    ]);
   });
 
   it("N5 an administrator with the right cannot confirm themselves, and is 403", async () => {
