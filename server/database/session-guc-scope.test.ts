@@ -229,7 +229,7 @@ function sources(directory: string): string[] {
 // Session settings in SQL that never runs on the application's pool, each
 // with its reason. The key is the file and the text the check reports.
 const FUNCTION_SET = "a function's own SET clause, in force only while the function runs";
-// Paths of ductura/server (db/main/...). The Ductus list (d52a92c3) also held
+// Paths of ductura/Institution_server (db/main/...). The Ductus list (d52a92c3) also held
 // the pg_dump preamble of db/schema.sql, which is not in this repository; the
 // check below requires every listed exception to exist, so that key comes back
 // with its file. The pgTAP description in db/main/tests/010-roles-and-privileges.sql

@@ -4,7 +4,7 @@
 // `npm pack --dry-run --json` of the staged package.
 
 export const REGISTRY = "https://npm.pkg.github.com";
-export const REPOSITORY_URL = "git+https://github.com/ductura/server.git";
+export const REPOSITORY_URL = "git+https://github.com/ductura/Institution_server.git";
 
 export type PackageSpec = {
   readonly name: string;

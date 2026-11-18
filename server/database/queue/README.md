@@ -1,6 +1,6 @@
 # server/database/queue
 
-Workerova strana reda poslova na pg-bossu (DAN-820, VS-1b dio 1; plan napada ductura/server#146), prijenos Ductus `src/server/db/job-queue.ts` na `333e163`. Dio područja baze ([karta servera](../../../docs/server-map.md)); jedino mjesto u repou koje uvozi `pg-boss` (lint `database-boundary`).
+Workerova strana reda poslova na pg-bossu (DAN-820, VS-1b dio 1; plan napada ductura/Institution_server#146), prijenos Ductus `src/server/db/job-queue.ts` na `333e163`. Dio područja baze ([karta servera](../../../docs/server-map.md)); jedino mjesto u repou koje uvozi `pg-boss` (lint `database-boundary`).
 
 ## Što radi
 

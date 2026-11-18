@@ -172,8 +172,8 @@ const failing: Case[] = [
   { file: "server/profile/x.ts", code: imp("../database/index.ts"), messageId: "typeOnly" },
   { file: "server/support/x.ts", code: imp("../database/index.ts"), messageId: "typeOnly" },
   ...all("server/session/x.ts", "alias", [
-    "@ductura/server",
-    "@ductura/server/server/domain/forensics/jcs.ts",
+    "@ductura/institution-server",
+    "@ductura/institution-server/server/domain/forensics/jcs.ts",
     "#domain",
   ]),
 ];

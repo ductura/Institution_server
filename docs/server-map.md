@@ -1,6 +1,6 @@
 # Karta servera
 
-Karta područja `ductura/server`, pravila uvoza među njima i tok jednog zahtjeva od ulazne točke do baze. Server je modularni monolit: svako područje je mapa s javnim sučeljem (`index.ts`), a granice uvoza provjerava CI (odluka vlasnika c.6870353871, mjera 3).
+Karta područja `ductura/Institution_server`, pravila uvoza među njima i tok jednog zahtjeva od ulazne točke do baze. Server je modularni monolit: svako područje je mapa s javnim sučeljem (`index.ts`), a granice uvoza provjerava CI (odluka vlasnika c.6870353871, mjera 3).
 
 Dokument opisuje **ciljnu** strukturu. Stupac „Stanje” kaže postoji li mapa danas; `server/server-map.test.ts` provjerava da svaka mapa označena `postoji` postoji, da mapa označena `planirano` još ne postoji i da je svaka mapa u `server/` i `server/external/` u karti. Kad zadatak (S-1A-a i dalje) napravi mapu, u istom PR-u mijenja oznaku u `postoji`.
 

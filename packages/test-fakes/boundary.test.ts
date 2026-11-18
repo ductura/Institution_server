@@ -120,7 +120,15 @@ describe("@ductura/test-fakes stays out of production", () => {
   it("is not in the production dependency closure, nor are its own dependencies", () => {
     const out = execFileSync(
       "pnpm",
-      ["list", "--prod", "--json", "--depth", "Infinity", "--filter", "@ductura/server"],
+      [
+        "list",
+        "--prod",
+        "--json",
+        "--depth",
+        "Infinity",
+        "--filter",
+        "@ductura/institution-server",
+      ],
       { cwd: REPO_ROOT, encoding: "utf8" },
     );
     const names = closureNames(JSON.parse(out) as ListNode[]);

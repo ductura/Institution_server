@@ -1,6 +1,6 @@
 Kanonski plan migracije: [PLAN-MIGRACIJE.md](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md). Ovaj dokument je dio tog plana.
 
-# Ductura/server: plan repozitorija
+# ductura/Institution_server: plan repozitorija
 
 Stanje: 14. 11. 2026. · **Samo plan.** Ništa se ovim dokumentom ne gradi ni otvara.
 Uključuje dvije vlasnikove odluke od 14. 11.: (A) jedan web repo, prijenos s testovima, ugovor API-ja prvi; (B) #87 c.6870353871: ugovor kao izvor koda, repo `ductura/.github`, modularni monolit, zajednički paket lažnih zamjena, katalog komponenti, gate prema riziku zadnji.
@@ -20,7 +20,7 @@ Izvori: [plan migracije](https://github.com/ductura/.github/blob/main/docs/plan/
 
 ## 2. Zatečeno stanje (kostur, 14. 11.)
 
-- Repozitorij `ductura/server` na početku: jedan commit. CI zelen.
+- Repozitorij `ductura/Institution_server` na početku: jedan commit. CI zelen.
 - Obični JavaScript: `src/app.js`, `src/index.js`, `src/store.js`, `src/access.js`. Memorijska pohrana i provjera „vlasnik ili suradnik”.
 - Identitet iz `Authorization: Bearer <id>`: **razvojni token**, nije AAI. Zamjenjuju ga lažni OIDC (S-0.16) i tok prijave (S-1E-a), prema D-09.
 - Testovi: `test/functional.test.js` (vlastiti da, tuđi ne), `test/helpers.test.js` (prazan i neispravan ID).
