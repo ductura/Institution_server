@@ -50,6 +50,7 @@ export type {
   EnrollmentCodeRevokeOutcome,
   InstitutionCourses,
 } from "./institution-courses.ts";
+export type { EnrollmentOutcome, InstitutionEnrollment } from "./institution-enrollment.ts";
 export type {
   AccessLogCursor,
   AccessLogEntry,
@@ -151,6 +152,7 @@ export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
+export { createInstitutionEnrollment } from "./institution-enrollment.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
