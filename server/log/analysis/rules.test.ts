@@ -392,6 +392,35 @@ describe("log analysis: entries that are skipped or refused", () => {
     expect(run(lastOnly(MAX_ENTRIES + 1), one)).toEqual(BAD_ENTRIES);
   });
 
+  // Codex review c.6966691133: a getter is never called, at any read site; a
+  // getter that counts and then throws must leave the count at zero.
+  it("never calls a getter, at any read site", () => {
+    let calls = 0;
+    const getter = <T extends object>(target: T, key: string): T =>
+      Object.defineProperty(target, key, {
+        get: () => {
+          calls += 1;
+          throw new Error("kanarinac");
+        },
+        enumerable: true,
+      });
+    const valid = { timeMs: T0, event: FAILED };
+    const lists = [
+      getter([valid, valid, valid], "2"),
+      [valid, valid, getter({ timeMs: T0 }, "event")],
+      [valid, valid, getter({ event: FAILED }, "timeMs")],
+    ];
+    for (const list of lists) expect(run(list)).toEqual({ ok: true, value: [] });
+    const rule = SMALL.loginFailures;
+    const thresholds = [
+      getter({}, "loginFailures"),
+      { loginFailures: getter({ minCount: rule.minCount }, "windowMs") },
+      { loginFailures: getter({ windowMs: rule.windowMs }, "minCount") },
+    ];
+    for (const t of thresholds) expect(run(at(FAILED, 0, 1, 2), t)).toEqual(BAD_THRESHOLD);
+    expect(calls).toBe(0);
+  });
+
   it("reads each key of the list, an entry and the thresholds exactly once", () => {
     const reads: string[] = [];
     const counted = <T extends object>(name: string, target: T): T =>
