@@ -360,7 +360,7 @@ describe("the default record of a refusal", () => {
 describe("enrolment is under its own rate limit (DAN-853-1a)", () => {
   const ENROLL = contractOf("institution.enrollments.post");
   const enroll = (port: number, lines: string[]) =>
-    one(port, request("POST", ENROLL.path, [`Origin: ${ORIGIN}`, ...lines], '{"code":"x"}'));
+    one(port, request(ENROLL.method, ENROLL.path, [`Origin: ${ORIGIN}`, ...lines], '{"code":"x"}'));
   const enrollRoute = (counter: { n: number }): Route => ({
     contract: ENROLL,
     handle: async (request, response) => {
@@ -418,6 +418,33 @@ describe("enrolment is under its own rate limit (DAN-853-1a)", () => {
     clock.advance(Number(refused.headers["retry-after"]) * 1000);
     expect((await enroll(port, [])).status).toBe(200);
     expect(enrolments.n).toBe(3);
+  });
+
+  it("a full save bucket of the same session leaves enrolment open", async () => {
+    const enrolments = { n: 0 };
+    const routes = [savingRoute([]), enrollRoute(enrolments)];
+    const { port } = await start({ routes });
+    const cookie = `Cookie: ${SESSION}=${TOKEN_A}`;
+    const save = (txid: string) =>
+      one(port, request("POST", SAVE, [`Origin: ${ORIGIN}`, cookie], saveBody(txid)));
+    expect([(await save("tx-1")).status, (await save("tx-2")).status]).toEqual([200, 200]);
+    expect((await save("tx-3")).status).toBe(429);
+    expect((await enroll(port, [cookie])).status).toBe(200);
+    expect(enrolments.n).toBe(1);
+  });
+
+  it.each([
+    `${"/api/v1/institution/enrollments"}/`,
+    "//api/v1/institution/enrollments",
+    "/api/v1/institution/enrollments#x",
+    "/API/v1/institution/enrollments",
+    "http://127.0.0.1/api/v1/institution/enrollments/",
+  ])("%s, outside the class, never reaches the enrolment handler", async (target) => {
+    const enrolments = { n: 0 };
+    const { port } = await start({ routes: [enrollRoute(enrolments)] });
+    const answer = await one(port, request("POST", target, [`Origin: ${ORIGIN}`], '{"code":"x"}'));
+    expect(answer.status).not.toBe(200);
+    expect(enrolments.n).toBe(0);
   });
 
   it("on the production path: the eleventh enrolment of a session is refused, a read is not", async () => {
