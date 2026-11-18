@@ -116,13 +116,13 @@ function unavailable(stages: readonly string[]): ErrorSpec {
 }
 
 // The shape of a canonical origin as a browser sends it (DAN-930-1a): a
-// lowercase DNS name whose last label is not a number (WHATWG reads those as
-// IPv4), a dotted-quad IPv4 or a lowercase IPv6 literal, and a port 1-65535
+// lowercase DNS name whose last label is not a number, all digits or 0x hex
+// (WHATWG reads those as IPv4), a dotted-quad IPv4 or a lowercase IPv6 literal, and a port 1-65535
 // without the scheme's default; no path, user or space. The server still
 // compares it with its own origin exactly (originLayer, pipeline step 7).
 const END = "(?![\\s\\S])";
 const LABEL = "[a-z0-9]+(?:-+[a-z0-9]+)*";
-const NOT_NUMBER = "(?=[0-9-]*[a-z])(?!0x[0-9a-f]*(?![a-z0-9-]))";
+const NOT_NUMBER = "(?![0-9]+(?![a-z0-9-]))(?!0x[0-9a-f]*(?![a-z0-9-]))";
 const OCTET = "(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])";
 const HOST = `(?:(?:${OCTET}\\.){3}${OCTET}|(?:${LABEL}\\.)*${NOT_NUMBER}${LABEL}|\\[[0-9a-f:.]+\\])`;
 const PORT =

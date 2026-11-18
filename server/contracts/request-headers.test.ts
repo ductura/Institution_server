@@ -50,37 +50,28 @@ const BAD_PROTOCOL = [
 ];
 const BAD_ORIGIN = [
   ...["", "null", `${SITE}/`, `${SITE}/put`, `${SITE}?a`, `${SITE}#a`, `${SITE}:`],
-  ...[
-    "https://u:p@ductura.example.invalid",
-    `${SITE}\r\n`,
-    `\t${SITE}`,
-    `${SITE}\u00a0`,
-    `${SITE}\u007f`,
-  ],
-  ...["C:\\ductura", "file:///C:/ductura", "https://Ductura.example.invalid", `${SITE}:443`],
-  ...["http://ductura.example.invalid:80", `${SITE}:0`, `${SITE}:0443`, `${SITE}:65536`],
-  ...["https://..", "http://-", "https://[::1", "https://[]", "https://[::FFFF:1]", 1],
-  ...[
-    "wss://ductura.example.invalid",
-    "https://a-.example.invalid",
-    `${SITE}.`,
-    "https://a_b.invalid",
-  ],
-  ...["http://127.1", "http://0x7f.0.0.1", "http://010.0.0.1", "http://999", "http://1.2.3"],
-  ...[
-    "http://256.0.0.1",
-    "http://1.2.3.4.5",
-    "http://1.2.3.04",
-    "http://0x10",
-    "https://0",
-    "http://a.0x",
-  ],
+  ...["https://u:p@ductura.example.invalid", `${SITE}\r\n`, `\t${SITE}`, `${SITE}\u00a0`],
+  ...[`${SITE}\u007f`, "C:\\ductura", "file:///C:/ductura", "https://Ductura.example.invalid"],
+  ...[`${SITE}:443`, "http://ductura.example.invalid:80", `${SITE}:0`, `${SITE}:0443`],
+  ...[`${SITE}:65536`, `${SITE}:100000`, "https://..", "http://-", "https://[::1", "https://[]"],
+  ...["https://[::FFFF:1]", "wss://ductura.example.invalid", "https://a-.example.invalid", 1],
+  ...[`${SITE}.`, "https://a_b.invalid", "http://a%41", "http://127.1", "http://127.1:3000"],
+  ...["http://0x7f.0.0.1", "http://010.0.0.1", "http://999", "http://1.2.3", "http://256.0.0.1"],
+  ...["http://1.2.3.4.5", "http://1.2.3.04", "http://0x10", "http://0xa", "http://a.0xff"],
+  ...["https://0", "http://a.0x"],
 ];
+// Each is canonical (new URL(o).origin === o), so the server could be set to it.
 const GOOD_ORIGIN = [
-  "http://127.0.0.1:3000",
-  "https://[::1]:8443",
-  "http://localhost",
-  `${SITE}:65535`,
+  ...["http://127.0.0.1:3000", "https://[::1]:8443", "http://localhost", `${SITE}:65535`],
+  ...["http://255.255.255.255:65534", "http://200.1.2.3", "http://0.0.0.0", `${SITE}:50000`],
+  ...[
+    `${SITE}:4430`,
+    `${SITE}:12345`,
+    `${SITE}:60000`,
+    "https://a-1.b--c.example.invalid",
+    "https://1a",
+  ],
+  ...["https://xn--mnchen-3ya.de", "https://a.0xg", "https://1-2", "https://a.26-27"],
 ];
 const EXTRA = [
   "cookie",
