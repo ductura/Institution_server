@@ -177,7 +177,9 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
       }
     }
     for (let i = 0; i < busy; i += 1) skip("busy");
-    if (busy < passed && check === undefined) {
+    // Nothing new starts once stop() was called, also from an onSkip above
+    // (Review FAIL on #289); a read in progress is checked again after it.
+    if (busy < passed && check === undefined && !stopped) {
       check = once(point).finally(() => {
         check = undefined;
         checkEnded = performance.now();

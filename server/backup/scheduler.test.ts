@@ -307,6 +307,59 @@ describe("backup scheduler: enabled runs once per interval", () => {
     }
   });
 
+  // Review FAIL on #289 (7d37ecf): once stop() is called, from any callback,
+  // no check, read or run() starts any more.
+  it.each(["onSkip on busy", "onSkip on disabled", "readSettings"] as const)(
+    "stop() called synchronously from %s starts nothing more",
+    async (from) => {
+      const fakeSetTimeout = globalThis.setTimeout;
+      let scheduled = 0;
+      const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+        fn: () => void,
+        ms: number,
+      ) => {
+        scheduled += 1;
+        // Point 2's timer comes at 3.5 h, after a job that blocked until 2.5 h.
+        const late = from === "onSkip on busy" && scheduled === 2;
+        return fakeSetTimeout(fn, late ? ms + 1.5 * H : ms);
+      }) as never);
+      try {
+        const holder: { stopping?: Promise<void> | undefined } = {};
+        const box: { stop?: () => Promise<void> } = {};
+        const stopNow = () => (holder.stopping ??= box.stop?.());
+        const { state, scheduler, readSettings, run } = setup(
+          from === "onSkip on disabled" ? [["backup.enabled", false]] : on(1),
+          {
+            onSkip: (reason) => {
+              if (from === "onSkip on busy" ? reason === "busy" : from === "onSkip on disabled")
+                stopNow();
+            },
+          },
+        );
+        box.stop = () => scheduler.stop();
+        if (from === "readSettings") {
+          readSettings.mockImplementation(() => {
+            stopNow();
+            return state.settings;
+          });
+        }
+        if (from === "onSkip on busy") {
+          run.mockImplementationOnce(() => {
+            vi.advanceTimersByTime(1.5 * H);
+          });
+        }
+        await vi.advanceTimersByTimeAsync(6 * H);
+        expect(holder.stopping).toBeDefined();
+        await expect(holder.stopping).resolves.toBeUndefined();
+        expect(readSettings).toHaveBeenCalledTimes(1);
+        expect(run).toHaveBeenCalledTimes(from === "onSkip on busy" ? 1 : 0);
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        spy.mockRestore();
+      }
+    },
+  );
+
   it("points missed by a blocked event loop count at once, without extra reads", async () => {
     const fakeSetTimeout = globalThis.setTimeout;
     const spy = vi

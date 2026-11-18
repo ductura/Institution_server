@@ -22,7 +22,7 @@ Točka koja samo čeka svoj sat ne javlja ništa. Svaka druga točka na kojoj se
 - `busy`: točka je dospjela dok je prethodna provjera ili posao još trajao (jednom za svaku točku), i kad njezin povratni poziv stigne tek nakon sinkronog posla;
 - `run_failed`: posao je bacio.
 
-Kod `settings_unavailable` i `interval_invalid` točke se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
+Kod `settings_unavailable` i `interval_invalid` točke se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Kad je `stop()` jednom pozvan, iz bilo kojeg povratnog poziva (`onSkip`, `readSettings`, `run`), ne počinje ni provjera, ni čitanje, ni poziv `run()`; čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
 
 Poznate granice:
 
