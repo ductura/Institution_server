@@ -32,11 +32,13 @@ const WORD = "[a-z0-9]+(?:-[a-z0-9]+)*";
 // name is a conservative local limit; GitHub documents 100 of description.
 const NAME = new RegExp(`^${WORD}(?::${WORD})?$`);
 const COLOR = /^[0-9a-f]{6}$/i;
-// The only characters of a description: Latin letters, printable ASCII (digits,
+// The only characters of a description: Latin letters (Script=Latin and a
+// letter, so no Roman numeral such as U+2160), printable ASCII (digits,
 // punctuation, space) and §, which a repo label uses. Nothing else, so no
 // character that renders blank or hides text can pass.
-const ALLOWED = /^[\p{Script=Latin} -~§]*$/u;
-const LETTER_OR_DIGIT = /[\p{Script=Latin}0-9]/u;
+// Each class is the intersection by lookahead, one way per character.
+const ALLOWED = /^(?:(?=[\p{L} -~§])[\p{Script=Latin} -~§])*$/u;
+const LETTER_OR_DIGIT = /(?=[\p{L}0-9])[\p{Script=Latin}0-9]/u;
 
 function entryProblems(entry: unknown, at: number): LabelError[] {
   if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
@@ -44,9 +46,10 @@ function entryProblems(entry: unknown, at: number): LabelError[] {
   }
   const record = entry as Record<string, unknown>;
   const own = (key: string): unknown => (Object.hasOwn(record, key) ? record[key] : undefined);
-  const problems = Object.keys(record)
-    .filter((key) => !KEYS.includes(key))
-    .map(() => error("LABEL_UNKNOWN_KEY", at));
+  // One problem per code and record, so a record has at most four problems
+  // however many keys it has.
+  const unknown = Object.keys(record).some((key) => !KEYS.includes(key));
+  const problems = unknown ? [error("LABEL_UNKNOWN_KEY", at)] : [];
   const name = own("name");
   const color = own("color");
   const description = own("description");

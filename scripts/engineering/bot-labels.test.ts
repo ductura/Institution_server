@@ -65,6 +65,7 @@ const RECORDS: Row[] = [
     ["__proto__ key", `{ ${N}, ${C}, ${D}, __proto__: "y" }`],
     ["constructor key", `{ ${N}, ${C}, ${D}, constructor: "y" }`],
     ["toString key", `{ ${N}, ${C}, ${D}, toString: "y" }`],
+    ["three extra keys, one problem", `{ ${N}, ${C}, ${D}, a: 1, b: 2, c: 3 }`],
   ]),
   ...of("LABEL_INVALID_NAME", [
     ["missing name", `{ ${C}, ${D} }`],
@@ -139,6 +140,7 @@ const DESCRIPTIONS: Row[] = [
     ["bidi override", "a\\u202eb"],
     ["NFD č", "c\\u030c"],
     ["Cyrillic a", "\\u0430"],
+    ["Roman numeral one (Latin script, no letter)", "\\u2160"],
     ["Croatian quotes", "\\u201ea\\u201d"],
     ["101 characters", "a".repeat(101)],
     ["101 astral Latin letters", "\\U00010780".repeat(101)],
