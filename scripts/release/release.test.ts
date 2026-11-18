@@ -109,6 +109,11 @@ describe("publish manifest", () => {
     expect(manifestErrors(spec, manifest(spec))).toEqual([]);
   });
 
+  it.each(PACKAGES)("$name publishes the renamed repository URL, written out literally", (spec) => {
+    const repository = manifest(spec).repository as { url?: string };
+    expect(repository.url).toBe("git+https://github.com/ductura/Institution_server.git");
+  });
+
   it.each(PACKAGES)("$name stays private in the repository", (spec) => {
     expect(source(spec.dir).private).toBe(true);
   });

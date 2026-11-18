@@ -36,6 +36,12 @@ describe("state", () => {
     for (const version of Object.values(versions)) expect(version).toMatch(/^v?\d+\.\d+\.\d+/u);
   });
 
+  it("lists the server package under its renamed name, written out literally", () => {
+    expect(VERSIONED).toContain("@ductura/institution-server");
+    expect(VERSIONED).not.toContain("@ductura/server");
+    expect(Object.keys(packageVersions(ROOT))).toContain("@ductura/institution-server");
+  });
+
   it("refuses a root without the manifests", () => {
     expect(() => packageVersions(dir)).toThrow();
   });
