@@ -5,6 +5,7 @@ import { Type, type TObject, type TSchema, type TUnion } from "@sinclair/typebox
 import { messageKeyOf } from "./message-keys.ts";
 
 export { ERROR_MESSAGE_KEYS, messageKeyOf } from "./message-keys.ts";
+export { Origin, ORIGIN_MAX_LENGTH } from "./origin.ts";
 
 /** Who may call a route. A declaration for clients and docs: the database still decides (RLS, RPC). */
 export const ACCESS = [
