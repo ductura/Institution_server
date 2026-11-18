@@ -166,10 +166,16 @@ describe("AAI-shaped login into identity.open_session", () => {
     expect(await accountsOf(ivo.sub)).toEqual([B.id]);
   });
 
+  /** A refusal (403 before DAN-1081): 303 to the sign-in page with login_failed. */
+  function expectRefused(response: Response): void {
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=login_failed`);
+  }
+
   it("A19 refuses an account of B whose unique id is in the realm of A", async () => {
     const mixed = account(`sub-mix-${suffix}`, "mia", B.homeOrg, A.homeOrg);
     const response = await signIn(mixed);
-    expect(response.status).toBe(403);
+    expectRefused(response);
     expect(
       response.headers
         .getSetCookie()
@@ -180,7 +186,7 @@ describe("AAI-shaped login into identity.open_session", () => {
 
   it("A19 refuses a home organisation no institution has", async () => {
     const stranger = account(`sub-none-${suffix}`, "eva", `aai-c-${suffix}.ductus.test`);
-    expect((await signIn(stranger)).status).toBe(403);
+    expectRefused(await signIn(stranger));
     expect(await accountsOf(stranger.sub)).toEqual([]);
   });
 
@@ -189,7 +195,7 @@ describe("AAI-shaped login into identity.open_session", () => {
     const response = await signIn(both, {
       userinfo: (u) => ({ ...u, hrEduPersonHomeOrg: [A.homeOrg, B.homeOrg] }),
     });
-    expect(response.status).toBe(403);
+    expectRefused(response);
     expect(await accountsOf(both.sub)).toEqual([]);
   });
 
