@@ -17,6 +17,7 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createHealthRoute,
+  createInstitutionCourseReadRoutesFor,
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createLayers,
@@ -139,6 +140,20 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 403,
   },
+  // DAN-1089: the reads of A-03. The accounts here are no administrator, so
+  // a live session is 403 forbidden from each function and reads nothing.
+  "institution.academic-years.get": {
+    method: "GET",
+    path: "/api/v1/institution/academic-years",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.course-list.get": {
+    method: "GET",
+    path: "/api/v1/institution/course-list?academicYear=2026%2F2027",
+    body: () => undefined,
+    live: 403,
+  },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
   // account does not hold is 403. The old cookie's registration carries a
@@ -176,6 +191,7 @@ const FACTORIES = [
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
+  "createInstitutionCourseReadRoutesFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -191,6 +207,7 @@ const MOUNTED = [
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
+  ...createInstitutionCourseReadRoutesFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
