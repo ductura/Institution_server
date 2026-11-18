@@ -51,6 +51,14 @@ export type {
   InstitutionCourses,
 } from "./institution-courses.ts";
 export type {
+  AcademicYearsOutcome,
+  CoursePerson,
+  InstitutionCourse,
+  InstitutionCourseReads,
+  InstitutionCoursesOutcome,
+  InstitutionGroup,
+} from "./institution-course-reads.ts";
+export type {
   AccessLogCursor,
   AccessLogEntry,
   AccessLogRole,
@@ -151,6 +159,7 @@ export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
+export { createInstitutionCourseReads, isAcademicYear } from "./institution-course-reads.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the

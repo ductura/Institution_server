@@ -106,6 +106,13 @@ export type Operations = {
     success: { status: 200; body: { "replayFormat": "ductus-evidence-replay-v1"; "segmentCount": number; "head": { "segmentHash": string; "segmentCount": number } | null; "from": number; "next": number | null; "startDocument": string | null; "segments": (string)[]; "resumeDocuments": { [key: string]: string } }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "record_changed" | "unavailable";
   };
+  "institution.academic-years.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "years": (string)[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "institution.acknowledgment.post": {
     params: { "assignmentId": string };
     query: undefined;
@@ -119,6 +126,13 @@ export type Operations = {
     body: { "expectedVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "wordMin": number | null; "wordMax": number | null };
     success: { status: 201; body: { "assignmentId": string; "versionNo": number }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "unavailable" | "version_conflict";
+  };
+  "institution.course-list.get": {
+    params: undefined;
+    query: { "academicYear": string };
+    body: undefined;
+    success: { status: 200; body: { "academicYear": string; "courses": ({ "courseId": string; "name": string; "students": number; "holder": { "personId": string; "name": { "givenName": string; "familyName": string } | null } | null; "team": ({ "personId": string; "name": { "givenName": string; "familyName": string } | null })[]; "groups": ({ "groupId": string; "name": string; "students": number; "teachers": ({ "personId": string; "name": { "givenName": string; "familyName": string } | null })[] })[] })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable" | "invalid_input";
   };
   "institution.courses.post": {
     params: undefined;

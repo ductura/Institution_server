@@ -12,6 +12,7 @@ import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
 import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
 import {
   AREA_NAMES,
+  createInstitutionCourseReadRoutesFor,
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
@@ -119,6 +120,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createInstitutionCourseRoutesFor(databases.main)",
     ids: [...INSTITUTION_COURSE_ROUTES],
     routes: () => createInstitutionCourseRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // DAN-1089: the two reads of A-03 over the main database.
+    call: "createInstitutionCourseReadRoutesFor(databases.main)",
+    ids: ["institution.academic-years.get", "institution.course-list.get"],
+    routes: () => createInstitutionCourseReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -234,6 +241,8 @@ describe("routes the entry point mounts itself", () => {
       "profile.interface-locale.post",
       "support.problem-report.post",
       ...INSTITUTION_COURSE_ROUTES,
+      "institution.academic-years.get",
+      "institution.course-list.get",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

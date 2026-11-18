@@ -60,6 +60,8 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
  * in INVENTORY, which stays a copy of the 38 files. The key is the route.ts it
  * would be (pathOf gives its path), `source` the Ductus file of its shape.
  */
+const A03_SOURCE =
+  "danielrisavi77-create/Ductus@70c168f:src/server/institution/institution-courses.ts";
 const WEBAUTHN_SOURCE = "danielrisavi77-create/Ductus@b36c82b:docs/DECISIONS.md#D-297";
 
 export const SERVER_SOURCES: Readonly<
@@ -111,6 +113,9 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:docs/DECISIONS.md#D-306",
   },
+  // DAN-1089: Ductus reads both in its page app/ustanova/kolegiji (A-03), not in a route.
+  "app/api/institution/academic-years/route.ts": { methods: ["GET"], source: A03_SOURCE },
+  "app/api/institution/course-list/route.ts": { methods: ["GET"], source: A03_SOURCE },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",

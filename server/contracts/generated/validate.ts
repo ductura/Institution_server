@@ -261,6 +261,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.course-list.get:query": (() => {
+  const local0 = /^[0-9]{4}\/[0-9]{4}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['academicYear'] === 'string') &&
+      local0.test(value['academicYear']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "institution.courses.post:body": (() => {
   const local0 = /^(?!\s)[\s\S]*(?<!\s)(?![\s\S])/;
   const local1 = /^[0-9]{4}\/[0-9]{4}(?![\s\S])/;

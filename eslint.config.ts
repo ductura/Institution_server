@@ -198,6 +198,12 @@ const DATABASE_NAMES = [
   "reader_role",
   "reader_given_name",
   "reader_family_name",
+  // Result columns of the A-03 reads (institution-course-reads.ts, DAN-1089) and its tests.
+  "academic_year",
+  "course_id",
+  "course_name",
+  "group_id",
+  "group_name",
   // Result columns of the work opener (open-work.ts, DAN-811) and its tests.
   "current_revision",
   "document_hash",

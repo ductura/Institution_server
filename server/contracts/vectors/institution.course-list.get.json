@@ -1,0 +1,234 @@
+{
+  "route": "institution.course-list.get",
+  "vectors": [
+    {
+      "name": "courses",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+        },
+        "query": {
+          "academicYear": "2026/2027"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "academicYear": "2026/2027",
+          "courses": [
+            {
+              "courseId": "7b0c1d2e-3f40-4a51-8b62-9c7d8e9f0a01",
+              "name": "Izmišljeni kolegij A",
+              "students": 3,
+              "holder": {
+                "personId": "7b0c1d2e-3f40-4a51-8b62-9c7d8e9f0b01",
+                "name": {
+                  "givenName": "Ana",
+                  "familyName": "Izmišljena"
+                }
+              },
+              "team": [
+                {
+                  "personId": "7b0c1d2e-3f40-4a51-8b62-9c7d8e9f0b01",
+                  "name": {
+                    "givenName": "Ana",
+                    "familyName": "Izmišljena"
+                  }
+                },
+                {
+                  "personId": "7b0c1d2e-3f40-4a51-8b62-9c7d8e9f0b02",
+                  "name": null
+                }
+              ],
+              "groups": [
+                {
+                  "groupId": "7b0c1d2e-3f40-4a51-8b62-9c7d8e9f0c01",
+                  "name": "Izmišljena grupa 1",
+                  "students": 2,
+                  "teachers": [
+                    {
+                      "personId": "7b0c1d2e-3f40-4a51-8b62-9c7d8e9f0b01",
+                      "name": {
+                        "givenName": "Ana",
+                        "familyName": "Izmišljena"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "courseId": "7b0c1d2e-3f40-4a51-8b62-9c7d8e9f0a02",
+              "name": "Izmišljeni kolegij B",
+              "students": 0,
+              "holder": null,
+              "team": [],
+              "groups": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "no-courses",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+        },
+        "query": {
+          "academicYear": "2026/2027"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "academicYear": "2026/2027",
+          "courses": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "query": {
+          "academicYear": "2026/2027"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "not-administrator",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+        },
+        "query": {
+          "academicYear": "2026/2027"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001",
+          "sec-fetch-site": "cross-site"
+        },
+        "query": {
+          "academicYear": "2026/2027"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000003"
+        }
+      }
+    },
+    {
+      "name": "year-not-consecutive",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+        },
+        "query": {
+          "academicYear": "2026/2028"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000004"
+        }
+      }
+    },
+    {
+      "name": "year-missing",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000000005"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-administratora-00000000001"
+        },
+        "query": {
+          "academicYear": "2026/2027"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000006"
+        }
+      }
+    }
+  ]
+}

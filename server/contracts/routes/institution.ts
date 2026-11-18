@@ -262,6 +262,92 @@ export const roleRevocationPost = defineRoute({
   errors: [...MUTATION_ERRORS],
 });
 
+/** Lowercase UUID, as the UUID check of Ductus institution-courses.ts. */
+const LowerUuid = Type.String({
+  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+});
+/** Two consecutive years such as 2026/2027 (isAcademicYear; the order a schema cannot say). */
+const AcademicYear = Type.String({ pattern: `^[0-9]{4}/[0-9]{4}${END}` });
+/** A course or group name as is_plain_label stored it: 1 to 200 code points, no control character. */
+const Label = Type.String({
+  pattern: `^(?=[\\s\\S]*\\S)${codePoint("\\u0000-\\u001f\\u007f-\\u009f")}{1,200}${END}`,
+});
+/** A name of the login claims (isName): 1 to 255 code points. */
+const PersonName = Type.String({ pattern: `^${codePoint("")}{1,255}${END}` });
+const Count = Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER });
+/** The name is null when the account has no name pair in the institution, never a stand-in. */
+const CoursePerson = closed({
+  personId: LowerUuid,
+  name: Type.Union([closed({ givenName: PersonName, familyName: PersonName }), Type.Null()]),
+});
+/** The reads of the administrator's course screen (A-03): no input but the session and the year. */
+const READ_ERRORS = [
+  error(401, "unauthorized"),
+  error(403, "forbidden"),
+  error(503, "unavailable"),
+] as const;
+
+// Port of Ductus 70c168f src/server/institution/institution-courses.ts (DAN-313,
+// screen A-03), which the page reads without a route.ts. Only a confirmed,
+// unrevoked administrator gets an answer, for their own institution; anyone
+// else is 403. A row the read cannot vouch for makes the whole answer 503.
+export const academicYearsGet = defineRoute({
+  id: "institution.academic-years.get",
+  method: "GET",
+  path: "/api/v1/institution/academic-years",
+  inventory: "app/api/institution/academic-years/route.ts",
+  access: "institution_admin",
+  summary:
+    "The academic years of the administrator's institution that have a course, newest first, each once (institution.institution_academic_years). A caller who is not an administrator, or a cross-site read, is 403.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "the years, possibly none",
+      body: closed({ years: Type.Array(AcademicYear) }),
+    },
+  ],
+  errors: [...READ_ERRORS],
+});
+
+export const courseListGet = defineRoute({
+  id: "institution.course-list.get",
+  method: "GET",
+  path: "/api/v1/institution/course-list",
+  inventory: "app/api/institution/course-list/route.ts",
+  access: "institution_admin",
+  summary:
+    "The courses of the administrator's institution in one academic year (institution.institution_courses): each with its number of open students, its holder, its teaching team and its seminar groups with their teachers and number of students. Students are counted, never named. Courses and groups by name (hr collation), then id; people by surname, then given name, then id, those without a name last. The query is exactly academicYear, once; anything else is 422 and reaches no database. A caller who is not an administrator, or a cross-site read, is 403.",
+  request: { query: closed({ academicYear: AcademicYear }) },
+  responses: [
+    {
+      status: 200,
+      description: "the courses of the year, possibly none",
+      body: closed({
+        academicYear: AcademicYear,
+        courses: Type.Array(
+          closed({
+            courseId: LowerUuid,
+            name: Label,
+            students: Count,
+            holder: Type.Union([CoursePerson, Type.Null()]),
+            team: Type.Array(CoursePerson),
+            groups: Type.Array(
+              closed({
+                groupId: LowerUuid,
+                name: Label,
+                students: Count,
+                teachers: Type.Array(CoursePerson),
+              }),
+            ),
+          }),
+        ),
+      }),
+    },
+  ],
+  errors: [...READ_ERRORS, error(422, "invalid_input")],
+});
+
 export const institutionRoutes = [
   coursesPost,
   assignmentVersionsPost,
@@ -271,4 +357,6 @@ export const institutionRoutes = [
   studentReturnPost,
   roleConfirmationPost,
   roleRevocationPost,
+  academicYearsGet,
+  courseListGet,
 ] as const;

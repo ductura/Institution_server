@@ -19,6 +19,7 @@ import {
   createClientContextRoute,
   createDatabases,
   createEvidenceCommitRouteFor,
+  createInstitutionCourseReadRoutesFor,
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
@@ -124,6 +125,8 @@ async function main(): Promise<void> {
       createProblemReportRouteFor(databases.main),
       // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
       ...createInstitutionCourseRoutesFor(databases.main),
+      // The two reads of the administrator's course screen A-03 (DAN-1089).
+      ...createInstitutionCourseReadRoutesFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
       ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;
