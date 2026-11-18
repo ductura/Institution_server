@@ -152,7 +152,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "settings.values.get",
   "student.access-log.get",
   "student.assignment-work.get",
-  "downloads.manifest.get",
 ];
 
 /**

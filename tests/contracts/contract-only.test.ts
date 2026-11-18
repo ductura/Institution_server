@@ -14,6 +14,7 @@ import {
   AREA_NAMES,
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
+  createDownloadsManifestRoute,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
@@ -107,6 +108,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createInterfaceLocaleRoutesFor(databases.main)",
     ids: ["profile.interface-locale.get", "profile.interface-locale.post"],
     routes: () => createInterfaceLocaleRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // DAN-932: the download manifest over the release configuration built in.
+    call: "createDownloadsManifestRoute()",
+    ids: ["downloads.manifest.get"],
+    routes: () => [createDownloadsManifestRoute().contract.id],
   },
   {
     // DAN-851-2d2a: the problem report over the main database.
@@ -209,10 +216,12 @@ describe("CONTRACT_ONLY", () => {
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
-      // problem report (851-2d2a) and the course routes (852-5a) are missing too.
-      ["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840].map(
-        (id) => `${id}: contract without a handler, not in CONTRACT_ONLY`,
-      ),
+      // problem report (851-2d2a), the course routes (852-5a) and the
+      // download manifest (DAN-932) are missing too.
+      [
+        ...["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840],
+        ...DAN_931,
+      ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
   });
 
@@ -232,6 +241,7 @@ describe("routes the entry point mounts itself", () => {
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
+      "downloads.manifest.get",
       "support.problem-report.post",
       ...INSTITUTION_COURSE_ROUTES,
       "auth.webauthn-challenge.post",
@@ -243,6 +253,8 @@ describe("routes the entry point mounts itself", () => {
     expect(mounted()).toContain("profile.interface-locale.post");
     expect(mounted()).toContain("support.problem-report.post");
     expect(CONTRACT_ONLY).not.toContain("support.problem-report.post");
+    expect(mounted()).toContain("downloads.manifest.get");
+    expect(CONTRACT_ONLY).not.toContain("downloads.manifest.get");
     for (const id of INSTITUTION_COURSE_ROUTES) {
       expect(mounted()).toContain(id);
       expect(CONTRACT_ONLY).not.toContain(id);
@@ -277,6 +289,20 @@ describe("routes the entry point mounts itself", () => {
       expect(entryMounted(entry)).toEqual([]);
     }
     expect(entryMounted(`routes: [\n  ${call},\n]`)).toEqual(["support.problem-report.post"]);
+  });
+
+  it("the download manifest commented out or over another configuration is not a mount", () => {
+    const call = "createDownloadsManifestRoute()";
+    for (const entry of [
+      `// ${call},`,
+      `/* ${call}, */`,
+      "",
+      "createDownloadsManifestRoute(() => releases),",
+      "createDownloadsManifestRoute(undefined),",
+    ]) {
+      expect(entryMounted(entry)).toEqual([]);
+    }
+    expect(entryMounted(`routes: [\n  ${call},\n]`)).toEqual(["downloads.manifest.get"]);
   });
 
   it("each factory gives the route ids of its row", () => {

@@ -1,4 +1,13 @@
 // Public interface of server/downloads; other areas import only this file.
 export { DOWNLOADS_ROUTES } from "./routes.ts";
 export { DOWNLOADS_SCHEMAS } from "./schemas.ts";
-export type { DownloadsService } from "./service.ts";
+export {
+  createDownloadsService,
+  DOWNLOADS_ERRORS,
+  DOWNLOADS_RELEASES_INVALID,
+  DOWNLOADS_RELEASES_ORDER,
+  DOWNLOADS_RELEASES_UNREADABLE,
+  type DownloadsManifest,
+  type DownloadsPackage,
+  type DownloadsService,
+} from "./service.ts";
