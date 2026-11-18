@@ -17,6 +17,7 @@ import {
   type AreaWithRoutes,
   createAuthRoutes,
   createClientContextRoute,
+  createDownloadsManifestRoute,
   createDatabases,
   createEvidenceCommitRouteFor,
   createInstitutionCourseRoutesFor,
@@ -116,6 +117,8 @@ async function main(): Promise<void> {
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
       createEvidenceOpenRoute(databases.main),
+      // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
+      createDownloadsManifestRoute(),
       // Settings by level (S-1J-g, DAN-826): the write over settings.set_value.
       createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
       // The interface language (S-M-1, DAN-851): GET and POST over the profile service.

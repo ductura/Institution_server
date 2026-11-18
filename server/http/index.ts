@@ -8,6 +8,7 @@ export {
   type ClientContext,
   type ClientContextOptions,
 } from "./client-context.ts";
+export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
 export {
   finishLogin,
   LOGIN_COOKIE_NAME,
