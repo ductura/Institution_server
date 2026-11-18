@@ -1,6 +1,7 @@
 // S-1G-a part 2 (DAN-1012-2c; contracts Ductus#2028 c.6966729858 and c.6967474538): the backup
 // scheduler on a fake clock. Negative cases first: the job never runs unless
 // backup.enabled is exactly true.
+import { types } from "node:util";
 import { runInNewContext } from "node:vm";
 
 // Taken before any test fakes timers: a real turn of the event loop, after
@@ -1190,6 +1191,59 @@ describe("backup scheduler: every shape of run()'s result", () => {
     expect(onSkip.mock.calls).toEqual([["run_failed"]]);
   });
 
+  // QA attacker on #312 (06c08fa): a native promise already settled when run()
+  // returns ends at the return, like a synchronous job, not in a reaction
+  // queued behind a 20 ms microtask that other code queued earlier.
+  it.each([
+    ["a synchronous return", () => undefined, false],
+    ["Promise.resolve()", () => Promise.resolve(), false],
+    ["an async function that returns at once", async () => undefined, false],
+    [
+      "a vm promise already resolved, with then: undefined",
+      () => runInNewContext("Object.assign(Promise.resolve(), { then: undefined })"),
+      false,
+    ],
+    ["Promise.reject()", () => Promise.reject(new Error(CANARY)), true],
+  ])(
+    "%s, 10 ms before point 2 behind a 20 ms microtask: point 2 is not busy",
+    async (_n, job, fails) => {
+      const fakeSetTimeout = globalThis.setTimeout;
+      let scheduled = 0;
+      const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+        fn: () => void,
+        ms: number,
+      ) => {
+        scheduled += 1;
+        // Point 2's callback comes 15 ms late, after the 20 ms microtask.
+        return fakeSetTimeout(fn, scheduled === 2 ? ms + 15 : ms);
+      }) as never);
+      try {
+        const t0 = performance.now();
+        const calls: number[] = [];
+        const { readSettings, onSkip } = setup(on(1), {
+          run: () => {
+            calls.push((performance.now() - t0) / H);
+            return calls.length === 1 ? (job() as Promise<void>) : undefined;
+          },
+        });
+        readSettings.mockImplementationOnce(
+          () =>
+            new Promise((resolve) =>
+              fakeSetTimeout(() => {
+                resolve(new Map(on(1)));
+                queueMicrotask(() => vi.advanceTimersByTime(20));
+              }, H - 10),
+            ),
+        );
+        await advance(2.5 * H);
+        expect(calls.map((at) => Math.round(at * 1000) / 1000)).toEqual([2, 2]);
+        expect(onSkip.mock.calls).toEqual(fails ? [["run_failed"]] : []);
+      } finally {
+        spy.mockRestore();
+      }
+    },
+  );
+
   // A thenable's end comes in the reaction to its call back, ahead of a 20 ms
   // microtask queued after it: point 2 is not busy (the 2d case for PromiseLike).
   it("a thenable that calls back 10 ms before point 2 is not busy behind a later microtask", async () => {
@@ -1268,10 +1322,11 @@ describe("backup scheduler: ordering around a 1.5 h job", () => {
   });
 });
 
-// Known limits of DAN-1012-2e (README): a value on which the language cannot
-// attach a reaction counts as a job that failed at once. These rows pin that
+// Known limits of DAN-1012-2e (README): a value that is not a native promise
+// but answers to Promise.prototype.then, or a native promise on which that
+// then throws, counts as a job that failed at once. These rows pin that
 // behaviour, so a change to it is a decision, not an accident.
-describe("backup scheduler: results no means of the language can follow", () => {
+describe("backup scheduler: results the scheduler does not follow", () => {
   const pending = () => new Promise<void>(() => undefined);
   it.each([
     ["a Proxy of a native promise", () => new Proxy(pending(), {})],
@@ -1307,6 +1362,89 @@ describe("backup scheduler: results no means of the language can follow", () => 
     await advance(H);
     expect(reads).toBe(1);
     expect(onSkip).not.toHaveBeenCalled();
+  });
+
+  // QA attacker on #312 (06c08fa): the probe that tells a promise settled at
+  // return applies only to that case; a pending one ends when it settles, so
+  // a point due during it is busy even when its callback comes after the end.
+  it("a point due during a 1.5 h promise job is busy, whenever its callback comes", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      // Point 2's callback comes only after the job ended at 2.5 h.
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 0.5 * H + 1 : ms);
+    }) as never);
+    try {
+      const { run, onSkip } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record(() =>
+        calls.length === 1
+          ? new Promise<void>((resolve) => fakeSetTimeout(resolve, 1.5 * H))
+          : undefined,
+      );
+      await advance(3.5 * H);
+      expect(calls).toEqual([1, 3]);
+      expect(onSkip.mock.calls).toEqual([["busy"]]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  // QA attacker on #312 (06c08fa): every function the scheduler follows a job
+  // with is taken at load, so a job that replaces one is still followed.
+  it.each([
+    [
+      "util.types.isPromise",
+      () => {
+        const original = types.isPromise;
+        types.isPromise = (() => false) as never;
+        return () => (types.isPromise = original);
+      },
+    ],
+    [
+      "Promise.resolve",
+      () => {
+        const original = Promise.resolve;
+        Promise.resolve = (() => original.call(Promise, undefined)) as never;
+        return () => (Promise.resolve = original);
+      },
+    ],
+    [
+      "Reflect.apply",
+      () => {
+        const original = Reflect.apply;
+        Reflect.apply = (() => undefined) as never;
+        return () => (Reflect.apply = original);
+      },
+    ],
+  ])("a job that replaces %s is still followed to its end", async (name, patch) => {
+    const restore: (() => unknown)[] = [];
+    const { run, onSkip } = setup(on(1));
+    const { calls, record } = callTimes(run);
+    record(() => {
+      if (calls.length > 1) return undefined;
+      restore.push(patch());
+      // Promise.resolve is used only for a result that is not a native promise.
+      if (name === "Promise.resolve") {
+        return { then: (ok: () => void) => void setTimeout(ok, 1.5 * H) } as unknown;
+      }
+      return runInNewContext(
+        "Object.assign(new Promise((resolve) => later(1.5 * hour, resolve)), { then: undefined })",
+        { later: (ms: number, fn: () => void) => void setTimeout(fn, ms), hour: H },
+      ) as unknown;
+    });
+    try {
+      await advance(H);
+    } finally {
+      restore.forEach((undo) => undo());
+    }
+    await advance(2.5 * H);
+    expect(calls).toEqual([1, 3]);
+    expect(onSkip.mock.calls).toEqual([["busy"]]);
   });
 
   it("a job that patches Promise.prototype.then is still followed to its end", async () => {

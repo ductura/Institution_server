@@ -109,6 +109,7 @@ const apply = Reflect.apply;
 const promiseThen = Promise.prototype.then;
 const promiseResolve = Promise.resolve.bind(Promise);
 const isPromise = types.isPromise;
+const enqueue = queueMicrotask;
 
 /**
  * Marks a callback's result as handled, read through Promise.prototype, so a
@@ -195,10 +196,12 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     // nested thenable is followed as await would, and then the job is over.
     let done!: () => void;
     let failed!: () => void;
+    /** Set while a reaction can only be to a promise already settled at return. */
+    let returnedAt: number | undefined;
     const settled = new Promise<void>((resolve, reject) => {
       // Each is called at most once: by one reaction, or by run()'s return or throw.
       const finish = (ok: boolean) => (): void => {
-        jobEnded = performance.now();
+        jobEnded = returnedAt ?? performance.now();
         if (ok) resolve();
         else reject(new Error("run_failed"));
       };
@@ -217,7 +220,13 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
       if (isPromise(result)) {
         // A native promise of any realm, read through Promise.prototype: its
         // own then is never read (Review and QA FAIL on #306).
+        // A reaction to a promise already settled is queued now, ahead of the
+        // probe; any other only once it settles, after the probe. So one that
+        // comes first ended at the return, like a synchronous job, whatever
+        // other code queued before it (QA attacker on #312).
+        returnedAt = performance.now();
         apply(promiseThen, result, [done, failed]);
+        enqueue(() => (returnedAt = undefined));
       } else if ((typeof result === "object" && result !== null) || typeof result === "function") {
         // Any other object: Promise.resolve reads its then once.
         apply(promiseThen, promiseResolve(result), [done, failed]);

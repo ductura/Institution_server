@@ -32,7 +32,9 @@ Ugovor porta je `run: () => void | Promise<void>` (Ductus#2028 c.6968668259). Re
 - svaki drugi objekt ili funkcija ide kroz `Promise.resolve`, koji `then` čita jednom; ugniježđeni thenable prati se kao kod `await`;
 - sinkroni povrat koji nije objekt završava posao odmah, a sinkroni izbačaj odmah daje `run_failed`.
 
-`Reflect.apply`, `Promise.prototype.then`, `Promise.resolve` i `types.isPromise` uzimaju se pri učitavanju modula, pa posao koji ih promijeni ne mijenja praćenje vlastitog kraja.
+Izvorni `Promise` koji je već razriješen pri povratku iz `run()` završava u trenutku povratka, kao sinkroni posao. Odmah iza reakcije stavlja se sonda (`queueMicrotask`). Reakcija na već razriješeno obećanje dolazi prije sonde, a svaka druga tek kad se obećanje razriješi, dakle iza nje. Zato mikrozadaci koje je drugi kod stavio u red prije reakcije ne pomiču kraj (QA napadač na #312).
+
+`Reflect.apply`, `Promise.prototype.then`, `Promise.resolve`, `types.isPromise` i `queueMicrotask` uzimaju se pri učitavanju modula, pa posao koji ih promijeni ne mijenja praćenje vlastitog kraja. `constructor` i `Symbol.species` obećanja jezik čita u trenutku poziva `then`.
 
 Poznate granice raspoređivača:
 
@@ -43,7 +45,7 @@ Poznate granice raspoređivača:
 - Više instanci bi svaka pokretale posao.
 - Posao koji ne završi drži `busy`, a `stop()` ga čeka. Thenable koji se razrješava samim sobom vrti mikrozadatke bez kraja i drži petlju događaja, kao i `await`.
 - Kraj thenablea koji nije izvorni `Promise` (`PromiseLike`) bilježi se u reakciji na `Promise.resolve`. Njegov `then` poziva se tek jedan mikrokorak nakon povrata iz `run()`, a sve što thenable sam prosljeđuje kroz vlastiti lanac kasni još za te korake.
-- Neke rezultate jezik ne može pratiti: izvorni `Promise` na kojem `Promise.prototype.then` baci (podklasa s nestandardnim konstruktorom, neprijateljski `constructor` ili species), te `Proxy` izvornog `Promise`a i objekt koji ga nasljeđuje. Oni se vode kao `run_failed` odmah, iako posao možda još traje, pa sljedeća točka može pozvati `run()` i `stop()` se može razriješiti prerano. Ako takvo obećanje kasnije bude odbijeno, odbijanje ostaje neobrađeno, a Node ga po zadanim postavkama prekida. Portove predaje sastavljač, kojem se vjeruje. Testovi te slučajeve vežu, pa svaka promjena ponašanja postaje odluka.
+- Neke rezultate raspoređivač ne prati: izvorni `Promise` na kojem `Promise.prototype.then` baci (podklasa s nestandardnim konstruktorom, ili `constructor` ili `Symbol.species` koje je promijenio posao ili netko drugi), te `Proxy` izvornog `Promise`a i objekt koji ga nasljeđuje (njega bi se moglo pratiti preko prototipa, ali to bi bio drugi put). Oni se vode kao `run_failed` odmah, iako posao možda još traje, pa sljedeća točka može pozvati `run()` i `stop()` se može razriješiti prerano. Ako takvo obećanje kasnije bude odbijeno, odbijanje ostaje neobrađeno, a Node po zadanim postavkama tada prekida proces. Portove predaje sastavljač, kojem se vjeruje. Testovi te slučajeve vežu, pa svaka promjena ponašanja postaje odluka.
 - Primatelj razloga radi u istoj niti. Ako blokira petlju, i nakon `await`, to se računa kao kašnjenje čitanja ili posla koji je u tijeku (pravilo kasnog čitanja), pa točka može ostati bez poziva. Zato primatelj mora samo bilježiti (Ductus#2028 c.6967461849, opcija C).
 - Točka koju je blokirana petlja preskočila broji se, ali ne javlja razlog.
 
