@@ -198,6 +198,8 @@ const DATABASE_NAMES = [
   "reader_role",
   "reader_given_name",
   "reader_family_name",
+  // Result column of institution.enroll_with_code (institution-enrollment.ts, DAN-853-1b).
+  "enrolled_course_id",
   // Result columns of the work opener (open-work.ts, DAN-811) and its tests.
   "current_revision",
   "document_hash",
