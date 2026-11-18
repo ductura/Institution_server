@@ -1,25 +1,22 @@
-import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SERVER_NODE_FLAGS } from "../../../scripts/build/index.ts";
+import { KILLING } from "./attempt-fence-core.ts";
 
 // DAN-822-5b1: the process fence over the deadlines of attempt-fence-core.ts
 // (#291). Its life cycle is checked with node:worker_threads replaced by a
 // recorder, so no real thread starts in vitest; that an attempt past its time
-// ends a real process is checked in child processes.
+// ends a real process is attempt-fence.integration.test.ts.
 const here = path.dirname(fileURLToPath(import.meta.url));
 const watchUrl = pathToFileURL(path.join(here, "attempt-fence-watch.ts")).href;
 
 type Recorded = { started: { script: unknown; options: unknown }[]; calls: string[] };
 
-async function loadWithRecorder(): Promise<
-  Recorded & { fence: typeof import("./attempt-fence.ts") }
-> {
+async function loadWithRecorder(
+  terminateFails = false,
+): Promise<Recorded & { fence: typeof import("./attempt-fence.ts") }> {
   const recorded: Recorded = { started: [], calls: [] };
   class Worker {
     constructor(script: unknown, options: unknown) {
@@ -30,6 +27,7 @@ async function loadWithRecorder(): Promise<
     }
     async terminate(): Promise<number> {
       recorded.calls.push("terminate");
+      if (terminateFails) throw new Error("terminate_failed");
       return 0;
     }
   }
@@ -41,6 +39,7 @@ async function loadWithRecorder(): Promise<
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.doUnmock("node:worker_threads");
   vi.resetModules();
 });
@@ -124,105 +123,38 @@ describe("startAttemptFence: the thread and its life cycle (recorder, no real th
     vi.restoreAllMocks();
   });
 
+  // Review FAIL on #296 (c.6966505063): the watch has claimed the kill but not
+  // yet sent it; a timely last release loses its exchange. It must not count,
+  // or close would end the watch before the signal and the process survive.
+  it("a release that loses to a claimed kill parks, and close never ends the thread", async () => {
+    const { started, calls, fence } = await loadWithRecorder();
+    const handle = fence.startAttemptFence();
+    const release = handle.arm(60_000);
+    await handle.close();
+    const shared = (started[0]?.options as { workerData: SharedArrayBuffer }).workerData;
+    const cell = new BigInt64Array(shared);
+    Atomics.store(cell, 0, KILLING);
+    vi.spyOn(Atomics, "wait").mockImplementation(() => {
+      throw new Error("parked");
+    });
+    expect(() => release()).toThrow("parked");
+    await handle.close();
+    expect(calls).toEqual(["unref"]);
+  });
+
+  it("a terminate that fails does not fail close, and a second close does not retry it", async () => {
+    const { calls, fence } = await loadWithRecorder(true);
+    const handle = fence.startAttemptFence();
+    await expect(handle.close()).resolves.toBeUndefined();
+    await expect(handle.close()).resolves.toBeUndefined();
+    expect(calls).toEqual(["unref", "terminate"]);
+  });
+
   it("a refused arm counts no attempt, so close still ends the thread", async () => {
     const { calls, fence } = await loadWithRecorder();
     const handle = fence.startAttemptFence();
     expect(() => handle.arm(0)).toThrow("fence_refused");
     await handle.close();
     expect(calls).toEqual(["unref", "terminate"]);
-  });
-});
-
-// The real thread in a child process, run with the server's node flags.
-const work = mkdtempSync(path.join(tmpdir(), "ductura-fence-"));
-afterAll(() => rmSync(work, { recursive: true, force: true }));
-const fenceModule = pathToFileURL(path.join(here, "attempt-fence.ts")).href;
-let scripts = 0;
-
-type Ending = {
-  code: number | null;
-  signal: NodeJS.Signals | null;
-  stdout: string;
-  stderr: string;
-};
-
-async function run(body: string): Promise<Ending> {
-  scripts += 1;
-  const file = path.join(work, `case-${scripts}.mjs`);
-  writeFileSync(
-    file,
-    `import { startAttemptFence } from ${JSON.stringify(fenceModule)};
-const fence = startAttemptFence();
-const later = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-// The main thread's clock only, past every deadline: the watch keeps the real one.
-const late = () => { const real = process.hrtime.bigint; process.hrtime.bigint = () => real() + 5_000_000_000n; };
-${body}
-`,
-  );
-  const child = spawn(process.execPath, [...SERVER_NODE_FLAGS, file], {
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  let stdout = "";
-  let stderr = "";
-  child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
-  child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
-  // A child the fence did not end is stopped with SIGTERM, never SIGKILL, so
-  // it cannot pass for one the fence killed; before vitest's own 5 s timeout.
-  const stop = setTimeout(() => child.kill("SIGTERM"), 4000);
-  return new Promise((resolve) => {
-    child.on("close", (code, signal) => {
-      clearTimeout(stop);
-      resolve({ code, signal, stdout, stderr });
-    });
-  });
-}
-
-describe("startAttemptFence: a real process", () => {
-  it("kills an attempt that blocks the thread past its time, and nothing is written after", async () => {
-    expect(await run(`fence.arm(300); console.log("armed"); for (;;) {}`)).toEqual({
-      code: null,
-      signal: "SIGKILL",
-      stdout: "armed\n",
-      stderr: "",
-    });
-  });
-
-  it("a release after the time never returns, and the process is killed at the real deadline", async () => {
-    expect(
-      await run(
-        `const release = fence.arm(1000); console.log("armed"); late(); console.log("before release"); release(); console.log("after release");`,
-      ),
-    ).toEqual({ code: null, signal: "SIGKILL", stdout: "armed\nbefore release\n", stderr: "" });
-  });
-
-  it("close does not end the watch under a live attempt: a late release after close is killed", async () => {
-    expect(
-      await run(
-        `const release = fence.arm(1000); await fence.close(); console.log("closed"); late(); release(); console.log("after release");`,
-      ),
-    ).toEqual({ code: null, signal: "SIGKILL", stdout: "closed\n", stderr: "" });
-  });
-
-  it("close does not end the watch under a live attempt: one that blocks after close is killed", async () => {
-    expect(
-      await run(`fence.arm(300); await fence.close(); console.log("closed"); for (;;) {}`),
-    ).toEqual({ code: null, signal: "SIGKILL", stdout: "closed\n", stderr: "" });
-  });
-
-  it("an attempt released in time, then close, lets the process exit 0", async () => {
-    expect(
-      await run(
-        `const release = fence.arm(300); release(); await fence.close(); await later(500); console.log("done");`,
-      ),
-    ).toEqual({ code: 0, signal: null, stdout: "done\n", stderr: "" });
-  });
-
-  it("an idle fence does not keep the process alive", async () => {
-    expect(await run(`console.log("done");`)).toEqual({
-      code: 0,
-      signal: null,
-      stdout: "done\n",
-      stderr: "",
-    });
   });
 });

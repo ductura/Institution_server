@@ -7,7 +7,7 @@
 // at or after its time never returns. Nothing starts on import: only an
 // explicit startAttemptFence() starts the thread.
 import { Worker } from "node:worker_threads";
-import { createDeadlines } from "./attempt-fence-core.ts";
+import { createDeadlines, KILLING } from "./attempt-fence-core.ts";
 import type { AttemptFence } from "./job-queue.ts";
 
 /** Starts the watch thread; the fence the worker process passes to openJobQueue. */
@@ -21,14 +21,11 @@ export function startAttemptFence(): AttemptFence {
     { workerData: cell.buffer },
   );
   thread.unref();
-  const deadlines = createDeadlines(
-    cell,
-    () => process.hrtime.bigint(),
-    // A late release holds the main thread until the watch's kill lands.
-    () => {
-      for (;;) Atomics.wait(cell, 0, Atomics.load(cell, 0));
-    },
-  );
+  // Holds the main thread until the watch's kill lands.
+  function park(): never {
+    for (;;) Atomics.wait(cell, 0, Atomics.load(cell, 0));
+  }
+  const deadlines = createDeadlines(cell, () => process.hrtime.bigint(), park);
   let closed = false;
   let live = 0;
   // The thread is ended at most once; every close returns the same promise.
@@ -50,6 +47,10 @@ export function startAttemptFence(): AttemptFence {
       return () => {
         if (released) return;
         release();
+        // The watch claimed the kill first (review FAIL on #296): the attempt
+        // is past its time, is not counted, and the watch is never ended
+        // before its signal.
+        if (Atomics.load(cell, 0) === KILLING) park();
         released = true;
         live -= 1;
         if (closed && live === 0) void end();
