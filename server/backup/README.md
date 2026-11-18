@@ -10,7 +10,7 @@ Kopije baze i pohrane te mjesečna proba povrata (ARCHITECTURE §9). Feature pod
 
 `createBackupScheduler` (`scheduler.ts`) na satnom otkucaju čita postavke razine `system` iz kataloga (DAN-1012-1); otkucaj `busy` ne čita ništa. Posao pokreće samo kad je `backup.enabled` točno `true` i kad je prošlo barem `backup.interval_hours` otkucaja od `start()`, od zadnjeg pokretanja ili od zadnjeg otkucaja na kojem backup nije bio uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
 
-Satni timer kreće ispočetka u svakom od tih trenutaka, i to nakon čitanja, pa se sati broje od tada. Dva pokretanja zato nikad nisu bliže od `interval_hours`, koliko god čitanje trajalo. Svako pokretanje dolazi interval i trajanje svojeg čitanja nakon prethodnog, pa raspored kasni za trajanje čitanja po pokretanju. Otkucaji `busy`, `settings_unavailable` i `interval_invalid` mogu razmak dodatno produljiti, nikad skratiti.
+Satni timer kreće ispočetka u svakom od tih trenutaka, i to nakon čitanja, a kod pokretanja tek kad `run()` vrati, pa se sati broje od tada. Pauza procesa prije stvarnog početka posla zato pomiče timer kasnije i nikad ne skraćuje razmak. Dva pokretanja zato nikad nisu bliže od `interval_hours`, koliko god čitanje trajalo. Svako pokretanje dolazi interval i trajanje svojeg čitanja nakon prethodnog, pa raspored kasni za trajanje čitanja po pokretanju. Otkucaji `busy`, `settings_unavailable` i `interval_invalid` mogu razmak dodatno produljiti, nikad skratiti.
 
 Otkucaj koji samo čeka svoj sat ne javlja ništa. Svaki drugi otkucaj na kojem se posao ne pokrene javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
 

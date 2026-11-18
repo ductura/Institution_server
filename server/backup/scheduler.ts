@@ -3,9 +3,10 @@
 // starts the job only when backup.enabled is exactly true and at least
 // backup.interval_hours checks have come since start(), the last start of the
 // job or the last time backup was seen off. The hourly timer starts again at
-// each of those moments, after the read, so the hours count from then: two
-// starts are never closer than interval_hours, and each start comes that much
-// plus the time of its read after the one before. A busy check reads nothing.
+// each of those moments: after the read, and for a start only once run() has
+// returned, so the hours count from then. Two starts are never closer than
+// interval_hours, and each comes that much plus the time of its read (and of
+// anything before run() returns) after the one before. A busy check reads nothing.
 // A check that starts nothing for a reason reports it with a closed code; one
 // that only waits for its hour reports nothing. The job must not await
 // stop(), which waits for the job. The settings reader, the job
@@ -122,13 +123,21 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     if (OFF.has(decision)) restart();
     if (typeof decision === "string") return skip(decision);
     if (hours < decision) return;
-    restart();
     // The job exists before run() is called, so a stop() from inside run()
-    // (Review FAIL on #283) still waits for it.
+    // still waits for it (Review FAIL on #283). The hours restart only once
+    // run() has returned: any pause before the job really starts moves the
+    // timer later and never shortens the gap (QA FAIL on #283).
     let finished!: () => void;
     job = new Promise<void>((resolve) => (finished = resolve));
+    let running: unknown;
     try {
-      await run();
+      running = run();
+    } catch (error: unknown) {
+      running = Promise.reject(error);
+    }
+    restart();
+    try {
+      await running;
     } catch {
       skip("run_failed");
     } finally {

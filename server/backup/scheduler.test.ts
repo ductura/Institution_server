@@ -202,6 +202,37 @@ describe("backup scheduler: enabled runs once per interval", () => {
     expect(run).toHaveBeenCalledTimes(1);
   });
 
+  // QA FAIL 1 on #283 (46443d6): any time between the timer and the job's real
+  // start (a paused process, the synchronous part of run) only lengthens the gap.
+  it.each([1, 2])(
+    "a pause before the job really starts does not shorten interval %s",
+    async (interval) => {
+      const starts: number[] = [];
+      const { run } = setup(on(interval));
+      run.mockImplementation(() => {
+        if (starts.length === 0) vi.advanceTimersByTime(5 * 60_000);
+        starts.push(performance.now());
+      });
+      await vi.advanceTimersByTimeAsync(10 * H);
+      expect(starts.length).toBeGreaterThan(2);
+      for (let i = 1; i < starts.length; i += 1) {
+        expect((starts[i] ?? 0) - (starts[i - 1] ?? 0)).toBeGreaterThanOrEqual(interval * H);
+      }
+    },
+  );
+
+  it("a run that throws synchronously is run_failed and still restarts the hours", async () => {
+    const { run, onSkip } = setup(on(2));
+    run.mockImplementationOnce(() => {
+      throw new Error(CANARY);
+    });
+    await vi.advanceTimersByTimeAsync(4 * H - 1);
+    expect(run).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(onSkip.mock.calls).toEqual([["run_failed"]]);
+  });
+
   it("turned off, no run from the next hour", async () => {
     const { state, run } = setup(on(1));
     await vi.advanceTimersByTimeAsync(3 * H);
