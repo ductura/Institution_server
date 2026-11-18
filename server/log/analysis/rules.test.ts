@@ -180,6 +180,32 @@ describe("log analysis: entries that are skipped or refused", () => {
 
   // Codex review c.6965183659 (1): the analysis writes its own lists without
   // going through Array.prototype, so read-only indexes there change nothing.
+  // Codex review c.6965474040 (1): an accessor stays unreadable even when
+  // Object.prototype carries a `value` that a descriptor would inherit.
+  it("skips a getter entry field when Object.prototype has a value", () => {
+    for (const [key, polluted] of [
+      ["event", FAILED],
+      ["timeMs", T0 + 2],
+    ] as const) {
+      const odd = Object.defineProperty({ ...three[2]! }, key, {
+        get: () => polluted,
+        enumerable: true,
+      });
+      let result: unknown;
+      try {
+        Object.defineProperty(Object.prototype, "value", {
+          value: polluted,
+          configurable: true,
+          writable: true,
+        });
+        result = run([three[0], three[1], odd]);
+      } finally {
+        delete (Object.prototype as Record<string, unknown>).value;
+      }
+      expect(result, key).toEqual({ ok: true, value: [] });
+    }
+  });
+
   it("ignores read-only indexes on Array.prototype", () => {
     const entries = at(FAILED, 0, 1, 2, W, W + 1, W + 2);
     let result: unknown;
@@ -277,14 +303,29 @@ describe("log analysis: entries that are skipped or refused", () => {
     ]) {
       expect(run(list)).toEqual(BAD_ENTRIES);
     }
-    // Exactly MAX_ENTRIES is still read (every index a hole here).
-    const full = new Proxy([], {
-      getOwnPropertyDescriptor: (t, k) =>
-        k === "length"
-          ? { value: MAX_ENTRIES, writable: true }
-          : Reflect.getOwnPropertyDescriptor(t, k),
+    // Codex review c.6965474040 (2): at exactly MAX_ENTRIES the last index is
+    // still read, and a valid entry there changes the result; one more is refused.
+    const lastOnly = (length: number) =>
+      new Proxy([], {
+        getOwnPropertyDescriptor: (t, k) => {
+          if (k === "length") return { value: length, writable: true };
+          if (k === String(length - 1)) {
+            return {
+              value: { timeMs: T0, event: FAILED },
+              writable: true,
+              enumerable: true,
+              configurable: true,
+            };
+          }
+          return Reflect.getOwnPropertyDescriptor(t, k);
+        },
+      });
+    const one = { loginFailures: { windowMs: 1, minCount: 1 } };
+    expect(run(lastOnly(MAX_ENTRIES), one)).toEqual({
+      ok: true,
+      value: [found(0, 1, one.loginFailures)],
     });
-    expect(run(full)).toEqual({ ok: true, value: [] });
+    expect(run(lastOnly(MAX_ENTRIES + 1), one)).toEqual(BAD_ENTRIES);
   });
 
   it("reads each key of the list, an entry and the thresholds exactly once", () => {
