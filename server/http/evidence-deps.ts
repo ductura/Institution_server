@@ -8,8 +8,6 @@
 // or shared bucket and no fake in production. Protocol 2 (DAN-518, the
 // worker signs) only under the process's own DUCTUS_EVIDENCE_ASYNC_SIGNING
 // exactly "1" (DAN-821-3); off by default, so no unsigned acceptance.
-// DAN-963 adds a choice before these: a DUCTUS_KMS_* configuration selects
-// the AWS KMS signer in every NODE_ENV, and an incomplete one no signer.
 import { createEvidenceCommitter } from "../database/index.ts";
 import { createEvidenceService } from "../evidence/index.ts";
 import {
@@ -23,12 +21,10 @@ import {
   PersistentDevelopmentEd25519SigningKeyProvider,
   type SigningKeyProvider,
 } from "../external/keys/index.ts";
-import { type KmsSettings, kmsProblems, kmsSettings } from "../settings/index.ts";
 
 import type { Databases } from "./databases.ts";
 import { createEvidenceCommitRoute } from "./evidence-commit.ts";
 import { createEvidenceReplayRoute } from "./evidence-replay.ts";
-import { kmsSignerOf } from "./kms-signer.ts";
 import type { Route } from "./router.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -58,20 +54,8 @@ export const REFUSING_SIGNER: Pick<SigningKeyProvider, "sign"> = Object.freeze({
   sign: () => Promise.reject(new Error("signing_key_unavailable")),
 });
 
-/** The KMS choice, read once from the process's own environment: invalid, none or a configuration. */
-type KmsChoice = "invalid" | KmsSettings | null;
-
-function signerOf(
-  env: Env,
-  repositoryRoot: string,
-  kms: KmsChoice,
-): Pick<SigningKeyProvider, "sign"> {
-  // DAN-963: a KMS configuration selects the KMS signer in every NODE_ENV; an
-  // incomplete one (which also stops the start) is no signer, never a quiet
-  // fall back to the development key.
-  if (kms === "invalid") return REFUSING_SIGNER;
+function signerOf(env: Env, repositoryRoot: string): Pick<SigningKeyProvider, "sign"> {
   try {
-    if (kms !== null) return kmsSignerOf(kms);
     return new PersistentDevelopmentEd25519SigningKeyProvider(env, repositoryRoot);
   } catch {
     // signing_key_production or a fault of the seed path: no key, no signature.
@@ -102,20 +86,12 @@ export function evidenceIngestDependencies(
   env: Env,
   repositoryRoot: string,
 ): EvidenceIngestDependencies {
-  // DAN-963: read from the very object startup checked, before the copy (a
-  // copy would call getters and keep a name's spelling, which on Windows
-  // process.env need not match), so the check and the choice cannot differ.
-  const kms: KmsChoice = kmsProblems(env).length > 0 ? "invalid" : kmsSettings(env);
   // A copy, as Ductus handed over: later changes of the process environment change nothing.
   const own: Env = { ...env };
   // Only the process's own value: Ductus read env.X === "1", which an
   // inherited value (or a polluted Object.prototype) would also satisfy.
   const asyncSigning = Object.hasOwn(own, ASYNC_SIGNING_FLAG) && own[ASYNC_SIGNING_FLAG] === "1";
-  return {
-    signer: signerOf(own, repositoryRoot, kms),
-    payloads: payloadsOf(own),
-    asyncSigning,
-  };
+  return { signer: signerOf(own, repositoryRoot), payloads: payloadsOf(own), asyncSigning };
 }
 
 /** The commit route over the main database and this process's signer and storage. */
