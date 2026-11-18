@@ -55,6 +55,9 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     ["empty description", '{ name: "x", color: "d73a4a", description: "" }'],
     ["spaces only", '{ name: "x", color: "d73a4a", description: "   " }'],
     ["CGJ only (U+034F, Mn)", '{ name: "x", color: "d73a4a", description: "\\u034f" }'],
+    ["Hangul filler only (Lo)", '{ name: "x", color: "d73a4a", description: "\\u3164" }'],
+    ["halfwidth filler inside", '{ name: "x", color: "d73a4a", description: "a\\uffa0b" }'],
+    ["Hangul choseong filler", '{ name: "x", color: "d73a4a", description: "\\u115fOpis" }'],
     ["NBSP only", '{ name: "x", color: "d73a4a", description: "\\u00a0" }'],
     ["zero width space only", '{ name: "x", color: "d73a4a", description: "\\u200b" }'],
     ["punctuation only", '{ name: "x", color: "d73a4a", description: "..." }'],
@@ -72,6 +75,7 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     ],
     ["scalar entry", '"x"'],
     ["missing name", '{ color: "d73a4a", description: "Opis" }'],
+    ["51 characters", `{ name: "${"a".repeat(51)}", color: "d73a4a", description: "Opis" }`],
     ["upper case name", '{ name: "Good-First", color: "d73a4a", description: "Opis" }'],
     ["same name", '{ name: "bug", color: "d73a4a", description: "Opis" }'],
     ["short color", '{ name: "x", color: "d73a4", description: "Opis" }'],
@@ -79,6 +83,11 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     const parsed = parseLabels(yamlWith(entry));
     expect(parsed.problems).not.toEqual([]);
     expect(parseLabels(VALID).problems).toEqual([]);
+  });
+
+  it("an invalid record is not among the labels", () => {
+    const parsed = parseLabels(yamlWith('{ name: "x", color: "d73a4a" }'));
+    expect(parsed.labels.map((label) => label.name)).toEqual(["bug"]);
   });
 
   it("an inherited description does not count", () => {

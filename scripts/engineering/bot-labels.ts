@@ -12,8 +12,10 @@ const WORD = "[a-z0-9]+(?:-[a-z0-9]+)*";
 const NAME = new RegExp(`^${WORD}(?::${WORD})?$`);
 const COLOR = /^[0-9a-f]{6}$/i;
 const VISIBLE = /[\p{L}\p{N}]/u;
-// Control, format, surrogate, private use, unassigned and line or paragraph separators.
-const INVISIBLE = /[\p{C}\p{Zl}\p{Zp}]/u;
+// Control, format, surrogate, private use, unassigned, line or paragraph
+// separators, and default ignorable code points: letters that render as
+// nothing, like the Hangul fillers U+3164 and U+FFA0, or U+034F.
+const INVISIBLE = /[\p{C}\p{Zl}\p{Zp}\p{Default_Ignorable_Code_Point}]/u;
 
 function entryProblems(entry: unknown, at: string): string[] {
   if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
