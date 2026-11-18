@@ -38,6 +38,8 @@ const OTHER = "izmisljeni-token-drugog-studenta-0000000002";
 const A1 = "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e01";
 const A2 = "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e02";
 const A3 = "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e03";
+/** In no valid row, so a bad row can never be refused as a conflict with one (QA c.6968023762). */
+const A4 = "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e04";
 const DOC = "izmisljeni-dokument-0001";
 const PATH = "/api/v1/student/assignment-work";
 
@@ -168,33 +170,33 @@ describe("no session: 401 and the reader is never asked", () => {
 describe("one row the reader cannot vouch for: 503 and no partial list", () => {
   const proto = (json: string): object => JSON.parse(json) as object;
   it.each([
-    ["an id ending in LF", row(`${A2}\n`)],
-    ["an id ending in CRLF", row(`${A2}\r\n`)],
-    ["an id with a tab", row(`\t${A2}`)],
-    ["an id with NBSP", row(`${A2} `)],
-    ["an id with DEL", row(`${A2}\u007f`)],
-    ["an uppercase id", row(A2.toUpperCase())],
+    ["an id ending in LF", row(`${A4}\n`)],
+    ["an id ending in CRLF", row(`${A4}\r\n`)],
+    ["an id with a tab", row(`\t${A4}`)],
+    ["an id with NBSP", row(`${A4} `)],
+    ["an id with DEL", row(`${A4}\u007f`)],
+    ["an uppercase id", row(A4.toUpperCase())],
     ["an id that is a number", row(7)],
-    ["an inherited id", Object.create(row(A2)) as object],
+    ["an inherited id", Object.create(row(A4)) as object],
     [
       "own __proto__ and toString only",
-      proto(`{"__proto__":{"assignment_id":"${A2}"},"toString":1}`),
+      proto(`{"__proto__":{"assignment_id":"${A4}"},"toString":1}`),
     ],
-    ["a document with NBSP at the edge", row(A2, `${DOC} `)],
-    ["a document with a space at the edge", row(A2, ` ${DOC}`)],
-    ["a document with a C0 character", row(A2, `izmisljeni\u0001dokument`)],
-    ["a document with DEL", row(A2, `izmisljeni\u007fdokument`)],
-    ["revision 0", row(A2, DOC, 0)],
-    ["revision not a number", row(A2, DOC, "2x")],
-    ["a submission without a document", row(A2, null, 1)],
+    ["a document with NBSP at the edge", row(A4, `${DOC} `)],
+    ["a document with a space at the edge", row(A4, ` ${DOC}`)],
+    ["a document with a C0 character", row(A4, `izmisljeni\u0001dokument`)],
+    ["a document with DEL", row(A4, `izmisljeni\u007fdokument`)],
+    ["revision 0", row(A4, DOC, 0)],
+    ["revision not a number", row(A4, DOC, "2x")],
+    ["a submission without a document", row(A4, null, 1)],
     ["the same assignment in two states", row(A1)],
     ["null", null],
     ["a number", 3],
-    ["an array", [A2]],
+    ["an array", [A4]],
     [
       "a missing column",
       Object.fromEntries([
-        ["assignment_id", A2],
+        ["assignment_id", A4],
         ["document_id", null],
       ]),
     ],
@@ -203,7 +205,7 @@ describe("one row the reader cannot vouch for: 503 and no partial list", () => {
     await startRows([...READY, bad]);
     const got = await get();
     expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
-    for (const id of [A1, A2, A3]) expect(JSON.stringify(got.body)).not.toContain(id);
+    for (const id of [A1, A2, A3, A4]) expect(JSON.stringify(got.body)).not.toContain(id);
     noLeak(got, lines);
     expect(tokens).toEqual([TOKEN]);
   });
