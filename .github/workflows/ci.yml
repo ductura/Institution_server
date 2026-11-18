@@ -261,7 +261,9 @@ jobs:
       # db/logs/local/migrator.sql and migrated by `migrate-locked --database
       # logs` as ductus_logs_migrator, as `pnpm db:migrate:logs` does;
       # tests/db/logs-database.integration.test.ts (pnpm test:database) checks
-      # it next to the main database above.
+      # it next to the main database above. wal_level=logical lets
+      # tests/db/log-chain-base-replication.integration.test.ts apply logical
+      # replication to the chain base (DAN-868-1a).
       - name: Baza zapisa (migrate-locked --database logs)
         env:
           LOGS_PASSWORD: ductus-logs-local-only
@@ -271,7 +273,7 @@ jobs:
           "$PGBIN/initdb" -D "$RUNNER_TEMP/logs-data" -U ductus --pwfile="$RUNNER_TEMP/logs-password" \
             --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8
           "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/logs-data" -l "$RUNNER_TEMP/logs.log" -w start \
-            -o "-p 54330 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"
+            -o "-p 54330 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1 -c wal_level=logical"
           "$PGBIN/psql" "postgres://ductus:$LOGS_PASSWORD@127.0.0.1:54330/postgres" -v ON_ERROR_STOP=1 \
             -c 'CREATE DATABASE ductus_logs'
           "$PGBIN/psql" "$LOGS_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f db/logs/local/migrator.sql

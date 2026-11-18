@@ -98,7 +98,10 @@ describe("ci.yml", () => {
   // cluster before the migration tests, which get its URL.
   it("the database job brings up the logs database through the locked runner before the migration tests", () => {
     const database = job("database");
-    const cluster = database.indexOf('-o "-p 54330 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"');
+    // wal_level=logical: the replication test of the chain base (DAN-868-1a).
+    const cluster = database.indexOf(
+      '-o "-p 54330 -k $RUNNER_TEMP -c listen_addresses=127.0.0.1 -c wal_level=logical"',
+    );
     const bootstrap = database.indexOf("-f db/logs/local/migrator.sql");
     const migrate = database.indexOf(
       'node scripts/db/migrate-locked.ts --database logs --url "$LOGS_DATABASE_URL?sslmode=disable&role=ductus_logs_migrator"',
