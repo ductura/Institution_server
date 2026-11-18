@@ -8,10 +8,11 @@
 -- once it runs:
 --   * identity functions: pg_catalog.current_setting and pg_show_all_settings,
 --     and every function of the database (oid at least 16384) whose body names
---     an identity function or a view that reads the session (pg_settings, or
---     a view of the database whose definition names either), closed over, so
---     app.current_actor and whatever calls it, at any depth and through views,
---     are in. A name counts as a whole word, with or without "(" after it,
+--     an identity function, a view that reads the session (pg_settings, or a
+--     view of the database whose definition names one) or a table whose RLS
+--     policy calls an identity function (each call of the function runs that
+--     policy again), closed over, so app.current_actor and whatever calls it,
+--     at any depth and through views and RLS tables, are in. A name counts as a whole word, with or without "(" after it,
 --     so a comment between a name and its bracket, t.name, or a name in a
 --     comment or a string count too: the closure may hold too much, never
 --     too little (test 2).
@@ -78,6 +79,14 @@ CREATE FUNCTION test_dan1066.wrap(r test_dan1066.tag) RETURNS uuid LANGUAGE sql 
 CREATE FUNCTION test_dan1066.to_tag(text) RETURNS test_dan1066.tag LANGUAGE sql STABLE
   AS $$ SELECT ROW(app.current_user_id())::test_dan1066.tag $$;
 CREATE CAST (text AS test_dan1066.tag) WITH FUNCTION test_dan1066.to_tag(text);
+CREATE TABLE test_dan1066.inner_t (owner uuid);
+ALTER TABLE test_dan1066.inner_t ENABLE ROW LEVEL SECURITY, FORCE ROW LEVEL SECURITY;
+CREATE POLICY inner_read ON test_dan1066.inner_t USING (owner IS DISTINCT FROM (SELECT app.current_user_id()));
+CREATE FUNCTION test_dan1066.has_row(uuid) RETURNS boolean LANGUAGE plpgsql STABLE
+  AS $$ BEGIN RETURN EXISTS (SELECT 1 FROM test_dan1066.inner_t i WHERE i.owner IS DISTINCT FROM $1); END $$;
+CREATE FUNCTION test_dan1066.in_version(uuid) RETURNS boolean LANGUAGE plpgsql STABLE
+  AS $$ BEGIN RETURN EXISTS (SELECT 1 FROM institution.assignment_version v WHERE v.assignment_id = $1); END $$;
+CREATE FUNCTION test_dan1066.plain_read() RETURNS bigint LANGUAGE sql STABLE AS $$ SELECT count(*) FROM test_dan1066.tagged $$;
 CREATE DOMAIN test_dan1066.mine_id AS uuid CHECK (VALUE = app.current_user_id());
 CREATE FUNCTION test_dan1066.is_me(a uuid, b uuid DEFAULT app.current_user_id()) RETURNS boolean
   LANGUAGE sql STABLE AS $$ SELECT $1 = $2 $$;
@@ -87,9 +96,11 @@ CREATE FUNCTION test_dan1066.ff(boolean) RETURNS boolean LANGUAGE sql STABLE
   AS $$ SELECT $1 AND app.current_user_id() IS NOT NULL $$;
 CREATE AGGREGATE test_dan1066.any_mine(uuid) (SFUNC = test_dan1066.sf, STYPE = boolean, FINALFUNC = test_dan1066.ff);
 
--- Readers are functions and views, each matched by its name as a whole word.
--- A function's text is its body, its argument defaults and, for an
--- aggregate, its support functions.
+-- Readers are functions, views and tables with RLS. A function or view names
+-- a reader by its name as a whole word; a table reads the session when the
+-- node tree of one of its policies calls an identity function, by oid. A
+-- function's text is its body, its argument defaults and, for an aggregate,
+-- its support functions.
 CREATE TEMP TABLE identity_reader AS
   WITH RECURSIVE obj (kind, oid, name, body) AS (
     SELECT 'f', p.oid, p.proname::text,
@@ -100,13 +111,18 @@ CREATE TEMP TABLE identity_reader AS
     FROM pg_proc p WHERE p.oid >= 16384
     UNION ALL
     SELECT 'v', c.oid, c.relname::text, pg_get_viewdef(c.oid) FROM pg_class c WHERE c.oid >= 16384 AND c.relkind = 'v'
+    UNION ALL
+    SELECT 't', c.oid, c.relname::text, string_agg(concat_ws(' ', p.polqual::text, p.polwithcheck::text), ' ')
+    FROM pg_class c JOIN pg_policy p ON p.polrelid = c.oid
+    WHERE c.oid >= 16384 AND c.relkind IN ('r', 'p') AND c.relrowsecurity GROUP BY c.oid, c.relname
   ), r (kind, oid, name) AS (
     SELECT 'f', p.oid, p.proname::text FROM pg_proc p
     WHERE p.pronamespace = 'pg_catalog'::regnamespace AND p.proname IN ('current_setting', 'pg_show_all_settings')
     UNION SELECT 'v', 'pg_catalog.pg_settings'::regclass::oid, 'pg_settings'
     UNION
     SELECT o.kind, o.oid, o.name FROM obj o, r
-    WHERE o.body ~* ('(^|[^\w$])' || regexp_replace(r.name, '(\W)', '\\\1', 'g') || '($|[^\w$])')
+    WHERE CASE WHEN o.kind = 't' THEN r.kind = 'f' AND o.body ~ (':(?:funcid|aggfnoid|winfnoid) ' || r.oid || ' ')
+               ELSE o.body ~* ('(^|[^\w$])' || regexp_replace(r.name, '(\W)', '\\\1', 'g') || '($|[^\w$])') END
   )
   SELECT kind, oid FROM r;
 CREATE TEMP VIEW identity_fn AS SELECT oid FROM identity_reader WHERE kind = 'f';
@@ -166,6 +182,7 @@ INSERT INTO probe_case VALUES
   ('n_depth', 'USING', 'owner = test_dan1066.f2()'),
   ('n_view', 'USING', 'owner = test_dan1066.via_view()'),
   ('n_comment', 'USING', 'owner = test_dan1066.cmt()'),
+  ('n_rls_table', 'USING', 'test_dan1066.has_row(owner)'),
   ('n_field', 'USING', 'owner = test_dan1066.wrap(ROW(owner)::test_dan1066.tag)'),
   ('n_window', 'USING', '(SELECT bool_or(m) FROM (SELECT test_dan1066.any_mine(x) OVER () AS m FROM unnest(ARRAY[owner]) x) s)'),
   ('n_default', 'USING', 'test_dan1066.is_me(owner)'),
@@ -212,6 +229,7 @@ SELECT set_eq(
         't1066_n_depth.n_depth: test_dan1066.f2()',
         't1066_n_view.n_view: test_dan1066.via_view()',
         't1066_n_comment.n_comment: test_dan1066.cmt()',
+        't1066_n_rls_table.n_rls_table: test_dan1066.has_row(uuid)',
         't1066_n_field.n_field: test_dan1066.wrap(test_dan1066.tag)',
         't1066_n_window.n_window: test_dan1066.any_mine(uuid)',
         't1066_n_default.n_default: test_dan1066.is_me(uuid,uuid)',
@@ -246,12 +264,13 @@ SELECT ok(
     'test_dan1066.token()', 'test_dan1066.via_token()', 'test_dan1066.via_view()',
     'test_dan1066.cmt()', 'test_dan1066.is_me(uuid,uuid)', 'test_dan1066.any_mine(uuid)', 'test_dan1066.cr()',
     'test_dan1066.loud()', 'test_dan1066.show_all()', 'test_dan1066.bracket()', 'test_dan1066.wrap(test_dan1066.tag)',
-    'test_dan1066.mentions()'],
+    'test_dan1066.mentions()', 'test_dan1066.has_row(uuid)', 'test_dan1066.in_version(uuid)'],
   'the identity functions include the session readers and whatever calls them, at any depth, and a name in a string or comment errs towards more'
 );
 SELECT ok(
-  NOT EXISTS (SELECT 1 FROM identity_fn WHERE oid = 'test_dan1066.shout(text)'::regprocedure),
-  'a function that does not read the session is not an identity function'
+  NOT EXISTS (SELECT 1 FROM identity_fn
+              WHERE oid IN ('test_dan1066.shout(text)'::regprocedure, 'test_dan1066.plain_read()'::regprocedure)),
+  'a function that does not read the session, or reads a table whose RLS does not, is not an identity function'
 );
 
 -- 3. The text matches the plan: the call per row is in the Filter, the
