@@ -68,7 +68,7 @@ END
 $$;
 
 
-SELECT plan(180);
+SELECT plan(184);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -435,8 +435,20 @@ INSERT INTO pg_temp.head_attempt VALUES
   ('ductus_logs_migrator', 'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
      ALTER TABLE public.log_chain_base INHERIT public.base_parent;
      UPDATE public.base_parent SET seq = 42', false, '55000'),
+  ('ductus_logs_migrator', 'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+     UPDATE public.base_parent SET seq = 42', true, '55000'),
   (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
      WHEN NOT MATCHED BY SOURCE THEN UPDATE SET seq = 5', false,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN UPDATE SET seq = 5', true,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN DELETE', false,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN DELETE', true,
    CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END);
 SELECT is(pg_temp.try_as(who, sql, replica), expected,
   coalesce(who, 'the superuser') || CASE WHEN replica THEN ' with session_replication_role = replica' ELSE '' END
