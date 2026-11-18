@@ -22,7 +22,7 @@ Točka koja samo čeka svoj sat ne javlja ništa. Razlozi se isporučuju kao mak
 - `busy`: provjera još traje kad stigne povratni poziv točke, ili je točka dospjela dok je `run()` trajao, i kad njezin povratni poziv stigne tek nakon sinkronog posla (jednom za svaku točku). Vrijeme koje je potrošio primatelj razloga nikad ne čini točku `busy`;
 - `run_failed`: posao je bacio.
 
-Kod `settings_unavailable` i `interval_invalid` točke se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Kad je `stop()` jednom pozvan, iz bilo kojeg povratnog poziva (`onSkip`, `readSettings`, `run`), ne počinje ni provjera, ni čitanje, ni poziv `run()`; čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
+Kod `settings_unavailable` i `interval_invalid` točke se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Kad je `stop()` jednom pozvan, iz bilo kojeg povratnog poziva (`onSkip`, `readSettings`, `run`), ne počinje ni provjera, ni čitanje, ni poziv `run()`; čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku i razloge koji su već na putu do primatelja, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
 
 Poznate granice raspoređivača:
 
@@ -32,7 +32,8 @@ Poznate granice raspoređivača:
 - `settings.read_values` razinu `system` danas nikome ne daje.
 - Više instanci bi svaka pokretale posao.
 - Posao koji ne završi drži `busy`.
-- Primatelj razloga radi u istoj niti. Ako sinkrono blokira petlju dok je čitanje ili posao još na čekanju, to se računa kao kašnjenje čitanja (pravilo kasnog čitanja), pa primatelj mora samo bilježiti (Ductus#2028 c.6967461849, opcija C).
+- Primatelj razloga radi u istoj niti. Ako blokira petlju, i nakon `await`, to se računa kao kašnjenje čitanja ili posla koji je u tijeku (pravilo kasnog čitanja), pa točka može ostati bez poziva. Zato primatelj mora samo bilježiti (Ductus#2028 c.6967461849, opcija C).
+- Točka koju je blokirana petlja preskočila broji se, ali ne javlja razlog.
 
 ## Tko ga zove
 

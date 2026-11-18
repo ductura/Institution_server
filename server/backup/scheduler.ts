@@ -18,6 +18,8 @@
 // what follows. The job must not await stop(), which waits for the job. The settings reader, the job and the
 // listener are handed in by the assembler of the background process, which
 // does not exist yet: nothing starts this, so backup stays off (V-6).
+import { types } from "node:util";
+
 import { defaultOf, fitsDefinition, settingOf, type SettingDefinition } from "../domain/index.ts";
 
 /** Why a check did not start the job; `onSkip` gets only one of these, never a message. */
@@ -42,8 +44,9 @@ export type BackupSchedulerOptions = {
   readonly run: () => unknown;
   /**
    * Told of every skipped check, after the tick has decided; may be async, and
-   * never reaches the caller. It must only record, never block: time it holds
-   * the event loop while a read or job is pending counts as read delay.
+   * never reaches the caller. It must only record and never block, also not
+   * after an await: time it holds the event loop counts as delay of whatever
+   * read or job is in progress, which may cost that point its call.
    */
   readonly onSkip: (reason: BackupSkipReason) => unknown;
 };
@@ -51,7 +54,10 @@ export type BackupSchedulerOptions = {
 export type BackupScheduler = {
   /** Starts the hourly check; a second call, or a call after stop, does nothing. */
   readonly start: () => void;
-  /** Stops for good and waits for the job in progress, not for a settings read; never rejects. */
+  /**
+   * Stops for good and waits for the job in progress and the reasons already
+   * queued for onSkip, not for a settings read; never rejects.
+   */
   readonly stop: () => Promise<void>;
 };
 
@@ -92,6 +98,21 @@ function decide(settings: unknown): number | BackupSkipReason {
   }
 }
 
+/**
+ * Marks a callback's result as handled, read through Promise.prototype, so a
+ * rejection is never unhandled, whatever its own then or catch do. A native
+ * promise whose constructor getter throws cannot be handled by any means of
+ * the language; the ports are trusted assembler code (known limit).
+ */
+function ignoreRejection(value: unknown): void {
+  try {
+    const settled = types.isPromise(value) ? value : Promise.resolve(value);
+    void Promise.prototype.then.call(settled, undefined, () => undefined);
+  } catch {
+    // A thenable whose then getter throws rejects the wrapper, handled above.
+  }
+}
+
 const OFF: ReadonlySet<unknown> = new Set(["enabled_missing", "enabled_invalid", "disabled"]);
 
 export function createBackupScheduler(options: BackupSchedulerOptions): BackupScheduler {
@@ -108,6 +129,8 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   let stopped = false;
   let check: Promise<void> | undefined;
   let job: Promise<void> | undefined;
+  /** Reasons queued for onSkip and not yet handed over; stop() waits for them. */
+  const deliveries = new Set<Promise<void>>();
   /** performance.now() when the last run() ended; an unhandled point due before it is busy. */
   let jobEnded = Number.NEGATIVE_INFINITY;
   /** Grid points since the last call of run(), or since backup was last seen off. */
@@ -120,13 +143,18 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   // is the port's known limit: it counts as read delay. A failing listener
   // never stops the scheduler.
   const skip = (reason: BackupSkipReason): void => {
-    setImmediate(() => {
-      try {
-        void Promise.resolve(onSkip(reason)).catch(() => undefined);
-      } catch {
-        // Nothing reaches the caller.
-      }
+    const delivered = new Promise<void>((resolve) => {
+      setImmediate(() => {
+        try {
+          ignoreRejection(onSkip(reason));
+        } catch {
+          // Nothing reaches the caller.
+        }
+        resolve();
+      });
     });
+    deliveries.add(delivered);
+    void delivered.then(() => deliveries.delete(delivered));
   };
 
   const once = async (at: number): Promise<void> => {
@@ -216,6 +244,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
       stopped = true;
       clearTimeout(timer);
       await job;
+      await Promise.all([...deliveries]);
     },
   });
 }

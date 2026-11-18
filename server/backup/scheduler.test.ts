@@ -3,6 +3,11 @@
 // backup.enabled is exactly true.
 import { runInNewContext } from "node:vm";
 
+// Taken before any test fakes timers: a real turn of the event loop, after
+// which Node has reported any unhandled rejection.
+const realImmediate = setImmediate;
+const realTurn = () => new Promise((resolve) => realImmediate(resolve));
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -766,11 +771,88 @@ describe("backup scheduler: failures, stop and options", () => {
     await advance(0);
     expect(stopped).toBe(false);
     hang.resolve();
+    // A rejected job queues run_failed; stop() resolves once it was handed over.
+    await advance(1);
     await stopping;
     expect(stopped).toBe(true);
     await advance(10 * H);
     expect(vi.getTimerCount()).toBe(0);
     expect(calls).toBe(1);
+  });
+
+  // QA attacker on 2c (c605ec0): a reason queued before stop() ends reaches
+  // onSkip before stop() resolves, so a logger closed after it loses nothing.
+  it("stop() resolves only after the last reasons reached onSkip", async () => {
+    const hang = deferred();
+    const { run, onSkip, scheduler } = setup(on(1));
+    run.mockImplementationOnce(() => hang.promise.then(() => Promise.reject(new Error(CANARY))));
+    await advance(H);
+    const order: string[] = [];
+    onSkip.mockImplementation((reason: string) => void order.push(reason));
+    const stopping = scheduler.stop().then(() => order.push("stopped"));
+    hang.resolve();
+    await advance(1);
+    await stopping;
+    expect(order).toEqual(["run_failed", "stopped"]);
+  });
+
+  // QA attacker on 2c (c605ec0): a hostile promise from a callback never
+  // becomes an unhandled rejection.
+  it.each([
+    [
+      "onSkip with its own catch",
+      (p: Promise<never>) => Object.defineProperty(p, "catch", { value: () => p }),
+    ],
+    [
+      "run with its own catch and then",
+      (p: Promise<never>) => Object.assign(p, { catch: () => p, then: undefined }),
+    ],
+  ])("a rejected promise from %s is never unhandled", async (name, tamper) => {
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    try {
+      const hostile = () => tamper(Promise.reject(new Error(CANARY)));
+      const fromOnSkip = name.startsWith("onSkip");
+      // A plain function, not a spy: a spy would itself observe the promise.
+      const { scheduler } = setup(fromOnSkip ? [["backup.enabled", false]] : on(1), {
+        ...(fromOnSkip ? { onSkip: hostile } : { run: hostile }),
+      });
+      await advance(3 * H);
+      await scheduler.stop();
+      await realTurn();
+      await realTurn();
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off("unhandledRejection", unhandled);
+    }
+  });
+
+  // QA attacker on 2c (c605ec0): a point due exactly when the job ended is not
+  // busy (the job is over), so its callback reads and calls.
+  it("a point due exactly at the end of a job is not busy", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      // Point 2's callback comes 1 ms after a job that ended exactly at 2 h.
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 1 : ms);
+    }) as never);
+    try {
+      const { run, onSkip } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record(() => {
+        if (calls.length === 1) vi.advanceTimersByTime(H);
+      });
+      // 2 h here plus the job's hour: points 1, 2 (just after the job) and 3.
+      await advance(2 * H);
+      expect(calls.length).toBe(3);
+      expect(onSkip).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("stop waits for the run in progress and leaves no timer", async () => {
