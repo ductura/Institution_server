@@ -174,9 +174,10 @@ export const EVENT_CATALOG = {
     },
   },
   // Step 8 of the pipeline refused an operator path (S-1J.2, DAN-842-3). The
-  // list is asked before the second factor (DAN-1092-1), so second_factor_required
-  // is an account on the list. The step learns no account id, so `anonymous` here means "not resolved in this
-  // step", not "nobody signed in"; route is `none` for a path that is no route.
+  // list is asked before the second factor (DAN-1092-1), so
+  // second_factor_required is an account on the list. The step learns no
+  // account id, so `anonymous` here means "not resolved in this step", not
+  // "nobody signed in"; route is `none` for a path that is no route.
   "authz.operator_denied": {
     actors: ANONYMOUS,
     fields: {

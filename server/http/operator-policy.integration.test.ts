@@ -1,8 +1,9 @@
 // The access rules of operator paths on a real node:http server (S-1J.2,
 // DAN-842-1; contract Ductus#1836 c.6945827668): without an allowed network, a
 // session cookie, an account on the server's operator list (DAN-1092-1) or a
-// confirmed second factor no operator path reaches its handler. No operator route exists yet, so a test route stands on one, and
-// every ROUTES path under /api/v1/ops joins the probes on its own.
+// confirmed second factor no operator path reaches its handler. No operator
+// route exists yet, so a test route stands on one, and every ROUTES path under
+// /api/v1/ops joins the probes on its own.
 // Tokens are invented; addresses are loopback and documentation ranges.
 import { request as httpRequest } from "node:http";
 
@@ -203,8 +204,8 @@ describe("operator policy on a real server", () => {
     ["a tab before =", `__Host-ductus_session\t=${TOKEN}`],
     ["an NBSP after =", `__Host-ductus_session= ${TOKEN}`],
     ["the ended mark of this session", `${COOKIE}; ductus-ended-${sessionTag(TOKEN)!}=1`],
-  ])("answers 401 without asking the port for %s", async (_name, cookie) => {
-    const { get, calls, tokens } = await start({
+  ])("answers 401 without asking either port for %s", async (_name, cookie) => {
+    const { get, calls, tokens, asked } = await start({
       networks: INSIDE,
       secondFactor: answers("confirmed"),
     });
@@ -215,6 +216,7 @@ describe("operator policy on a real server", () => {
       connection: "close",
     });
     expect(tokens).toEqual([]);
+    expect(asked).toEqual([]);
     expect(calls).toEqual([]);
   });
 
@@ -231,14 +233,16 @@ describe("operator policy on a real server", () => {
 
   it.each(ON_EITHER(answers("unauthenticated")))(
     "answers 401 when %s does not know the session",
-    async (_port, ports) => {
-      const { get, calls } = await start({ networks: INSIDE, ...ports });
+    async (on, ports) => {
+      const { get, calls, tokens } = await start({ networks: INSIDE, ...ports });
       expect(await get(OPS, COOKIE)).toEqual({
         status: 401,
         code: "unauthenticated",
         connection: "close",
       });
       expect(calls).toEqual([]);
+      // The second factor is asked only for an account on the list.
+      expect(tokens).toEqual(on === "the list" ? [] : [TOKEN]);
     },
   );
 
@@ -265,8 +269,14 @@ describe("operator policy on a real server", () => {
     ),
     ["the second factor", "listed", ON_EITHER(answers("listed"))[0][1]] as const,
     ["the list", "confirmed", ON_EITHER(answers("confirmed"))[1][1]] as const,
-  ])("answers 503, not 500, when %s gives %s", async (_on, _name, ports) => {
-    const { get, calls } = await start({ networks: INSIDE, ...ports });
+    ["the list", "LISTED", ON_EITHER(answers("LISTED"))[1][1]] as const,
+    [
+      "the list",
+      "an object that prints listed",
+      ON_EITHER(answers({ toString: () => "listed" }))[1][1],
+    ] as const,
+  ])("answers 503, not 500, when %s gives %s", async (on, _name, ports) => {
+    const { get, calls, tokens } = await start({ networks: INSIDE, ...ports });
     const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       expect(await get(OPS, COOKIE)).toEqual({
@@ -285,6 +295,7 @@ describe("operator policy on a real server", () => {
       stderr.mockRestore();
     }
     expect(calls).toEqual([]);
+    expect(tokens).toEqual(on === "the list" ? [] : [TOKEN]);
   });
 
   it("does not ask either port on other paths", async () => {

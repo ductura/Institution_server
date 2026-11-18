@@ -83,6 +83,7 @@ export function operatorPolicyLayer(
       pass: string,
       fail: string,
       reason: OperatorDenialReason,
+      name: string,
     ): Promise<"next" | "done"> => {
       let outcome: unknown;
       try {
@@ -95,11 +96,23 @@ export function operatorPolicyLayer(
       if (outcome === pass) return "next";
       if (outcome === fail) return deny(403, "forbidden", reason);
       if (outcome === "unauthenticated") return deny(401, "unauthenticated", "session_unknown");
-      report("layer", new Error(`${reason} port: no known outcome`), requestIdOf(response));
+      report("layer", new Error(`${name} port: no known outcome`), requestIdOf(response));
       return deny(503, "unavailable", "unavailable");
     };
-    const listed = await ask(() => operators(token), "listed", "not_listed", "not_operator");
+    const listed = await ask(
+      () => operators(token),
+      "listed",
+      "not_listed",
+      "not_operator",
+      "operator list",
+    );
     if (listed !== "next") return listed;
-    return ask(() => secondFactor(token), "confirmed", "unconfirmed", "second_factor_required");
+    return ask(
+      () => secondFactor(token),
+      "confirmed",
+      "unconfirmed",
+      "second_factor_required",
+      "second factor",
+    );
   };
 }
