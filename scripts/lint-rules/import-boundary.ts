@@ -20,13 +20,15 @@ function staticText(source: Source | null | undefined): string | null {
 }
 
 /**
- * The one JSON import (DAN-928): the error catalogue that @ductura/contracts
- * publishes as data and the server reads, imported only by this file, with this
- * exact specifier and the single attribute `type: "json"`. A named pair, never a
+ * The JSON imports: data that @ductura/contracts publishes and the server
+ * reads, the error catalogue (DAN-928) and where a failed login ends
+ * (DAN-1081), each imported only by its file, with this exact specifier and the single attribute `type: "json"`. A named pair, never a
  * pattern; no-dynamic-load (DAN-770) still checks the same import on its own.
  */
 export const JSON_IMPORTS: Readonly<Record<string, string>> = Object.freeze({
   "server/contracts/routes/platform.ts": "./error-catalog.json",
+  // DAN-1081: where a failed login ends, published as auth/sign-in-failure.json.
+  "server/contracts/routes/auth.ts": "./sign-in-failure.json",
 });
 
 type Attribute = { key?: { name?: string; value?: unknown }; value?: { value?: unknown } };

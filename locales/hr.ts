@@ -1537,6 +1537,8 @@ export const hr = {
     cardBody:
       "Prijavite se korisničkim računom AAI@EduHr, istim kojim se prijavljujete u Studomat i Merlin. Studenti i nastavnici koriste isti ulaz.",
     button: "Prijava sustavom AAI@EduHr",
+    // DAN-1081: shown while the browser goes to AAI@EduHr (Ductus#2028 c.6965980260).
+    redirecting: "Preusmjeravamo Vas na AAI@EduHr",
     passwordNote: "Lozinku upisujete samo kod AAI@EduHr.",
     roleTitle: "Jedan ulaz. Vaš prostor.",
     roleBody:
