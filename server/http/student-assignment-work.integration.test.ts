@@ -277,9 +277,14 @@ describe("an inherited toJSON never changes the 200 body", () => {
   const has = (o: unknown, key: string) =>
     typeof o === "object" && o !== null && Object.hasOwn(o, key);
   const list = (o: unknown) => Array.isArray(o) && has(o[0], "assignmentId");
-  const forging = (target: (o: unknown) => boolean): PropertyDescriptor => ({
+  // One forged value per target; an item gets one forged item, so its own fields are
+  // never a target again (toJSON is called once per value, never on what it returns).
+  const forging = (
+    target: (o: unknown) => boolean,
+    forged: unknown = FORGED,
+  ): PropertyDescriptor => ({
     value(this: unknown) {
-      return target(this) ? FORGED : this;
+      return target(this) ? forged : this;
     },
   });
   it.each([
@@ -287,7 +292,7 @@ describe("an inherited toJSON never changes the 200 body", () => {
     [
       "Object.prototype.toJSON on an item",
       Object.prototype,
-      forging((o) => has(o, "assignmentId")),
+      forging((o) => has(o, "assignmentId"), FORGED[0]),
     ],
     [
       "Object.prototype.toJSON on the body",
