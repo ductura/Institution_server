@@ -35,6 +35,8 @@ const FILES: Row[] = [
     ["BOM before a flow list", `\uFEFF[{ ${N}, ${C}, ${D} }]\n`],
     ["BOM before a comment", `\uFEFF# x\n${VALID}`],
     ["BOM before ---", `\uFEFF---\n${VALID}`],
+    ["BOM after ...", `${VALID}...\n\uFEFF`],
+    ["CR line ends only", VALID.replaceAll("\n", "\r")],
     ["tab indentation", "- name: x\n\tcolor: d73a4a\n"],
     ["two documents", `${VALID}---\n${VALID}`],
     ["alias", `- { ${N}, ${C}, description: &d "O" }\n- { name: "y", ${C}, description: *d }\n`],
@@ -91,6 +93,7 @@ const RECORDS: Row[] = [
     ["empty description", `{ ${N}, ${C}, description: "" }`],
     ["spaces only", `{ ${N}, ${C}, description: "   " }`],
     ["tab and CRLF only", `{ ${N}, ${C}, description: "\\t\\r\\n" }`],
+    ["NBSP only", `{ ${N}, ${C}, description: "\\u00a0" }`],
   ]),
   ...of("LABEL_DUPLICATE_NAME", [["same name", `{ name: "bug", ${C}, ${D} }`]]),
 ];
@@ -131,13 +134,19 @@ describe("a record with any problem is no label", () => {
     expect(parsed.labels.map((label) => label.name)).toEqual(["bug", "constructor"]);
   });
 
-  it("an inherited description does not count", () => {
-    Object.defineProperty(Object.prototype, "description", { value: "O", configurable: true });
+  it("an inherited name, color or description does not count", () => {
+    const inherited = { name: "x", color: "d73a4a", description: "O" };
+    for (const [key, value] of Object.entries(inherited)) {
+      Object.defineProperty(Object.prototype, key, { value, writable: true, configurable: true });
+    }
     try {
-      const parsed = parseLabels(`- { ${N}, ${C} }\n`);
-      expect(parsed.problems).toEqual([problem("LABEL_NO_DESCRIPTION", 0)]);
+      expect(parseLabels("- {}\n").problems).toEqual(
+        ["LABEL_INVALID_NAME", "LABEL_INVALID_COLOR", "LABEL_NO_DESCRIPTION"].map((code) =>
+          problem(code as LabelErrorCode, 0),
+        ),
+      );
     } finally {
-      Reflect.deleteProperty(Object.prototype, "description");
+      for (const key of Object.keys(inherited)) Reflect.deleteProperty(Object.prototype, key);
     }
   });
 });
