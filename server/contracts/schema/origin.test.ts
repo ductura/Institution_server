@@ -1,4 +1,5 @@
 import { Value } from "@sinclair/typebox/value";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import { Origin, ORIGIN_MAX_LENGTH } from "./origin.ts";
@@ -6,7 +7,8 @@ import { Origin, ORIGIN_MAX_LENGTH } from "./origin.ts";
 // DAN-930-1d-a (ugovor Ductus#2028): every named value Origin accepts is a
 // canonical http(s) origin, every named value outside the subset is refused,
 // the bound is exactly 16 KiB, and a step counter, not a clock, shows that the
-// check is linear in the length of the value. Generated values come in 1d-a2-ii.
+// check is linear in the length of the value; on generated values Origin
+// accepts exactly that subset.
 
 /** The bound the contract sets, written out so the schema's constant cannot move it. */
 const LIMIT = 16384;
@@ -19,6 +21,14 @@ const canonical = (value: string) => {
     return false;
   }
 };
+/** The subset: canonical, at most 16 KiB, no xn-- label, IPv6 [::1] or uncompressed. */
+const inSubset = (value: string) => {
+  if (value.length > LIMIT || !canonical(value)) return false;
+  const host = new URL(value).hostname;
+  if (host.startsWith("[")) return host === "[::1]" || !host.includes("::");
+  return !host.split(".").some((label) => label.startsWith("xn--"));
+};
+
 // A backtracking matcher for the syntax the pattern uses, in ECMAScript's
 // search order. A class or an escape matches one code unit and is decided by
 // RegExp itself. A step is every call and every code unit a class examines; a
@@ -297,5 +307,101 @@ describe("Origin", () => {
       expect(() =>
         countSteps(parse(PATTERN.split(`${domain}+`).join(slow)), value, budget(value)),
       ).toThrow(/^over/);
+  });
+  it("accepts exactly the subset of generated values, in linear steps", () => {
+    const letters = [..."-!\"$&'()*+,;=_`{}~0123456789abcdefxnAXN%^|<>"];
+    const word = fc.string({ unit: fc.constantFrom(...letters), maxLength: 6 });
+    const hex = fc.string({ unit: fc.constantFrom(..."0123456789abcdefABCDEF"), maxLength: 5 });
+    const label = fc.oneof(
+      word,
+      word.map((w) => `xn--${w}`),
+      hex.map((h) => `0x${h}`),
+    );
+    const octet = fc.nat(300).chain((n) => fc.constantFrom(`${n}`, `0${n}`));
+    const group = fc.oneof(
+      { weight: 12, arbitrary: fc.constantFrom("0", "1", "a", "ffff", "12") },
+      fc.constantFrom("01", "12345", "A", ""),
+      hex,
+    );
+    const host = fc.oneof(
+      fc.array(label, { minLength: 1, maxLength: 4 }).map((l) => ["domain", l.join(".")]),
+      fc.array(octet, { minLength: 3, maxLength: 5 }).map((l) => ["ipv4", l.join(".")]),
+      fc
+        .oneof(fc.array(group, { minLength: 8, maxLength: 8 }), fc.array(group, { maxLength: 9 }))
+        .map((g) => ["ipv6", `[${g.join(":")}]`]),
+      fc.constantFrom(["ipv6", "[::1]"], ["domain", "a."], ["domain", "localhost"]),
+    );
+    const port = fc.oneof(
+      fc.constant(""),
+      fc.nat(65535).map((p) => `:${p}`),
+      fc.constantFrom(":", ":80", ":443", ":65536", ":99999", ":080", ":0"),
+    );
+    const scheme = fc.oneof(
+      { weight: 6, arbitrary: fc.constantFrom("https://", "http://") },
+      fc.constantFrom("HTTP://", "ws://", "https:/", "https:\\\\", "", "u:p@"),
+    );
+    const noise = fc.oneof({ weight: 6, arbitrary: fc.constant("") }, fc.constantFrom(...NOISE));
+    const sample = fc
+      .tuple(
+        scheme,
+        fc.constantFrom("", "", "", "", "u@", "u:p@", "@"),
+        host,
+        port,
+        noise,
+        fc.nat(),
+      )
+      .map(([s, user, [kind, h], p, n, at]) => {
+        const v = s + user + h + p;
+        return {
+          kind: `${kind} ${s}`,
+          value: v.slice(0, at % (v.length + 1)) + n + v.slice(at % (v.length + 1)),
+        };
+      });
+    const tally = new Map<string, [number, number]>();
+    for (const { kind, value } of fc.sample(sample, { numRuns: 20_000, seed: 930 })) {
+      const { accepted } = check(value);
+      expect([value, accepted]).toEqual([value, inSubset(value)]);
+      const [yes, no] = tally.get(kind) ?? [0, 0];
+      tally.set(kind, accepted ? [yes + 1, no] : [yes, no + 1]);
+    }
+    for (const kind of ["domain", "ipv4", "ipv6"])
+      for (const s of ["https://", "http://"])
+        expect([kind, s, ...(tally.get(`${kind} ${s}`) ?? [0, 0]).map((c) => c > 0)]).toEqual([
+          kind,
+          s,
+          true,
+          true,
+        ]);
+    // A slice of at least one unit repeated 64-512 times, and one unit repeated up
+    // to LIMIT ± 32, checked against the subset within the same step budget.
+    const whole = sample.map(({ value }) => value).filter((v) => v.length > 0);
+    const pumped = fc
+      .tuple(whole, fc.nat(), fc.nat(), fc.integer({ min: 64, max: 512 }))
+      .map(([v, a, b, times]) => {
+        const from = a % v.length;
+        const to = from + 1 + (b % (v.length - from));
+        return v.slice(0, from) + v.slice(from, to).repeat(times) + v.slice(to);
+      });
+    const near = fc
+      .tuple(whole.filter(inSubset), fc.nat(), fc.integer({ min: -32, max: 32 }))
+      .map(([v, a, d]) => {
+        const at = a % v.length;
+        return (
+          v.slice(0, at) +
+          v.charAt(at).repeat(Math.max(1, LIMIT + d - v.length + 1)) +
+          v.slice(at + 1)
+        );
+      });
+    let [over, under] = [0, 0];
+    for (const value of [
+      ...fc.sample(pumped, { numRuns: 1_000, seed: 931 }),
+      ...fc.sample(near, { numRuns: 200, seed: 932 }),
+    ]) {
+      const { accepted } = check(value);
+      expect([value.slice(0, 40), accepted]).toEqual([value.slice(0, 40), inSubset(value)]);
+      if (value.length > LIMIT && canonical(value)) over++;
+      if (value.length > LIMIT - 64 && accepted) under++;
+    }
+    expect([over > 0, under > 0]).toEqual([true, true]);
   });
 });
