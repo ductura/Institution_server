@@ -131,7 +131,11 @@ function countSteps(root: Node, s: string, limit: number): { ok: boolean; steps:
       }
     }
   };
-  for (let at = 0; at <= s.length; at++) if (m(root, at, () => true)) return { ok: true, steps };
+  // A pattern that begins with ^ is tried from 0 only, as V8 does.
+  const first = root.t === "alt" && root.options.length === 1 ? root.options[0] : undefined;
+  const anchored = first?.t === "seq" && first.items[0]?.t === "start";
+  for (let at = 0; at <= (anchored ? 0 : s.length); at++)
+    if (m(root, at, () => true)) return { ok: true, steps };
   return { ok: false, steps };
 }
 
@@ -244,7 +248,7 @@ describe("Origin", () => {
       (n) => `https://[${"0:".repeat(n / 2)}`,
       (n) => `https://[${"1:".repeat(n / 2)}1]`,
       (n) => `http://a.0x${"1".repeat(n)}:`,
-      (n) => `http://a:${"9".repeat(n)}`,
+      (n) => `https://${"a".repeat(n)}:443`,
       (n) => `https://${"{".repeat(n)}:443`,
     ];
     for (const make of families)
@@ -258,6 +262,30 @@ describe("Origin", () => {
           true,
         ]);
       }
+  });
+
+  it("takes linear steps on a run of any one unit after any part of an origin", () => {
+    const units = [...Array(95).keys()].map((c) => String.fromCharCode(c + 32)).concat(NOISE);
+    for (const head of [
+      "https://",
+      "http://",
+      "https://a.",
+      "https://[",
+      "https://[1:",
+      "http://a:",
+    ])
+      for (const unit of units)
+        for (const tail of ["/", "\u00a0"]) {
+          const make = (n: number) => head + unit.repeat(n / unit.length) + tail;
+          const [single, double] = [check(make(128)), check(make(256))];
+          const linear = double.steps <= 2 * single.steps + 64;
+          expect([make(2), single.accepted, double.accepted, linear]).toEqual([
+            make(2),
+            false,
+            false,
+            true,
+          ]);
+        }
   });
 
   it("has a counter that sees a domain which backtracks", () => {
