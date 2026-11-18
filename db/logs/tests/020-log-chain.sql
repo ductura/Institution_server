@@ -70,7 +70,7 @@ END
 $$;
 
 
-SELECT plan(256);
+SELECT plan(264);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -751,25 +751,40 @@ FROM (VALUES
 ) t (sql, expected, what);
 -- DAN-868-1b2: a base in an impossible state is a 'base' finding by itself,
 -- on a full chain left uncut and on a chain cut to nothing whose head is set
--- to the base, whatever else is found.
-SELECT ok('- base' = ANY(pg_temp.tampered(c.prefix || s.sql || CASE WHEN c.prefix = '' THEN ''
-            ELSE '; UPDATE public.log_chain_head SET (seq, hash) = (SELECT seq, hash FROM public.log_chain_base)' END)),
+-- to the base (when there is one). The whole list of findings is pinned: on
+-- the full chain '- base' and what the first row shows, on the cut chain
+-- `empty`. Each state but the NULLs breaks one clause of the 'base' finding.
+SELECT is(pg_temp.tampered(c.prefix || s.sql || CASE WHEN c.prefix = '' THEN '' ELSE
+            '; UPDATE public.log_chain_head SET (seq, hash) = (SELECT seq, hash FROM ONLY public.log_chain_base LIMIT 1)
+               WHERE EXISTS (SELECT 1 FROM ONLY public.log_chain_base)' END),
+  CASE WHEN c.prefix = '' THEN ARRAY['- base'] || ARRAY(SELECT (1 - pg_temp.at(0))::text || ' ' || f FROM unnest(s.first_row) f)
+       ELSE s.empty END,
   'a base ' || s.what || ' is found, ' || c.what)
 FROM (VALUES
-  ('UPDATE public.log_chain_base SET seq = 0, hash = decode(repeat(''ab'', 32), ''hex'')', 'at seq 0 with a digest that is not zero'),
-  ('UPDATE public.log_chain_base SET seq = :base + 2, hash = decode(repeat(''00'', 32), ''hex'')', 'past seq 0 with the zero digest'),
+  ('UPDATE public.log_chain_base SET seq = 0, hash = decode(repeat(''ab'', 32), ''hex'')',
+   '{link}'::text[], '{- base}'::text[], 'at seq 0 with a digest that is not zero'),
+  ('UPDATE public.log_chain_base SET seq = :base + 2, hash = decode(repeat(''00'', 32), ''hex'')',
+   '{gap}', '{- base}', 'past seq 0 with the zero digest'),
   ('ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; ALTER TABLE public.log_chain_head ALTER seq DROP NOT NULL;
-    UPDATE public.log_chain_base SET seq = NULL', 'with a NULL seq'),
+    UPDATE public.log_chain_base SET seq = NULL', '{gap}', '{- base,- head}', 'with a NULL seq'),
   ('ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; ALTER TABLE public.log_chain_head ALTER hash DROP NOT NULL;
-    UPDATE public.log_chain_base SET hash = NULL', 'with a NULL digest'),
+    UPDATE public.log_chain_base SET hash = NULL', '{link}', '{- base,7 head}', 'with a NULL digest'),
   ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_seq; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_seq;
-    UPDATE public.log_chain_base SET seq = -1', 'below seq 0'),
+    UPDATE public.log_chain_base SET seq = -1, hash = decode(repeat(''ab'', 32), ''hex'')', '{gap,link}', '{- base}', 'below seq 0'),
+  ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_seq; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_seq;
+    UPDATE public.log_chain_base SET seq = -9223372036854775808, hash = decode(repeat(''ab'', 32), ''hex'')',
+   '{gap,link}', '{- base}', 'at the least bigint'),
   ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_hash_size; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_hash_size;
-    UPDATE public.log_chain_base SET hash = decode(repeat(''00'', 31), ''hex'')', 'with a digest of 31 bytes'),
+    UPDATE public.log_chain_base SET seq = :base + 2, hash = decode(repeat(''ab'', 31), ''hex'')', '{gap,link}', '{- base}', 'with a digest of 31 bytes'),
   ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_hash_size; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_hash_size;
-    UPDATE public.log_chain_base SET seq = :base + 2, hash = decode(repeat(''ab'', 33), ''hex'')', 'with a digest of 33 bytes')
-) s (sql, what)
-CROSS JOIN (VALUES ('', 'on the full chain'), (':cut7; ', 'on a chain cut to nothing with the head set to it')) c (prefix, what);
+    UPDATE public.log_chain_base SET seq = :base + 2, hash = decode(repeat(''ab'', 33), ''hex'')', '{gap,link}', '{- base}', 'with a digest of 33 bytes'),
+  ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_hash_size; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_hash_size;
+    UPDATE public.log_chain_base SET seq = :base + 2, hash = ''''::bytea', '{gap,link}', '{- base}', 'with an empty digest'),
+  ('DELETE FROM public.log_chain_base', '{}', '{- base,7 head}', 'of no row (verified from seq 0, the head left past it)'),
+  ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_pkey;
+    INSERT INTO public.log_chain_base SELECT * FROM public.log_chain_base', '{}', '{- base}', 'of two equal rows')
+) s (sql, first_row, empty, what)
+CROSS JOIN (VALUES ('', 'on the full chain'), (':cut7; ', 'on a chain cut to nothing')) c (prefix, what);
 
 -- Repeated places on a chain large enough for the window sort to spill at
 -- 4MB of work_mem: the order of the repeated rows, and so their link
