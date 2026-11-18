@@ -68,7 +68,7 @@ END
 $$;
 
 
-SELECT plan(185);
+SELECT plan(186);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -227,6 +227,11 @@ SELECT is((SELECT relowner::regrole::text || ' ' || (relrowsecurity AND relforce
 SELECT is((SELECT prosrc FROM pg_proc WHERE oid = 'public.log_chain_base_refuse_change()'::regprocedure),
   E'\nBEGIN\n  RAISE EXCEPTION ''log_chain_base does not change: % refused'', TG_OP USING ERRCODE = ''55000'';\nEND\n',
   'the trigger function of the base only raises 55000');
+SELECT set_eq(
+  $$ SELECT tgname || ' ' || tgfoid::regprocedure::text FROM pg_trigger
+     WHERE tgrelid = 'public.log_chain_base'::regclass AND NOT tgisinternal $$,
+  ARRAY['log_chain_base_no_change log_chain_base_refuse_change()', 'log_chain_base_no_row_change log_chain_base_refuse_change()'],
+  'both triggers of the base call that function');
 SELECT is(pg_temp.try_as('ductus_logs_migrator', $$ DO $d$ BEGIN
     IF (SELECT count(*) FROM public.log_chain_base) <> 1 THEN RAISE EXCEPTION 'unseen' USING ERRCODE = 'P0002'; END IF;
   END $d$ $$), 'ok', 'the owner reads the one row of the base, by its policy');
