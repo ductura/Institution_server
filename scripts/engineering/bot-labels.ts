@@ -84,11 +84,36 @@ export function parseLabels(text: string): ParsedLabels {
 }
 
 /**
+ * Inline code spans of one line, as in CommonMark: a backtick run opens a span
+ * only if a later run has the same length; otherwise it is text.
+ */
+function codeSpans(line: string): string[] {
+  const runs = [...line.matchAll(/`+/gu)].map((m) => ({ at: m.index, length: m[0].length }));
+  const spans: string[] = [];
+  for (let i = 0; i < runs.length;) {
+    const open = runs[i];
+    const close = runs.findIndex((run, j) => j > i && run.length === open?.length);
+    if (open === undefined || close === -1) {
+      i += 1;
+      continue;
+    }
+    spans.push(line.slice(open.at + open.length, runs[close]?.at));
+    i = close + 1;
+  }
+  return spans;
+}
+
+/**
  * Labels a Markdown text mentions: label-shaped inline code outside fenced
  * blocks, on a line that contains "label" or in a section whose heading does,
  * or with a label namespace on any line. `x:a|b` is `x:a` and `x:b`; `x:*` stays.
+ * With `sectionsOnly`, only mentions inside a section whose heading has "label".
  */
-export function labelMentions(markdown: string, names: readonly string[]): string[] {
+export function labelMentions(
+  markdown: string,
+  names: readonly string[],
+  options: { sectionsOnly?: boolean } = {},
+): string[] {
   const prefixed = names.filter((name) => name.includes(":"));
   const namespaces = new Set([...NAMESPACES, ...prefixed.map((name) => name.split(":")[0] ?? "")]);
   const mentions = new Set<string>();
@@ -113,9 +138,10 @@ export function labelMentions(markdown: string, names: readonly string[]): strin
     if (heading !== undefined && (section === 0 || heading <= section)) {
       section = /label/iu.test(line) ? heading : 0;
     }
+    if (options.sectionsOnly === true && section === 0) continue;
     const context = section !== 0 || /label/iu.test(line);
-    for (const span of line.matchAll(/(`+)(.+?)\1/gu)) {
-      const token = TOKEN.exec((span[2] ?? "").trim());
+    for (const span of codeSpans(line)) {
+      const token = TOKEN.exec(span.trim());
       if (token === null) continue;
       const [, prefix = "", rest] = token;
       if (!context && (rest === undefined || !namespaces.has(prefix))) continue;

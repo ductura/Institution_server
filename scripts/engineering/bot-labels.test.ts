@@ -208,6 +208,40 @@ describe("label mentions", () => {
     expect(mentionProblems("F.md", markdown, names)).toEqual([]);
   });
 
+  it.each([
+    ["an unclosed double run", "Labela `` pa `nema`."],
+    ["an unclosed triple run", "Labela ``` pa `nema`."],
+    ["a run longer than any closer", "Labela ```` x `` pa `nema`."],
+    ["runs of other lengths before the span", "Labela `` x ``` y `nema`."],
+  ])("a backtick run without a closer of its length is text: %s", (_, markdown) => {
+    expect(mentionProblems("F.md", markdown, names)).toEqual([
+      "F.md: `nema` (no such label in .github/labels.yml)",
+    ]);
+  });
+
+  it("finds several spans on a line and keeps inner backticks in a span", () => {
+    expect(labelMentions("Labele `bug`, ``area:db`` i `` a`b `` te `nema`.", names)).toEqual([
+      "bug",
+      "area:db",
+      "nema",
+    ]);
+  });
+
+  it.each([
+    ["H1 before the line", "## Labele\n\n- `bug`\n\n# Dodatak\n\n- `risk:low`", ["bug"]],
+    ["H2 before the line", "## Labele\n\n- `bug`\n\n## Dalje\n\n- `risk:low`", ["bug"]],
+    ["H3 keeps the section", "## Labele\n\n### Pod\n\n- `risk:low`", ["risk:low"]],
+    ["a fenced # keeps it", "## Labele\n\n```\n# x\n```\n\n- `risk:low`", ["risk:low"]],
+    ["a label line outside", "Labela `bug`, razina `risk:low`.", []],
+  ])("sections only: %s", (_, markdown, expected) => {
+    expect(labelMentions(markdown, names, { sectionsOnly: true })).toEqual(expected);
+  });
+
+  it("without sectionsOnly a namespace counts outside the section", () => {
+    const markdown = "## Labele\n\n- `bug`\n\n# Dodatak\n\n- `risk:low`";
+    expect(labelMentions(markdown, names)).toEqual(["bug", "risk:low"]);
+  });
+
   it("the fixed namespaces need no label of that namespace", () => {
     const text = "Vidi `claude:nema`, `area:nema`, `risk:nema` i `role:nema`.";
     expect(mentionProblems("F.md", text, [])).toHaveLength(4);
@@ -259,10 +293,7 @@ describe("repository", () => {
   });
 
   it("the Labele section of docs/BOTS.md names every label of labels.yml", () => {
-    const parts = bots.split(/^## /mu);
-    const section = parts.find((part) => /^Labele\r?\n/u.test(part)) ?? "";
-    expect(section).not.toBe("");
-    const listed = labelMentions(`## ${section}`, names);
+    const listed = labelMentions(bots, names, { sectionsOnly: true });
     expect(names.filter((name) => !listed.includes(name))).toEqual([]);
   });
 
