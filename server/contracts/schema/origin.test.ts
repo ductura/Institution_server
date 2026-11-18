@@ -71,7 +71,7 @@ describe("Origin", () => {
     for (const value of [null, true, 1, {}, [SITE], undefined]) expect(accepts(value)).toBe(false);
   });
 
-  it("rejects canonical origins outside the subset, and every xn-- label", () => {
+  it("rejects canonical origins outside the subset, and the named xn-- labels", () => {
     for (const value of OUTSIDE)
       expect([value, canonical(value), accepts(value)]).toEqual([value, true, false]);
     for (const value of XN) expect([value, accepts(value)]).toEqual([value, false]);
@@ -89,7 +89,7 @@ describe("Origin", () => {
   });
 
   it("accepts the canonical origins named in #284 but one, and more of the subset", () => {
-    expect(GOOD.slice(0, 27)).not.toContain("https://xn--mnchen-3ya.invalid");
+    expect(GOOD).toHaveLength(34);
     for (const value of GOOD)
       expect([value, canonical(value), accepts(value)]).toEqual([value, true, true]);
   });
@@ -101,7 +101,7 @@ describe("Origin", () => {
     for (const [head, tail, unit] of [
       ["https://", "", "a"],
       ["http://", ":65535", "a"],
-      ["https://", ".z", "b."],
+      ["https://", "z", "b."],
     ] as const)
       for (const size of [LIMIT, LIMIT + 1]) {
         const value = fill(head, tail, unit, size);

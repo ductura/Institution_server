@@ -6,8 +6,9 @@ import { Type } from "@sinclair/typebox";
 // origin is accepted: no label may begin with xn-- (the pilot's host is
 // ASCII), and an IPv6 host is [::1] or eight groups with no two zero groups
 // side by side. The server still compares the value with its own origin
-// (originLayer, pipeline step 7). Lookaheads, not $, end each branch, as in
-// live.ts. A step counter for the pattern comes in DAN-930-1d-a2.
+// (originLayer, pipeline step 7). A lookahead, not $, ends the pattern, as in
+// live.ts, so an engine where $ also matches before a final newline reads it
+// the same. A step counter for the pattern comes in DAN-930-1d-a2.
 const END = "(?![\\s\\S])";
 // The code points WHATWG keeps in a domain, dots and empty labels included.
 const DOMAIN = "[-!\"$&'()*+,.0-9;=_`a-z{}~]+";
