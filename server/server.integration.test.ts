@@ -239,6 +239,11 @@ describe("dist/server.js", () => {
       { NODE_ENV: "production", ...KMS, DUCTUS_KMS_REGION: "eu-west-1" },
       "DUCTUS_KMS_KEY_ID is not in DUCTUS_KMS_REGION",
     ],
+    [
+      "a KMS provider aws with CRLF under NODE_ENV production",
+      { NODE_ENV: "production", ...KMS, DUCTUS_KMS_PROVIDER: `aws\r\n${CANARY}` },
+      "DUCTUS_KMS_PROVIDER is not a known provider",
+    ],
   ])(
     "does not start with %s and names the variable, never the value",
     async (_, env, problem) => {
@@ -253,7 +258,7 @@ describe("dist/server.js", () => {
   );
 
   // DAN-963: the control of the KMS cases above. A complete configuration
-  // starts in production; the KMS client is made without a call or credentials.
+  // starts in production: the startup check passes it (the signer is DAN-963-1b).
   it("starts with a complete KMS configuration under NODE_ENV production", async () => {
     const [, port] = await start({ NODE_ENV: "production", ...KMS });
     expect((await fetch(url(port, "/api/v1/health"))).status).toBe(200);

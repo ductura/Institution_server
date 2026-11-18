@@ -56,6 +56,9 @@ describe("kmsProblems: an incomplete configuration never starts", () => {
       KEY.replace("arn:aws:", "arn:awsx:"),
       KEY.replace("000000000000", "00000000000"),
       KEY.replace("000000000000", "00000000000\uff10"),
+      KEY.replace("000000000000", "0000000000000"),
+      KEY.replace("-4b5a-", "-4b5a0-"),
+      KEY.replace("eu-central-1", "eu-central-100"),
       KEY.replace("0f1e2d3c", "0F1E2D3C"),
       KEY.replace(UUID, UUID.replaceAll("-", "")),
       KEY.replace(UUID, `mrk-${"A".repeat(32)}`),
@@ -70,6 +73,8 @@ describe("kmsProblems: an incomplete configuration never starts", () => {
       "eu-central",
       "eu_central_1",
       "eu-central-0",
+      "eu-central-100",
+      "eur-central-1",
     ].map((v) => ["REGION", v, R]),
   ])("refuses DUCTUS_KMS_%s %j", (name, value, problem) => {
     refused({ ...FULL, [`DUCTUS_KMS_${name}`]: value }, problem);
