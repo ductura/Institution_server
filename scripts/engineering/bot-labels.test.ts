@@ -48,6 +48,7 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     ["%TAG repeating !!", `%TAG !! tag:yaml.org,2002:\n---\n${VALID}`],
   ])("%s is a problem", (_, text) => {
     expect(parseLabels(text).problems).not.toEqual([]);
+    expect(parseLabels(text).labels).toEqual([]);
   });
 
   it.each([
@@ -82,12 +83,9 @@ describe("labels.yml: every label has a description and a valid shape", () => {
   ])("%s is a problem", (_, entry) => {
     const parsed = parseLabels(yamlWith(entry));
     expect(parsed.problems).not.toEqual([]);
-    expect(parseLabels(VALID).problems).toEqual([]);
-  });
-
-  it("an invalid record is not among the labels", () => {
-    const parsed = parseLabels(yamlWith('{ name: "x", color: "d73a4a" }'));
+    // The record with a problem is no label; only the valid first one is.
     expect(parsed.labels.map((label) => label.name)).toEqual(["bug"]);
+    expect(parseLabels(VALID).problems).toEqual([]);
   });
 
   it("an inherited description does not count", () => {

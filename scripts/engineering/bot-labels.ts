@@ -74,7 +74,11 @@ export function parseLabels(text: string): ParsedLabels {
     problems.push(...found);
     if (found.length > 0) return;
     const label = entry as Label;
-    if (seen.has(label.name)) problems.push(`labels.yml[${index}]: duplicate name ${label.name}`);
+    // A record with any problem, a duplicate included, is no label.
+    if (seen.has(label.name)) {
+      problems.push(`labels.yml[${index}]: duplicate name ${label.name}`);
+      return;
+    }
     seen.add(label.name);
     labels.push({ name: label.name, color: label.color, description: label.description });
   });
