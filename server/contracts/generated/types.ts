@@ -211,6 +211,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
     errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
   };
+  "ops.events.get": {
+    params: undefined;
+    query: { "from": string; "to": string; "after"?: string };
+    body: undefined;
+    success: { status: 200; body: { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": null } | { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": number }; headers: {  } };
+    errorCode: "unauthenticated" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "platform.health.get": {
     params: undefined;
     query: undefined;
