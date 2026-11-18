@@ -125,5 +125,9 @@
     "database_error": "Prijava problema trenutačno nije dostupna. Pokušajte ponovno.",
     "invalid_json": "Problem nije poslan. Zahtjev nije valjan; učitajte stranicu i pokušajte ponovno.",
     "invalid_body": "Problem nije poslan. Provjerite opis i odabrane podatke pa pokušajte ponovno."
+  },
+  "logAnalysis": {
+    "analysis_threshold_invalid": "Prag analize zapisa nije ispravan: prozor i najmanji broj zapisa moraju biti cijeli brojevi veći od nule, a prozor najviše 24 sata.",
+    "analysis_entries_invalid": "Zapisi za analizu nisu ispravan popis ili ih je previše, pa analiza nije pokrenuta."
   }
 }
