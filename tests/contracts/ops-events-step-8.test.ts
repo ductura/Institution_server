@@ -20,10 +20,25 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CONTRACT_ONLY, INVENTORY, ROUTES, SERVER_SOURCES } from "../../server/contracts/index.ts";
 import {
-  operatorPolicyLayer,
-  type OperatorList,
+  AREA_NAMES,
+  createAuthRoutes,
+  createClientContextRoute,
+  createDownloadsManifestRoute,
+  createEvidenceCommitRouteFor,
+  createEvidenceOpenRoute,
+  createEvidenceReplayRouteFor,
+  createHealthRoute,
+  createInstitutionCourseRoutesFor,
+  createInterfaceLocaleRoutesFor,
   createLayers,
   createOperatorDenialLog,
+  createProblemReportRouteFor,
+  createSettingsValuesPutRoute,
+  createWebAuthnRoutesFor,
+  operatorPolicyLayer,
+  type OperatorList,
+  type Route,
+  routesOf,
   type SecondFactor,
 } from "../../server/http/index.ts";
 import { checkEvent } from "../../server/log/index.ts";
@@ -373,12 +388,41 @@ function asOperatorLogRow(
 
 const CONTRACT_PATHS: ReadonlySet<string> = new Set(ROUTES.map((r) => r.path));
 /**
- * The routes the server mounts: every route but those of CONTRACT_ONLY
- * (tests/contracts/contract-only.test.ts holds the entry point to that), plus
- * ops.events.get, which 843-2 mounts. A route only in the contract is no path
- * of the router (PREDPROVJERA on #337: GET /api/v1/settings/values is 405).
+ * The route table of server/server.ts, factory by factory, each called as the
+ * entry point calls it, with stand-ins for what it reaches only when it
+ * answers. A route with a contract but no factory here (CONTRACT_ONLY, and
+ * platform.ready.get and platform.status.get, which the entry point does not
+ * mount) is no path of the router (PREDPROVJERA and QA self-check on #337).
  */
-const MOUNTED = ROUTES.filter((r) => !CONTRACT_ONLY.includes(r.id) || r.id === "ops.events.get");
+const STAND_IN = {} as never;
+const ENTRY_ROUTES: Readonly<Record<string, () => readonly Route[]>> = {
+  createHealthRoute: () => [createHealthRoute({ health: STAND_IN, serverVersion: "0.0.0" })],
+  createClientContextRoute: () => [createClientContextRoute()],
+  createEvidenceOpenRoute: () => [createEvidenceOpenRoute(STAND_IN)],
+  createDownloadsManifestRoute: () => [createDownloadsManifestRoute()],
+  createSettingsValuesPutRoute: () => [createSettingsValuesPutRoute({ writer: STAND_IN })],
+  createInterfaceLocaleRoutesFor: () => createInterfaceLocaleRoutesFor(STAND_IN),
+  createProblemReportRouteFor: () => [createProblemReportRouteFor(STAND_IN)],
+  createInstitutionCourseRoutesFor: () => createInstitutionCourseRoutesFor(STAND_IN),
+  createWebAuthnRoutesFor: () =>
+    createWebAuthnRoutesFor({ withActor: STAND_IN, webauthnCredentials: STAND_IN }, null),
+  createEvidenceCommitRouteFor: () => [createEvidenceCommitRouteFor(STAND_IN, STAND_IN)],
+  createEvidenceReplayRouteFor: () => [createEvidenceReplayRouteFor(STAND_IN, STAND_IN)],
+  createAuthRoutes: () => createAuthRoutes({}),
+  routesOf: () => routesOf(AREA_NAMES),
+};
+/** The factories the routes: [...] of server.ts calls, without its comments. */
+function entryFactories(entry: string): string[] {
+  const text = entry.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/gu, "");
+  const table = /\n {4}routes: \[([\s\S]*?)\n {4}\],/u.exec(text)?.[1] ?? "";
+  return [...table.matchAll(/\b(create\w+|routesOf)\(/gu)].map((m) => m[1]!);
+}
+const ENTRY_TEXT = readFileSync(new URL("../../server/server.ts", import.meta.url), "utf8");
+const ENTRY_IDS: readonly string[] = Object.values(ENTRY_ROUTES).flatMap((routes) =>
+  routes().map((r) => r.contract.id),
+);
+/** What the server mounts, plus ops.events.get, which 843-2 mounts. */
+const MOUNTED = ROUTES.filter((r) => ENTRY_IDS.includes(r.id) || r.id === "ops.events.get");
 const NO_ROUTE_PATH = "/api/v1/no-such-route";
 /**
  * The router's template for a path without parameters, whatever the method:
@@ -437,8 +481,8 @@ async function recorded(row: Row, lagMs = 3): Promise<Record<string, unknown>> {
  * route and the route itself (server/http/pipeline.ts, router.ts). The
  * recorder is not armed yet (step 5 is empty); that steps 3 and 4 refusals
  * are recorded too is the plan (docs/server-map.md, step 5). The model is
- * the server once this route is mounted (843-2); every other route of
- * CONTRACT_ONLY is no route of the router (MOUNTED).
+ * the server once this route is mounted (843-2); a route the entry point
+ * does not mount is no route of the router (MOUNTED).
  * - On a path of the contract: what the route of that method declares
  *   (responses and errors), or 405 when no route there has the method.
  * - On another path (route none): 404.
@@ -550,7 +594,32 @@ describe("answerable, for every route of the inventory", () => {
     expect(CONTRACT_ONLY).toContain("settings.values.get");
     expect([get.has(200), get.has(405)]).toEqual([false, true]);
     expect(MOUNTED.map((r) => r.id)).toContain("ops.events.get");
-    expect(MOUNTED.length).toBe(ROUTES.length - CONTRACT_ONLY.length + 1);
+    for (const id of CONTRACT_ONLY)
+      expect(MOUNTED.some((r) => r.id === id)).toBe(id === "ops.events.get");
+  });
+
+  // QA self-check on #337: ready and status have a contract and no mount, so
+  // a row of either is the router's 404 (route none), never a 200.
+  it("the table is the entry point's: GET ready and GET status are not mounted", async () => {
+    expect(entryFactories(ENTRY_TEXT)).toEqual(Object.keys(ENTRY_ROUTES));
+    expect(new Set(ENTRY_IDS).size).toBe(ENTRY_IDS.length);
+    for (const id of ENTRY_IDS) expect(ROUTES.some((r) => r.id === id)).toBe(true);
+    for (const path of ["/api/v1/ready", "/api/v1/status"]) {
+      expect(ROUTES.some((r) => r.path === path)).toBe(true);
+      expect((await answerable("GET", path)).size, path).toBe(0);
+    }
+    expect((await answerable("GET", "/api/v1/health")).has(200)).toBe(true);
+    // A factory called but missing here, or a comment that names one, is told apart.
+    const extra = ENTRY_TEXT.replace(
+      "...routesOf(AREAS),",
+      "...routesOf(AREAS),\n      createReadyRoute(x),",
+    );
+    expect(entryFactories(extra)).toContain("createReadyRoute");
+    const commented = ENTRY_TEXT.replace(
+      "...routesOf(AREAS),",
+      "...routesOf(AREAS),\n      // createReadyRoute(x),",
+    );
+    expect(entryFactories(commented)).toEqual(Object.keys(ENTRY_ROUTES));
   });
 
   it("a path outside the contract gives nothing; route none its own set", async () => {
