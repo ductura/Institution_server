@@ -215,7 +215,7 @@ export type Operations = {
     params: undefined;
     query: { "from": string; "to": string; "after"?: string };
     body: undefined;
-    success: { status: 200; body: { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": number | null }; headers: {  } };
+    success: { status: 200; body: { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": null } | { "events": ({ "seq": number; "at": string; "kind": string; "requestId": string | null; "accountKind": string | null; "fields": { [key: string]: string | number | boolean | null } })[]; "next": number }; headers: {  } };
     errorCode: "unauthenticated" | "forbidden" | "invalid_input" | "unavailable";
   };
   "platform.health.get": {

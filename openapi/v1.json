@@ -17102,102 +17102,189 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "events",
-                    "next"
-                  ],
-                  "properties": {
-                    "events": {
-                      "maxItems": 1000,
-                      "type": "array",
-                      "items": {
-                        "additionalProperties": false,
-                        "type": "object",
-                        "required": [
-                          "seq",
-                          "at",
-                          "kind",
-                          "requestId",
-                          "accountKind",
-                          "fields"
-                        ],
-                        "properties": {
-                          "seq": {
-                            "minimum": 1,
-                            "maximum": 9007199254740991,
-                            "type": "integer"
-                          },
-                          "at": {
-                            "pattern": "^(?:(?!0000)[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8]))|(?!0000)(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z(?![\\s\\S])",
-                            "type": "string"
-                          },
-                          "kind": {
-                            "maxLength": 64,
-                            "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*(?![\\s\\S])",
-                            "type": "string"
-                          },
-                          "requestId": {
-                            "anyOf": [
-                              {
-                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "accountKind": {
-                            "anyOf": [
-                              {
-                                "pattern": "^[a-z_]{1,32}(?![\\s\\S])",
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "fields": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "events",
+                        "next"
+                      ],
+                      "properties": {
+                        "events": {
+                          "maxItems": 999,
+                          "type": "array",
+                          "items": {
                             "additionalProperties": false,
                             "type": "object",
-                            "patternProperties": {
-                              "^[A-Za-z][A-Za-z0-9]*(?![\\s\\S])": {
+                            "required": [
+                              "seq",
+                              "at",
+                              "kind",
+                              "requestId",
+                              "accountKind",
+                              "fields"
+                            ],
+                            "properties": {
+                              "seq": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "at": {
+                                "pattern": "^(?:(?!0000)[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8]))|(?!0000)(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "maxLength": 64,
+                                "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "requestId": {
                                 "anyOf": [
                                   {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
                                     "type": "string"
-                                  },
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "boolean"
                                   },
                                   {
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "accountKind": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^[a-z_]{1,32}(?![\\s\\S])",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fields": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "patternProperties": {
+                                  "^[A-Za-z][A-Za-z0-9]*(?![\\s\\S])": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
                               }
                             }
                           }
+                        },
+                        "next": {
+                          "type": "null"
                         }
                       }
                     },
-                    "next": {
-                      "anyOf": [
-                        {
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "events",
+                        "next"
+                      ],
+                      "properties": {
+                        "events": {
+                          "minItems": 1000,
+                          "maxItems": 1000,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "seq",
+                              "at",
+                              "kind",
+                              "requestId",
+                              "accountKind",
+                              "fields"
+                            ],
+                            "properties": {
+                              "seq": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "at": {
+                                "pattern": "^(?:(?!0000)[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8]))|(?!0000)(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "maxLength": 64,
+                                "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "requestId": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "accountKind": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^[a-z_]{1,32}(?![\\s\\S])",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fields": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "patternProperties": {
+                                  "^[A-Za-z][A-Za-z0-9]*(?![\\s\\S])": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "next": {
                           "minimum": 1,
                           "maximum": 9007199254740991,
                           "type": "integer"
-                        },
-                        {
-                          "type": "null"
                         }
-                      ]
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }

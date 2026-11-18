@@ -229,13 +229,22 @@ describe("ops.events.get refuses the 200 body", () => {
 
   it("1001 events", () => expect(bodyOk({ events: events(1001), next: 1001 })).toBe(false));
 
-  it.each([0, -1, 1.5, MAX_SAFE + 1, 2 ** 53, "1000", `${MAX_SAFE}`])("next %j", (next) =>
-    expect(bodyOk({ ...PAGE, next })).toBe(false),
+  // On a full page, where next is a number: never a bad seq.
+  it.each([0, -1, 1.5, MAX_SAFE + 1, 2 ** 53, "1000", `${MAX_SAFE}`, null])(
+    "next %j on a full page",
+    (next) => expect(bodyOk({ events: events(1000), next })).toBe(false),
+  );
+
+  // QA on #328: next goes with the length of the page.
+  it.each([0, 1, 999])("a page of %d events with a numeric next", (count) =>
+    expect(bodyOk({ events: events(count), next: 1000 })).toBe(false),
   );
 
   it("without next, or a key beside events and next", () => {
     expect(bodyOk({ events: [EVENT] })).toBe(false);
+    expect(bodyOk({ events: events(1000) })).toBe(false);
     expect(bodyOk({ ...PAGE, total: 1 })).toBe(false);
+    expect(bodyOk({ events: events(1000), next: 1000, total: 1 })).toBe(false);
   });
 });
 
@@ -322,6 +331,7 @@ describe("ops.events.get accepts", () => {
 
   it("an empty page, a full page with next, and null where null is allowed", () => {
     expect(bodyOk({ events: [], next: null })).toBe(true);
+    expect(bodyOk({ events: events(999), next: null })).toBe(true);
     expect(bodyOk({ events: events(1000), next: 1000 })).toBe(true);
     expect(withEvent("requestId", null)).toBe(true);
     // operator_log keeps any lowercase UUID, not only version 4.
@@ -338,7 +348,8 @@ describe("ops.events.get accepts", () => {
     expect(last.at(-1)?.seq).toBe(MAX_SAFE);
     expect(bodyOk({ events: last, next: MAX_SAFE })).toBe(true);
     expect(bodyOk({ events: last, next: MAX_SAFE - 1 })).toBe(true);
-    expect(bodyOk({ events: [], next: MAX_SAFE })).toBe(true);
+    // A page shorter than 1000 has no next (QA on #328).
+    expect(bodyOk({ events: [], next: MAX_SAFE })).toBe(false);
   });
 
   it("the field names and values operator_log gives", () => {
@@ -405,7 +416,9 @@ describe("ops.events.get patterns", () => {
     expect(topLevel("^a.b")).toEqual({ alternation: false, dot: true });
   });
 
-  it("are all found", () => expect(own.length).toBe(8));
+  // from, to, after; at, kind, requestId, accountKind and the field name of
+  // the event, once in each of the two page shapes.
+  it("are all found", () => expect(own.length).toBe(3 + 2 * 5));
 
   it("of the error bodies are only the exempt request id, DAN-1098", () => {
     expect(route?.errors.map((e) => e.status)).toEqual([401, 403, 422, 503]);
@@ -434,7 +447,9 @@ describe("ops.events.get objects are closed", () => {
   };
   const all = [...objects(schemaOf("query"), "query"), ...objects(schemaOf("body"), "body")];
 
-  it("finds the query, the body, the event and fields", () => expect(all).toHaveLength(4));
+  // The query, then a short and a full page, each with the event and fields.
+  it("finds the query, both pages, their events and fields", () =>
+    expect(all).toHaveLength(1 + 2 * 3));
 
   it.each(all.map(([path, node]) => [path, node] as const))(
     "%s has additionalProperties false",

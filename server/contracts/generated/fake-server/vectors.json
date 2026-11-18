@@ -12185,7 +12185,7 @@
         "after": "40"
       },
       "headers": {
-        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
       }
     },
     "response": {
@@ -12275,7 +12275,7 @@
         "to": "2026-11-18T12:00:00Z"
       },
       "headers": {
-        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
       }
     },
     "response": {
@@ -12317,7 +12317,7 @@
         "to": "2026-11-18T12:00:00Z"
       },
       "headers": {
-        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
       }
     },
     "response": {
@@ -12341,7 +12341,7 @@
         "to": "2026-11-18T00:00:00.001Z"
       },
       "headers": {
-        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
       }
     },
     "response": {
@@ -12365,7 +12365,7 @@
         "to": "2026-11-18T12:00:00Z"
       },
       "headers": {
-        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000000"
       }
     },
     "response": {

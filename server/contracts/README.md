@@ -70,7 +70,7 @@ Poslužitelj pokrenut tek nakon pokretanja (na zahtjev ili timer) brojač ne vid
 
 ## Operatorsko čitanje događaja (DAN-843-1)
 
-`routes/ops.ts` (S-1K.5-b): `GET /api/v1/ops/events?from=…&to=…[&after=…]` nad funkcijom `public.operator_log` baze zapisa (S-1K.5-a, DAN-835-1; funkcija, ne pogled, jer čita prozor). Funkcija maskira svaki zapis: adresa ostaje samo kao mreža. Dio računala uvijek se reže, a maska duža od /24 (IPv4) ili /48 (IPv6) skraćuje se na nju. Kraća maska ostaje (npr. `10.0.0.0/8`, pgTAP `db/logs/tests/040-operator-log.sql`, slučaj 3). Token, kolačić ni sesija ne izlaze. Prozor je poluotvoren `[from, to)`, najviše 24 sata (točno 24 dopušteno). Stranica ima najviše 1000 događaja, poredanih po `seq`; `next` je `seq` zadnjeg događaja pune stranice, inače `null`. Shema provjerava oblik:
+`routes/ops.ts` (S-1K.5-b): `GET /api/v1/ops/events?from=…&to=…[&after=…]` nad funkcijom `public.operator_log` baze zapisa (S-1K.5-a, DAN-835-1; funkcija, ne pogled, jer čita prozor). Funkcija maskira svaki zapis: adresa ostaje samo kao mreža. Dio računala uvijek se reže, a maska duža od /24 (IPv4) ili /48 (IPv6) skraćuje se na nju. Kraća maska ostaje (npr. `10.0.0.0/8`, pgTAP `db/logs/tests/040-operator-log.sql`, slučaj 3). Token, kolačić ni sesija ne izlaze. Prozor je poluotvoren `[from, to)`, najviše 24 sata (točno 24 dopušteno). Stranica ima najviše 1000 događaja, poredanih po `seq`; `next` je `seq` zadnjeg događaja pune stranice, inače `null`. Shema to veže uz duljinu: stranica od najviše 999 događaja ima `next: null`, a stranica od točno 1000 broj. Shema provjerava oblik:
 
 - `from` i `to` su stvarni UTC trenuci kalendara (kao `student.access-log.get`);
 - `after` je broj od 0 do 2^53−1 bez vodeće nule (uzorak znamenku po znamenku, provjeren proročištem);
@@ -81,9 +81,9 @@ Svaki uzorak je samo ASCII (`[0-9]`, nikad `\d`, ni u klasi) i završava s `(?![
 
 Vektori su zahtjevi i odgovori koje stvarni server može dati (DAN-843-1b, Ductus#2028 c.6981773723). `tests/contracts/ops-events-step-8.test.ts` provjerava sljedeće:
 
-- svaki vektor prolazi stvarni korak 8, a oba porta dobivaju token koji `server/session` čita iz kolačića;
+- svaki vektor prolazi stvarni korak 8, a oba porta dobivaju token koji `server/session` čita iz kolačića, i to token kakav daje `newSessionToken` (32 bajta u kanonskom base64url);
 - 401, 403 i 503 tijela su ona koja korak 8 piše;
-- svaki redak vektora `page` je zapis koji katalog zapisa propušta, maskiran kao u `operator_log`, a `seq` stranice ide bez rupa, jer lanac zapisa ne preskače `seq`;
+- svaki redak vektora `page` je zapis koji katalog zapisa propušta, maskiran kao u `operator_log`, a `seq` stranice ide bez rupa, jer lanac zapisa ne preskače `seq` (rupu može dati samo pomak sata baze unatrag, koji vektor nema);
 - redak `traffic.request` je ono što piše `createTrafficRecorder` (`anonymous`, `not_checked`, `requestId` kao UUID v4).
 
 TS preslika maske provjerava se na svih 14 slučajeva pgTAP 040. Poznata granica: uzorak `requestId` u tijelima grešaka je zajednički `REQUEST_ID_PATTERN` i završava s `$` (DAN-1098). Test uzoraka ga izuzima samo po točnom tekstu.

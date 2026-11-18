@@ -185,6 +185,10 @@ describe("every request of ops.events.get through step 8", () => {
       const { request } = vector(name);
       const token = sessionTokenFromCookie(request.headers?.cookie);
       expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/u);
+      // QA on #328: a token newSessionToken can give, 32 bytes in canonical
+      // base64url; the last character carries 4 bits, so it cannot be "1".
+      expect(Buffer.from(token!, "base64url")).toHaveLength(32);
+      expect(Buffer.from(token!, "base64url").toString("base64url")).toBe(token);
       const got = await step8(request, "unconfirmed");
       expect(got.seen).toEqual([`listed:${token}`, `factor:${token}`]);
     },
@@ -443,7 +447,9 @@ describe("the page vector is what the log flow writes and operator_log returns",
     let at = from;
     // The chain gives seq without gaps (log_chain: head.seq + 1 under a
     // lock, log_entry append only), and operator_log returns every row of
-    // the window after `after`: the rows of one page follow each other.
+    // the window after `after`: with a clock that never steps back the rows
+    // of one page follow each other. A step back of the database clock can
+    // leave a row out of a window (QA on #328); this vector has no step.
     for (const [i, row] of rows.entries()) {
       expect(row.seq).toBeGreaterThan(seq);
       if (i > 0) expect(row.seq).toBe(seq + 1);

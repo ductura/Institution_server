@@ -63,6 +63,18 @@ const Fields = Type.Record(
   { additionalProperties: false },
 );
 
+/** The most events a page holds: operator_log's LIMIT. */
+const PAGE = 1000;
+/** One event as operator_log returns it. */
+const Event = closed({
+  seq: Seq,
+  at: Instant,
+  kind: Kind,
+  requestId: Type.Union([RequestId, Type.Null()]),
+  accountKind: Type.Union([AccountKind, Type.Null()]),
+  fields: Fields,
+});
+
 export const opsEventsGet = defineRoute({
   id: "ops.events.get",
   method: "GET",
@@ -85,20 +97,13 @@ export const opsEventsGet = defineRoute({
     {
       status: 200,
       description: "a page of events, possibly none",
-      body: closed({
-        events: Type.Array(
-          closed({
-            seq: Seq,
-            at: Instant,
-            kind: Kind,
-            requestId: Type.Union([RequestId, Type.Null()]),
-            accountKind: Type.Union([AccountKind, Type.Null()]),
-            fields: Fields,
-          }),
-          { maxItems: 1000 },
-        ),
-        next: Type.Union([Seq, Type.Null()]),
-      }),
+      // next goes with the length of the page (QA on #328): null on a page
+      // shorter than 1000, a seq on a full one. That it is the seq of the
+      // last event the schema cannot say; the summary does, and the handler.
+      body: Type.Union([
+        closed({ events: Type.Array(Event, { maxItems: PAGE - 1 }), next: Type.Null() }),
+        closed({ events: Type.Array(Event, { minItems: PAGE, maxItems: PAGE }), next: Seq }),
+      ]),
     },
   ],
   errors: [
