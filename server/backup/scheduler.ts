@@ -98,6 +98,8 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   let stopped = false;
   let check: Promise<void> | undefined;
   let job: Promise<void> | undefined;
+  /** performance.now() when the last check (read and job) ended. */
+  let checkEnded = Number.NEGATIVE_INFINITY;
   /** Grid points since the last call of run(), or since backup was last seen off. */
   let hours = 0;
 
@@ -165,10 +167,21 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     const passed = due - point;
     point += passed;
     hours += passed;
-    if (check !== undefined) {
-      for (let i = 0; i < passed; i += 1) skip("busy");
-    } else {
-      check = once(point).finally(() => (check = undefined));
+    // A point due while a check or job was going is busy, even when its
+    // callback only comes after a synchronous job freed the loop (QA on #289).
+    let busy = passed;
+    if (check === undefined) {
+      busy = 0;
+      for (let p = point - passed + 1; p <= point; p += 1) {
+        if (origin + p * BACKUP_CHECK_MS < checkEnded) busy += 1;
+      }
+    }
+    for (let i = 0; i < busy; i += 1) skip("busy");
+    if (busy < passed && check === undefined) {
+      check = once(point).finally(() => {
+        check = undefined;
+        checkEnded = performance.now();
+      });
     }
     schedule();
   }

@@ -19,7 +19,7 @@ Točka koja samo čeka svoj sat ne javlja ništa. Svaka druga točka na kojoj se
 - `settings_unavailable`: čitač baci, ne vrati pravi `Map` ili ne završi prije sljedeće točke;
 - `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; točke se broje ispočetka;
 - `interval_invalid`: interval je izvan kataloga;
-- `busy`: prethodna provjera ili posao još traje (jednom za svaku točku);
+- `busy`: točka je dospjela dok je prethodna provjera ili posao još trajao (jednom za svaku točku), i kad njezin povratni poziv stigne tek nakon sinkronog posla;
 - `run_failed`: posao je bacio.
 
 Kod `settings_unavailable` i `interval_invalid` točke se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.

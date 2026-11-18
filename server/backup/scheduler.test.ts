@@ -278,6 +278,35 @@ describe("backup scheduler: enabled runs once per interval", () => {
     }
   });
 
+  // QA FAIL 2 on #289 (f40f4f8): a point due while a synchronous job blocked
+  // the loop is busy, even when its callback only comes after the job.
+  it("a point due during a synchronous job is busy, whenever its callback comes", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      // The timer for point 2 runs only once the blocked loop is free again.
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 0.5 * H + 1 : ms);
+    }) as never);
+    try {
+      const { readSettings, run, onSkip } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record(() => {
+        if (calls.length === 1) vi.advanceTimersByTime(1.5 * H);
+      });
+      await vi.advanceTimersByTimeAsync(3 * H);
+      // The job moved the clock to 2.5 h; three more hours bring it to 4.5 h.
+      expect(calls).toEqual([1, 3, 4]);
+      expect(onSkip.mock.calls).toEqual([["busy"]]);
+      expect(readSettings).toHaveBeenCalledTimes(3);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("points missed by a blocked event loop count at once, without extra reads", async () => {
     const fakeSetTimeout = globalThis.setTimeout;
     const spy = vi
