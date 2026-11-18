@@ -1,6 +1,6 @@
 Kanonski plan migracije: [PLAN-MIGRACIJE.md](https://github.com/ductura/.github/blob/main/docs/plan/PLAN-MIGRACIJE.md). Ovaj dokument je dio tog plana.
 
-# Ductura/server: plan repozitorija
+# ductura/Institution_server: plan repozitorija
 
 Stanje: 14. 11. 2026. · **Samo plan.** Ništa se ovim dokumentom ne gradi ni otvara.
 Uključuje dvije vlasnikove odluke od 14. 11.: (A) jedan web repo, prijenos s testovima, ugovor API-ja prvi; (B) #87 c.6870353871: ugovor kao izvor koda, repo `ductura/.github`, modularni monolit, zajednički paket lažnih zamjena, katalog komponenti, gate prema riziku zadnji.
