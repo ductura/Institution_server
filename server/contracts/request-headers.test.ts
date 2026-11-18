@@ -107,39 +107,60 @@ const canonical = (value: string) => {
 };
 
 /**
- * Where the pattern repeats without bound a part that itself repeats without
- * bound, as in `(a+)+`: the shape that backtracks exponentially on a long
- * input. Review FAIL c.6969681336 replaced a 50 ms clock with this check.
+ * Where the pattern can backtrack exponentially on a long input: a part with
+ * an unbounded quantifier repeated more than once, as in `(a+)+` or
+ * `(a+){0,127}`; a part with alternation or a quantifier repeated without
+ * bound (or more than 16 times), as in `(a|a)*`; or a top-level `|`, which
+ * leaves a branch without `^`. Overlapping adjacent atoms (`a*a*`) are
+ * polynomial and not caught. Review FAIL c.6969681336 replaced a 50 ms clock
+ * with this check.
  */
-const unboundedInRepeat = (pattern: string): number[] => {
+const unsafeShape = (pattern: string): number[] => {
+  type Part = { at: number; unbounded: boolean; variable: boolean };
   const found: number[] = [];
-  const open: { at: number; unbounded: boolean }[] = [];
-  let last: { at: number; unbounded: boolean } | undefined;
+  const open: Part[] = [];
+  let last: Part | undefined;
+  const mark = (unbounded: boolean, variable: boolean) => {
+    const top = open[open.length - 1];
+    if (top) {
+      top.unbounded ||= unbounded;
+      top.variable ||= variable;
+    }
+  };
   for (let i = 0; i < pattern.length; i++) {
     const c = pattern[i];
     const range = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(i));
-    if (c === "*" || c === "+" || (range && range[2] !== undefined && range[3] === "")) {
-      if (last?.unbounded) found.push(last.at);
-      if (open.length > 0) open[open.length - 1]!.unbounded = true;
+    if (c === "*" || c === "+" || c === "?" || range) {
+      if (last === undefined) continue; // (?: (?! (?= or a lazy quantifier
+      const max =
+        c === "?"
+          ? 1
+          : !range
+            ? Infinity
+            : range[2] === undefined
+              ? Number(range[1])
+              : Number(range[3] || Infinity);
+      if (max > 1 && last.unbounded) found.push(last.at);
+      else if (max > 16 && last.variable) found.push(last.at);
+      mark(last.unbounded || max === Infinity, !(range && range[2] === undefined));
       if (range) i += range[0].length - 1;
       last = undefined;
       continue;
     }
-    if (c === "?" || range) {
-      if (range) i += range[0].length - 1;
-      else if (last === undefined) continue; // (?: (?! (?= or a lazy quantifier
-      if (last?.unbounded && open.length > 0) open[open.length - 1]!.unbounded = true;
+    if (c === "|") {
+      if (open.length === 0) found.push(i);
+      mark(false, true);
       last = undefined;
       continue;
     }
     if (c === "(") {
-      open.push({ at: i, unbounded: false });
+      open.push({ at: i, unbounded: false, variable: false });
       last = undefined;
       continue;
     }
     if (c === ")") {
-      last = open.pop() ?? { at: i, unbounded: false };
-      if (last.unbounded && open.length > 0) open[open.length - 1]!.unbounded = true;
+      last = open.pop() ?? { at: i, unbounded: false, variable: false };
+      mark(last.unbounded, last.variable);
       continue;
     }
     if (c === "\\") i++;
@@ -148,7 +169,7 @@ const unboundedInRepeat = (pattern: string): number[] => {
         if (pattern[i] === "\\") i++;
       }
     }
-    last = { at: i, unbounded: false };
+    last = { at: i, unbounded: false, variable: false };
   }
   return found;
 };
@@ -209,7 +230,7 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
 // c.6968995576): hosts that make the origin exactly LIMIT long, without a port
 // or with :65535, of one label, of many and of every code point kept in a domain,
 // and an uppercase one URL rewrites. Their cost is bounded by the pattern's
-// shape (unboundedInRepeat), not by a clock.
+// shape (unsafeShape), not by a clock.
 const LIMIT = 16 * 1024;
 const LONG_UNITS = ["A", "a", "a.", "-!\"$&'()*+,0123456789;=_`abcdefghijklmnopqrstuvwxyz{}~."];
 const longHosts = (scheme: string) =>
@@ -337,26 +358,36 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
     if (!names.some((n) => n === "origin")) return;
     const origin = schema?.properties["origin"] as TSchema | undefined;
     const pattern = String(origin?.["pattern"]);
-    // Anchored at both ends, so one start; no unbounded repeat of one.
+    // Anchored at both ends, so one start, and no shape that backtracks
+    // exponentially.
     expect(pattern.startsWith("^")).toBe(true);
     expect(pattern.endsWith("(?![\\s\\S])")).toBe(true);
-    expect(unboundedInRepeat(pattern)).toEqual([]);
+    expect(unsafeShape(pattern)).toEqual([]);
     for (const bad of [
       "^(a+)+$",
       "^(?:[a-z]*b)*$",
       "^(a|b{2,}){1,}$",
       "^((a)+)*",
       "^(?:x(?:a+)?)+",
+      "^(?:[a-z0-9-]+\\.?){0,127}$",
+      "^(?:a+){2}$",
+      "^(?:a|a)*$",
+      "^(?:\\.|[^:])+$",
+      "^(?:a?a?){1,}$",
+      "^a|b+(?![\\s\\S])",
     ])
-      expect(unboundedInRepeat(bad), bad).not.toEqual([]);
+      expect(unsafeShape(bad), bad).not.toEqual([]);
     for (const good of [
       "^(?:a{3})+$",
       "^(?:[+*]\\+)?a+$",
       "^(\\(a+\\))?$",
       "^(?:a)+b*$",
       "^(?:a+?)?$",
+      "^(?:(?:25[0-5]|[1-9]?[0-9])\\.){3}[0-9]{0,3}$",
+      "^(?:[\\]|]+)?(?:x|y)$",
+      "^(?:(?!a)b)+$",
     ])
-      expect(unboundedInRepeat(good), good).toEqual([]);
+      expect(unsafeShape(good), good).toEqual([]);
   });
 
   it("is closed, every name required and a lowercase token, every value a string", () => {
