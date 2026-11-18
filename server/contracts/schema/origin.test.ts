@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 
 import { Origin, ORIGIN_MAX_LENGTH } from "./origin.ts";
 
-// DAN-930-1d-a1 (ugovor Ductus#2028): every named value Origin accepts is a
+// DAN-930-1d-a (ugovor Ductus#2028): every named value Origin accepts is a
 // canonical http(s) origin, every named value outside the subset is refused,
-// and the bound is exactly 16 KiB. The step counter and the generated values
-// come in 1d-a2.
+// the bound is exactly 16 KiB, and a step counter, not a clock, shows that the
+// check is linear in the length of the value. Generated values come in 1d-a2-ii.
 
 /** The bound the contract sets, written out so the schema's constant cannot move it. */
 const LIMIT = 16384;
@@ -19,7 +19,143 @@ const canonical = (value: string) => {
     return false;
   }
 };
-const accepts = (value: unknown) => Value.Check(Origin, value);
+// A backtracking matcher for the syntax the pattern uses, in ECMAScript's
+// search order. A class or an escape matches one code unit and is decided by
+// RegExp itself. A step is every call and every code unit a class examines; a
+// quantified class is a loop that gives back one unit at a time, as greedy
+// backtracking does, so 16 KiB does not overflow the stack.
+type Node =
+  | { t: "start" }
+  | { t: "unit"; re: RegExp }
+  | { t: "seq"; items: Node[] }
+  | { t: "alt"; options: Node[] }
+  | { t: "not"; node: Node }
+  | { t: "rep"; node: Node; min: number; max: number };
+
+function parse(src: string): Node {
+  let i = 0;
+  const unit = (source: string): Node => ({ t: "unit", re: new RegExp(`^${source}$`) });
+  // The escapes the contract refuses, outside a class and inside one alike.
+  const escape = (at: number) => {
+    if (at + 1 >= src.length) throw new Error(`\\ at the end, at ${at}`);
+    if (/[0-9bBkuxcpP]/.test(src[at + 1] ?? "")) throw new Error(`unsupported escape at ${at}`);
+    return 2;
+  };
+  const atom = (): Node => {
+    const c = src[i++] ?? "";
+    if (c === "^") return { t: "start" };
+    if (c === "\\") return (escape(i - 1), unit(c + src[i++]));
+    if (c === "[") {
+      const from = i - 1;
+      if (src[i] === "^") i++;
+      if (src[i] === "]") throw new Error(`class opening with ] at ${i}`);
+      do i += src[i] === "\\" ? escape(i) : 1;
+      while (i < src.length && src[i] !== "]");
+      if (i >= src.length) throw new Error(`unclosed class from ${from}`);
+      return unit(src.slice(from, ++i));
+    }
+    const group = c === "(" ? src.slice(i, i + 2) : "";
+    if (group === "?:" || group === "?!") {
+      i += 2;
+      const node = alt();
+      if (src[i++] !== ")") throw new Error(`unclosed group before ${i}`);
+      return group === "?:" ? node : { t: "not", node };
+    }
+    if ("()|*+?{}$.]".includes(c)) throw new Error(`unsupported ${c} at ${i - 1}`);
+    return unit(c.replace(/[/\\^$*+?.()|[\]{}-]/g, "\\$&"));
+  };
+  const quantified = (): Node => {
+    const node = atom();
+    const q = /^(?:([*+?])|\{(\d+)(?:(,)(\d*))?\})/.exec(src.slice(i));
+    if (!q) return node;
+    if (node.t === "start") throw new Error(`quantified ^ at ${i}`);
+    i += q[0].length;
+    if (src[i] === "?") throw new Error(`lazy quantifier at ${i}`);
+    const [, sign, low, comma, high] = q;
+    const min = sign ? Number(sign === "+") : Number(low);
+    const max = sign
+      ? sign === "?"
+        ? 1
+        : Infinity
+      : !comma
+        ? min
+        : high
+          ? Number(high)
+          : Infinity;
+    if (min > max) throw new Error(`quantifier out of order before ${i}`);
+    return { t: "rep", node, min, max };
+  };
+  const seq = (): Node => {
+    const items: Node[] = [];
+    while (i < src.length && src[i] !== "|" && src[i] !== ")") items.push(quantified());
+    return { t: "seq", items };
+  };
+  const alt = (): Node => {
+    const options = [seq()];
+    while (src[i] === "|") (i++, options.push(seq()));
+    return { t: "alt", options };
+  };
+  const root = alt();
+  if (i !== src.length) throw new Error(`unparsed from ${i}`);
+  return root;
+}
+
+/** Whether `root` matches `s`, by a search that throws past `limit` steps. */
+function countSteps(root: Node, s: string, limit: number): { ok: boolean; steps: number } {
+  let steps = 0;
+  const tick = () => {
+    if (++steps > limit) throw new Error(`over ${limit} steps`);
+  };
+  const m = (n: Node, i: number, k: (j: number) => boolean): boolean => {
+    tick();
+    switch (n.t) {
+      case "start":
+        return i === 0 && k(i);
+      case "unit":
+        return i < s.length && (tick(), n.re.test(s[i] ?? "")) && k(i + 1);
+      case "seq": {
+        const go = (x: number, j: number): boolean => {
+          const item = n.items[x];
+          return item ? m(item, j, (e) => go(x + 1, e)) : k(j);
+        };
+        return go(0, i);
+      }
+      case "alt":
+        return n.options.some((o) => m(o, i, k));
+      case "not":
+        return !m(n.node, i, () => true) && k(i);
+      case "rep": {
+        const { node, min, max } = n;
+        if (node.t === "unit") {
+          let j = i;
+          while (j - i < max && j < s.length && (tick(), node.re.test(s[j] ?? ""))) j++;
+          for (; j >= i + min; j--) if (k(j)) return true;
+          return false;
+        }
+        const go = (count: number, j: number): boolean =>
+          (count < max && m(node, j, (e) => (e !== j || count < min) && go(count + 1, e))) ||
+          (count >= min && k(j));
+        return go(0, i);
+      }
+    }
+  };
+  // A pattern that begins with ^ is tried from 0 only, as V8 does.
+  const first = root.t === "alt" && root.options.length === 1 ? root.options[0] : undefined;
+  const anchored = first?.t === "seq" && first.items[0]?.t === "start";
+  for (let at = 0; at <= (anchored ? 0 : s.length); at++)
+    if (m(root, at, () => true)) return { ok: true, steps };
+  return { ok: false, steps };
+}
+
+const PATTERN = Origin.pattern ?? "";
+const TREE = parse(PATTERN);
+const budget = (value: string) => 64 * (value.length + 16);
+/** Checks `value` by the counter first, within budget, then by RegExp and Value.Check. */
+const check = (value: string) => {
+  const { ok, steps } = countSteps(TREE, value, budget(value));
+  expect([value, ok]).toEqual([value, new RegExp(PATTERN).test(value)]);
+  return { accepted: Value.Check(Origin, value), steps };
+};
 
 const SITE = "https://ductura.example.invalid";
 // From #284 (05d12f26), plus 15 IPv6 forms, 12 of which the old pattern took: none is canonical.
@@ -67,23 +203,24 @@ const NOISE = [
 describe("Origin", () => {
   it("rejects every non-canonical origin named here and in #284, and what is not text", () => {
     for (const value of NOT_CANONICAL)
-      expect([value, canonical(value), accepts(value)]).toEqual([value, false, false]);
-    for (const value of [null, true, 1, {}, [SITE], undefined]) expect(accepts(value)).toBe(false);
+      expect([value, canonical(value), check(value).accepted]).toEqual([value, false, false]);
+    for (const value of [null, true, 1, {}, [SITE], undefined])
+      expect(Value.Check(Origin, value)).toBe(false);
   });
 
   it("rejects canonical origins outside the subset, and the named xn-- labels", () => {
     for (const value of OUTSIDE)
-      expect([value, canonical(value), accepts(value)]).toEqual([value, true, false]);
-    for (const value of XN) expect([value, accepts(value)]).toEqual([value, false]);
+      expect([value, canonical(value), check(value).accepted]).toEqual([value, true, false]);
+    for (const value of XN) expect([value, check(value).accepted]).toEqual([value, false]);
   });
 
   it("rejects noise at every position of a good origin", () => {
     for (const good of ["https://a.invalid:8443", "http://[::1]", "http://192.0.2.1:8080"]) {
-      expect([good, canonical(good), accepts(good)]).toEqual([good, true, true]);
+      expect([good, canonical(good), check(good).accepted]).toEqual([good, true, true]);
       for (const noise of NOISE)
         for (let at = 0; at <= good.length; at++) {
           const value = good.slice(0, at) + noise + good.slice(at);
-          expect([value, canonical(value), accepts(value)]).toEqual([value, false, false]);
+          expect([value, canonical(value), check(value).accepted]).toEqual([value, false, false]);
         }
     }
   });
@@ -91,7 +228,7 @@ describe("Origin", () => {
   it("accepts the canonical origins named in #284 but one, and more of the subset", () => {
     expect(GOOD).toHaveLength(34);
     for (const value of GOOD)
-      expect([value, canonical(value), accepts(value)]).toEqual([value, true, true]);
+      expect([value, canonical(value), check(value).accepted]).toEqual([value, true, true]);
   });
 
   it("accepts canonical origins of exactly 16 KiB and refuses one unit more", () => {
@@ -106,7 +243,95 @@ describe("Origin", () => {
       for (const size of [LIMIT, LIMIT + 1]) {
         const value = fill(head, tail, unit, size);
         const fits = size === LIMIT;
-        expect([value.length, canonical(value), accepts(value)]).toEqual([size, true, fits]);
+        expect([value.length, canonical(value), check(value).accepted]).toEqual([size, true, fits]);
       }
+  });
+  it("takes steps linear in the length on inputs that fail late, by a counter", () => {
+    const families: ((n: number) => string)[] = [
+      (n) => `https://${"a".repeat(n)}/`,
+      (n) => `https://${"a".repeat(n)}\r\n`,
+      (n) => `http://${"1.".repeat(n / 2)}1\u00a0`,
+      (n) => `https://${"a.".repeat(n / 2)}xn--`,
+      (n) => `https://${"-.".repeat(n / 2)}0x`,
+      (n) => `https://[${"0:".repeat(n / 2)}`,
+      (n) => `https://[${"1:".repeat(n / 2)}1]`,
+      (n) => `http://a.0x${"1".repeat(n)}:`,
+      (n) => `https://${"a".repeat(n)}:443`,
+      (n) => `https://${"{".repeat(n)}:443`,
+    ];
+    for (const make of families)
+      for (const n of [256, 512, 1024, 2048]) {
+        const [single, double] = [check(make(n)), check(make(2 * n))];
+        const linear = double.steps <= 2 * single.steps + 64;
+        expect([make(2), single.accepted, double.accepted, linear]).toEqual([
+          make(2),
+          false,
+          false,
+          true,
+        ]);
+      }
+  });
+
+  it("takes linear steps on a run of any one unit after any part of an origin", () => {
+    const units = [...Array(95).keys()].map((c) => String.fromCharCode(c + 32)).concat(NOISE);
+    for (const head of [
+      "https://",
+      "http://",
+      "https://a.",
+      "https://[",
+      "https://[1:",
+      "http://a:",
+      "http://1.",
+      "http://a:1",
+    ])
+      for (const unit of units)
+        for (const tail of ["/", "\u00a0"]) {
+          const make = (n: number) => head + unit.repeat(n) + tail;
+          expect(make(256)).toHaveLength(head.length + 256 * unit.length + tail.length);
+          const [single, double] = [check(make(128)), check(make(256))];
+          const linear = double.steps <= 2 * single.steps + 64;
+          expect([make(2), single.accepted, double.accepted, linear]).toEqual([
+            make(2),
+            false,
+            false,
+            true,
+          ]);
+        }
+  });
+
+  it("refuses syntax the interpreter does not model, inside a class too", () => {
+    const u = "\\u";
+    for (const src of [
+      ...["[\\x61]", `[${u}0061]`, "[\\1]", "[\\0]", "[\\b]", "[\\B]", "[\\cA]", "[\\k]"],
+      ...["[\\p{L}]", "[\\P{L}]", "\\x61", `${u}0061`, "\\1", "\\b", "[a", "[^a", "[a\\", "a\\"],
+      ...["[]", "[^]", "(a)", "(?=a)", "(?<=a)", "(?:a", "a)", "a*?", "a{2,1}", "^+", "$", "."],
+      ...["[]a]", "[^]a]"],
+    ])
+      expect(() => parse(src), src).toThrow();
+  });
+
+  it("agrees with RegExp on iterations that match nothing", () => {
+    for (const [src, value] of [
+      ["^(?:a?){2}b", "b"],
+      ["^(?:a?)+b", "b"],
+      ["(?:^)+x", "x"],
+      ["^(?:(?!c)){1}x", "x"],
+      ["^(?:(?!c))*x", "x"],
+    ] as const)
+      expect([src, countSteps(parse(src), value, 1000).ok]).toEqual([
+        src,
+        new RegExp(src).test(value),
+      ]);
+  });
+
+  it("has a counter that sees a domain which backtracks", () => {
+    const domain = "[-!\"$&'()*+,.0-9;=_`a-z{}~]";
+    const value = `https://${"a".repeat(256)}/`;
+    expect(PATTERN.split(`${domain}+`)).toHaveLength(3);
+    expect(countSteps(TREE, value, budget(value)).ok).toBe(false);
+    for (const slow of [`(?:${domain}+)+`, `${domain}*${domain}*`, `${domain}+${domain}+`])
+      expect(() =>
+        countSteps(parse(PATTERN.split(`${domain}+`).join(slow)), value, budget(value)),
+      ).toThrow(/^over/);
   });
 });
