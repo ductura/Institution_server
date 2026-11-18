@@ -118,6 +118,11 @@ describe("enrollWithCode refusals and faults of the database", () => {
     }
   });
 
+  it("an inherited code is read, as Ductus reads it with `in`", async () => {
+    const inherited = Object.create({ code: "ZD403" }) as object;
+    expect(await enroll({ throws: inherited }).result).toEqual({ status: "forbidden" });
+  });
+
   it("ZD401 thrown outside fn is unauthenticated too", async () => {
     expect(await enroll({ actorThrows: dbError("ZD401") }).result).toEqual({
       status: "unauthenticated",
@@ -202,6 +207,7 @@ describe("enrollWithCode outcomes", () => {
       });
       expect(await result).toEqual({ status: "enrolled", courseId: course });
       expect(calls.queries).toEqual([{ text: SQL, values: [CODE], token: TOKEN }]);
+      expect([calls.fnRejected, calls.committed]).toEqual([0, 1]);
     },
   );
 });

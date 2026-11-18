@@ -2,7 +2,7 @@
 // part of Ductus src/server/institution/enrollment-route.ts at 078c780, with
 // these changes: an outcome (status) instead of an HTTP response, which the
 // route (853-1c) maps to its problem code, and the port never throws. As in
-// Ductus, the row is read only after withActor commits: a refused guess
+// Ductus, the row is mapped only after withActor commits (fn only hands the rows on): a refused guess
 // stores its attempt in the same transaction, so a row of a wrong form must
 // never roll it back. One call is one withActor transaction (READ
 // COMMITTED, which the RPC requires) of one statement. The message of a
