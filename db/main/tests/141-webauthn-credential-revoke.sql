@@ -17,6 +17,9 @@ SELECT p.id, p.institution_id, v.credential, '\x01', v.count, CASE WHEN v.revoke
                ('tomo', '\xb1', 1, false), ('marko', '\x31', 4, false), ('boris', '\x41', 0, false))
        AS v (who, credential, count, revoked)
   JOIN person p ON p.name = v.who;
+-- Nina's credential is dated an hour ahead: the revocation must not precede it.
+INSERT INTO identity.webauthn_credential (user_id, institution_id, credential_id, public_key, sign_count, created_at)
+SELECT p.id, p.institution_id, '\x71', '\x07', 2, now() + interval '1 hour' FROM person p WHERE p.name = 'nina';
 
 -- One call as p_actor through the web role: "ok" or "SQLSTATE: message".
 CREATE FUNCTION pg_temp.revoke(p_actor text, p_credential bytea, p_count bigint) RETURNS text
@@ -58,11 +61,18 @@ SELECT is(pg_temp.snapshot(), (SELECT v FROM before), 'no refused call changed a
 
 -- 4. Ana revokes her own; then it can be neither revoked again nor used.
 CREATE TEMP TABLE other AS SELECT * FROM identity.webauthn_credential WHERE credential_id <> '\xa1';
+CREATE TEMP TABLE mine AS SELECT * FROM identity.webauthn_credential WHERE credential_id = '\xa1';
+CREATE TEMP TABLE called AS SELECT clock_timestamp() AS at;
 SELECT is(pg_temp.revoke('ana', '\xa1', 6), 'ok', 'Ana revokes her own credential with a fresh assertion');
 SELECT is(
-  (SELECT c.sign_count || ' ' || (c.revoked_at = c.last_used_at AND c.revoked_at >= c.created_at)::text
+  (SELECT c.sign_count || ' ' || (c.revoked_at = c.last_used_at)::text || ' '
+          || (c.revoked_at BETWEEN (SELECT at FROM called) AND clock_timestamp())::text
      FROM identity.webauthn_credential c WHERE c.credential_id = '\xa1'),
-  '6 true', 'the revocation spends the assertion: counter, last use and revocation are stored');
+  '6 true true', 'the revocation spends the assertion: counter, last use and revocation at the time of the call');
+SELECT set_eq(
+  'SELECT id, user_id, institution_id, credential_id, public_key, created_at FROM identity.webauthn_credential WHERE credential_id = ''\xa1''',
+  'SELECT id, user_id, institution_id, credential_id, public_key, created_at FROM mine',
+  'no other column of the revoked row changed');
 SELECT set_eq('SELECT * FROM identity.webauthn_credential WHERE credential_id <> ''\xa1''', 'SELECT * FROM other',
   'no other row changed');
 CREATE TEMP TABLE revoked AS SELECT pg_temp.snapshot() AS v;
@@ -76,9 +86,13 @@ SELECT is(pg_temp.ask('ana', 'SELECT count(*)::text FROM identity.webauthn_crede
 -- 5. The other accepted assertions.
 SELECT is(pg_temp.revoke('marko', '\x31', 5), 'ok', 'a higher counter revokes');
 SELECT is(pg_temp.revoke('boris', '\x41', 0), 'ok', 'an authenticator without a counter (0 and 0) revokes');
+SELECT is(pg_temp.revoke('nina', '\x71', 3), 'ok', 'a credential dated ahead of the call revokes');
+SELECT is((SELECT (revoked_at = created_at AND last_used_at = created_at)::text
+             FROM identity.webauthn_credential WHERE credential_id = '\x71'),
+  'true', 'and its revocation and last use are not earlier than the credential');
 SELECT is((SELECT string_agg(encode(credential_id, 'hex') || ' ' || sign_count, ', ' ORDER BY credential_id)
              FROM identity.webauthn_credential WHERE revoked_at IS NOT NULL),
-  '31 5, 41 0, a1 6, a3 1', 'exactly the revoked rows, with the counters of their assertions');
+  '31 5, 41 0, 71 3, a1 6, a3 1', 'exactly the revoked rows, with the counters of their assertions');
 
 -- 6. The function from the catalogue; only the web role calls it.
 SELECT is(
