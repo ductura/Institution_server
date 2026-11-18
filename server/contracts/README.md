@@ -60,14 +60,14 @@ Ovaj dio samo izjavljuje odredište. Tok prijave ga šalje od DAN-1081-Sb.
 
 ## Operatorsko čitanje događaja (DAN-843-1)
 
-`routes/ops.ts` (S-1K.5-b): `GET /api/v1/ops/events?from=…&to=…[&after=…]` nad funkcijom `public.operator_log` baze zapisa (S-1K.5-a, DAN-835-1; funkcija, ne pogled, jer čita prozor). Funkcija maskira svaki zapis: adresa ostaje samo kao mreža /24 ili /48, a token, kolačić ni sesija ne izlaze. Prozor je poluotvoren `[from, to)`, najviše 24 sata (točno 24 dopušteno). Stranica ima najviše 1000 događaja, poredanih po `seq`; `next` je `seq` zadnjeg događaja pune stranice, inače `null`. Shema provjerava oblik:
+`routes/ops.ts` (S-1K.5-b): `GET /api/v1/ops/events?from=…&to=…[&after=…]` nad funkcijom `public.operator_log` baze zapisa (S-1K.5-a, DAN-835-1; funkcija, ne pogled, jer čita prozor). Funkcija maskira svaki zapis: adresa ostaje samo kao mreža. Dio računala uvijek se reže, a maska duža od /24 (IPv4) ili /48 (IPv6) skraćuje se na nju. Kraća maska ostaje (npr. `10.0.0.0/8`, pgTAP `db/logs/tests/040-operator-log.sql`, slučaj 3). Token, kolačić ni sesija ne izlaze. Prozor je poluotvoren `[from, to)`, najviše 24 sata (točno 24 dopušteno). Stranica ima najviše 1000 događaja, poredanih po `seq`; `next` je `seq` zadnjeg događaja pune stranice, inače `null`. Shema provjerava oblik:
 
 - `from` i `to` su stvarni UTC trenuci kalendara (kao `student.access-log.get`);
 - `after` ima najviše 16 znamenki, bez vodeće nule;
 - `kind` je kao provjera `log_entry_kind_shape`;
 - `fields` je zatvoren rječnik skalarnih vrijednosti (`additionalProperties: false`, jer ga TypeBox inače ne zatvara).
 
-Svaki uzorak je samo ASCII (`[0-9]`, nikad `\d`, ni u klasi) i završava s `(?![\s\S])`. `ops-events.test.ts` provjerava i to, uz svaki dan od 1999. do 2032. i rubove kalendara iz QA #256. Ostalo kaže sažetak, a provodi handler u 843-2: `from` < `to`, granica od 24 h, `after` ≤ 2^53−1, 422 za ponovljen ili nepoznat parametar i 503 za cijelu stranicu zbog jednog neprovjerenog retka. `access` je `signed_in`, jer `ACCESS` još nema `operator`. Pristup odlučuje pipeline: korak 3 (mreža) i korak 8 (sesija i drugi faktor).
+Svaki uzorak je samo ASCII (`[0-9]`, nikad `\d`, ni u klasi) i završava s `(?![\s\S])`. `ops-events.test.ts` provjerava i to, uz svaki dan od 1999. do 2032. i rubove kalendara iz QA #256. Ostalo kaže sažetak, a provodi handler u 843-2: `from` < `to`, granica od 24 h, `after` ≤ 2^53−1, 422 za ponovljen ili nepoznat parametar i 503 za cijelu stranicu zbog jednog neprovjerenog retka. `access` je `signed_in`, jer `ACCESS` još nema `operator`. Pristup odlučuje pipeline: korak 3 (mreža) i korak 8 (živa sesija, serverski popis operatora i potvrđen drugi faktor, tim redom; DAN-1092-1).
 
 ## Operatorske rute (DAN-842-2)
 

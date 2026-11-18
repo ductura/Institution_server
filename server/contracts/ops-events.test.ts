@@ -281,6 +281,8 @@ describe("ops.events.get accepts", () => {
   it("the field names and values operator_log gives", () => {
     expect(withFields({})).toBe(true);
     expect(withFields({ toString: "hidden", a1: null, b: 1.5, c: true, d: "none" })).toBe(true);
+    // operator_log keeps a mask shorter than /24 or /48 (pgTAP 040, case 3).
+    expect(withFields({ ip: "10.0.0.0/8", network: "2001:db8::/32" })).toBe(true);
   });
 });
 

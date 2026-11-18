@@ -51,10 +51,11 @@ export const opsEventsGet = defineRoute({
   path: "/api/v1/ops/events",
   inventory: "app/api/ops/events/route.ts",
   // Who passes is decided before the route, by the pipeline: the network
-  // (step 3) and a session with a confirmed WebAuthn factor (step 8).
+  // (step 3), then a live session, the server's operator list and a
+  // confirmed WebAuthn factor (step 8).
   access: "signed_in",
   summary:
-    'The operator\'s read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator read (operator_log) masks it (an address only as its /24 or /48 network, no token, cookie or session value; a value the read cannot vouch for is "hidden"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3) or without a confirmed second factor (step 8), 401 unauthenticated without a live session (step 8). from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), at most 2^53-1. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.',
+    'The operator\'s read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator read (operator_log) masks it (an address only as a network: the host part is always cut, a mask longer than /24 for IPv4 or /48 for IPv6 is cut to it, a shorter one such as /8 stays; no token, cookie or session value; a value the read cannot vouch for is "hidden"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3), or for an account not on the operator list of the server or without a confirmed second factor (step 8); 401 unauthenticated without a live session (step 8). from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), at most 2^53-1. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.',
   request: {
     query: closed({
       from: QueryInstant,
