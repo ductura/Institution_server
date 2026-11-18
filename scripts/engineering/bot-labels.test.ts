@@ -115,10 +115,11 @@ describe("a record with any problem is no label", () => {
     expect(names(yamlWith(`{ name: "${name}", ${C}, ${D} }`))).toEqual(["bug", name]);
   });
 
-  it("a dashed name and an upper-case color are a whole label", () => {
-    const text = '- { name: "needs-review", color: "D73A4A", description: "O" }\n';
-    const label = { name: "needs-review", color: "D73A4A", description: "O" };
-    expect(parseLabels(text)).toEqual({ labels: [label], problems: [] });
+  it("a dashed name with a digit and an upper-case color, after an invalid record of its name", () => {
+    const label = { name: "2fa-v2", color: "D73A4A", description: "O" };
+    const text = `- { name: "2fa-v2", color: "zz", ${D} }\n- ${JSON.stringify(label)}\n`;
+    const problems = [problem("LABEL_INVALID_COLOR", 0)];
+    expect(parseLabels(text)).toEqual({ labels: [label], problems });
   });
 
   it("a file with CRLF line ends is valid", () => {
