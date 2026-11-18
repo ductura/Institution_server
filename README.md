@@ -20,7 +20,8 @@ pnpm test:unit
 pnpm test:property
 pnpm test:integration  # integracijski testovi; testne baze na PGliteu (test-support/database)
 pnpm test:integration:pg # testovi ovlasti (*.pg.integration.test.ts) na pravom PostgreSQL-u; traže migrirane baze
-pnpm test:database      # testovi migracija, zatim test:integration:pg; traže migrirane baze na 127.0.0.1:54329 i :54330 (posao database u CI-ju)
+pnpm test:database      # testovi migracija, zatim test:integration:pg; traže migrirane baze na 127.0.0.1:54329 i :54330 (posao database u CI-ju);
+                        # klaster :54330 radi s wal_level=logical (compose postgres-logs; stari kontejner: docker compose up -d --force-recreate postgres-logs)
 pnpm contracts:generate # ponovno generira server/contracts/generated i openapi/v1.json iz ugovora
 pnpm contracts:breaking [ref] # ruši se kad ugovor lomi klijente openapi/v1.json na ref (zadano origin/main)
 ```
