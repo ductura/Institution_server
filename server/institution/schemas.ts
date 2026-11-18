@@ -92,21 +92,22 @@ export function parseEnrollmentCodeBody(value: unknown): EnrollmentCodeBody | nu
 
 // The enrolment body of POST /api/v1/institution/enrollments (DAN-853-1c).
 // Literal port of validInput of Ductus src/server/institution/enrollment-route.ts
-// at 078c780: Object.keys gives one key and code is an own string of at most 64
-// UTF-16 units, kept unchanged (the RPC ignores spaces, hyphens and case). The
-// one change: a getter or Proxy that throws is null, where Ductus threw; a JSON
-// body never has either, so no HTTP answer changes.
+// at 078c780, in its order: Object.keys gives one key, code is own, and only
+// then is code read, once: a string of at most 64
+// UTF-16 units, kept unchanged (the RPC ignores spaces, hyphens and case). Two
+// changes: a getter or Proxy that throws is null, where Ductus threw, and the
+// one value read is the one returned, where Ductus read code again later. A
+// JSON body has neither a getter nor a Proxy, so no HTTP answer changes.
 export type EnrollmentBody = { code: string };
 
 export function parseEnrollmentBody(value: unknown): EnrollmentBody | null {
   try {
     if (!value || typeof value !== "object" || Array.isArray(value)) return null;
     const input = value as Record<string, unknown>;
-    const code = Object.hasOwn(input, "code") ? input.code : undefined;
-    if (Object.keys(input).length !== 1 || typeof code !== "string" || code.length > 64) {
-      return null;
-    }
-    return { code };
+    // The order of Ductus: count the keys, then own code, and only then read it (once).
+    if (Object.keys(input).length !== 1 || !Object.hasOwn(input, "code")) return null;
+    const code = input.code;
+    return typeof code === "string" && code.length <= 64 ? { code } : null;
   } catch {
     return null;
   }

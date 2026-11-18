@@ -269,6 +269,42 @@ describe("parseEnrollmentBody refuses the body", () => {
 // count is Object.keys, so a symbol or a non-enumerable key is not seen, and
 // the object need not be plain. A duplicate key keeps its last value
 // (request-json.ts), so it is one key.
+// QA FAIL on #323 (c.6980824243): the keys are counted before code is read,
+// as in Ductus validInput, so a getter never runs on a body of two keys.
+describe("parseEnrollmentBody counts the keys before it reads code", () => {
+  it("a getter that deletes the other key and answers a string is refused", () => {
+    const body: Record<string, unknown> = { other: "x" };
+    Object.defineProperty(body, "code", {
+      enumerable: true,
+      configurable: true,
+      get() {
+        delete body.other;
+        return KOD;
+      },
+    });
+    expect(parseEnrollmentBody(body)).toBeNull();
+  });
+
+  it("with two keys the getter is never called; with one it is called once", () => {
+    const reads = { n: 0 };
+    const counted = (extra: boolean) => {
+      const body: Record<string, unknown> = extra ? { other: "x" } : {};
+      Object.defineProperty(body, "code", {
+        enumerable: true,
+        get() {
+          reads.n += 1;
+          return `${KOD}-${reads.n}`;
+        },
+      });
+      return body;
+    };
+    expect(parseEnrollmentBody(counted(true))).toBeNull();
+    expect(reads.n).toBe(0);
+    expect(parseEnrollmentBody(counted(false))).toEqual({ code: `${KOD}-1` });
+    expect(reads.n).toBe(1);
+  });
+});
+
 describe("parseEnrollmentBody accepts as Ductus does", () => {
   const withHidden = Object.defineProperty(withCode(KOD), "courseId", { value: "x" });
   it.each<[string, unknown]>([
