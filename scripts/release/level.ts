@@ -1,6 +1,9 @@
+import { posix } from "node:path";
+
 import ts from "typescript";
 
 import { breakingChanges } from "../../server/contracts/index.ts";
+import { ROUTES_JS, PUBLIC_ROUTES_JS, type Snapshot } from "./staged-routes.ts";
 
 // DAN-804: the semver level of a release, from the staged package of the last
 // tag to the staged package of HEAD. Closed by default: whatever cannot be
@@ -383,6 +386,8 @@ export type LevelInput = {
   readonly after: Files;
   /** Whether scripts/generate-contracts.ts changed since the tag. */
   readonly generatorChanged: boolean;
+  /** The routes the fake server of a test-fakes package exports (stagedRoutes, DAN-974-4a). */
+  readonly routes?: (files: Files) => Snapshot;
 };
 export type LevelResult = { readonly level: Level; readonly reasons: string[] };
 
@@ -407,6 +412,87 @@ function openapiLevel(before: string, after: string, reasons: string[]): Level {
   throw new Error("openapi changed without a minor or patch rise");
 }
 
+/**
+ * DAN-974-4d: the JS files of `files` reachable from the public entry through
+ * relative static imports and re-exports (the guard, oidc and what they
+ * import), not counting the fake server module itself and what it imports,
+ * whose routes the snapshot reads. An import whose target is not a string
+ * literal (`import(name)`, `require`) cannot be followed: blocked.
+ */
+export function reachableFromEntry(files: Files): Set<string> {
+  const out = new Set<string>();
+  const queue = [PUBLIC_ROUTES_JS];
+  while (queue.length > 0) {
+    const path = queue.pop()!;
+    if (out.has(path) || path === ROUTES_JS) continue;
+    const content = files.get(path);
+    if (content === undefined) continue;
+    out.add(path);
+    const file = ts.createSourceFile(
+      path,
+      decode(content),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.JS,
+    );
+    const follow = (specifier: ts.Node | undefined): void => {
+      if (specifier === undefined) return;
+      if (!ts.isStringLiteral(specifier))
+        throw new Error(`${path}: an import that cannot be followed`);
+      const name = specifier.text;
+      if (!name.startsWith("./") && !name.startsWith("../")) return;
+      queue.push(posix.normalize(posix.join(posix.dirname(path), name)));
+    };
+    const visit = (node: ts.Node): void => {
+      if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
+        follow(node.moduleSpecifier);
+      else if (
+        ts.isCallExpression(node) &&
+        (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+          (ts.isIdentifier(node.expression) && node.expression.text === "require"))
+      )
+        follow(node.arguments[0] ?? node);
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+  }
+  return out;
+}
+
+/**
+ * DAN-974-4a: when a JS file of test-fakes changed, the routes its fake server
+ * exports after its module ran: a removed or changed route is major, a new one
+ * minor. DAN-974-4d: any change to a JS file reachable from the public entry
+ * (the guard, oidc, the entry itself) is major, since the snapshot does not run
+ * them. A fake server on one side only, or no reader, is blocked.
+ */
+function routesLevel(input: LevelInput, raise: (to: Level, why: string) => void): void {
+  const { before, after } = input;
+  const changed = [...new Set([...before.keys(), ...after.keys()])].some((path) => {
+    const a = before.get(path);
+    const b = after.get(path);
+    return (
+      /\.[mc]?js$/u.test(path) && (a === undefined || b === undefined || !bytes(a).equals(bytes(b)))
+    );
+  });
+  if (!changed || (!before.has(ROUTES_JS) && !after.has(ROUTES_JS))) return;
+  if (!before.has(ROUTES_JS) || !after.has(ROUTES_JS))
+    throw new Error(`${ROUTES_JS} on one side only`);
+  if (input.routes === undefined) throw new Error("no reader for the fake server routes");
+  for (const path of new Set([...reachableFromEntry(before), ...reachableFromEntry(after)])) {
+    const a = before.get(path);
+    const b = after.get(path);
+    if (a === undefined || b === undefined || !bytes(a).equals(bytes(b)))
+      raise("major", `${path} (reachable from the public entry) changed`);
+  }
+  const old = input.routes(before);
+  const now = input.routes(after);
+  for (const [id, row] of old)
+    if (!now.has(id)) raise("major", `route ${id} removed`);
+    else if (now.get(id) !== row) raise("major", `route ${id} changed`);
+  for (const id of now.keys()) if (!old.has(id)) raise("minor", `route ${id} added`);
+}
+
 function packageLevel(input: LevelInput): LevelResult {
   const { before, after } = input;
   const reasons: string[] = [];
@@ -426,6 +512,7 @@ function packageLevel(input: LevelInput): LevelResult {
   // A new required member of a generated type (a new route) is backed by the
   // document only when the document grew and the generator stayed the same.
   const backed = api === "minor" && !input.generatorChanged;
+  if (input.short === "test-fakes") routesLevel(input, raise);
   // A new name that appears anywhere in the old declarations may shadow it.
   const used = new Set<string>();
   let frozen = false;
