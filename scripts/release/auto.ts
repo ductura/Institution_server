@@ -4,6 +4,7 @@ import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { floorProblem, latestTag, nextVersion, releaseLevel, type Files } from "./level.ts";
+import { stagedRoutes } from "./staged-routes.ts";
 import { ROOT } from "./stage.ts";
 
 // `pnpm release:level` (DAN-804): the first job of release.yml, contents: read.
@@ -25,6 +26,8 @@ export type ReleaseIo = {
   readonly stagedAt: (commit: string, short: Short) => Files;
   readonly stagedHead: (short: Short) => Files;
   readonly generatorChanged: (commit: string) => boolean;
+  /** The fake server routes of a staged test-fakes package; stagedRoutes when absent. */
+  readonly routes?: (files: Files) => ReadonlyMap<string, string>;
   /** `version` of packages/<short>/package.json at HEAD. */
   readonly floor: (short: Short) => string;
 };
@@ -40,6 +43,7 @@ function plan(short: Short, io: ReleaseIo): Plan {
     before: io.stagedAt(commit, short),
     after: io.stagedHead(short),
     generatorChanged: io.generatorChanged(commit),
+    routes: io.routes ?? stagedRoutes,
   });
   // A version raised alone (no other byte changed) still says something: a
   // pending major or an unreadable version stops the package (QA #92).

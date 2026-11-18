@@ -707,3 +707,31 @@ describe("releaseLevel limits the generated exception to new routes", () => {
     );
   });
 });
+
+// DAN-974-4a: the classifier with a stubbed route reader, no process.
+describe("releaseLevel for the routes of the test-fakes fake server", () => {
+  const JS = "server/contracts/generated/fake-server/index.js";
+  const pkg = (code: string) => fakes(BASE_DTS, { [JS]: code });
+  const table: Record<string, [string, string][]> = {
+    one: [["a.get", "1"]],
+    two: [
+      ["a.get", "1"],
+      ["b.get", "1"],
+    ],
+    changed: [["a.get", "2"]],
+  };
+  const run = (a: string, b: string) =>
+    releaseLevel({
+      short: "test-fakes",
+      before: pkg(a),
+      after: pkg(b),
+      generatorChanged: false,
+      routes: (files) => new Map(table[String(files.get(JS))]),
+    }).level;
+
+  it("is major for a removed or changed route, minor for a new one", () => {
+    expect(run("two", "one")).toBe("major");
+    expect(run("one", "changed")).toBe("major");
+    expect(run("one", "two")).toBe("minor");
+  });
+});

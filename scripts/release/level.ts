@@ -1,6 +1,7 @@
 import ts from "typescript";
 
 import { breakingChanges } from "../../server/contracts/index.ts";
+import { ROUTES_JS, PUBLIC_ROUTES_JS, type Snapshot } from "./staged-routes.ts";
 
 // DAN-804: the semver level of a release, from the staged package of the last
 // tag to the staged package of HEAD. Closed by default: whatever cannot be
@@ -383,6 +384,8 @@ export type LevelInput = {
   readonly after: Files;
   /** Whether scripts/generate-contracts.ts changed since the tag. */
   readonly generatorChanged: boolean;
+  /** The routes the fake server of a test-fakes package exports (stagedRoutes, DAN-974-4a). */
+  readonly routes?: (files: Files) => Snapshot;
 };
 export type LevelResult = { readonly level: Level; readonly reasons: string[] };
 
@@ -407,6 +410,37 @@ function openapiLevel(before: string, after: string, reasons: string[]): Level {
   throw new Error("openapi changed without a minor or patch rise");
 }
 
+/**
+ * DAN-974-4a: when a JS file of test-fakes changed, the routes its fake server
+ * exports after its module ran: a removed or changed route is major, a new one
+ * minor. The public entry that re-exports it may not change at all. A fake
+ * server on one side only, or no reader, is blocked.
+ */
+function routesLevel(input: LevelInput, raise: (to: Level, why: string) => void): void {
+  const { before, after } = input;
+  const changed = [...new Set([...before.keys(), ...after.keys()])].some((path) => {
+    const a = before.get(path);
+    const b = after.get(path);
+    return (
+      /\.[mc]?js$/u.test(path) && (a === undefined || b === undefined || !bytes(a).equals(bytes(b)))
+    );
+  });
+  if (!changed || (!before.has(ROUTES_JS) && !after.has(ROUTES_JS))) return;
+  if (!before.has(ROUTES_JS) || !after.has(ROUTES_JS))
+    throw new Error(`${ROUTES_JS} on one side only`);
+  if (input.routes === undefined) throw new Error("no reader for the fake server routes");
+  const a = before.get(PUBLIC_ROUTES_JS);
+  const b = after.get(PUBLIC_ROUTES_JS);
+  if ((a === undefined) !== (b === undefined) || (a !== undefined && !bytes(a).equals(bytes(b!))))
+    raise("major", `${PUBLIC_ROUTES_JS} changed`);
+  const old = input.routes(before);
+  const now = input.routes(after);
+  for (const [id, row] of old)
+    if (!now.has(id)) raise("major", `route ${id} removed`);
+    else if (now.get(id) !== row) raise("major", `route ${id} changed`);
+  for (const id of now.keys()) if (!old.has(id)) raise("minor", `route ${id} added`);
+}
+
 function packageLevel(input: LevelInput): LevelResult {
   const { before, after } = input;
   const reasons: string[] = [];
@@ -426,6 +460,7 @@ function packageLevel(input: LevelInput): LevelResult {
   // A new required member of a generated type (a new route) is backed by the
   // document only when the document grew and the generator stayed the same.
   const backed = api === "minor" && !input.generatorChanged;
+  if (input.short === "test-fakes") routesLevel(input, raise);
   // A new name that appears anywhere in the old declarations may shadow it.
   const used = new Set<string>();
   let frozen = false;
