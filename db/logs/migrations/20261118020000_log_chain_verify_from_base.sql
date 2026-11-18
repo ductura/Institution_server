@@ -12,6 +12,16 @@
 -- it knows.
 --
 -- What changes:
+-- - The base is used only in a possible state: exactly one row (read FROM
+--   ONLY, so no child table adds to it) with a seq of 0 or more and a hash of
+--   32 bytes that is the zero one exactly at seq 0 (nothing is cut there, and
+--   no row has a zero SHA-256). Any other state (no row or several, a NULL, a
+--   seq below 0, a hash of another size, seq 0 with a hash that is not zero,
+--   a seq above 0 with the zero hash) is reported as 'base' (seq NULL), and
+--   the chain is then verified from seq 0 and 32 zero bytes, exactly as
+--   before the base: a base in an impossible state adds its finding and can
+--   neither hide nor change another, even of rows made to follow it. The
+--   zero base is possible, so uncut nothing changes.
 -- - The predecessor of the first row is lag's default, the base, as the zero
 --   default was before; a NULL seq or hash inside the chain stays NULL. The
 --   default is a scalar subquery, not a join, so the window sorts the same
@@ -19,24 +29,8 @@
 --   order of the repeated rows is the sort's, as it was.
 -- - The last seq stays max(seq) and the last hash the hash of the row first
 --   in seq DESC order, each with the base's in place of NULL.
--- - A base in an impossible state is reported as 'base' (seq NULL), whatever
---   the chain and the head hold: not exactly one row; a NULL seq or hash; a
---   seq below 0; a hash that is not 32 bytes; seq 0 with a hash that is not
---   32 zero bytes (nothing is cut, so the hash is the zero one); a seq above
---   0 with 32 zero bytes (no row has a zero SHA-256). The zero base is none
---   of these, so uncut nothing changes.
--- - With a base that is not exactly one row, the chain is verified from the
---   base row with the greatest seq (a NULL
---   seq last, then the smallest hash), or from seq 0 and 32 zero bytes when
---   there is none: the base CTE is always exactly one row, so no state of
---   the base table can empty the verification. The base is read FROM ONLY,
---   so no child table adds to it.
 -- - The gap is compared in numeric: no stored seq, the greatest bigint of a
 --   base included, makes the verification fail instead of report.
--- - A NULL seq or hash in the base is a gap or a link of the first row
---   whatever that row holds, and a head finding where the base stands in for
---   the last row, so a base damaged like the row or the head cannot hide
---   their damage. The zero base holds no NULL, so uncut nothing changes.
 DO $$
 BEGIN
   IF current_user <> 'ductus_logs_migrator' OR current_database() <> 'ductus_logs' THEN
@@ -49,53 +43,44 @@ $$;
 CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, problem text)
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
   WITH base AS (
-    SELECT x.seq, x.hash FROM (
-      SELECT 0 AS fallback, b.seq, b.hash FROM ONLY public.log_chain_base b
+    SELECT x.seq, x.hash, x.possible FROM (
+      SELECT true AS possible, b.seq, b.hash FROM ONLY public.log_chain_base b
+      WHERE (SELECT pg_catalog.count(*) FROM ONLY public.log_chain_base) OPERATOR(pg_catalog.=) 1
+        AND b.seq OPERATOR(pg_catalog.>=) 0
+        AND pg_catalog.octet_length(b.hash) OPERATOR(pg_catalog.=) 32
+        AND (b.seq OPERATOR(pg_catalog.=) 0)
+            OPERATOR(pg_catalog.=) (b.hash OPERATOR(pg_catalog.=) pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex'))
       UNION ALL
-      SELECT 1, 0::bigint, pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')
+      SELECT false, 0::bigint, pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')
     ) x
-    ORDER BY x.fallback, x.seq DESC NULLS LAST, x.hash
+    ORDER BY x.possible DESC
     LIMIT 1
   ), entry AS (
     SELECT e.seq, e.prev_hash, e.hash,
            public.log_entry_digest(e.prev_hash, e.seq, e.id, e.at, e.kind, e.payload) AS computed,
            pg_catalog.lag(e.seq, 1, (SELECT b.seq FROM base b)) OVER w AS before_seq,
-           pg_catalog.lag(e.hash, 1, (SELECT b.hash FROM base b)) OVER w AS before_hash,
-           pg_catalog.row_number() OVER w OPERATOR(pg_catalog.=) 1 AS first
+           pg_catalog.lag(e.hash, 1, (SELECT b.hash FROM base b)) OVER w AS before_hash
     FROM public.log_entry e
     WINDOW w AS (ORDER BY e.seq)
-  ), last_row AS (
-    SELECT (SELECT pg_catalog.max(e.seq) FROM public.log_entry e) AS seq,
-           (SELECT x.hash FROM public.log_entry x ORDER BY x.seq DESC LIMIT 1) AS hash
   ), last AS (
-    SELECT coalesce(r.seq, base.seq) AS seq, coalesce(r.hash, base.hash) AS hash,
-           (r.seq IS NULL AND base.seq IS NULL) OR (r.hash IS NULL AND base.hash IS NULL) AS base_null
-    FROM last_row r CROSS JOIN base
+    SELECT coalesce((SELECT pg_catalog.max(e.seq) FROM public.log_entry e), base.seq) AS seq,
+           coalesce((SELECT x.hash FROM public.log_entry x ORDER BY x.seq DESC LIMIT 1), base.hash) AS hash
+    FROM base
   )
   SELECT x.seq, x.problem FROM (
     SELECT entry.seq, 'hash' AS problem FROM entry WHERE entry.hash IS DISTINCT FROM entry.computed
     UNION ALL
-    SELECT entry.seq, 'link' FROM entry
-    WHERE entry.prev_hash IS DISTINCT FROM entry.before_hash OR (entry.first AND entry.before_hash IS NULL)
+    SELECT entry.seq, 'link' FROM entry WHERE entry.prev_hash IS DISTINCT FROM entry.before_hash
     UNION ALL
     SELECT entry.seq, 'gap' FROM entry
     WHERE entry.seq::numeric IS DISTINCT FROM (entry.before_seq::numeric OPERATOR(pg_catalog.+) 1)
-       OR (entry.first AND entry.before_seq IS NULL)
     UNION ALL
     SELECT h.seq, 'head' FROM public.log_chain_head h, last
-    WHERE h.seq IS DISTINCT FROM last.seq OR h.hash IS DISTINCT FROM last.hash OR last.base_null
+    WHERE h.seq IS DISTINCT FROM last.seq OR h.hash IS DISTINCT FROM last.hash
     UNION ALL
     SELECT NULL::bigint, 'head' WHERE (SELECT pg_catalog.count(*) FROM public.log_chain_head) OPERATOR(pg_catalog.<>) 1
     UNION ALL
-    SELECT NULL::bigint, 'base'
-    WHERE (SELECT pg_catalog.count(*) FROM ONLY public.log_chain_base) OPERATOR(pg_catalog.<>) 1
-       OR EXISTS (
-         SELECT 1 FROM ONLY public.log_chain_base b
-         WHERE b.seq IS NULL OR b.hash IS NULL
-            OR b.seq OPERATOR(pg_catalog.<) 0
-            OR pg_catalog.octet_length(b.hash) OPERATOR(pg_catalog.<>) 32
-            OR (b.seq OPERATOR(pg_catalog.=) 0)
-               OPERATOR(pg_catalog.<>) (b.hash OPERATOR(pg_catalog.=) pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')))
+    SELECT NULL::bigint, 'base' FROM base WHERE NOT base.possible
   ) x
   ORDER BY x.seq NULLS FIRST, x.problem
 $$;
