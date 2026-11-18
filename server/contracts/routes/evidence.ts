@@ -115,18 +115,20 @@ function unavailable(stages: readonly string[]): ErrorSpec {
   });
 }
 
-// The shape of a canonical origin as a browser sends it (DAN-930-1a): a
-// lowercase DNS name whose last label is not a number, all digits or 0x hex
-// (WHATWG reads those as IPv4), a dotted-quad IPv4 or a lowercase IPv6 literal, and a port 1-65535
-// without the scheme's default; no path, user or space. The server still
-// compares it with its own origin exactly (originLayer, pipeline step 7).
+// Every canonical http(s) origin (new URL(v).origin === v), the set the server
+// accepts as APP_ORIGIN (DAN-930-1a, review FAIL c.6965388921): a host of the
+// code points WHATWG keeps in a domain, dots and empty labels included, unless
+// its last label before one trailing dot is a number (all digits or 0x hex),
+// which only a dotted-quad IPv4 may be; or a lowercase IPv6 literal. The port
+// is 0-65535 without a leading zero or the scheme's default. The server still compares it with
+// its own origin exactly (originLayer, pipeline step 7).
 const END = "(?![\\s\\S])";
-const LABEL = "[a-z0-9]+(?:-+[a-z0-9]+)*";
-const NOT_NUMBER = "(?![0-9]+(?![a-z0-9-]))(?!0x[0-9a-f]*(?![a-z0-9-]))";
+const DOMAIN = "[-!\"$&'()*+,.0-9;=_`a-z{}~]+";
+const NUMBER_LAST = `(?:[^:]*\\.)?(?:[0-9]+|0x[0-9a-f]*)\\.?(?::|${END})`;
 const OCTET = "(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])";
-const HOST = `(?:(?:${OCTET}\\.){3}${OCTET}|(?:${LABEL}\\.)*${NOT_NUMBER}${LABEL}|\\[[0-9a-f:.]+\\])`;
+const HOST = `(?:(?:${OCTET}\\.){3}${OCTET}|(?!${NUMBER_LAST})${DOMAIN}|\\[[0-9a-f:.]+\\])`;
 const PORT =
-  "(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
+  "(?:0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
 const port = (fallback: string) => `(?::(?!${fallback}${END})${PORT})?`;
 const Origin = Type.String({
   pattern: `^(?:https://${HOST}${port("443")}|http://${HOST}${port("80")})${END}`,
