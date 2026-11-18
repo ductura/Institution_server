@@ -75,14 +75,18 @@ async function login() {
   return callback(idp.approve(authorize, `${APP}/api/v1/auth/callback`), cookie);
 }
 
-async function expectRefused(response: Response, status = 400) {
-  expect(response.status).toBe(status);
+/** A failed login (DAN-1081): 303 to the sign-in page with the code, only the attempt cleared. */
+async function expectRefused(response: Response, code = "login_failed") {
+  expect(response.status).toBe(303);
+  expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=${code}`);
   expect(deps.openSession).not.toHaveBeenCalled();
-  const cookies = setCookies(response);
-  expect(cookies.has(SESSION_COOKIE_NAME)).toBe(false);
-  expect(cookies.get(LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
+  expect(deps.closeSession).not.toHaveBeenCalled();
+  expect(response.headers.getSetCookie()).toEqual([
+    `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
+  ]);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(await response.text()).toContain("Prijava nije dovršena");
+  expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+  expect(await response.text()).toBe("");
 }
 
 const without = (claims: Record<string, unknown>, key: string) =>
@@ -214,33 +218,32 @@ describe("login", () => {
     await expectRefused(await login());
   });
 
-  it("refuses a login without hrEduPersonUniqueID with the same page as a refused institution", async () => {
+  it("refuses a login without hrEduPersonUniqueID with the same answer as a refused institution", async () => {
     idp.state.next = { userinfo: (u) => without(u, "hrEduPersonUniqueID") };
     const missing = await login();
-    const missingPage = await missing.clone().text();
-    await expectRefused(missing, 403);
+    const answer = (r: Response) => [r.status, r.headers.get("location"), r.headers.getSetCookie()];
+    const missingAnswer = answer(missing);
+    await expectRefused(missing);
 
     idp.state.next = {};
     deps.openSession.mockResolvedValueOnce({ ok: false, reason: "refused" });
     const refused = await login();
-    expect(refused.status).toBe(403);
-    expect(setCookies(refused).has(SESSION_COOKIE_NAME)).toBe(false);
-    expect(await refused.text()).toBe(missingPage);
+    expect(answer(refused)).toEqual(missingAnswer);
   });
 
   it("#11 shows the unavailable page when the provider is down or failing", async () => {
     idp.state.next = { down: true };
     const start = await startLogin(new Request(`${APP}/api/v1/auth/login`), deps);
-    expect(start.status).toBe(503);
-    expect(setCookies(start).has(LOGIN_COOKIE_NAME)).toBe(false);
-    expect(await start.text()).toContain("trenutačno ne odgovara");
+    expect(start.status).toBe(303);
+    expect(start.headers.get("location")).toBe(`${APP}/prijava?greska=provider_unavailable`);
+    expect(start.headers.getSetCookie()).toEqual([]);
 
     idp.state.next = {};
     const { authorize, cookie } = await begin();
     idp.state.next = { tokenStatus: 502 };
     await expectRefused(
       await callback(idp.approve(authorize, `${APP}/api/v1/auth/callback`), cookie),
-      503,
+      "provider_unavailable",
     );
   });
 
@@ -385,8 +388,8 @@ describe("login", () => {
     deps.oidc = createOidcClient(wellKnown, idp.fetch);
 
     const start = await startLogin(new Request(`${APP}/api/v1/auth/login`), deps);
-    expect(start.status).toBe(503);
-    expect(start.headers.get("location")).toBeNull();
+    expect(start.status).toBe(303);
+    expect(start.headers.get("location")).toBe(`${APP}/prijava?greska=provider_unavailable`);
     await expect(
       deps.oidc.verify(new URL(`${APP}/api/v1/auth/callback?code=x&state=y`), {
         state: "y",

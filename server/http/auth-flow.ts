@@ -1,14 +1,16 @@
 /**
  * The login and callback routes (B-6; docs/BACKEND.md 4.3), as plain Request
  * to Response functions so tests drive them without a server; the HTTP
- * routes over them come in the second PR of S-1E-a. Every failure ends on one neutral Croatian page: the
- * browser learns neither which check failed nor whether an institution
- * exists. Logs carry a stage and an error code, never a value from the
- * request or the provider. Ported from Ductus src/server/auth/flow.ts at
+ * routes over them come in the second PR of S-1E-a. Every failed login ends
+ * on a 303 to the sign-in page with one of two codes (DAN-1081,
+ * SIGN_IN_FAILURE): the browser learns neither which check failed nor
+ * whether an institution exists. Logs carry a stage, an error code and that
+ * code, never a value from the request or the provider. Ported from Ductus src/server/auth/flow.ts at
  * 078c780 (S-1E-a, DAN-808); logout-all (S-1D-c, DAN-828-1) from 333e163;
  * logout (S-1D-d, DAN-829-1) from 393b8e0.
  */
 import { messagesHr as t } from "../../locales/index.ts";
+import { SIGN_IN_FAILURE, type SignInFailureCode } from "../contracts/index.ts";
 import {
   identityFromClaims,
   isProviderUnavailable,
@@ -113,7 +115,33 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-/** The HTML of the neutral page; step 7 of the pipeline answers a refused origin with it too. */
+/**
+ * Where a failed login goes (DAN-1081): the sign-in page with the code, on
+ * the configured origin, or relative when no configuration loaded. Only
+ * constants and that origin, never a value from the request.
+ */
+export function signInFailureLocation(code: SignInFailureCode, origin?: string): string {
+  const target = `${SIGN_IN_FAILURE.page}?${SIGN_IN_FAILURE.param}=${code}`;
+  return origin === undefined ? target : new URL(target, origin).href;
+}
+
+/**
+ * A failed login: exactly one log line (stage, error code, the code the
+ * browser gets; the last tells "provider down" from "refused", Ductus#2031
+ * V5) and a 303 to the sign-in page. `cookies` only ever clears the attempt.
+ */
+export function failedLogin(
+  stage: string,
+  detail: string,
+  code: SignInFailureCode,
+  origin?: string,
+  cookies: string[] = [],
+): Response {
+  console.error("login failed", stage, detail, code);
+  return redirect(signInFailureLocation(code, origin), cookies);
+}
+
+/** The HTML of the neutral page of sign-out; step 7 of the pipeline answers a refused origin with it too. */
 export function failureHtml(status: 400 | 403 | 503): string {
   const body = status === 503 ? t.auth.unavailableBody : t.auth.failedBody;
   return `<!doctype html>
@@ -123,7 +151,7 @@ export function failureHtml(status: 400 | 403 | 503): string {
 <p><a href="${LOGIN_PATH}">${escapeHtml(t.auth.retry)}</a> · <a href="/">${escapeHtml(t.auth.home)}</a></p></main></body></html>`;
 }
 
-/** The neutral page every failure ends on. */
+/** The neutral page a failed sign-out ends on. */
 export function failurePage(
   status: 400 | 403 | 503,
   extraHeaders: Headers = new Headers(),
@@ -149,8 +177,12 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
   try {
     location = await deps.oidc.authorizationUrl(checks);
   } catch (error) {
-    logFailure("authorize", errorCode(error));
-    return failurePage(503);
+    return failedLogin(
+      "authorize",
+      errorCode(error),
+      "provider_unavailable",
+      deps.config.redirectUri.origin,
+    );
   }
   // A return path that normalizes past the decoder's limit (a long
   // non-ASCII path, percent-encoded by URL) would give an attempt that
@@ -171,39 +203,33 @@ const clearedLoginCookie = () => cookie(LOGIN_COOKIE_NAME, "", "Max-Age=0");
 export async function finishLogin(request: Request, deps: AuthDeps): Promise<Response> {
   // The attempt is single use: whatever happens next, its cookie is cleared,
   // so a replayed callback finds no state to match.
-  const cleared = new Headers({ "set-cookie": clearedLoginCookie() });
+  // A failure never sets or clears the session cookie (Ductus#2031 S1, S3).
+  const origin = deps.config.redirectUri.origin;
+  const failed = (stage: string, detail: string, code: SignInFailureCode = "login_failed") =>
+    failedLogin(stage, detail, code, origin, [clearedLoginCookie()]);
   const attempt = decodeAttempt(readCookie(request, LOGIN_COOKIE_NAME));
-  if (!attempt) {
-    logFailure("callback", "no_attempt");
-    return failurePage(400, cleared);
-  }
+  if (!attempt) return failed("callback", "no_attempt");
 
   let verified;
   try {
     verified = await deps.oidc.verify(new URL(request.url), attempt);
   } catch (error) {
-    logFailure("verify", errorCode(error));
-    return failurePage(isProviderUnavailable(error) ? 503 : 400, cleared);
+    const down = isProviderUnavailable(error);
+    return failed("verify", errorCode(error), down ? "provider_unavailable" : "login_failed");
   }
 
   const claims = identityFromClaims(verified.idToken, verified.userinfo);
-  if (!claims.ok) {
-    logFailure("claims", claims.reason);
-    return failurePage(403, cleared);
-  }
+  if (!claims.ok) return failed("claims", claims.reason);
 
   const { token, tokenHash } = newSessionToken();
   let opened;
   try {
     opened = await deps.openSession({ issuer: verified.issuer, ...claims.identity, tokenHash });
   } catch (error) {
-    logFailure("open_session", errorCode(error));
-    return failurePage(503, cleared);
+    return failed("open_session", errorCode(error), "provider_unavailable");
   }
-  if (!opened.ok) {
-    logFailure("open_session", opened.reason);
-    return failurePage(opened.reason === "refused" ? 403 : 400, cleared);
-  }
+  // Every reason alike: refused, conflict or any other (Ductus#2031 K3, V1).
+  if (!opened.ok) return failed("open_session", opened.reason);
 
   // A session cookie the browser already had (another user's, or one planted
   // before login) is closed, never reused: the new session has a new token.
@@ -214,7 +240,7 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
       .catch((error: unknown) => logFailure("close_previous", errorCode(error)));
   }
 
-  return redirect(new URL(attempt.returnTo, deps.config.redirectUri.origin).href, [
+  return redirect(new URL(attempt.returnTo, origin).href, [
     clearedLoginCookie(),
     sessionSetCookie(token, opened.expires),
   ]);

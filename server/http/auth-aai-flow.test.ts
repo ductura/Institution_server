@@ -93,8 +93,10 @@ async function complete(attempt: Awaited<ReturnType<typeof begin>>) {
   );
 }
 
-async function expectRefused(response: Response, status = 403) {
-  expect(response.status).toBe(status);
+/** Every refusal here (403 and 400 before DAN-1081) is one code on the sign-in page. */
+async function expectRefused(response: Response) {
+  expect(response.status).toBe(303);
+  expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=login_failed`);
   expect(deps.openSession).not.toHaveBeenCalled();
   expect(cookieOf(response, SESSION_COOKIE_NAME)).toBeUndefined();
   expect(cookieOf(response, LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
@@ -236,9 +238,9 @@ describe("login against an AAI@EduHr-shaped provider", () => {
 
   it("A10 refuses userinfo for another subject, or a subject as an array", async () => {
     idp.state.next = { userinfo: (u) => ({ ...u, sub: "sub-aai-8" }) };
-    await expectRefused(await complete(await begin()), 400);
+    await expectRefused(await complete(await begin()));
     idp.state.next = { userinfo: (u) => ({ ...u, sub: [ACCOUNT.sub] }) };
-    await expectRefused(await complete(await begin()), 400);
+    await expectRefused(await complete(await begin()));
   });
 
   it("A13 signs in without a name when the names come as arrays (known limit, #757)", async () => {

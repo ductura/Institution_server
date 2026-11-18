@@ -92,7 +92,7 @@
         ],
         "responses": {
           "303": {
-            "description": "redirect",
+            "description": "redirect; a failed login goes to /prijava with a code (auth/sign-in-failure.json)",
             "headers": {
               "location": {
                 "schema": {
@@ -156,7 +156,7 @@
         ],
         "responses": {
           "303": {
-            "description": "redirect",
+            "description": "redirect; a failed login goes to /prijava with a code (auth/sign-in-failure.json)",
             "headers": {
               "location": {
                 "schema": {

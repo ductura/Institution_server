@@ -39,6 +39,8 @@ type Stack = {
   opened: OpenSessionInput[];
   closed: string[];
   logged: string[];
+  /** Paths the provider was asked for. */
+  asked: string[];
 };
 
 /**
@@ -50,6 +52,7 @@ async function stack(mode: FakeOidcMode, delayUserinfo = 0): Promise<Stack> {
   const opened: OpenSessionInput[] = [];
   const closed: string[] = [];
   const logged: string[] = [];
+  const asked: string[] = [];
   vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
     logged.push(args.map(String).join(" "));
   });
@@ -99,9 +102,10 @@ async function stack(mode: FakeOidcMode, delayUserinfo = 0): Promise<Stack> {
     backchannelLogoutUri: `${origin}/api/v1/auth/backchannel-logout`,
     mode,
   });
-  server.on("request", (req: IncomingMessage, res: ServerResponse) =>
-    fake.emit("request", req, res),
-  );
+  server.on("request", (req: IncomingMessage, res: ServerResponse) => {
+    asked.push(new URL(req.url ?? "/", issuer).pathname);
+    fake.emit("request", req, res);
+  });
   Object.assign(env, {
     DUCTUS_AUTH_PROVIDER: "fake-oidc",
     OIDC_ISSUER: issuer,
@@ -109,7 +113,7 @@ async function stack(mode: FakeOidcMode, delayUserinfo = 0): Promise<Stack> {
     OIDC_CLIENT_SECRET: "ductus-local-only",
     OIDC_REDIRECT_URI: callback,
   });
-  return { origin, opened, closed, logged };
+  return { origin, opened, closed, logged, asked };
 }
 
 /** A browser reduced to what the flow needs: one cookie jar and manual redirects. */
@@ -163,20 +167,19 @@ async function signIn(origin: string, account = "demo-student") {
   return { answer: await b.get(back), jar: b.jar };
 }
 
-/** The neutral page: the contract's HTML error, no cache, the attempt cleared, no session. */
-async function expectPage(answer: Response, status: number, logged: string[]) {
-  expect(answer.status).toBe(status);
-  expect(answer.headers.get("content-type")).toBe("text/html; charset=utf-8");
+/** A failed login (DAN-1081): 303 to the sign-in page with the code, no cache, no session. */
+async function expectSignInPage(answer: Response, origin: string, code: string, logged: string[]) {
+  expect(answer.status).toBe(303);
+  expect(answer.headers.get("location")).toBe(`${origin}/prijava?greska=${code}`);
   expect(answer.headers.get("cache-control")).toBe("no-store");
-  expect(answer.headers.get("x-request-id")).toEqual(expect.any(String));
-  expect(answer.headers.get("location")).toBeNull();
+  expect(answer.headers.get("referrer-policy")).toBe("no-referrer");
   const cookies = answer.headers.getSetCookie();
   expect(cookies.some((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`))).toBe(false);
-  const body = await answer.text();
-  expect(body).toMatch(/^<!doctype html>\n<html lang="hr">/u);
-  expect(body).toContain("Prijava nije dovršena");
-  expect(body).toContain('href="/api/v1/auth/login"');
-  // Logs carry a stage and a code, never a value from the provider or the request.
+  expect(await answer.text()).toBe("");
+  // One line per failure, ending in the code; never a value from the provider or the request.
+  const failures = logged.filter((line) => line.startsWith("login failed"));
+  expect(failures).toHaveLength(1);
+  expect(failures[0]).toMatch(new RegExp(`^login failed \\S+ \\S+ ${code}$`, "u"));
   expect(logged.join("\n")).not.toMatch(/demo-student|code=|state=/u);
   return cookies;
 }
@@ -202,10 +205,10 @@ describe("login against the fake OIDC provider in each of its modes", () => {
     expect(closed).toEqual([]);
   });
 
-  it("refuse: access_denied ends on the 400 page, with no session", async () => {
+  it("refuse: access_denied ends on the sign-in page with login_failed, with no session", async () => {
     const { origin, opened, logged } = await stack("refuse");
     const { answer, jar } = await signIn(origin);
-    const cookies = await expectPage(answer, 400, logged);
+    const cookies = await expectSignInPage(answer, origin, "login_failed", logged);
     expect(cookies).toEqual([
       `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
     ]);
@@ -214,29 +217,29 @@ describe("login against the fake OIDC provider in each of its modes", () => {
     expect(logged.some((line) => line.startsWith("login failed verify"))).toBe(true);
   });
 
-  it("expired: tokens past their lifetime when used end on the 400 page, with no session", async () => {
+  it("expired: tokens past their lifetime when used end on login_failed, with no session", async () => {
     const { origin, opened, logged } = await stack("expired", 1_500);
     const { answer } = await signIn(origin, "demo-teacher");
     // Refused where the tokens are used (userinfo answers 401), not anywhere earlier.
-    const cookies = await expectPage(answer, 400, logged);
+    const cookies = await expectSignInPage(answer, origin, "login_failed", logged);
     expect(cookies).toEqual([
       `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
     ]);
     // The userinfo challenge for an expired access token, not any other 400.
     expect(logged).toContain(
-      "login failed verify WWWAuthenticateChallengeError:OAUTH_WWW_AUTHENTICATE_CHALLENGE",
+      "login failed verify WWWAuthenticateChallengeError:OAUTH_WWW_AUTHENTICATE_CHALLENGE login_failed",
     );
     expect(opened).toEqual([]);
   });
 
-  it("unavailable: the login itself ends on the 503 page, with no attempt cookie", async () => {
-    const { origin, opened, logged } = await stack("unavailable");
+  it("unavailable: the login itself ends on provider_unavailable, with no attempt cookie", async () => {
+    const { origin, opened, logged, asked } = await stack("unavailable");
     const answer = await fetch(`${origin}/api/v1/auth/login`, { redirect: "manual" });
-    const cookies = await expectPage(answer, 503, logged);
+    const cookies = await expectSignInPage(answer, origin, "provider_unavailable", logged);
     expect(cookies).toEqual([]);
-    expect(await (await fetch(`${origin}/api/v1/auth/login`)).text()).toContain(
-      "Prijava preko AAI@EduHr trenutačno ne odgovara.",
-    );
+    // One click, at most one discovery, and nothing leads back to the login (#2031 P1).
+    expect(asked).toEqual(["/.well-known/openid-configuration"]);
+    expect(new URL(answer.headers.get("location") ?? "").pathname).toBe("/prijava");
     expect(opened).toEqual([]);
   });
 });
@@ -291,7 +294,8 @@ describe("the login routes over HTTP", () => {
     );
     const back = location(await b.get(resume), resume);
     expect((await b.get(back)).status).toBe(303);
-    expect((await b.get(back)).status).toBe(400);
+    const replayed = await b.get(back);
+    expect(replayed.headers.get("location")).toBe(`${origin}/prijava?greska=login_failed`);
     expect(opened).toHaveLength(1);
   });
 
@@ -307,7 +311,7 @@ describe("a login configuration that does not load", () => {
   // Ported from Ductus tests/unit/auth/routes.test.ts at 078c780 ("ends on
   // the neutral page, naming no variable"), over the real routes here.
   it.each([["production"], [undefined]])(
-    "D-09: the fake provider with NODE_ENV %s ends on the 503 page, naming no variable",
+    "D-09: the fake provider with NODE_ENV %s ends on provider_unavailable, naming no variable",
     async (nodeEnv) => {
       const logged: string[] = [];
       vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
@@ -330,16 +334,18 @@ describe("a login configuration that does not load", () => {
       });
       for (const path of ["/api/v1/auth/login", "/api/v1/auth/callback?code=x&state=y"]) {
         const answer = await fetch(`http://127.0.0.1:${app.port}${path}`, { redirect: "manual" });
-        expect(answer.status, path).toBe(503);
-        expect(answer.headers.get("content-type")).toBe("text/html; charset=utf-8");
+        // No configuration, so no origin: a relative Location, never the issuer (DAN-1081).
+        expect(answer.status, path).toBe(303);
+        expect(answer.headers.get("location")).toBe("/prijava?greska=provider_unavailable");
+        expect(answer.headers.get("cache-control")).toBe("no-store");
         expect(answer.headers.getSetCookie()).toEqual([]);
-        const body = await answer.text();
-        expect(body).toContain("Prijava preko AAI@EduHr trenutačno ne odgovara.");
-        expect(body).not.toMatch(/NODE_ENV|DUCTUS_AUTH_PROVIDER|OIDC_|fake/u);
+        expect(await answer.text()).toBe("");
+        const headers = JSON.stringify([...answer.headers]);
+        expect(headers).not.toMatch(/NODE_ENV|DUCTUS_AUTH_PROVIDER|OIDC_|fake|9400/u);
       }
       expect(logged).toEqual([
-        "login failed config AuthConfigError",
-        "login failed config AuthConfigError",
+        "login failed config AuthConfigError provider_unavailable",
+        "login failed config AuthConfigError provider_unavailable",
       ]);
     },
   );

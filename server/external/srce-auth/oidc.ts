@@ -59,6 +59,9 @@ export class ProviderUnavailableError extends Error {
   override name = "ProviderUnavailableError";
 }
 
+/** Authorization response errors that mean the provider, not the login, failed (RFC 6749 4.1.2.1). */
+const PROVIDER_DOWN: ReadonlySet<string> = new Set(["temporarily_unavailable", "server_error"]);
+
 /** Largest response body read from the provider: discovery, JWKS, token, userinfo. */
 export const MAX_PROVIDER_RESPONSE_BYTES = 256 * 1024;
 /** Seconds for each request to the provider. */
@@ -165,7 +168,10 @@ export function isProviderUnavailable(error: unknown): boolean {
     if (
       e instanceof ProviderUnavailableError ||
       e.name === "TimeoutError" ||
-      e.name === "AbortError"
+      e.name === "AbortError" ||
+      // The provider's own "try later" (Ductus#2031 V4). The library checks
+      // `state` before `error`, so only a callback of this attempt gets here.
+      (e instanceof client.AuthorizationResponseError && PROVIDER_DOWN.has(e.error))
     )
       return true;
   }

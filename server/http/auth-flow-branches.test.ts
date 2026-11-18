@@ -81,13 +81,14 @@ function callback(url: URL | string, cookie?: string) {
   return finishLogin(new Request(url, { headers: cookie ? { cookie } : {} }), deps);
 }
 
-async function expectRefused(response: Response, status = 400) {
-  expect(response.status).toBe(status);
+/** A failed login (DAN-1081): 303 to the sign-in page with the code, only the attempt cleared. */
+async function expectRefused(response: Response, code = "login_failed") {
+  expect(response.status).toBe(303);
   expect(deps.openSession).not.toHaveBeenCalled();
-  const cookies = setCookies(response);
-  expect(cookies.has(SESSION_COOKIE_NAME)).toBe(false);
-  expect(cookies.get(LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
-  expect(response.headers.get("location")).toBeNull();
+  expect(response.headers.getSetCookie()).toEqual([
+    `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
+  ]);
+  expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=${code}`);
   expect(response.headers.get("cache-control")).toBe("no-store");
 }
 
@@ -262,7 +263,7 @@ describe("finishLogin with an attempt cookie it cannot trust", () => {
 });
 
 describe("finishLogin when the provider fails", () => {
-  it("shows the neutral page for an error the provider sent back, without redeeming anything", async () => {
+  it("sends an error the provider sent back to the sign-in page, without redeeming anything", async () => {
     const { authorize, value } = await begin();
     const url = new URL(CALLBACK);
     url.searchParams.set("error", "access_denied");
@@ -270,7 +271,7 @@ describe("finishLogin when the provider fails", () => {
     url.searchParams.set("state", authorize.searchParams.get("state")!);
     const response = await callback(url, `${LOGIN_COOKIE_NAME}=${value}`);
     await expectRefused(response);
-    expect(await response.text()).not.toContain("Ana Anić");
+    expect(await response.text()).toBe("");
     expect(idp.tokenRequests).toHaveLength(0);
     expect(JSON.stringify(errors.mock.calls)).not.toContain("Ana Anić");
   });
@@ -282,32 +283,36 @@ describe("finishLogin when the provider fails", () => {
   });
 
   it.each([
-    ["the client is refused", { endpointStatus: { path: "/token", status: 401 } }, 400],
-    ["the code has expired", { codeExpired: true }, 400],
+    ["the client is refused", { endpointStatus: { path: "/token", status: 401 } }, "login_failed"],
+    ["the code has expired", { codeExpired: true }, "login_failed"],
     [
       "the token response has no ID token",
       { tokenBody: (b: Record<string, unknown>) => ({ ...b, id_token: undefined }) },
-      400,
+      "login_failed",
     ],
     [
       "the JWKS cannot be fetched",
       { reject: { path: "/jwks", error: new TypeError("fetch failed") } },
-      503,
+      "provider_unavailable",
     ],
-    ["userinfo answers 503", { endpointStatus: { path: "/me", status: 503 } }, 503],
+    [
+      "userinfo answers 503",
+      { endpointStatus: { path: "/me", status: 503 } },
+      "provider_unavailable",
+    ],
     [
       "the token endpoint times out",
       { reject: { path: "/token", error: new DOMException("timed out", "TimeoutError") } },
-      503,
+      "provider_unavailable",
     ],
-  ])("refuses with the right status when %s", async (_name, next, status) => {
+  ])("refuses with the right code when %s", async (_name, next, code) => {
     const { authorize, value } = await begin();
     idp.state.next = next;
     const response = await callback(
       idp.approve(authorize, CALLBACK),
       `${LOGIN_COOKIE_NAME}=${value}`,
     );
-    await expectRefused(response, status);
+    await expectRefused(response, code);
   });
 });
 
@@ -320,15 +325,15 @@ describe("finishLogin when the session ports fail", () => {
     );
   }
 
-  it("shows the unavailable page when opening the session throws, and logs only a code", async () => {
+  it("sends provider_unavailable when opening the session throws, and logs only a code", async () => {
     deps.openSession.mockRejectedValueOnce(
       Object.assign(new Error("connect ana@demo.ductus.test"), { code: "ECONNREFUSED" }),
     );
     const response = await approvedCallback();
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=provider_unavailable`);
     expect(setCookies(response).has(SESSION_COOKIE_NAME)).toBe(false);
     expect(setCookies(response).get(LOGIN_COOKIE_NAME)).toMatch(/Max-Age=0/);
-    expect(await response.text()).toContain("trenutačno ne odgovara");
     const logged = JSON.stringify(errors.mock.calls);
     expect(logged).toContain("Error:ECONNREFUSED");
     expect(logged).not.toContain("ana@demo.ductus.test");
@@ -347,7 +352,8 @@ describe("finishLogin when the session ports fail", () => {
     "logs only a fallback code when opening the session rejects with %s",
     async (_, reason, expected) => {
       deps.openSession.mockRejectedValueOnce(reason);
-      expect((await approvedCallback()).status).toBe(503);
+      const answer = await approvedCallback();
+      expect(answer.headers.get("location")).toBe(`${APP}/prijava?greska=provider_unavailable`);
       const logged = JSON.stringify(errors.mock.calls);
       expect(logged).toContain(expected);
       expect(logged).not.toContain("ana@demo.ductus.test");
@@ -355,12 +361,12 @@ describe("finishLogin when the session ports fail", () => {
     },
   );
 
-  it("shows the neutral 400 page on a conflict", async () => {
+  it("sends login_failed on a conflict", async () => {
     deps.openSession.mockResolvedValueOnce({ ok: false, reason: "conflict" });
     const response = await approvedCallback();
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(`${APP}/prijava?greska=login_failed`);
     expect(setCookies(response).has(SESSION_COOKIE_NAME)).toBe(false);
-    expect(await response.text()).toContain("Prijava nije dovršena");
   });
 
   it("still signs in when the previous session cannot be closed", async () => {

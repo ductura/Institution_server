@@ -256,15 +256,16 @@ describe("dist/server.js", () => {
       });
       for (const path of ["/api/v1/auth/login", "/api/v1/auth/callback?code=x&state=y"]) {
         const response = await fetch(url(port, path), { redirect: "manual" });
-        expect(response.status, path).toBe(503);
-        expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+        // DAN-1081: the sign-in page with provider_unavailable, never the issuer.
+        expect(response.status, path).toBe(303);
+        expect(response.headers.get("location")).toBe("/prijava?greska=provider_unavailable");
         expect(response.headers.get("cache-control")).toBe("no-store");
         expect(response.headers.getSetCookie()).toEqual([]);
-        expect(response.headers.get("location")).toBeNull();
         const body = await response.text();
-        expect(body).toContain('<html lang="hr">');
-        expect(body).not.toMatch(/NODE_ENV|DUCTUS_AUTH_PROVIDER|OIDC_|fake|127\.0\.0\.1/u);
-        expect(body).not.toContain(CANARY);
+        expect(body).toBe("");
+        const headers = JSON.stringify([...response.headers]);
+        expect(headers).not.toMatch(/NODE_ENV|DUCTUS_AUTH_PROVIDER|OIDC_|fake|127\.0\.0\.1/u);
+        expect(headers).not.toContain(CANARY);
       }
       server.child.kill("SIGTERM");
       await server.exit;
@@ -272,7 +273,7 @@ describe("dist/server.js", () => {
       expect(output).not.toContain(CANARY);
       expect(output).not.toMatch(/OIDC_|DUCTUS_AUTH_PROVIDER/u);
       expect(server.stderr.join("")).toBe(
-        "login failed config AuthConfigError\nlogin failed config AuthConfigError\n",
+        "login failed config AuthConfigError provider_unavailable\n".repeat(2),
       );
     },
     20_000,

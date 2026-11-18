@@ -33,21 +33,25 @@ export const CONTRACTS: PackageSpec = {
   exports: { ".": "packages/contracts/index.ts" },
   // The contract document itself, info.version included, for clients and tools,
   // the work id vectors that clients and the server both pass (DAN-942) and the
-  // error catalogue with SHARED_ERRORS as data (DAN-928).
+  // error catalogue with SHARED_ERRORS as data (DAN-928) and where a failed
+  // login ends (DAN-1081).
   dataExports: {
     "./openapi/v1.json": "./openapi/v1.json",
     "./vectors/work-id.json": "./vectors/work-id.json",
     "./errors/catalog.json": "./errors/catalog.json",
+    "./auth/sign-in-failure.json": "./auth/sign-in-failure.json",
   },
   data: {
     "openapi/v1.json": "openapi/v1.json",
     "errors/catalog.json": "server/contracts/routes/error-catalog.json",
+    "auth/sign-in-failure.json": "server/contracts/routes/sign-in-failure.json",
     "vectors/work-id.json": "packages/contracts/vectors/work-id.json",
     "README.md": "packages/contracts/README.md",
   },
   dependencies: [],
   files: [
     "README.md",
+    "auth/sign-in-failure.json",
     "errors/catalog.json",
     "openapi/v1.json",
     "package.json",

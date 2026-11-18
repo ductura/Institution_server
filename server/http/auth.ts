@@ -24,6 +24,7 @@ import {
 
 import {
   type AuthDeps,
+  failedLogin,
   failurePage,
   finishLogin,
   logout,
@@ -35,6 +36,9 @@ import { sendBareRefusal, sendHtmlProblem } from "./problem.ts";
 import type { Route } from "./router.ts";
 
 type Flow = (request: Request, deps: AuthDeps) => Promise<Response>;
+
+/** The routes whose failures go to the sign-in page (DAN-1081); sign-out keeps its pages. */
+const LOGIN_IDS: ReadonlySet<string> = new Set(["auth.login.get", "auth.callback.get"]);
 
 function contractOf(id: string): RouteContract {
   const found = ROUTES.find((route) => route.id === id);
@@ -121,9 +125,20 @@ function route(id: string, flow: Flow, load: () => AuthDeps): Route {
         deps = load();
       } catch (error) {
         // The class only: a configuration error names a variable, and the
-        // page must not (D-09, a fake provider in production included).
-        console.error("login failed", "config", error instanceof Error ? error.name : "unknown");
-        await writeResponse(failurePage(503), response, contract);
+        // answer must not (D-09, a fake provider in production included).
+        // Without a configuration there is no origin: the Location is relative.
+        // Sign-out keeps its 503 page (Ductus#2031 R3).
+        const name = error instanceof Error ? error.name : "unknown";
+        if (LOGIN_IDS.has(id)) {
+          await writeResponse(
+            failedLogin("config", name, "provider_unavailable"),
+            response,
+            contract,
+          );
+        } else {
+          console.error("login failed", "config", name);
+          await writeResponse(failurePage(503), response, contract);
+        }
         return;
       }
       const origin = deps.config.redirectUri.origin;

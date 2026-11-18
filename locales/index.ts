@@ -18,6 +18,7 @@ export {
   SOURCE_DIGESTS,
   SOURCE_KEY_RENAMES,
   SOURCE_ADDITIONS,
+  SOURCE_KEY_ADDITIONS,
   SOURCE_TEXT_CHANGES,
   withoutAdditions,
   withSourceTexts,
