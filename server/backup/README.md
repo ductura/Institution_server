@@ -1,14 +1,55 @@
 # server/backup
 
-Područje iz [karte servera](../../docs/server-map.md). Mapa je za sada prazna (S-1A-a): ima samo prazne izvoze i tipove, bez logike.
+Područje iz [karte servera](../../docs/server-map.md). Rute, sheme i servis su još prazni (S-1A-a). Jedina logika je raspoređivač backupa (S-1G-a, DAN-1012-2).
 
 ## Što radi
 
 Kopije baze i pohrane te mjesečna proba povrata (ARCHITECTURE §9). Feature područje: logika rute ili posla bit će u `service`.
 
+### Raspoređivač backupa
+
+`createBackupScheduler` (`scheduler.ts`) radi na fiksnoj satnoj mreži od `start()` (DAN-1012-2c, opcija A, Ductus#2028 c.6965242237). Točka mreže k dospijeva u `start + k` sati po monotonom satu (`performance.now()`), a timer se uvijek postavlja na sljedeću točku. Zato ni posao ni čitanje ne pomiču mrežu. Točke koje blokirana petlja događaja propusti broje se odjednom. Nijedna točka se ne broji prije dospijeća: ako timer okine ranije (Node skraćuje razlomljenu odgodu), ponovno se postavlja na istu točku.
+
+Na točki čita postavke razine `system` iz kataloga (DAN-1012-1); točka `busy` ne čita ništa. `run()` poziva samo kad je `backup.enabled` točno `true` i kad je prošlo barem `backup.interval_hours` točaka od zadnjeg poziva ili od zadnje provjere koja je na vrijeme vidjela da backup nije uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
+
+Zato se `run()` poziva najviše jednom po intervalu mreže, a točno jednom kad posao završi unutar intervala. Posao koji završi unutar intervala, sinkron ili asinkron, ne pomiče sljedeći poziv. Dulji posao samo odgađa sljedeći poziv na prvu točku nakon svojeg kraja, a mreža ostaje ista. Čitanje postavki pomiče samo svoj poziv, unutar sata svoje točke. Čitanje koje završi u trenutku sljedeće točke ili kasnije ne poziva ništa i javlja `settings_unavailable`, bez obzira na to koji povratni poziv timera petlja izvrši prvi. Zato nijedan poziv ne izlazi iz sata svoje točke. Takvo kasno čitanje ne vraća brojanje na 0, ni kad je vidjelo da je backup isključen. Točke `busy`, `settings_unavailable` i `interval_invalid` mogu razmak samo produljiti.
+
+Točka koja samo čeka svoj sat ne javlja ništa. Razlozi se isporučuju kao makrozadatak (`setImmediate`, svaki poziv u svojem `try`): iza odluke točke, iza nastavka već razriješenog čitanja i iza bilježenja kraja posla. Zato primatelj ni trajanjem, ni bacanjem, ni pozivom `stop()` ne mijenja te odluke. Ugovor porta: primatelj samo bilježi i ne blokira. Svaka druga točka na kojoj se posao ne pokrene javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
+
+- `settings_unavailable`: čitač baci, ne vrati pravi `Map` (provjera kroz `Map.prototype`, pa vrijedi i `Map` iz drugog realma) ili ne završi prije sljedeće točke;
+- `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; točke se broje ispočetka;
+- `interval_invalid`: interval je izvan kataloga;
+- `busy`: provjera još traje kad stigne povratni poziv točke, ili je točka dospjela dok je `run()` trajao, i kad njezin povratni poziv stigne tek nakon sinkronog posla (jednom za svaku točku). Vrijeme koje je potrošio primatelj razloga nikad ne čini točku `busy`;
+- `run_failed`: posao je bacio ili je njegovo obećanje odbijeno.
+
+Kod `settings_unavailable` i `interval_invalid` točke se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Kad je `stop()` jednom pozvan, iz bilo kojeg povratnog poziva (`onSkip`, `readSettings`, `run`), ne počinje ni provjera, ni čitanje, ni poziv `run()`; čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku i razloge koji su već na putu do primatelja, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
+
+#### Kraj posla (DAN-1012-2e)
+
+Ugovor porta je `run: () => void | Promise<void>` (Ductus#2028 c.6968668259). Rezultat `run()` prati se jednim putem. Prije poziva nastaje jedno izvorno obećanje ovog realma. Isti poziv koji bilježi kraj posla ujedno to obećanje razrješava, a posao, provjera i `stop()` čekaju samo njega. Rezultat se normalizira jednom:
+
+- izvorni `Promise` iz bilo kojeg realma (`types.isPromise`) prati se kroz `Promise.prototype.then`, pa se njegov vlastiti `then` ne čita (vrijedi i za `Promise` iz `vm` konteksta s `then: undefined`);
+- svaki drugi objekt ili funkcija ide kroz `Promise.resolve`, koji `then` čita jednom; ugniježđeni thenable prati se kao kod `await`;
+- sinkroni povrat koji nije objekt završava posao odmah, a sinkroni izbačaj odmah daje `run_failed`.
+
+`Reflect.apply`, `Promise.prototype.then`, `Promise.resolve` i `types.isPromise` uzimaju se pri učitavanju modula, pa posao koji ih promijeni ne mijenja praćenje vlastitog kraja.
+
+Poznate granice raspoređivača:
+
+- Raspoređivač se još nigdje ne pokreće, pa je backup isključen (V-6 je vlasnikov).
+- Kad unutar posla backup stvarno krene, odgovornost je posla. Raspoređivač vidi samo poziv `run()`, pa asinkrona priprema unutar posla može skratiti razmak između stvarnih početaka.
+- Sporo čitanje (kraće od sata) pomiče svoj poziv, pa dva poziva u susjednim prozorima mogu biti bliža od intervala za trajanje tog čitanja.
+- `settings.read_values` razinu `system` danas nikome ne daje.
+- Više instanci bi svaka pokretale posao.
+- Posao koji ne završi drži `busy`, a `stop()` ga čeka. Thenable koji se razrješava samim sobom vrti mikrozadatke bez kraja i drži petlju događaja, kao i `await`.
+- Kraj thenablea koji nije izvorni `Promise` (`PromiseLike`) bilježi se u reakciji na `Promise.resolve`. Njegov `then` poziva se tek jedan mikrokorak nakon povrata iz `run()`, a sve što thenable sam prosljeđuje kroz vlastiti lanac kasni još za te korake.
+- Neke rezultate jezik ne može pratiti: izvorni `Promise` na kojem `Promise.prototype.then` baci (podklasa s nestandardnim konstruktorom, neprijateljski `constructor` ili species), te `Proxy` izvornog `Promise`a i objekt koji ga nasljeđuje. Oni se vode kao `run_failed` odmah, iako posao možda još traje, pa sljedeća točka može pozvati `run()` i `stop()` se može razriješiti prerano. Ako takvo obećanje kasnije bude odbijeno, odbijanje ostaje neobrađeno, a Node ga po zadanim postavkama prekida. Portove predaje sastavljač, kojem se vjeruje. Testovi te slučajeve vežu, pa svaka promjena ponašanja postaje odluka.
+- Primatelj razloga radi u istoj niti. Ako blokira petlju, i nakon `await`, to se računa kao kašnjenje čitanja ili posla koji je u tijeku (pravilo kasnog čitanja), pa točka može ostati bez poziva. Zato primatelj mora samo bilježiti (Ductus#2028 c.6967461849, opcija C).
+- Točka koju je blokirana petlja preskočila broji se, ali ne javlja razlog.
+
 ## Tko ga zove
 
-`http` (status za administratora) i planirani posao. Planirani posao je pozadinski proces s vlastitim sastavljačem; dok ga nema, područje zove samo `http`.
+`http` (status za administratora) i planirani posao. Planirani posao je pozadinski proces s vlastitim sastavljačem; dok ga nema, područje zove samo `http`, a raspoređivač nitko.
 
 ## Koje podatke dira
 
@@ -18,7 +59,8 @@ Kopije glavne baze i replika bucketa.
 
 - `BACKUP_ROUTES`: popis ruta, za sada prazan (`routes.ts`);
 - `BACKUP_SCHEMAS`: sheme, za sada prazne (`schemas.ts`);
-- `BackupService`: tip servisa bez članova (`service.ts`).
+- `BackupService`: tip servisa bez članova (`service.ts`);
+- `createBackupScheduler`, `BACKUP_CHECK_MS`, `BACKUP_SKIP_REASONS` i njihovi tipovi: raspoređivač (`scheduler.ts`).
 
 ## Što ne smije uvoziti
 
