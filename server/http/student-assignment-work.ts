@@ -34,14 +34,20 @@ const own = (item: unknown, key: string): unknown =>
 /**
  * The 200 body from the two named own fields of each item, or null when the
  * value is no array or the body is not what the contract's closed schema
- * allows: nothing else a reader answers ever leaves.
+ * allows: nothing else a reader answers ever leaves. Items are read by index
+ * as own elements, never through a method or iterator of the value (review
+ * FAIL c.6968017042), and the first hole or field outside the schema ends it.
  */
 function bodyOf(value: unknown): { assignments: unknown[] } | null {
   if (!Array.isArray(value)) return null;
-  const assignments = Array.from(value, (item: unknown) => ({
-    assignmentId: own(item, "assignmentId"),
-    workState: own(item, "workState"),
-  }));
+  const length = value.length;
+  const assignments: unknown[] = [];
+  for (let index = 0; index < length; index += 1) {
+    const item = own(value, String(index));
+    const work = { assignmentId: own(item, "assignmentId"), workState: own(item, "workState") };
+    if (typeof BODY !== "object" || !Value.Check(BODY, { assignments: [work] })) return null;
+    assignments.push(work);
+  }
   const body = { assignments };
   return typeof BODY === "object" && Value.Check(BODY, body) ? body : null;
 }

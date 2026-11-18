@@ -265,6 +265,25 @@ describe("a reader that answers something else", () => {
     ]);
   });
 
+  // Review FAIL on 5511498 (c.6968017042): Array.from asked the value's own iterator.
+  it("an own iterator that skips a bad item is never asked: 503, not a partial 200", async () => {
+    let iterated = 0;
+    const good = { assignmentId: A1, workState: "submitted" as const };
+    const value = Object.assign([good, { assignmentId: A2, workState: "graded" }], {
+      [Symbol.iterator]: function* () {
+        iterated += 1;
+        yield good;
+      },
+    });
+    const lines = logged();
+    await stub(async () => ({ ok: true, value: value as never }));
+    const got = await get();
+    expect(problem(got)).toEqual([503, "unavailable", PROBLEM_KEYS]);
+    expect(JSON.stringify(got.body)).not.toContain(A1);
+    expect(iterated).toBe(0);
+    oneReport(lines, "type_error");
+  });
+
   it("an unknown error code is 503 without a report", async () => {
     const lines = logged();
     await stub(async () => ({ ok: false, error: { code: "SOMETHING_ELSE", messageKey: "x.y" } }));
