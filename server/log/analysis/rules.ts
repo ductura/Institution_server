@@ -81,6 +81,17 @@ function readThreshold(thresholds: unknown, key: AnalysisThresholdKey): RuleThre
 
 type ReadEntry = { readonly time: number; readonly event: string };
 
+// Adds an own index to a list built here. `push` and index assignment would go
+// through Array.prototype, where a read-only index makes them throw.
+function append<T>(list: T[], value: T): void {
+  Object.defineProperty(list, list.length, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
+}
+
 // The list index by index; an index or entry that cannot be read is skipped.
 function readEntries(entries: unknown): ReadEntry[] | null {
   try {
@@ -89,15 +100,16 @@ function readEntries(entries: unknown): ReadEntry[] | null {
     return null;
   }
   const length = ownValue(entries, "length");
-  if (!Number.isSafeInteger(length) || (length as number) > MAX_ENTRIES) return null;
+  const count = length as number;
+  if (!Number.isSafeInteger(length) || count < 0 || count > MAX_ENTRIES) return null;
   const read: ReadEntry[] = [];
-  for (let i = 0; i < (length as number); i += 1) {
+  for (let i = 0; i < count; i += 1) {
     const entry = ownValue(entries, String(i));
     const event = ownValue(entry, "event");
     const time = ownValue(entry, "timeMs");
     if (typeof event !== "string" || !Number.isSafeInteger(time)) continue;
     if (Math.abs(time as number) > MAX_TIME_MS) continue;
-    read.push({ time: (time as number) + 0, event }); // + 0 turns -0 into 0
+    append(read, { time: (time as number) + 0, event }); // + 0 turns -0 into 0
   }
   return read;
 }
@@ -117,7 +129,7 @@ function windowsOf(
     if (j < i) j = i;
     while (j < times.length && times[j]! < toMs) j += 1;
     if (j - i >= t.minCount) {
-      found.push(Object.freeze({ rule, fromMs, toMs, count: j - i, minCount: t.minCount }));
+      append(found, Object.freeze({ rule, fromMs, toMs, count: j - i, minCount: t.minCount }));
       i = j;
     } else {
       i += 1;

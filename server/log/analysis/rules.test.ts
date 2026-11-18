@@ -178,6 +178,23 @@ describe("log analysis: entries that are skipped or refused", () => {
     expect(result).toEqual({ ok: true, value: [] });
   });
 
+  // Codex review c.6965183659 (1): the analysis writes its own lists without
+  // going through Array.prototype, so read-only indexes there change nothing.
+  it("ignores read-only indexes on Array.prototype", () => {
+    const entries = at(FAILED, 0, 1, 2, W, W + 1, W + 2);
+    let result: unknown;
+    try {
+      for (let k = 0; k < 8; k += 1) {
+        Object.defineProperty(Array.prototype, k, { value: three[0], configurable: true });
+      }
+      result = run(entries);
+    } finally {
+      for (let k = 0; k < 8; k += 1)
+        delete (Array.prototype as unknown as Record<number, unknown>)[k];
+    }
+    expect(result).toEqual({ ok: true, value: [found(0, 3), found(W, 3)] });
+  });
+
   it("skips bad times and events, and counts times up to the Date limit", () => {
     const odd: unknown[] = [null, 7, FAILED, Object.create(three[0]!) as object];
     for (const t of [
@@ -238,6 +255,15 @@ describe("log analysis: entries that are skipped or refused", () => {
           ? { value: MAX_ENTRIES + 1, writable: true }
           : Reflect.getOwnPropertyDescriptor(t, k),
     });
+    // Codex review c.6965183659 (2): a length that is no count of entries.
+    const lengths = [-1, -MAX_ENTRIES, 1.5, Number.NaN, Infinity, "3", null, 2 ** 53];
+    const lying = lengths.map(
+      (value) =>
+        new Proxy([...three], {
+          getOwnPropertyDescriptor: (t, k) =>
+            k === "length" ? { value, writable: true } : Reflect.getOwnPropertyDescriptor(t, k),
+        }),
+    );
     for (const list of [
       null,
       undefined,
@@ -247,6 +273,7 @@ describe("log analysis: entries that are skipped or refused", () => {
       proxy,
       trap([...three]),
       long,
+      ...lying,
     ]) {
       expect(run(list)).toEqual(BAD_ENTRIES);
     }

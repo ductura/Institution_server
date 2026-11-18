@@ -10,7 +10,7 @@ Pravila analize zapisa područja `log` (S-1K.7-a, DAN-1010; [karta servera](../.
 - Pragovi su parametar, a zadani su `DEFAULT_ANALYSIS_THRESHOLDS`. Svako polje praga je sigurni cijeli broj > 0, a prozor je najviše 24 h. Inače poziv daje `ANALYSIS_THRESHOLD_INVALID`; pragovi se provjeravaju prvi.
 - Svaki ključ se čita jednom, kao vlastito podatkovno svojstvo. Getter, naslijeđena vrijednost, nositelj koji nije običan objekt (npr. funkcija) i čitanje koje baca (opozvani `Proxy`, zamka) vrijede kao nečitljivi.
 - Nečitljiv zapis se preskače. Preskače se i zapis kojem vrijeme nije cijeli broj unutar granice `Date` (`MAX_TIME_MS`) ili mu događaj nije točno string iz pravila.
-- Popis koji nije polje, koji baca ili je dulji od `MAX_ENTRIES` daje `ANALYSIS_ENTRIES_INVALID`. Tekstovi grešaka su u `locales/hr.json` pod `logAnalysis`. `analyzeLog` nikad ne baca, a rezultat je zamrznut.
+- Popis koji nije polje, koji baca, ili mu `length` nije cijeli broj od 0 do `MAX_ENTRIES`, daje `ANALYSIS_ENTRIES_INVALID`. Liste koje analiza gradi pišu se bez prolaska kroz `Array.prototype`. Tekstovi grešaka su u `locales/hr.json` pod `logAnalysis`. `analyzeLog` nikad ne baca, a rezultat je zamrznut.
 - Analiza se nikad ne koristi za ocjenu studenta i ništa ne šalje nastavnicima: nalaz nema računa, IP-a, ocjene ni primatelja.
 
 ## Tko ga zove
