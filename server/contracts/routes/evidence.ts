@@ -115,6 +115,32 @@ function unavailable(stages: readonly string[]): ErrorSpec {
   });
 }
 
+// Every canonical http(s) origin (new URL(v).origin === v), the set the server
+// accepts as APP_ORIGIN (DAN-930-1a, review FAIL c.6965388921): a host of the
+// code points WHATWG keeps in a domain, dots and empty labels included, unless
+// its last label before one trailing dot is a number (all digits or 0x hex),
+// which only a dotted-quad IPv4 may be; or a lowercase IPv6 literal. The port
+// is 0-65535 without a leading zero or the scheme's default. The server still compares it with
+// its own origin exactly (originLayer, pipeline step 7).
+const END = "(?![\\s\\S])";
+const DOMAIN = "[-!\"$&'()*+,.0-9;=_`a-z{}~]+";
+const NUMBER_LAST = `(?:[^:]*\\.)?(?:[0-9]+|0x[0-9a-f]*)\\.?(?::|${END})`;
+const OCTET = "(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])";
+const HOST = `(?:(?:${OCTET}\\.){3}${OCTET}|(?!${NUMBER_LAST})${DOMAIN}|\\[[0-9a-f:]+\\])`;
+const PORT =
+  "(?:0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
+const port = (fallback: string) => `(?::(?!${fallback}${END})${PORT})?`;
+const Origin = Type.String({
+  pattern: `^(?:https://${HOST}${port("443")}|http://${HOST}${port("80")})${END}`,
+});
+
+/** What the client sends for the guard: Origin (step 7) and `ductus-protocol` (readEvidenceBody). */
+const guarded = (...protocols: [string, ...string[]]) =>
+  closed({
+    origin: Origin,
+    "ductus-protocol": Type.Union(protocols.map((p) => Type.Literal(p))),
+  });
+
 // readGuardedBody: method and Origin, protocol, media type, cookie, then the body under limits.
 const GUARD_ERRORS = [
   refusal(403, "forbidden"),
@@ -141,6 +167,7 @@ export const open = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     body: closed({
       assignmentId: Type.String({
         pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
@@ -183,6 +210,7 @@ export const commit = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: MAX_COMMIT_BODY_BYTES,
+    headers: guarded("1", "2"),
     body: closed({
       documentId: Type.String(),
       clientTransactionId: TransactionId,
@@ -288,6 +316,7 @@ export const submit = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     body: closed({
       documentId: Type.String({ minLength: 1 }),
       // Revision 0 is a work with nothing saved: 409 blocked no_evidence while the
@@ -367,6 +396,7 @@ export const replay = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     // The first page has no head; every later page has the head the first one reported.
     body: Type.Union([
       closed({ documentId: Type.String(), from: Type.Literal(0) }),

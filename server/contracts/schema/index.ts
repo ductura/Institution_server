@@ -59,6 +59,15 @@ export type RequestSpec = {
   readonly body?: TObject | TUnion<TObject[]>;
   readonly contentType?: "application/json" | "application/x-www-form-urlencoded";
   readonly maxBodyBytes?: number;
+  /**
+   * Headers the client must set itself that the contract states nowhere else
+   * (DAN-930-1a): a closed object, lowercase names, every one required. It is
+   * checked on those names only, never on the whole request: `content-type` is
+   * `contentType`, and the browser adds the cookie and `sec-fetch-site`. A
+   * route without it may still need headers (Origin on every mutation but the
+   * identity provider's back-channel logout).
+   */
+  readonly headers?: TObject;
 };
 
 export type RouteContract = {
