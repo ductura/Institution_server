@@ -13,12 +13,15 @@
 --   false) is refused too, as are MERGE, COPY and INSERT ... ON CONFLICT;
 -- - at row level, every row write that does not pass the statement trigger
 --   of the base: through an inheritance or partitioned parent the statement
---   names, and the apply of logical replication, which fires row triggers
---   only.
+--   names, and the apply of logical replication, whose INSERT, UPDATE and
+--   DELETE fire row triggers only (its TRUNCATE fires the statement one).
+-- A statement naming a parent that reaches no row of the base changes
+-- nothing and is not refused.
 -- No role holds a right to write it, and only the owner reads it, by a
 -- policy of its own (for the verification of 868-1b). DDL by the owner or a
--- superuser (dropping or disabling a trigger, ALTER COLUMN TYPE ... USING,
--- a child table, RENAME) stays outside, as for the head (#125).
+-- superuser (dropping or disabling a trigger, replacing the trigger
+-- function, ALTER COLUMN TYPE ... USING, a child table, RENAME) stays
+-- outside, as for the head (#125).
 DO $$
 BEGIN
   IF current_user <> 'ductus_logs_migrator' OR current_database() <> 'ductus_logs' THEN

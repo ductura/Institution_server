@@ -68,7 +68,7 @@ END
 $$;
 
 
-SELECT plan(179);
+SELECT plan(180);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -218,8 +218,12 @@ SELECT set_eq(
 SELECT is((SELECT array_agg(seq::text || ' ' || encode(hash, 'hex')) FROM public.log_chain_base), ARRAY['0 ' || repeat('00', 32)],
   'the base is seq 0 and 32 zero bytes: nothing is cut');
 SELECT is((SELECT relowner::regrole::text || ' ' || (relrowsecurity AND relforcerowsecurity)::text
+             || ' ' || (SELECT proowner::regrole::text FROM pg_proc WHERE oid = 'public.log_chain_base_refuse_change()'::regprocedure)
            FROM pg_class WHERE oid = 'public.log_chain_base'::regclass),
-  'ductus_logs_migrator true', 'the migrator owns the base; RLS on it is enabled and forced');
+  'ductus_logs_migrator true ductus_logs_migrator', 'the migrator owns the base and its trigger function; RLS on the base is enabled and forced');
+SELECT is(pg_temp.try_as('ductus_logs_migrator', $$ DO $d$ BEGIN
+    IF (SELECT count(*) FROM public.log_chain_base) <> 1 THEN RAISE EXCEPTION 'unseen' USING ERRCODE = 'P0002'; END IF;
+  END $d$ $$), 'ok', 'the owner reads the one row of the base, by its policy');
 SELECT set_eq(
   $$ SELECT polname || ' ' || polcmd::text || ' ' || array_to_string(polroles::regrole[], ',')
             || ' using ' || coalesce(pg_get_expr(polqual, polrelid), '-') || ' check ' || coalesce(pg_get_expr(polwithcheck, polrelid), '-')
