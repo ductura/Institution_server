@@ -360,6 +360,96 @@ describe("ops.events.get accepts", () => {
   });
 });
 
+// Review on #328 at b6edc3e: the schema took fields { sessionToken }, which
+// operator_log leaves out. A differential test: the rule is read from the
+// migration itself, never copied, and the schema must keep exactly the names
+// the function keeps. lower() in PostgreSQL and toLowerCase agree on the
+// ASCII names the first condition lets through.
+describe("ops.events.get field names are the ones operator_log keeps", () => {
+  const sql = readFileSync(
+    new URL("../../db/logs/migrations/20261116190000_operator_log.sql", import.meta.url),
+    "utf8",
+  );
+  // The WHERE of the field list, not the address CASE above it, which also
+  // matches f.key and lower(f.key): exactly one such WHERE.
+  const wheres = [
+    ...sql.matchAll(
+      /WHERE f\.key OPERATOR\(pg_catalog\.~\) '([^']+)'\s+AND NOT pg_catalog\.lower\(f\.key\)\s+OPERATOR\(pg_catalog\.~\) '([^']+)'/gu,
+    ),
+  ];
+  const [, keyRule = "", wordRule = ""] = wheres.length === 1 ? wheres[0]! : [];
+  const kept = (name: string) =>
+    new RegExp(keyRule, "u").test(name) && !new RegExp(wordRule, "u").test(name.toLowerCase());
+  const words = wordRule.split("|");
+  const cases = [
+    ...words.flatMap((w) => {
+      const mixed = [...w].map((c, i) => (i % 2 === 0 ? c.toUpperCase() : c)).join("");
+      const capital = `${w[0]!.toUpperCase()}${w.slice(1)}`;
+      return [
+        w,
+        w.toUpperCase(),
+        mixed,
+        `a${capital}`,
+        `${w}1`,
+        `x${w.toUpperCase()}y`,
+        `my${mixed}Id`,
+      ];
+    }),
+    ...["sessionToken", "authToken", "csrfToken", "Cookie", "setCookie", "SeSsIoN1", "aSecretB"],
+    // Near misses the function keeps, and cookies, which holds cookie.
+    ...["tokn", "toke", "sesion", "passwd", "pass", "secrt", "auth", "bear", "credit", "cookies"],
+    ...["authorisation", "sessio", "credentia", "bearr"],
+    ...["toString", "constructor", "hasOwnProperty", "valueOf", "network", "reason", "attempt"],
+    ...["a", "Z9", "a1B2", "durationMs", "ip", "route", "status", "method", "kind", "ipRule"],
+    ...["", "1a", "_a", "a_b", "a-b", "a.b", "a b", "a\r\n", "a\n", "a\t", "a\u00a0", "a\u007f"],
+    // Kelvin sign, dotless i and long s: refused by the ASCII rule first.
+    ...[
+      "a\u0000",
+      "\u212aey",
+      "to\u212aen",
+      "s\u0131",
+      "\u017fession",
+      "C:\\token",
+      "a\\b",
+      "a/b",
+      "é",
+      "tokén",
+    ],
+  ];
+
+  it("reads the rule of the migration", () => {
+    expect(wheres).toHaveLength(1);
+    // Only syntax PostgreSQL and JavaScript read alike: letters, digits, ^$|[]*-.
+    expect(keyRule).toMatch(/^[A-Za-z0-9^$|[\]*-]+$/u);
+    expect(wordRule).toMatch(/^[a-z|]+$/u);
+    expect(keyRule).toBe("^[A-Za-z][A-Za-z0-9]*$");
+    expect(words).toEqual([
+      "token",
+      "cookie",
+      "secret",
+      "password",
+      "credential",
+      "bearer",
+      "authorization",
+      "session",
+    ]);
+    expect(cases.length).toBeGreaterThan(100);
+    expect(cases.filter(kept).length).toBeGreaterThan(20);
+    expect(cases.filter((c) => !kept(c)).length).toBeGreaterThan(60);
+  });
+
+  it.each(cases.map((name) => [JSON.stringify(name), name] as const))(
+    "%s: the schema keeps it exactly when operator_log does",
+    (_label, name) => expect(withFields(Object.fromEntries([[name, "x"]]))).toBe(kept(name)),
+  );
+
+  it("an own __proto__ key and every inherited name alone", () => {
+    expect(withFields(JSON.parse('{"__proto__":"x"}'))).toBe(false);
+    for (const name of ["toString", "constructor", "valueOf"])
+      expect(withFields(Object.fromEntries([[name, 1]]))).toBe(true);
+  });
+});
+
 // $ and \d mean other things outside JavaScript ($ before a final LF, \d any
 // Unicode digit), so a client validator in another language would accept
 // more: every pattern of the route ends at the end of the input, ASCII only.
@@ -404,6 +494,8 @@ describe("ops.events.get patterns", () => {
   it.each(own)("%s", (pattern) => {
     expect(pattern.startsWith("^")).toBe(true);
     expect(pattern.endsWith(END)).toBe(true);
+    // QA on #328 at b6edc3e: printable ASCII only, so no Unicode literal.
+    expect(pattern).toMatch(/^[\x20-\x7e]*$/u);
     const body = pattern.slice(0, -END.length);
     // Before the end, no shorthand class or word boundary, inside [] or out.
     expect(body).not.toMatch(/\\[dDwWsSbB]/u);

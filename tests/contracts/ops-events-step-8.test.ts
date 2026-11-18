@@ -10,26 +10,53 @@
 //   createTrafficRecorder writes (review on #320 at b777a70).
 // - The summary names what step 8 refuses on and what operator_log does to a
 //   network (review and QA on #320 at 221669b).
+import { randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
 import { IncomingMessage, ServerResponse } from "node:http";
 import { isIPv4, isIPv6, Socket } from "node:net";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { ROUTES } from "../../server/contracts/index.ts";
+import { INVENTORY, ROUTES, SERVER_SOURCES } from "../../server/contracts/index.ts";
 import {
   operatorPolicyLayer,
   type OperatorList,
+  createLayers,
   type SecondFactor,
 } from "../../server/http/index.ts";
 import { checkEvent } from "../../server/log/index.ts";
-import { sessionTokenFromCookie } from "../../server/session/index.ts";
+import { newSessionToken, sessionTokenFromCookie } from "../../server/session/index.ts";
 import {
   clientIpLayer,
   createTrafficRecorder,
+  isOpsPath,
   NO_TRUSTED_PROXIES,
 } from "../../server/traffic/index.ts";
+
+// randomBytes passes through, except where issuable() hands newSessionToken
+// the bytes of a token (DAN-843-1c, class 1 of the FAILs on #328).
+vi.mock("node:crypto", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:crypto")>();
+  return { ...actual, randomBytes: vi.fn(actual.randomBytes) };
+});
+
+/**
+ * Could login issue this token? newSessionToken of session-token.ts is given
+ * the 32 bytes the token decodes to as its randomness, and must give back the
+ * token itself: not a check of length and alphabet, but the generator.
+ */
+function issuable(token: string): boolean {
+  const bytes = Buffer.from(token, "base64url");
+  if (bytes.length !== 32) return false;
+  let asked: number | undefined;
+  vi.mocked(randomBytes).mockImplementationOnce(((size: number) => {
+    asked = size;
+    return bytes;
+  }) as typeof randomBytes);
+  const issued = newSessionToken().token;
+  return asked === 32 && issued === token;
+}
 
 type Vector = {
   name: string;
@@ -184,15 +211,37 @@ describe("every request of ops.events.get through step 8", () => {
     async (name) => {
       const { request } = vector(name);
       const token = sessionTokenFromCookie(request.headers?.cookie);
-      expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/u);
-      // QA on #328: a token newSessionToken can give, 32 bytes in canonical
-      // base64url; the last character carries 4 bits, so it cannot be "1".
-      expect(Buffer.from(token!, "base64url")).toHaveLength(32);
-      expect(Buffer.from(token!, "base64url").toString("base64url")).toBe(token);
+      // QA and review on #328: a token newSessionToken can give.
+      expect(issuable(token!)).toBe(true);
       const got = await step8(request, "unconfirmed");
       expect(got.seen).toEqual([`listed:${token}`, `factor:${token}`]);
     },
   );
+
+  // The last character of 32 bytes carries 4 bits, so "1" cannot end one.
+  const TOKEN = "izmisljeni-token-operatora-0000000000000000";
+  const notIssuable: readonly (readonly [string, string])[] = [
+    ["the old vector token", "izmisljeni-token-operatora-0000000000000001"],
+    ["42 characters", TOKEN.slice(1)],
+    ["44 characters", `${TOKEN}A`],
+    ["padding", `${TOKEN}=`],
+    ["+ for -", TOKEN.replaceAll("-", "+")],
+    ["/ inside", `${TOKEN.slice(0, 10)}/${TOKEN.slice(11)}`],
+    ...["\r\n", "\t", "\u00a0", "\u007f", "\u0000", " "].map(
+      (c) =>
+        [`${JSON.stringify(c)} inside`, `${TOKEN.slice(0, 20)}${c}${TOKEN.slice(20)}`] as const,
+    ),
+    ["empty", ""],
+  ];
+  it.each(notIssuable)("a token login cannot issue: %s", (_name, token) =>
+    expect(issuable(token)).toBe(false),
+  );
+
+  it("tokens newSessionToken issues pass, and the vector token", () => {
+    vi.mocked(randomBytes).mockClear();
+    for (let i = 0; i < 64; i += 1) expect(issuable(newSessionToken().token)).toBe(true);
+    expect(issuable(TOKEN)).toBe(true);
+  });
 
   it.each(ofStatus(200, 422, 503))(
     "%s: a confirmed operator on the list passes step 8 to the route",
@@ -315,9 +364,13 @@ function asOperatorLogRow(
 
 const CONTRACT_PATHS: ReadonlySet<string> = new Set(ROUTES.map((r) => r.path));
 const NO_ROUTE_PATH = "/api/v1/no-such-route";
-/** The router's template for a path without parameters, or null (404, route none). */
+/**
+ * The router's template for a path without parameters, whatever the method:
+ * the router finds the path first and answers 405 for another method on it
+ * (router.ts); null for a path it does not know (404, route none).
+ */
 const routeOf = (request: IncomingMessage): string | null =>
-  ROUTES.find((r) => r.path === request.url && r.method === request.method)?.path ?? null;
+  ROUTES.find((r) => r.path === request.url)?.path ?? null;
 
 /** A host inside a masked network: the network's address plus 0x17. */
 function hostIn(network: unknown): string {
@@ -363,6 +416,123 @@ async function recorded(row: Row, lagMs = 3): Promise<Record<string, unknown>> {
   return written[0]!;
 }
 
+/**
+ * The statuses a traffic.request row can carry, from the layers before the
+ * route and the route itself (server/http/pipeline.ts, router.ts). The
+ * recorder is not armed yet (step 5 is empty); that steps 3 and 4 refusals
+ * are recorded too is the plan (docs/server-map.md, step 5). The model is
+ * the server once the route is mounted (843-2): a CONTRACT_ONLY route answers
+ * 404 until then.
+ * - On a path of the contract: what the route of that method declares
+ *   (responses and errors), or 405 when no route there has the method.
+ * - On another path (route none): 404.
+ * - 429 of step 4, 499 (closed early) and 500 (answerInternal), everywhere.
+ * - 403 of step 3 and 401, 403 and 503 of step 8 where isOpsPath holds; for
+ *   route none the path is not kept, so it may have been one.
+ * - 403 of step 7 where the real origin layer refuses a request without an
+ *   Origin (a method outside GET, HEAD and OPTIONS, but not a route of the
+ *   identity provider).
+ * No row is written for the 503 while draining (start.ts answers before the
+ * handler) nor for what Node refuses before a request event (400, 408, 431).
+ */
+const originCheck = createLayers({ expectedOrigin: null }).originCheck;
+
+async function originRefuses(method: string, path: string): Promise<boolean> {
+  const message = new IncomingMessage(new Socket());
+  message.method = method;
+  message.url = path;
+  const response = new ServerResponse(message);
+  const outcome = await originCheck(message, response);
+  return outcome === "done" && response.statusCode === 403;
+}
+
+const declaredOf = (route: (typeof ROUTES)[number]) =>
+  [...route.responses, ...route.errors].map((r) => r.status);
+
+async function answerable(method: string, route: string): Promise<ReadonlySet<number>> {
+  const everywhere = [429, 499, 500];
+  if (route === "none") return new Set([404, ...everywhere, 401, 403, 503]);
+  const onPath = ROUTES.filter((r) => r.path === route);
+  if (onPath.length === 0) return new Set();
+  const own = onPath.find((r) => r.method === method);
+  return new Set([
+    ...(own === undefined ? [405] : declaredOf(own)),
+    ...everywhere,
+    ...(isOpsPath(route) ? [401, 403, 503] : []),
+    ...((await originRefuses(method, route)) ? [403] : []),
+  ]);
+}
+
+const trafficRows = (rows: readonly Row[]) => rows.filter((r) => r.kind === "traffic.request");
+
+/** Why a traffic.request row's status is not one its route can answer, if it is not. */
+async function statusProblem(row: Row): Promise<string | undefined> {
+  const { method, route, status } = row.fields;
+  return (await answerable(String(method), String(route))).has(Number(status))
+    ? undefined
+    : `${String(method)} ${String(route)} cannot answer ${String(status)}`;
+}
+
+// Per route, for every route of the inventory (inventory.ts): which layer
+// can answer which status, against a rule written out here, not the layers.
+describe("answerable, for every route of the inventory", () => {
+  const inventoried = (key: string) => key in INVENTORY || key in SERVER_SOURCES;
+  const SAFE = ["GET", "HEAD", "OPTIONS"];
+
+  it.each(ROUTES.map((r) => [r.id, r] as const))("%s", async (_id, route) => {
+    expect(inventoried(route.inventory)).toBe(true);
+    const ops = isOpsPath(route.path);
+    const provider = route.access === "identity_provider";
+    const methods = new Set<string>(
+      ROUTES.filter((r) => r.path === route.path).map((r) => r.method),
+    );
+    for (const method of [...SAFE, "POST", "PUT", "PATCH", "DELETE", "OTHER"]) {
+      const own = ROUTES.find((r) => r.path === route.path && r.method === method);
+      const declared = new Set(own === undefined ? [405] : declaredOf(own));
+      const step7 = !SAFE.includes(method) && !(provider && method === route.method);
+      const allowed = await answerable(method, route.path);
+      for (let status = 100; status < 600; status += 1) {
+        const want =
+          declared.has(status) ||
+          [429, 499, 500].includes(status) ||
+          (ops && [401, 403, 503].includes(status)) ||
+          (step7 && status === 403);
+        expect(allowed.has(status), `${method} ${route.path} ${status}`).toBe(want);
+      }
+      expect(allowed.has(405)).toBe(!methods.has(method));
+    }
+  });
+
+  it("GET /api/v1/health answers none of 401, 403, 405 and 503; any other method 405", async () => {
+    const health = await answerable("GET", "/api/v1/health");
+    for (const status of [401, 403, 405, 503]) expect(health.has(status)).toBe(false);
+    for (const method of ["HEAD", "OPTIONS", "DELETE", "OTHER"])
+      expect((await answerable(method, "/api/v1/health")).has(405)).toBe(true);
+  });
+
+  it("an operator path and a mutation give 403; the provider's back-channel does not", async () => {
+    const ops = await answerable("GET", "/api/v1/ops/events");
+    for (const status of [401, 403, 503]) expect(ops.has(status)).toBe(true);
+    const mutation = ROUTES.find((r) => r.method === "POST" && r.access !== "identity_provider");
+    expect((await answerable(mutation!.method, mutation!.path)).has(403)).toBe(true);
+    const provider = ROUTES.filter((r) => r.access === "identity_provider" && r.method === "POST");
+    expect(provider.length).toBeGreaterThan(0);
+    for (const r of provider) {
+      expect(await originRefuses(r.method, r.path)).toBe(false);
+      expect(declaredOf(r).includes(403) || isOpsPath(r.path)).toBe(
+        (await answerable(r.method, r.path)).has(403),
+      );
+    }
+  });
+
+  it("a path outside the contract gives nothing; route none its own set", async () => {
+    expect((await answerable("GET", "/api/v1/no-such-route")).size).toBe(0);
+    expect([...(await answerable("GET", "none"))].sort()).toEqual([
+      401, 403, 404, 429, 499, 500, 503,
+    ]);
+  });
+});
+
 describe("the page vector is what the log flow writes and operator_log returns", () => {
   const page = vector("page");
   const rows = (page.response.body as { events: Row[] }).events;
@@ -396,18 +566,28 @@ describe("the page vector is what the log flow writes and operator_log returns",
     },
   );
 
-  // A status the route declares, or one the pipeline gives on any route:
-  // 403 (step 3), 405, 429, 499 (closed early) and 500.
-  it("every traffic.request status is one its route can answer", () => {
-    const pipeline = [403, 405, 429, 499, 500];
-    for (const row of rows.filter(
-      (r) => r.kind === "traffic.request" && r.fields.route !== "none",
-    )) {
-      const route = ROUTES.find(
-        (r) => r.path === row.fields.route && r.method === row.fields.method,
-      );
-      const declared = [...(route?.responses ?? []), ...(route?.errors ?? [])].map((r) => r.status);
-      expect([...declared, ...pipeline], `seq ${row.seq}`).toContain(row.fields.status);
+  // Review on #328 at b6edc3e: 403 was let through on every route, so a
+  // health row of 403 passed. Now per route, by answerable() below.
+  it("every traffic.request status is one its route can answer", async () => {
+    for (const row of trafficRows(rows))
+      expect(await statusProblem(row), `seq ${row.seq}`).toBeUndefined();
+  });
+
+  // On an in-memory copy of the row, never the file: the health row as 403
+  // (the review's case) and every status outside answerable, row by row.
+  it("a status its route cannot answer fails the check, row by row", async () => {
+    const health = trafficRows(rows).find((r) => r.fields.route === "/api/v1/health");
+    expect(health?.seq).toBe(44);
+    const as403 = { ...health!, fields: { ...health!.fields, status: 403 } };
+    expect(await statusProblem(as403)).toBeDefined();
+    for (const row of trafficRows(rows)) {
+      const allowed = await answerable(String(row.fields.method), String(row.fields.route));
+      for (let status = 100; status < 600; status += 1) {
+        const mutant = { ...row, fields: { ...row.fields, status } };
+        expect((await statusProblem(mutant)) === undefined, `seq ${row.seq} ${status}`).toBe(
+          allowed.has(status),
+        );
+      }
     }
   });
 

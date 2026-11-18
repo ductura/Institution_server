@@ -56,9 +56,27 @@ const RequestId = Type.String({
   pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}${END}`,
 });
 const AccountKind = Type.String({ pattern: `^[a-z_]{1,32}${END}` });
-/** operator_log's fields: names of ASCII letters and digits, scalar values only. */
+/**
+ * The words operator_log leaves a field out for, in any case (its
+ * lower(key) ~ 'token|cookie|...'): a name holding one never comes out
+ * (review on #328 at b6edc3e: sessionToken passed the schema).
+ */
+const SECRET_WORDS = [
+  "token",
+  "cookie",
+  "secret",
+  "password",
+  "credential",
+  "bearer",
+  "authorization",
+  "session",
+] as const;
+const anyCase = (word: string) => [...word].map((c) => `[${c}${c.toUpperCase()}]`).join("");
+/** A field name operator_log keeps: ASCII letters and digits, none of the words. */
+const FIELD_NAME = `^(?![A-Za-z0-9]*(?:${SECRET_WORDS.map(anyCase).join("|")}))[A-Za-z][A-Za-z0-9]*${END}`;
+/** operator_log's fields: the names it keeps, scalar values only. */
 const Fields = Type.Record(
-  Type.String({ pattern: `^[A-Za-z][A-Za-z0-9]*${END}` }),
+  Type.String({ pattern: FIELD_NAME }),
   Type.Union([Type.String(), Type.Number(), Type.Boolean(), Type.Null()]),
   { additionalProperties: false },
 );
@@ -85,7 +103,7 @@ export const opsEventsGet = defineRoute({
   // confirmed WebAuthn factor (step 8), which answers 503 when it cannot ask.
   access: "signed_in",
   summary:
-    'The operator\'s read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator read (operator_log) masks it (an address only as a network: the host part is always cut, a mask longer than /24 for IPv4 or /48 for IPv6 is cut to it, a shorter one such as /8 stays; no token, cookie or session value; a value the read cannot vouch for is "hidden"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3), or for an account not on the operator list of the server or without a confirmed second factor (step 8); 401 unauthenticated without a live session (step 8); 503 unavailable when step 8 cannot ask the operator list or the second factor. from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), a decimal of 0 to 2^53-1 without a leading zero. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.',
+    'The operator\'s read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator read (operator_log) masks it (an address only as a network: the host part is always cut, a mask longer than /24 for IPv4 or /48 for IPv6 is cut to it, a shorter one such as /8 stays; a field whose name is not ASCII letters and digits, or holds token, cookie, secret, password, credential, bearer, authorization or session in any case, is left out; a value the read cannot vouch for is "hidden"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3), or for an account not on the operator list of the server or without a confirmed second factor (step 8); 401 unauthenticated without a live session (step 8); 503 unavailable when step 8 cannot ask the operator list or the second factor. from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), a decimal of 0 to 2^53-1 without a leading zero. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.',
   request: {
     query: closed({
       from: QueryInstant,
