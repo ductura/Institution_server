@@ -11,8 +11,9 @@
 --     an identity function or a view that reads the session (pg_settings, or
 --     a view of the database whose definition names either), closed over, so
 --     app.current_actor and whatever calls it, at any depth and through views,
---     are in. Bodies are matched by name, so a name in a comment counts too
---     (more is caught, never less).
+--     are in. A name counts as a whole word, with or without "(" after it,
+--     so a comment between a name and its bracket, (r).name or a name in a
+--     comment are caught too (more is caught, never less).
 --   * the calls: every function (funcid) and operator (opno, by its oprcode)
 --     in the stored node tree of pg_policy.polqual and polwithcheck, by oid,
 --     whatever the search path, quoting or overloading. Each call counts.
@@ -22,7 +23,7 @@
 --   * what a node tree does not show: an operator, cast or domain CHECK that
 --     reads the session, or a view read by a policy; none may exist (4).
 -- Left to review: a name built at run time for EXECUTE, SHOW, C functions,
--- a name in a body written with quotes around a part of it.
+-- a name written with U& escapes or quotes around a part of it.
 -- Stricter than the planner: (SELECT g(app.current_user_id())) and
 -- (SELECT (app.current_actor()).user_id) are InitPlans but are caught.
 --
@@ -60,16 +61,32 @@ CREATE FUNCTION test_dan1066.via_token() RETURNS text LANGUAGE sql STABLE AS $$ 
 CREATE VIEW test_dan1066.actor_v AS SELECT app.current_user_id() AS id;
 CREATE FUNCTION test_dan1066.via_view() RETURNS uuid LANGUAGE plpgsql STABLE
   AS $$ BEGIN RETURN (SELECT id FROM test_dan1066.actor_v); END $$;
-CREATE FUNCTION test_dan1066.cmt() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id/**/() $$;
+CREATE FUNCTION test_dan1066.cmt() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id/* /* */ */() $$;
+CREATE FUNCTION test_dan1066.cr() RETURNS uuid LANGUAGE sql STABLE AS E'SELECT app.current_user_id -- x\r()';
+CREATE FUNCTION test_dan1066.loud() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT APP.CURRENT_USER_ID() $$;
+CREATE FUNCTION test_dan1066.show_all() RETURNS int LANGUAGE sql STABLE AS $$ SELECT count(*)::int FROM pg_show_all_settings() $$;
+CREATE FUNCTION test_dan1066."who[1]"() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id() $$;
+CREATE FUNCTION test_dan1066.bracket() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT test_dan1066."who[1]"() $$;
+CREATE TYPE test_dan1066.tag AS (v uuid);
+CREATE TABLE test_dan1066.tagged (v uuid);
+CREATE FUNCTION test_dan1066.pick(r test_dan1066.tagged) RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id() $$;
+CREATE FUNCTION test_dan1066.wrap(r test_dan1066.tag) RETURNS uuid LANGUAGE sql STABLE SET search_path = test_dan1066
+  AS $$ SELECT t.pick FROM test_dan1066.tagged t WHERE t.v = r.v $$;
+CREATE FUNCTION test_dan1066.to_tag(text) RETURNS test_dan1066.tag LANGUAGE sql STABLE
+  AS $$ SELECT ROW(app.current_user_id())::test_dan1066.tag $$;
+CREATE CAST (text AS test_dan1066.tag) WITH FUNCTION test_dan1066.to_tag(text);
+CREATE DOMAIN test_dan1066.mine_id AS uuid CHECK (VALUE = app.current_user_id());
 CREATE FUNCTION test_dan1066.is_me(a uuid, b uuid DEFAULT app.current_user_id()) RETURNS boolean
   LANGUAGE sql STABLE AS $$ SELECT $1 = $2 $$;
-CREATE FUNCTION test_dan1066.sf(boolean, uuid) RETURNS boolean LANGUAGE sql STABLE
-  AS $$ SELECT coalesce($1, false) OR $2 = app.current_user_id() $$;
-CREATE AGGREGATE test_dan1066.any_mine(uuid) (SFUNC = test_dan1066.sf, STYPE = boolean);
+CREATE FUNCTION test_dan1066.sf(boolean, uuid) RETURNS boolean LANGUAGE sql IMMUTABLE
+  AS $$ SELECT coalesce($1, false) OR $2 IS NOT NULL $$;
+CREATE FUNCTION test_dan1066.ff(boolean) RETURNS boolean LANGUAGE sql STABLE
+  AS $$ SELECT $1 AND app.current_user_id() IS NOT NULL $$;
+CREATE AGGREGATE test_dan1066.any_mine(uuid) (SFUNC = test_dan1066.sf, STYPE = boolean, FINALFUNC = test_dan1066.ff);
 
--- Readers are functions and views; a function is matched by name and "("
--- (comments between allowed), a view by its name alone. A function's text is
--- its body, its argument defaults and, for an aggregate, its support functions.
+-- Readers are functions and views, each matched by its name as a whole word.
+-- A function's text is its body, its argument defaults and, for an
+-- aggregate, its support functions.
 CREATE TEMP TABLE identity_reader AS
   WITH RECURSIVE obj (kind, oid, name, body) AS (
     SELECT 'f', p.oid, p.proname::text,
@@ -86,11 +103,25 @@ CREATE TEMP TABLE identity_reader AS
     UNION SELECT 'v', 'pg_catalog.pg_settings'::regclass::oid, 'pg_settings'
     UNION
     SELECT o.kind, o.oid, o.name FROM obj o, r
-    WHERE o.body ~* ('\m' || regexp_replace(r.name, '(\W)', '\\\1', 'g')
-                     || CASE r.kind WHEN 'f' THEN '"?(\s|/\*([^*]|\*+[^*/])*\*+/|--[^\n]*\n)*\(' ELSE '\M' END)
+    WHERE o.body ~* ('(^|[^\w$])' || regexp_replace(r.name, '(\W)', '\\\1', 'g') || '($|[^\w$])')
   )
   SELECT kind, oid FROM r;
 CREATE TEMP VIEW identity_fn AS SELECT oid FROM identity_reader WHERE kind = 'f';
+
+-- Calls the node tree of a policy does not show: an operator, cast or domain
+-- CHECK that reads the session, and a policy that reads a view.
+CREATE TEMP VIEW hidden_reader AS
+  SELECT 'operator ' || o.oid::regoperator::text AS found FROM pg_operator o
+  WHERE o.oid >= 16384 AND o.oprcode::oid IN (SELECT oid FROM identity_fn)
+  UNION ALL
+  SELECT 'cast ' || k.castsource::regtype || ' as ' || k.casttarget::regtype FROM pg_cast k
+  WHERE k.oid >= 16384 AND k.castfunc IN (SELECT oid FROM identity_fn)
+  UNION
+  SELECT 'domain ' || d.contypid::regtype FROM pg_constraint d, regexp_matches(d.conbin::text, ':funcid (\d+)', 'g') m
+  WHERE d.contypid <> 0 AND m[1]::oid IN (SELECT oid FROM identity_fn)
+  UNION ALL
+  SELECT 'policy ' || p.polname FROM pg_policy p
+  WHERE coalesce(p.polqual::text, '') || ' ' || coalesce(p.polwithcheck::text, '') ~ ':relkind v ';
 
 -- One InitPlan: {SUBLINK} of type 4 (EXPR) over a {QUERY} that holds no
 -- other node than its one target, a {FUNCEXPR} whose args are {CONST}s.
@@ -132,6 +163,8 @@ INSERT INTO probe_case VALUES
   ('n_depth', 'USING', 'owner = test_dan1066.f2()'),
   ('n_view', 'USING', 'owner = test_dan1066.via_view()'),
   ('n_comment', 'USING', 'owner = test_dan1066.cmt()'),
+  ('n_field', 'USING', 'owner = test_dan1066.wrap(ROW(owner)::test_dan1066.tag)'),
+  ('n_window', 'USING', '(SELECT bool_or(m) FROM (SELECT test_dan1066.any_mine(x) OVER () AS m FROM unnest(ARRAY[owner]) x) s)'),
   ('n_default', 'USING', 'test_dan1066.is_me(owner)'),
   ('n_aggregate', 'USING', '(SELECT test_dan1066.any_mine(x) FROM unnest(ARRAY[owner]) x)'),
   ('n_having', 'USING', 'owner = (SELECT app.current_user_id() HAVING label IS NOT NULL)'),
@@ -176,6 +209,8 @@ SELECT set_eq(
         't1066_n_depth.n_depth: test_dan1066.f2()',
         't1066_n_view.n_view: test_dan1066.via_view()',
         't1066_n_comment.n_comment: test_dan1066.cmt()',
+        't1066_n_field.n_field: test_dan1066.wrap(test_dan1066.tag)',
+        't1066_n_window.n_window: test_dan1066.any_mine(uuid)',
         't1066_n_default.n_default: test_dan1066.is_me(uuid,uuid)',
         't1066_n_aggregate.n_aggregate: test_dan1066.any_mine(uuid)',
         't1066_n_having.n_having: app.current_user_id()',
@@ -189,6 +224,15 @@ SELECT set_eq(
   'every call per row is caught, once per call, and none of the InitPlan shapes or a plain function is'
 );
 
+CREATE TABLE test_dan1066.t1066_hv (owner uuid);
+CREATE POLICY hv_view ON test_dan1066.t1066_hv USING (owner IN (SELECT id FROM test_dan1066.actor_v));
+SELECT set_eq(
+  $$ SELECT found FROM hidden_reader WHERE found ~ '(test_dan1066|hv_view)' $$,
+  ARRAY['operator test_dan1066.===(uuid,uuid)', 'cast text as test_dan1066.tag', 'domain test_dan1066.mine_id',
+        'policy hv_view'],
+  'an operator, a cast and a domain CHECK that read the session, and a policy that reads a view, are caught'
+);
+
 -- 2. The closure: the functions that read the session, also through others.
 SELECT ok(
   (SELECT array_agg(oid::regprocedure::text) FROM identity_fn) @> ARRAY[
@@ -197,7 +241,8 @@ SELECT ok(
     'institution.actor_assignment_ids(text[])', 'institution.work_accommodation(uuid,uuid)',
     'test_dan1066.f1()', 'test_dan1066.f2()', 'test_dan1066.mine(uuid,uuid)',
     'test_dan1066.token()', 'test_dan1066.via_token()', 'test_dan1066.via_view()',
-    'test_dan1066.cmt()', 'test_dan1066.is_me(uuid,uuid)', 'test_dan1066.any_mine(uuid)'],
+    'test_dan1066.cmt()', 'test_dan1066.is_me(uuid,uuid)', 'test_dan1066.any_mine(uuid)', 'test_dan1066.cr()',
+    'test_dan1066.loud()', 'test_dan1066.show_all()', 'test_dan1066.bracket()', 'test_dan1066.wrap(test_dan1066.tag)'],
   'the identity functions include the session readers and whatever calls them, at any depth'
 );
 SELECT ok(
@@ -246,24 +291,8 @@ SELECT cmp_ok(
   '>=', 30,
   'at least 30 policies of the database read the session, all as InitPlans but the exception'
 );
--- A call the node tree of a policy does not show: a cast, an operator or a
--- domain CHECK that reads the session, or a view the policy reads.
-SELECT is(
-  (SELECT count(*)::int FROM (
-     SELECT o.oprcode::oid AS fn FROM pg_operator o WHERE o.oid >= 16384
-     UNION ALL SELECT k.castfunc FROM pg_cast k WHERE k.oid >= 16384
-     UNION ALL SELECT m[1]::oid FROM pg_constraint d, regexp_matches(d.conbin::text, ':funcid (\d+)', 'g') m
-     WHERE d.contypid <> 0) x
-   WHERE x.fn IN (SELECT oid FROM identity_fn)),
-  0,
-  'no operator, cast or domain CHECK of the database reads the session'
-);
-SELECT is(
-  (SELECT count(*)::int FROM pg_policy p
-   WHERE coalesce(p.polqual::text, '') || ' ' || coalesce(p.polwithcheck::text, '') ~ ':relkind v '),
-  0,
-  'no policy of the database reads a view, whose calls its node tree would not show'
-);
+SELECT is_empty('SELECT found FROM hidden_reader',
+  'no operator, cast or domain CHECK of the database reads the session, and no policy reads a view');
 
 SELECT * FROM finish();
 ROLLBACK;
