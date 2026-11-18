@@ -70,6 +70,8 @@ CREATE FUNCTION test_dan1066.mentions() RETURNS text LANGUAGE sql IMMUTABLE
 CREATE FUNCTION test_dan1066.loud() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT APP.CURRENT_USER_ID() $$;
 CREATE FUNCTION test_dan1066.show_all() RETURNS int LANGUAGE sql STABLE AS $$ SELECT count(*)::int FROM pg_show_all_settings() $$;
 CREATE FUNCTION test_dan1066."who[1]"() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id() $$;
+CREATE FUNCTION test_dan1066."actor""key"() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT app.current_user_id() $$;
+CREATE FUNCTION test_dan1066.quoted() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT test_dan1066."actor""key"() $$;
 CREATE FUNCTION test_dan1066.bracket() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT test_dan1066."who[1]"() $$;
 CREATE TYPE test_dan1066.tag AS (v uuid);
 CREATE TABLE test_dan1066.tagged (v uuid);
@@ -86,6 +88,8 @@ CREATE FUNCTION test_dan1066.has_row(uuid) RETURNS boolean LANGUAGE plpgsql STAB
   AS $$ BEGIN RETURN EXISTS (SELECT 1 FROM test_dan1066.inner_t i WHERE i.owner IS DISTINCT FROM $1); END $$;
 CREATE FUNCTION test_dan1066.in_version(uuid) RETURNS boolean LANGUAGE plpgsql STABLE
   AS $$ BEGIN RETURN EXISTS (SELECT 1 FROM institution.assignment_version v WHERE v.assignment_id = $1); END $$;
+CREATE FUNCTION test_dan1066.in_settings(uuid) RETURNS boolean LANGUAGE plpgsql STABLE
+  AS $$ BEGIN RETURN EXISTS (SELECT 1 FROM institution.institution_settings s WHERE s.institution_id = $1); END $$;
 CREATE FUNCTION test_dan1066.plain_read() RETURNS bigint LANGUAGE sql STABLE AS $$ SELECT count(*) FROM test_dan1066.tagged $$;
 CREATE DOMAIN test_dan1066.mine_id AS uuid CHECK (VALUE = app.current_user_id());
 CREATE FUNCTION test_dan1066.is_me(a uuid, b uuid DEFAULT app.current_user_id()) RETURNS boolean
@@ -97,7 +101,8 @@ CREATE FUNCTION test_dan1066.ff(boolean) RETURNS boolean LANGUAGE sql STABLE
 CREATE AGGREGATE test_dan1066.any_mine(uuid) (SFUNC = test_dan1066.sf, STYPE = boolean, FINALFUNC = test_dan1066.ff);
 
 -- Readers are functions, views and tables with RLS. A function or view names
--- a reader by its name as a whole word; a table reads the session when the
+-- a reader by its name as a whole word, as stored or with " doubled as SQL
+-- quotes it; a table reads the session when the
 -- node tree of one of its policies calls an identity function, by oid. A
 -- function's text is its body, its argument defaults and, for an aggregate,
 -- its support functions.
@@ -122,7 +127,8 @@ CREATE TEMP TABLE identity_reader AS
     UNION
     SELECT o.kind, o.oid, o.name FROM obj o, r
     WHERE CASE WHEN o.kind = 't' THEN r.kind = 'f' AND o.body ~ (':(?:funcid|aggfnoid|winfnoid) ' || r.oid || ' ')
-               ELSE o.body ~* ('(^|[^\w$])' || regexp_replace(r.name, '(\W)', '\\\1', 'g') || '($|[^\w$])') END
+               ELSE o.body ~* ('(^|[^\w$])(' || regexp_replace(r.name, '(\W)', '\\\1', 'g') || '|'
+                               || regexp_replace(replace(r.name, '"', '""'), '(\W)', '\\\1', 'g') || ')($|[^\w$])') END
   )
   SELECT kind, oid FROM r;
 CREATE TEMP VIEW identity_fn AS SELECT oid FROM identity_reader WHERE kind = 'f';
@@ -264,7 +270,8 @@ SELECT ok(
     'test_dan1066.token()', 'test_dan1066.via_token()', 'test_dan1066.via_view()',
     'test_dan1066.cmt()', 'test_dan1066.is_me(uuid,uuid)', 'test_dan1066.any_mine(uuid)', 'test_dan1066.cr()',
     'test_dan1066.loud()', 'test_dan1066.show_all()', 'test_dan1066.bracket()', 'test_dan1066.wrap(test_dan1066.tag)',
-    'test_dan1066.mentions()', 'test_dan1066.has_row(uuid)', 'test_dan1066.in_version(uuid)'],
+    'test_dan1066.mentions()', 'test_dan1066.has_row(uuid)', 'test_dan1066.in_version(uuid)',
+    'test_dan1066.quoted()', 'test_dan1066.in_settings(uuid)'],
   'the identity functions include the session readers and whatever calls them, at any depth, and a name in a string or comment errs towards more'
 );
 SELECT ok(
