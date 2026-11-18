@@ -1,5 +1,6 @@
-// DAN-1010-1a (S-1K.7-a): log analysis, rule login_failures, on invented entries.
-// Contract Ductus#2028 c.6964677996. Time is only in the entries: no clock.
+// DAN-1010-1a/1b (S-1K.7-a): log analysis, rules login_failures and
+// traffic_refusals, on invented entries. Contracts Ductus#2028 c.6964677996
+// (1a) and c.6967029458 (1b). Time is only in the entries: no clock.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -19,7 +20,9 @@ import {
 
 const T0 = Date.UTC(2026, 10, 18, 9, 0);
 const W = 60_000;
-const SMALL: AnalysisThresholds = { loginFailures: { windowMs: W, minCount: 3 } };
+// trafficRefusals has its own pair, so a rule given the other rule's threshold fails.
+const TR = { trafficRefusals: { windowMs: 30_000, minCount: 4 } };
+const SMALL: AnalysisThresholds = { loginFailures: { windowMs: W, minCount: 3 }, ...TR };
 const FAILED = "authn.login_failed";
 const SECOND = "authn.second_factor_failed";
 const refused = (code: string) => ({
@@ -43,6 +46,11 @@ const found = (from: number, count: number, t = SMALL.loginFailures) => ({
 const counts = (entries: unknown, t?: unknown) => {
   const result = run(entries, t);
   return result.ok ? result.value.map((f) => [f.fromMs - T0, f.count]) : result;
+};
+// Like counts, with the rule name of each finding.
+const named = (entries: unknown, t?: unknown) => {
+  const result = run(entries, t);
+  return result.ok ? result.value.map((f) => [f.rule, f.fromMs - T0, f.count]) : result;
 };
 
 const without = (holder: object, key: string) => {
@@ -86,7 +94,7 @@ const UNREADABLE: [string, (holder: object, key: string, value: unknown) => obje
 describe("log analysis: the contract's fixed bounds", () => {
   const DAY_MS = 86_400_000;
   const DATE_LIMIT_MS = 8_640_000_000_000_000;
-  const one = (windowMs: number) => ({ loginFailures: { windowMs, minCount: 1 } });
+  const one = (windowMs: number) => ({ ...TR, loginFailures: { windowMs, minCount: 1 } });
 
   it("has the bounds of the contract", () => {
     expect([MAX_WINDOW_MS, MAX_TIME_MS, MAX_ENTRIES]).toEqual([DAY_MS, DATE_LIMIT_MS, 1_000_000]);
@@ -116,17 +124,30 @@ describe("log analysis: the contract's fixed bounds", () => {
 describe("log analysis: thresholds that are refused", () => {
   const bad: unknown[] = [0, -0, -1, 1.5, Number.NaN, Infinity, Number.MAX_SAFE_INTEGER + 1];
   bad.push("3", " 3\r\n", null, undefined, 3n, new Number(3), { valueOf: () => 3 });
+  // Each refusal changes one key of the pair below, which itself is accepted.
+  it("accepts the base pair of thresholds", () => {
+    const both = [...at(FAILED, 0, 1, 2), ...at("traffic.rate_limited", 0, 1, 2, 3)];
+    expect(named(both, SMALL)).toEqual([
+      ["login_failures", 0, 3],
+      ["traffic_refusals", 0, 4],
+    ]);
+  });
+
   it.each(bad.map((v) => [String(v), v]))("refuses windowMs and minCount %s", (_, v) => {
-    for (const key of ["windowMs", "minCount"]) {
-      expect(
-        run(at(FAILED, 0, 1, 2), { loginFailures: { ...SMALL.loginFailures, [key]: v } }),
-      ).toEqual(BAD_THRESHOLD);
+    for (const rule of ["loginFailures", "trafficRefusals"] as const) {
+      for (const key of ["windowMs", "minCount"]) {
+        const t = { ...SMALL, [rule]: { ...SMALL[rule], [key]: v } };
+        expect(run(at(FAILED, 0, 1, 2), t), `${rule}.${key}`).toEqual(BAD_THRESHOLD);
+      }
     }
   });
 
   it("refuses a window over 24 h, missing thresholds and a missing rule", () => {
     for (const t of [
-      { loginFailures: { windowMs: MAX_WINDOW_MS + 1, minCount: 1 } },
+      { ...TR, loginFailures: { windowMs: MAX_WINDOW_MS + 1, minCount: 1 } },
+      { ...SMALL, trafficRefusals: { windowMs: MAX_WINDOW_MS + 1, minCount: 1 } },
+      { loginFailures: SMALL.loginFailures },
+      { ...TR },
       null,
       7,
       {},
@@ -137,8 +158,10 @@ describe("log analysis: thresholds that are refused", () => {
   });
 
   it("accepts a 24 h window, minCount 1, extra keys and undefined for the defaults", () => {
-    const edge = { loginFailures: { windowMs: MAX_WINDOW_MS, minCount: 1 }, other: 1 };
+    const edge = { ...TR, loginFailures: { windowMs: MAX_WINDOW_MS, minCount: 1 }, other: 1 };
     expect(counts(at(FAILED, 0), edge)).toEqual([[0, 1]]);
+    const trafficEdge = { ...SMALL, trafficRefusals: { windowMs: MAX_WINDOW_MS, minCount: 1 } };
+    expect(named(at("traffic.ip_denied", 0), trafficEdge)).toEqual([["traffic_refusals", 0, 1]]);
     const twenty = Array.from({ length: 20 }, () => ({ timeMs: T0, event: FAILED }));
     expect(analyzeLog(twenty, undefined)).toEqual(analyzeLog(twenty));
     expect(analyzeLog(twenty, undefined)).toMatchObject({
@@ -148,13 +171,15 @@ describe("log analysis: thresholds that are refused", () => {
   });
 
   it.each(UNREADABLE)("refuses a threshold read site that is %s", (_, make) => {
-    const rule = SMALL.loginFailures;
-    const cases = [
-      make(SMALL, "loginFailures", rule),
-      { loginFailures: make(rule, "windowMs", rule.windowMs) },
-      { loginFailures: make(rule, "minCount", rule.minCount) },
-    ];
-    for (const t of cases) expect(run(at(FAILED, 0, 1, 2), t)).toEqual(BAD_THRESHOLD);
+    for (const key of ["loginFailures", "trafficRefusals"] as const) {
+      const rule = SMALL[key];
+      const cases = [
+        make(SMALL, key, rule),
+        { ...SMALL, [key]: make(rule, "windowMs", rule.windowMs) },
+        { ...SMALL, [key]: make(rule, "minCount", rule.minCount) },
+      ];
+      for (const t of cases) expect(run(at(FAILED, 0, 1, 2), t), key).toEqual(BAD_THRESHOLD);
+    }
   });
 
   it("reports the threshold error first when the entries are bad too", () => {
@@ -311,7 +336,7 @@ describe("log analysis: entries that are skipped or refused", () => {
     for (const e of [FAILED.toUpperCase(), "__proto__", "toString", new String(FAILED), 1])
       odd.push({ timeMs: T0, event: e });
     expect(counts([...odd, three[0], three[1]])).toEqual([]);
-    const one = { loginFailures: { windowMs: 1, minCount: 1 } };
+    const one = { ...TR, loginFailures: { windowMs: 1, minCount: 1 } };
     for (const t of [MAX_TIME_MS, -MAX_TIME_MS]) {
       expect(run([{ timeMs: t, event: FAILED }], one)).toEqual({
         ok: true,
@@ -325,12 +350,12 @@ describe("log analysis: entries that are skipped or refused", () => {
   });
 
   it("turns -0 into 0 and sorts times as numbers", () => {
-    const one = { loginFailures: { windowMs: 1, minCount: 1 } };
+    const one = { ...TR, loginFailures: { windowMs: 1, minCount: 1 } };
     const result = run([{ timeMs: -0, event: FAILED }], one);
     expect(result.ok && Object.is(result.value[0]!.fromMs, 0)).toBe(true);
     // Times of different lengths: a string sort would put 10 and 100 before 9.
     const short = [100, 9, 10].map((timeMs) => ({ timeMs, event: FAILED }));
-    expect(run(short, { loginFailures: { windowMs: 2, minCount: 2 } })).toEqual({
+    expect(run(short, { ...TR, loginFailures: { windowMs: 2, minCount: 2 } })).toEqual({
       ok: true,
       value: [{ rule: "login_failures", fromMs: 9, toMs: 11, count: 2, minCount: 2 }],
     });
@@ -384,7 +409,7 @@ describe("log analysis: entries that are skipped or refused", () => {
           return Reflect.getOwnPropertyDescriptor(t, k);
         },
       });
-    const one = { loginFailures: { windowMs: 1, minCount: 1 } };
+    const one = { ...TR, loginFailures: { windowMs: 1, minCount: 1 } };
     expect(run(lastOnly(MAX_ENTRIES), one)).toEqual({
       ok: true,
       value: [found(0, 1, one.loginFailures)],
@@ -411,12 +436,14 @@ describe("log analysis: entries that are skipped or refused", () => {
       [valid, valid, getter({ event: FAILED }, "timeMs")],
     ];
     for (const list of lists) expect(run(list)).toEqual({ ok: true, value: [] });
-    const rule = SMALL.loginFailures;
-    const thresholds = [
-      getter({}, "loginFailures"),
-      { loginFailures: getter({ minCount: rule.minCount }, "windowMs") },
-      { loginFailures: getter({ windowMs: rule.windowMs }, "minCount") },
-    ];
+    const thresholds = (["loginFailures", "trafficRefusals"] as const).flatMap((key) => {
+      const rule = SMALL[key];
+      return [
+        getter(without(SMALL, key), key),
+        { ...SMALL, [key]: getter({ minCount: rule.minCount }, "windowMs") },
+        { ...SMALL, [key]: getter({ windowMs: rule.windowMs }, "minCount") },
+      ];
+    });
     for (const t of thresholds) expect(run(at(FAILED, 0, 1, 2), t)).toEqual(BAD_THRESHOLD);
     expect(calls).toBe(0);
   });
@@ -436,12 +463,16 @@ describe("log analysis: entries that are skipped or refused", () => {
       });
     const entry = counted("e", { timeMs: T0, event: FAILED });
     const rule = counted("r", { windowMs: W, minCount: 1 });
-    run(counted("list", [entry]), counted("t", { loginFailures: rule }));
-    // In the contract's order: thresholds first, then the list, then each entry.
+    const traffic = counted("q", { windowMs: W, minCount: 1 });
+    run(counted("list", [entry]), counted("t", { loginFailures: rule, trafficRefusals: traffic }));
+    // In the contract's order: every threshold first, then the list, then each entry.
     expect(reads).toEqual([
       "t.loginFailures",
       "r.windowMs",
       "r.minCount",
+      "t.trafficRefusals",
+      "q.windowMs",
+      "q.minCount",
       "list.length",
       "list.0",
       "e.event",
@@ -451,91 +482,226 @@ describe("log analysis: entries that are skipped or refused", () => {
     // Codex review c.6966142677: with a bad threshold the list is never read.
     reads.length = 0;
     const bad = counted("r", { windowMs: 0, minCount: 1 });
-    expect(run(counted("list", [entry]), counted("t", { loginFailures: bad }))).toEqual(
-      BAD_THRESHOLD,
-    );
-    expect(reads.filter((r) => !r.startsWith("t.") && !r.startsWith("r."))).toEqual([]);
+    const fine = counted("q", { windowMs: W, minCount: 1 });
+    const t = counted("t", { loginFailures: bad, trafficRefusals: fine });
+    expect(run(counted("list", [entry]), t)).toEqual(BAD_THRESHOLD);
+    // Every threshold is read before any is checked, and the list never is.
+    expect(reads).toEqual([
+      "t.loginFailures",
+      "r.windowMs",
+      "r.minCount",
+      "t.trafficRefusals",
+      "q.windowMs",
+      "q.minCount",
+    ]);
+
+    // Only trafficRefusals bad: the list is not read either.
+    reads.length = 0;
+    const badTraffic = { ...SMALL, trafficRefusals: { windowMs: W, minCount: 0 } };
+    expect(run(counted("list", [entry]), badTraffic)).toEqual(BAD_THRESHOLD);
+    expect(reads).toEqual([]);
   });
 
-  it("analyses 400 000 entries in one window below the threshold in linear time", () => {
+  // Review #288 c.6966982604: the pass over windows is linear; with the sort
+  // before it the whole analysis is O(n log n).
+  it("analyses 400 000 entries in one window below the threshold in O(n log n)", () => {
     const entries = Array.from({ length: 400_000 }, (_, k) => ({
       timeMs: T0 + (k % 1000),
       event: FAILED,
     }));
-    expect(run(entries, { loginFailures: { windowMs: MAX_WINDOW_MS, minCount: 400_001 } })).toEqual(
-      { ok: true, value: [] },
-    );
+    expect(
+      run(entries, { ...TR, loginFailures: { windowMs: MAX_WINDOW_MS, minCount: 400_001 } }),
+    ).toEqual({ ok: true, value: [] });
   }, 10_000);
 });
 
-describe("rule login_failures", () => {
-  it("has the name, key and events of the contract, all in the catalog", () => {
-    expect(ANALYSIS_RULES.map((r) => [r.name, r.key, [...r.events]])).toEqual([
-      ["login_failures", "loginFailures", [FAILED, SECOND]],
-    ]);
-    for (const event of [FAILED, SECOND]) expect(Object.hasOwn(EVENT_CATALOG, event)).toBe(true);
-  });
-
-  it.each([
-    ["below the threshold", at(FAILED, 0, 1), []],
-    ["exactly on the threshold", at(FAILED, 0, 1, W - 1), [[0, 3]]],
-    ["above the threshold", at(FAILED, 0, 1, 2, 3), [[0, 4]]],
-    ["an entry windowMs after the first is outside", at(FAILED, 0, 1, W), []],
+// Name, threshold key, both events, the test pair (windowMs, minCount) from
+// SMALL and an event of the other rule, all written out.
+// The last item holds the expected [fromMs − T0, count] of each table row below,
+// written out per rule (rows in the order of the table).
+const RULES = [
+  [
+    "login_failures",
+    "loginFailures",
+    FAILED,
+    SECOND,
+    W,
+    3,
+    "traffic.ip_denied",
     [
-      "a later start finds what the first window misses",
-      at(FAILED, 0, W - 1, W, W + 1),
-      [[W - 1, 3]],
-    ],
-    [
-      "two bursts windowMs apart",
-      at(FAILED, 0, 1, 2, W, W + 1, W + 2),
+      [],
+      [[0, 3]],
+      [[0, 4]],
+      [],
+      [[59_999, 3]],
       [
         [0, 3],
-        [W, 3],
+        [60_000, 3],
+      ],
+      [[0, 4]],
+      [[0, 3]],
+      [[0, 3]],
+      [],
+      [[5, 3]],
+    ],
+  ],
+  [
+    "traffic_refusals",
+    "trafficRefusals",
+    "traffic.rate_limited",
+    "traffic.ip_denied",
+    30_000,
+    4,
+    FAILED,
+    [
+      [],
+      [[0, 4]],
+      [[0, 5]],
+      [],
+      [[29_999, 4]],
+      [
+        [0, 4],
+        [30_000, 4],
+      ],
+      [[0, 5]],
+      [[0, 4]],
+      [[0, 4]],
+      [],
+      [[5, 4]],
+    ],
+  ],
+] as const;
+
+describe("the rules of the contract", () => {
+  it("has the names, keys and events of the contract, all in the catalog", () => {
+    expect(ANALYSIS_RULES.map((r) => [r.name, r.key, [...r.events]])).toEqual([
+      ["login_failures", "loginFailures", [FAILED, SECOND]],
+      ["traffic_refusals", "trafficRefusals", ["traffic.rate_limited", "traffic.ip_denied"]],
+    ]);
+    for (const event of [FAILED, SECOND, "traffic.rate_limited", "traffic.ip_denied"]) {
+      expect(Object.hasOwn(EVENT_CATALOG, event)).toBe(true);
+    }
+  });
+});
+
+describe.each(RULES)("rule %s", (name, _key, e1, e2, w, m, other, literal) => {
+  // n entries one millisecond apart, starting at `from`.
+  const run1 = (event: string, from: number, n: number) =>
+    at(event, ...Array.from({ length: n }, (_, k) => from + k));
+
+  const rows: [string, AnalysisEntry[]][] = [
+    ["below the threshold", run1(e1, 0, m - 1)],
+    ["exactly on the threshold", [...run1(e1, 0, m - 1), ...at(e1, w - 1)]],
+    ["above the threshold", run1(e1, 0, m + 1)],
+    ["an entry windowMs after the first is outside", [...run1(e1, 0, m - 1), ...at(e1, w)]],
+    ["a later start finds what the first window misses", [...at(e1, 0), ...run1(e1, w - 1, m)]],
+    ["two bursts windowMs apart", [...run1(e1, 0, m), ...run1(e1, w, m)]],
+    ["a finding takes every entry in its window", [...run1(e1, 0, m), ...at(e1, w - 1, w)]],
+    ["the second event alone", run1(e2, 0, m)],
+    ["both events together", [...run1(e1, 0, m - 1), ...at(e2, m)]],
+    [
+      "events of the other rule, logout and traffic requests do not count",
+      [
+        ...run1(e1, 0, m - 1),
+        ...at(other, 9),
+        ...at("authn.logout", 9),
+        ...at("traffic.request", 9),
       ],
     ],
-    ["a finding takes every entry in its window", at(FAILED, 0, 1, 2, W - 1, W, W + 1), [[0, 4]]],
-    ["the second event alone", at(SECOND, 0, 1, 2), [[0, 3]]],
-    ["both events together", [...at(FAILED, 0, 1), ...at(SECOND, 2)], [[0, 3]]],
-    [
-      "other events do not count",
-      [...at(FAILED, 0, 1), ...at("authn.logout", 2), ...at("traffic.ip_denied", 2)],
-      [],
-    ],
-    ["the same millisecond", at(FAILED, 5, 5, 5), [[5, 3]]],
-  ])("%s", (_, entries, expected) => {
-    expect(counts(entries)).toEqual(expected);
-    expect(counts([...entries].reverse())).toEqual(expected);
+    ["the same millisecond", at(e1, ...Array.from({ length: m }, () => 5))],
+  ];
+
+  it("has a literal expectation for every row", () => {
+    expect(literal).toHaveLength(rows.length);
   });
+
+  it.each(rows.map(([label, entries], i) => [label, entries, literal[i]!] as const))(
+    "%s",
+    (_, entries, expected) => {
+      const want = (expected as readonly (readonly number[])[]).map(([from, count]) => [
+        name,
+        from,
+        count,
+      ]);
+      expect(named(entries)).toEqual(want);
+      expect(named([...entries].reverse())).toEqual(want);
+    },
+  );
+
+  it("has a name and key with no forbidden term", () => {
+    for (const text of [name, name.replaceAll("_", " "), _key.replace(/([A-Z])/g, " $1")]) {
+      expect(findForbiddenTerms(text), text).toEqual([]);
+    }
+  });
+});
+
+describe("log analysis: defaults and both rules at once", () => {
+  const same = (event: string, n: number) =>
+    Array.from({ length: n }, () => ({ timeMs: T0, event }));
 
   it("uses DEFAULT_ANALYSIS_THRESHOLDS without a second argument", () => {
     expect(DEFAULT_ANALYSIS_THRESHOLDS).toEqual({
       loginFailures: { windowMs: 600_000, minCount: 20 },
+      trafficRefusals: { windowMs: 300_000, minCount: 50 },
     });
-    const n = (k: number) => Array.from({ length: k }, () => ({ timeMs: T0, event: FAILED }));
-    expect(analyzeLog(n(19))).toEqual({ ok: true, value: [] });
-    expect(analyzeLog(n(20))).toEqual({
+    expect(analyzeLog(same(FAILED, 19))).toEqual({ ok: true, value: [] });
+    expect(analyzeLog(same(FAILED, 20))).toEqual({
       ok: true,
-      value: [found(0, 20, DEFAULT_ANALYSIS_THRESHOLDS.loginFailures)],
+      value: [{ rule: "login_failures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 }],
+    });
+    expect(analyzeLog(same("traffic.ip_denied", 49))).toEqual({ ok: true, value: [] });
+    expect(analyzeLog(same("traffic.ip_denied", 50))).toEqual({
+      ok: true,
+      value: [
+        { rule: "traffic_refusals", fromMs: T0, toMs: T0 + 300_000, count: 50, minCount: 50 },
+      ],
+    });
+  });
+
+  it("orders findings by rule first, then by time", () => {
+    // The traffic finding is earlier in time; login_failures still comes first.
+    const entries = [...at("traffic.ip_denied", 0, 1, 2, 3), ...at(FAILED, 1000, 1001, 1002)];
+    expect(named(entries)).toEqual([
+      ["login_failures", 1000, 3],
+      ["traffic_refusals", 0, 4],
+    ]);
+  });
+
+  it("gives one finding per rule, in rule order, for mixed entries at the same millisecond", () => {
+    const entries = [
+      ...same("traffic.rate_limited", 25),
+      ...same(FAILED, 10),
+      ...same("traffic.ip_denied", 25),
+      ...same(SECOND, 10),
+    ];
+    expect(analyzeLog(entries)).toEqual({
+      ok: true,
+      value: [
+        { rule: "login_failures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 },
+        { rule: "traffic_refusals", fromMs: T0, toMs: T0 + 300_000, count: 50, minCount: 50 },
+      ],
     });
   });
 });
 
 describe("log analysis: output and text", () => {
   it("gives frozen results and findings with the closed keys only, about no person", () => {
-    const ok = run(at(FAILED, 0, 1, 2));
-    expect(ok).toEqual({ ok: true, value: [found(0, 3)] });
+    const ok = run([...at(FAILED, 0, 1, 2), ...at("traffic.rate_limited", 0, 1, 2, 3)]);
+    expect(ok).toEqual({
+      ok: true,
+      value: [
+        found(0, 3),
+        { rule: "traffic_refusals", fromMs: T0, toMs: T0 + 30_000, count: 4, minCount: 4 },
+      ],
+    });
     const bad = run([], null);
-    for (const value of [ok, ok.ok && ok.value, ok.ok && ok.value[0], bad, !bad.ok && bad.error]) {
+    const findings = ok.ok ? ok.value : [];
+    for (const value of [ok, findings, ...findings, bad, !bad.ok && bad.error]) {
       expect(Object.isFrozen(value)).toBe(true);
     }
-    expect(Object.keys(ok.ok ? ok.value[0]! : {}).sort()).toEqual([
-      "count",
-      "fromMs",
-      "minCount",
-      "rule",
-      "toMs",
-    ]);
+    for (const finding of findings) {
+      expect(Object.keys(finding).sort()).toEqual(["count", "fromMs", "minCount", "rule", "toMs"]);
+    }
   });
 
   it("has a Croatian text for every code, no other key and no forbidden term", () => {
@@ -545,7 +711,7 @@ describe("log analysis: output and text", () => {
       }
     ).logAnalysis;
     expect(Object.keys(texts)).toEqual(ANALYSIS_ERROR_CODES.map((c) => c.toLowerCase()));
-    for (const text of [...Object.values(texts), "login failures", "login Failures"]) {
+    for (const text of Object.values(texts)) {
       expect(text.length).toBeGreaterThan(0);
       expect(findForbiddenTerms(text), text).toEqual([]);
     }

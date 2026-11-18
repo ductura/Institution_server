@@ -1,6 +1,7 @@
 /**
- * Log analysis rules (S-1K.7-a, DAN-1010-1a; contract Ductus#2028
- * c.6964677996): pure functions that count system events in a time window.
+ * Log analysis rules (S-1K.7-a, DAN-1010-1a and 1b; contracts Ductus#2028
+ * c.6964677996 and c.6967029458): pure functions that count system events in
+ * a time window.
  * A finding is about the system only: it holds no account, address or person,
  * so it is never a statement about a student and goes to no teacher.
  */
@@ -19,6 +20,7 @@ const rule = <const N extends string, const K extends string>(
 
 export const ANALYSIS_RULES = Object.freeze([
   rule("login_failures", "loginFailures", ["authn.login_failed", "authn.second_factor_failed"]),
+  rule("traffic_refusals", "trafficRefusals", ["traffic.rate_limited", "traffic.ip_denied"]),
 ]);
 
 export type AnalysisRuleName = (typeof ANALYSIS_RULES)[number]["name"];
@@ -34,6 +36,7 @@ export const MAX_ENTRIES = 1_000_000;
 
 export const DEFAULT_ANALYSIS_THRESHOLDS: AnalysisThresholds = Object.freeze({
   loginFailures: Object.freeze({ windowMs: 10 * 60 * 1000, minCount: 20 }),
+  trafficRefusals: Object.freeze({ windowMs: 5 * 60 * 1000, minCount: 50 }),
 });
 
 export type AnalysisFinding = {
