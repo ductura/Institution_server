@@ -54,4 +54,38 @@ export const interfaceLocalePost = defineRoute({
   ],
 });
 
-export const profileRoutes = [interfaceLocaleGet, interfaceLocalePost] as const;
+const AccountRole = Type.Union([
+  Type.Literal("student"),
+  Type.Literal("teacher"),
+  Type.Literal("network_engineer"),
+  Type.Literal("institution_admin"),
+]);
+
+// Contract Ductus#2028 c.6993786629 §3.3: the front of the institution reads
+// the signed-in account after the AAI@EduHr login; 401 sends it to the login.
+export const meGet = defineRoute({
+  id: "profile.me.get",
+  method: "GET",
+  path: "/api/v1/me",
+  inventory: "app/api/me/route.ts",
+  access: "signed_in",
+  summary: "The caller's institution, roles in force and display name.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "the signed-in account",
+      body: closed({
+        institution: closed({
+          slug: Type.String(),
+          displayName: Type.Union([Type.String(), Type.Null()]),
+        }),
+        roles: Type.Array(AccountRole, { minItems: 1 }),
+        displayName: Type.Union([Type.String(), Type.Null()]),
+      }),
+    },
+  ],
+  errors: [error(401, "unauthorized"), error(403, "forbidden"), error(503, "unavailable")],
+});
+
+export const profileRoutes = [interfaceLocaleGet, interfaceLocalePost, meGet] as const;

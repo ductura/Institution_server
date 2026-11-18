@@ -3,6 +3,10 @@ import type pg from "pg";
 import { createBackchannelLogout, type BackchannelLogout } from "./backchannel-logout.ts";
 import { createActorReader, type ActorReader } from "./current-actor.ts";
 import { assertNoParameterLogging, withLogCheck } from "./log-settings.ts";
+import {
+  createInstitutionProvisioning,
+  type InstitutionProvisioning,
+} from "./institution-provisioning.ts";
 import { createOpenSession, type OpenSession } from "./open-session.ts";
 import { createMyAccessLogReader, type MyAccessLogReader } from "./my-access-log.ts";
 import { createWorkOpener, type WorkOpener } from "./open-work.ts";
@@ -16,6 +20,14 @@ export type {
 } from "./backchannel-logout.ts";
 export type { ActorReader, CurrentActor, CurrentActorWithInstitution } from "./current-actor.ts";
 export type { OpenSession, OpenSessionInput, OpenSessionResult } from "./open-session.ts";
+export type {
+  InstitutionProvisioning,
+  InstitutionProvisionInput,
+  InstitutionProvisionOutcome,
+  InstitutionSeats,
+  ProvisionedInstitution,
+} from "./institution-provisioning.ts";
+export type { MyAccount, MyAccountReader, MyAccountResult, MyAccountRole } from "./my-account.ts";
 export type {
   CommitContextReader,
   EvidenceCommitContext,
@@ -102,6 +114,8 @@ export { DATABASE_HEALTH_WORDS, handleConnectionErrors } from "./registry.ts";
 export { createBackchannelLogout } from "./backchannel-logout.ts";
 export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
+export { createInstitutionProvisioning } from "./institution-provisioning.ts";
+export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export {
@@ -171,6 +185,7 @@ export { createRegistry, POOLS, type Registry } from "./registry.ts";
 let appWithActor: WithActor | undefined;
 let authOpenSession: OpenSession | undefined;
 let authBackchannelLogout: BackchannelLogout | undefined;
+let authInstitutionProvisioning: InstitutionProvisioning | undefined;
 
 // Limits of the web process pool. Every wait has an end, so a stuck request
 // fails instead of holding a connection or a caller for good.
@@ -296,6 +311,22 @@ export const backchannelLogout: BackchannelLogout = async (input) => {
   const pool = registry.pool("auth");
   authBackchannelLogout ??= createBackchannelLogout(pool);
   return authBackchannelLogout(input);
+};
+
+/**
+ * Provisioning of an institution instance (Ductus#2028 c.6993786629 §2) over
+ * the same ductus_auth login: only the internal routes, called server to
+ * server by Aplication_server, use it.
+ */
+function provisioningPort(): InstitutionProvisioning {
+  // Asked on every call, so that after closePools nothing reaches the pool.
+  const pool = registry.pool("auth");
+  authInstitutionProvisioning ??= createInstitutionProvisioning(pool);
+  return authInstitutionProvisioning;
+}
+export const institutionProvisioning: InstitutionProvisioning = {
+  provision: async (input) => provisioningPort().provision(input),
+  read: async (slug) => provisioningPort().read(slug),
 };
 
 /**

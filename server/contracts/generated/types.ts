@@ -246,6 +246,13 @@ export type Operations = {
     success: { status: 200; body: { "locale": "hr" | "en" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "invalid_input" | "unavailable";
   };
+  "profile.me.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "institution": { "slug": string; "displayName": string | null }; "roles": ("student" | "teacher" | "network_engineer" | "institution_admin")[]; "displayName": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "projection.process-summary.post": {
     params: undefined;
     query: undefined;

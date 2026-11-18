@@ -105,6 +105,8 @@ Ulaz `server/server.ts` danas montira samo `GET /api/v1/health`. Ostale rute u t
 | GET    | `/api/documents/:id` | Jedan dokument (vlasnik ili suradnik) |
 | PUT    | `/api/documents/:id` | Izmjena (samo vlasnik)                |
 
+Unutarnje rute poslužitelj–poslužitelj (Aplication_server → Institution_server, ugovor Ductus#2028 c.6993786629 §2) montira `server/server.ts`: `POST /internal/v1/institutions` i `GET /internal/v1/institutions/{slug}` (`server/http/internal-institutions.ts`). Traže `Authorization: Bearer` jednak varijabli `DUCTURA_PROVISIONING_TOKEN` (najmanje 32 znaka, samo iz okoline); bez nje obje vraćaju 404. Nisu dio javnog ugovora `/api/v1`. Prijavljeni račun čita `GET /api/v1/me` (§3.3).
+
 ## Ugovor API-ja (`server/contracts/`)
 
 Ugovor je izvor koda (DAN-736, Ductura U4). Svaka ruta ima shemu u `server/contracts/routes/`: ulaz (parametri putanje, upit, tijelo, vrsta i najveća veličina tijela), uspješne odgovore, greške (status, zatvoreni kod i ključ za locales `errors.<kod>`) i „tko smije” (`access`, zatvoren skup). „Tko smije” je deklaracija; ovlast i dalje odlučuje baza. `server/contracts` uvozi samo `@sinclair/typebox`.

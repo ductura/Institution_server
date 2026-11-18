@@ -21,6 +21,8 @@ import {
   createDatabases,
   createEvidenceCommitRouteFor,
   createInstitutionCourseRoutesFor,
+  createInternalInstitutionRoutes,
+  createMeRouteFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createWebAuthnRoutesFor,
@@ -136,6 +138,11 @@ async function main(): Promise<void> {
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
       // DAN-818: one replay page, read from the same storage as commit writes.
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+      // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
+      createMeRouteFor(databases.main),
+      // Provisioning of an institution instance by Aplication_server, server
+      // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
+      ...createInternalInstitutionRoutes({ env: process.env }),
       // Login over AAI@EduHr (S-1E-a; D-09: the fake provider only in development and test).
       ...createAuthRoutes(process.env),
       ...routesOf(AREAS),

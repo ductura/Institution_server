@@ -89,6 +89,7 @@ describe("route inventory", () => {
       "auth.webauthn-challenge.post: app/api/auth/webauthn/challenge/route.ts is not in the inventory",
       "auth.webauthn-registration.post: app/api/auth/webauthn/registration/route.ts is not in the inventory",
       "auth.webauthn-assertion.post: app/api/auth/webauthn/assertion/route.ts is not in the inventory",
+      "profile.me.get: app/api/me/route.ts is not in the inventory",
       "student.assignments.get: app/api/student/assignments/route.ts is not in the inventory",
       "student.access-log.get: app/api/student/works/[documentId]/access-log/route.ts is not in the inventory",
       "student.assignment-work.get: app/api/student/assignment-work/route.ts is not in the inventory",
