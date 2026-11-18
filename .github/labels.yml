@@ -1,7 +1,7 @@
 # Labele repoa ductura/server, zapis stanja na GitHubu 18. 11. 2026. (S-0.11, DAN-724).
-# Ništa ih ne sinkronizira: nova ili promijenjena labela mijenja se na GitHubu i ovdje.
-# Značenje labela je u docs/BOTS.md; scripts/engineering/bot-labels.test.ts provjerava da svaka
-# labela ima opis i da docs/BOTS.md i pravila repoa spominju samo labele s ovog popisa.
+# Ništa ih ne sinkronizira s GitHubom (opseg DAN-724). docs/BOTS.md navodi svaku labelu
+# s ulogom u Ductusu; scripts/engineering/bot-labels.test.ts provjerava da svaka labela
+# ima opis i da docs/BOTS.md i pravila repoa spominju samo labele s ovog popisa.
 - { name: "area:auth", color: "1d76db", description: "Područje: prijava i ovlasti" }
 - { name: "area:ci", color: "1d76db", description: "CI, GitHub Actions workflowi, gate provjere" }
 - { name: "area:db", color: "1d76db", description: "Područje: baza" }

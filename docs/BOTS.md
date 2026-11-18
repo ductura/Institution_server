@@ -14,12 +14,12 @@ Uz Claude sesije radi šest vanjskih Grok botova: Trijaža, Review, QA, Sigurnos
 - Ne pišu na Ductus#87; pregledi idu u Ductus issue „Botovi: dnevni pregled”.
 - Najviše jedan komentar po botu po headu PR-a, i nijedan ako nema nalaza. Nalaz ima datoteku i redak, scenarij i redak „Dohvatljivo kroz:”.
 - Ne otvaraju PR-ove, ne zatvaraju, ne mijenjaju nacrt ni tuđe komentare.
-- Sigurnost u javni repo piše samo ID nalaza i status; pojedinosti nalaza nikad ne idu u javni repo.
-- Claude sesijama posao dodjeljuje orkestrator. Na review i QA komentare botova Claude sesija odgovara u istoj niti: popravi ili obrazloži (D-110). Pitanje botu ide s labelom `pitanje-za-grok`; smjer je jedan: Claude pita, botovi ne nalažu Claude sesijama.
+- Sigurnost u ovaj repo piše samo ID nalaza i status; pojedinosti nalaza nikad ne idu u javni repo.
+- Claude sesijama posao dodjeljuje orkestrator. Na review i QA komentare botova Claude sesija odgovara u istoj niti: popravi ili obrazloži. Nakon kanonskog PASS-a na nalaz bota se ne pusha, osim ako je označen kao blokirajući (D-110). Pitanje botu ide s labelom `pitanje-za-grok`; smjer je jedan: Claude pita, botovi ne nalažu Claude sesijama.
 
 ## Labele
 
-Popis, boje i opisi su u [.github/labels.yml](../.github/labels.yml), zapisu labela ovog repoa. Ništa ga ne sinkronizira s GitHubom: labela se mijenja na GitHubu i u toj datoteci zajedno. Test `scripts/engineering/bot-labels.test.ts` pada ako ovaj dokument ili pravila repoa (`CLAUDE.md`, `AGENTS.md`, `.claude/rules/`) spominju labelu koje nema u `labels.yml`, ako labela nema opis ili ako ovaj odjeljak ne navodi neku labelu iz `labels.yml`. Značenje je opis iz `labels.yml`; uloga u Ductusu navedena je samo gdje je izvor ima. Issuei zadataka su u Ductusu ([CLAUDE.md](../CLAUDE.md), „Putanje: Ductus → ovdje”).
+Popis, boje i opisi su u [.github/labels.yml](../.github/labels.yml), zapisu labela ovog repoa. Ništa ga ne sinkronizira s GitHubom (opseg DAN-724). Test `scripts/engineering/bot-labels.test.ts` pada ako ovaj dokument ili pravila repoa (`CLAUDE.md`, `AGENTS.md`, `.claude/rules/`) spominju labelu koje nema u `labels.yml`, ako labela nema opis ili ako ovaj odjeljak ne navodi neku labelu iz `labels.yml`. Uz svaku labelu niže stoji njezin opis iz `labels.yml`, a uloga u Ductusu samo gdje je izvor ima. Issuei zadataka su u Ductusu ([CLAUDE.md](../CLAUDE.md), „Putanje: Ductus → ovdje”).
 
 - `ready-for-claude`: issue je spreman da ga preuzme Claude sesija. U Ductusu je stavlja Trijaža; zadatke s demo lanca koje dodjeljuje orkestrator ne labelira (D-111).
 - `claude:in-progress`: Claude sesija radi na issueu. U Ductusu je sesija stavlja kad makne `ready-for-claude`.

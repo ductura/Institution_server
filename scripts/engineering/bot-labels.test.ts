@@ -31,6 +31,13 @@ describe("labels.yml: every label has a description and a valid shape", () => {
       "alias",
       '- { name: "x", color: "d73a4a", description: &d "Opis" }\n- { name: "y", color: "d73a4a", description: *d }\n',
     ],
+    [
+      "YAML 1.1 directive with a merge key",
+      '%YAML 1.1\n---\n- { <<: { description: "Opis", name: "x" }, color: "d73a4a" }\n',
+    ],
+    ["YAML 1.2 directive", `%YAML 1.2\n---\n${VALID}`],
+    ["TAG directive", `%TAG !x! tag:x.invalid,2026:\n---\n${VALID}`],
+    ["unknown tag (a warning)", '- { name: "x", color: "d73a4a", description: !foo "Opis" }\n'],
   ])("%s is a problem", (_, text) => {
     expect(parseLabels(text).problems).not.toEqual([]);
   });
@@ -60,6 +67,17 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     ["toString key", '{ name: "x", color: "d73a4a", description: "Opis", toString: "y" }'],
     ["constructor key", '{ name: "x", color: "d73a4a", description: "Opis", constructor: "y" }'],
     ["merge key", '{ <<: { default: true }, name: "x", color: "d73a4a", description: "Opis" }'],
+    [
+      "description only from a merge key",
+      '{ <<: { description: "Opis" }, name: "x", color: "d73a4a" }',
+    ],
+    ["lone surrogate", '{ name: "x", color: "d73a4a", description: "a\\ud800" }'],
+    ["private use", '{ name: "x", color: "d73a4a", description: "a\\ue000" }'],
+    ["unassigned", '{ name: "x", color: "d73a4a", description: "a\\u0378" }'],
+    [
+      "101 code points, astral",
+      `{ name: "x", color: "d73a4a", description: "a${"😀".repeat(100)}" }`,
+    ],
     ["scalar entry", '"x"'],
     ["null entry", "null"],
     ["missing name", '{ color: "d73a4a", description: "Opis" }'],
@@ -106,6 +124,10 @@ describe("labels.yml: every label has a description and a valid shape", () => {
   it("100 characters of description and 50 of name are allowed", () => {
     const entry = `{ name: "${"a".repeat(50)}", color: "D73A4A", description: "${"č".repeat(100)}" }`;
     expect(parseLabels(yamlWith(entry)).problems).toEqual([]);
+    const astral = `{ name: "x", color: "d73a4a", description: "a${"😀".repeat(99)}" }`;
+    expect(parseLabels(yamlWith(astral)).problems).toEqual([]);
+    const digits = '{ name: "x", color: "d73a4a", description: "2026" }';
+    expect(parseLabels(yamlWith(digits)).problems).toEqual([]);
   });
 });
 
@@ -120,6 +142,14 @@ describe("label mentions", () => {
     ["under a label heading", "## Labele\n\n- `nema`: opis", ["nema"]],
     ["upper-case heading", "## LABELE\n\n- `nema`: opis", ["nema"]],
     ["CRLF lines", "## Labele\r\n\r\n- `nema`: opis\r\n", ["nema"]],
+    ["deeper heading stays in the section", "## Labele\n\n### Pod\n\n- `nema`", ["nema"]],
+    ["NBSP after # is no heading", "## Labele\n\n##\u00a0Dalje\n\n- `nema`", ["nema"]],
+    [
+      "inline triple backticks are no fence",
+      "```nema``` je labela.\nLabela `nema2`.",
+      ["nema", "nema2"],
+    ],
+    ["four spaces of indent are no fence", "    ```\nLabela `nema`.\n", ["nema"]],
     ["fixed namespace", "Uloga `role:nema` danas.", ["role:nema"]],
     ["unclosed fence ends nothing", "Labela `nema`.\n```\n", ["nema"]],
     [
@@ -144,9 +174,20 @@ describe("label mentions", () => {
     ["line without the word", "Pokreni `nema-je` danas."],
     ["alternatives without a namespace", "Labele `bug|nema`."],
     ["after an unclosed fence", "```\nLabela `nema`.\n"],
+    ["fence not closed by a shorter one", "````\n```\nLabela `nema`.\n````\n"],
+    ["fence not closed by the other character", "```\n~~~\nLabela `nema`.\n```\n"],
+    ["fence not closed by an opener with info", "```\n```js\nLabela `nema`.\n```\n"],
+    ["next line of a paragraph (known limit: lines)", "Stavi labelu\n`nema-je` na issue."],
     ["after a label section ends", "## Labele\n\n- `bug`: opis\n\n## Dalje\n\n`nema-je`"],
   ])("%s is not a mention", (_, markdown) => {
     expect(mentionProblems("F.md", markdown, names)).toEqual([]);
+  });
+
+  it("namespaces come from labels.yml too", () => {
+    expect(mentionProblems("F.md", "Vidi `foo:nema`.", [...names, "foo:x"])).toEqual([
+      "F.md: `foo:nema` (no such label in .github/labels.yml)",
+    ]);
+    expect(mentionProblems("F.md", "Vidi `foo:nema`.", names)).toEqual([]);
   });
 
   it("expands alternatives and wildcards that exist", () => {
@@ -181,8 +222,11 @@ describe("repository", () => {
     expect(names.length).toBeGreaterThan(0);
   });
 
-  it("docs/BOTS.md mentions every label of labels.yml by name", () => {
-    expect(names.filter((name) => !labelMentions(bots, names).includes(name))).toEqual([]);
+  it("the Labele section of docs/BOTS.md names every label of labels.yml", () => {
+    const section = bots.split(/^## /mu).find((part) => part.startsWith("Labele\n")) ?? "";
+    expect(section).not.toBe("");
+    const listed = labelMentions(`## ${section}`, names);
+    expect(names.filter((name) => !listed.includes(name))).toEqual([]);
   });
 
   it("docs/BOTS.md mentions every label the scope names", () => {

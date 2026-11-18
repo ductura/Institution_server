@@ -13,7 +13,8 @@ const WORD = "[a-z0-9]+(?:-[a-z0-9]+)*";
 const NAME = new RegExp(`^${WORD}(?::${WORD})?$`);
 const COLOR = /^[0-9a-f]{6}$/i;
 const VISIBLE = /[\p{L}\p{N}]/u;
-const INVISIBLE = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
+// Control, format, surrogate, private use, unassigned and line or paragraph separators.
+const INVISIBLE = /[\p{C}\p{Zl}\p{Zp}]/u;
 /** Namespaces whose inline code counts as a label mention on any line. */
 const NAMESPACES = ["area", "role", "risk", "claude"];
 const TOKEN = new RegExp(`^(${WORD})(?::(\\*|${WORD}(?:\\|${WORD})*))?$`);
@@ -46,9 +47,12 @@ function entryProblems(entry: unknown, at: string): string[] {
 /** Labels of a labels.yml text; every problem of shape or content is reported. */
 export function parseLabels(text: string): ParsedLabels {
   const invalid = { labels: [], problems: ["labels.yml: invalid YAML"] };
-  // A BOM, a second document, an alias or a merge key is no valid labels.yml.
+  // A BOM, a second document, an alias, a merge key, a directive (%YAML 1.1
+  // would turn merge keys back on) or a warning is no valid labels.yml.
   const doc = parseDocument(text, { version: "1.2", merge: false, logLevel: "error" });
-  if (doc.errors.length > 0) return invalid;
+  const tags = Object.keys(doc.directives?.tags ?? {}).filter((tag) => tag !== "!!");
+  if (doc.errors.length + doc.warnings.length + tags.length > 0) return invalid;
+  if (doc.directives?.yaml.explicit === true) return invalid;
   let root: unknown;
   try {
     root = doc.toJS({ maxAliasCount: 0 });
@@ -84,18 +88,21 @@ export function labelMentions(markdown: string, names: readonly string[]): strin
   let fence = "";
   let section = 0;
   for (const line of markdown.split(/\r?\n/u)) {
-    const marker = /^ {0,3}(`{3,}|~{3,})/u.exec(line)?.[1];
+    // CommonMark fences: a backtick opener's info string has no backtick, and
+    // a closer is the same character, at least as long, with nothing after it.
+    const open = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec(line);
     if (fence !== "") {
-      if (marker !== undefined && marker[0] === fence[0] && marker.length >= fence.length) {
+      const close = /^ {0,3}(`{3,}|~{3,})[ \t]*$/u.exec(line)?.[1];
+      if (close !== undefined && close[0] === fence[0] && close.length >= fence.length) {
         fence = "";
       }
       continue;
     }
-    if (marker !== undefined) {
-      fence = marker;
+    if (open?.[1] !== undefined && !(open[1][0] === "`" && (open[2] ?? "").includes("`"))) {
+      fence = open[1];
       continue;
     }
-    const heading = /^ {0,3}(#{1,6})\s/u.exec(line)?.[1]?.length;
+    const heading = /^ {0,3}(#{1,6})(?:[ \t]|$)/u.exec(line)?.[1]?.length;
     if (heading !== undefined && (section === 0 || heading <= section)) {
       section = /label/iu.test(line) ? heading : 0;
     }
