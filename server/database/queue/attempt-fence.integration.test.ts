@@ -164,9 +164,10 @@ describe("startAttemptFence: a real process", () => {
   });
 
   it("an attempt released in time, then close, lets the process exit 0", async () => {
+    // fence.arm, not armed: no file is written between arm and a timely release.
     expect(
       await run(
-        `const release = armed(300); release(); await fence.close(); await later(500); console.log("done");`,
+        `const release = fence.arm(300); release(); await fence.close(); await later(500); console.log("done");`,
       ),
     ).toEqual({ code: 0, signal: null, stdout: "done\n", stderr: "" });
     expect(signalAt).toBeUndefined();
