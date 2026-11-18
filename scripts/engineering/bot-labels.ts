@@ -1,7 +1,7 @@
 // Checks for .github/labels.yml and for the labels that docs/BOTS.md and the
 // agent rules (CLAUDE.md, AGENTS.md, .claude/rules) mention (S-0.11, DAN-724).
 // The file records the repo's labels; nothing syncs it to GitHub.
-import { parseDocument } from "yaml";
+import { isNode, parseDocument, Parser, visit } from "yaml";
 
 export type Label = { name: string; color: string; description: string };
 export type ParsedLabels = { labels: Label[]; problems: string[] };
@@ -48,11 +48,17 @@ function entryProblems(entry: unknown, at: string): string[] {
 export function parseLabels(text: string): ParsedLabels {
   const invalid = { labels: [], problems: ["labels.yml: invalid YAML"] };
   // A BOM, a second document, an alias, a merge key, a directive (%YAML 1.1
-  // would turn merge keys back on) or a warning is no valid labels.yml.
+  // would turn merge keys back on), an explicit tag (`!!merge <<` is a merge
+  // key even with merge: false) or a warning is no valid labels.yml.
   const doc = parseDocument(text, { version: "1.2", merge: false, logLevel: "error" });
-  const tags = Object.keys(doc.directives?.tags ?? {}).filter((tag) => tag !== "!!");
-  if (doc.errors.length + doc.warnings.length + tags.length > 0) return invalid;
-  if (doc.directives?.yaml.explicit === true) return invalid;
+  if (doc.errors.length + doc.warnings.length > 0) return invalid;
+  const tokens = [...new Parser().parse(text)];
+  if (tokens.some((token) => token.type === "directive")) return invalid;
+  let tagged = false;
+  visit(doc, (_, node) => {
+    if (isNode(node) && node.tag !== undefined) tagged = true;
+  });
+  if (tagged) return invalid;
   let root: unknown;
   try {
     root = doc.toJS({ maxAliasCount: 0 });
@@ -83,7 +89,8 @@ export function parseLabels(text: string): ParsedLabels {
  * or with a label namespace on any line. `x:a|b` is `x:a` and `x:b`; `x:*` stays.
  */
 export function labelMentions(markdown: string, names: readonly string[]): string[] {
-  const namespaces = new Set([...NAMESPACES, ...names.map((name) => name.split(":")[0] ?? "")]);
+  const prefixed = names.filter((name) => name.includes(":"));
+  const namespaces = new Set([...NAMESPACES, ...prefixed.map((name) => name.split(":")[0] ?? "")]);
   const mentions = new Set<string>();
   let fence = "";
   let section = 0;

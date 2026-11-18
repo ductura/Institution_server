@@ -19,13 +19,13 @@ Uz Claude sesije radi šest vanjskih Grok botova: Trijaža, Review, QA, Sigurnos
 
 ## Labele
 
-Popis, boje i opisi su u [.github/labels.yml](../.github/labels.yml), zapisu labela ovog repoa. Ništa ga ne sinkronizira s GitHubom (opseg DAN-724). Test `scripts/engineering/bot-labels.test.ts` pada ako ovaj dokument ili pravila repoa (`CLAUDE.md`, `AGENTS.md`, `.claude/rules/`) spominju labelu koje nema u `labels.yml`, ako labela nema opis ili ako ovaj odjeljak ne navodi neku labelu iz `labels.yml`. Uz svaku labelu niže stoji njezin opis iz `labels.yml`, a uloga u Ductusu samo gdje je izvor ima. Issuei zadataka su u Ductusu ([CLAUDE.md](../CLAUDE.md), „Putanje: Ductus → ovdje”).
+Popis, boje i opisi su u [.github/labels.yml](../.github/labels.yml), zapisu labela ovog repoa. Ništa ga ne sinkronizira s GitHubom (opseg DAN-724). Test `scripts/engineering/bot-labels.test.ts` pada ako ovaj dokument ili pravila repoa (`CLAUDE.md`, `AGENTS.md`, `.claude/rules/`) spominju labelu koje nema u `labels.yml`, ako labela nema opis ili ako ovaj odjeljak ne navodi neku labelu iz `labels.yml`. Uz svaku labelu niže stoji kratko značenje (puni opis je u `labels.yml`), a uloga u Ductusu samo gdje je izvor ima. Issuei zadataka su u Ductusu ([CLAUDE.md](../CLAUDE.md), „Putanje: Ductus → ovdje”).
 
 - `ready-for-claude`: issue je spreman da ga preuzme Claude sesija. U Ductusu je stavlja Trijaža; zadatke s demo lanca koje dodjeljuje orkestrator ne labelira (D-111).
-- `claude:in-progress`: Claude sesija radi na issueu. U Ductusu je sesija stavlja kad makne `ready-for-claude`.
-- `security`, `bug`, `plan-napada`: sigurnosni nalaz ili rizik; kvar; plan napada prije koda. U Ductusu ih stavlja Trijaža, a Claude sesija novi posao uzima tim redom.
+- `claude:in-progress`: Claude sesija radi na ovom issueu. U Ductusu je sesija stavlja kad makne `ready-for-claude`.
+- `security`, `bug`, `plan-napada`: sigurnosni nalaz ili rizik; kvar (opis je GitHubov zadani, „Something isn't working”); plan napada prije koda. U Ductusu ih stavlja Trijaža, a Claude sesija novi posao uzima tim redom.
 - `pitanje-za-grok`: pitanje za jednog od Grok botova.
 - `izvjestaj-ceka`: izvještaj sesije čeka orkestratora.
-- `area:auth|ci|db|docs|platforma|sync|ui`: područje issuea ili PR-a. U Ductusu Trijaža stavlja `area:db|sync|auth|ui`.
+- `area:auth|ci|db|docs|platforma|sync|ui`: područje rada; svaka ima svoj opis u `labels.yml`. U Ductusu Trijaža stavlja `area:db|sync|auth|ui`.
 - `role:backend|frontend|platforma`: pisac Backend, Frontend ili Platforma. U Ductusu ih stavlja Trijaža.
-- `risk:low|standard|critical`: risk razina iz Ductus `docs/ENGINEERING_SYSTEM.md` §5.
+- `risk:low|standard|critical`: rizik low, standard ili critical; razine su u Ductus `docs/ENGINEERING_SYSTEM.md` §5.

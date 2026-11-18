@@ -38,6 +38,15 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     ["YAML 1.2 directive", `%YAML 1.2\n---\n${VALID}`],
     ["TAG directive", `%TAG !x! tag:x.invalid,2026:\n---\n${VALID}`],
     ["unknown tag (a warning)", '- { name: "x", color: "d73a4a", description: !foo "Opis" }\n'],
+    ["!!merge key", '- { !!merge <<: { description: "Opis" }, name: "x", color: "d73a4a" }\n'],
+    ["!!merge key, block", "- !!merge <<:\n    description: Opis\n  name: x\n  color: d73a4a\n"],
+    [
+      "verbatim merge tag",
+      '- { !<tag:yaml.org,2002:merge> <<: { description: "Opis" }, name: "x", color: "d73a4a" }\n',
+    ],
+    ["!!str tag", '- { name: "x", color: "d73a4a", description: !!str "Opis" }\n'],
+    ["%TAG redefining !!", `%TAG !! tag:x.invalid,2026:\n---\n${VALID}`],
+    ["%TAG repeating !!", `%TAG !! tag:yaml.org,2002:\n---\n${VALID}`],
   ])("%s is a problem", (_, text) => {
     expect(parseLabels(text).problems).not.toEqual([]);
   });
@@ -53,6 +62,7 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     ["zero width space inside", '{ name: "x", color: "d73a4a", description: "a\\u200bb" }'],
     ["bidi mark inside", '{ name: "x", color: "d73a4a", description: "a\\u202eb" }'],
     ["line separator inside", '{ name: "x", color: "d73a4a", description: "a\\u2028b" }'],
+    ["paragraph separator inside", '{ name: "x", color: "d73a4a", description: "a\\u2029b" }'],
     ["binary description", '{ name: "x", color: "d73a4a", description: !!binary T3Bpcw== }'],
     ["null description", '{ name: "x", color: "d73a4a", description: null }'],
     ["number description", '{ name: "x", color: "d73a4a", description: 5 }'],
@@ -96,6 +106,7 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     ["number color", '{ name: "x", color: 000001, description: "Opis" }'],
     ["short color", '{ name: "x", color: "d73a4", description: "Opis" }'],
     ["color with hash", '{ name: "x", color: "#d73a4a", description: "Opis" }'],
+    ["seven-digit color", '{ name: "x", color: "d73a4a0", description: "Opis" }'],
     ["missing color", '{ name: "x", description: "Opis" }'],
   ])("%s is a problem", (_, entry) => {
     const parsed = parseLabels(yamlWith(entry));
@@ -128,6 +139,9 @@ describe("labels.yml: every label has a description and a valid shape", () => {
     expect(parseLabels(yamlWith(astral)).problems).toEqual([]);
     const digits = '{ name: "x", color: "d73a4a", description: "2026" }';
     expect(parseLabels(yamlWith(digits)).problems).toEqual([]);
+    const numeral = '{ name: "x", color: "d73a4a", description: "Ⅻ" }';
+    expect(parseLabels(yamlWith(numeral)).problems).toEqual([]);
+    expect(parseLabels(`---\n# komentar\n${VALID}...\n`).problems).toEqual([]);
   });
 });
 
@@ -150,6 +164,13 @@ describe("label mentions", () => {
       ["nema", "nema2"],
     ],
     ["four spaces of indent are no fence", "    ```\nLabela `nema`.\n", ["nema"]],
+    ["a tab before ``` is no fence", "\t```\nLabela `nema`.\n", ["nema"]],
+    ["a longer closer closes", "```\n````\nLabela `nema`.", ["nema"]],
+    ["a closer with a trailing tab closes", "```\n```\t\nLabela `nema`.", ["nema"]],
+    ["a CRLF closer closes", "```\r\nx\r\n```\r\nLabela `nema`.", ["nema"]],
+    ["a CRLF closer after an LF opener closes", "```\nx\n```\r\nLabela `nema`.", ["nema"]],
+    ["seven # are no heading", "## Labele\n\n####### x\n\n- `nema`", ["nema"]],
+    ["double backtick span", "Labela `` nema ``.", ["nema"]],
     ["fixed namespace", "Uloga `role:nema` danas.", ["role:nema"]],
     ["unclosed fence ends nothing", "Labela `nema`.\n```\n", ["nema"]],
     [
@@ -178,9 +199,24 @@ describe("label mentions", () => {
     ["fence not closed by the other character", "```\n~~~\nLabela `nema`.\n```\n"],
     ["fence not closed by an opener with info", "```\n```js\nLabela `nema`.\n```\n"],
     ["next line of a paragraph (known limit: lines)", "Stavi labelu\n`nema-je` na issue."],
+    ["a closer indented by four is no closer", "```\n    ```\nLabela `nema`.\n```\n"],
+    ["an empty heading ends the section", "## Labele\n\n##\n\n`nema-je`"],
+    ["seven # open no section", "####### Labele\n\n- `nema`"],
+    ["a label without a namespace gives none", "Vidi `bug:x` danas."],
     ["after a label section ends", "## Labele\n\n- `bug`: opis\n\n## Dalje\n\n`nema-je`"],
   ])("%s is not a mention", (_, markdown) => {
     expect(mentionProblems("F.md", markdown, names)).toEqual([]);
+  });
+
+  it("the fixed namespaces need no label of that namespace", () => {
+    const text = "Vidi `claude:nema`, `area:nema`, `risk:nema` i `role:nema`.";
+    expect(mentionProblems("F.md", text, [])).toHaveLength(4);
+  });
+
+  it("a wildcard needs a label of exactly that namespace", () => {
+    expect(mentionProblems("F.md", "Labele `bu:*`.", ["bug", "bux:y"])).toEqual([
+      "F.md: `bu:*` (no such label in .github/labels.yml)",
+    ]);
   });
 
   it("namespaces come from labels.yml too", () => {
@@ -223,7 +259,8 @@ describe("repository", () => {
   });
 
   it("the Labele section of docs/BOTS.md names every label of labels.yml", () => {
-    const section = bots.split(/^## /mu).find((part) => part.startsWith("Labele\n")) ?? "";
+    const parts = bots.split(/^## /mu);
+    const section = parts.find((part) => /^Labele\r?\n/u.test(part)) ?? "";
     expect(section).not.toBe("");
     const listed = labelMentions(`## ${section}`, names);
     expect(names.filter((name) => !listed.includes(name))).toEqual([]);
