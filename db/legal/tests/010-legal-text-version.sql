@@ -12,7 +12,7 @@ SET LOCAL search_path TO pg_catalog, pg_temp, public;
 CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA public;
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(153);
+SELECT plan(185);
 
 -- Runs `sql` as `who` (NULL: the session's superuser), with
 -- session_replication_role = replica when asked; gives back the SQLSTATE it
@@ -45,34 +45,40 @@ CREATE TABLE pg_temp.before AS
 -- 1. Nobody changes or removes a published version: both roles of the
 -- database (no right), the superuser and the superuser with
 -- session_replication_role = replica (the triggers fire ALWAYS).
--- Each column gets a value that is otherwise valid for the one published
--- version here; `control` is what the same statement gives the superuser with
--- the triggers off. The hash of 33 bytes fails its CHECK even so: an extra
--- negative, not a proof.
+-- Each column gets values that are otherwise valid for the one published
+-- version here, in both directions where a column has them; `control` is
+-- what the same statement gives the superuser with the triggers off. The hash
+-- of 33 bytes fails its CHECK even so: an extra negative, not a proof.
+CREATE TABLE pg_temp.executor (who text, replica boolean NOT NULL, refused text NOT NULL);
+INSERT INTO pg_temp.executor VALUES ('ductus_legal_app', false, '42501'), ('ductus_legal_migrator', false, '42501'),
+  (NULL, false, '55000'), (NULL, true, '55000');
 CREATE TABLE pg_temp.attempt (sql text PRIMARY KEY, control text NOT NULL);
 INSERT INTO pg_temp.attempt VALUES
   ('UPDATE legal.text_version SET id = DEFAULT', 'ok'),
   ('UPDATE legal.text_version SET version = 2', 'ok'),
+  ('UPDATE legal.text_version SET version = 1000000', 'ok'),
   ('UPDATE legal.text_version SET content_sha256 = ''\x00''::bytea || content_sha256', '23514'),
   ('UPDATE legal.text_version SET content_sha256 = sha256(convert_to(''Drugi izmišljeni tekst.'', ''UTF8''))', 'ok'),
   ('UPDATE legal.text_version SET kind = ''privacy_notice''', 'ok'),
+  ('UPDATE legal.text_version SET kind = ''cookie_policy''', 'ok'),
   ('UPDATE legal.text_version SET language = ''en''', 'ok'),
   ('UPDATE legal.text_version SET published_at = published_at - interval ''1 day''', 'ok'),
+  ('UPDATE legal.text_version SET published_at = published_at + interval ''1 day''', 'ok'),
   ('UPDATE legal.text_version SET effective_at = effective_at + interval ''1 day''', 'ok'),
+  ('UPDATE legal.text_version SET effective_at = effective_at - interval ''1 day''', 'ok'),
   ('DELETE FROM legal.text_version', 'ok'),
   ('TRUNCATE legal.text_version', 'ok');
-SELECT is(pg_temp.try_as(w.who, s.sql, w.replica), w.expected,
+SELECT is(pg_temp.try_as(w.who, s.sql, w.replica), w.refused,
   coalesce(w.who, 'the superuser') || CASE WHEN w.replica THEN ' (replica)' ELSE '' END || ' is refused: ' || s.sql)
-FROM (VALUES ('ductus_legal_app', false, '42501'), ('ductus_legal_migrator', false, '42501'),
-             (NULL, false, '55000'), (NULL, true, '55000')) w (who, replica, expected)
-CROSS JOIN pg_temp.attempt s;
+FROM pg_temp.executor w CROSS JOIN pg_temp.attempt s;
 SELECT set_eq('SELECT v.* FROM legal.text_version v WHERE (kind, language, version) = (''terms_of_use'', ''hr'', 999001)',
   'SELECT * FROM pg_temp.before', 'after every attempt the published version is there, every column unchanged');
 -- The control of every attempt (DAN-847-1b): the same statement with both
--- refusing triggers disabled, in a block that is always undone, leaves the
--- published version changed or gone for the superuser, in replica too, so
--- each value is otherwise valid and the trigger alone refuses it above. The
--- roles stay refused without the triggers: their rights hold on their own.
+-- refusing triggers disabled, in a block that is always undone, gives the
+-- superuser, in replica too, its `control`: every attempt with `ok` leaves the
+-- published version changed or gone, so its value is otherwise valid and the
+-- trigger alone refuses it above. The roles stay refused without the
+-- triggers: their rights hold on their own.
 SELECT ok((SELECT rolsuper FROM pg_roles WHERE rolname = current_user), 'the control runs as a superuser');
 CREATE FUNCTION pg_temp.without_triggers(who text, sql text, replica boolean) RETURNS text
   LANGUAGE plpgsql AS $$
@@ -96,12 +102,11 @@ EXCEPTION
   WHEN OTHERS THEN RETURN SQLSTATE;
 END
 $$;
-SELECT is(pg_temp.without_triggers(w.who, s.sql, w.replica), coalesce(w.expected, s.control),
+SELECT is(pg_temp.without_triggers(w.who, s.sql, w.replica), e.expected,
   'without the triggers, ' || coalesce(w.who, 'the superuser') || CASE WHEN w.replica THEN ' (replica)' ELSE '' END
-  || ' gets ' || coalesce(w.expected, s.control) || ': ' || s.sql)
-FROM (VALUES ('ductus_legal_app', false, '42501'), ('ductus_legal_migrator', false, '42501'),
-             (NULL, false, NULL), (NULL, true, NULL)) w (who, replica, expected)
-CROSS JOIN pg_temp.attempt s;
+  || ' gets ' || e.expected || ': ' || s.sql)
+FROM pg_temp.executor w CROSS JOIN pg_temp.attempt s
+CROSS JOIN LATERAL (SELECT CASE WHEN w.who IS NULL THEN s.control ELSE w.refused END) e (expected);
 
 -- 2. A version is published once per kind and language.
 SELECT is(pg_temp.try_as(NULL, format(
