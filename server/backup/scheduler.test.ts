@@ -255,6 +255,29 @@ describe("backup scheduler: enabled runs once per interval", () => {
     expect(onSkip.mock.calls).toEqual([["settings_unavailable"]]);
   });
 
+  // Review FAIL on #289 (f40f4f8): Node truncates a fractional delay, so a
+  // timer can call back just before its point; that point must not count yet.
+  it("a timer that calls back 1 ms early counts no point before it is due", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    const spy = vi
+      .spyOn(globalThis, "setTimeout")
+      .mockImplementation(((fn: () => void, ms: number) =>
+        fakeSetTimeout(fn, ms >= 2 ? ms - 1 : ms)) as never);
+    try {
+      const { run } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record();
+      await vi.advanceTimersByTimeAsync(3 * H + 2);
+      expect(calls.length).toBe(3);
+      calls.forEach((at, i) => {
+        expect(at).toBeGreaterThanOrEqual(i + 1);
+        expect(at).toBeLessThan(i + 1 + 2 / H);
+      });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("points missed by a blocked event loop count at once, without extra reads", async () => {
     const fakeSetTimeout = globalThis.setTimeout;
     const spy = vi

@@ -8,7 +8,7 @@ Kopije baze i pohrane te mjesečna proba povrata (ARCHITECTURE §9). Feature pod
 
 ## Raspoređivač backupa
 
-`createBackupScheduler` (`scheduler.ts`) radi na fiksnoj satnoj mreži od `start()` (DAN-1012-2a, opcija A, Ductus#2028 c.6965242237). Točka mreže k dospijeva u `start + k` sati po monotonom satu (`performance.now()`), a timer se uvijek postavlja na sljedeću točku. Zato ni posao ni čitanje ne pomiču mrežu. Točke koje blokirana petlja događaja propusti broje se odjednom.
+`createBackupScheduler` (`scheduler.ts`) radi na fiksnoj satnoj mreži od `start()` (DAN-1012-2a, opcija A, Ductus#2028 c.6965242237). Točka mreže k dospijeva u `start + k` sati po monotonom satu (`performance.now()`), a timer se uvijek postavlja na sljedeću točku. Zato ni posao ni čitanje ne pomiču mrežu. Točke koje blokirana petlja događaja propusti broje se odjednom. Nijedna točka se ne broji prije dospijeća: ako timer okine ranije (Node skraćuje razlomljenu odgodu), ponovno se postavlja na istu točku.
 
 Na točki čita postavke razine `system` iz kataloga (DAN-1012-1); točka `busy` ne čita ništa. `run()` poziva samo kad je `backup.enabled` točno `true` i kad je prošlo barem `backup.interval_hours` točaka od zadnjeg poziva ili od zadnje provjere koja je na vrijeme vidjela da backup nije uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
 

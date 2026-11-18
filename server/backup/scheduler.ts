@@ -150,7 +150,9 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   const schedule = (): void => {
     if (stopped) return;
     const due = origin + (point + 1) * BACKUP_CHECK_MS;
-    timer = setTimeout(tick, Math.max(0, due - performance.now()));
+    // Rounded up and never 0: Node truncates a fractional delay, which could
+    // call back before the point (Review FAIL on #289).
+    timer = setTimeout(tick, Math.max(1, Math.ceil(due - performance.now())));
     // The scheduler alone never keeps the process up.
     timer.unref();
   };
@@ -158,7 +160,9 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   function tick(): void {
     // Every point due by now counts, also those a blocked event loop merged.
     const due = Math.floor((performance.now() - origin) / BACKUP_CHECK_MS);
-    const passed = Math.max(1, due - point);
+    // Called back before the next point is due: count nothing, wait again.
+    if (due <= point) return schedule();
+    const passed = due - point;
     point += passed;
     hours += passed;
     if (check !== undefined) {
