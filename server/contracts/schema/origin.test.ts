@@ -329,6 +329,10 @@ describe("Origin", () => {
       fc
         .oneof(fc.array(group, { minLength: 8, maxLength: 8 }), fc.array(group, { maxLength: 9 }))
         .map((g) => ["ipv6", `[${g.join(":")}]`]),
+      // Compressed: [::], [::a], [1::], [::1:1] and the like, canonical neighbours of [::1].
+      fc
+        .tuple(fc.array(group, { maxLength: 3 }), fc.array(group, { maxLength: 3 }))
+        .map(([a, b]) => ["ipv6", `[${a.join(":")}::${b.join(":")}]`]),
       fc.constantFrom(["ipv6", "[::1]"], ["domain", "a."], ["domain", "localhost"]),
     );
     const port = fc.oneof(
@@ -383,16 +387,21 @@ describe("Origin", () => {
         return v.slice(0, from) + v.slice(from, to).repeat(times) + v.slice(to);
       });
     const near = fc
-      .tuple(whole.filter(inSubset), fc.nat(), fc.integer({ min: -32, max: 32 }))
+      .tuple(
+        whole.filter(inSubset),
+        fc.nat(),
+        fc.oneof(fc.integer({ min: -32, max: 32 }), fc.constantFrom(0, 1)),
+      )
       .map(([v, a, d]) => {
-        const at = a % v.length;
+        const start = v.indexOf("//") + 2;
+        const at = start + (a % (v.length - start));
         return (
           v.slice(0, at) +
           v.charAt(at).repeat(Math.max(1, LIMIT + d - v.length + 1)) +
           v.slice(at + 1)
         );
       });
-    let [over, under] = [0, 0];
+    let [over, under, edge] = [0, 0, 0];
     for (const value of [
       ...fc.sample(pumped, { numRuns: 1_000, seed: 931 }),
       ...fc.sample(near, { numRuns: 200, seed: 932 }),
@@ -401,7 +410,8 @@ describe("Origin", () => {
       expect([value.slice(0, 40), accepted]).toEqual([value.slice(0, 40), inSubset(value)]);
       if (value.length > LIMIT && canonical(value)) over++;
       if (value.length > LIMIT - 64 && accepted) under++;
+      if (value.length === LIMIT + 1 && canonical(value)) edge++;
     }
-    expect([over > 0, under > 0]).toEqual([true, true]);
+    expect([over > 0, under > 0, edge > 0]).toEqual([true, true, true]);
   });
 });
