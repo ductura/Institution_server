@@ -6,7 +6,9 @@ Pravila analize zapisa područja `log` (S-1K.7-a, DAN-1010; [karta servera](../.
 
 `analyzeLog(entries, thresholds)` je čista funkcija koja u zapisima prepoznaje obrasce na razini sustava. Za svako pravilo poreda vremena njegovih događaja. Nalaz `{ rule, fromMs, toMs, count, minCount }` daje svaki poluotvoreni prozor `[t, t + windowMs)` koji počinje na zapisu i sadrži najmanje `minCount` zapisa. Sljedeća potraga počinje od prvog zapisa s vremenom `>= toMs`.
 
-- Pravilo `login_failures` (ključ praga `loginFailures`) broji `authn.login_failed` i `authn.second_factor_failed`. Ostala pravila dolaze u 1010-1b i dalje.
+- Pravilo `login_failures` (ključ praga `loginFailures`, zadano 10 min i 20 zapisa) broji `authn.login_failed` i `authn.second_factor_failed`.
+- Pravilo `traffic_refusals` (ključ praga `trafficRefusals`, zadano 5 min i 50 zapisa) broji `traffic.rate_limited` i `traffic.ip_denied` (DAN-1010-1b, ugovor Ductus#2028 c.6967029458).
+- Pragovi moraju imati ključ svakog pravila. Nalazi idu redom pravila, a unutar pravila po vremenu. Sesije, ovlasti i pogon dolaze u 1010-2 i 1010-3.
 - Pragovi su parametar, a zadani su `DEFAULT_ANALYSIS_THRESHOLDS`. Svako polje praga je sigurni cijeli broj > 0, a prozor je najviše 24 h. Inače poziv daje `ANALYSIS_THRESHOLD_INVALID`; pragovi se provjeravaju prvi.
 - Svaki ključ se čita jednom, kao vlastito podatkovno svojstvo. Getter, naslijeđena vrijednost, nositelj koji nije običan objekt (npr. funkcija) i čitanje koje baca (opozvani `Proxy`, zamka) vrijede kao nečitljivi.
 - Nečitljiv zapis se preskače. Preskače se i zapis kojem vrijeme nije cijeli broj unutar granice `Date` (`MAX_TIME_MS`) ili mu događaj nije točno string iz pravila.
