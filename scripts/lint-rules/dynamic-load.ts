@@ -376,8 +376,10 @@ export const noDynamicLoad: Rule.RuleModule = {
         fn.id?.type === "Identifier" &&
         exported?.type === "ExportNamedDeclaration" &&
         exported.parent?.type === "Program" &&
+        // The function's own name only: its parameters are declared by it too.
         context.sourceCode
           .getDeclaredVariables(fn as unknown as Node)
+          .filter((variable) => variable.name === fn.id?.name)
           .every((variable) => variable.references.length === 0)
       );
     }
@@ -411,6 +413,8 @@ export const noDynamicLoad: Rule.RuleModule = {
         for (const variable of context.sourceCode.getDeclaredVariables(specifier)) {
           for (const reference of variable.references) {
             if ((reference as { isValueReference?: boolean }).isValueReference === false) continue;
+            // `typeof Worker` in a type is erased and starts nothing.
+            if (inTypeQuery(reference.identifier as Loose)) continue;
             const id = reference.identifier as Loose;
             const call = id.parent;
             const [url, options, ...rest] = (call?.arguments ?? []) as Loose[];

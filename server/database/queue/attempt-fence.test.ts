@@ -96,6 +96,34 @@ describe("startAttemptFence: the thread and its life cycle (recorder, no real th
     expect(calls).toEqual(["unref", "terminate"]);
   });
 
+  it("ends the thread at most once, however often close is called", async () => {
+    const { calls, fence } = await loadWithRecorder();
+    const handle = fence.startAttemptFence();
+    const release = handle.arm(60_000);
+    await handle.close();
+    release();
+    await handle.close();
+    await handle.close();
+    expect(calls).toEqual(["unref", "terminate"]);
+  });
+
+  it("a late release parks, is not counted, and close never ends the thread under it", async () => {
+    const { calls, fence } = await loadWithRecorder();
+    const handle = fence.startAttemptFence();
+    const release = handle.arm(100);
+    await handle.close();
+    // The clock past the deadline; park's Atomics.wait would block vitest for good.
+    const real = process.hrtime.bigint;
+    vi.spyOn(process.hrtime, "bigint").mockImplementation(() => real() + 60_000_000_000n);
+    vi.spyOn(Atomics, "wait").mockImplementation(() => {
+      throw new Error("parked");
+    });
+    expect(() => release()).toThrow("parked");
+    await handle.close();
+    expect(calls).toEqual(["unref"]);
+    vi.restoreAllMocks();
+  });
+
   it("a refused arm counts no attempt, so close still ends the thread", async () => {
     const { calls, fence } = await loadWithRecorder();
     const handle = fence.startAttemptFence();
@@ -126,7 +154,8 @@ async function run(body: string): Promise<Ending> {
     `import { startAttemptFence } from ${JSON.stringify(fenceModule)};
 const fence = startAttemptFence();
 const later = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const spin = (ms) => { const end = Date.now() + ms; while (Date.now() < end) {} };
+// The main thread's clock only, past every deadline: the watch keeps the real one.
+const late = () => { const real = process.hrtime.bigint; process.hrtime.bigint = () => real() + 5_000_000_000n; };
 ${body}
 `,
   );
@@ -158,12 +187,26 @@ describe("startAttemptFence: a real process", () => {
     });
   });
 
-  it("a release after the time never returns, and the process is killed", async () => {
+  it("a release after the time never returns, and the process is killed at the real deadline", async () => {
     expect(
       await run(
-        `const release = fence.arm(200); console.log("armed"); spin(400); release(); console.log("after release");`,
+        `const release = fence.arm(1000); console.log("armed"); late(); console.log("before release"); release(); console.log("after release");`,
       ),
-    ).toEqual({ code: null, signal: "SIGKILL", stdout: "armed\n", stderr: "" });
+    ).toEqual({ code: null, signal: "SIGKILL", stdout: "armed\nbefore release\n", stderr: "" });
+  });
+
+  it("close does not end the watch under a live attempt: a late release after close is killed", async () => {
+    expect(
+      await run(
+        `const release = fence.arm(1000); await fence.close(); console.log("closed"); late(); release(); console.log("after release");`,
+      ),
+    ).toEqual({ code: null, signal: "SIGKILL", stdout: "closed\n", stderr: "" });
+  });
+
+  it("close does not end the watch under a live attempt: one that blocks after close is killed", async () => {
+    expect(
+      await run(`fence.arm(300); await fence.close(); console.log("closed"); for (;;) {}`),
+    ).toEqual({ code: null, signal: "SIGKILL", stdout: "closed\n", stderr: "" });
   });
 
   it("an attempt released in time, then close, lets the process exit 0", async () => {

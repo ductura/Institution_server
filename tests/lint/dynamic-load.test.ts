@@ -89,7 +89,13 @@ const failing: Case[] = [
       `new URL("data:text/javascript,1", import.meta.url), { workerData: 1 }`,
       `new URL("./attempt-fence-watch.js"), { workerData: 1 }`,
       `true ? ${URL_JS} : new URL("./x.js", import.meta.url), { workerData: 1 }`,
-    ].map((args) => startWith(args)),
+      `new globalThis.URL("./attempt-fence-watch.js", import.meta.url), { workerData: 1 }`,
+      `new URL("./attempt-fence-watch.js", "file:///x/"), { workerData: 1 }`,
+      `new URL(\`./attempt-fence-watch.js\`, import.meta.url), { workerData: 1 }`,
+      `${URL_JS}, { "workerData": 1 }`,
+      `${URL_JS}, { get workerData() { return 1; } }`,
+      `u, { workerData: 1 }`,
+    ].map((args) => startWith(args, `const u = ${URL_JS};\n`)),
     startWith(`${URL_JS}, { workerData: 1 }`, "class URL {}\nvoid URL;\n"),
     `import { Worker } from "${WT}";\nconst W = Worker;\nexport const w = W;\n`,
     `import { Worker } from "${WT}";\nexport { Worker };\n`,
@@ -473,6 +479,9 @@ const passing: Case[] = [
     startWith(`${URL_JS}, { workerData: 1 }`),
     startWith(`import.meta.url.endsWith(".ts") ? ${URL_TS} : ${URL_JS}, { workerData: 1 }`),
     `import { Worker } from "${WT}";\nexport type T = Worker;\n`,
+    `import { Worker } from "${WT}";\nexport type T = typeof Worker;\n`,
+    // A parameter named like the option is not a call of the starter.
+    `import { Worker } from "${WT}";\nexport function f(workerData: SharedArrayBuffer): void {\n  const t = new Worker(${URL_JS}, { workerData });\n  t.unref();\n}\n`,
   ]),
   ...at(WATCH, "", [WATCH_CODE]),
   ...at(ENV, "", [
@@ -608,6 +617,9 @@ describe("the rule covers the whole of server/", () => {
       const text = readFileSync(path.join(ROOT, file), "utf8");
       for (const script of scripts) {
         expect(text, `${file} ${script}`).toContain(`"${script}"`);
+        // A .js script is only the built copy of a listed .ts one.
+        if (script.endsWith(".js"))
+          expect(scripts, script).toContain(script.replace(/\.js$/u, ".ts"));
         if (!script.endsWith(".ts")) continue;
         const target = path.posix.join(path.posix.dirname(file), script.slice(2));
         expect(tracked, target).toContain(target);

@@ -31,6 +31,16 @@ export function startAttemptFence(): AttemptFence {
   );
   let closed = false;
   let live = 0;
+  // The thread is ended at most once; every close returns the same promise.
+  let ended: Promise<void> | undefined;
+  function end(): Promise<void> {
+    // A failed terminate leaves only an idle, unref'd thread.
+    ended ??= thread.terminate().then(
+      () => {},
+      () => {},
+    );
+    return ended;
+  }
   return {
     arm(ms) {
       if (closed) throw new Error("fence_refused");
@@ -42,12 +52,13 @@ export function startAttemptFence(): AttemptFence {
         release();
         released = true;
         live -= 1;
-        if (closed && live === 0) void thread.terminate();
+        if (closed && live === 0) void end();
       };
     },
+    // Resolves at once while attempts are live: each stays fenced until released.
     async close() {
       closed = true;
-      if (live === 0) await thread.terminate();
+      if (live === 0) await end();
     },
   };
 }
