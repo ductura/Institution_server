@@ -165,6 +165,7 @@ describe("the class: shape of the reader's result (503, one report, never a 200)
     ["an own toString key", "type_error", ok([{ ...GOOD, toString: "x" }])],
     ["inherited fields", "type_error", ok([Object.create(GOOD) as object])],
     ["a value that is no array", "type_error", ok(GOOD)],
+    ["a null result", "type_error", () => null],
     ["a state outside the contract", "type_error", ok([BAD])],
     ["an uppercase id", "type_error", ok([{ ...GOOD, assignmentId: A1.toUpperCase() }])],
     ["a non-enumerable item", "type_error", ok(Object.defineProperty([GOOD], 1, { value: GOOD }))],
@@ -190,6 +191,17 @@ describe("the class: shape of the reader's result (503, one report, never a 200)
     await stub(ok([GOOD, , GOOD]));
     await planted(Array.prototype, "1", { ...GOOD }, async () =>
       unavailable(await get(), 1, "type_error"),
+    );
+  });
+
+  // QA self-check: ok and value of the result must be own fields of the snapshot too.
+  it.each([
+    ["ok", true, () => ({ value: [GOOD] }), 0],
+    ["value", [GOOD], () => ({ ok: true }), 1],
+  ] as const)("a result whose %s only Object.prototype carries", async (key, value, answer, n) => {
+    await stub(answer);
+    await planted(Object.prototype, key, value, async () =>
+      unavailable(await get(), n, n === 0 ? undefined : "type_error"),
     );
   });
 
@@ -247,6 +259,7 @@ describe("the reader's own answers", () => {
     ["an unknown code", code("ELSE")],
     ["ok false without an error", () => ({ ok: false })],
     ["ok that is only truthy", () => ({ ok: "yes", value: [GOOD] })],
+    ["a string result", () => "ok"],
   ] as [string, () => unknown][])("%s is 503 without a report", async (_name, answer) => {
     await stub(answer);
     unavailable(await get(), 0);

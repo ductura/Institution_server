@@ -74,13 +74,16 @@ export function createStudentAssignmentWorkRoute(
         // structuredClone throws on a Proxy, a function or a symbol value (and passes on
         // what a getter throws), drops symbol keys such as an own iterator and keeps
         // only own enumerable fields, never the prototype of an object.
-        const read = snapshotOf(await options.reader.read(token));
-        if (read.ok !== true) {
+        const read: { ok?: unknown; value?: unknown; error?: { code?: unknown } } = snapshotOf(
+          await options.reader.read(token),
+        );
+        // ok and value count only as own fields of the snapshot, never from a prototype.
+        if (!Object.hasOwn(read, "ok") || read.ok !== true) {
           return read.error?.code === UNAUTHENTICATED
             ? sendProblem(response, 401, "unauthorized")
             : sendProblem(response, 503, "unavailable");
         }
-        const body = bodyOf(read.value);
+        const body = Object.hasOwn(read, "value") ? bodyOf(read.value) : null;
         if (body === null) throw new TypeError("assignment work outside the contract");
         sendJson(response, 200, body);
       } catch (error) {
