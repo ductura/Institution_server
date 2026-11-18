@@ -226,7 +226,7 @@ describe("dist/server.js", () => {
     // (NODE_ENV production or unset) as anywhere.
     [
       "only a KMS key under NODE_ENV production",
-      { NODE_ENV: "production", DUCTUS_KMS_KEY_ID: KMS.DUCTUS_KMS_KEY_ID },
+      { NODE_ENV: "production", DUCTUS_KMS_KEY_ID: `${KMS.DUCTUS_KMS_KEY_ID}${CANARY}` },
       "DUCTUS_KMS_PROVIDER is not set",
     ],
     [

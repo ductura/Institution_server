@@ -118,6 +118,7 @@ describe("kmsProblems and kmsSettings: an absent or complete configuration", () 
     [KEY, "eu-central-1"],
     [KEY.replace(UUID, `mrk-${"0123456789abcdef".repeat(2)}`), "eu-central-1"],
     [`arn:aws-us-gov:kms:us-gov-west-1:000000000000:key/${UUID}`, "us-gov-west-1"],
+    [`arn:aws-cn:kms:cn-north-1:000000000000:key/${UUID}`, "cn-north-1"],
   ])("selects aws with the key %s", (keyId, region) => {
     const env = {
       NODE_ENV: "production",
