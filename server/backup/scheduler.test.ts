@@ -2232,6 +2232,24 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
       true,
     ],
     ["T6 a thenable that rejects", () => ({ then: (_ok: Ok, fail: Fail) => fail(CANARY) }), true],
+    // QA attacker on 2g: a rejected promise as the reason of the first call
+    // back reaches only the scheduler, so the scheduler handles it.
+    [
+      "T16 a thenable that fails with a rejected promise as the reason",
+      () => ({ then: (_ok: Ok, fail: Fail) => fail(Promise.reject(new Error(CANARY))) }),
+      true,
+    ],
+    [
+      "T16 a thenable resolving with a thenable that fails with a rejected vm promise",
+      () => ({
+        then: (ok: Ok) =>
+          ok({
+            then: (_inner: Ok, fail: Fail) =>
+              fail(runInNewContext("Promise.reject(new Error('x'))")),
+          }),
+      }),
+      true,
+    ],
     ["T4 a rejected native promise", () => Promise.reject(new Error(CANARY)), true],
     [
       "T2 a synchronous throw",

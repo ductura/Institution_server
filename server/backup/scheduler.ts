@@ -160,6 +160,9 @@ function callThen(
   const reject = (reason: unknown): void => {
     if (called) return;
     called = true;
+    // A native promise as the reason reaches only the scheduler, which drops
+    // the reason, so it is marked handled here (QA attacker on 2g).
+    if (isPromise(reason)) ignoreRejection(reason);
     fail(reason);
   };
   try {
