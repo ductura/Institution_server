@@ -12176,6 +12176,195 @@
     }
   },
   {
+    "route": "ops.events.get",
+    "name": "page",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z",
+        "after": "40"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "events": [
+          {
+            "seq": 41,
+            "at": "2026-11-18T08:59:58.004Z",
+            "kind": "authn.login_started",
+            "requestId": "3f2a1b4c-5d6e-4f70-8a91-b2c3d4e5f601",
+            "accountKind": "anonymous",
+            "fields": {
+              "method": "aai_eduhr"
+            }
+          },
+          {
+            "seq": 42,
+            "at": "2026-11-18T09:00:01.250Z",
+            "kind": "authn.login_failed",
+            "requestId": "3f2a1b4c-5d6e-4f70-8a91-b2c3d4e5f601",
+            "accountKind": "anonymous",
+            "fields": {
+              "reason": "provider_unavailable"
+            }
+          },
+          {
+            "seq": 57,
+            "at": "2026-11-18T10:30:00.000Z",
+            "kind": "traffic.request",
+            "requestId": "8c9d0e1f-2a3b-4c4d-9e5f-a0b1c2d3e4f5",
+            "accountKind": "student",
+            "fields": {
+              "method": "GET",
+              "route": "/api/v1/health",
+              "ip": "192.0.2.0/24",
+              "status": 200,
+              "durationMs": 12,
+              "ipRule": "allowed",
+              "rateLimit": "allowed"
+            }
+          },
+          {
+            "seq": 58,
+            "at": "2026-11-18T10:30:00.420Z",
+            "kind": "traffic.request",
+            "requestId": null,
+            "accountKind": "anonymous",
+            "fields": {
+              "method": "GET",
+              "route": "none",
+              "ip": "2001:db8::/48",
+              "status": 404,
+              "durationMs": 3,
+              "ipRule": "not_checked",
+              "rateLimit": "allowed"
+            }
+          }
+        ],
+        "next": null
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "empty",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "events": [],
+        "next": null
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "no-session",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthenticated",
+        "code": "unauthenticated",
+        "messageKey": "errors.unauthenticated",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "no-second-factor",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "window-over-24-hours",
+    "request": {
+      "query": {
+        "from": "2026-11-17T00:00:00Z",
+        "to": "2026-11-18T00:00:00.001Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "ops.events.get",
+    "name": "unavailable",
+    "request": {
+      "query": {
+        "from": "2026-11-18T00:00:00Z",
+        "to": "2026-11-18T12:00:00Z"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatora-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
     "route": "platform.health.get",
     "name": "alive",
     "request": {},
@@ -12210,7 +12399,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.22.0",
+        "apiVersion": "1.23.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -12226,7 +12415,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.22.0",
+        "apiVersion": "1.23.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
