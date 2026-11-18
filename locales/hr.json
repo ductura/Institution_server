@@ -117,6 +117,14 @@
     "row_malformed": "Stanje vaših radova trenutačno nije moguće prikazati. Pokušajte ponovno.",
     "database_error": "Stanje vaših radova trenutačno nije dostupno. Pokušajte ponovno."
   },
+  "enrollment": {
+    "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
+    "forbidden": "Upis u kolegij nije dopušten.",
+    "refused": "Kôd nije prihvaćen. Provjerite kôd i pokušajte ponovno.",
+    "too_many_attempts": "Previše pokušaja upisa. Pokušajte ponovno kasnije.",
+    "row_malformed": "Upis trenutačno nije moguće potvrditi. Pokušajte ponovno.",
+    "database_error": "Upis trenutačno nije dostupan. Pokušajte ponovno."
+  },
   "problemReport": {
     "unauthenticated": "Niste prijavljeni. Prijavite se ponovno; problem nije poslan.",
     "invalid": "Problem nije poslan. Provjerite opis i pokušajte ponovno.",

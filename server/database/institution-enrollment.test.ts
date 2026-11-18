@@ -7,7 +7,18 @@
 // port never throws. Every token, identifier and message below is invented.
 import { describe, expect, it } from "vitest";
 
-import { createInstitutionEnrollment } from "./institution-enrollment.ts";
+import { readFileSync } from "node:fs";
+
+import {
+  createInstitutionEnrollment,
+  ENROLLMENT_DATABASE_ERROR,
+  ENROLLMENT_ERRORS,
+  ENROLLMENT_FORBIDDEN,
+  ENROLLMENT_REFUSED,
+  ENROLLMENT_ROW_MALFORMED,
+  ENROLLMENT_TOO_MANY_ATTEMPTS,
+  ENROLLMENT_UNAUTHENTICATED,
+} from "./institution-enrollment.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 const TOKEN = "izmisljeni-token-upisa-00000000000000000001";
@@ -58,8 +69,37 @@ function enroll(answer: Answer) {
 }
 
 const dbError = (code: unknown) => Object.assign(new Error(SECRET), { code });
-const DATABASE = { status: "unavailable", reason: "database_error" };
-const MALFORMED = { status: "unavailable", reason: "enroll_malformed" };
+const fail = (error: unknown) => ({ ok: false, error });
+const DATABASE = fail(ENROLLMENT_DATABASE_ERROR);
+const MALFORMED = fail(ENROLLMENT_ROW_MALFORMED);
+const enrolled = (courseId: string) => ({ ok: true, value: { courseId } });
+
+// Review FAIL on #322 (c.6980566116): one shape of an expected failure.
+describe("enrolment errors (docs/CODE_STYLE.md §8)", () => {
+  const catalogue = JSON.parse(
+    readFileSync(new URL("../../locales/hr.json", import.meta.url), "utf8"),
+  ) as { enrollment?: Record<string, unknown> };
+  it("has a Croatian text for every key, and no other key in its section", () => {
+    const section = catalogue.enrollment ?? {};
+    for (const { messageKey } of ENROLLMENT_ERRORS) {
+      const text = section[messageKey.replace(/^enrollment\./, "")];
+      expect(typeof text === "string" && text.trim().length > 0, messageKey).toBe(true);
+    }
+    expect(
+      Object.keys(section)
+        .map((k) => `enrollment.${k}`)
+        .sort(),
+    ).toEqual(ENROLLMENT_ERRORS.map((e) => e.messageKey).sort());
+  });
+
+  it("lists six errors with distinct UPPER_SNAKE codes and only { code, messageKey }", () => {
+    expect(new Set(ENROLLMENT_ERRORS.map((e) => e.code)).size).toBe(6);
+    for (const e of ENROLLMENT_ERRORS) {
+      expect(e.code).toMatch(/^ENROLLMENT_[A-Z_]+$/);
+      expect(Object.keys(e).sort()).toEqual(["code", "messageKey"]);
+    }
+  });
+});
 
 function expectNothingLeaks(outcome: unknown) {
   const text = JSON.stringify(outcome);
@@ -69,11 +109,11 @@ function expectNothingLeaks(outcome: unknown) {
 
 describe("enrollWithCode refusals and faults of the database", () => {
   it.each([
-    ["ZD401", "unauthenticated"],
-    ["ZD403", "forbidden"],
-  ])("%s is %s", async (code, status) => {
+    ["ZD401", ENROLLMENT_UNAUTHENTICATED],
+    ["ZD403", ENROLLMENT_FORBIDDEN],
+  ])("%s is %j", async (code, error) => {
     const outcome = await enroll({ throws: dbError(code) }).result;
-    expect(outcome).toEqual({ status });
+    expect(outcome).toEqual(fail(error));
     expectNothingLeaks(outcome);
   });
 
@@ -123,13 +163,13 @@ describe("enrollWithCode refusals and faults of the database", () => {
 
   it("an inherited code is read, as Ductus reads it with `in`", async () => {
     const inherited = Object.create({ code: "ZD403" }) as object;
-    expect(await enroll({ throws: inherited }).result).toEqual({ status: "forbidden" });
+    expect(await enroll({ throws: inherited }).result).toEqual(fail(ENROLLMENT_FORBIDDEN));
   });
 
   it("ZD401 thrown outside fn is unauthenticated too", async () => {
-    expect(await enroll({ actorThrows: dbError("ZD401") }).result).toEqual({
-      status: "unauthenticated",
-    });
+    expect(await enroll({ actorThrows: dbError("ZD401") }).result).toEqual(
+      fail(ENROLLMENT_UNAUTHENTICATED),
+    );
   });
 });
 
@@ -193,8 +233,8 @@ describe("enrollWithCode rows of a wrong form: unavailable, and nothing rolls ba
 
 describe("enrollWithCode outcomes", () => {
   it.each([
-    ["refused", { status: "refused" }],
-    ["too_many_attempts", { status: "too_many_attempts" }],
+    ["refused", fail(ENROLLMENT_REFUSED)],
+    ["too_many_attempts", fail(ENROLLMENT_TOO_MANY_ATTEMPTS)],
   ])("%s with a null course is %j, committed", async (outcome, expected) => {
     const { result, calls } = enroll({ rows: [{ outcome, enrolled_course_id: null }] });
     expect(await result).toEqual(expected);
@@ -208,7 +248,7 @@ describe("enrollWithCode outcomes", () => {
       const { result, calls } = enroll({
         rows: [{ outcome: "enrolled", enrolled_course_id: course }],
       });
-      expect(await result).toEqual({ status: "enrolled", courseId: course });
+      expect(await result).toEqual(enrolled(course));
       expect(calls.queries).toEqual([{ text: SQL, values: [CODE], token: TOKEN }]);
       expect([calls.fnRejected, calls.committed]).toEqual([0, 1]);
     },
@@ -222,9 +262,9 @@ describe("enrollWithCode outcomes", () => {
 describe("enrollWithCode reads the row only after commit", () => {
   const COURSE_OR_NULL = (outcome: string) => (outcome === "enrolled" ? COURSE : null);
   it.each([
-    ["enrolled", { status: "enrolled", courseId: COURSE }],
-    ["refused", { status: "refused" }],
-    ["too_many_attempts", { status: "too_many_attempts" }],
+    ["enrolled", enrolled(COURSE)],
+    ["refused", fail(ENROLLMENT_REFUSED)],
+    ["too_many_attempts", fail(ENROLLMENT_TOO_MANY_ATTEMPTS)],
     ["unknown", MALFORMED],
   ])("%s: every column read happens after commit", async (outcome, expected) => {
     const readAt: number[] = [];

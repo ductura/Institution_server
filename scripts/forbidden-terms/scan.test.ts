@@ -76,7 +76,7 @@ describe("scanLocales on locales/", () => {
   it("reads every text and finds nothing", () => {
     const scan = report(REPO_ROOT);
     expect(found(scan)).toEqual([]);
-    expect(scan.read).toEqual({ "hr.ts": 1434, "en.ts": 1434, "hr.json": 99 });
+    expect(scan.read).toEqual({ "hr.ts": 1434, "en.ts": 1434, "hr.json": 105 });
   });
 });
 
@@ -98,7 +98,7 @@ describe("scan errors", () => {
 
 describe("invariant 1: every leaf is read", () => {
   it("reads the same numbers from a copy", () => {
-    expect(report(copy()).read).toEqual({ "hr.ts": 1434, "en.ts": 1434, "hr.json": 99 });
+    expect(report(copy()).read).toEqual({ "hr.ts": 1434, "en.ts": 1434, "hr.json": 105 });
   });
 
   it.each(["de.ts", "x.json", "notes.txt", "sub/hr.ts", "hr.test.json"])(
