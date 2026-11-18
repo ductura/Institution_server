@@ -1903,3 +1903,115 @@ it("a thenable that calls back at once, behind an earlier 20 ms microtask, ends 
     spy.mockRestore();
   }
 });
+
+// Codex review on #314 (728be8a): only the first call back of a thenable is
+// followed, at every depth, so a later one with a rejected promise, already
+// handled by the job, leaves nothing unhandled.
+it.each([
+  [
+    "the job's thenable",
+    (late: Promise<void>) => ({
+      then: (ok: (value?: unknown) => void) => {
+        ok();
+        ok(late);
+      },
+    }),
+  ],
+  [
+    "a thenable it resolves with",
+    (late: Promise<void>) => ({
+      then: (ok: (value?: unknown) => void) =>
+        ok({
+          then: (inner: (value?: unknown) => void) => {
+            inner();
+            inner(late);
+          },
+        }),
+    }),
+  ],
+  [
+    "a thenable that failed first",
+    (late: Promise<void>) => ({
+      then: (ok: (value?: unknown) => void, fail: (reason: unknown) => void) => {
+        fail(new Error(CANARY));
+        ok(late);
+      },
+    }),
+  ],
+])("a second call back of %s is ignored: nothing unhandled", async (n, make) => {
+  const unhandled = vi.fn();
+  process.on("unhandledRejection", unhandled);
+  try {
+    const late = Promise.reject(new Error(CANARY));
+    late.catch(() => undefined);
+    const reasons: string[] = [];
+    const { scheduler } = setup(on(1), {
+      onSkip: (reason) => void reasons.push(reason),
+      run: () => make(late) as unknown as Promise<void>,
+    });
+    // One call, at 1 h.
+    await advance(1.5 * H);
+    await scheduler.stop();
+    await realTurn();
+    await realTurn();
+    expect(reasons).toEqual(n.includes("failed") ? ["run_failed"] : []);
+    expect(unhandled).not.toHaveBeenCalled();
+  } finally {
+    process.off("unhandledRejection", unhandled);
+  }
+});
+
+// QA attacker on #314 (728be8a): what a thenable resolves with is normalized
+// with the same guards at depth, so a nested then getter that throws is
+// run_failed, and a nested native promise's derived promise is marked handled.
+it.each([
+  [
+    "a thenable whose then getter throws",
+    () => ({
+      get then(): never {
+        throw new Error(CANARY);
+      },
+    }),
+    ["run_failed"],
+  ],
+  [
+    "a native promise whose species derives a rejected promise",
+    () => {
+      class Derived {
+        constructor(executor: (ok: () => void, fail: () => void) => void) {
+          executor(
+            () => undefined,
+            () => undefined,
+          );
+          return Promise.reject(new Error(CANARY));
+        }
+      }
+      return Object.defineProperty(Promise.resolve(), "constructor", {
+        value: { [Symbol.species]: Derived },
+      });
+    },
+    [],
+  ],
+])("a job's thenable resolving later with %s", async (_n, nested, expected) => {
+  const unhandled = vi.fn();
+  process.on("unhandledRejection", unhandled);
+  try {
+    const reasons: string[] = [];
+    const { scheduler } = setup(on(1), {
+      onSkip: (reason) => void reasons.push(reason),
+      run: () =>
+        ({
+          then: (ok: (value: unknown) => void) => void setTimeout(() => ok(nested()), 0.25 * H),
+        }) as unknown as Promise<void>,
+    });
+    // One call, at 1 h, that ends a quarter of an hour later.
+    await advance(1.5 * H);
+    await scheduler.stop();
+    await realTurn();
+    await realTurn();
+    expect(reasons).toEqual(expected);
+    expect(unhandled).not.toHaveBeenCalled();
+  } finally {
+    process.off("unhandledRejection", unhandled);
+  }
+});

@@ -136,6 +136,30 @@ const objectLike = (value: unknown): value is object =>
   (typeof value === "object" && value !== null) || typeof value === "function";
 
 /**
+ * The call backs a job's then gets: only the first call of either has an
+ * effect, as with the engine's own, so a later one is never even normalized
+ * and leaves nothing unhandled (Codex review on #314).
+ */
+function firstOnly(
+  ok: (value: unknown) => void,
+  fail: (reason: unknown) => void,
+): [(value: unknown) => void, (reason: unknown) => void] {
+  let called = false;
+  return [
+    (value) => {
+      if (called) return;
+      called = true;
+      ok(settledBy(value));
+    },
+    (reason) => {
+      if (called) return;
+      called = true;
+      fail(reason);
+    },
+  ];
+}
+
+/**
  * What a job's thenable resolves with, made safe to hand to the engine: the
  * same outcome, with no then of the job's read twice (contract attacker on
  * 2f). A native promise of any realm is followed through Promise.prototype,
@@ -158,7 +182,7 @@ function settledBy(value: unknown): unknown {
   if (typeof then !== "function") return undefined;
   return {
     then: (ok: (next: unknown) => void, fail: (reason: unknown) => void) =>
-      apply(then, value, [(next: unknown) => ok(settledBy(next)), fail]),
+      apply(then, value, firstOnly(ok, fail)),
   };
 }
 
@@ -285,7 +309,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
         } else {
           const thenable = {
             then: (ok: (value: unknown) => void, fail: (reason: unknown) => void) =>
-              apply(then, result, [(value: unknown) => ok(settledBy(value)), fail]),
+              apply(then, result, firstOnly(ok, fail)),
           };
           apply(promiseThen, promiseResolve(thenable), [done, failed]);
         }
