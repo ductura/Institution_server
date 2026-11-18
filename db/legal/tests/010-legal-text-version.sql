@@ -11,7 +11,7 @@ SET LOCAL search_path TO pg_catalog, pg_temp, public;
 CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA public;
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(81);
+SELECT plan(102);
 
 -- Runs `sql` as `who` (NULL: the session's superuser), with
 -- session_replication_role = replica when asked; gives back the SQLSTATE it
@@ -51,6 +51,10 @@ FROM (VALUES ('ductus_legal_app', false, '42501'), ('ductus_legal_migrator', fal
 CROSS JOIN unnest(ARRAY[
   'UPDATE public.legal_text_version SET version = 2',
   'UPDATE public.legal_text_version SET content_sha256 = ''\x00''::bytea || content_sha256',
+  'UPDATE public.legal_text_version SET kind = ''privacy_notice''',
+  'UPDATE public.legal_text_version SET language = ''en''',
+  'UPDATE public.legal_text_version SET published_at = published_at - interval ''1 day''',
+  'UPDATE public.legal_text_version SET effective_at = effective_at + interval ''1 day''',
   'DELETE FROM public.legal_text_version',
   'TRUNCATE public.legal_text_version'
 ]) s (sql);
@@ -108,8 +112,27 @@ FROM (VALUES
   ('terms_of_use', 'hr', 999011, '\x' || repeat('ab', 33), '2026-12-01 00:00+01', '23514', 'a hash of 33 bytes is refused'),
   ('terms_of_use', 'hr', 999011, NULL, '2026-12-01 00:00+01', '23502', 'a NULL hash is refused'),
   ('terms_of_use', 'hr', 999012, '\x' || repeat('ab', 32), NULL, '23502', 'a NULL date of entry into force is refused'),
-  ('terms_of_use', 'hr', 999012, '\x' || repeat('ab', 32), 'not a date', '22007', 'a date of entry into force that is not a time is refused')
+  ('terms_of_use', 'hr', 999012, '\x' || repeat('ab', 32), 'not a date', '22007', 'a date of entry into force that is not a time is refused'),
+  ('terms_of_use', 'hr', 999012, '\x' || repeat('ab', 32), 'infinity', '23514', 'an infinite date of entry into force is refused'),
+  ('terms_of_use', 'hr', 999012, '\x' || repeat('ab', 32), '-infinity', '23514', 'a date of entry into force at minus infinity is refused')
 ) b (kind, language, version, hash, effective, expected, what);
+SELECT is(pg_temp.try_as(NULL,
+  'INSERT INTO public.legal_text_version (kind, language, version, content_sha256, effective_at, published_at) VALUES (''terms_of_use'', ''hr'', 999013, ''\x' || repeat('ab', 32) || ''', ''2026-12-01'', ''infinity'')'),
+  '23514', 'an infinite time of publication is refused');
+-- Version 1 of every kind in every language is accepted. The rows are made in
+-- a block that then raises its own code, so nothing stays and nothing can meet
+-- a row a later seed commits; a pair that already has version 1 shows it too.
+SELECT is(pg_temp.try_as(NULL, $$ DO $d$ BEGIN
+    INSERT INTO public.legal_text_version (kind, language, version, content_sha256, effective_at)
+      SELECT k, l, 1, sha256(convert_to('Izmišljeni tekst.', 'UTF8')), '2026-12-01'
+      FROM unnest(ARRAY['terms_of_use', 'privacy_notice', 'cookie_policy']) k
+      CROSS JOIN unnest(ARRAY['hr', 'en']) l
+      WHERE NOT EXISTS (SELECT 1 FROM public.legal_text_version v WHERE (v.kind, v.language, v.version) = (k, l, 1));
+    IF (SELECT count(*) FROM public.legal_text_version WHERE version = 1) <> 6 THEN
+      RAISE EXCEPTION 'version 1 is missing for a kind or a language' USING ERRCODE = 'P0001';
+    END IF;
+    RAISE EXCEPTION 'undo the six rows' USING ERRCODE = 'P0002';
+  END $d$ $$), 'P0002', 'version 1 of each kind in each language is accepted');
 SELECT ok((SELECT published_at IS NOT NULL AND published_at <= clock_timestamp() FROM public.legal_text_version
            WHERE (kind, language, version) = ('terms_of_use', 'hr', 1000000)),
   'the database gives each version its time of publication');
@@ -205,8 +228,26 @@ SELECT set_eq(
      FROM pg_policy WHERE polrelid = 'public.legal_text_version'::regclass $$,
   ARRAY['legal_text_version_read r true ductus_legal_app using true check -'],
   'one policy: SELECT for the app, every version is public (D-301)');
-SELECT is((SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'legal_text_version_version'),
-  'CHECK (((version >= 1) AND (version <= 1000000)))', 'versions run from 1 to 1 000 000, both accepted');
+SELECT is(
+  (SELECT string_agg(a.attname || ' ' || format_type(a.atttypid, a.atttypmod)
+                     || CASE WHEN a.attnotnull THEN ' not null' ELSE '' END
+                     || CASE WHEN a.attidentity = 'a' THEN ' identity always' ELSE '' END
+                     || coalesce(' default ' || pg_get_expr(d.adbin, d.adrelid), ''), ', ' ORDER BY a.attnum)
+   FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+   WHERE a.attrelid = 'public.legal_text_version'::regclass AND a.attnum > 0 AND NOT a.attisdropped),
+  'id bigint not null identity always, kind text not null, language text not null, version integer not null, '
+  || 'content_sha256 bytea not null, published_at timestamp with time zone not null default clock_timestamp(), '
+  || 'effective_at timestamp with time zone not null',
+  'the columns, their types, NOT NULL, the identity and the one default, as the contract has them');
+SELECT set_eq($$ SELECT conname || ' ' || pg_get_constraintdef(oid) FROM pg_constraint
+                 WHERE conrelid = 'public.legal_text_version'::regclass AND contype = 'c' $$,
+  ARRAY[
+    'legal_text_version_content_sha256 CHECK ((octet_length(content_sha256) = 32))',
+    'legal_text_version_finite CHECK ((isfinite(published_at) AND isfinite(effective_at)))',
+    'legal_text_version_kind CHECK ((kind = ANY (ARRAY[''terms_of_use''::text, ''privacy_notice''::text, ''cookie_policy''::text])))',
+    'legal_text_version_language CHECK ((language = ANY (ARRAY[''hr''::text, ''en''::text])))',
+    'legal_text_version_version CHECK (((version >= 1) AND (version <= 1000000)))'],
+  'exactly these CHECK constraints, versions from 1 to 1 000 000 among them, and no other');
 SELECT set_eq(
   $$ SELECT c.contype::text || ' ' || c.condeferrable::text || ' '
             || array_to_string(ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY k (n, i)
@@ -215,11 +256,12 @@ SELECT set_eq(
   ARRAY['p false id', 'u false kind,language,version'],
   'the version is unique over exactly kind, language and version, checked at once (a unique index holds across concurrent transactions)');
 SELECT set_eq(
-  $$ SELECT t.tgname || ' ' || t.tgenabled::text || ' ' || t.tgtype::text FROM pg_trigger t
+  $$ SELECT t.tgname || ' ' || t.tgenabled::text || ' ' || t.tgtype::text || ' columns ' || t.tgattr::text
+            || ' when ' || coalesce(pg_get_expr(t.tgqual, t.tgrelid), '-') FROM pg_trigger t
      WHERE t.tgrelid = 'public.legal_text_version'::regclass AND NOT t.tgisinternal $$,
   -- tgtype: 27 = ROW | BEFORE | DELETE | UPDATE, 34 = BEFORE | TRUNCATE (per statement).
-  ARRAY['legal_text_version_no_change A 27', 'legal_text_version_no_truncate A 34'],
-  'the refusing triggers fire ALWAYS, before UPDATE or DELETE of each row and before TRUNCATE');
+  ARRAY['legal_text_version_no_change A 27 columns  when -', 'legal_text_version_no_truncate A 34 columns  when -'],
+  'the refusing triggers fire ALWAYS, before UPDATE (of any column, with no WHEN) or DELETE of each row and before TRUNCATE');
 SELECT is(
   (SELECT array_to_string(p.proconfig, ',') || ' ' || p.prosecdef::text || ' '
           || (NOT EXISTS (SELECT 1 FROM aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a

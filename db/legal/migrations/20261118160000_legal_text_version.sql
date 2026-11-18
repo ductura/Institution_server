@@ -44,6 +44,10 @@ CREATE TABLE public.legal_text_version (
   -- D-301: every version carries the date it enters into force; whether it
   -- may lie before the publication is the publishing RPC's rule (DAN-848).
   effective_at timestamptz NOT NULL,
+  -- A row is never corrected, so neither time may be infinity.
+  CONSTRAINT legal_text_version_finite CHECK (
+    pg_catalog.isfinite(published_at) AND pg_catalog.isfinite(effective_at)
+  ),
   CONSTRAINT legal_text_version_once UNIQUE (kind, language, version)
 );
 
