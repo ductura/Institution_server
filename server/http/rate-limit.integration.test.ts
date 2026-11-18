@@ -354,3 +354,116 @@ describe("the default record of a refusal", () => {
     expect(records.map((r) => r.fields)).toEqual([{ route: CATALOGUE, bucket: "per_account" }]);
   });
 });
+
+// DAN-853-1a: enrolment is in its own class (S-1C.3). The path is the one of
+// the route's contract, so the class and the route cannot drift apart.
+describe("enrolment is under its own rate limit (DAN-853-1a)", () => {
+  const ENROLL = contractOf("institution.enrollments.post");
+  const enroll = (port: number, lines: string[]) =>
+    one(port, request(ENROLL.method, ENROLL.path, [`Origin: ${ORIGIN}`, ...lines], '{"code":"x"}'));
+  const enrollRoute = (counter: { n: number }): Route => ({
+    contract: ENROLL,
+    handle: async (request, response) => {
+      for await (const chunk of request) void chunk;
+      counter.n += 1;
+      response.writeHead(200, { "content-type": "application/json" }).end("{}");
+    },
+  });
+
+  it("one session on many addresses meets the enrolment account limit", async () => {
+    const counter = { n: 0 };
+    const logged: unknown[] = [];
+    const routes = [enrollRoute(counter), readRoute({ n: 0 })];
+    const { port } = await start({ trusted: "127.0.0.1", routes, log: (f) => logged.push(f) });
+    const statuses: number[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      const lines = [`X-Forwarded-For: 203.0.113.${i}`, `Cookie: ${SESSION}=${TOKEN_A}`];
+      statuses.push((await enroll(port, lines)).status);
+    }
+    expect(statuses).toEqual([200, 200, 429, 429]);
+    expect(counter.n).toBe(LIMITS.enroll.perAccount);
+    expect(logged).toEqual([
+      { route: ENROLL.path, bucket: "per_account" },
+      { route: ENROLL.path, bucket: "per_account" },
+    ]);
+    // The default account bucket of the same session is untouched.
+    const read = [`X-Forwarded-For: 203.0.113.9`, `Cookie: ${SESSION}=${TOKEN_A}`];
+    expect((await one(port, request("GET", READ, read))).status).toBe(200);
+  });
+
+  it("without a cookie one address meets the enrolment address limit", async () => {
+    const counter = { n: 0 };
+    const logged: unknown[] = [];
+    const routes = [enrollRoute(counter), readRoute({ n: 0 })];
+    const { port } = await start({ routes, log: (f) => logged.push(f) });
+    const statuses: number[] = [];
+    for (let i = 0; i < 3; i += 1) statuses.push((await enroll(port, [])).status);
+    expect(statuses).toEqual([200, 200, 429]);
+    expect(counter.n).toBe(LIMITS.enroll.perIp);
+    expect(logged).toEqual([{ route: ENROLL.path, bucket: "per_address" }]);
+    // A full enrolment bucket leaves the default one of the same address open.
+    expect((await one(port, request("GET", READ))).status).toBe(200);
+  });
+
+  it("keeps enrolment and default apart, and lets it through again after Retry-After", async () => {
+    const reads = { n: 0 };
+    const enrolments = { n: 0 };
+    const { port, clock } = await start({ routes: [readRoute(reads), enrollRoute(enrolments)] });
+    for (let i = 0; i < 3; i += 1) await one(port, request("GET", READ));
+    expect((await one(port, request("GET", READ))).status).toBe(429);
+    expect((await enroll(port, [])).status).toBe(200);
+    expect((await enroll(port, [])).status).toBe(200);
+    const refused = await enroll(port, []);
+    expect([refused.status, JSON.parse(refused.body).code]).toEqual([429, "too_many_requests"]);
+    clock.advance(Number(refused.headers["retry-after"]) * 1000);
+    expect((await enroll(port, [])).status).toBe(200);
+    expect(enrolments.n).toBe(3);
+  });
+
+  it("a full save bucket of the same session leaves enrolment open", async () => {
+    const enrolments = { n: 0 };
+    const routes = [savingRoute([]), enrollRoute(enrolments)];
+    const { port } = await start({ routes });
+    const cookie = `Cookie: ${SESSION}=${TOKEN_A}`;
+    const save = (txid: string) =>
+      one(port, request("POST", SAVE, [`Origin: ${ORIGIN}`, cookie], saveBody(txid)));
+    expect([(await save("tx-1")).status, (await save("tx-2")).status]).toEqual([200, 200]);
+    expect((await save("tx-3")).status).toBe(429);
+    expect((await enroll(port, [cookie])).status).toBe(200);
+    expect(enrolments.n).toBe(1);
+  });
+
+  it.each([
+    `${"/api/v1/institution/enrollments"}/`,
+    "//api/v1/institution/enrollments",
+    "/api/v1/institution/enrollments#x",
+    "/API/v1/institution/enrollments",
+    "http://127.0.0.1/api/v1/institution/enrollments/",
+  ])("%s, outside the class, never reaches the enrolment handler", async (target) => {
+    const enrolments = { n: 0 };
+    const { port } = await start({ routes: [enrollRoute(enrolments)] });
+    const answer = await one(port, request("POST", target, [`Origin: ${ORIGIN}`], '{"code":"x"}'));
+    expect(answer.status).not.toBe(200);
+    expect(enrolments.n).toBe(0);
+  });
+
+  it("on the production path: the eleventh enrolment of a session is refused, a read is not", async () => {
+    server = await startServer({
+      host: "127.0.0.1",
+      port: 0,
+      layers: createLayers({ expectedOrigin: ORIGIN }),
+      routes: [],
+      databases: createDatabases(),
+    });
+    const cookie = `Cookie: ${SESSION}=${TOKEN_A}`;
+    const limit = DEFAULT_RATE_LIMITS.enroll.perAccount ?? 0;
+    const statuses: number[] = [];
+    for (let i = 0; i < limit + 3; i += 1)
+      statuses.push((await enroll(server.port, [cookie])).status);
+    // The real clock gives back one token in six seconds, far more than this takes.
+    expect(statuses.slice(0, limit).includes(429)).toBe(false);
+    expect(statuses[limit]).toBe(429);
+    expect(statuses.at(-1)).toBe(429);
+    expect((await one(server.port, request("GET", READ, [cookie]))).status).not.toBe(429);
+  });
+});
