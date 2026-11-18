@@ -129,8 +129,11 @@ const weakAdd = WeakSet.prototype.add;
 function ignoreRejection(value: unknown): void {
   try {
     apply(promiseThen, isPromise(value) ? value : promiseResolve(value), [discard, discard]);
-  } catch {
+  } catch (error) {
     // A thenable whose then getter throws rejects the wrapper, handled above.
+    // What a constructor or species getter throws is dropped, so a native
+    // promise in it is marked too (QA attacker on fbad58e).
+    discard(error);
   }
 }
 
@@ -141,8 +144,7 @@ const marked = new WeakSet<object>();
  * Marks a value the scheduler drops handled when it is a native promise: a
  * throw, a reason or a fulfilment value a port handed over and nobody else
  * sees, and so on through the value or reason it settles with (Review FAIL
- * on #318, 9d5a993). A throw from inside ignoreRejection itself is not
- * marked again (known limit, README).
+ * on #318, 9d5a993), and through what marking it throws.
  */
 function discard(value: unknown): void {
   if (!isPromise(value) || apply(weakHas, marked, [value])) return;
@@ -166,12 +168,13 @@ function callThen(
   target: unknown,
   ok: (value: unknown) => void,
   fail: (reason: unknown) => void,
+  follow: (value: unknown) => unknown = settledBy,
 ): void {
   let called = false;
   const settle = (value: unknown): void => {
     if (called) return;
     called = true;
-    ok(settledBy(value));
+    ok(follow(value));
   };
   const reject = (reason: unknown): void => {
     if (called) return;
@@ -200,19 +203,25 @@ function settledBy(value: unknown): unknown {
       // Only the end counts: the value is dropped, so a then getter on it
       // is never read again (QA FAIL on #314).
       // Both the value and the reason are dropped, so a native promise in
-      // either is marked handled (Review FAIL on #318).
-      ignoreRejection(
-        apply(promiseThen, value, [
-          (fulfilled: unknown) => {
-            resolve(undefined);
-            discard(fulfilled);
-          },
-          (reason: unknown) => {
-            reject(reason);
-            discard(reason);
-          },
-        ]),
-      );
+      // either is marked handled (Review FAIL on #318). So is what a
+      // constructor getter throws (QA attacker on fbad58e).
+      try {
+        ignoreRejection(
+          apply(promiseThen, value, [
+            (fulfilled: unknown) => {
+              resolve(undefined);
+              discard(fulfilled);
+            },
+            (reason: unknown) => {
+              reject(reason);
+              discard(reason);
+            },
+          ]),
+        );
+      } catch (error) {
+        reject(error);
+        discard(error);
+      }
     });
   }
   if (!objectLike(value)) return undefined;
@@ -240,6 +249,35 @@ function settledBy(value: unknown): unknown {
  */
 function ignoreResult(value: unknown): void {
   ignoreRejection(settledBy(value));
+}
+
+/**
+ * What the settings reader's result settles with, followed on the same path
+ * as settledBy: a native promise of any realm through Promise.prototype, a
+ * thenable through its then read once, at every depth, each throw and reason
+ * discarded. Unlike settledBy the end is kept, in a box, so no then of it is
+ * read again (Review FAIL on #318 and QA attacker on fbad58e).
+ */
+function readValue(value: unknown): Promise<{ readonly value: unknown }> {
+  return new Promise((resolve, reject) => {
+    const fail = (reason: unknown): void => {
+      reject(reason);
+      discard(reason);
+    };
+    try {
+      if (isPromise(value)) {
+        ignoreRejection(
+          apply(promiseThen, value, [(next: unknown) => resolve(readValue(next)), fail]),
+        );
+        return;
+      }
+      const then: unknown = objectLike(value) ? (value as { then?: unknown }).then : undefined;
+      if (typeof then !== "function") return resolve({ value });
+      callThen(then, value, resolve as (next: unknown) => void, fail, readValue);
+    } catch (error) {
+      fail(error);
+    }
+  });
 }
 
 const OFF: ReadonlySet<unknown> = new Set(["enabled_missing", "enabled_invalid", "disabled"]);
@@ -294,17 +332,22 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
 
   const once = async (at: number): Promise<void> => {
     let decision: number | BackupSkipReason;
-    // What the reader throws, rejects with or resolves with is dropped
-    // after the decision (Review FAIL on #318).
-    let settings: unknown;
+    // What the reader returns, throws or rejects with is dropped, so a native
+    // promise in it is marked (Review FAIL on #318). A native promise or
+    // plain value is awaited as before, so a read ends on the same microtask
+    // (DAN-1012-2d); a thenable is followed as run()'s result is, so a native
+    // promise it resolves with is followed whatever its own then (QA
+    // attacker on fbad58e).
     try {
-      settings = await readSettings();
-      decision = decide(settings);
+      const result = readSettings();
+      discard(result);
+      decision = decide(
+        isPromise(result) || !objectLike(result) ? await result : (await readValue(result)).value,
+      );
     } catch (error) {
       discard(error);
       decision = "settings_unavailable";
     }
-    discard(settings);
     if (stopped) return;
     // The next point is due: a call now would leave the hour of its point,
     // whichever timer callback the event loop runs first.

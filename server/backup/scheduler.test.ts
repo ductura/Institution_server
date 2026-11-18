@@ -2315,6 +2315,22 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
       },
       true,
     ],
+    // QA attacker on fbad58e: a constructor getter that throws a rejected
+    // promise, one thenable down.
+    [
+      "T17 a thenable resolving with a promise whose constructor getter throws a rejected promise",
+      () => ({
+        then: (ok: Ok) =>
+          ok(
+            Object.defineProperty(Promise.resolve(), "constructor", {
+              get: () => {
+                throw Promise.reject(new Error(CANARY));
+              },
+            }),
+          ),
+      }),
+      true,
+    ],
     [
       "T17 a native promise fulfilled with a rejected promise with then: undefined",
       () =>
@@ -2441,6 +2457,11 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
     expect(reads).toBe(2 * results);
   });
 
+  class SubSettings extends Promise<unknown> {}
+  const thrower = (): never => {
+    throw new Error(CANARY);
+  };
+
   // T17, the same class for the settings reader: what it throws, rejects with
   // or resolves with is dropped, so a native promise in it is marked handled.
   it.each([
@@ -2451,6 +2472,44 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
       },
     ],
     ["rejects with a rejected promise", () => Promise.reject(Promise.reject(new Error(CANARY)))],
+    // QA attacker on fbad58e: the reader's result is followed on the same
+    // path as run()'s, so its own then is never read.
+    [
+      "returns a rejected subclass promise whose then getter throws",
+      () => Object.defineProperty(SubSettings.reject(new Error(CANARY)), "then", { get: thrower }),
+    ],
+    [
+      "returns a rejected vm promise whose then getter throws",
+      () =>
+        runInNewContext(
+          "Object.defineProperty(Promise.reject(new Error('x')), 'then', { get() { throw new Error('y'); } })",
+        ),
+    ],
+    [
+      "returns a rejected subclass promise whose then fails with another reason",
+      () =>
+        Object.assign(SubSettings.reject(new Error(CANARY)), {
+          then: (_ok: Ok, fail: Fail) => fail(new Error(CANARY)),
+        }),
+    ],
+    [
+      "resolves through a thenable with a rejected subclass promise whose then getter throws",
+      () => ({
+        then: (ok: Ok) =>
+          ok(
+            Object.defineProperty(SubSettings.reject(new Error(CANARY)), "then", { get: thrower }),
+          ),
+      }),
+    ],
+    [
+      "returns a promise whose constructor getter throws a rejected promise",
+      () =>
+        Object.defineProperty(Promise.resolve(new Map()), "constructor", {
+          get: () => {
+            throw Promise.reject(new Error(CANARY));
+          },
+        }),
+    ],
     [
       "rejects with reasons two deep",
       () => Promise.reject(Promise.reject(Promise.reject(new Error(CANARY)))),
@@ -2474,4 +2533,20 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
       expect(reasons).toEqual(["settings_unavailable", "settings_unavailable"]);
     }),
   );
+
+  // QA attacker on fbad58e: a reader's promise whose own then never calls
+  // back is awaited as before (2f), so the read never ends and the next
+  // point is busy; its rejection is marked all the same.
+  it("readSettings that returns a rejected subclass promise whose then never calls back: busy, nothing unhandled", () =>
+    noneUnhandled(async () => {
+      const reasons: string[] = [];
+      const { run, scheduler } = setup([], {
+        readSettings: () => Object.assign(SubSettings.reject(new Error(CANARY)), { then: noop }),
+        onSkip: (reason) => void reasons.push(reason),
+      });
+      await advance(2 * H);
+      await scheduler.stop();
+      expect(run).not.toHaveBeenCalled();
+      expect(reasons).toEqual(["busy"]);
+    }));
 });
