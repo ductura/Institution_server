@@ -222,6 +222,12 @@ export async function finishLogin(request: Request, deps: AuthDeps): Promise<Res
     failedLogin(stage, detail, code, origin, [clearedLoginCookie()]);
   const attempt = decodeAttempt(readCookie(request, LOGIN_COOKIE_NAME));
   if (!attempt) return failed("callback", "no_attempt");
+  // The state is checked here, before the provider is asked for anything:
+  // a callback that is not this attempt's is login_failed even when the
+  // provider is down (Ductus#2031 V4; Codex CLI on #301). The library
+  // checks it again.
+  const states = new URL(request.url).searchParams.getAll("state");
+  if (states.length !== 1 || states[0] !== attempt.state) return failed("callback", "state");
 
   let verified;
   try {

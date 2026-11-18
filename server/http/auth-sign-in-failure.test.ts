@@ -222,6 +222,37 @@ describe("K5 V4: what the provider sends back on the callback", () => {
       await expectFailure(await providerSays(error, CANARY.padEnd(43, "x")), "login_failed");
     },
   );
+
+  // Codex CLI on #301: after a restart nothing is discovered yet, and the
+  // provider may be down; a callback that is not this attempt's must still
+  // be login_failed, and must not reach the provider at all.
+  it.each<[string, (url: URL, state: string) => void]>([
+    ["another state", (url) => url.searchParams.set("state", "x".repeat(43))],
+    ["no state", (url) => url.searchParams.delete("state")],
+    ["the state twice", (url, state) => url.searchParams.append("state", state)],
+    [
+      "a provider error with another state",
+      (url) => {
+        url.searchParams.set("state", "x".repeat(43));
+        url.searchParams.set("error", "temporarily_unavailable");
+      },
+    ],
+  ])("after a restart with the provider down, %s is login_failed", async (_name, edit) => {
+    const { authorize, cookie } = await begin();
+    const url = approved(authorize);
+    edit(url, authorize.searchParams.get("state") ?? "");
+    providerDown();
+    const asked = idp.requests.length;
+    await expectFailure(await callback(url, cookie), "login_failed");
+    expect(idp.requests.length).toBe(asked);
+  });
+
+  it("after a restart with the provider down, this attempt's callback is provider_unavailable", async () => {
+    const { authorize, cookie } = await begin();
+    const url = approved(authorize);
+    providerDown();
+    await expectFailure(await callback(url, cookie), "provider_unavailable");
+  });
 });
 
 describe("R1 R2 R5: the Location is the configured origin and constants", () => {
