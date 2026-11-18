@@ -161,18 +161,22 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
       expect(canonical(origin), origin).toBe(true);
       expect(check({ ...full, origin }), origin).toBe(true);
     }
-    // Every port, and every one with a leading zero (QA FAIL c.6965391343).
+    // For both schemes (QA FAIL c.6965391343, c.6965783097): every port, with
+    // and without a leading zero, and every printable ASCII code point inside
+    // a host; the schema agrees with URL on each.
     const wrong: string[] = [];
-    for (let port = 0; port <= 65536; port++)
-      for (const origin of [`${SITE}:${port}`, `${SITE}:0${port}`])
+    for (const scheme of ["http://", "https://"]) {
+      const host = `${scheme}ductura.example.invalid`;
+      const origins: string[] = [];
+      for (let port = 0; port <= 65536; port++) origins.push(`${host}:${port}`, `${host}:0${port}`);
+      for (let code = 0x20; code < 0x7f; code++)
+        origins.push(`${scheme}a${String.fromCharCode(code)}b`);
+      for (const origin of origins)
         if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
           wrong.push(origin);
-    expect(wrong).toEqual([]);
-    // Every printable ASCII code point inside a host: the schema agrees with URL.
-    for (let code = 0x20; code < 0x7f; code++) {
-      const origin = `https://a${String.fromCharCode(code)}b`;
-      expect(check({ ...full, origin }), origin).toBe(canonical(origin));
     }
+    expect(schema).toBeDefined();
+    expect(wrong).toEqual([]);
   });
 
   it("is closed, every name required and a lowercase token, every value a string", () => {
