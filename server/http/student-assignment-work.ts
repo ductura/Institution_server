@@ -25,6 +25,12 @@ function contractOf(id: string) {
 const CONTRACT = contractOf("student.assignment-work.get");
 const BODY = CONTRACT.responses[0]!.body;
 
+/** The own field `key` of a non-null object, else undefined; never one from a prototype. */
+const ownField = (value: unknown, key: string): unknown =>
+  typeof value === "object" && value !== null && Object.hasOwn(value, key)
+    ? (value as Record<string, unknown>)[key]
+    : undefined;
+
 /** An object item with both fields as its own, never from a prototype. */
 const ownItem = (item: unknown): boolean =>
   typeof item === "object" &&
@@ -74,16 +80,15 @@ export function createStudentAssignmentWorkRoute(
         // structuredClone throws on a Proxy, a function or a symbol value (and passes on
         // what a getter throws), drops symbol keys such as an own iterator and keeps
         // only own enumerable fields, never the prototype of an object.
-        const read: { ok?: unknown; value?: unknown; error?: { code?: unknown } } = snapshotOf(
-          await options.reader.read(token),
-        );
-        // ok and value count only as own fields of the snapshot, never from a prototype.
-        if (!Object.hasOwn(read, "ok") || read.ok !== true) {
-          return read.error?.code === UNAUTHENTICATED
+        const read: unknown = snapshotOf(await options.reader.read(token));
+        // ok, value, error and its code count only as own fields of the snapshot; a
+        // snapshot that is no object is an answer like any other error: 503, no report.
+        if (ownField(read, "ok") !== true) {
+          return ownField(ownField(read, "error"), "code") === UNAUTHENTICATED
             ? sendProblem(response, 401, "unauthorized")
             : sendProblem(response, 503, "unavailable");
         }
-        const body = Object.hasOwn(read, "value") ? bodyOf(read.value) : null;
+        const body = bodyOf(ownField(read, "value"));
         if (body === null) throw new TypeError("assignment work outside the contract");
         sendJson(response, 200, body);
       } catch (error) {
