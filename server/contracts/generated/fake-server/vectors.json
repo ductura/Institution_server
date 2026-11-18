@@ -12218,22 +12218,22 @@
             "at": "2026-11-18T10:30:00.000Z",
             "kind": "traffic.request",
             "requestId": "8c9d0e1f-2a3b-4c4d-9e5f-a0b1c2d3e4f5",
-            "accountKind": "student",
+            "accountKind": "anonymous",
             "fields": {
               "method": "GET",
               "route": "/api/v1/health",
               "ip": "192.0.2.0/24",
               "status": 200,
               "durationMs": 12,
-              "ipRule": "allowed",
-              "rateLimit": "allowed"
+              "ipRule": "not_checked",
+              "rateLimit": "not_checked"
             }
           },
           {
             "seq": 58,
             "at": "2026-11-18T10:30:00.420Z",
             "kind": "traffic.request",
-            "requestId": null,
+            "requestId": "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9",
             "accountKind": "anonymous",
             "fields": {
               "method": "GET",
@@ -12242,7 +12242,7 @@
               "status": 404,
               "durationMs": 3,
               "ipRule": "not_checked",
-              "rateLimit": "allowed"
+              "rateLimit": "not_checked"
             }
           }
         ],
