@@ -24,6 +24,7 @@ const admin = new pg.Pool({ connectionString: ADMIN_URL, max: 1 });
 const app = new pg.Pool({ connectionString: APP_URL, max: 2 });
 
 const USE = "SELECT identity.use_webauthn_credential($1, $2)";
+const REVOKE = "SELECT identity.revoke_webauthn_credential($1, $2)";
 
 /** Opens a READ COMMITTED transaction of the test session. */
 async function begin(): Promise<pg.PoolClient> {
@@ -33,11 +34,12 @@ async function begin(): Promise<pg.PoolClient> {
   return client;
 }
 
-/** Waits until the backend `pid` is blocked on a lock; fails after 10 s. */
+/** Waits until the backend `pid` is blocked on a row (the holder's transaction); fails after 10 s. */
 async function waitUntilBlocked(pid: number): Promise<void> {
   for (let i = 0; i < 200; i++) {
     const { rows } = await admin.query<{ waiting: boolean }>(
-      "SELECT coalesce(wait_event_type = 'Lock', false) AS waiting FROM pg_catalog.pg_stat_activity WHERE pid = $1",
+      `SELECT coalesce(wait_event_type = 'Lock' AND wait_event IN ('transactionid', 'tuple'), false) AS waiting
+         FROM pg_catalog.pg_stat_activity WHERE pid = $1`,
       [pid],
     );
     if (rows[0]?.waiting) return;
@@ -68,14 +70,20 @@ const stored = async (id: Buffer) =>
     )
   ).rows[0]?.count;
 
-/** Uses `id` with `first` on one connection while the same use with `second` waits on the other. */
-async function race(id: Buffer, first: number, second: number): Promise<string | undefined> {
+/** Runs `firstCall` on one connection while `secondCall` (both a use by default) waits on the other. */
+async function race(
+  id: Buffer,
+  first: number,
+  second: number,
+  firstCall = USE,
+  secondCall = USE,
+): Promise<string | undefined> {
   const a = await begin();
   const b = await begin();
   try {
-    await a.query(USE, [id, first]);
+    await a.query(firstCall, [id, first]);
     const pid = await pidOf(b);
-    const late = b.query(USE, [id, second]).then(
+    const late = b.query(secondCall, [id, second]).then(
       () => "ok",
       (error: { code?: string }) => error.code,
     );
@@ -132,5 +140,25 @@ describe("identity.use_webauthn_credential under concurrent uses of one credenti
     const id = await credential();
     expect(await race(id, 5, 6)).toBe("ok");
     expect(await stored(id)).toBe("6");
+  });
+
+  // DAN-1095 (contract on Ductus#2028, c.6970898042): a use that meets an
+  // open revocation of its credential waits, then sees it revoked.
+  it("a use behind an open revocation: it waits, then is refused (ZD403)", async () => {
+    const id = await credential();
+    expect(await race(id, 5, 6, REVOKE)).toBe("ZD403");
+    expect(await stored(id)).toBe("5");
+  });
+
+  it("a second revocation behind an open one: it waits, then is refused (ZD403)", async () => {
+    const id = await credential();
+    expect(await race(id, 5, 6, REVOKE, REVOKE)).toBe("ZD403");
+    expect(await stored(id)).toBe("5");
+  });
+
+  it("a revocation behind an open use of the same counter: it waits, then is refused (ZD409)", async () => {
+    const id = await credential();
+    expect(await race(id, 5, 5, USE, REVOKE)).toBe("ZD409");
+    expect(await stored(id)).toBe("5");
   });
 });
