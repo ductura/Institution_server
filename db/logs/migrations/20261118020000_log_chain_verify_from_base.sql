@@ -13,7 +13,10 @@
 --
 -- What changes:
 -- - The predecessor of the first row is lag's default, the base, as the zero
---   default was before; a NULL seq or hash inside the chain stays NULL.
+--   default was before; a NULL seq or hash inside the chain stays NULL. The
+--   default is a scalar subquery, not a join, so the window sorts the same
+--   rows as before: where seqs repeat (their unique constraint dropped) the
+--   order of the repeated rows is the sort's, as it was.
 -- - The last seq stays max(seq) and the last hash the hash of the row first
 --   in seq DESC order, each with the base's in place of NULL.
 -- - A base that is not exactly one row is reported as 'base' (seq NULL). The
@@ -46,9 +49,9 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
   ), entry AS (
     SELECT e.seq, e.prev_hash, e.hash,
            public.log_entry_digest(e.prev_hash, e.seq, e.id, e.at, e.kind, e.payload) AS computed,
-           pg_catalog.lag(e.seq, 1, base.seq) OVER w AS before_seq,
-           pg_catalog.lag(e.hash, 1, base.hash) OVER w AS before_hash
-    FROM public.log_entry e CROSS JOIN base
+           pg_catalog.lag(e.seq, 1, (SELECT b.seq FROM base b)) OVER w AS before_seq,
+           pg_catalog.lag(e.hash, 1, (SELECT b.hash FROM base b)) OVER w AS before_hash
+    FROM public.log_entry e
     WINDOW w AS (ORDER BY e.seq)
   ), last AS (
     SELECT coalesce((SELECT pg_catalog.max(e.seq) FROM public.log_entry e), base.seq) AS seq,

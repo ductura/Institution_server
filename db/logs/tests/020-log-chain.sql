@@ -70,7 +70,7 @@ END
 $$;
 
 
-SELECT plan(234);
+SELECT plan(237);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -662,7 +662,18 @@ FROM (VALUES
   ('CREATE TABLE public.entry_child () INHERITS (public.log_entry);
     INSERT INTO public.entry_child SELECT * FROM public.log_entry WHERE seq = :base + 7', 'a child table of log_entry repeating the last row'),
   ('CREATE TABLE public.head_child () INHERITS (public.log_chain_head);
-    INSERT INTO public.head_child SELECT * FROM public.log_chain_head', 'a child table of the head')
+    INSERT INTO public.head_child SELECT * FROM public.log_chain_head', 'a child table of the head'),
+  ('CREATE TABLE public.entry_child () INHERITS (public.log_entry);
+    INSERT INTO public.entry_child SELECT id, at, kind, payload, seq + 1, prev_hash, hash FROM public.log_entry WHERE seq = :base + 7',
+   'a child table of log_entry with a copy of the last row in the next place'),
+  ('CREATE TABLE public.entry_child () INHERITS (public.log_entry);
+    INSERT INTO public.entry_child SELECT id, at, kind, payload, seq + 1, prev_hash, decode(repeat(''ee'', 32), ''hex'') FROM public.log_entry WHERE seq = :base + 7;
+    UPDATE public.log_chain_head SET seq = :base + 8, hash = decode(repeat(''ee'', 32), ''hex'')',
+   'a child table of log_entry holding the last row, which the head follows'),
+  ('ALTER TABLE public.log_entry ALTER hash DROP NOT NULL, DROP CONSTRAINT log_entry_prev_hash_unique;
+    UPDATE public.log_entry SET hash = NULL WHERE seq = :base + 2;
+    UPDATE public.log_entry SET prev_hash = decode(repeat(''00'', 32), ''hex'') WHERE seq = :base + 3',
+   'a NULL digest followed by a link to 32 zero bytes')
 ) d (sql, what)
 CROSS JOIN LATERAL (SELECT pg_temp.versus(d.sql) AS r) v;
 
@@ -702,14 +713,18 @@ FROM (VALUES
     DELETE FROM ONLY public.log_chain_base', ARRAY['- base', '2 hash'],
    'with the base row only in a child table, the base is missing and every other finding stays'),
   (':cut2; ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_pkey;
-    INSERT INTO public.log_chain_base (seq, hash) SELECT seq, decode(repeat(''ff'', 32), ''hex'') FROM public.log_chain_base', ARRAY['- base'],
-   'of two base rows in one place, the smaller digest is the base')
+    WITH cut AS (DELETE FROM public.log_chain_base RETURNING seq, hash)
+    INSERT INTO public.log_chain_base (seq, hash)
+    SELECT seq, decode(repeat(''ff'', 32), ''hex'') FROM cut UNION ALL SELECT seq, hash FROM cut', ARRAY['- base'],
+   'of two base rows in one place, the smaller digest is the base, wherever it lies')
 ) t (sql, expected, what);
 -- Where the verification before the base failed (a seq at the greatest
 -- bigint overflowed its gap), this one reports instead.
-SELECT ok(cardinality(pg_temp.tampered('ALTER TABLE public.log_entry DROP CONSTRAINT log_entry_seq_unique;
-    UPDATE public.log_entry SET seq = 9223372036854775807 WHERE seq IN (:base + 6, :base + 7)')) > 0,
-  'two rows at the greatest bigint are reported, not a failure');
+SELECT is(pg_temp.tampered('ALTER TABLE public.log_entry ALTER seq DROP NOT NULL;
+    UPDATE public.log_entry SET seq = 9223372036854775807 WHERE seq = :base + 6;
+    UPDATE public.log_entry SET seq = NULL WHERE seq = :base + 7'),
+  ARRAY['- gap', '- hash', '7 head', (9223372036854775807 - pg_temp.at(0))::text || ' gap', (9223372036854775807 - pg_temp.at(0))::text || ' hash'],
+  'a row at the greatest bigint before a NULL seq is reported, not a failure');
 SELECT is(pg_temp.tampered(t.sql), t.expected, t.what)
 FROM (VALUES
   ('ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL',
