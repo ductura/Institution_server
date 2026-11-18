@@ -3,6 +3,8 @@
 -- chain (public.log_chain_head) moves only with an append; its row of the
 -- access matrix and that of the chain's functions; and public.log_chain_verify()
 -- finds every change, deletion and insertion made behind the triggers' back.
+-- S-1K.8 (DAN-868-1b): the verification starts from the base; on every damage
+-- below it gives what the verification before it gave, plus the cut's own.
 -- S-1K.8 (DAN-868-1a): the base of the chain (public.log_chain_base) does not
 -- change by any statement, one that touches no row included, and only its
 -- owner reads it.
@@ -68,7 +70,7 @@ END
 $$;
 
 
-SELECT plan(186);
+SELECT plan(256);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -108,7 +110,73 @@ BEGIN
 END
 $$;
 
--- Runs `sql` as the superuser with every trigger of both tables off, so it
+-- `sql` with ':base' as the place 0 of this file and ':cutN' as a cut of the
+-- chain after place N: the base takes the seq and hash of that row, then
+-- every row up to it goes (DAN-868-1b).
+CREATE FUNCTION pg_temp.expand(sql text) RETURNS text LANGUAGE sql AS $$
+  SELECT replace(regexp_replace(sql, ':cut(\d)',
+    'UPDATE public.log_chain_base SET (seq, hash) = (SELECT seq, hash FROM public.log_entry WHERE seq = :base + \1);
+     DELETE FROM public.log_entry WHERE seq <= :base + \1', 'g'), ':base', (SELECT n FROM pg_temp.base)::text)
+$$;
+
+-- The verification as it was before the base (20261116170000_log_chain.sql),
+-- run by the superuser: the reference the new one is compared with.
+CREATE FUNCTION pg_temp.verify_before_base() RETURNS TABLE (seq bigint, problem text) LANGUAGE sql AS $$
+  WITH entry AS (
+    SELECT e.seq, e.prev_hash, e.hash,
+           public.log_entry_digest(e.prev_hash, e.seq, e.id, e.at, e.kind, e.payload) AS computed,
+           pg_catalog.lag(e.seq, 1, 0::bigint) OVER w AS before_seq,
+           pg_catalog.lag(e.hash, 1, pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')) OVER w AS before_hash
+    FROM public.log_entry e
+    WINDOW w AS (ORDER BY e.seq)
+  ), last AS (
+    SELECT coalesce(pg_catalog.max(e.seq), 0) AS seq,
+           coalesce((SELECT x.hash FROM public.log_entry x ORDER BY x.seq DESC LIMIT 1),
+                    pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')) AS hash
+    FROM public.log_entry e
+  )
+  SELECT x.seq, x.problem FROM (
+    SELECT entry.seq, 'hash' AS problem FROM entry WHERE entry.hash IS DISTINCT FROM entry.computed
+    UNION ALL
+    SELECT entry.seq, 'link' FROM entry WHERE entry.prev_hash IS DISTINCT FROM entry.before_hash
+    UNION ALL
+    SELECT entry.seq, 'gap' FROM entry
+    WHERE entry.seq IS DISTINCT FROM (entry.before_seq OPERATOR(pg_catalog.+) 1)
+    UNION ALL
+    SELECT h.seq, 'head' FROM public.log_chain_head h, last
+    WHERE h.seq IS DISTINCT FROM last.seq OR h.hash IS DISTINCT FROM last.hash
+    UNION ALL
+    SELECT NULL::bigint, 'head' WHERE (SELECT pg_catalog.count(*) FROM public.log_chain_head) OPERATOR(pg_catalog.<>) 1
+  ) x
+  ORDER BY x.seq NULLS FIRST, x.problem
+$$;
+
+-- `sql` as in pg_temp.tampered, then both verifications, each as
+-- '<seq> <problem>' in order: ARRAY[now, before]. All undone.
+CREATE FUNCTION pg_temp.versus(sql text) RETURNS text[] LANGUAGE plpgsql AS $$
+DECLARE
+  now_found text;
+  before_found text;
+BEGIN
+  BEGIN
+    ALTER TABLE public.log_entry DISABLE TRIGGER USER;
+    ALTER TABLE public.log_chain_head DISABLE TRIGGER USER;
+    ALTER TABLE public.log_chain_base DISABLE TRIGGER USER;
+    EXECUTE pg_temp.expand(sql);
+    SELECT coalesce(string_agg(coalesce(v.seq::text, '-') || ' ' || v.problem, ', ' ORDER BY v.seq NULLS FIRST, v.problem), '')
+      INTO now_found FROM public.log_chain_verify() v;
+    SELECT coalesce(string_agg(coalesce(v.seq::text, '-') || ' ' || v.problem, ', ' ORDER BY v.seq NULLS FIRST, v.problem), '')
+      INTO before_found FROM pg_temp.verify_before_base() v;
+    -- An undo of its own (DAN-868-1b2): any other error fails the test, and
+    -- a verification that gave nothing never compares as equal.
+    RAISE EXCEPTION 'undo' USING ERRCODE = 'ZU868';
+  EXCEPTION WHEN SQLSTATE 'ZU868' THEN
+    RETURN ARRAY[coalesce(now_found, '<no result now>'), coalesce(before_found, '<no result before>')];
+  END;
+END
+$$;
+
+-- Runs `sql` as the superuser with every trigger of the three tables off, so it
 -- can change what the triggers otherwise refuse, gives back what the
 -- verification then reports, and undoes it all.
 CREATE FUNCTION pg_temp.tampered(sql text) RETURNS text[] LANGUAGE plpgsql AS $$
@@ -118,10 +186,11 @@ BEGIN
   BEGIN
     ALTER TABLE public.log_entry DISABLE TRIGGER USER;
     ALTER TABLE public.log_chain_head DISABLE TRIGGER USER;
-    EXECUTE replace(sql, ':base', (SELECT n FROM pg_temp.base)::text);
+    ALTER TABLE public.log_chain_base DISABLE TRIGGER USER;
+    EXECUTE pg_temp.expand(sql);
     result := pg_temp.verified();
-    RAISE EXCEPTION 'undo' USING ERRCODE = 'P0001';
-  EXCEPTION WHEN SQLSTATE 'P0001' THEN
+    RAISE EXCEPTION 'undo' USING ERRCODE = 'ZU868';
+  EXCEPTION WHEN SQLSTATE 'ZU868' THEN
     RETURN result;
   END;
 END
@@ -548,6 +617,183 @@ SELECT is(pg_temp.try_as(NULL, $$
     RAISE EXCEPTION 'found' USING ERRCODE = 'P0001';
   END $d$ $$),
   'P0001', 'a head the superuser moves one step from a trigger of its own, without a row, is found (boundary of #125)');
+
+-- 7. The verification from the base (DAN-868-1b). Uncut, it gives on every
+-- damage what the verification before the base gave, a NULL inside the
+-- chain included.
+SELECT is(r[1], r[2], 'as before the base: ' || d.what)
+FROM (VALUES
+  ('SELECT 1', 'the chain left as it is'),
+  ('UPDATE public.log_entry SET payload = ''{"n": 9}'' WHERE seq = :base + 2', 'a changed payload'),
+  ('UPDATE public.log_entry SET at = ''infinity'' WHERE seq = :base + 2', 'a time set to infinity'),
+  ('UPDATE public.log_entry SET hash = decode(repeat(''ee'', 32), ''hex'') WHERE seq = :base + 2', 'a changed digest'),
+  ('DELETE FROM public.log_entry WHERE seq = :base + 3', 'a row deleted in the middle'),
+  ('DELETE FROM public.log_entry WHERE seq >= :base + 6', 'rows deleted at the end'),
+  ('DELETE FROM public.log_entry WHERE seq = 1', 'the first row of the chain deleted'),
+  ('UPDATE public.log_entry SET prev_hash = decode(repeat(''01'', 32), ''hex'') WHERE seq = 1', 'a first row that does not follow 32 zero bytes'),
+  ('UPDATE public.log_entry SET seq = seq + 1000 WHERE seq = :base + 2;
+    UPDATE public.log_entry SET seq = :base + 2 WHERE seq = :base + 3;
+    UPDATE public.log_entry SET seq = :base + 3 WHERE seq = :base + 1002', 'two rows swapped'),
+  ('UPDATE public.log_chain_head SET seq = seq - 1', 'a head set back'),
+  ('UPDATE public.log_chain_head SET hash = decode(repeat(''00'', 32), ''hex'')', 'a head with another digest'),
+  ('DELETE FROM public.log_chain_head', 'a missing head'),
+  ('ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_pkey;
+    INSERT INTO public.log_chain_head SELECT * FROM public.log_chain_head', 'a head of two rows'),
+  ('DELETE FROM public.log_entry; UPDATE public.log_chain_head SET seq = 0, hash = decode(repeat(''00'', 32), ''hex'')', 'an empty table with the first head'),
+  ('DELETE FROM public.log_entry', 'an empty table with the head left'),
+  ('ALTER TABLE public.log_entry ALTER seq DROP NOT NULL, DROP CONSTRAINT log_entry_prev_hash_unique;
+    UPDATE public.log_entry SET seq = NULL, hash = decode(repeat(''00'', 32), ''hex'') WHERE seq = :base + 7;
+    UPDATE public.log_chain_head SET seq = 0, hash = decode(repeat(''00'', 32), ''hex'')', 'a last row with a NULL seq and the head set back to the start'),
+  ('ALTER TABLE public.log_entry ALTER seq DROP NOT NULL;
+    UPDATE public.log_entry SET seq = NULL WHERE seq IN (:base + 3, :base + 4)', 'two rows with a NULL seq'),
+  ('ALTER TABLE public.log_entry ALTER hash DROP NOT NULL;
+    UPDATE public.log_entry SET hash = NULL WHERE seq = :base + 2', 'a row with a NULL digest'),
+  ('ALTER TABLE public.log_entry ALTER prev_hash DROP NOT NULL;
+    UPDATE public.log_entry SET prev_hash = NULL WHERE seq = :base + 2', 'a row with a NULL link'),
+  ('ALTER TABLE public.log_entry ALTER prev_hash DROP NOT NULL;
+    UPDATE public.log_entry SET prev_hash = NULL WHERE seq = 1', 'a first row with a NULL link'),
+  ('ALTER TABLE public.log_chain_head ALTER seq DROP NOT NULL; UPDATE public.log_chain_head SET seq = NULL', 'a head with a NULL seq'),
+  ('ALTER TABLE public.log_entry DROP CONSTRAINT log_entry_seq_unique;
+    UPDATE public.log_entry SET seq = :base + 3 WHERE seq = :base + 4', 'two rows in one place in the middle'),
+  ('ALTER TABLE public.log_entry DROP CONSTRAINT log_entry_seq_unique;
+    UPDATE public.log_entry SET seq = :base + 6 WHERE seq = :base + 7', 'two rows in the last place'),
+  ('ALTER TABLE public.log_entry DROP CONSTRAINT log_entry_seq_positive;
+    UPDATE public.log_entry SET seq = 0 WHERE seq = :base + 2', 'a row at seq 0'),
+  ('ALTER TABLE public.log_entry DROP CONSTRAINT log_entry_seq_positive;
+    UPDATE public.log_entry SET seq = -9223372036854775808 WHERE seq = :base + 2', 'a row at the smallest bigint'),
+  ('CREATE TABLE public.entry_child () INHERITS (public.log_entry);
+    INSERT INTO public.entry_child SELECT * FROM public.log_entry WHERE seq = :base + 7', 'a child table of log_entry repeating the last row'),
+  ('CREATE TABLE public.head_child () INHERITS (public.log_chain_head);
+    INSERT INTO public.head_child SELECT * FROM public.log_chain_head', 'a child table of the head'),
+  ('CREATE TABLE public.entry_child () INHERITS (public.log_entry);
+    INSERT INTO public.entry_child SELECT id, at, kind, payload, seq + 1, prev_hash, hash FROM public.log_entry WHERE seq = :base + 7',
+   'a child table of log_entry with a copy of the last row in the next place'),
+  ('CREATE TABLE public.entry_child () INHERITS (public.log_entry);
+    INSERT INTO public.entry_child SELECT id, at, kind, payload, seq + 1, prev_hash, decode(repeat(''ee'', 32), ''hex'') FROM public.log_entry WHERE seq = :base + 7;
+    UPDATE public.log_chain_head SET seq = :base + 8, hash = decode(repeat(''ee'', 32), ''hex'')',
+   'a child table of log_entry holding the last row, which the head follows'),
+  ('ALTER TABLE public.log_entry ALTER hash DROP NOT NULL, DROP CONSTRAINT log_entry_prev_hash_unique;
+    UPDATE public.log_entry SET hash = NULL WHERE seq = :base + 2;
+    UPDATE public.log_entry SET prev_hash = decode(repeat(''00'', 32), ''hex'') WHERE seq = :base + 3',
+   'a NULL digest followed by a link to 32 zero bytes')
+) d (sql, what)
+CROSS JOIN LATERAL (SELECT pg_temp.versus(d.sql) AS r) v;
+
+-- A chain cut exactly at the base verifies; every mismatch of the two is
+-- found, and no base the superuser leaves makes the verification fail.
+SELECT is(pg_temp.tampered(t.sql), t.expected, t.what)
+FROM (VALUES
+  (':cut2', '{}'::text[], 'a chain cut after place 2 verifies from the base'),
+  (':cut7', '{}'::text[], 'a chain cut after its last row verifies: the head is the base'),
+  (':cut2; SET LOCAL TimeZone = ''Pacific/Kiritimati''; SET LOCAL DateStyle = ''SQL, DMY''', '{}'::text[],
+   'a cut chain verifies under another time zone and date style'),
+  (':cut7; ALTER TABLE public.log_entry ENABLE ALWAYS TRIGGER log_entry_chain;
+    SET LOCAL ROLE ductus_logs_writer; INSERT INTO public.log_entry (kind, payload) VALUES (''authn.logout'', ''{}''); RESET ROLE',
+   '{}'::text[], 'an append after a cut of every row chains on the base and verifies'),
+  (':cut2; UPDATE public.log_chain_base SET hash = decode(repeat(''ee'', 32), ''hex'')', ARRAY['3 link'],
+   'a cut whose base holds another digest is found at the first row left'),
+  (':cut2; UPDATE public.log_chain_base SET seq = seq - 1', ARRAY['3 gap'],
+   'a cut whose base holds another place is found at the first row left'),
+  (':cut2; DELETE FROM public.log_entry WHERE seq = :base + 3', ARRAY['4 gap', '4 link'],
+   'a row deleted past the base is found at the next row'),
+  (':cut7; UPDATE public.log_chain_base SET seq = seq + 1', ARRAY['7 head'],
+   'with no row left, a base past the head is found at the head'),
+  (':cut7; UPDATE public.log_chain_base SET hash = decode(repeat(''ee'', 32), ''hex'')', ARRAY['7 head'],
+   'with no row left, a base with another digest than the head is found at the head'),
+  (':cut7; UPDATE public.log_chain_base SET seq = 9223372036854775807', ARRAY['7 head'],
+   'with no row left, a base at the greatest bigint is found at the head'),
+  ('DELETE FROM public.log_chain_base', ARRAY['- base'],
+   'a missing base under an uncut chain is found alone: the chain is verified from seq 0 and 32 zero bytes'),
+  (':cut2; DELETE FROM public.log_chain_base', ARRAY['- base', '3 gap', '3 link'],
+   'a missing base after a cut is found, and the chain is verified from seq 0'),
+  ('CREATE TABLE public.base_child () INHERITS (public.log_chain_base);
+    INSERT INTO public.base_child VALUES (true, :base + 2, decode(repeat(''ab'', 32), ''hex''))', '{}'::text[],
+   'a child table of the base adds no base row (FROM ONLY)'),
+  ('UPDATE public.log_entry SET payload = ''{"n": 9}'' WHERE seq = :base + 2;
+    CREATE TABLE public.base_child () INHERITS (public.log_chain_base);
+    INSERT INTO public.base_child VALUES (true, 0, decode(repeat(''00'', 32), ''hex''));
+    DELETE FROM ONLY public.log_chain_base', ARRAY['- base', '2 hash'],
+   'with the base row only in a child table, the base is missing and every other finding stays'),
+  (':cut2; ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_pkey;
+    WITH cut AS (DELETE FROM public.log_chain_base RETURNING seq, hash)
+    INSERT INTO public.log_chain_base (seq, hash)
+    SELECT seq, decode(repeat(''ff'', 32), ''hex'') FROM cut UNION ALL SELECT seq, hash FROM cut', ARRAY['- base'],
+   'of two base rows in one place, the smaller digest is the base, wherever it lies')
+) t (sql, expected, what);
+-- Where the verification before the base failed (a seq at the greatest
+-- bigint overflowed its gap), this one reports instead.
+SELECT is(pg_temp.tampered('ALTER TABLE public.log_entry ALTER seq DROP NOT NULL;
+    UPDATE public.log_entry SET seq = 9223372036854775807 WHERE seq = :base + 6;
+    UPDATE public.log_entry SET seq = NULL WHERE seq = :base + 7'),
+  ARRAY['- gap', '- hash', '7 head', (9223372036854775807 - pg_temp.at(0))::text || ' gap', (9223372036854775807 - pg_temp.at(0))::text || ' hash'],
+  'a row at the greatest bigint before a NULL seq is reported, not a failure');
+SELECT is(pg_temp.tampered(t.sql), t.expected, t.what)
+FROM (VALUES
+  ('ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL',
+   ARRAY['- base', (1 - pg_temp.at(0))::text || ' gap'], 'a base of one row with a NULL seq is found at the first row, not taken as seq 0'),
+  ('ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; UPDATE public.log_chain_base SET hash = NULL',
+   ARRAY['- base', (1 - pg_temp.at(0))::text || ' link'], 'a base of one row with a NULL digest is found at the first row, not taken as 32 zero bytes'),
+  -- A base damaged like the first row does not hide the row's damage.
+  ('ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; UPDATE public.log_chain_base SET hash = NULL;
+    ALTER TABLE public.log_entry ALTER prev_hash DROP NOT NULL; UPDATE public.log_entry SET prev_hash = NULL WHERE seq = 1',
+   ARRAY['- base', (1 - pg_temp.at(0))::text || ' hash', (1 - pg_temp.at(0))::text || ' link'],
+   'a NULL base digest and a NULL link of the first row give the link, as a valid base does'),
+  (':cut6; ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL;
+    ALTER TABLE public.log_entry ALTER seq DROP NOT NULL; UPDATE public.log_entry SET seq = NULL WHERE seq = :base + 7',
+   ARRAY['- base', '- gap', '- hash', '7 head'],
+   'a NULL base seq and a NULL seq of the only row left give the gap, as a valid base does'),
+  (':cut7; ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; UPDATE public.log_chain_base SET hash = NULL;
+    ALTER TABLE public.log_chain_head ALTER hash DROP NOT NULL; UPDATE public.log_chain_head SET hash = NULL',
+   ARRAY['- base', '7 head'], 'with no row left, a NULL base digest and a NULL head digest give the head, as a valid base does'),
+  (':cut7; ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; UPDATE public.log_chain_base SET seq = NULL;
+    ALTER TABLE public.log_chain_head ALTER seq DROP NOT NULL; UPDATE public.log_chain_head SET seq = NULL',
+   ARRAY['- base', '- head'], 'with no row left, a NULL base seq and a NULL head seq give the head, as a valid base does')
+) t (sql, expected, what);
+-- DAN-868-1b2: a base in an impossible state is a 'base' finding by itself,
+-- on a full chain left uncut and on a chain cut to nothing whose head is set
+-- to the base, whatever else is found.
+SELECT ok('- base' = ANY(pg_temp.tampered(c.prefix || s.sql || CASE WHEN c.prefix = '' THEN ''
+            ELSE '; UPDATE public.log_chain_head SET (seq, hash) = (SELECT seq, hash FROM public.log_chain_base)' END)),
+  'a base ' || s.what || ' is found, ' || c.what)
+FROM (VALUES
+  ('UPDATE public.log_chain_base SET seq = 0, hash = decode(repeat(''ab'', 32), ''hex'')', 'at seq 0 with a digest that is not zero'),
+  ('UPDATE public.log_chain_base SET seq = :base + 2, hash = decode(repeat(''00'', 32), ''hex'')', 'past seq 0 with the zero digest'),
+  ('ALTER TABLE public.log_chain_base ALTER seq DROP NOT NULL; ALTER TABLE public.log_chain_head ALTER seq DROP NOT NULL;
+    UPDATE public.log_chain_base SET seq = NULL', 'with a NULL seq'),
+  ('ALTER TABLE public.log_chain_base ALTER hash DROP NOT NULL; ALTER TABLE public.log_chain_head ALTER hash DROP NOT NULL;
+    UPDATE public.log_chain_base SET hash = NULL', 'with a NULL digest'),
+  ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_seq; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_seq;
+    UPDATE public.log_chain_base SET seq = -1', 'below seq 0'),
+  ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_hash_size; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_hash_size;
+    UPDATE public.log_chain_base SET hash = decode(repeat(''00'', 31), ''hex'')', 'with a digest of 31 bytes'),
+  ('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_hash_size; ALTER TABLE public.log_chain_head DROP CONSTRAINT log_chain_head_hash_size;
+    UPDATE public.log_chain_base SET seq = :base + 2, hash = decode(repeat(''ab'', 33), ''hex'')', 'with a digest of 33 bytes')
+) s (sql, what)
+CROSS JOIN (VALUES ('', 'on the full chain'), (':cut7; ', 'on a chain cut to nothing with the head set to it')) c (prefix, what);
+
+-- Repeated places on a chain large enough for the window sort to spill at
+-- 4MB of work_mem: the order of the repeated rows, and so their link
+-- findings, is what it was before the base.
+SELECT is(r[1], r[2], 'as before the base: a place repeated in a chain of 20000 rows sorted on disk')
+FROM (SELECT pg_temp.versus($$
+  SET LOCAL work_mem = '4MB';
+  ALTER TABLE public.log_entry DROP CONSTRAINT log_entry_seq_unique, DROP CONSTRAINT log_entry_prev_hash_unique;
+  DELETE FROM public.log_entry;
+  INSERT INTO public.log_entry (seq, prev_hash, hash, kind, payload)
+    SELECT g, sha256(int8send(g - 1)), sha256(int8send(g)), 'authn.logout', '{}' FROM generate_series(1, 20000) g;
+  UPDATE public.log_entry SET seq = 3 WHERE seq = 4 $$) AS r) v;
+SELECT is(pg_temp.tampered('UPDATE public.log_chain_base SET (seq, hash) = (SELECT seq, hash FROM public.log_entry WHERE seq = :base + 2)'),
+  ARRAY[(1 - pg_temp.at(0))::text || ' gap', (1 - pg_temp.at(0))::text || ' link'],
+  'a base moved on while its rows stay is found at the first row');
+SELECT is(pg_temp.tampered('UPDATE public.log_chain_base SET seq = 9223372036854775807'),
+  ARRAY['- base', (1 - pg_temp.at(0))::text || ' gap'],
+  'a base at the greatest bigint is found at the first row, the verification does not fail');
+SELECT is(pg_temp.tampered('ALTER TABLE public.log_chain_base DROP CONSTRAINT log_chain_base_pkey,
+      ALTER seq DROP NOT NULL, ALTER hash DROP NOT NULL;
+    INSERT INTO public.log_chain_base (seq, hash) SELECT seq, hash FROM public.log_entry WHERE seq = :base + 2;
+    INSERT INTO public.log_chain_base (seq, hash) VALUES (NULL, decode(repeat(''00'', 32), ''hex''))'),
+  ARRAY['- base', (1 - pg_temp.at(0))::text || ' gap', (1 - pg_temp.at(0))::text || ' link'],
+  'a base of three rows is found, the chain is verified from the one with the greatest seq (a NULL seq last), and nothing fails');
 
 -- 6. Negative controls: a right of the main application role is caught.
 CREATE ROLE ductus_app NOLOGIN;
