@@ -413,9 +413,29 @@ const ENTRY_ROUTES: Readonly<Record<string, () => readonly Route[]>> = {
 };
 /** The factories the routes: [...] of server.ts calls, without its comments. */
 function entryFactories(entry: string): string[] {
+  return entryTable(entry).calls.map((call) => /^\w+/u.exec(call)![0]);
+}
+/**
+ * The calls of that table, each with its balanced arguments, and what is
+ * left between them: only commas, spreads and space when every route is a
+ * call (QA self-check on #337: a route held in a variable is none).
+ */
+function entryTable(entry: string): { calls: string[]; rest: string } {
   const text = entry.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/gu, "");
   const table = /\n {4}routes: \[([\s\S]*?)\n {4}\],/u.exec(text)?.[1] ?? "";
-  return [...table.matchAll(/\b(create\w+|routesOf)\(/gu)].map((m) => m[1]!);
+  const calls: string[] = [];
+  let rest = "";
+  let at = 0;
+  for (const match of table.matchAll(/\b(?:create\w+|routesOf)\(/gu)) {
+    if (match.index < at) continue;
+    let end = match.index + match[0].length;
+    for (let depth = 1; depth > 0 && end < table.length; end += 1)
+      depth += table[end] === "(" ? 1 : table[end] === ")" ? -1 : 0;
+    rest += table.slice(at, match.index);
+    calls.push(table.slice(match.index, end).replace(/\s+/gu, " "));
+    at = end;
+  }
+  return { calls, rest: rest + table.slice(at) };
 }
 const ENTRY_TEXT = readFileSync(new URL("../../server/server.ts", import.meta.url), "utf8");
 const ENTRY_IDS: readonly string[] = Object.values(ENTRY_ROUTES).flatMap((routes) =>
@@ -602,6 +622,11 @@ describe("answerable, for every route of the inventory", () => {
   // a row of either is the router's 404 (route none), never a 200.
   it("the table is the entry point's: GET ready and GET status are not mounted", async () => {
     expect(entryFactories(ENTRY_TEXT)).toEqual(Object.keys(ENTRY_ROUTES));
+    const { calls, rest } = entryTable(ENTRY_TEXT);
+    expect(rest).toMatch(/^[\s,.]*$/u);
+    expect(calls.at(-1)).toBe("routesOf(AREAS)");
+    const held = ENTRY_TEXT.replace("...routesOf(AREAS),", "...routesOf(AREAS),\n      ready,");
+    expect(entryTable(held).rest).not.toMatch(/^[\s,.]*$/u);
     expect(new Set(ENTRY_IDS).size).toBe(ENTRY_IDS.length);
     for (const id of ENTRY_IDS) expect(ROUTES.some((r) => r.id === id)).toBe(true);
     for (const path of ["/api/v1/ready", "/api/v1/status"]) {
