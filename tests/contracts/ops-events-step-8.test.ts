@@ -24,7 +24,10 @@ const { vectors } = JSON.parse(
   ),
 ) as { vectors: Vector[] };
 
-/** Step 8 over one vector's request, with a second factor that answers `outcome`. */
+/**
+ * Step 8 over one vector's request: the account is on the operator list, and
+ * the second factor answers `outcome`. `seen` records each port's token.
+ */
 async function step8(vector: Vector, outcome: Awaited<ReturnType<SecondFactor>>) {
   const request = new IncomingMessage(new Socket());
   request.method = "GET";
@@ -40,6 +43,11 @@ async function step8(vector: Vector, outcome: Awaited<ReturnType<SecondFactor>>)
     },
     () => undefined,
     () => undefined,
+    // On the operator list (DAN-1092-1), so the second factor decides.
+    async (token) => {
+      seen.push(`listed:${token}`);
+      return "listed";
+    },
   );
   return { result: await layer(request, response), status: response.statusCode, seen };
 }
@@ -65,11 +73,11 @@ describe("the requests of ops.events.get through step 8", () => {
     expect([got.result, got.status, got.seen]).toEqual(["done", 401, []]);
   });
 
-  it("no-second-factor: its token reaches the port, and unconfirmed is 403", async () => {
+  it("no-second-factor: its token reaches both ports, and unconfirmed is 403", async () => {
     const vector = vectors.find((v) => v.name === "no-second-factor")!;
     expect(vector.response.status).toBe(403);
     const got = await step8(vector, "unconfirmed");
-    expect([got.result, got.status, got.seen.length]).toEqual(["done", 403, 1]);
+    expect([got.result, got.status, got.seen.length]).toEqual(["done", 403, 2]);
   });
 
   it.each(["page", "empty", "window-over-24-hours", "unavailable"])(
@@ -79,7 +87,7 @@ describe("the requests of ops.events.get through step 8", () => {
         vectors.find((v) => v.name === name)!,
         "confirmed",
       );
-      expect([got.result, got.seen.length]).toEqual(["next", 1]);
+      expect([got.result, got.seen.length]).toEqual(["next", 2]);
     },
   );
 });
