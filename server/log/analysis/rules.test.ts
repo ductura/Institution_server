@@ -1,6 +1,7 @@
-// DAN-1010-1a/1b/1c (S-1K.7-a): log analysis, rules login_failures,
-// traffic_refusals and session_rejections, on invented entries. Contracts
-// Ductus#2028 c.6964677996 (1a), c.6967029458 (1b) and c.6980590578 (1c).
+// DAN-1010-1a/1b/1c/1d (S-1K.7-a): log analysis, rules login_failures,
+// traffic_refusals, session_rejections and authz_denials, on invented entries.
+// Contracts Ductus#2028 c.6964677996 (1a), c.6967029458 (1b), c.6980590578 (1c)
+// and c.6981110138 (1d).
 // Time is only in the entries: no clock.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -21,17 +22,27 @@ import {
 
 const T0 = Date.UTC(2026, 10, 18, 9, 0);
 const W = 60_000;
-// trafficRefusals and sessionRejections have their own pairs, so a rule given
-// another rule's threshold fails. Every threshold of the tests is built on TR.
+// trafficRefusals, sessionRejections and authzDenials have their own pairs, so
+// a rule given another rule's threshold fails. Every threshold of the tests is
+// built on TR.
 const TR = {
   trafficRefusals: { windowMs: 30_000, minCount: 4 },
   sessionRejections: { windowMs: 20_000, minCount: 5 },
+  authzDenials: { windowMs: 40_000, minCount: 6 },
 };
 const SMALL: AnalysisThresholds = { loginFailures: { windowMs: W, minCount: 3 }, ...TR };
 const FAILED = "authn.login_failed";
 const SECOND = "authn.second_factor_failed";
 const COOKIE = "session.cookie_rejected";
-const THRESHOLD_KEYS = ["loginFailures", "trafficRefusals", "sessionRejections"] as const;
+const DENIED = "authz.denied";
+const OPERATOR = "authz.operator_denied";
+const ORIGIN = "authz.origin_rejected";
+const THRESHOLD_KEYS = [
+  "loginFailures",
+  "trafficRefusals",
+  "sessionRejections",
+  "authzDenials",
+] as const;
 const refused = (code: string) => ({
   ok: false,
   error: { code, messageKey: `logAnalysis.${code.toLowerCase()}` },
@@ -137,11 +148,13 @@ describe("log analysis: thresholds that are refused", () => {
       ...at(FAILED, 0, 1, 2),
       ...at("traffic.rate_limited", 0, 1, 2, 3),
       ...at(COOKIE, 0, 1, 2, 3, 4),
+      ...at(DENIED, 0, 1, 2, 3, 4, 5),
     ];
     expect(named(all, SMALL)).toEqual([
       ["login_failures", 0, 3],
       ["traffic_refusals", 0, 4],
       ["session_rejections", 0, 5],
+      ["authz_denials", 0, 6],
     ]);
   });
 
@@ -159,10 +172,12 @@ describe("log analysis: thresholds that are refused", () => {
       { ...TR, loginFailures: { windowMs: MAX_WINDOW_MS + 1, minCount: 1 } },
       { ...SMALL, trafficRefusals: { windowMs: MAX_WINDOW_MS + 1, minCount: 1 } },
       { ...SMALL, sessionRejections: { windowMs: MAX_WINDOW_MS + 1, minCount: 1 } },
+      { ...SMALL, authzDenials: { windowMs: MAX_WINDOW_MS + 1, minCount: 1 } },
       { loginFailures: SMALL.loginFailures },
       { ...TR },
       without(SMALL, "trafficRefusals"),
       without(SMALL, "sessionRejections"),
+      without(SMALL, "authzDenials"),
       null,
       7,
       {},
@@ -179,6 +194,8 @@ describe("log analysis: thresholds that are refused", () => {
     expect(named(at("traffic.ip_denied", 0), trafficEdge)).toEqual([["traffic_refusals", 0, 1]]);
     const sessionEdge = { ...SMALL, sessionRejections: { windowMs: MAX_WINDOW_MS, minCount: 1 } };
     expect(named(at(COOKIE, 0), sessionEdge)).toEqual([["session_rejections", 0, 1]]);
+    const authzEdge = { ...SMALL, authzDenials: { windowMs: MAX_WINDOW_MS, minCount: 1 } };
+    expect(named(at(ORIGIN, 0), authzEdge)).toEqual([["authz_denials", 0, 1]]);
     const twenty = Array.from({ length: 20 }, () => ({ timeMs: T0, event: FAILED }));
     expect(analyzeLog(twenty, undefined)).toEqual(analyzeLog(twenty));
     expect(analyzeLog(twenty, undefined)).toMatchObject({
@@ -482,7 +499,13 @@ describe("log analysis: entries that are skipped or refused", () => {
     const rule = counted("r", { windowMs: W, minCount: 1 });
     const traffic = counted("q", { windowMs: W, minCount: 1 });
     const session = counted("s", { windowMs: W, minCount: 1 });
-    const all = { loginFailures: rule, trafficRefusals: traffic, sessionRejections: session };
+    const authz = counted("a", { windowMs: W, minCount: 1 });
+    const all = {
+      loginFailures: rule,
+      trafficRefusals: traffic,
+      sessionRejections: session,
+      authzDenials: authz,
+    };
     run(counted("list", [entry]), counted("t", all));
     // In the contract's order: every threshold first, then the list, then each entry.
     expect(reads).toEqual([
@@ -495,6 +518,9 @@ describe("log analysis: entries that are skipped or refused", () => {
       "t.sessionRejections",
       "s.windowMs",
       "s.minCount",
+      "t.authzDenials",
+      "a.windowMs",
+      "a.minCount",
       "list.length",
       "list.0",
       "e.event",
@@ -506,10 +532,12 @@ describe("log analysis: entries that are skipped or refused", () => {
     const bad = counted("r", { windowMs: 0, minCount: 1 });
     const fine = counted("q", { windowMs: W, minCount: 1 });
     const fineSession = counted("s", { windowMs: W, minCount: 1 });
+    const fineAuthz = counted("a", { windowMs: W, minCount: 1 });
     const t = counted("t", {
       loginFailures: bad,
       trafficRefusals: fine,
       sessionRejections: fineSession,
+      authzDenials: fineAuthz,
     });
     expect(run(counted("list", [entry]), t)).toEqual(BAD_THRESHOLD);
     // Every threshold is read before any is checked, and the list never is.
@@ -523,10 +551,13 @@ describe("log analysis: entries that are skipped or refused", () => {
       "t.sessionRejections",
       "s.windowMs",
       "s.minCount",
+      "t.authzDenials",
+      "a.windowMs",
+      "a.minCount",
     ]);
 
-    // Only trafficRefusals or only sessionRejections bad: the list is not read either.
-    for (const key of ["trafficRefusals", "sessionRejections"]) {
+    // Only one later threshold bad: the list is not read either.
+    for (const key of ["trafficRefusals", "sessionRejections", "authzDenials"]) {
       reads.length = 0;
       const badOne = { ...SMALL, [key]: { windowMs: W, minCount: 0 } };
       expect(run(counted("list", [entry]), badOne), key).toEqual(BAD_THRESHOLD);
@@ -563,7 +594,7 @@ const RULES = [
     3,
     "traffic.ip_denied",
     [
-      ...["traffic.rate_limited", "traffic.ip_denied", COOKIE],
+      ...["traffic.rate_limited", "traffic.ip_denied", COOKIE, DENIED, OPERATOR, ORIGIN],
       ...["authn.login_started", "authn.login_succeeded", "authn.logout"],
     ],
     [
@@ -591,7 +622,7 @@ const RULES = [
     30_000,
     4,
     FAILED,
-    [FAILED, SECOND, COOKIE, "traffic.request"],
+    [FAILED, SECOND, COOKIE, DENIED, OPERATOR, ORIGIN, "traffic.request"],
     [
       [],
       [[0, 4]],
@@ -618,7 +649,7 @@ const RULES = [
     5,
     "traffic.rate_limited",
     [
-      ...[FAILED, SECOND, "traffic.rate_limited", "traffic.ip_denied"],
+      ...[FAILED, SECOND, "traffic.rate_limited", "traffic.ip_denied", DENIED, OPERATOR, ORIGIN],
       ...["session.created", "session.expired", "session.revoked", "authn.logout"],
     ],
     [
@@ -638,6 +669,36 @@ const RULES = [
       [[5, 5]],
     ],
   ],
+  [
+    "authz_denials",
+    "authzDenials",
+    DENIED,
+    ORIGIN,
+    40_000,
+    6,
+    COOKIE,
+    [
+      ...[FAILED, SECOND, "traffic.rate_limited", "traffic.ip_denied", COOKIE],
+      ...["authn.logout", "session.revoked", "traffic.request", "admin.action"],
+      "authn.second_factor_succeeded",
+    ],
+    [
+      [],
+      [[0, 6]],
+      [[0, 7]],
+      [],
+      [[39_999, 6]],
+      [
+        [0, 6],
+        [40_000, 6],
+      ],
+      [[0, 7]],
+      [[0, 6]],
+      [[0, 6]],
+      [],
+      [[5, 6]],
+    ],
+  ],
 ] as const;
 
 describe("the rules of the contract", () => {
@@ -646,7 +707,27 @@ describe("the rules of the contract", () => {
       ["login_failures", "loginFailures", [FAILED, SECOND]],
       ["traffic_refusals", "trafficRefusals", ["traffic.rate_limited", "traffic.ip_denied"]],
       ["session_rejections", "sessionRejections", [COOKIE]],
+      ["authz_denials", "authzDenials", [DENIED, OPERATOR, ORIGIN]],
     ]);
+  });
+
+  // Written by hand, not read from ANALYSIS_RULES: every counted event alone,
+  // minCount times, gives a finding of its rule (authz.operator_denied is in no
+  // column of the table below).
+  it("finds each counted event alone at the threshold of its rule", () => {
+    const counted = [
+      ["login_failures", 3, [FAILED, SECOND]],
+      ["traffic_refusals", 4, ["traffic.rate_limited", "traffic.ip_denied"]],
+      ["session_rejections", 5, [COOKIE]],
+      ["authz_denials", 6, [DENIED, OPERATOR, ORIGIN]],
+    ] as const;
+    for (const [name, m, events] of counted) {
+      for (const event of events) {
+        const entries = at(event, ...Array.from({ length: m }, (_, k) => k));
+        expect(named(entries), event).toEqual([[name, 0, m]]);
+        expect(named(entries.slice(1)), event).toEqual([]);
+      }
+    }
   });
 
   // A misspelt event would turn a case that must not count into a silent pass.
@@ -732,6 +813,7 @@ describe("log analysis: defaults and all rules at once", () => {
       loginFailures: { windowMs: 600_000, minCount: 20 },
       trafficRefusals: { windowMs: 300_000, minCount: 50 },
       sessionRejections: { windowMs: 300_000, minCount: 100 },
+      authzDenials: { windowMs: 600_000, minCount: 50 },
     });
     expect(analyzeLog(same(FAILED, 19))).toEqual({ ok: true, value: [] });
     expect(analyzeLog(same(FAILED, 20))).toEqual({
@@ -752,11 +834,17 @@ describe("log analysis: defaults and all rules at once", () => {
         { rule: "session_rejections", fromMs: T0, toMs: T0 + 300_000, count: 100, minCount: 100 },
       ],
     });
+    expect(analyzeLog(same(OPERATOR, 49))).toEqual({ ok: true, value: [] });
+    expect(analyzeLog(same(OPERATOR, 50))).toEqual({
+      ok: true,
+      value: [{ rule: "authz_denials", fromMs: T0, toMs: T0 + 600_000, count: 50, minCount: 50 }],
+    });
   });
 
   it("orders findings by rule first, then by time", () => {
     // The later rules' findings are earlier in time; rule order still holds.
     const entries = [
+      ...at(DENIED, -9, -8, -7, -6, -5, -4),
       ...at(COOKIE, 0, 1, 2, 3, 4),
       ...at("traffic.ip_denied", 500, 501, 502, 503),
       ...at(FAILED, 1000, 1001, 1002),
@@ -765,6 +853,7 @@ describe("log analysis: defaults and all rules at once", () => {
       ["login_failures", 1000, 3],
       ["traffic_refusals", 500, 4],
       ["session_rejections", 0, 5],
+      ["authz_denials", -9, 6],
     ]);
   });
 
@@ -773,9 +862,12 @@ describe("log analysis: defaults and all rules at once", () => {
       ...same(COOKIE, 50),
       ...same("traffic.rate_limited", 25),
       ...same(FAILED, 10),
+      ...same(DENIED, 17),
       ...same(COOKIE, 50),
       ...same("traffic.ip_denied", 25),
+      ...same(OPERATOR, 17),
       ...same(SECOND, 10),
+      ...same(ORIGIN, 16),
     ];
     expect(analyzeLog(entries)).toEqual({
       ok: true,
@@ -783,6 +875,8 @@ describe("log analysis: defaults and all rules at once", () => {
         { rule: "login_failures", fromMs: T0, toMs: T0 + 600_000, count: 20, minCount: 20 },
         { rule: "traffic_refusals", fromMs: T0, toMs: T0 + 300_000, count: 50, minCount: 50 },
         { rule: "session_rejections", fromMs: T0, toMs: T0 + 300_000, count: 100, minCount: 100 },
+        // 17 + 17 + 16 of the three authz events make one finding of 50.
+        { rule: "authz_denials", fromMs: T0, toMs: T0 + 600_000, count: 50, minCount: 50 },
       ],
     });
   });
@@ -794,6 +888,7 @@ describe("log analysis: output and text", () => {
       ...at(FAILED, 0, 1, 2),
       ...at("traffic.rate_limited", 0, 1, 2, 3),
       ...at(COOKIE, 0, 1, 2, 3, 4),
+      ...at(OPERATOR, 0, 1, 2, 3, 4, 5),
     ]);
     expect(ok).toEqual({
       ok: true,
@@ -801,6 +896,7 @@ describe("log analysis: output and text", () => {
         found(0, 3),
         { rule: "traffic_refusals", fromMs: T0, toMs: T0 + 30_000, count: 4, minCount: 4 },
         { rule: "session_rejections", fromMs: T0, toMs: T0 + 20_000, count: 5, minCount: 5 },
+        { rule: "authz_denials", fromMs: T0, toMs: T0 + 40_000, count: 6, minCount: 6 },
       ],
     });
     const bad = run([], null);

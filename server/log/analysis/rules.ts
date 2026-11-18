@@ -1,7 +1,7 @@
 /**
- * Log analysis rules (S-1K.7-a, DAN-1010-1a, 1b and 1c; contracts Ductus#2028
- * c.6964677996, c.6967029458 and c.6980590578): pure functions that count
- * system events in a time window.
+ * Log analysis rules (S-1K.7-a, DAN-1010-1a to 1d; contracts Ductus#2028
+ * c.6964677996, c.6967029458, c.6980590578 and c.6981110138): pure functions
+ * that count system events in a time window.
  * A finding is about the system only: it holds no account, address or person,
  * so it is never a statement about a student and goes to no teacher.
  */
@@ -23,6 +23,12 @@ export const ANALYSIS_RULES = Object.freeze([
   rule("traffic_refusals", "trafficRefusals", ["traffic.rate_limited", "traffic.ip_denied"]),
   // Only rejected cookies: a session created, expired or revoked is the usual course.
   rule("session_rejections", "sessionRejections", ["session.cookie_rejected"]),
+  // One rule for the authz group until there is data (contract 1d); `reason` is not read.
+  rule("authz_denials", "authzDenials", [
+    "authz.denied",
+    "authz.operator_denied",
+    "authz.origin_rejected",
+  ]),
 ]);
 
 export type AnalysisRuleName = (typeof ANALYSIS_RULES)[number]["name"];
@@ -41,6 +47,8 @@ export const DEFAULT_ANALYSIS_THRESHOLDS: AnalysisThresholds = Object.freeze({
   trafficRefusals: Object.freeze({ windowMs: 5 * 60 * 1000, minCount: 50 }),
   // Provisional: nothing writes session.cookie_rejected yet (contract 1c).
   sessionRejections: Object.freeze({ windowMs: 5 * 60 * 1000, minCount: 100 }),
+  // Provisional: only authz.operator_denied is written yet (contract 1d, c.6981110138).
+  authzDenials: Object.freeze({ windowMs: 10 * 60 * 1000, minCount: 50 }),
 });
 
 export type AnalysisFinding = {
