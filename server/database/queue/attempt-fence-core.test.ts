@@ -194,6 +194,32 @@ describe("the watch and a release racing on the cell", () => {
     expect(notify).toHaveBeenCalledTimes(4);
     expect(notify.mock.calls.every(([target, index]) => target === cell && index === 0)).toBe(true);
   });
+
+  // QA FAIL on #287 (c.6965184860): every notify follows a successful
+  // exchange, and only then; a late release publishes nothing, so it does not notify.
+  it("notifies only right after an exchange that published, never before it or without one", () => {
+    const order: string[] = [];
+    const exchange = Atomics.compareExchange.bind(Atomics);
+    const wake = Atomics.notify.bind(Atomics);
+    vi.spyOn(Atomics, "compareExchange").mockImplementation((cell, index, expected, value) => {
+      const seen = exchange(cell as BigInt64Array, index, expected as bigint, value as bigint);
+      order.push(seen === expected ? "published" : "lost");
+      return seen;
+    });
+    vi.spyOn(Atomics, "notify").mockImplementation((cell, index, count) => {
+      order.push("notify");
+      return wake(cell, index, count);
+    });
+    const { clock, arm } = fixture();
+    const first = arm(300);
+    arm(1000);
+    clock.now = T0 + 100n * MS;
+    first();
+    const late = arm(50);
+    clock.now = T0 + 100n * MS + 50n * MS;
+    expect(() => late()).toThrow(PARKED);
+    expect(order).toEqual(["published", "notify", "published", "notify", "published", "notify"]);
+  });
 });
 
 describe("watchOnce: the watch loop, one round on a fake clock", () => {
@@ -239,6 +265,47 @@ describe("watchOnce: the watch loop, one round on a fake clock", () => {
     const later = T0 + 1500n * MS;
     expect(watch(cell, T0 + 300n * MS)).toEqual([`wait ${later} 1200`]);
   });
+
+  // QA FAIL on #287 (c.6965184860): the cell changes inside the round, between
+  // the watch's read and its decision, through watchOnce itself.
+  it("does not kill when a timely release replaced the time between its read and its claim", () => {
+    const { cell, clock, arm } = fixture();
+    const first = arm(300);
+    arm(1500);
+    const at = T0 + 300n * MS;
+    const done: string[] = [];
+    watchOnce(cell, {
+      now: () => {
+        clock.now = at - 1n;
+        first();
+        return at;
+      },
+      wait: () => done.push("wait"),
+      kill: () => done.push("kill"),
+    });
+    expect(done).toEqual([]);
+    expect(Atomics.load(cell, 0)).toBe(T0 + 1500n * MS);
+  });
+
+  it("returns at once from a wait on the time it judged when an earlier one was published meanwhile", () => {
+    const { cell, arm } = fixture();
+    arm(1000);
+    const old = T0 + 1000n * MS;
+    const results: string[] = [];
+    watchOnce(cell, {
+      now: () => {
+        arm(200);
+        return T0;
+      },
+      wait: (value, ms) => {
+        expect(value).toBe(old);
+        results.push(Atomics.wait(cell, 0, value, ms));
+      },
+      kill: () => results.push("kill"),
+    });
+    expect(results).toEqual(["not-equal"]);
+    expect(Atomics.load(cell, 0)).toBe(T0 + 200n * MS);
+  });
 });
 
 describe("arm: only a time the cell holds exactly", () => {
@@ -272,6 +339,12 @@ describe("arm: only a time the cell holds exactly", () => {
     const { cell, arm } = fixture(start);
     expect(() => arm(1)).toThrow("fence_refused");
     expect(Atomics.load(cell, 0)).toBe(0n);
+  });
+
+  it("arms the largest time the cell holds, 2^63 - 1, to the nanosecond", () => {
+    const { cell, arm } = fixture(2n ** 63n - 1n - MS);
+    arm(1);
+    expect(Atomics.load(cell, 0)).toBe(2n ** 63n - 1n);
   });
 
   it("imports nothing at run time, so the watch thread loads no other module", () => {
