@@ -114,6 +114,8 @@ const promiseThen = Promise.prototype.then;
 const promiseResolve = Promise.resolve.bind(Promise);
 const isPromise = types.isPromise;
 const enqueue = queueMicrotask;
+const weakHas = WeakSet.prototype.has;
+const weakAdd = WeakSet.prototype.add;
 
 /**
  * Marks a callback's result as handled, read through Promise.prototype, so a
@@ -121,17 +123,31 @@ const enqueue = queueMicrotask;
  * promise whose constructor getter throws cannot be handled by any means of
  * the language; the ports are trusted assembler code (known limit). Its
  * value is never handed on, so a then getter on it is not read again (QA
- * FAIL on #314).
+ * FAIL on #314); a native promise it settles with is marked too (discard,
+ * Review FAIL on #318).
  */
 function ignoreRejection(value: unknown): void {
   try {
-    apply(promiseThen, isPromise(value) ? value : promiseResolve(value), [
-      () => undefined,
-      () => undefined,
-    ]);
+    apply(promiseThen, isPromise(value) ? value : promiseResolve(value), [discard, discard]);
   } catch {
     // A thenable whose then getter throws rejects the wrapper, handled above.
   }
+}
+
+/** Native promises discard has marked; each is marked once, so a cycle of reasons ends. */
+const marked = new WeakSet<object>();
+
+/**
+ * Marks a value the scheduler drops handled when it is a native promise: a
+ * throw, a reason or a fulfilment value a port handed over and nobody else
+ * sees, and so on through the value or reason it settles with (Review FAIL
+ * on #318, 9d5a993). A throw from inside ignoreRejection itself is not
+ * marked again (known limit, README).
+ */
+function discard(value: unknown): void {
+  if (!isPromise(value) || apply(weakHas, marked, [value])) return;
+  apply(weakAdd, marked, [value]);
+  ignoreRejection(value);
 }
 
 /** Whether a value can carry a then. */
@@ -160,9 +176,8 @@ function callThen(
   const reject = (reason: unknown): void => {
     if (called) return;
     called = true;
-    // A native promise as the reason reaches only the scheduler, which drops
-    // the reason, so it is marked handled here (QA attacker on 2g).
-    if (isPromise(reason)) ignoreRejection(reason);
+    // The reason reaches only the scheduler, which drops it (QA attacker on 2g).
+    discard(reason);
     fail(reason);
   };
   try {
@@ -184,14 +199,28 @@ function settledBy(value: unknown): unknown {
     return new Promise((resolve, reject) => {
       // Only the end counts: the value is dropped, so a then getter on it
       // is never read again (QA FAIL on #314).
-      ignoreRejection(apply(promiseThen, value, [() => resolve(undefined), reject]));
+      // Both the value and the reason are dropped, so a native promise in
+      // either is marked handled (Review FAIL on #318).
+      ignoreRejection(
+        apply(promiseThen, value, [
+          (fulfilled: unknown) => {
+            resolve(undefined);
+            discard(fulfilled);
+          },
+          (reason: unknown) => {
+            reject(reason);
+            discard(reason);
+          },
+        ]),
+      );
     });
   }
   if (!objectLike(value)) return undefined;
   let then: unknown;
   try {
     then = (value as { then?: unknown }).then;
-  } catch {
+  } catch (error) {
+    discard(error);
     return { then: (_ok: unknown, fail: () => void) => fail() };
   }
   if (typeof then !== "function") return undefined;
@@ -251,8 +280,9 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     setImmediate(() => {
       try {
         ignoreResult(onSkip(reason));
-      } catch {
+      } catch (error) {
         // Nothing reaches the caller.
+        discard(error);
       }
       undelivered -= 1;
       if (undelivered > 0) return;
@@ -264,11 +294,17 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
 
   const once = async (at: number): Promise<void> => {
     let decision: number | BackupSkipReason;
+    // What the reader throws, rejects with or resolves with is dropped
+    // after the decision (Review FAIL on #318).
+    let settings: unknown;
     try {
-      decision = decide(await readSettings());
-    } catch {
+      settings = await readSettings();
+      decision = decide(settings);
+    } catch (error) {
+      discard(error);
       decision = "settings_unavailable";
     }
+    discard(settings);
     if (stopped) return;
     // The next point is due: a call now would leave the hour of its point,
     // whichever timer callback the event loop runs first.
@@ -320,7 +356,20 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
         // The promise then derives through species is marked handled, so a
         // species that makes it rejected leaves nothing unhandled (Review FAIL
         // on #312).
-        ignoreRejection(apply(promiseThen, result, [done, failed]));
+        // Its value or reason is dropped after the end is recorded (Review
+        // FAIL on #318).
+        ignoreRejection(
+          apply(promiseThen, result, [
+            (value: unknown) => {
+              done();
+              discard(value);
+            },
+            (reason: unknown) => {
+              failed();
+              discard(reason);
+            },
+          ]),
+        );
         returnedAt = performance.now();
         enqueue(() => (returnedAt = undefined));
       } else if (objectLike(result)) {
@@ -343,11 +392,13 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
       } else {
         done();
       }
-    } catch {
+    } catch (error) {
       // A synchronous throw, or a native promise on which then throws (its
       // constructor or species): no means of the language can follow it, so
-      // it counts as over (known limit, README).
+      // it counts as over (known limit, README). What was thrown is dropped
+      // after the end is recorded (Review FAIL on #318).
       failed();
+      discard(error);
     }
     await current;
     job = undefined;

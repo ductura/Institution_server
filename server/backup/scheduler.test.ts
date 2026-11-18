@@ -2250,6 +2250,91 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
       }),
       true,
     ],
+    // Review FAIL on #318 (9d5a993): every value a port hands the scheduler
+    // and the scheduler drops (a throw, a reason, a fulfilment value) is
+    // marked handled when it is a native promise.
+    [
+      "T17 a thenable whose then getter throws a rejected promise",
+      () => ({
+        get then(): never {
+          throw Promise.reject(new Error(CANARY));
+        },
+      }),
+      true,
+    ],
+    [
+      "T17 a thenable resolving with an object whose then getter throws a rejected promise",
+      () => ({
+        then: (ok: Ok) =>
+          ok({
+            get then(): never {
+              throw Promise.reject(new Error(CANARY));
+            },
+          }),
+      }),
+      true,
+    ],
+    [
+      "T17 a then that throws a rejected promise",
+      () => ({
+        then: () => {
+          throw Promise.reject(new Error(CANARY));
+        },
+      }),
+      true,
+    ],
+    [
+      "T17 a synchronous throw of a rejected promise",
+      () => {
+        throw Promise.reject(new Error(CANARY));
+      },
+      true,
+    ],
+    [
+      "T17 a native promise rejected with a rejected promise",
+      () => Promise.reject(Promise.reject(new Error(CANARY))),
+      true,
+    ],
+    [
+      "T17 a thenable resolving with a native promise rejected with a rejected promise",
+      () => ({ then: (ok: Ok) => ok(Promise.reject(Promise.reject(new Error(CANARY)))) }),
+      true,
+    ],
+    [
+      "T17 a native promise rejected with reasons two deep",
+      () => Promise.reject(Promise.reject(Promise.reject(new Error(CANARY)))),
+      true,
+    ],
+    [
+      "T17 a native promise rejected in a cycle of two reasons",
+      () => {
+        const box: { other?: Promise<never> } = {};
+        const first = new Promise<never>((_, reject) => queueMicrotask(() => reject(box.other)));
+        box.other = Promise.reject(first);
+        return first;
+      },
+      true,
+    ],
+    [
+      "T17 a native promise fulfilled with a rejected promise with then: undefined",
+      () =>
+        new Promise((resolve) =>
+          resolve(Object.assign(Promise.reject(new Error(CANARY)), { then: undefined })),
+        ),
+      false,
+    ],
+    [
+      "T17 a thenable resolving with a native promise fulfilled with a rejected promise with then: undefined",
+      () => ({
+        then: (ok: Ok) =>
+          ok(
+            new Promise((resolve) =>
+              resolve(Object.assign(Promise.reject(new Error(CANARY)), { then: undefined })),
+            ),
+          ),
+      }),
+      false,
+    ],
     ["T4 a rejected native promise", () => Promise.reject(new Error(CANARY)), true],
     [
       "T2 a synchronous throw",
@@ -2355,4 +2440,38 @@ describe("backup scheduler: one table of result shapes for run() and onSkip", ()
     expect(results).toBe(3);
     expect(reads).toBe(2 * results);
   });
+
+  // T17, the same class for the settings reader: what it throws, rejects with
+  // or resolves with is dropped, so a native promise in it is marked handled.
+  it.each([
+    [
+      "throws a rejected promise",
+      () => {
+        throw Promise.reject(new Error(CANARY));
+      },
+    ],
+    ["rejects with a rejected promise", () => Promise.reject(Promise.reject(new Error(CANARY)))],
+    [
+      "rejects with reasons two deep",
+      () => Promise.reject(Promise.reject(Promise.reject(new Error(CANARY)))),
+    ],
+    [
+      "resolves through a thenable with a rejected promise with then: undefined",
+      () => ({
+        then: (ok: Ok) => ok(Object.assign(Promise.reject(new Error(CANARY)), { then: undefined })),
+      }),
+    ],
+  ])("readSettings that %s: settings_unavailable, nothing unhandled", (_n, read) =>
+    noneUnhandled(async () => {
+      const reasons: string[] = [];
+      const { run, scheduler } = setup([], {
+        readSettings: read,
+        onSkip: (reason) => void reasons.push(reason),
+      });
+      await advance(2 * H);
+      await scheduler.stop();
+      expect(run).not.toHaveBeenCalled();
+      expect(reasons).toEqual(["settings_unavailable", "settings_unavailable"]);
+    }),
+  );
 });
