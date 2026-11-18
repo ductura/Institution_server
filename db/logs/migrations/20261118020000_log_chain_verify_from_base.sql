@@ -1,23 +1,27 @@
 -- migrate:up
 -- S-1K.8 (DAN-868, part 868-1b): public.log_chain_verify() verifies the chain
 -- from its base (public.log_chain_base, 868-1a2) instead of seq 0 and 32 zero
--- bytes: the first row must follow the base (gap, link), and with no row
--- left the last seq and hash are the base's, so the head must be the base.
+-- bytes: the first row must follow the base (gap, link), and where no row
+-- gives the last seq or hash (none left, or only NULLs) the base's stand in,
+-- as seq 0 and 32 zero bytes did before.
 -- While nothing is cut the base is seq 0 and 32 zero bytes, and every chain,
 -- however damaged, gives exactly what the verification of 20261116170000
--- (with 20261116200000) gave; db/logs/tests/020-log-chain.sql compares the
--- two on every damage it knows.
+-- (with 20261116200000) gave, wherever that one returns at all: on a seq at
+-- the greatest bigint it failed with bigint out of range, and this one
+-- reports. db/logs/tests/020-log-chain.sql compares the two on every damage
+-- it knows.
 --
 -- What changes:
 -- - The predecessor of the first row is lag's default, the base, as the zero
 --   default was before; a NULL seq or hash inside the chain stays NULL.
--- - The last seq stays max(seq), now with the base's seq when no row is left;
---   the last hash stays the hash of the row first in seq DESC order, now with
---   the base's hash when no row is left.
+-- - The last seq stays max(seq) and the last hash the hash of the row first
+--   in seq DESC order, each with the base's in place of NULL.
 -- - A base that is not exactly one row is reported as 'base' (seq NULL). The
 --   chain is then verified from the base row with the greatest seq (a NULL
---   seq last), or from seq 0 and 32 zero bytes when there is none. The base
---   is read FROM ONLY, so no child table adds to it.
+--   seq last, then the smallest hash), or from seq 0 and 32 zero bytes when
+--   there is none: the base CTE is always exactly one row, so no state of
+--   the base table can empty the verification. The base is read FROM ONLY,
+--   so no child table adds to it.
 -- - The gap is compared in numeric: no stored seq, the greatest bigint of a
 --   base included, makes the verification fail instead of report.
 DO $$
@@ -33,12 +37,11 @@ CREATE OR REPLACE FUNCTION public.log_chain_verify() RETURNS TABLE (seq bigint, 
   LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
   WITH base AS (
     SELECT x.seq, x.hash FROM (
-      SELECT b.seq, b.hash FROM ONLY public.log_chain_base b
+      SELECT 0 AS fallback, b.seq, b.hash FROM ONLY public.log_chain_base b
       UNION ALL
-      SELECT 0::bigint, pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')
-      WHERE NOT EXISTS (SELECT 1 FROM ONLY public.log_chain_base)
+      SELECT 1, 0::bigint, pg_catalog.decode(pg_catalog.repeat('00', 32), 'hex')
     ) x
-    ORDER BY x.seq DESC NULLS LAST, x.hash
+    ORDER BY x.fallback, x.seq DESC NULLS LAST, x.hash
     LIMIT 1
   ), entry AS (
     SELECT e.seq, e.prev_hash, e.hash,
