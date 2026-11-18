@@ -115,7 +115,7 @@ const ASCII = Array.from({ length: 0x5f }, (_, c) => String.fromCharCode(c + 0x2
 const HOSTS: Readonly<Record<string, readonly string[]>> = {
   // every printable ASCII code point first, inside and last, and long names;
   domain: [
-    ...ASCII.flatMap((c) => [`${c}a.invalid`, `a${c}b`, `a.invalid${c}`]),
+    ...ASCII.flatMap((c) => [`${c}a.invalid`, `a${c}b`, `a.invalid${c}`, `a${c.repeat(64)}b`]),
     `${"a".repeat(250)}.invalid`,
     `${"a.".repeat(120)}invalid`,
     `${"b".repeat(1000)}.invalid`,
@@ -130,10 +130,12 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
   numeric: [
     ...["0", "1", "09", "256", "0x", "0x10", "0xa", "0xg", "1a", "1-", "a", "4294967296"],
     ...["00000000001", "0x100000000", "0x0123456789abcdef", "0x23456789bcde", "0x1g"],
+    ...["9".repeat(64), `0x${"f".repeat(64)}`],
   ].flatMap((last) =>
-    ["", "a.", "1.", "127.", "1.2.", "1.2.3.", "a_b.", "!.", "{}.", "a-.", ".", "a..b."].flatMap(
-      (head) => [`${head}${last}`, `${head}${last}.`],
-    ),
+    [
+      ...["", "a.", "1.", "127.", "1.2.", "1.2.3.", "a_b.", "!.", "{}.", "a-.", ".", "a..b."],
+      `${"a".repeat(16000)}.`,
+    ].flatMap((head) => [`${head}${last}`, `${head}${last}.`]),
   ),
   // each hex digit in each of eight groups, a zero run at every start and
   // length (compressed or not, as URL writes it) and the longest literal;
@@ -156,6 +158,16 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
     ...["[A::1]", "[]", "[::1", "[::FFFF:1]", "[::ffff:1.2.3.4]"],
   ],
 };
+// Canonical origins up to Node's header limit (QA c.6967875485, Ductus#2012
+// c.6968995576): hosts that make the origin exactly LIMIT long, without a port
+// or with :65535, of one label, of many and of every code point kept in a domain,
+// and an uppercase one URL rewrites. Every check of 1 KiB or more takes under 50 ms.
+const LIMIT = 16 * 1024;
+const LONG_UNITS = ["A", "a", "a.", "-!\"$&'()*+,0123456789;=_`abcdefghijklmnopqrstuvwxyz{}~."];
+const longHosts = (scheme: string) =>
+  ["", ":65535"].flatMap((port) =>
+    LONG_UNITS.map((unit) => unit.repeat(LIMIT).slice(0, LIMIT - scheme.length - port.length)),
+  );
 // Every host of every kind takes each of these ports.
 const PORTS = [
   ...["", ":", ":0", ":00", ":01", ":1", ":80", ":443", ":1234", ":8080", ":54321"],
@@ -241,14 +253,22 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
     // and every port 0-65536 agree with URL.
     const wrong: string[] = [];
     const agree = (origin: string) => {
+      const start = performance.now();
       if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
         wrong.push(origin);
+      // The first slow check fails the test at once, not after a timeout.
+      if (origin.length >= 1024 && performance.now() - start >= 50)
+        throw new Error(`Value.Check took 50 ms or more: ${origin.slice(0, 40)}`);
     };
     const listed = [...GOOD_ORIGIN, ...BAD_ORIGIN].flatMap((o) =>
       typeof o === "string" ? [o.replace(/^https?:\/\//, "")] : [],
     );
     for (const scheme of ["http://", "https://"]) {
-      for (const [kind, hosts] of Object.entries(HOSTS)) {
+      const atLimit = longHosts(scheme).flatMap((host) =>
+        ["", ":65535"].map((port) => `${scheme}${host}${port}`),
+      );
+      expect(atLimit.filter((o) => o.length === LIMIT && canonical(o))).toHaveLength(6);
+      for (const [kind, hosts] of Object.entries({ ...HOSTS, long: longHosts(scheme) })) {
         const origins = hosts.flatMap((host) => PORTS.map((port) => `${scheme}${host}${port}`));
         expect(origins.filter(canonical).length, `${scheme} ${kind}`).toBeGreaterThan(0);
         origins.forEach(agree);
