@@ -319,6 +319,35 @@ describe("backup scheduler: failures, stop and options", () => {
     ]);
   });
 
+  // Review FAIL on #283 (46443d6): stop() called synchronously from inside run().
+  it.each([
+    ["resolves", (done: Promise<void>) => done],
+    ["rejects", (done: Promise<void>) => done.then(() => Promise.reject(new Error(CANARY)))],
+  ])("a run that calls stop and then %s: stop waits for it", async (_k, finish) => {
+    const hang = deferred();
+    let stopping: Promise<void> | undefined;
+    const options = { run: (): unknown => undefined };
+    let calls = 0;
+    const { scheduler } = setup(on(1), { run: () => options.run() });
+    options.run = () => {
+      calls += 1;
+      stopping = scheduler.stop();
+      return finish(hang.promise);
+    };
+    let stopped = false;
+    await vi.advanceTimersByTimeAsync(H);
+    expect(stopping).toBeDefined();
+    void stopping?.then(() => (stopped = true));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(stopped).toBe(false);
+    hang.resolve();
+    await stopping;
+    expect(stopped).toBe(true);
+    await vi.advanceTimersByTimeAsync(10 * H);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(calls).toBe(1);
+  });
+
   it("stop waits for the run in progress and leaves no timer", async () => {
     const hang = deferred();
     const { run, scheduler } = setup(on(1));

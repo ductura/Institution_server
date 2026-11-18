@@ -123,15 +123,18 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     if (typeof decision === "string") return skip(decision);
     if (hours < decision) return;
     restart();
-    job = (async () => {
-      try {
-        await run();
-      } catch {
-        skip("run_failed");
-      }
-    })();
-    await job;
-    job = undefined;
+    // The job exists before run() is called, so a stop() from inside run()
+    // (Review FAIL on #283) still waits for it.
+    let finished!: () => void;
+    job = new Promise<void>((resolve) => (finished = resolve));
+    try {
+      await run();
+    } catch {
+      skip("run_failed");
+    } finally {
+      job = undefined;
+      finished();
+    }
   };
 
   function tick(): void {
