@@ -56,12 +56,11 @@ export type AnalysisResult =
   | { readonly ok: true; readonly value: readonly AnalysisFinding[] }
   | { readonly ok: false; readonly error: AnalysisError };
 
-// One own data property, read once. A getter, an inherited key, a non-object or
+// One own data property, read once. A getter, an inherited key, a non-object (a
+// function too) or
 // a read that throws (revoked Proxy, throwing trap) gives undefined.
 function ownValue(holder: unknown, key: string): unknown {
-  if ((typeof holder !== "object" && typeof holder !== "function") || holder === null) {
-    return undefined;
-  }
+  if (typeof holder !== "object" || holder === null) return undefined;
   try {
     const descriptor = Object.getOwnPropertyDescriptor(holder, key);
     return descriptor && "value" in descriptor ? descriptor.value : undefined;

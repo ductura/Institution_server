@@ -77,6 +77,8 @@ const UNREADABLE: [string, (holder: object, key: string, value: unknown) => obje
   ["inherited", (h, k, v) => Object.assign(Object.create({ [k]: v }) as object, without(h, k))],
   ["a revoked Proxy", () => revoked()],
   ["a throwing trap", (h) => trap({ ...h })],
+  ["a revoked Proxy as the value", (h, k) => ({ ...h, [k]: revoked() })],
+  ["a function holding the same keys", (h) => Object.assign(() => undefined, h)],
 ];
 
 describe("log analysis: thresholds that are refused", () => {
@@ -105,7 +107,12 @@ describe("log analysis: thresholds that are refused", () => {
   it("accepts a 24 h window, minCount 1, extra keys and undefined for the defaults", () => {
     const edge = { loginFailures: { windowMs: MAX_WINDOW_MS, minCount: 1 }, other: 1 };
     expect(counts(at(FAILED, 0), edge)).toEqual([[0, 1]]);
-    expect(run([], undefined)).toEqual({ ok: true, value: [] });
+    const twenty = Array.from({ length: 20 }, () => ({ timeMs: T0, event: FAILED }));
+    expect(analyzeLog(twenty, undefined)).toEqual(analyzeLog(twenty));
+    expect(analyzeLog(twenty, undefined)).toMatchObject({
+      ok: true,
+      value: [{ count: 20, minCount: 20 }],
+    });
   });
 
   it.each(UNREADABLE)("refuses a threshold read site that is %s", (_, make) => {
@@ -243,6 +250,14 @@ describe("log analysis: entries that are skipped or refused", () => {
     ]) {
       expect(run(list)).toEqual(BAD_ENTRIES);
     }
+    // Exactly MAX_ENTRIES is still read (every index a hole here).
+    const full = new Proxy([], {
+      getOwnPropertyDescriptor: (t, k) =>
+        k === "length"
+          ? { value: MAX_ENTRIES, writable: true }
+          : Reflect.getOwnPropertyDescriptor(t, k),
+    });
+    expect(run(full)).toEqual({ ok: true, value: [] });
   });
 
   it("reads each key of the list, an entry and the thresholds exactly once", () => {
@@ -253,6 +268,10 @@ describe("log analysis: entries that are skipped or refused", () => {
           reads.push(`${name}.${String(k)}`);
           return Reflect.getOwnPropertyDescriptor(t, k);
         },
+        // Any other kind of read is a read too, and must not happen.
+        get: (t, k, r) => (reads.push(`${name}.get ${String(k)}`), Reflect.get(t, k, r)),
+        has: (t, k) => (reads.push(`${name}.has ${String(k)}`), Reflect.has(t, k)),
+        ownKeys: (t) => (reads.push(`${name}.ownKeys`), Reflect.ownKeys(t)),
       });
     const entry = counted("e", { timeMs: T0, event: FAILED });
     const rule = counted("r", { windowMs: W, minCount: 1 });
