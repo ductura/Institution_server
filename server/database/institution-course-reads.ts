@@ -8,7 +8,9 @@
 // Any row that is not what the function returns makes the whole read
 // unavailable, never a shorter list. Changes: an outcome (status) instead of
 // Ductus `kind`, forbidden instead of notFound (the route answers 403, not
-// the page's 404), nothing is logged, and no SQLSTATE leaves the port.
+// the page's 404), nothing is logged (Ductus logged a constant message and
+// the SQLSTATE), and no SQLSTATE leaves the port. As in Ductus, an error
+// whose `code` cannot be read rejects the read; the route answers it 503.
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 export type PersonName = { readonly givenName: string; readonly familyName: string } | null;
@@ -220,13 +222,9 @@ export function academicYearsOf(rows: readonly Row[]): string[] | null {
   return [...years].sort().reverse();
 }
 
-/** The code of a database error, read as Ductus does; a getter or Proxy that throws has none. */
+/** The code of a database error, read as Ductus does: a getter or Proxy that throws rejects the read. */
 function codeOf(thrown: unknown): unknown {
-  try {
-    return thrown && typeof thrown === "object" && "code" in thrown ? thrown.code : undefined;
-  } catch {
-    return undefined;
-  }
+  return thrown && typeof thrown === "object" && "code" in thrown ? thrown.code : undefined;
 }
 
 type Read<T> =

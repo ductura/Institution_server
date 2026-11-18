@@ -300,7 +300,7 @@ export const academicYearsGet = defineRoute({
   inventory: "app/api/institution/academic-years/route.ts",
   access: "institution_admin",
   summary:
-    "The academic years of the administrator's institution that have a course, newest first, each once (institution.institution_academic_years). A caller who is not an administrator, or a cross-site read, is 403.",
+    "The academic years of the administrator's institution that have a course, newest first, each once (institution.institution_academic_years). A caller who is not an administrator is 403, and so is a request whose Sec-Fetch-Site is present and not exactly one same-origin; without Sec-Fetch-Site (a client that is not a browser) it is served.",
   request: {},
   responses: [
     {
@@ -319,7 +319,7 @@ export const courseListGet = defineRoute({
   inventory: "app/api/institution/course-list/route.ts",
   access: "institution_admin",
   summary:
-    "The courses of the administrator's institution in one academic year (institution.institution_courses): each with its number of open students, its holder, its teaching team and its seminar groups with their teachers and number of students. Students are counted, never named. Courses and groups by name (hr collation), then id; people by surname, then given name, then id, those without a name last. The query is exactly academicYear, once; anything else is 422 and reaches no database. A caller who is not an administrator, or a cross-site read, is 403.",
+    "The courses of the administrator's institution in one academic year (institution.institution_courses): each with its number of open students, its holder, its teaching team and its seminar groups with their teachers and number of students. Students are counted, never named. Courses and groups by name (hr collation), then id; people by surname, then given name, then id, those without a name last. The query is exactly academicYear, once; anything else is 422 and reaches no database. A caller who is not an administrator is 403, and so is a request whose Sec-Fetch-Site is present and not exactly one same-origin; without Sec-Fetch-Site (a client that is not a browser) it is served.",
   request: { query: closed({ academicYear: AcademicYear }) },
   responses: [
     {

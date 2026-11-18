@@ -199,6 +199,20 @@ describe("refusals before the port on both routes", () => {
     expect(calls).toEqual([]);
   });
 
+  it("without Sec-Fetch-Site (a client that is not a browser) both reads are served", async () => {
+    yearAnswer = YEAR_OUTCOMES["no-years"]!;
+    courseAnswer = COURSE_OUTCOMES["no-courses"]!;
+    await start();
+    const years = await get(paths[0]!, { cookie });
+    const list = await get(paths[1]!, { cookie });
+    expect([years.status, years.body]).toEqual([200, { years: [] }]);
+    expect([list.status, list.body]).toEqual([200, { academicYear: YEAR, courses: [] }]);
+    expect(calls).toEqual([
+      ["years", TOKEN],
+      ["courses", TOKEN, YEAR],
+    ]);
+  });
+
   it("any Sec-Fetch-Site but one same-origin is 403", async () => {
     await start();
     for (const path of paths) {

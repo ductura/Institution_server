@@ -3,7 +3,7 @@
 // answer only rows they can vouch for: one row that is not what the function
 // returns makes the whole read unavailable, never a shorter list; a refusal
 // carries no message and no SQLSTATE. Invented courses, groups, people and ids only.
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   academicYearsOf,
@@ -75,6 +75,16 @@ function database(answer: { rows?: Row[]; code?: string }) {
   return { withActor, calls, reads };
 }
 
+// Ductus logged a constant message and the SQLSTATE and asserted the
+// database's message never reached the log. The port logs nothing: every
+// console method is watched, and none may be called by a read.
+const CONSOLE = ["error", "warn", "log", "info", "debug", "trace"] as const;
+function watchConsole() {
+  const spies = CONSOLE.map((name) => vi.spyOn(console, name).mockImplementation(() => {}));
+  return () => spies.flatMap((spy) => spy.mock.calls);
+}
+afterEach(() => vi.restoreAllMocks());
+
 describe("isAcademicYear", () => {
   it.each(["2026/2027", "1999/2000", "0000/0001"])("accepts %j", (year) =>
     expect(isAcademicYear(year)).toBe(true),
@@ -142,11 +152,28 @@ describe("readCourses", () => {
     ["ZD422", "invalid"],
     ["42501", "unavailable"],
     ["57014", "unavailable"],
-  ])("maps SQLSTATE %s to %s and nothing else", async (code, status) => {
-    expect(await database({ code }).reads.readCourses(TOKEN, YEAR)).toEqual({ status });
+  ])("maps SQLSTATE %s to %s, logs nothing and carries no message", async (code, status) => {
+    const logged = watchConsole();
+    const outcome = await database({ code }).reads.readCourses(TOKEN, YEAR);
+    expect(outcome).toEqual({ status });
+    expect(JSON.stringify(outcome)).not.toContain(CANARY);
+    expect(logged()).toEqual([]);
   });
 
-  it("is unavailable for an error without a SQLSTATE or with a throwing code", async () => {
+  it("is unavailable for an error without a SQLSTATE, logging nothing", async () => {
+    const logged = watchConsole();
+    for (const thrown of [new Error(CANARY), { code: 403 }, null]) {
+      const withActor = (async () => {
+        throw thrown;
+      }) as unknown as WithActor;
+      const outcome = await createInstitutionCourseReads(withActor).readCourses(TOKEN, YEAR);
+      expect(outcome).toEqual({ status: "unavailable" });
+      expect(JSON.stringify(outcome)).not.toContain(CANARY);
+    }
+    expect(logged()).toEqual([]);
+  });
+
+  it("rejects, as Ductus, when the error's code cannot be read", async () => {
     const thrower = new Proxy(
       {},
       {
@@ -156,19 +183,19 @@ describe("readCourses", () => {
         },
       },
     );
-    for (const thrown of [new Error(CANARY), thrower, { code: 403 }]) {
-      const withActor = (async () => {
-        throw thrown;
-      }) as unknown as WithActor;
-      expect(await createInstitutionCourseReads(withActor).readCourses(TOKEN, YEAR)).toEqual({
-        status: "unavailable",
-      });
-    }
+    const withActor = (async () => {
+      throw thrower;
+    }) as unknown as WithActor;
+    const reads = createInstitutionCourseReads(withActor);
+    await expect(reads.readCourses(TOKEN, YEAR)).rejects.toThrow(CANARY);
+    await expect(reads.readAcademicYears(TOKEN)).rejects.toThrow(CANARY);
   });
 
-  it("is unavailable, never a shorter list, when one row is malformed", async () => {
+  it("is unavailable, never a shorter list, when one row is malformed, logging nothing", async () => {
+    const logged = watchConsole();
     const db = database({ rows: [...SAMPLE, course(2, "Drugi", -1)] });
     expect(await db.reads.readCourses(TOKEN, YEAR)).toEqual({ status: "unavailable" });
+    expect(logged()).toEqual([]);
   });
 });
 
@@ -337,13 +364,19 @@ describe("readAcademicYears", () => {
     ["ZD403", "forbidden"],
     ["ZD422", "unavailable"],
     ["57014", "unavailable"],
-  ])("maps SQLSTATE %s to %s", async (code, status) => {
-    expect(await database({ code }).reads.readAcademicYears(TOKEN)).toEqual({ status });
+  ])("maps SQLSTATE %s to %s, logs nothing and carries no message", async (code, status) => {
+    const logged = watchConsole();
+    const outcome = await database({ code }).reads.readAcademicYears(TOKEN);
+    expect(outcome).toEqual({ status });
+    expect(JSON.stringify(outcome)).not.toContain(CANARY);
+    expect(logged()).toEqual([]);
   });
 
-  it("is unavailable when a row is malformed", async () => {
+  it("is unavailable when a row is malformed, logging nothing", async () => {
+    const logged = watchConsole();
     const db = database({ rows: [{ academic_year: "2026/2028" }] });
     expect(await db.reads.readAcademicYears(TOKEN)).toEqual({ status: "unavailable" });
+    expect(logged()).toEqual([]);
   });
 });
 

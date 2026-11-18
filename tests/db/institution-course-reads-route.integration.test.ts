@@ -25,6 +25,7 @@ const ADMIN_URL =
 const APP_LOGIN = "it_institution_course_reads_app";
 const ORIGIN = "https://ductura.example.invalid";
 const YEAR = "2026/2027";
+const OTHER_YEAR = "2025/2026";
 const password = randomBytes(24).toString("hex");
 const suffix = randomBytes(4).toString("hex");
 const inst = { a: randomUUID(), b: randomUUID() };
@@ -85,14 +86,16 @@ async function seed(): Promise<void> {
     "INSERT INTO identity.person_name (user_id, institution_id, given_name, family_name) VALUES ($1, $2, 'Iva', 'Izmišljena')",
     [user.teacher, inst.a],
   );
-  for (const [key, home, owner] of [
-    ["a", inst.a, user.teacher],
-    ["b", inst.b, user.b1],
+  // The other institution's course is in another year, so neither its year
+  // nor its course may reach the administrator's lists.
+  for (const [key, home, owner, year] of [
+    ["a", inst.a, user.teacher, YEAR],
+    ["b", inst.b, user.b1, OTHER_YEAR],
   ] as const) {
     await q(
       `INSERT INTO institution.course (id, institution_id, name, academic_year, ai_policy, created_by)
        VALUES ($1, $2, $3, $4, 'encouraged', $5)`,
-      [course[key], home, `Izmišljeni kolegij ${key}`, YEAR, owner],
+      [course[key], home, `Izmišljeni kolegij ${key}`, year, owner],
     );
   }
   const a = [course.a, inst.a] as const;
@@ -220,9 +223,9 @@ describe("A-03 over real PostgreSQL: only the institution's administrator reads"
         ],
       },
     });
-    expect(await get(list("2025/2026"), token.admin)).toEqual({
+    expect(await get(list(OTHER_YEAR), token.admin)).toEqual({
       status: 200,
-      body: { academicYear: "2025/2026", courses: [] },
+      body: { academicYear: OTHER_YEAR, courses: [] },
     });
   });
 
