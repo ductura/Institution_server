@@ -73,6 +73,7 @@ const BAD_ORIGIN = [
 // Each is canonical, so the server could be set to it (review FAIL c.6965388921).
 const GOOD_ORIGIN = [
   ...["http://127.0.0.1:3000", "https://[::1]:8443", "http://localhost", `${SITE}:65535`],
+  "https://[2001:db8:1:2:3:4:5:6]:8443",
   ...["http://255.255.255.255:65534", "http://203.0.113.3", "http://0.0.0.0", `${SITE}:50000`],
   ...[`${SITE}:4430`, `${SITE}:12345`, `${SITE}:60000`, `${SITE}:0`, "https://1a", "http://1.."],
   ...["https://a-1.b--c.example.invalid", "https://xn--mnchen-3ya.invalid", "https://a.0xg"],
@@ -240,7 +241,7 @@ const longHosts = (scheme: string) =>
 // Every host of every kind takes each of these ports.
 const PORTS = [
   ...["", ":", ":0", ":00", ":01", ":1", ":80", ":443", ":1234", ":8080", ":54321"],
-  ...[":65534", ":65535", ":65536", ":99999"],
+  ...[":65000", ":65534", ":65535", ":65536", ":99999"],
 ];
 // A few hosts of each kind also take each of these around them.
 const HEADS = ["", "\t", " ", "u:p@", "U"];
