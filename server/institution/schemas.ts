@@ -89,3 +89,25 @@ export function parseEnrollmentCodeBody(value: unknown): EnrollmentCodeBody | nu
   }
   return { validUntil: body.validUntil };
 }
+
+// The enrolment body of POST /api/v1/institution/enrollments (DAN-853-1c).
+// Literal port of validInput of Ductus src/server/institution/enrollment-route.ts
+// at 078c780: exactly one own enumerable key, code, a string of at most 64
+// UTF-16 units, kept unchanged (the RPC ignores spaces, hyphens and case). The
+// one change: a getter or Proxy that throws is null, where Ductus threw; a JSON
+// body never has either, so no HTTP answer changes.
+export type EnrollmentBody = { code: string };
+
+export function parseEnrollmentBody(value: unknown): EnrollmentBody | null {
+  try {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const input = value as Record<string, unknown>;
+    const code = Object.hasOwn(input, "code") ? input.code : undefined;
+    if (Object.keys(input).length !== 1 || typeof code !== "string" || code.length > 64) {
+      return null;
+    }
+    return { code };
+  } catch {
+    return null;
+  }
+}

@@ -1,13 +1,19 @@
 // DAN-852-1, 3a, 3b: the public interface of server/institution (docs/server-map.md).
 import { describe, expect, expectTypeOf, it } from "vitest";
 import * as area from "./index.ts";
-import type { CourseBody, EnrollmentCodeBody, InstitutionService } from "./index.ts";
+import type {
+  CourseBody,
+  EnrollmentBody,
+  EnrollmentCodeBody,
+  InstitutionService,
+} from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the two body parsers and the service factory", () => {
+  it("exports only the three body parsers and the service factory", () => {
     expect(Object.keys(area).sort()).toEqual([
       "createInstitutionService",
       "parseCourseBody",
+      "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
     ]);
   });
@@ -18,5 +24,6 @@ describe("server/institution public interface", () => {
     >();
     expectTypeOf<keyof CourseBody>().toEqualTypeOf<"name" | "academicYear" | "aiPolicy">();
     expectTypeOf<EnrollmentCodeBody>().toEqualTypeOf<{ validUntil: string }>();
+    expectTypeOf<EnrollmentBody>().toEqualTypeOf<{ code: string }>();
   });
 });

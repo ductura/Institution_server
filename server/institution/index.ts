@@ -2,8 +2,10 @@
 export {
   type AiPolicy,
   type CourseBody,
+  type EnrollmentBody,
   type EnrollmentCodeBody,
   parseCourseBody,
+  parseEnrollmentBody,
   parseEnrollmentCodeBody,
 } from "./schemas.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";

@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { parseCourseBody, parseEnrollmentCodeBody } from "./schemas.ts";
+import { parseCourseBody, parseEnrollmentBody, parseEnrollmentCodeBody } from "./schemas.ts";
 
 const VALID = { name: "Izmišljeni kolegij A", academicYear: "2026/2027", aiPolicy: "encouraged" };
 const withName = (name: string) => ({ ...VALID, name });
@@ -205,5 +205,106 @@ describe("parseEnrollmentCodeBody against the contract vectors", () => {
     expect(body("invalid-input")).toBeDefined();
     expect(parseEnrollmentCodeBody(body("invalid-input"))).toBeNull();
     expect(parseEnrollmentCodeBody(body("issued"))).toEqual(body("issued"));
+  });
+});
+
+// DAN-853-1c: the enrolment body, a literal port of validInput of Ductus
+// enrollment-route.ts at 078c780. Refusals come first; codes are invented.
+const KOD = "IZMISLJENI-KOD-0001";
+const withCode = (code: unknown) => ({ code });
+
+describe("parseEnrollmentBody refuses the body", () => {
+  const throwing = Object.defineProperty({}, "code", {
+    enumerable: true,
+    get() {
+      throw new Error("getter");
+    },
+  });
+  const trap = (name: "ownKeys" | "getOwnPropertyDescriptor" | "get") =>
+    new Proxy(withCode(KOD), {
+      [name]() {
+        throw new Error(name);
+      },
+    });
+  it.each<[string, unknown]>([
+    ["null", null],
+    ["undefined", undefined],
+    ["an array", [withCode(KOD)]],
+    ["a JSON string", JSON.stringify(withCode(KOD))],
+    ["a number", 1],
+    ["true", true],
+    ["an empty object", {}],
+    ["a course id too", { ...withCode(KOD), courseId: "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01" }],
+    ["an institution id too", { ...withCode(KOD), institutionId: "x" }],
+    ["an inherited code", Object.create(withCode(KOD)) as unknown],
+    [
+      "an inherited code next to one own key",
+      Object.assign(Object.create(withCode(KOD)) as object, { other: KOD }),
+    ],
+    ["toString in place of the key", { toString: KOD }],
+    ["an own __proto__", JSON.parse(`{"__proto__":"${KOD}"}`)],
+    ["an own __proto__ next to the code", JSON.parse(`{"code":"${KOD}","__proto__":"x"}`)],
+    ["a key in another case", JSON.parse(`{"Code":"${KOD}"}`)],
+    ["a key with a space", JSON.parse(`{"code ":"${KOD}"}`)],
+    ["a number code", withCode(1234)],
+    ["a null code", withCode(null)],
+    ["an object code", withCode({ code: KOD })],
+    ["an array code", withCode([KOD])],
+    ["a boolean code", withCode(true)],
+    ["65 units", withCode("x".repeat(65))],
+    ["33 emoji, 66 units in 33 code points", withCode("😀".repeat(33))],
+    ["a getter that throws", throwing],
+    ["a Proxy whose ownKeys throws", trap("ownKeys")],
+    ["a Proxy whose getOwnPropertyDescriptor throws", trap("getOwnPropertyDescriptor")],
+    ["a Proxy whose get throws", trap("get")],
+  ])("%s", (_, value) => {
+    expect(parseEnrollmentBody(value)).toBeNull();
+  });
+});
+
+// Shapes JSON never makes, accepted as Ductus validInput accepts them: the
+// count is Object.keys, so a symbol or a non-enumerable key is not seen, and
+// the object need not be plain. A duplicate key keeps its last value
+// (request-json.ts), so it is one key.
+describe("parseEnrollmentBody accepts as Ductus does", () => {
+  const withHidden = Object.defineProperty(withCode(KOD), "courseId", { value: "x" });
+  it.each<[string, unknown]>([
+    ["a duplicate key, the last a string", JSON.parse(`{"code":1,"code":"${KOD}"}`)],
+    ["a null prototype", Object.assign(Object.create(null) as object, withCode(KOD))],
+    ["a Date with an own code", Object.assign(new Date(0), withCode(KOD))],
+    ["a symbol key next to the code", { ...withCode(KOD), [Symbol("x")]: 1 }],
+    ["a non-enumerable key next to the code", withHidden],
+    [
+      "a Proxy whose has throws (no check asks has)",
+      new Proxy(withCode(KOD), {
+        has() {
+          throw new Error("has");
+        },
+      }),
+    ],
+  ])("%s", (_, value) => {
+    expect(parseEnrollmentBody(value)).toEqual({ code: KOD });
+  });
+});
+
+describe("parseEnrollmentBody accepts the code unchanged", () => {
+  it.each<[string, string]>([
+    ["an empty code", ""],
+    ["the vector's code", KOD],
+    ["64 units", "x".repeat(64)],
+    ["32 emoji, 64 units", "😀".repeat(32)],
+    ["CRLF", `${KOD}\r\n`],
+    ["a tab", `\t${KOD}`],
+    ["NBSP (U+00A0)", `${KOD} `],
+    ["DEL (U+007F)", `${KOD}\u007f`],
+    ["dashes and spaces at the edges", ` -${KOD}- `],
+    ["__proto__ as the value", "__proto__"],
+    ["toString as the value", "toString"],
+  ])("%s", (_, code) => {
+    const input = withCode(code);
+    const body = parseEnrollmentBody(input);
+    expect(body).toEqual({ code });
+    expect(Object.keys(body!)).toEqual(["code"]);
+    expect(body).not.toBe(input);
   });
 });
