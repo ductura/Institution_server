@@ -14,6 +14,7 @@ Tekstovi poruka i sučelja. Kod vraća samo ključ (`messageKey`, `docs/CODE_STY
 - `openWork.*`: greške porta kojim ruta `evidence/open` otvara rad studenta (`server/database/open-work.ts`, DAN-859). Ruta ih ne šalje (odgovara samo `{status}`); test `server/database/open-work.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija nema drugih ključeva.
 - `enrollment.*`: greške porta upisa u kolegij kodom (`server/database/institution-enrollment.ts`, DAN-853-1b). Ruta ih preslikava u svoje problem kodove; test `server/database/institution-enrollment.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija nema drugih ključeva.
 - `myAccessLog.*`: greške porta studentovog zapisa pristupa (`server/database/my-access-log.ts`, DAN-859-1). Test `server/database/my-access-log.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija nema drugih ključeva.
+- `labels.*`: greške zapisa labela repoa (`scripts/engineering/bot-labels.ts`, DAN-724-1a-i-2a′). Test `scripts/engineering/bot-labels.test.ts` provjerava da svaki kod ima tekst i da sekcija nema drugih ključeva.
 - `app.*`: greške prijelaznog poslužitelja `server/app.ts` (DAN-782; `APP_ERRORS`, odgovor `{ code, messageKey }`). Test `server/app.test.ts` provjerava da svaki `messageKey` ima tekst i da sekcija `app` nema drugih ključeva.
 
 ## Katalog sučelja (S-1L.1, DAN-768)

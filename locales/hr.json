@@ -137,5 +137,15 @@
   "logAnalysis": {
     "analysis_threshold_invalid": "Prag analize zapisa nije ispravan: prozor i najmanji broj zapisa moraju biti cijeli brojevi veći od nule, a prozor najviše 24 sata.",
     "analysis_entries_invalid": "Zapisi za analizu nisu ispravan popis ili ih je previše, pa analiza nije pokrenuta."
+  },
+  "labels": {
+    "labels_invalid_yaml": "Zapis labela nije ispravan YAML ili koristi nedopuštene oblike (BOM, direktive, oznake, aliase, spajanje ključeva, više dokumenata).",
+    "labels_not_a_list": "Zapis labela mora biti neprazan popis labela.",
+    "label_not_a_mapping": "Stavka u zapisu labela nije zapis s imenom, bojom i opisom.",
+    "label_unknown_key": "Zapis labele ima ključ koji nije ime, boja ni opis.",
+    "label_invalid_name": "Ime labele nije ispravno: mala slova, brojke i crtice, najviše jedna dvotočka i najviše 50 znakova.",
+    "label_invalid_color": "Boja labele nije ispravna: šest heksadecimalnih znamenki bez znaka #.",
+    "label_no_description": "Labela nema opis: opis mora biti tekst koji nije prazan.",
+    "label_duplicate_name": "Labela s tim imenom već postoji u zapisu."
   }
 }
