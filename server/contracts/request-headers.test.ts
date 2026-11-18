@@ -73,7 +73,7 @@ const BAD_ORIGIN = [
 // Each is canonical, so the server could be set to it (review FAIL c.6965388921).
 const GOOD_ORIGIN = [
   ...["http://127.0.0.1:3000", "https://[::1]:8443", "http://localhost", `${SITE}:65535`],
-  ...["http://255.255.255.255:65534", "http://200.1.2.3", "http://0.0.0.0", `${SITE}:50000`],
+  ...["http://255.255.255.255:65534", "http://203.0.113.3", "http://0.0.0.0", `${SITE}:50000`],
   ...[`${SITE}:4430`, `${SITE}:12345`, `${SITE}:60000`, `${SITE}:0`, "https://1a", "http://1.."],
   ...["https://a-1.b--c.example.invalid", "https://xn--mnchen-3ya.invalid", "https://a.0xg"],
   ...[
@@ -106,28 +106,33 @@ const canonical = (value: string) => {
   }
 };
 
-// Hosts by kind, without the scheme (QA c.6965391343, c.6965783097,
-// c.6966049680, c.6966779387; review c.6966316345):
+// Hosts by kind, without the scheme or port (QA c.6965391343, c.6965783097,
+// c.6966049680, c.6966779387; review c.6966316345; 930-1c self-check):
 const ipv4 = (octet: string, place: number) =>
   ["192", "0", "2", "42"].map((part, i) => (i === place ? octet : part)).join(".");
 const ipv6 = (groups: readonly string[]) => new URL(`http://[${groups.join(":")}]`).host;
+const ASCII = Array.from({ length: 0x5f }, (_, c) => String.fromCharCode(c + 0x20));
 const HOSTS: Readonly<Record<string, readonly string[]>> = {
-  // every port 0-65536, with and without a leading zero;
-  port: Array.from({ length: 65537 }, (_, p) => [`a.invalid:${p}`, `a.invalid:0${p}`]).flat(),
-  // every printable ASCII code point inside a domain;
-  domain: Array.from({ length: 0x5f }, (_, c) => `a${String.fromCharCode(c + 0x20)}b`),
-  // every octet 0-256 in every place, with and without a leading zero or port;
+  // every printable ASCII code point first, inside and last, and long names;
+  domain: [
+    ...ASCII.flatMap((c) => [`${c}a.invalid`, `a${c}b`, `a.invalid${c}`]),
+    `${"a".repeat(250)}.invalid`,
+    `${"a.".repeat(120)}invalid`,
+  ],
+  // every octet 0-256 in every place, with and without a leading zero;
   ipv4: Array.from({ length: 257 }, (_, n) => [`${n}`, `0${n}`])
     .flat()
-    .flatMap((octet) => [0, 1, 2, 3].map((place) => ipv4(octet, place)))
-    .flatMap((host) => [host, `${host}:3000`]),
-  // a last label that is or is not a number, before one trailing dot or not;
+    .flatMap((octet) => [0, 1, 2, 3].map((place) => ipv4(octet, place))),
+  // a last label that is or is not a number, after zero to three labels,
+  // before one trailing dot or not;
   numeric: ["0", "1", "09", "256", "0x", "0x10", "0xa", "0xg", "1a", "1-", "a"].flatMap((last) =>
-    ["", "a.", "1.2.", "1.2.3."].flatMap((head) => [`${head}${last}`, `${head}${last}.`]),
+    ["", "a.", "1.", "127.", "1.2.", "1.2.3."].flatMap((head) => [
+      `${head}${last}`,
+      `${head}${last}.`,
+    ]),
   ),
   // each hex digit in each of eight groups, a zero run at every start and
-  // length (compressed or not, as URL writes it) and the longest literal,
-  // with and without a port.
+  // length (compressed or not, as URL writes it) and the longest literal;
   ipv6: [
     ..."0123456789abcdef"
       .split("")
@@ -143,8 +148,14 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
     ),
     ipv6(Array.from({ length: 8 }, () => "ffff")),
     ipv6(["2001", "db8", "1", "2", "3", "4", "5", "6"]),
-  ].flatMap((host) => [host, `${host}:8443`]),
+    ...["[A::1]", "[]", "[::1", "[::FFFF:1]", "[::ffff:1.2.3.4]"],
+  ],
 };
+// Every host of every kind takes each of these ports.
+const PORTS = ["", ":", ":0", ":00", ":01", ":1", ":80", ":443", ":1234", ":65535", ":65536"];
+// A few hosts of each kind also take each of these around them.
+const HEADS = ["", "\t", " ", "u:p@", "U"];
+const TAILS = ["", "/", "/put", "?a", "#a", ".", ":100000", "\r\n", "\t", " ", "\u00a0", "\u007f"];
 
 const project = (names: readonly string[], headers: Readonly<Record<string, string>> = {}) =>
   Object.fromEntries(names.flatMap((n) => (Object.hasOwn(headers, n) ? [[n, headers[n]]] : [])));
@@ -212,16 +223,33 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
       expect(check({ ...full, origin }), origin).toBe(true);
     }
     // One loop, scheme x kind of host (930-1c, Ductus#2028 c.6966917804): for
-    // http and https alike, every host of every kind agrees with URL.
+    // http and https alike, every host of every kind with every port, a few
+    // of each with junk around them, every listed example in either scheme
+    // and every port 0-65536 agree with URL.
     const wrong: string[] = [];
-    for (const scheme of ["http://", "https://"])
+    const agree = (origin: string) => {
+      if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
+        wrong.push(origin);
+    };
+    const listed = [...GOOD_ORIGIN, ...BAD_ORIGIN].flatMap((o) =>
+      typeof o === "string" ? [o.replace(/^https?:\/\//, "")] : [],
+    );
+    for (const scheme of ["http://", "https://"]) {
       for (const [kind, hosts] of Object.entries(HOSTS)) {
-        const origins = hosts.map((host) => `${scheme}${host}`);
+        const origins = hosts.flatMap((host) => PORTS.map((port) => `${scheme}${host}${port}`));
         expect(origins.filter(canonical).length, `${scheme} ${kind}`).toBeGreaterThan(0);
-        for (const origin of origins)
-          if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
-            wrong.push(origin);
+        origins.forEach(agree);
+        for (const host of [...hosts.slice(0, 3), ...hosts.slice(-2)])
+          for (const head of HEADS)
+            for (const tail of TAILS)
+              for (const port of ["", ":1"]) agree(`${scheme}${head}${host}${port}${tail}`);
       }
+      listed.forEach((rest) => agree(`${scheme}${rest}`));
+      for (let port = 0; port <= 65536; port++) {
+        agree(`${scheme}a.invalid:${port}`);
+        agree(`${scheme}a.invalid:0${port}`);
+      }
+    }
     expect(schema).toBeDefined();
     expect(wrong).toEqual([]);
   });
