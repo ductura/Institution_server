@@ -106,6 +106,53 @@ const canonical = (value: string) => {
   }
 };
 
+/**
+ * Where the pattern repeats without bound a part that itself repeats without
+ * bound, as in `(a+)+`: the shape that backtracks exponentially on a long
+ * input. Review FAIL c.6969681336 replaced a 50 ms clock with this check.
+ */
+const unboundedInRepeat = (pattern: string): number[] => {
+  const found: number[] = [];
+  const open: { at: number; unbounded: boolean }[] = [];
+  let last: { at: number; unbounded: boolean } | undefined;
+  for (let i = 0; i < pattern.length; i++) {
+    const c = pattern[i];
+    const range = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(i));
+    if (c === "*" || c === "+" || (range && range[2] !== undefined && range[3] === "")) {
+      if (last?.unbounded) found.push(last.at);
+      if (open.length > 0) open[open.length - 1]!.unbounded = true;
+      if (range) i += range[0].length - 1;
+      last = undefined;
+      continue;
+    }
+    if (c === "?" || range) {
+      if (range) i += range[0].length - 1;
+      else if (last === undefined) continue; // (?: (?! (?= or a lazy quantifier
+      if (last?.unbounded && open.length > 0) open[open.length - 1]!.unbounded = true;
+      last = undefined;
+      continue;
+    }
+    if (c === "(") {
+      open.push({ at: i, unbounded: false });
+      last = undefined;
+      continue;
+    }
+    if (c === ")") {
+      last = open.pop() ?? { at: i, unbounded: false };
+      if (last.unbounded && open.length > 0) open[open.length - 1]!.unbounded = true;
+      continue;
+    }
+    if (c === "\\") i++;
+    if (c === "[") {
+      while (++i < pattern.length && pattern[i] !== "]") {
+        if (pattern[i] === "\\") i++;
+      }
+    }
+    last = { at: i, unbounded: false };
+  }
+  return found;
+};
+
 // Hosts by kind, without the scheme or port (QA c.6965391343, c.6965783097,
 // c.6966049680, c.6966779387; review c.6966316345; 930-1c self-check):
 const ipv4 = (octet: string, place: number) =>
@@ -161,7 +208,8 @@ const HOSTS: Readonly<Record<string, readonly string[]>> = {
 // Canonical origins up to Node's header limit (QA c.6967875485, Ductus#2012
 // c.6968995576): hosts that make the origin exactly LIMIT long, without a port
 // or with :65535, of one label, of many and of every code point kept in a domain,
-// and an uppercase one URL rewrites. Every check of 1 KiB or more takes under 50 ms.
+// and an uppercase one URL rewrites. Their cost is bounded by the pattern's
+// shape (unboundedInRepeat), not by a clock.
 const LIMIT = 16 * 1024;
 const LONG_UNITS = ["A", "a", "a.", "-!\"$&'()*+,0123456789;=_`abcdefghijklmnopqrstuvwxyz{}~."];
 const longHosts = (scheme: string) =>
@@ -253,12 +301,8 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
     // and every port 0-65536 agree with URL.
     const wrong: string[] = [];
     const agree = (origin: string) => {
-      const start = performance.now();
       if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
         wrong.push(origin);
-      // The first slow check fails the test at once, not after a timeout.
-      if (origin.length >= 1024 && performance.now() - start >= 50)
-        throw new Error(`Value.Check took 50 ms or more: ${origin.slice(0, 40)}`);
     };
     const listed = [...GOOD_ORIGIN, ...BAD_ORIGIN].flatMap((o) =>
       typeof o === "string" ? [o.replace(/^https?:\/\//, "")] : [],
@@ -287,6 +331,32 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
     }
     expect(schema).toBeDefined();
     expect(wrong).toEqual([]);
+  });
+
+  it("checks a long origin in time bounded by the pattern's shape, not a clock", () => {
+    if (!names.some((n) => n === "origin")) return;
+    const origin = schema?.properties["origin"] as TSchema | undefined;
+    const pattern = String(origin?.["pattern"]);
+    // Anchored at both ends, so one start; no unbounded repeat of one.
+    expect(pattern.startsWith("^")).toBe(true);
+    expect(pattern.endsWith("(?![\\s\\S])")).toBe(true);
+    expect(unboundedInRepeat(pattern)).toEqual([]);
+    for (const bad of [
+      "^(a+)+$",
+      "^(?:[a-z]*b)*$",
+      "^(a|b{2,}){1,}$",
+      "^((a)+)*",
+      "^(?:x(?:a+)?)+",
+    ])
+      expect(unboundedInRepeat(bad), bad).not.toEqual([]);
+    for (const good of [
+      "^(?:a{3})+$",
+      "^(?:[+*]\\+)?a+$",
+      "^(\\(a+\\))?$",
+      "^(?:a)+b*$",
+      "^(?:a+?)?$",
+    ])
+      expect(unboundedInRepeat(good), good).toEqual([]);
   });
 
   it("is closed, every name required and a lowercase token, every value a string", () => {
