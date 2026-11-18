@@ -47,6 +47,8 @@ const FILES: Row[] = [
     ["!!merge key", `- { !!merge <<: { ${D} }, ${N}, ${C} }\n`],
     ["!!merge key, block", "- !!merge <<:\n    description: O\n  name: x\n  color: d73a4a\n"],
     ["verbatim merge tag", `- { !<tag:yaml.org,2002:merge> <<: { ${D} }, ${N}, ${C} }\n`],
+    ["anchor as a key (a warning only)", `- &a: { ${N}, ${C}, ${D} }\n`],
+    ["!!map tag on a record", `- !!map { ${N}, ${C}, ${D} }\n`],
     ["!!str tag", `- { ${N}, ${C}, description: !!str "O" }\n`],
     ["!!binary description", `- { ${N}, ${C}, description: !!binary T3Bpcw== }\n`],
     ["%TAG redefining !!", `%TAG !! tag:x.invalid,2026:\n---\n${VALID}`],
@@ -78,6 +80,8 @@ const RECORDS: Row[] = [
     ["space in name", `{ name: "a b", ${C}, ${D} }`],
     ["__proto__ as name", `{ name: "__proto__", ${C}, ${D} }`],
     ["51 characters", `{ name: "${"a".repeat(51)}", ${C}, ${D} }`],
+    ["double dash", `{ name: "a--b", ${C}, ${D} }`],
+    ["trailing dash", `{ name: "a-", ${C}, ${D} }`],
     ["two colons", `{ name: "a:b:c", ${C}, ${D} }`],
     ["tab in name", `{ name: "a\\tb", ${C}, ${D} }`],
     ["CRLF in name", `{ name: "a\\r\\nb", ${C}, ${D} }`],
@@ -85,6 +89,8 @@ const RECORDS: Row[] = [
   ...of("LABEL_INVALID_COLOR", [
     ["short color", `{ ${N}, color: "d73a4", ${D} }`],
     ["color with hash", `{ ${N}, color: "#d73a4a", ${D} }`],
+    ["seven digit color", `{ ${N}, color: "d73a4aa", ${D} }`],
+    ["numeric color", `{ ${N}, color: 123456, ${D} }`],
   ]),
   ...of("LABEL_NO_DESCRIPTION", [
     ["missing description", `{ ${N}, ${C} }`],
