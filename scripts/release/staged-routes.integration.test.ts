@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
+import { planRelease, type ReleaseIo } from "./auto.ts";
 import { ROUTES_JS, stagedRoutes, PUBLIC_ROUTES_JS } from "./staged-routes.ts";
 import { releaseLevel, type Files } from "./level.ts";
 
@@ -114,6 +115,12 @@ describe("the routes the published fake server exports (DAN-974-4a)", () => {
       'const h = ["x"]; h.extra = 1;\nexport const ROUTE_TABLE = { "a.get": { headers: h } };\n',
     ],
     ["output that is not a snapshot", 'process.stdout.write("[1]"); process.exit(0);\n'],
+    // Codex #285: diagnostics that look like a snapshot, then exit 0 before the snapshot.
+    [
+      "a snapshot-like diagnostic",
+      'process.stdout.write(\'[["a.get","GET"]]\'); process.exit(0);\n',
+    ],
+    ["a row that is not an object", 'export const ROUTE_TABLE = { "a.get": "GET" };\n'],
   ])("is blocked for %s", (_, code) => {
     expect(level(small(code), SMALL).level).toBe("blocked");
   });
@@ -131,6 +138,30 @@ describe("the routes the published fake server exports (DAN-974-4a)", () => {
     const without = new Map(BASE);
     without.delete(ROUTES_JS);
     expect(level(BASE, without).level).toBe("blocked");
+  });
+
+  it("ignores what the module prints", () => {
+    const noisy = small(
+      `console.log('[["a.get","GET"]]');\n${'export const ROUTE_TABLE = { "a.get": { method: "GET", headers: [] } };\n'}`,
+    );
+    expect(level(noisy, SMALL).level).toBe("patch");
+  });
+
+  // Codex #285: the automatic release passes stagedRoutes itself.
+  it("is used by planRelease without a reader of its own", () => {
+    const added = pkg(js(SOURCE.replace(OPEN, `${OPEN}${NEW_ROW}`)));
+    const io = (head: Files): ReleaseIo => ({
+      tags: ["test-fakes-v4.0.0"],
+      ancestorCommit: () => "a".repeat(40),
+      stagedAt: () => BASE,
+      stagedHead: () => head,
+      generatorChanged: () => false,
+      floor: () => "4.0.0",
+    });
+    expect(planRelease("test-fakes", io(added))).toMatchObject({ release: "test-fakes-v4.1.0" });
+    expect(planRelease("test-fakes", io(append(`delete ROUTE_TABLE[${FIRST}];`))).level).toBe(
+      "major",
+    );
   });
 
   // The criterion: one added route is not major.

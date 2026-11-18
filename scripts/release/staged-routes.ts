@@ -36,7 +36,9 @@ const same = Object.is;
 const OBJECT = Object.prototype;
 const ARRAY = Array.prototype;
 const Failure = Error;
-const write = process.stdout.write.bind(process.stdout);
+const { writeSync } = await import("node:fs");
+// The snapshot has a channel of its own (fd 3): whatever the module prints is not it.
+const write = (text) => writeSync(3, text);
 const fail = (why) => { throw new Failure(why); };
 const fields = (value, at) => {
   const out = [];
@@ -100,20 +102,28 @@ export function stagedRoutes(files: Files, timeout = 20_000): Snapshot {
         killSignal: "SIGKILL",
         maxBuffer: 16 * 1024 * 1024,
         encoding: "utf8",
+        // stdout is ignored; the snapshot comes on fd 3.
+        stdio: ["ignore", "ignore", "pipe", "pipe"],
       },
     );
     if (run.error !== undefined || run.signal !== null || run.status !== 0)
       throw new Error(
         `fake server routes: ${run.signal ?? run.error?.message ?? run.stderr.trim().split("\n").at(-1) ?? ""}`,
       );
-    return snapshot(run.stdout);
+    return snapshot(String(run.output[3] ?? ""));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 }
 
-function snapshot(stdout: string): Snapshot {
-  const pairs: unknown = JSON.parse(stdout);
+/** A row as the child writes it: a plain object, ["o", sorted pairs]. */
+const isRow = (text: string): boolean => {
+  const row: unknown = JSON.parse(text);
+  return Array.isArray(row) && row.length === 2 && row[0] === "o" && Array.isArray(row[1]);
+};
+
+function snapshot(text: string): Snapshot {
+  const pairs: unknown = JSON.parse(text);
   if (!Array.isArray(pairs)) throw new Error("fake server routes: not a snapshot");
   const out = new Map<string, string>();
   for (const pair of pairs as unknown[]) {
@@ -125,6 +135,7 @@ function snapshot(stdout: string): Snapshot {
     )
       throw new Error("fake server routes: not a snapshot");
     if (out.has(pair[0])) throw new Error(`fake server routes: ${pair[0]} twice`);
+    if (!isRow(pair[1])) throw new Error(`fake server routes: ${pair[0]} is not an object`);
     out.set(pair[0], pair[1]);
   }
   return out;
