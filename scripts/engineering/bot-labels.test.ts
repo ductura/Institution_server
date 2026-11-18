@@ -57,6 +57,7 @@ it.each(FILES)("labels.yml, %s: %s", (code, _, text) => {
 const RECORDS: Row[] = [
   ...of("LABEL_NOT_A_MAPPING", [
     ["scalar entry", '"x"'],
+    ["list entry", '["x"]'],
     ["null entry", "null"],
   ]),
   ...of("LABEL_UNKNOWN_KEY", [
@@ -71,6 +72,7 @@ const RECORDS: Row[] = [
     ["space in name", `{ name: "a b", ${C}, ${D} }`],
     ["__proto__ as name", `{ name: "__proto__", ${C}, ${D} }`],
     ["51 characters", `{ name: "${"a".repeat(51)}", ${C}, ${D} }`],
+    ["two colons", `{ name: "a:b:c", ${C}, ${D} }`],
   ]),
   ...of("LABEL_INVALID_COLOR", [
     ["short color", `{ ${N}, color: "d73a4", ${D} }`],
@@ -89,6 +91,10 @@ describe("a record with any problem is no label", () => {
     const parsed = parseLabels(yamlWith(entry));
     expect(parsed.problems).toEqual([problem(code, 1)]);
     expect(parsed.labels.map((label) => label.name)).toEqual(["bug"]);
+  });
+
+  it.each(["a:b", "a".repeat(50)])("%s is a name", (name) => {
+    expect(names(yamlWith(`{ name: "${name}", ${C}, ${D} }`))).toEqual(["bug", name]);
   });
 
   it("a merge key is an unknown key, and gives no description", () => {
@@ -135,6 +141,8 @@ const DESCRIPTIONS: Row[] = [
     ["Cyrillic a", "\\u0430"],
     ["Croatian quotes", "\\u201ea\\u201d"],
     ["101 characters", "a".repeat(101)],
+    ["101 astral Latin letters", "\\U00010780".repeat(101)],
+    ["trailing NBSP", "a\\u00a0"],
   ]),
   ...of("LABEL_NO_DESCRIPTION", [
     ["empty", ""],
@@ -156,6 +164,7 @@ describe("a description: Latin letters, printable ASCII and §", () => {
     ["an apostrophe", "Something isn't working"],
     ["§ and digits", "SESSIONS.md §2a"],
     ["100 characters", "č".repeat(100)],
+    ["100 astral Latin letters, counted in code points", "\\U00010780".repeat(100)],
     ["one digit", "7"],
   ])("%s pass", (_, text) => {
     expect(parseLabels(described(text)).problems).toEqual([]);
