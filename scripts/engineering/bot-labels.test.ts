@@ -160,7 +160,6 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
       "- `bug`: kvar\n\n## Povijest labela\n\n- `risk:low`: x\n",
     ],
     ["# Dodatak before an item", "- `bug`: kvar\n\n# Dodatak\n\n- `risk:low`: x\n"],
-    ["a #-line with no space", "- `bug`: kvar\n#x\n- `risk:low`: x\n"],
   ])("%s ends the section, so the item after it is missing", (_, section) => {
     expect(labelListProblems(doc(section), names).at(-1)).toMatch(/: no item for `risk:low`$/u);
   });
@@ -169,7 +168,6 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
     ["a trailing space", "## Labele "],
     ["a trailing NBSP", "## Labele\u00a0"],
     ["a trailing tab", "## Labele\t"],
-    ["an NBSP after ##", "##\u00a0Labele"],
     ["closing hashes", "## Labele ##"],
     ["another level", "### Labele"],
     ["a longer title", "## Labele i boje"],
@@ -206,8 +204,8 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
     ["a bidi override", "- `nema`: x\u202ey", "malformed line"],
     ["a tab inside", "- `nema`: x\ty", "malformed line"],
     ["an indented heading", " # Dodatak", "malformed line"],
-    ["an HTML comment", "<!-- - `nema`: x -->", "comment, fence or HTML"],
-    ["an HTML block", "<details>", "comment, fence or HTML"],
+    ["an HTML comment", "<!-- - `nema`: x -->", "hidden or moved text"],
+    ["an HTML block", "<details>", "hidden or moved text"],
     ["an entity dash", "&#45; `bug`: x", "malformed line"],
     ["an escaped dash", "\\- `bug`: x", "malformed line"],
     ["a setext underline", "===", "malformed line"],
@@ -235,6 +233,21 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
     expect(labelListProblems(doc(`uvod\r# Dodatak\n${list}`), names)).toEqual([
       "docs/BOTS.md:7: lone CR",
     ]);
+  });
+
+  it("front matter or a #-line that is no heading is a problem anywhere", () => {
+    expect(labelListProblems("---\n" + doc(list).slice(10) + "#\n---\n", names)).toEqual([
+      "docs/BOTS.md:1: front matter",
+    ]);
+    for (const line of ["#x", "####### sedam", "#\u00a0x", "#!"]) {
+      expect(labelListProblems(doc(list) + line + "\n- `bug`: opet\n", names)).toEqual([
+        "docs/BOTS.md:9: # line is no heading",
+      ]);
+    }
+    expect(labelListProblems(`##\u00a0Labele\n\n${list}`, names)).toEqual([
+      "docs/BOTS.md:1: # line is no heading",
+    ]);
+    expect(labelListProblems(doc(list) + "#\n###### Šest\n#\tTab\n", names)).toEqual([]);
   });
 
   it("a CR at the very end is a lone CR, as no LF follows it", () => {
@@ -268,9 +281,11 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
     ["a comment around the section", "<!--\n" + doc(list) + "# kraj -->\n", [1, 10]],
     ["a comment before the heading", "<!-- x\n\n" + doc(list), [1]],
     ["an HTML block before the heading", "<div>\n" + doc(list), [1]],
+    ["a math block around the section", "$$\n" + doc(list) + "$$\n", [1, 10]],
+    ["a footnote item", doc(list + "Vidi[^1].\n\n[^1]: - `nema`: x\n"), [11]],
   ])("%s is a problem anywhere: fences and comments are not read but refused", (_, text, at) => {
     expect(labelListProblems(text, names)).toEqual(
-      at.map((n) => `docs/BOTS.md:${n}: comment, fence or HTML`),
+      at.map((n) => `docs/BOTS.md:${n}: hidden or moved text`),
     );
   });
 

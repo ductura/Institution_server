@@ -85,15 +85,20 @@ const FILE = "docs/BOTS.md";
 // heading, an HTML block, a setext underline, an entity or an escape. Wider
 // than CommonMark on purpose.
 const MARKED = /^\s*(?:[-+*>#<=&\\]|\d+[.)])/u;
-// Lines that could hide text from a reader: an HTML comment or block, a fence.
-const HIDING = /<!--|-->|```|~~~|^\s*</u;
+// Lines that could hide or move text: an HTML comment or block, a fence, a
+// math block, a footnote definition.
+const HIDING = /<!--|-->|```|~~~|\$\$|^\s*<|^\s*\[\^/u;
+// A line that starts with # but is no ATX heading (#x, seven #), so a reader
+// would not see the section end there.
+const FALSE_HEADING = /^#(?!#{0,5}(?:[ \t]|$))/u;
 const ITEM = /^- `([^`]+)`: \S(?:.*\S)?$/u;
 
 /**
  * Problems of the Labele section of docs/BOTS.md: it starts at the one line
  * that is exactly `## Labele` and ends at the next line that starts with `#`.
- * Fences are not read: a fence, an HTML comment or an HTML block line anywhere
- * in the text is a problem, so nothing can hide the section. Every line of it marked as a list item must be exactly
+ * Fences are not read: a fence, an HTML comment or block, a math block, a
+ * footnote, front matter or a #-line that is no heading anywhere in the text is
+ * a problem, so nothing can hide the section or end it unseen. Every line of it marked as a list item must be exactly
  * "- `name`: text" for a label of `names`, and every label has one such line.
  */
 export function labelListProblems(markdown: string, names: readonly string[]): string[] {
@@ -105,7 +110,11 @@ export function labelListProblems(markdown: string, names: readonly string[]): s
   const raw = [
     ...lines.flatMap((line, i) => (line.includes("\uFEFF") ? [`${at(i)}: BOM`] : [])),
     ...lines.flatMap((line, i) => (line.includes("\r") ? [`${at(i)}: lone CR`] : [])),
-    ...lines.flatMap((line, i) => (HIDING.test(line) ? [`${at(i)}: comment, fence or HTML`] : [])),
+    ...(/^---\s*$/u.test(lines[0] ?? "") ? [`${at(0)}: front matter`] : []),
+    ...lines.flatMap((line, i) => (HIDING.test(line) ? [`${at(i)}: hidden or moved text`] : [])),
+    ...lines.flatMap((line, i) =>
+      FALSE_HEADING.test(line) ? [`${at(i)}: # line is no heading`] : [],
+    ),
   ];
   if (raw.length > 0) return raw;
   const starts = lines.flatMap((line, i) => (line === "## Labele" ? [i] : []));
