@@ -9,6 +9,8 @@ Zajednički API za sva Ductura sučelja: prijava AAI@EduHr, ovlasti, baza i poza
 
 ## Pokretanje
 
+Server s prijavom preko simulatora AAI@EduHr, migracijama i izmišljenim ustanovama, jednom naredbom na Windowsu i Linuxu: `pnpm lokalno` ([docs/LOKALNO.md](docs/LOKALNO.md)).
+
 ```bash
 pnpm install
 pnpm build              # jedan ulaz server/server.ts -> jedna datoteka dist/server.js (esbuild)

@@ -18,6 +18,19 @@ export {
 } from "./accounts.ts";
 export { assertFakeOidcAllowed };
 export { FAKE_OIDC_MODES, fakeOidcMode, type FakeOidcMode } from "./modes.ts";
+export {
+  isSimulatedDomain,
+  parseSimulatedAccountId,
+  parseSimulatedAccountsFile,
+  readSimulatedAccountsFile,
+  SIMULATED_ROLES,
+  simulatedAccountClaims,
+  simulatedAccountFromForm,
+  simulatedAccountId,
+  simulatedClaimsFor,
+  type SimulatedAccount,
+  type SimulatedRole,
+} from "./simulated-accounts.ts";
 export { DEFAULT_POST_LOGOUT_REDIRECT_URIS, DEFAULT_REDIRECT_URIS } from "./redirect-uris.ts";
 export {
   createFakeOidc,

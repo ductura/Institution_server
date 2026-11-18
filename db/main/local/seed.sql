@@ -1,6 +1,7 @@
 -- Local and CI stack only: invented institutions for the demo login (B-6).
--- `pnpm db:seed` runs it after `pnpm db:migrate`. The fake OIDC provider
--- (infra/fake-oidc) releases hrEduPersonHomeOrg demo.ductus.test or
+-- `pnpm db:seed` runs it after `pnpm db:migrate`; `pnpm lokalno` runs it
+-- without the psql guard below, over loopback TCP (scripts/lokalno). The fake
+-- OIDC provider (packages/test-fakes/oidc, http://localhost:8090) releases hrEduPersonHomeOrg demo.ductus.test or
 -- b.demo.ductus.test, so each of its accounts lands in exactly one of "Demo
 -- fakultet" and "Demo fakultet B" (DAN-483). The third institution takes no
 -- logins (aai_home_org NULL): an unknown home organisation is refused, never
