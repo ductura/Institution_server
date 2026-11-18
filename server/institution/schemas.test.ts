@@ -234,6 +234,9 @@ describe("parseEnrollmentBody refuses the body", () => {
     ["a number", 1],
     ["true", true],
     ["an empty object", {}],
+    ["an array with an own code", Object.assign([], withCode(KOD))],
+    ["a function with an own code", Object.assign(() => undefined, withCode(KOD))],
+    ["a lone non-enumerable code", Object.defineProperty({}, "code", { value: KOD })],
     ["a course id too", { ...withCode(KOD), courseId: "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01" }],
     ["an institution id too", { ...withCode(KOD), institutionId: "x" }],
     ["an inherited code", Object.create(withCode(KOD)) as unknown],
@@ -300,6 +303,7 @@ describe("parseEnrollmentBody accepts the code unchanged", () => {
     ["dashes and spaces at the edges", ` -${KOD}- `],
     ["__proto__ as the value", "__proto__"],
     ["toString as the value", "toString"],
+    ["a lone surrogate, as Ductus", "\ud800"],
   ])("%s", (_, code) => {
     const input = withCode(code);
     const body = parseEnrollmentBody(input);

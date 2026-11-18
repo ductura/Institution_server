@@ -92,7 +92,7 @@ export function parseEnrollmentCodeBody(value: unknown): EnrollmentCodeBody | nu
 
 // The enrolment body of POST /api/v1/institution/enrollments (DAN-853-1c).
 // Literal port of validInput of Ductus src/server/institution/enrollment-route.ts
-// at 078c780: exactly one own enumerable key, code, a string of at most 64
+// at 078c780: Object.keys gives one key and code is an own string of at most 64
 // UTF-16 units, kept unchanged (the RPC ignores spaces, hyphens and case). The
 // one change: a getter or Proxy that throws is null, where Ductus threw; a JSON
 // body never has either, so no HTTP answer changes.
