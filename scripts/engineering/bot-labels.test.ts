@@ -5,7 +5,7 @@ import { findForbiddenTerms } from "../forbidden-terms/index.ts";
 import { LABEL_ERROR_CODES, type LabelErrorCode, parseLabels } from "./bot-labels.ts";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
-const VALID = '- { name: "bug", color: "d73a4a", description: "Opis" }\n';
+const VALID = '- { name: "bug", color: "d73a4a", description: "Opis !b 100%" }\n';
 const [N, C, D] = ['name: "x"', 'color: "d73a4a"', 'description: "O"'];
 const yamlWith = (entry: string): string => `${VALID}- ${entry}\n`;
 const problem = (code: LabelErrorCode, at: number | null = null) => {
@@ -67,7 +67,7 @@ it.each(FILES)("labels.yml, %s: %s", (code, _, text) => {
 type Classes = Record<string, { pass: (string | number)[]; fail: (string | number)[] }>;
 const NAME_CLASSES: Classes = {
   "lower-case letters": { pass: ["bug", "constructor"], fail: ["Bug", "\u010d"] },
-  digit: { pass: ["2fa-v2"], fail: ["v\uff12"] },
+  digit: { pass: ["2fa-v2", "area:v2"], fail: ["v\uff12"] },
   dash: { pass: ["needs-review"], fail: ["needs_review", "a b", "a\tb", "a\r\nb"] },
   start: { pass: ["a"], fail: ["-a", ":a", "__proto__"] },
   end: { pass: ["a1"], fail: ["a-", "a:"] },
