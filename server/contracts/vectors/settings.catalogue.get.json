@@ -111,6 +111,38 @@
               "default": 30,
               "min": 1,
               "max": 30
+            },
+            {
+              "key": "thresholds.session_gap_minutes",
+              "levels": ["institution"],
+              "kind": "integer",
+              "default": 30,
+              "min": 1,
+              "max": 240
+            },
+            {
+              "key": "thresholds.paste_event_chars",
+              "levels": ["institution"],
+              "kind": "integer",
+              "default": 200,
+              "min": 1,
+              "max": 100000
+            },
+            {
+              "key": "thresholds.teacher_refresh_minutes",
+              "levels": ["institution"],
+              "kind": "integer",
+              "default": 5,
+              "min": 1,
+              "max": 60
+            },
+            {
+              "key": "thresholds.short_assignment_hours",
+              "levels": ["institution"],
+              "kind": "integer",
+              "default": 24,
+              "min": 1,
+              "max": 168
             }
           ]
         }

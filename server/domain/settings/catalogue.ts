@@ -58,6 +58,16 @@ const rateLimit = (name: string, value: number): SettingDefinition =>
     max: 100_000,
   });
 
+const threshold = (name: string, value: number, max: number): SettingDefinition =>
+  define({
+    key: `thresholds.${name}`,
+    levels: ["institution"],
+    kind: "integer",
+    default: value,
+    min: 1,
+    max,
+  });
+
 /**
  * The catalogue. Adding a key changes the vector of settings.catalogue.get,
  * which must equal this list; the release sees it as a patch of the fake
@@ -111,6 +121,16 @@ export const SETTINGS_CATALOGUE: readonly SettingDefinition[] = Object.freeze([
     min: 1,
     max: 30,
   }),
+  // DAN-1060-1 (Ductus#2028): the thresholds P-01 to P-04 of Ductus DECISIONS
+  // ("Zadane vrijednosti pragova"), settings of the institution that only its
+  // administrator writes (D-117, D-265 Q18). P-05 is P-02 and has no key. The
+  // defaults are those of the table (30 and 200 are breakAboveMinutes and
+  // listedAboveCharacters of the process summary, "above" meaning strictly
+  // more); the hard limits are not an owner's decision and may be widened.
+  threshold("session_gap_minutes", 30, 240),
+  threshold("paste_event_chars", 200, 100_000),
+  threshold("teacher_refresh_minutes", 5, 60),
+  threshold("short_assignment_hours", 24, 168),
 ]);
 
 const BY_KEY: ReadonlyMap<string, SettingDefinition> = new Map(

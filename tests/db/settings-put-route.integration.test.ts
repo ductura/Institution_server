@@ -22,9 +22,10 @@ import {
 // /api/v1/settings/values over settings.set_value on real PostgreSQL with
 // RLS and a ductus_app login. Another's level or course is 404 not_found, the
 // same as one that does not exist (C-23), and the answer never carries the
-// value of that level. The catalogue refuses every level but personal and
-// network_security before the database (422), so the course, institution and
-// system cases go through the adapter directly. Every institution, person,
+// value of that level. The catalogue refuses a key at a level it does not
+// list before the database (422), so the course, institution and system cases
+// go through the adapter directly (institution thresholds over HTTP:
+// institution-thresholds-route.integration.test.ts). Every institution, person,
 // course and token is random and synthetic; the login exists only while this
 // file runs.
 const ADMIN_URL =
