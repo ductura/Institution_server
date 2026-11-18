@@ -68,7 +68,7 @@ END
 $$;
 
 
-SELECT plan(165);
+SELECT plan(179);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -238,7 +238,7 @@ SELECT set_eq(
   -- 62 = BEFORE | INSERT | DELETE | UPDATE | TRUNCATE, at statement level.
   ARRAY['log_entry log_entry_chain A 7', 'log_entry log_entry_no_change A 27', 'log_entry log_entry_no_truncate A 34',
         'log_chain_head log_chain_head_guard A 31', 'log_chain_head log_chain_head_no_truncate A 34',
-        'log_chain_base log_chain_base_no_change A 62'],
+        'log_chain_base log_chain_base_no_change A 62', 'log_chain_base log_chain_base_no_row_change A 31'],
   'every trigger of the chain fires ALWAYS');
 -- DAN-835-4: the head hash and the digest cover the full payload; with the
 -- rest of a row from operator_log they would let the reader guess an IPv4
@@ -405,8 +405,35 @@ INSERT INTO pg_temp.head_attempt
                     'MERGE INTO public.log_chain_base b USING (VALUES (true)) v (o) ON b.only_row = v.o
                        WHEN MATCHED THEN DELETE',
                     'COPY public.log_chain_base FROM PROGRAM ''true''',
+                    'WITH x AS (UPDATE public.log_chain_base SET seq = 1 WHERE false RETURNING 1) SELECT 1',
+                    'WITH x AS (DELETE FROM public.log_chain_base WHERE false RETURNING 1) SELECT 1',
+                    -- A write naming a parent passes no statement trigger of the base.
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+                     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+                     UPDATE public.base_parent SET seq = 42',
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+                     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+                     DELETE FROM public.base_parent',
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL)
+                       PARTITION BY LIST (only_row);
+                     ALTER TABLE public.base_parent ATTACH PARTITION public.log_chain_base FOR VALUES IN (true);
+                     UPDATE public.base_parent SET seq = 44',
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL)
+                       PARTITION BY LIST (only_row);
+                     ALTER TABLE public.base_parent ATTACH PARTITION public.log_chain_base FOR VALUES IN (true);
+                     DELETE FROM public.base_parent',
                     'TRUNCATE public.log_chain_base']) s (sql)
   CROSS JOIN unnest(ARRAY[false, true]) r (replica);
+-- The owner, who holds no right to write the base, cannot write it through
+-- a parent of its own either; nor through MERGE ... NOT MATCHED BY SOURCE
+-- (PostgreSQL 17; a syntax error before).
+INSERT INTO pg_temp.head_attempt VALUES
+  ('ductus_logs_migrator', 'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+     UPDATE public.base_parent SET seq = 42', false, '55000'),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN UPDATE SET seq = 5', false,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END);
 SELECT is(pg_temp.try_as(who, sql, replica), expected,
   coalesce(who, 'the superuser') || CASE WHEN replica THEN ' with session_replication_role = replica' ELSE '' END
   || CASE expected WHEN 'ok' THEN ' may: ' ELSE ' is refused: ' END || sql)

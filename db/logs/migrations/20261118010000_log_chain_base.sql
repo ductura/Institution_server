@@ -6,13 +6,19 @@
 -- while nothing is cut. Verifying the chain from it is part 868-1b; moving it
 -- with the cut is 868-2.
 --
--- In this part nothing changes the base. One trigger ENABLE ALWAYS at
--- statement level refuses every INSERT, UPDATE, DELETE and TRUNCATE before a
--- row is touched, so a statement that would touch no row (WHERE false) is
--- refused too, as are MERGE, COPY and INSERT ... ON CONFLICT, which fire the
--- same statement triggers; a superuser and session_replication_role =
--- replica included. No role holds a right to write it, and only the owner
--- reads it, by a policy of its own (for the verification of 868-1b).
+-- In this part no write changes the base. Two triggers ENABLE ALWAYS refuse
+-- it, a superuser and session_replication_role = replica included:
+-- - at statement level, every INSERT, UPDATE, DELETE and TRUNCATE naming the
+--   base, before a row is touched, so one that would touch no row (WHERE
+--   false) is refused too, as are MERGE, COPY and INSERT ... ON CONFLICT;
+-- - at row level, every row write that does not pass the statement trigger
+--   of the base: through an inheritance or partitioned parent the statement
+--   names, and the apply of logical replication, which fires row triggers
+--   only.
+-- No role holds a right to write it, and only the owner reads it, by a
+-- policy of its own (for the verification of 868-1b). DDL by the owner or a
+-- superuser (dropping or disabling a trigger, ALTER COLUMN TYPE ... USING,
+-- a child table, RENAME) stays outside, as for the head (#125).
 DO $$
 BEGIN
   IF current_user <> 'ductus_logs_migrator' OR current_database() <> 'ductus_logs' THEN
@@ -39,7 +45,10 @@ REVOKE ALL ON FUNCTION public.log_chain_base_refuse_change() FROM PUBLIC;
 
 CREATE TRIGGER log_chain_base_no_change BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.log_chain_base
   FOR EACH STATEMENT EXECUTE FUNCTION public.log_chain_base_refuse_change();
+CREATE TRIGGER log_chain_base_no_row_change BEFORE INSERT OR UPDATE OR DELETE ON public.log_chain_base
+  FOR EACH ROW EXECUTE FUNCTION public.log_chain_base_refuse_change();
 ALTER TABLE public.log_chain_base ENABLE ALWAYS TRIGGER log_chain_base_no_change;
+ALTER TABLE public.log_chain_base ENABLE ALWAYS TRIGGER log_chain_base_no_row_change;
 
 ALTER TABLE public.log_chain_base ENABLE ROW LEVEL SECURITY, FORCE ROW LEVEL SECURITY;
 CREATE POLICY log_chain_base_owner_read ON public.log_chain_base FOR SELECT TO ductus_logs_migrator
