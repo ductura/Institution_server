@@ -118,12 +118,14 @@ const enqueue = queueMicrotask;
  * Marks a callback's result as handled, read through Promise.prototype, so a
  * rejection is never unhandled, whatever its own then or catch do. A native
  * promise whose constructor getter throws cannot be handled by any means of
- * the language; the ports are trusted assembler code (known limit).
+ * the language; the ports are trusted assembler code (known limit). Its
+ * value is never handed on, so a then getter on it is not read again (QA
+ * FAIL on #314).
  */
 function ignoreRejection(value: unknown): void {
   try {
     apply(promiseThen, isPromise(value) ? value : promiseResolve(value), [
-      undefined,
+      () => undefined,
       () => undefined,
     ]);
   } catch {
@@ -136,27 +138,34 @@ const objectLike = (value: unknown): value is object =>
   (typeof value === "object" && value !== null) || typeof value === "function";
 
 /**
- * The call backs a job's then gets: only the first call of either has an
- * effect, as with the engine's own, so a later one is never even normalized
- * and leaves nothing unhandled (Codex review on #314).
+ * Calls a job's then with call backs of which only the first call of either
+ * has an effect, as with the engine's own, so a later one is never even
+ * normalized and leaves nothing unhandled (Codex review on #314). A then that
+ * throws closes them too, so a call back it queued first has no effect either
+ * (Review FAIL on #314, 6a82a19).
  */
-function firstOnly(
+function callThen(
+  then: unknown,
+  target: unknown,
   ok: (value: unknown) => void,
   fail: (reason: unknown) => void,
-): [(value: unknown) => void, (reason: unknown) => void] {
+): void {
   let called = false;
-  return [
-    (value) => {
-      if (called) return;
-      called = true;
-      ok(settledBy(value));
-    },
-    (reason) => {
-      if (called) return;
-      called = true;
-      fail(reason);
-    },
-  ];
+  const settle = (value: unknown): void => {
+    if (called) return;
+    called = true;
+    ok(settledBy(value));
+  };
+  const reject = (reason: unknown): void => {
+    if (called) return;
+    called = true;
+    fail(reason);
+  };
+  try {
+    apply(then as (...args: unknown[]) => unknown, target, [settle, reject]);
+  } catch (error) {
+    reject(error);
+  }
 }
 
 /**
@@ -169,7 +178,9 @@ function firstOnly(
 function settledBy(value: unknown): unknown {
   if (isPromise(value)) {
     return new Promise((resolve, reject) => {
-      ignoreRejection(apply(promiseThen, value, [resolve, reject]));
+      // Only the end counts: the value is dropped, so a then getter on it
+      // is never read again (QA FAIL on #314).
+      ignoreRejection(apply(promiseThen, value, [() => resolve(undefined), reject]));
     });
   }
   if (!objectLike(value)) return undefined;
@@ -182,7 +193,7 @@ function settledBy(value: unknown): unknown {
   if (typeof then !== "function") return undefined;
   return {
     then: (ok: (next: unknown) => void, fail: (reason: unknown) => void) =>
-      apply(then, value, firstOnly(ok, fail)),
+      callThen(then, value, ok, fail),
   };
 }
 
@@ -309,7 +320,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
         } else {
           const thenable = {
             then: (ok: (value: unknown) => void, fail: (reason: unknown) => void) =>
-              apply(then, result, firstOnly(ok, fail)),
+              callThen(then, result, ok, fail),
           };
           apply(promiseThen, promiseResolve(thenable), [done, failed]);
         }

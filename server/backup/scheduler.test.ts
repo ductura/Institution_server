@@ -2015,3 +2015,132 @@ it.each([
     process.off("unhandledRejection", unhandled);
   }
 });
+
+// Review FAIL on #314 (6a82a19): a then that throws closes its call backs as
+// the engine's own do, so a call back it queued before throwing has no effect,
+// at every depth; one it made before throwing still counts.
+it.each([
+  [
+    "the job's then queues a call back and throws",
+    (late: Promise<void>) => ({
+      then: (ok: (value?: unknown) => void) => {
+        queueMicrotask(() => ok(late));
+        throw new Error(CANARY);
+      },
+    }),
+    ["run_failed"],
+  ],
+  [
+    "a nested then queues a call back and throws",
+    (late: Promise<void>) => ({
+      then: (ok: (value?: unknown) => void) =>
+        ok({
+          then: (inner: (value?: unknown) => void) => {
+            setTimeout(() => inner(late), 0.25 * H);
+            throw new Error(CANARY);
+          },
+        }),
+    }),
+    ["run_failed"],
+  ],
+  [
+    "the job's then calls back and then throws",
+    () => ({
+      then: (ok: (value?: unknown) => void) => {
+        ok();
+        throw new Error(CANARY);
+      },
+    }),
+    [],
+  ],
+])("%s: nothing unhandled", async (_n, make, expected) => {
+  const unhandled = vi.fn();
+  process.on("unhandledRejection", unhandled);
+  try {
+    const late = Promise.reject(new Error(CANARY));
+    late.catch(() => undefined);
+    const reasons: string[] = [];
+    const { scheduler } = setup(on(1), {
+      onSkip: (reason) => void reasons.push(reason),
+      run: () => make(late) as unknown as Promise<void>,
+    });
+    // One call, at 1 h.
+    await advance(1.5 * H);
+    await scheduler.stop();
+    await realTurn();
+    await realTurn();
+    expect(reasons).toEqual(expected);
+    expect(unhandled).not.toHaveBeenCalled();
+  } finally {
+    process.off("unhandledRejection", unhandled);
+  }
+});
+
+// QA FAIL on #314 (6a82a19): a fulfilled promise's value is never handed on,
+// so a then getter on it is read once, by whoever fulfilled the promise, and
+// never again by the scheduler: not when following a job, not when marking
+// what onSkip returns.
+const flakyThen = (second: () => unknown) => {
+  let reads = 0;
+  return {
+    get then(): unknown {
+      reads += 1;
+      return reads === 1 ? undefined : second();
+    },
+  };
+};
+const throwsLater = () => {
+  throw new Error(CANARY);
+};
+const hangsLater = () => () => undefined;
+
+it.each([
+  ["a getter that throws when read again", throwsLater],
+  ["a getter that hangs when read again", hangsLater],
+])(
+  "a job's thenable resolving with a promise fulfilled with %s: ends, no run_failed",
+  async (_n, second) => {
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    try {
+      const t0 = performance.now();
+      const calls: number[] = [];
+      const reasons: string[] = [];
+      const { scheduler } = setup(on(1), {
+        onSkip: (reason) => void reasons.push(reason),
+        run: () => {
+          calls.push((performance.now() - t0) / H);
+          if (calls.length > 1) return undefined;
+          return {
+            then: (ok: (value: unknown) => void) => ok(Promise.resolve(flakyThen(second))),
+          } as unknown as Promise<void>;
+        },
+      });
+      await advance(2.5 * H);
+      await scheduler.stop();
+      await realTurn();
+      expect(calls).toEqual([1, 2]);
+      expect(reasons).toEqual([]);
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off("unhandledRejection", unhandled);
+    }
+  },
+);
+
+it("an onSkip that returns a promise fulfilled with a then getter that throws later: nothing unhandled", async () => {
+  const unhandled = vi.fn();
+  process.on("unhandledRejection", unhandled);
+  try {
+    const { scheduler } = setup([["backup.enabled", false]], {
+      onSkip: () => Promise.resolve(flakyThen(throwsLater)),
+    });
+    await advance(2 * H);
+    await scheduler.stop();
+    await realTurn();
+    await realTurn();
+    expect(unhandled).not.toHaveBeenCalled();
+  } finally {
+    process.off("unhandledRejection", unhandled);
+  }
+});
