@@ -213,6 +213,7 @@ describe("label mentions", () => {
     ["an unclosed triple run", "Labela ``` pa `nema`."],
     ["a run longer than any closer", "Labela ```` x `` pa `nema`."],
     ["runs of other lengths before the span", "Labela `` x ``` y `nema`."],
+    ["a longer run inside a span", "Primjer ``tri znaka ``` ovdje``. Labela `nema`."],
   ])("a backtick run without a closer of its length is text: %s", (_, markdown) => {
     expect(mentionProblems("F.md", markdown, names)).toEqual([
       "F.md: `nema` (no such label in .github/labels.yml)",
@@ -232,6 +233,7 @@ describe("label mentions", () => {
     ["H2 before the line", "## Labele\n\n- `bug`\n\n## Dalje\n\n- `risk:low`", ["bug"]],
     ["H3 keeps the section", "## Labele\n\n### Pod\n\n- `risk:low`", ["risk:low"]],
     ["a fenced # keeps it", "## Labele\n\n```\n# x\n```\n\n- `risk:low`", ["risk:low"]],
+    ["a fenced ## keeps it", "## Labele\n\n```md\n## Primjer\n```\n\n- `risk:low`", ["risk:low"]],
     ["a label line outside", "Labela `bug`, razina `risk:low`.", []],
   ])("sections only: %s", (_, markdown, expected) => {
     expect(labelMentions(markdown, names, { sectionsOnly: true })).toEqual(expected);
