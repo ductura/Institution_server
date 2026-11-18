@@ -2144,3 +2144,197 @@ it("an onSkip that returns a promise fulfilled with a then getter that throws la
     process.off("unhandledRejection", unhandled);
   }
 });
+
+// DAN-1012-2g (contract Ductus#2028 c.6974647087): one table of result shapes for run()
+// and for onSkip, followed on the same path at every depth. Negative rows
+// first: on 66b4dd8b an onSkip thenable resolving with a rejected native
+// promise whose own then is not Promise.prototype.then left that rejection
+// unhandled (Review and QA FAIL on #314). Each promise is made inside the call
+// back that hands it over, so only the scheduler can handle it. A value from
+// a call back that has no effect is not followed: the port handles it (as
+// with await), so those rows hand over a promise already handled.
+describe("backup scheduler: one table of result shapes for run() and onSkip", () => {
+  type Ok = (value?: unknown) => void;
+  type Fail = (reason: unknown) => void;
+  const noop = () => undefined;
+  const handled = () => {
+    const promise = Promise.reject(new Error(CANARY));
+    promise.catch(noop);
+    return promise;
+  };
+  const ownThens: [string, (promise: Promise<unknown>) => unknown][] = [
+    ["then: undefined", (p) => Object.assign(p, { then: undefined })],
+    ["then: null", (p) => Object.assign(p, { then: null })],
+    ["then: 5", (p) => Object.assign(p, { then: 5 })],
+    [
+      "a then getter that throws",
+      (p) =>
+        Object.defineProperty(p, "then", {
+          get: () => {
+            throw new Error(CANARY);
+          },
+        }),
+    ],
+    ["a then that never calls back", (p) => Object.assign(p, { then: noop })],
+    ["a null prototype", (p) => Object.setPrototypeOf(p, null)],
+  ];
+  class Sub extends Promise<unknown> {}
+  const rows: [string, () => unknown, boolean][] = [
+    ...ownThens.map(([name, tamper]): [string, () => unknown, boolean] => [
+      `T8 a thenable resolving with a rejected promise with ${name}`,
+      () => ({ then: (ok: Ok) => ok(tamper(Promise.reject(new Error(CANARY)))) }),
+      true,
+    ]),
+    [
+      "T8 a thenable resolving with a rejected subclass promise with then: undefined",
+      () => ({
+        then: (ok: Ok) => ok(Object.assign(Sub.reject(new Error(CANARY)), { then: undefined })),
+      }),
+      true,
+    ],
+    [
+      "T9 a thenable two deep resolving with a rejected promise with then: undefined",
+      () => ({
+        then: (ok: Ok) =>
+          ok({
+            then: (inner: Ok) =>
+              inner(Object.assign(Promise.reject(new Error(CANARY)), { then: undefined })),
+          }),
+      }),
+      true,
+    ],
+    [
+      "T10 a thenable resolving with a rejected vm promise with then: undefined",
+      () => ({
+        then: (ok: Ok) =>
+          ok(runInNewContext("Object.assign(Promise.reject(new Error('x')), { then: undefined })")),
+      }),
+      true,
+    ],
+    [
+      "T11 a thenable whose then getter throws",
+      () => ({
+        get then(): never {
+          throw new Error(CANARY);
+        },
+      }),
+      true,
+    ],
+    [
+      "T14 a then that queues a call back with a handled rejection, then throws",
+      () => ({
+        then: (ok: Ok) => {
+          const late = handled();
+          queueMicrotask(() => ok(late));
+          throw new Error(CANARY);
+        },
+      }),
+      true,
+    ],
+    ["T6 a thenable that rejects", () => ({ then: (_ok: Ok, fail: Fail) => fail(CANARY) }), true],
+    ["T4 a rejected native promise", () => Promise.reject(new Error(CANARY)), true],
+    [
+      "T2 a synchronous throw",
+      () => {
+        throw new Error(CANARY);
+      },
+      true,
+    ],
+    [
+      "T13 a thenable that calls back twice, the second with a handled rejection, then fails",
+      () => ({
+        then: (ok: Ok, fail: Fail) => {
+          ok();
+          ok(handled());
+          fail(CANARY);
+        },
+      }),
+      false,
+    ],
+    [
+      "T7 a thenable resolving with a fulfilled promise with then: undefined",
+      () => ({ then: (ok: Ok) => ok(Object.assign(Promise.resolve(), { then: undefined })) }),
+      false,
+    ],
+    ["T5 a thenable that fulfils", () => ({ then: (ok: Ok) => ok() }), false],
+    [
+      "T5 a thenable with an inherited then",
+      () => Object.create({ then: (ok: Ok) => ok() }),
+      false,
+    ],
+    ["T15 a function with a then", () => Object.assign(noop, { then: (ok: Ok) => ok() }), false],
+    ["T3 a fulfilled native promise", () => Promise.resolve(), false],
+    ["T1 undefined", () => undefined, false],
+    ["T1 a plain object", () => ({}), false],
+    ["T1 an object whose then is not a function", () => ({ then: 5 }), false],
+  ];
+
+  /** Runs body with a listener for unhandled rejections and checks it saw none. */
+  const noneUnhandled = async (body: () => Promise<void>): Promise<void> => {
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    try {
+      await body();
+      await realTurn();
+      await realTurn();
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off("unhandledRejection", unhandled);
+    }
+  };
+
+  it.each(rows)("onSkip, %s: nothing unhandled, the scheduler goes on", (_n, shape) =>
+    noneUnhandled(async () => {
+      // A plain function, not a spy: a spy would itself observe the result.
+      const { state, run, scheduler } = setup([["backup.enabled", false]], { onSkip: shape });
+      await advance(2 * H);
+      state.settings = new Map(on(1));
+      await advance(H);
+      expect(run).toHaveBeenCalledTimes(1);
+      await scheduler.stop();
+    }),
+  );
+
+  it.each(rows)("run(), %s: ends before the next point, nothing unhandled", (_n, shape, fails) =>
+    noneUnhandled(async () => {
+      const reasons: string[] = [];
+      let calls = 0;
+      const { scheduler } = setup(on(1), {
+        onSkip: (reason) => void reasons.push(reason),
+        run: () => {
+          calls += 1;
+          return (calls === 1 ? shape() : undefined) as Promise<void>;
+        },
+      });
+      await advance(2 * H);
+      await scheduler.stop();
+      expect(calls).toBe(2);
+      expect(reasons).toEqual(fails ? ["run_failed"] : []);
+    }),
+  );
+
+  // T12: each then, one and two thenables deep, is read once per result.
+  it.each(["onSkip", "run()"])("%s: each then is read once", async (port) => {
+    let reads = 0;
+    const counted = (then: (ok: Ok) => void) => ({
+      get then() {
+        reads += 1;
+        return then;
+      },
+    });
+    const shape = () => counted((ok) => ok(counted((inner) => inner())));
+    let results = 0;
+    const once = () => {
+      results += 1;
+      return shape();
+    };
+    const { scheduler } = setup(
+      port === "onSkip" ? [["backup.enabled", false]] : on(1),
+      port === "onSkip" ? { onSkip: once } : { run: once as () => Promise<void> },
+    );
+    await advance(3 * H);
+    await scheduler.stop();
+    expect(results).toBe(3);
+    expect(reads).toBe(2 * results);
+  });
+});

@@ -1,6 +1,6 @@
-// The backup scheduler (S-1G-a part 2, DAN-1012-2f; contracts Ductus#2028
-// c.6966729858, c.6967474538, c.6968668259 and c.6970885582, option A of
-// c.6965242237). A grid of points one hour apart
+// The backup scheduler (S-1G-a part 2, DAN-1012-2f and 2g; contracts
+// Ductus#2028 c.6966729858, c.6967474538, c.6968668259, c.6970885582 and
+// c.6974647087, option A of c.6965242237). A grid of points one hour apart
 // from start(): each point is due at start + k hours on the monotonic clock,
 // so nothing the job or a read does moves the grid. At a point the system
 // settings of DAN-1012-1 are read, and run() is called only when
@@ -15,8 +15,9 @@
 // point that calls nothing for a reason reports it with a closed code, as a
 // macrotask after the tick has decided, so no callback changes a decision;
 // the listener must only record (option C); one that only waits reports
-// nothing. run()'s result is followed on one path only (2e). The ports are
-// trusted assembler code that leaves the built-ins alone (2f). stop(), from
+// nothing. run()'s result is followed on one path only (2e), and onSkip's
+// result on the same path (2g). The ports are trusted assembler code that
+// leaves the built-ins alone (2f). stop(), from
 // anywhere, stops what follows. The job must not await stop(), which waits for
 // the job. The settings reader, the job and the listener are handed in by
 // the assembler of the background process, which does not exist yet: nothing
@@ -197,6 +198,18 @@ function settledBy(value: unknown): unknown {
   };
 }
 
+/**
+ * Marks an onSkip result handled on the same path as run()'s result
+ * (DAN-1012-2g): through settledBy, so a native promise of any realm is
+ * followed through Promise.prototype, a thenable's then is read once per
+ * call of settledBy, and a promise a thenable resolves with, whatever its own
+ * then, is followed at every depth, not taken as a value (Review and QA FAIL
+ * on #314, 66b4dd8b).
+ */
+function ignoreResult(value: unknown): void {
+  ignoreRejection(settledBy(value));
+}
+
 const OFF: ReadonlySet<unknown> = new Set(["enabled_missing", "enabled_invalid", "disabled"]);
 
 export function createBackupScheduler(options: BackupSchedulerOptions): BackupScheduler {
@@ -234,7 +247,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     undelivered += 1;
     setImmediate(() => {
       try {
-        ignoreRejection(onSkip(reason));
+        ignoreResult(onSkip(reason));
       } catch {
         // Nothing reaches the caller.
       }
