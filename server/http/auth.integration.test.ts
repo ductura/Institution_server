@@ -332,13 +332,21 @@ describe("a login configuration that does not load", () => {
         databases: createDatabases(),
         routes: createAuthRoutes(env),
       });
-      for (const path of ["/api/v1/auth/login", "/api/v1/auth/callback?code=x&state=y"]) {
-        const answer = await fetch(`http://127.0.0.1:${app.port}${path}`, { redirect: "manual" });
+      // The callback comes with an attempt from before the restart (Codex CLI QA on #301).
+      const cleared = `${LOGIN_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+      for (const [path, cookies] of [
+        ["/api/v1/auth/login", []],
+        ["/api/v1/auth/callback?code=x&state=y", [cleared]],
+      ] as const) {
+        const answer = await fetch(`http://127.0.0.1:${app.port}${path}`, {
+          redirect: "manual",
+          headers: { cookie: `${LOGIN_COOKIE_NAME}=${"a".repeat(64)}` },
+        });
         // No configuration, so no origin: a relative Location, never the issuer (DAN-1081).
         expect(answer.status, path).toBe(303);
         expect(answer.headers.get("location")).toBe("/prijava?greska=provider_unavailable");
         expect(answer.headers.get("cache-control")).toBe("no-store");
-        expect(answer.headers.getSetCookie()).toEqual([]);
+        expect(answer.headers.getSetCookie(), path).toEqual(cookies);
         expect(await answer.text()).toBe("");
         const headers = JSON.stringify([...answer.headers]);
         expect(headers).not.toMatch(/NODE_ENV|DUCTUS_AUTH_PROVIDER|OIDC_|fake|9400/u);

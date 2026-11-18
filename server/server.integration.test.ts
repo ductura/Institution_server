@@ -255,13 +255,22 @@ describe("dist/server.js", () => {
         OIDC_CLIENT_ID: "ductus-local",
         OIDC_REDIRECT_URI: "http://127.0.0.1:4000/api/v1/auth/callback",
       });
-      for (const path of ["/api/v1/auth/login", "/api/v1/auth/callback?code=x&state=y"]) {
-        const response = await fetch(url(port, path), { redirect: "manual" });
-        // DAN-1081: the sign-in page with provider_unavailable, never the issuer.
+      // DAN-1081: the sign-in page with provider_unavailable, never the issuer;
+      // the callback clears an attempt the browser still has, the login sets nothing.
+      const attempt = "__Host-ductus_login";
+      const cleared = `${attempt}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+      for (const [path, cookies] of [
+        ["/api/v1/auth/login", []],
+        ["/api/v1/auth/callback?code=x&state=y", [cleared]],
+      ] as const) {
+        const response = await fetch(url(port, path), {
+          redirect: "manual",
+          headers: { cookie: `${attempt}=${"a".repeat(64)}` },
+        });
         expect(response.status, path).toBe(303);
         expect(response.headers.get("location")).toBe("/prijava?greska=provider_unavailable");
         expect(response.headers.get("cache-control")).toBe("no-store");
-        expect(response.headers.getSetCookie()).toEqual([]);
+        expect(response.headers.getSetCookie(), path).toEqual(cookies);
         const body = await response.text();
         expect(body).toBe("");
         const headers = JSON.stringify([...response.headers]);

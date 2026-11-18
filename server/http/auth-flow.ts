@@ -210,7 +210,8 @@ export async function startLogin(request: Request, deps: AuthDeps): Promise<Resp
   ]);
 }
 
-const clearedLoginCookie = () => cookie(LOGIN_COOKIE_NAME, "", "Max-Age=0");
+/** Clears the attempt cookie; every failed callback sends it, a config failure included. */
+export const clearedLoginCookie = () => cookie(LOGIN_COOKIE_NAME, "", "Max-Age=0");
 
 /** GET /api/v1/auth/callback?code=…&state=… */
 export async function finishLogin(request: Request, deps: AuthDeps): Promise<Response> {

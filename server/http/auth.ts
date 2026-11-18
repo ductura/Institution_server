@@ -24,6 +24,7 @@ import {
 
 import {
   type AuthDeps,
+  clearedLoginCookie,
   failedLogin,
   failurePage,
   finishLogin,
@@ -130,8 +131,11 @@ function route(id: string, flow: Flow, load: () => AuthDeps): Route {
         // Sign-out keeps its 503 page (Ductus#2031 R3).
         const name = error instanceof Error ? error.name : "unknown";
         if (LOGIN_IDS.has(id)) {
+          // A callback clears the attempt as every failed callback does
+          // (Codex CLI QA on #301); the login sets nothing.
+          const cleared = id === "auth.callback.get" ? [clearedLoginCookie()] : [];
           await writeResponse(
-            failedLogin("config", name, "provider_unavailable"),
+            failedLogin("config", name, "provider_unavailable", undefined, cleared),
             response,
             contract,
           );
