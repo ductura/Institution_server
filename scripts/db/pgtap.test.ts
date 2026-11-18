@@ -33,7 +33,7 @@ test("every database has a pgTAP directory with at least one test file, which pg
       "db/logs/tests/030-metric-sample.sql",
       "db/logs/tests/040-operator-log.sql",
     ],
-    legal: [],
+    legal: ["db/legal/tests/010-legal-text-version.sql"],
   };
   for (const name of ["logs", "legal"]) {
     assert.deepEqual(testFiles(databaseNamed(name).testsDir), [
