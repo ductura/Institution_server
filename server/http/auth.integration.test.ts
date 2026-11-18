@@ -4,7 +4,13 @@
 // real pipeline, router and login routes; only the database ports are in
 // memory. Accounts and values are invented (D-09: the fake provider runs
 // only here, under NODE_ENV=test).
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  request as httpRequest,
+  type Server,
+  type ServerResponse,
+} from "node:http";
 import type { AddressInfo } from "node:net";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -244,6 +250,40 @@ describe("login against the fake OIDC provider in each of its modes", () => {
   });
 });
 
+/** A GET with exactly these headers on the wire, Host included (fetch may not send it). */
+function rawGet(url: string, headers: Record<string, string>) {
+  return new Promise<IncomingMessage>((done, fail) => {
+    const sent = httpRequest(url, { headers }, (answer) => {
+      answer.resume();
+      done(answer);
+    });
+    sent.on("error", fail);
+    sent.end();
+  });
+}
+
+// Codex CLI QA on #301 (R1): a failed login over HTTP, with Host and the
+// forwarding headers naming another site, still goes to the configured origin.
+describe("a failed login with a forged Host", () => {
+  const forged = {
+    host: "zlo.invalid",
+    "x-forwarded-host": "zlo.invalid",
+    "x-forwarded-proto": "https",
+    forwarded: "host=zlo.invalid;proto=https",
+  };
+
+  it.each<[FakeOidcMode, string, string]>([
+    ["unavailable", "/api/v1/auth/login", "provider_unavailable"],
+    ["success", "/api/v1/auth/callback?code=x&state=y", "login_failed"],
+  ])("%s %s goes to the configured origin", async (mode, path, code) => {
+    const { origin } = await stack(mode);
+    const answer = await rawGet(`${origin}${path}`, forged);
+    expect(answer.statusCode).toBe(303);
+    expect(answer.headers.location).toBe(`${origin}/prijava?greska=${code}`);
+    expect(answer.headers["referrer-policy"]).toBe("no-referrer");
+  });
+});
+
 describe("the login routes over HTTP", () => {
   it("come from the contract, and answer another method 405 with Allow: GET", async () => {
     const { origin } = await stack("success");
@@ -346,6 +386,7 @@ describe("a login configuration that does not load", () => {
         expect(answer.status, path).toBe(303);
         expect(answer.headers.get("location")).toBe("/prijava?greska=provider_unavailable");
         expect(answer.headers.get("cache-control")).toBe("no-store");
+        expect(answer.headers.get("referrer-policy")).toBe("no-referrer");
         expect(answer.headers.getSetCookie(), path).toEqual(cookies);
         expect(await answer.text()).toBe("");
         const headers = JSON.stringify([...answer.headers]);

@@ -270,6 +270,7 @@ describe("dist/server.js", () => {
         expect(response.status, path).toBe(303);
         expect(response.headers.get("location")).toBe("/prijava?greska=provider_unavailable");
         expect(response.headers.get("cache-control")).toBe("no-store");
+        expect(response.headers.get("referrer-policy")).toBe("no-referrer");
         expect(response.headers.getSetCookie(), path).toEqual(cookies);
         const body = await response.text();
         expect(body).toBe("");
