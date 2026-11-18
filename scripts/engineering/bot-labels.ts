@@ -8,8 +8,8 @@ export type ParsedLabels = { labels: Label[]; problems: string[] };
 
 const KEYS = ["name", "color", "description"];
 const WORD = "[a-z0-9]+(?:-[a-z0-9]+)*";
-// A name has the shape of a mention, so every label can be mentioned. 50 code
-// points of name is a conservative local limit; GitHub documents 100 of description.
+// A name is one or two lower-case words joined by a colon. 50 code points of
+// name is a conservative local limit; GitHub documents 100 of description.
 const NAME = new RegExp(`^${WORD}(?::${WORD})?$`);
 const COLOR = /^[0-9a-f]{6}$/i;
 const VISIBLE = /[\p{L}\p{N}]/u;
@@ -82,22 +82,30 @@ export function parseLabels(text: string): ParsedLabels {
 
 const FILE = "docs/BOTS.md";
 // A line that, after any whitespace, starts like a list item, a quote, a
-// heading, an HTML block or a setext underline. Wider than CommonMark on purpose.
-const MARKED = /^\s*(?:[-+*>#<=]|\d+[.)])/u;
+// heading, an HTML block, a setext underline, an entity or an escape. Wider
+// than CommonMark on purpose.
+const MARKED = /^\s*(?:[-+*>#<=&\\]|\d+[.)])/u;
+// Lines that could hide text from a reader: an HTML comment or block, a fence.
+const HIDING = /<!--|-->|```|~~~|^\s*</u;
 const ITEM = /^- `([^`]+)`: \S(?:.*\S)?$/u;
 
 /**
  * Problems of the Labele section of docs/BOTS.md: it starts at the one line
  * that is exactly `## Labele` and ends at the next line that starts with `#`.
- * Fences are not read. Every line of it marked as a list item must be exactly
+ * Fences are not read: a fence, an HTML comment or an HTML block line anywhere
+ * in the text is a problem, so nothing can hide the section. Every line of it marked as a list item must be exactly
  * "- `name`: text" for a label of `names`, and every label has one such line.
  */
 export function labelListProblems(markdown: string, names: readonly string[]): string[] {
-  const lines = markdown.split("\n").map((line) => line.replace(/\r$/u, ""));
+  // A CR right before LF is a CRLF line end; any other CR is a lone CR.
+  const lines = markdown
+    .split("\n")
+    .map((line, i, all) => (i < all.length - 1 ? line.replace(/\r$/u, "") : line));
   const at = (index: number): string => `${FILE}:${index + 1}`;
   const raw = [
-    ...lines.flatMap((line, i) => (line.includes("﻿") ? [`${at(i)}: BOM`] : [])),
+    ...lines.flatMap((line, i) => (line.includes("\uFEFF") ? [`${at(i)}: BOM`] : [])),
     ...lines.flatMap((line, i) => (line.includes("\r") ? [`${at(i)}: lone CR`] : [])),
+    ...lines.flatMap((line, i) => (HIDING.test(line) ? [`${at(i)}: comment, fence or HTML`] : [])),
   ];
   if (raw.length > 0) return raw;
   const starts = lines.flatMap((line, i) => (line === "## Labele" ? [i] : []));

@@ -160,7 +160,6 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
       "- `bug`: kvar\n\n## Povijest labela\n\n- `risk:low`: x\n",
     ],
     ["# Dodatak before an item", "- `bug`: kvar\n\n# Dodatak\n\n- `risk:low`: x\n"],
-    ["a fenced ## Primjer", "```md\n## Primjer\n```\n\n- `bug`: kvar\n- `risk:low`: x\n"],
     ["a #-line with no space", "- `bug`: kvar\n#x\n- `risk:low`: x\n"],
   ])("%s ends the section, so the item after it is missing", (_, section) => {
     expect(labelListProblems(doc(section), names).at(-1)).toMatch(/: no item for `risk:low`$/u);
@@ -207,7 +206,10 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
     ["a bidi override", "- `nema`: x\u202ey", "malformed line"],
     ["a tab inside", "- `nema`: x\ty", "malformed line"],
     ["an indented heading", " # Dodatak", "malformed line"],
-    ["an HTML comment", "<!-- - `nema`: x -->", "malformed line"],
+    ["an HTML comment", "<!-- - `nema`: x -->", "comment, fence or HTML"],
+    ["an HTML block", "<details>", "comment, fence or HTML"],
+    ["an entity dash", "&#45; `bug`: x", "malformed line"],
+    ["an escaped dash", "\\- `bug`: x", "malformed line"],
     ["a setext underline", "===", "malformed line"],
     ["a dash underline", "---", "malformed line"],
     ["bold prose at the start", "**masno** prvo", "malformed line"],
@@ -235,6 +237,12 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
     ]);
   });
 
+  it("a CR at the very end is a lone CR, as no LF follows it", () => {
+    expect(labelListProblems(doc(list.slice(0, -1) + "\r"), names)).toEqual([
+      "docs/BOTS.md:8: lone CR",
+    ]);
+  });
+
   it("a BOM anywhere is a problem", () => {
     expect(labelListProblems(`\ufeff${doc(list)}`, names)).toEqual(["docs/BOTS.md:1: BOM"]);
     expect(labelListProblems(doc(`${list}Kraj.\ufeff\n`), names)).toEqual(["docs/BOTS.md:9: BOM"]);
@@ -253,10 +261,17 @@ describe("the Labele section of docs/BOTS.md lists every label exactly once", ()
     expect(labelListProblems(withItem, [...names, "constructor"])).toEqual([]);
   });
 
-  it("fences are not read: an item in a fence counts, a fence hides no #-line", () => {
-    expect(
-      labelListProblems(doc(`- \`bug\`: kvar\n\`\`\`\n- \`risk:low\`: x\n\`\`\`\n`), names),
-    ).toEqual([]);
+  it.each([
+    ["a fenced ## Primjer", doc("```md\n## Primjer\n```\n" + list), [7, 9]],
+    ["a fence around the section", "~~~\n" + doc(list) + "~~~\n", [1, 10]],
+    ["an unclosed fence after the heading", doc("```\n" + list), [7]],
+    ["a comment around the section", "<!--\n" + doc(list) + "# kraj -->\n", [1, 10]],
+    ["a comment before the heading", "<!-- x\n\n" + doc(list), [1]],
+    ["an HTML block before the heading", "<div>\n" + doc(list), [1]],
+  ])("%s is a problem anywhere: fences and comments are not read but refused", (_, text, at) => {
+    expect(labelListProblems(text, names)).toEqual(
+      at.map((n) => `docs/BOTS.md:${n}: comment, fence or HTML`),
+    );
   });
 
   it("a full list passes, to the end of the text or to the next #-line", () => {
