@@ -1,18 +1,20 @@
 // The backup scheduler (S-1G-a part 2, DAN-1012-2a; contract Ductus#2028
-// c.6965270952, option A of c.6965242237). One timer ticks every hour from
-// start(), a fixed grid that nothing moves. On a tick the system settings of
-// DAN-1012-1 are read, and run() is called only when backup.enabled is
-// exactly true and at least backup.interval_hours ticks have come since the
-// last call or since backup was last seen off. So run() is called at most once
-// per interval of the grid, and exactly once when the job ends within it; when
-// the backup really starts inside the job is the job's own concern. A read
-// still going when the next tick comes calls nothing, so no call leaves the
-// hour of its tick. A busy tick reads nothing. A tick that calls nothing for a
-// reason reports it with a closed code; one that only waits reports nothing.
-// The job must not await stop(), which waits for the job. The settings
-// reader, the job and the listener are handed in by the assembler of the
-// background process, which does not exist yet: nothing starts this, so
-// backup stays off (V-6).
+// c.6965270952, option A of c.6965242237). A grid of points one hour apart
+// from start(): each point is due at start + k hours on the monotonic clock,
+// so nothing the job or a read does moves the grid. At a point the system
+// settings of DAN-1012-1 are read, and run() is called only when
+// backup.enabled is exactly true and at least backup.interval_hours points
+// have come since the last call or since a check in time saw backup off. So
+// run() is called at most once per interval of the grid, and exactly once
+// when the job ends within it; when the backup really starts inside the job
+// is the job's own concern. A read that ends at or after the next point calls
+// nothing, so no call leaves the hour of its point. A point that comes while a
+// check is going is busy and reads nothing; points missed while the event loop
+// was blocked still count. A point that calls nothing for a reason reports it
+// with a closed code; one that only waits reports nothing. The job must not
+// await stop(), which waits for the job. The settings reader, the job and the
+// listener are handed in by the assembler of the background process, which
+// does not exist yet: nothing starts this, so backup stays off (V-6).
 import { defaultOf, fitsDefinition, settingOf, type SettingDefinition } from "../domain/index.ts";
 
 /** Why a check did not start the job; `onSkip` gets only one of these, never a message. */
@@ -28,7 +30,7 @@ export const BACKUP_SKIP_REASONS = Object.freeze([
 
 export type BackupSkipReason = (typeof BACKUP_SKIP_REASONS)[number];
 
-/** One check an hour: backup.interval_hours is a whole number of hours. */
+/** One grid point an hour: backup.interval_hours is a whole number of hours. */
 export const BACKUP_CHECK_MS = 3_600_000;
 
 export type BackupSchedulerOptions = {
@@ -88,14 +90,16 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     if (typeof fn !== "function") throw new RangeError(`${name} must be a function`);
   }
 
-  let timer: ReturnType<typeof setInterval> | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  /** performance.now() at start(); grid point k is due at origin + k hours. */
+  let origin = 0;
+  /** The last grid point handled. */
+  let point = 0;
   let stopped = false;
   let check: Promise<void> | undefined;
   let job: Promise<void> | undefined;
-  /** Ticks since the last call of run(), or since backup was last seen off. */
+  /** Grid points since the last call of run(), or since backup was last seen off. */
   let hours = 0;
-  /** Ticks that came while the current check was still going. */
-  let late = 0;
 
   const skip = (reason: BackupSkipReason): void => {
     try {
@@ -105,7 +109,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     }
   };
 
-  const once = async (): Promise<void> => {
+  const once = async (at: number): Promise<void> => {
     let decision: number | BackupSkipReason;
     try {
       decision = decide(await readSettings());
@@ -113,8 +117,11 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
       decision = "settings_unavailable";
     }
     if (stopped) return;
-    // The next tick came during the read: a call now would leave its hour.
-    if (late > 0) return skip("settings_unavailable");
+    // The next point is due: a call now would leave the hour of its point,
+    // whichever timer callback the event loop runs first.
+    if (performance.now() >= origin + (at + 1) * BACKUP_CHECK_MS) {
+      return skip("settings_unavailable");
+    }
     if (OFF.has(decision)) hours = 0;
     if (typeof decision === "string") return skip(decision);
     if (hours < decision) return;
@@ -139,26 +146,38 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
     }
   };
 
+  /** Waits for the next grid point, due at an absolute time. */
+  const schedule = (): void => {
+    if (stopped) return;
+    const due = origin + (point + 1) * BACKUP_CHECK_MS;
+    timer = setTimeout(tick, Math.max(0, due - performance.now()));
+    // The scheduler alone never keeps the process up.
+    timer.unref();
+  };
+
   function tick(): void {
-    hours += 1;
+    // Every point due by now counts, also those a blocked event loop merged.
+    const due = Math.floor((performance.now() - origin) / BACKUP_CHECK_MS);
+    const passed = Math.max(1, due - point);
+    point += passed;
+    hours += passed;
     if (check !== undefined) {
-      late += 1;
-      return skip("busy");
+      for (let i = 0; i < passed; i += 1) skip("busy");
+    } else {
+      check = once(point).finally(() => (check = undefined));
     }
-    late = 0;
-    check = once().finally(() => (check = undefined));
+    schedule();
   }
 
   return Object.freeze({
     start(): void {
       if (stopped || timer !== undefined) return;
-      timer = setInterval(tick, BACKUP_CHECK_MS);
-      // The scheduler alone never keeps the process up.
-      timer.unref();
+      origin = performance.now();
+      schedule();
     },
     async stop(): Promise<void> {
       stopped = true;
-      clearInterval(timer);
+      clearTimeout(timer);
       await job;
     },
   });

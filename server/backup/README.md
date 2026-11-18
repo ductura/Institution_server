@@ -8,19 +8,21 @@ Kopije baze i pohrane te mjesečna proba povrata (ARCHITECTURE §9). Feature pod
 
 ## Raspoređivač backupa
 
-`createBackupScheduler` (`scheduler.ts`) ima jedan satni timer koji kreće u `start()` i koji ništa ne pomiče: to je fiksna satna mreža (DAN-1012-2a, opcija A, Ductus#2028 c.6965242237). Na otkucaju čita postavke razine `system` iz kataloga (DAN-1012-1); otkucaj `busy` ne čita ništa. `run()` poziva samo kad je `backup.enabled` točno `true` i kad je prošlo barem `backup.interval_hours` otkucaja od zadnjeg poziva ili od zadnjeg otkucaja na kojem backup nije bio uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
+`createBackupScheduler` (`scheduler.ts`) radi na fiksnoj satnoj mreži od `start()` (DAN-1012-2a, opcija A, Ductus#2028 c.6965242237). Točka mreže k dospijeva u `start + k` sati po monotonom satu (`performance.now()`), a timer se uvijek postavlja na sljedeću točku. Zato ni posao ni čitanje ne pomiču mrežu. Točke koje blokirana petlja događaja propusti broje se odjednom.
 
-Zato se `run()` poziva najviše jednom po intervalu mreže, a točno jednom kad posao završi unutar intervala. Trajanje posla, sinkrono ili asinkrono, ne pomiče sljedeći poziv. Čitanje postavki pomiče samo svoj poziv, unutar sata svojeg otkucaja. Ako tijekom čitanja kucne sljedeći otkucaj, poziva nema i javlja se `settings_unavailable`, pa nijedan poziv ne izlazi iz sata svojeg otkucaja. Otkucaji `busy`, `settings_unavailable` i `interval_invalid` mogu razmak samo produljiti.
+Na točki čita postavke razine `system` iz kataloga (DAN-1012-1); točka `busy` ne čita ništa. `run()` poziva samo kad je `backup.enabled` točno `true` i kad je prošlo barem `backup.interval_hours` točaka od zadnjeg poziva ili od zadnje provjere koja je na vrijeme vidjela da backup nije uključen. Ako ključ intervala nedostaje, vrijedi zadano iz kataloga.
 
-Otkucaj koji samo čeka svoj sat ne javlja ništa. Svaki drugi otkucaj na kojem se posao ne pokrene javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
+Zato se `run()` poziva najviše jednom po intervalu mreže, a točno jednom kad posao završi unutar intervala. Posao koji završi unutar intervala, sinkron ili asinkron, ne pomiče sljedeći poziv. Dulji posao samo odgađa sljedeći poziv na prvu točku nakon svojeg kraja, a mreža ostaje ista. Čitanje postavki pomiče samo svoj poziv, unutar sata svoje točke. Čitanje koje završi u trenutku sljedeće točke ili kasnije ne poziva ništa i javlja `settings_unavailable`, bez obzira na to koji povratni poziv timera petlja izvrši prvi. Zato nijedan poziv ne izlazi iz sata svoje točke. Takvo kasno čitanje ne vraća brojanje na 0, ni kad je vidjelo da je backup isključen. Točke `busy`, `settings_unavailable` i `interval_invalid` mogu razmak samo produljiti.
 
-- `settings_unavailable`: čitač baci, ne vrati pravi `Map` ili ne završi prije sljedećeg otkucaja;
-- `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; otkucaji se broje ispočetka;
+Točka koja samo čeka svoj sat ne javlja ništa. Svaka druga točka na kojoj se posao ne pokrene javlja `onSkip` s jednim razlogom iz `BACKUP_SKIP_REASONS`, nikad s porukom ni vrijednošću:
+
+- `settings_unavailable`: čitač baci, ne vrati pravi `Map` ili ne završi prije sljedeće točke;
+- `enabled_missing`, `enabled_invalid`, `disabled`: backup nije uključen; točke se broje ispočetka;
 - `interval_invalid`: interval je izvan kataloga;
-- `busy`: prethodni otkucaj još traje;
+- `busy`: prethodna provjera ili posao još traje (jednom za svaku točku);
 - `run_failed`: posao je bacio.
 
-Kod `settings_unavailable` i `interval_invalid` otkucaji se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
+Kod `settings_unavailable` i `interval_invalid` točke se i dalje broje. Brojač sati je u memoriji i ne ovisi o zidnom satu. Čitanje koje završi nakon `stop()` ne pokreće posao. `stop()` čeka posao u tijeku, ali ne i čitanje postavki. Posao ne smije čekati `stop()`, jer `stop()` čeka posao. Čitač, posao i primatelj razloga predaje sastavljač.
 
 Poznate granice:
 

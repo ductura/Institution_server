@@ -239,6 +239,57 @@ describe("backup scheduler: enabled runs once per interval", () => {
     expect(onSkip.mock.calls).toEqual([["busy"], ["settings_unavailable"]]);
   });
 
+  // QA attacker on #289 (84f6f59): a read that ends exactly at the next tick,
+  // before that tick's callback runs, must not call run() a second time there.
+  it("a read ending exactly at the next tick, first in line, calls nothing", async () => {
+    let release!: (value: unknown) => void;
+    const first = new Promise((resolve) => (release = resolve));
+    // Created before start(): at 2 h this timer runs before the scheduler's.
+    setTimeout(() => release(new Map(on(1))), 2 * H);
+    const { readSettings, run, onSkip } = setup(on(1));
+    const { calls, record } = callTimes(run);
+    record();
+    readSettings.mockImplementationOnce(() => first);
+    await vi.advanceTimersByTimeAsync(3 * H);
+    expect(calls).toEqual([2, 3]);
+    expect(onSkip.mock.calls).toEqual([["settings_unavailable"]]);
+  });
+
+  it("points missed by a blocked event loop count at once, without extra reads", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    const spy = vi
+      .spyOn(globalThis, "setTimeout")
+      .mockImplementationOnce(((fn: () => void, ms: number) =>
+        fakeSetTimeout(fn, ms + 2.5 * H)) as never);
+    try {
+      const { readSettings, run, onSkip } = setup(on(3));
+      const { calls, record } = callTimes(run);
+      record();
+      await vi.advanceTimersByTimeAsync(6 * H);
+      expect(calls).toEqual([3.5, 6]);
+      expect(readSettings).toHaveBeenCalledTimes(4);
+      expect(onSkip).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("a late read that sees backup off does not restart the count", async () => {
+    const { state, readSettings, run } = setup(on(2));
+    const { calls, record } = callTimes(run);
+    record();
+    readSettings.mockImplementationOnce(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve(new Map([["backup.enabled", false]])), 1.5 * H),
+        ),
+    );
+    await vi.advanceTimersByTimeAsync(2.5 * H);
+    state.settings = new Map(on(2));
+    await vi.advanceTimersByTimeAsync(H);
+    expect(calls).toEqual([3]);
+  });
+
   it("a slow read that sees backup off: the hours count from that tick", async () => {
     const { state, readSettings, run } = setup([["backup.enabled", false]]);
     const { calls, record } = callTimes(run);
@@ -302,14 +353,19 @@ describe("backup scheduler: enabled runs once per interval", () => {
   it("a run longer than an hour is busy: the busy hour reads nothing, no second run", async () => {
     const hang = deferred();
     const { readSettings, run, onSkip } = setup(on(1));
-    run.mockImplementationOnce(() => hang.promise);
-    await vi.advanceTimersByTimeAsync(3 * H);
-    expect(run).toHaveBeenCalledTimes(1);
+    const { calls, record } = callTimes(run);
+    record();
+    run.mockImplementationOnce(() => {
+      calls.push(1);
+      return hang.promise;
+    });
+    await vi.advanceTimersByTimeAsync(3.5 * H);
+    expect(calls).toEqual([1]);
     expect(readSettings).toHaveBeenCalledTimes(1);
     expect(onSkip.mock.calls).toEqual([["busy"], ["busy"]]);
     hang.resolve();
-    await vi.advanceTimersByTimeAsync(H);
-    expect(run).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(0.5 * H);
+    expect(calls).toEqual([1, 4]);
   });
 
   it("busy hours count toward the next interval", async () => {
@@ -464,15 +520,17 @@ describe("backup scheduler: failures, stop and options", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("keeps one fixed timer, never a reference on the process", async () => {
-    const spy = vi.spyOn(globalThis, "setInterval");
+  it("keeps one timer to the next grid point, never a reference on the process", async () => {
+    const spy = vi.spyOn(globalThis, "setTimeout");
     try {
       const { state } = setup(on(1));
       await vi.advanceTimersByTimeAsync(3 * H);
       state.settings = new Map([["backup.enabled", false]]);
       await vi.advanceTimersByTimeAsync(3 * H);
-      expect(spy).toHaveBeenCalledTimes(1);
-      expect((spy.mock.results[0]?.value as NodeJS.Timeout).hasRef()).toBe(false);
+      expect(spy.mock.calls.length).toBeGreaterThan(0);
+      for (const result of spy.mock.results) {
+        expect((result.value as NodeJS.Timeout).hasRef()).toBe(false);
+      }
       expect(vi.getTimerCount()).toBe(1);
     } finally {
       spy.mockRestore();
