@@ -134,6 +134,13 @@ describe("a wrong hash fails", () => {
     expect(await download(at, c)).toEqual({ ok: false, reason: "sha256 mismatch" });
   });
 
+  it.each(COMBINATIONS)("%s %s: no file at the address", async (...c) => {
+    const files = new Map(FILES);
+    files.delete(urlOf(c));
+    const at = await start({ packages: COMBINATIONS.map((x) => rowOf(x)) }, files);
+    expect(await download(at, c)).toEqual({ ok: false, reason: "file 404" });
+  });
+
   it("a hash that is not a SHA-256 makes the whole manifest 503, so nothing downloads", async () => {
     const rows = COMBINATIONS.map((x) => rowOf(x));
     rows[2] = { ...rows[2]!, sha256: rows[2]!.sha256.slice(1) };

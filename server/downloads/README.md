@@ -16,7 +16,7 @@ Samo `http`.
 
 ## Koje podatke dira
 
-Objekti u pohrani; zapis preuzimanja u glavnoj bazi.
+Za sada samo konfiguraciju izdanja ugrađenu u build (`releases.ts`); bazu i pohranu ne dira. Objekti u pohrani i zapis preuzimanja u glavnoj bazi dolaze s mjestom paketa.
 
 ## Što izvozi
 

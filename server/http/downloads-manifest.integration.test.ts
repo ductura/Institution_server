@@ -102,6 +102,15 @@ describe("the route as mounted", () => {
     }
   });
 
+  it("a broken stderr never turns the 503 into a crash", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {
+      throw new Error("stderr closed");
+    });
+    const got = await fetch(await start(() => null));
+    expect(got.status).toBe(503);
+    expect(((await got.json()) as { code: string }).code).toBe("unavailable");
+  });
+
   it.each(["POST", "PUT", "DELETE"])("%s is 405 from the router", async (method) => {
     const headers = { origin: "https://ductura.example.invalid", "sec-fetch-site": "same-origin" };
     const got = await fetch(await start(), { method, headers });
