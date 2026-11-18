@@ -272,8 +272,10 @@ const AcademicYear = Type.String({ pattern: `^[0-9]{4}/[0-9]{4}${END}` });
 const Label = Type.String({
   pattern: `^(?=[\\s\\S]*\\S)${codePoint("\\u0000-\\u001f\\u007f-\\u009f")}{1,200}${END}`,
 });
-/** A name of the login claims (isName): 1 to 255 code points. */
-const PersonName = Type.String({ pattern: `^${codePoint("")}{1,255}${END}` });
+/** A name of the login claims (isName): 1 to 255 code points, no control character (C0, DEL, C1). */
+const PersonName = Type.String({
+  pattern: `^${codePoint("\\u0000-\\u001f\\u007f-\\u009f")}{1,255}${END}`,
+});
 const Count = Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER });
 /** The name is null when the account has no name pair in the institution, never a stand-in. */
 const CoursePerson = closed({
@@ -304,7 +306,7 @@ export const academicYearsGet = defineRoute({
     {
       status: 200,
       description: "the years, possibly none",
-      body: closed({ years: Type.Array(AcademicYear) }),
+      body: closed({ years: Type.Array(AcademicYear, { uniqueItems: true }) }),
     },
   ],
   errors: [...READ_ERRORS],

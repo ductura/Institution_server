@@ -77,7 +77,7 @@ afterEach(async () => {
 });
 
 type Answer = { status: number; headers: Record<string, unknown>; body: Record<string, unknown> };
-function get(path: string, headers: Record<string, string> = {}): Promise<Answer> {
+function get(path: string, headers: Record<string, string | string[]> = {}): Promise<Answer> {
   return new Promise((resolve, reject) => {
     const req = httpRequest(
       { host: "127.0.0.1", port: server!.port, method: "GET", path, headers },
@@ -134,6 +134,9 @@ describe("the query of course-list", () => {
     ["a repeated year", "academicYear=2026%2F2027&academicYear=2026%2F2027"],
     ["another parameter", "academicYear=2026%2F2027&institution=x"],
     ["another name", "godina=2026%2F2027"],
+    ["a plus for the slash", "academicYear=2026+2027"],
+    ["an empty year", "academicYear="],
+    ["a bare key", "academicYear"],
   ])("refuses %s without the port (422)", async (_label, query) => {
     await start();
     const got = await get(`/api/v1/institution/course-list?${query}`, cookie);
@@ -165,5 +168,45 @@ describe("the query of course-list", () => {
     const fault = await get("/api/v1/institution/academic-years", cookie);
     expect([fault.status, fault.body.code]).toEqual([503, "unavailable"]);
     expect(JSON.stringify(fault.body)).not.toContain("izmisljeni kvar");
+  });
+});
+
+describe("refusals before the port on both routes", () => {
+  const paths = [
+    "/api/v1/institution/academic-years",
+    "/api/v1/institution/course-list?academicYear=2026/2027",
+  ];
+  const cookie = `__Host-ductus_session=${TOKEN}`;
+
+  it("an unencoded slash in the year is the same year", async () => {
+    courseAnswer = COURSE_OUTCOMES["no-courses"]!;
+    await start();
+    const got = await get(paths[1]!, { cookie });
+    expect([got.status, got.body]).toEqual([200, { academicYear: YEAR, courses: [] }]);
+    expect(calls).toEqual([["courses", TOKEN, YEAR]]);
+  });
+
+  it("a session this browser ended reads as none (401)", async () => {
+    const { sessionTag } = await import("../session/index.ts");
+    const tag = sessionTag(TOKEN)!;
+    await start();
+    for (const path of paths) {
+      for (const mark of [`ductus-ended-${tag}=1`, `ductus-ended=aaaa.${tag}`]) {
+        const got = await get(path, { cookie: `${cookie}; ${mark}` });
+        expect([got.status, got.body.code]).toEqual([401, "unauthorized"]);
+      }
+    }
+    expect(calls).toEqual([]);
+  });
+
+  it("any Sec-Fetch-Site but one same-origin is 403", async () => {
+    await start();
+    for (const path of paths) {
+      for (const site of ["same-site", "none", "cross-site", ["same-origin", "same-origin"]]) {
+        const got = await get(path, { cookie, "sec-fetch-site": site });
+        expect([got.status, got.body.code]).toEqual([403, "forbidden"]);
+      }
+    }
+    expect(calls).toEqual([]);
   });
 });

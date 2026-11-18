@@ -7811,6 +7811,7 @@
                   ],
                   "properties": {
                     "years": {
+                      "uniqueItems": true,
                       "type": "array",
                       "items": {
                         "pattern": "^[0-9]{4}/[0-9]{4}(?![\\s\\S])",
@@ -9553,11 +9554,11 @@
                                         ],
                                         "properties": {
                                           "givenName": {
-                                            "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF]){1,255}(?![\\s\\S])",
+                                            "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF\\u0000-\\u001f\\u007f-\\u009f]){1,255}(?![\\s\\S])",
                                             "type": "string"
                                           },
                                           "familyName": {
-                                            "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF]){1,255}(?![\\s\\S])",
+                                            "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF\\u0000-\\u001f\\u007f-\\u009f]){1,255}(?![\\s\\S])",
                                             "type": "string"
                                           }
                                         }
@@ -9599,11 +9600,11 @@
                                       ],
                                       "properties": {
                                         "givenName": {
-                                          "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF]){1,255}(?![\\s\\S])",
+                                          "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF\\u0000-\\u001f\\u007f-\\u009f]){1,255}(?![\\s\\S])",
                                           "type": "string"
                                         },
                                         "familyName": {
-                                          "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF]){1,255}(?![\\s\\S])",
+                                          "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF\\u0000-\\u001f\\u007f-\\u009f]){1,255}(?![\\s\\S])",
                                           "type": "string"
                                         }
                                       }
@@ -9666,11 +9667,11 @@
                                             ],
                                             "properties": {
                                               "givenName": {
-                                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF]){1,255}(?![\\s\\S])",
+                                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF\\u0000-\\u001f\\u007f-\\u009f]){1,255}(?![\\s\\S])",
                                                 "type": "string"
                                               },
                                               "familyName": {
-                                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF]){1,255}(?![\\s\\S])",
+                                                "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF\\u0000-\\u001f\\u007f-\\u009f]){1,255}(?![\\s\\S])",
                                                 "type": "string"
                                               }
                                             }

@@ -216,6 +216,23 @@ describe("institutionCoursesOf", () => {
     ],
     ["half a name", [course(1, "K", 0), person("team", 1, 10, null, { given_name: "Ana" })]],
     [
+      "a name with a control character",
+      [course(1, "K", 0), person("team", 1, 10, ["Ana\u0007", "Uzorak"])],
+    ],
+    [
+      "a surname with a C1 control character",
+      [course(1, "K", 0), person("holder", 1, 10, ["Ana", "Uzorak\u0085"])],
+    ],
+    [
+      "a group teacher's name with DEL",
+      [
+        course(1, "K", 0),
+        group(1, 20, "G", 0),
+        person("team", 1, 10, ["Ana\u007f", "Uzorak"]),
+        groupTeacher(1, 20, 10, ["Ana\u007f", "Uzorak"]),
+      ],
+    ],
+    [
       "a name of 256 code points",
       [course(1, "K", 0), person("team", 1, 10, ["𝔸".repeat(256), "Uzorak"])],
     ],

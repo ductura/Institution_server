@@ -74,9 +74,12 @@ const isLabel = (value: unknown): value is string =>
   /\S/u.test(value) &&
   [...value].length <= LABEL_MAX &&
   !CONTROL.test(value);
-/** A name of the login claims (Ductus isName): 1 to 255 code points. */
+/** A name of the login claims (Ductus isName): 1 to 255 code points, no control character. */
 const isName = (value: unknown): value is string =>
-  typeof value === "string" && value.length >= 1 && [...value].length <= NAME_MAX;
+  typeof value === "string" &&
+  value.length >= 1 &&
+  [...value].length <= NAME_MAX &&
+  !CONTROL.test(value);
 
 /** Both names, or null for neither; undefined for anything else. */
 function nameOf(given: unknown, family: unknown): PersonName | undefined {
