@@ -7,17 +7,17 @@ import { readFileSync } from "node:fs";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  createMyAssignmentWorkReader,
-  type MyAssignmentWorkReader,
-  type WithActor,
-} from "../database/index.ts";
+import { type MyAssignmentWorkReader, type WithActor } from "../database/index.ts";
 import { sessionTag } from "../session/index.ts";
 
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
+import type { Route } from "./router.ts";
 import { type Running, startServer } from "./start.ts";
-import { createStudentAssignmentWorkRoute } from "./student-assignment-work.ts";
+import {
+  createStudentAssignmentWorkRoute,
+  createStudentAssignmentWorkRouteFor,
+} from "./student-assignment-work.ts";
 
 type Vector = {
   name: string;
@@ -61,27 +61,35 @@ afterEach(async () => {
   server = undefined;
 });
 
-async function start(reader: MyAssignmentWorkReader) {
+async function serve(route: Route) {
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
     layers: createLayers({ expectedOrigin: "https://ductura.invalid" }),
     databases: createDatabases(),
-    routes: [createStudentAssignmentWorkRoute({ reader })],
+    routes: [route],
   });
 }
-/** The real reader over a withActor that answers rows, or throws `answer`. */
+/** The route over a stub reader (N4). */
+const start = (reader: MyAssignmentWorkReader) =>
+  serve(createStudentAssignmentWorkRoute({ reader }));
+/**
+ * The production route (createStudentAssignmentWorkRouteFor, review FAIL
+ * c.6968296412) over a main whose withActor answers rows, or throws `answer`.
+ */
 const startRows = (answer: unknown) =>
-  start(
-    createMyAssignmentWorkReader((async (token, fn) => {
-      tokens.push(token);
-      return fn({
-        async query() {
-          if (answer instanceof Error) throw answer;
-          return { rows: answer as never[], rowCount: 0 };
-        },
-      });
-    }) as WithActor),
+  serve(
+    createStudentAssignmentWorkRouteFor({
+      withActor: (async (token, fn) => {
+        tokens.push(token);
+        return fn({
+          async query() {
+            if (answer instanceof Error) throw answer;
+            return { rows: answer as never[], rowCount: 0 };
+          },
+        });
+      }) as WithActor,
+    }),
   );
 const thrown = (code?: string) => Object.assign(new Error("tajna poruka baze"), { code });
 
