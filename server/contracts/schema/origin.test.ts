@@ -35,18 +35,23 @@ type Node =
 function parse(src: string): Node {
   let i = 0;
   const unit = (source: string): Node => ({ t: "unit", re: new RegExp(`^${source}$`) });
+  // The escapes the contract refuses, outside a class and inside one alike.
+  const escape = (at: number) => {
+    if (at + 1 >= src.length) throw new Error(`\\ at the end, at ${at}`);
+    if (/[0-9bBkuxcpP]/.test(src[at + 1] ?? "")) throw new Error(`unsupported escape at ${at}`);
+    return 2;
+  };
   const atom = (): Node => {
     const c = src[i++] ?? "";
     if (c === "^") return { t: "start" };
-    if (c === "\\" && /[0-9bBkuxcpP]/.test(src[i] ?? ""))
-      throw new Error(`unsupported escape at ${i}`);
-    if (c === "\\") return unit(c + src[i++]);
+    if (c === "\\") return (escape(i - 1), unit(c + src[i++]));
     if (c === "[") {
       const from = i - 1;
       if (src[i] === "^") i++;
       if (src[i] === "]") throw new Error(`class opening with ] at ${i}`);
-      do i += src[i] === "\\" ? 2 : 1;
-      while (src[i] !== "]");
+      do i += src[i] === "\\" ? escape(i) : 1;
+      while (i < src.length && src[i] !== "]");
+      if (i >= src.length) throw new Error(`unclosed class from ${from}`);
       return unit(src.slice(from, ++i));
     }
     const group = c === "(" ? src.slice(i, i + 2) : "";
@@ -63,6 +68,7 @@ function parse(src: string): Node {
     const node = atom();
     const q = /^(?:([*+?])|\{(\d+)(?:(,)(\d*))?\})/.exec(src.slice(i));
     if (!q) return node;
+    if (node.t === "start") throw new Error(`quantified ^ at ${i}`);
     i += q[0].length;
     if (src[i] === "?") throw new Error(`lazy quantifier at ${i}`);
     const [, sign, low, comma, high] = q;
@@ -76,6 +82,7 @@ function parse(src: string): Node {
         : high
           ? Number(high)
           : Infinity;
+    if (min > max) throw new Error(`quantifier out of order before ${i}`);
     return { t: "rep", node, min, max };
   };
   const seq = (): Node => {
@@ -126,7 +133,8 @@ function countSteps(root: Node, s: string, limit: number): { ok: boolean; steps:
           return false;
         }
         const go = (count: number, j: number): boolean =>
-          (count < max && m(node, j, (e) => e !== j && go(count + 1, e))) || (count >= min && k(j));
+          (count < max && m(node, j, (e) => (e !== j || count < min) && go(count + 1, e))) ||
+          (count >= min && k(j));
         return go(0, i);
       }
     }
@@ -276,7 +284,8 @@ describe("Origin", () => {
     ])
       for (const unit of units)
         for (const tail of ["/", "\u00a0"]) {
-          const make = (n: number) => head + unit.repeat(n / unit.length) + tail;
+          const make = (n: number) => head + unit.repeat(n) + tail;
+          expect(make(256)).toHaveLength(head.length + 256 * unit.length + tail.length);
           const [single, double] = [check(make(128)), check(make(256))];
           const linear = double.steps <= 2 * single.steps + 64;
           expect([make(2), single.accepted, double.accepted, linear]).toEqual([
@@ -286,6 +295,30 @@ describe("Origin", () => {
             true,
           ]);
         }
+  });
+
+  it("refuses syntax the interpreter does not model, inside a class too", () => {
+    const u = "\\u";
+    for (const src of [
+      ...["[\\x61]", `[${u}0061]`, "[\\1]", "[\\0]", "[\\b]", "[\\B]", "[\\cA]", "[\\k]"],
+      ...["[\\p{L}]", "[\\P{L}]", "\\x61", `${u}0061`, "\\1", "\\b", "[a", "[^a", "[a\\", "a\\"],
+      ...["[]", "[^]", "(a)", "(?=a)", "(?<=a)", "(?:a", "a)", "a*?", "a{2,1}", "^+", "$", "."],
+    ])
+      expect(() => parse(src), src).toThrow();
+  });
+
+  it("agrees with RegExp on iterations that match nothing", () => {
+    for (const [src, value] of [
+      ["^(?:a?){2}b", "b"],
+      ["^(?:a?)+b", "b"],
+      ["(?:^)+x", "x"],
+      ["^(?:(?!c)){1}x", "x"],
+      ["^(?:(?!c))*x", "x"],
+    ] as const)
+      expect([src, countSteps(parse(src), value, 1000).ok]).toEqual([
+        src,
+        new RegExp(src).test(value),
+      ]);
   });
 
   it("has a counter that sees a domain which backtracks", () => {
