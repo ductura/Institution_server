@@ -1,0 +1,154 @@
+import { readFileSync } from "node:fs";
+
+import ts from "typescript";
+import { describe, expect, it } from "vitest";
+
+import { ROUTES_JS, stagedRoutes, PUBLIC_ROUTES_JS } from "./staged-routes.ts";
+import { releaseLevel, type Files } from "./level.ts";
+
+// DAN-974-4a: the release level of test-fakes reads the routes the published
+// fake server really exports, after its module ran, from a real `node`
+// process. Built from the real generated source on main; the added route and
+// every small module here are invented.
+
+const DIR = "server/contracts/generated/fake-server/";
+const read = (name: string) =>
+  readFileSync(new URL(`../../${DIR}${name}`, import.meta.url), "utf8");
+const SOURCE = read("index.ts");
+const VECTORS = read("vectors.json");
+const OPEN = "export const ROUTE_TABLE = {\n";
+const FIRST = /\n {2}("[^"]+"): /u.exec(SOURCE.slice(SOURCE.indexOf(OPEN)))![1]!;
+/** A route with headers, so emptying them is a change. */
+const WITH_HEADERS = /\n {2}("[^"]+"): [^\n]*headers: \["/u.exec(SOURCE)![1]!;
+const NEW_ROW =
+  '  "zz.invented.get": { method: "GET", path: "/api/v1/invented", body: null, headers: [], errors: {} },\n';
+// The declaration file of 974-4b: a record, so a new route does not change it.
+const DTS =
+  "export type Route = { readonly method: string };\nexport declare const ROUTE_TABLE: Readonly<Record<string, Route>>;\n";
+const PUBLIC = 'export * from "../../../server/contracts/generated/fake-server/index.js";\n';
+
+const js = (source: string) =>
+  ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2023 },
+  }).outputText;
+const pkg = (code: string, rest: Record<string, string> = {}): Files =>
+  new Map(
+    Object.entries({
+      "package.json": JSON.stringify({ name: "@ductura/test-fakes", type: "module" }),
+      [ROUTES_JS]: code,
+      [`${DIR}index.d.ts`]: DTS,
+      [`${DIR}vectors.json`]: VECTORS,
+      [PUBLIC_ROUTES_JS]: PUBLIC,
+      ...rest,
+    }),
+  );
+const BASE = pkg(js(SOURCE));
+const level = (after: Files, before = BASE, timeout = 20_000) =>
+  releaseLevel({
+    short: "test-fakes",
+    before,
+    after,
+    generatorChanged: false,
+    routes: (files) => stagedRoutes(files, timeout),
+  });
+const append = (code: string) => pkg(js(`${SOURCE}\n${code}\n`));
+const small = (code: string) => pkg(code);
+const SMALL = small('export const ROUTE_TABLE = { "a.get": { method: "GET", headers: [] } };\n');
+
+describe("the routes the published fake server exports (DAN-974-4a)", () => {
+  it("reads every route of the real generated table", () => {
+    const routes = stagedRoutes(BASE);
+    expect(routes.size).toBeGreaterThan(40);
+    expect(routes.has(JSON.parse(FIRST) as string)).toBe(true);
+  });
+
+  // Negative cases first: what must stay major.
+  it.each([
+    ["a removed route", pkg(js(SOURCE.replace(new RegExp(`\\n {2}${FIRST}: [^\\n]*`, "u"), "")))],
+    [
+      "a row emptied after the literal",
+      append(`Object.assign(ROUTE_TABLE[${WITH_HEADERS}], { headers: [] });`),
+    ],
+    [
+      "headers truncated after the literal",
+      append(`ROUTE_TABLE[${WITH_HEADERS}].headers.length = 0;`),
+    ],
+    ["a route deleted after the literal", append(`delete ROUTE_TABLE[${FIRST}];`)],
+    ["a changed path", pkg(js(SOURCE.replace(/path: "\/api\/v1\//u, 'path: "/api/v2/')))],
+    [
+      "a changed public entry",
+      pkg(js(SOURCE), { [PUBLIC_ROUTES_JS]: `${PUBLIC}export const ROUTE_TABLE = {};\n` }),
+    ],
+    // A module that lies through Reflect.ownKeys still loses the route: the child took it first.
+    [
+      "a removal behind a replaced Reflect",
+      append(
+        `const own = Reflect.ownKeys; const keys = own(ROUTE_TABLE); Reflect.ownKeys = (o) => (o === ROUTE_TABLE ? keys : own(o)); delete ROUTE_TABLE[${FIRST}];`,
+      ),
+    ],
+  ])("is major for %s", (_, after) => {
+    expect(level(after).level).toBe("major");
+  });
+
+  it.each([
+    ["a module that throws", "throw new Error('no');\n"],
+    ["no ROUTE_TABLE", "export const OTHER = 1;\n"],
+    ["a getter", 'export const ROUTE_TABLE = { "a.get": { get method() { return "GET"; } } };\n'],
+    [
+      "a non-enumerable field",
+      'export const ROUTE_TABLE = { "a.get": Object.defineProperty({}, "method", { value: "GET" }) };\n',
+    ],
+    ["a function", 'export const ROUTE_TABLE = { "a.get": { method: () => "GET" } };\n'],
+    ["a symbol key", 'export const ROUTE_TABLE = { "a.get": { [Symbol("x")]: 1 } };\n'],
+    ["a Proxy", 'export const ROUTE_TABLE = new Proxy({ "a.get": { method: "GET" } }, {});\n'],
+    [
+      "a class instance",
+      'class R { method = "GET"; }\nexport const ROUTE_TABLE = { "a.get": new R() };\n',
+    ],
+    ["undefined", 'export const ROUTE_TABLE = { "a.get": { body: undefined } };\n'],
+    ["NaN", 'export const ROUTE_TABLE = { "a.get": { n: NaN } };\n'],
+    ["minus zero", 'export const ROUTE_TABLE = { "a.get": { n: -0 } };\n'],
+    ["an array with a hole", 'export const ROUTE_TABLE = { "a.get": { headers: [, "x"] } };\n'],
+    [
+      "an array with an extra key",
+      'const h = ["x"]; h.extra = 1;\nexport const ROUTE_TABLE = { "a.get": { headers: h } };\n',
+    ],
+    ["output that is not a snapshot", 'process.stdout.write("[1]"); process.exit(0);\n'],
+  ])("is blocked for %s", (_, code) => {
+    expect(level(small(code), SMALL).level).toBe("blocked");
+  });
+
+  it("is blocked for a module that never finishes, without the reader or with one side only", () => {
+    expect(level(small("while (true) {}\n"), SMALL, 1500).level).toBe("blocked");
+    expect(
+      releaseLevel({
+        short: "test-fakes",
+        before: BASE,
+        after: append("// x"),
+        generatorChanged: false,
+      }).level,
+    ).toBe("blocked");
+    const without = new Map(BASE);
+    without.delete(ROUTES_JS);
+    expect(level(BASE, without).level).toBe("blocked");
+  });
+
+  // The criterion: one added route is not major.
+  it("is minor for one added route", () => {
+    const out = level(pkg(js(SOURCE.replace(OPEN, `${OPEN}${NEW_ROW}`))));
+    expect(out.level).toBe("minor");
+    expect(out.reasons.join("\n")).toContain("route zz.invented.get added");
+  });
+
+  it("treats toString, constructor and __proto__ as routes like any other and ignores CRLF", () => {
+    const more = small(
+      'export const ROUTE_TABLE = { "a.get": { method: "GET", headers: [] }, toString: {}, constructor: {}, ["__proto__"]: {} };\n',
+    );
+    expect(stagedRoutes(more).size).toBe(4);
+    expect(level(more, SMALL).level).toBe("minor");
+    expect(level(SMALL, more).level).toBe("major");
+    const crlf = js(SOURCE).replace(/\n/gu, "\r\n");
+    expect(level(pkg(crlf)).level).toBe("patch");
+    expect(level(BASE).level).toBe("none");
+  });
+});
