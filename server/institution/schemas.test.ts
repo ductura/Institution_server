@@ -220,6 +220,11 @@ describe("parseEnrollmentBody refuses the body", () => {
       throw new Error("getter");
     },
   });
+  const revoked = () => {
+    const { proxy, revoke } = Proxy.revocable(withCode(KOD), {});
+    revoke();
+    return proxy;
+  };
   const trap = (name: "ownKeys" | "getOwnPropertyDescriptor" | "get") =>
     new Proxy(withCode(KOD), {
       [name]() {
@@ -238,6 +243,10 @@ describe("parseEnrollmentBody refuses the body", () => {
     ["a function with an own code", Object.assign(() => undefined, withCode(KOD))],
     ["a lone non-enumerable code", Object.defineProperty({}, "code", { value: KOD })],
     ["a course id too", { ...withCode(KOD), courseId: "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01" }],
+    [
+      "a user id too, as the Ductus test",
+      { ...withCode(KOD), userId: "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c02" },
+    ],
     ["an institution id too", { ...withCode(KOD), institutionId: "x" }],
     ["an inherited code", Object.create(withCode(KOD)) as unknown],
     [
@@ -260,6 +269,7 @@ describe("parseEnrollmentBody refuses the body", () => {
     ["a Proxy whose ownKeys throws", trap("ownKeys")],
     ["a Proxy whose getOwnPropertyDescriptor throws", trap("getOwnPropertyDescriptor")],
     ["a Proxy whose get throws", trap("get")],
+    ["a revoked Proxy, on which Array.isArray throws", revoked()],
   ])("%s", (_, value) => {
     expect(parseEnrollmentBody(value)).toBeNull();
   });
@@ -313,6 +323,10 @@ describe("parseEnrollmentBody accepts as Ductus does", () => {
     ["a Date with an own code", Object.assign(new Date(0), withCode(KOD))],
     ["a symbol key next to the code", { ...withCode(KOD), [Symbol("x")]: 1 }],
     ["a non-enumerable key next to the code", withHidden],
+    [
+      "a non-enumerable own code next to one enumerable key",
+      Object.defineProperty({ other: "x" }, "code", { value: KOD }),
+    ],
     [
       "a Proxy whose has throws (no check asks has)",
       new Proxy(withCode(KOD), {
