@@ -12,3 +12,5 @@ export {
   type JobQueueErrorCode,
   type JobQueueSettings,
 } from "./job-queue.ts";
+// The fence the worker process passes (DAN-822-5b1).
+export { startAttemptFence } from "./attempt-fence.ts";
