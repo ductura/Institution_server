@@ -194,3 +194,38 @@ export function sendRouteRefusal(
   requestIdOf(response);
   writeJson(response, status, body, retry === undefined ? {} : { "retry-after": retry });
 }
+
+/**
+ * An error of an internal server-to-server route (internal-institutions.ts;
+ * contract Ductus#2028 c.6993786629 §2), whose body is {greska, ...} instead
+ * of a problem, or no body at all (401, 404, 503). Only an error the route's
+ * own contract lists for this status is answered: `greska` must be its code
+ * and the body must match its schema; a body-less error must be declared
+ * `body: "none"`. Anything else answers 500 internal. Headers are cleared as
+ * by sendProblem.
+ */
+export function sendInternalRefusal(
+  response: ServerResponse,
+  contract: RouteContract,
+  status: number,
+  body?: { readonly greska: string; readonly [field: string]: unknown },
+): void {
+  if (body === undefined) {
+    sendBareRefusal(response, contract, status);
+    return;
+  }
+  const spec = contract.errors.find((e) => e.status === status && e.code === body.greska);
+  const schema = spec?.body;
+  if (spec === undefined || typeof schema !== "object" || !Value.Check(schema, body)) {
+    sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
+    return;
+  }
+  if (!response.headersSent) {
+    for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
+    response.addTrailers({});
+    response.statusMessage = STATUS_CODES[status] ?? "";
+  }
+  answering.add(response);
+  requestIdOf(response);
+  writeJson(response, status, body);
+}

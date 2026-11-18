@@ -26,6 +26,10 @@ const WIRE_NAMES = [
   ...["requested_revision", "opened_is_own", "opened_window", "response_kind"],
   ...["response_explanation", "response_revision", "response_is_own", "response_window"],
   ...["closed_as", "closed_is_own", "closed_window", "accepted_revision", "accepted_range_hash"],
+  // The seats per role of an institution instance, keys on the wire of the
+  // provisioning contract (Ductus#2028 c.6993786629 §2).
+  "network_engineer",
+  "institution_admin",
   // OAuth 2.0 (RFC 6749): authorization request, token request and response, errors.
   "client_id",
   "client_secret",
@@ -103,6 +107,8 @@ const ENV_NAMES = [
   "DUCTURA_TEST_DATABASE",
   // The origin a state-changing request must carry (S-1B-b, server/config).
   "APP_ORIGIN",
+  // The shared secret of the provisioning routes (Ductus#2028 c.6993786629 §2).
+  "DUCTURA_PROVISIONING_TOKEN",
   // Login configuration (S-0.18, server/external/srce-auth/config.ts), names from Ductus.
   "OIDC_ISSUER",
   "OIDC_CLIENT_ID",

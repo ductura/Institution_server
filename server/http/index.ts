@@ -140,6 +140,20 @@ export {
   INTERFACE_LOCALE_TIMEOUT_MS,
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
+export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export {
+  bearerMatches,
+  checkProvisionBody,
+  createInternalInstitutionRoutes,
+  INTERNAL_INSTITUTION_GET,
+  INTERNAL_INSTITUTIONS_POST,
+  INTERNAL_PATH_PREFIX,
+  provisioningToken,
+  PROVISIONING_MAX_BODY_BYTES,
+  PROVISIONING_TOKEN_MIN_LENGTH,
+  PROVISIONING_TOKEN_VARIABLE,
+} from "./internal-institutions.ts";
+export type { InternalInstitutionRouteOptions } from "./internal-institutions.ts";
 export {
   createProblemReportRoute,
   createProblemReportRouteFor,

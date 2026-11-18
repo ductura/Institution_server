@@ -12764,6 +12764,107 @@
     }
   },
   {
+    "route": "profile.me.get",
+    "name": "student",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni_token-racuna_studenta_0000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "institution": {
+          "slug": "demo-fakultet",
+          "displayName": "Demo fakultet (test)"
+        },
+        "roles": [
+          "student"
+        ],
+        "displayName": "Ana Primjer"
+      }
+    }
+  },
+  {
+    "route": "profile.me.get",
+    "name": "teacher-without-name",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni_token-racuna_nastavnika_00000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "institution": {
+          "slug": "demo-fakultet",
+          "displayName": null
+        },
+        "roles": [
+          "institution_admin",
+          "teacher"
+        ],
+        "displayName": null
+      }
+    }
+  },
+  {
+    "route": "profile.me.get",
+    "name": "unauthorized",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401
+      }
+    }
+  },
+  {
+    "route": "profile.me.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni_token-racuna_studenta_0000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403
+      }
+    }
+  },
+  {
+    "route": "profile.me.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni_token-racuna_studenta_0000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503
+      }
+    }
+  },
+  {
     "route": "projection.process-summary.post",
     "name": "summary",
     "request": {
