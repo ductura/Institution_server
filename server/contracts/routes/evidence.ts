@@ -115,20 +115,24 @@ function unavailable(stages: readonly string[]): ErrorSpec {
   });
 }
 
-// A serialized origin as a browser sends it (DAN-930-1a): lowercase host or an
-// IPv6 literal, a port 1-65535 without the scheme's default; no path, user or
-// space. The server still compares it with its own origin exactly.
+// The shape of a canonical origin as a browser sends it (DAN-930-1a): a
+// lowercase DNS name whose last label is not a number (WHATWG reads those as
+// IPv4), a dotted-quad IPv4 or a lowercase IPv6 literal, and a port 1-65535
+// without the scheme's default; no path, user or space. The server still
+// compares it with its own origin exactly (originLayer, pipeline step 7).
+const END = "(?![\\s\\S])";
 const LABEL = "[a-z0-9]+(?:-+[a-z0-9]+)*";
-const HOST = `(?:${LABEL}(?:\\.${LABEL})*|\\[[0-9a-f:.]+\\])`;
+const NOT_NUMBER = "(?=[0-9-]*[a-z])(?!0x[0-9a-f]*(?![a-z0-9-]))";
+const OCTET = "(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])";
+const HOST = `(?:(?:${OCTET}\\.){3}${OCTET}|(?:${LABEL}\\.)*${NOT_NUMBER}${LABEL}|\\[[0-9a-f:.]+\\])`;
 const PORT =
   "(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
-const END = "(?![\\s\\S])";
 const port = (fallback: string) => `(?::(?!${fallback}${END})${PORT})?`;
 const Origin = Type.String({
   pattern: `^(?:https://${HOST}${port("443")}|http://${HOST}${port("80")})${END}`,
 });
 
-/** The headers readGuardedBody asks the client for: its Origin and `ductus-protocol`. */
+/** What the client sends for the guard: Origin (step 7) and `ductus-protocol` (readEvidenceBody). */
 const guarded = (...protocols: [string, ...string[]]) =>
   closed({
     origin: Origin,

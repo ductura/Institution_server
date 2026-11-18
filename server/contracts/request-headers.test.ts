@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import type { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
@@ -17,6 +18,19 @@ const DECLARED = {
   "live.document.get": ["ductus-protocol"],
   "submission.submit.post": ["ductus-protocol", "origin"],
 } as const;
+
+// The protocols each route takes, as readEvidenceBody's lists (open, replay:
+// "1"; commit: "1", and "2" with async signing) and, for the CONTRACT_ONLY
+// submission and live read, the vectors. contracts may not import http.
+const PROTOCOLS: Readonly<Record<string, readonly string[]>> = {
+  "evidence.commit.post": ["1", "2"],
+  "evidence.open.post": ["1"],
+  "evidence.replay.post": ["1"],
+  "live.document.get": ["1"],
+  "submission.submit.post": ["1"],
+};
+const literals = (s: TSchema | undefined): unknown[] =>
+  Array.isArray(s?.["anyOf"]) ? (s["anyOf"] as TSchema[]).flatMap(literals) : [s?.["const"]];
 
 const SITE = "https://ductura.example.invalid";
 const BAD_PROTOCOL = [
@@ -45,7 +59,22 @@ const BAD_ORIGIN = [
   ],
   ...["C:\\ductura", "file:///C:/ductura", "https://Ductura.example.invalid", `${SITE}:443`],
   ...["http://ductura.example.invalid:80", `${SITE}:0`, `${SITE}:0443`, `${SITE}:65536`],
-  ...["https://..", "http://-", "https://[::1", 1],
+  ...["https://..", "http://-", "https://[::1", "https://[]", "https://[::FFFF:1]", 1],
+  ...[
+    "wss://ductura.example.invalid",
+    "https://a-.example.invalid",
+    `${SITE}.`,
+    "https://a_b.invalid",
+  ],
+  ...["http://127.1", "http://0x7f.0.0.1", "http://010.0.0.1", "http://999", "http://1.2.3"],
+  ...[
+    "http://256.0.0.1",
+    "http://1.2.3.4.5",
+    "http://1.2.3.04",
+    "http://0x10",
+    "https://0",
+    "http://a.0x",
+  ],
 ];
 const GOOD_ORIGIN = [
   "http://127.0.0.1:3000",
@@ -134,6 +163,9 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
     for (const name of names) expect(name).toMatch(/^[a-z0-9!#$%&'*+.^_`|~-]+$/);
     for (const property of Object.values(schema?.properties ?? {}))
       expect(Value.Check(property, 1)).toBe(false);
+    expect(literals(schema?.properties["ductus-protocol"]).sort()).toEqual(
+      [...(PROTOCOLS[id] ?? [])].sort(),
+    );
   });
 });
 
