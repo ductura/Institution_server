@@ -18,11 +18,12 @@ import { isIPv4, isIPv6, Socket } from "node:net";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { INVENTORY, ROUTES, SERVER_SOURCES } from "../../server/contracts/index.ts";
+import { CONTRACT_ONLY, INVENTORY, ROUTES, SERVER_SOURCES } from "../../server/contracts/index.ts";
 import {
   operatorPolicyLayer,
   type OperatorList,
   createLayers,
+  createOperatorDenialLog,
   type SecondFactor,
 } from "../../server/http/index.ts";
 import { checkEvent } from "../../server/log/index.ts";
@@ -32,6 +33,7 @@ import {
   createTrafficRecorder,
   isOpsPath,
   NO_TRUSTED_PROXIES,
+  parseAllowedNetworks,
 } from "../../server/traffic/index.ts";
 
 // randomBytes passes through, except where issuable() hands newSessionToken
@@ -40,6 +42,8 @@ vi.mock("node:crypto", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:crypto")>();
   return { ...actual, randomBytes: vi.fn(actual.randomBytes) };
 });
+const { randomBytes: passThroughRandomBytes } =
+  await vi.importActual<typeof import("node:crypto")>("node:crypto");
 
 /**
  * Could login issue this token? newSessionToken of session-token.ts is given
@@ -54,8 +58,13 @@ function issuable(token: string): boolean {
     asked = size;
     return bytes;
   }) as typeof randomBytes);
-  const issued = newSessionToken().token;
-  return asked === 32 && issued === token;
+  try {
+    return newSessionToken().token === token && asked === 32;
+  } finally {
+    // Nothing queued may reach the next caller of randomBytes.
+    vi.mocked(randomBytes).mockReset();
+    vi.mocked(randomBytes).mockImplementation(passThroughRandomBytes);
+  }
 }
 
 type Vector = {
@@ -363,6 +372,13 @@ function asOperatorLogRow(
 }
 
 const CONTRACT_PATHS: ReadonlySet<string> = new Set(ROUTES.map((r) => r.path));
+/**
+ * The routes the server mounts: every route but those of CONTRACT_ONLY
+ * (tests/contracts/contract-only.test.ts holds the entry point to that), plus
+ * ops.events.get, which 843-2 mounts. A route only in the contract is no path
+ * of the router (PREDPROVJERA on #337: GET /api/v1/settings/values is 405).
+ */
+const MOUNTED = ROUTES.filter((r) => !CONTRACT_ONLY.includes(r.id) || r.id === "ops.events.get");
 const NO_ROUTE_PATH = "/api/v1/no-such-route";
 /**
  * The router's template for a path without parameters, whatever the method:
@@ -370,7 +386,7 @@ const NO_ROUTE_PATH = "/api/v1/no-such-route";
  * (router.ts); null for a path it does not know (404, route none).
  */
 const routeOf = (request: IncomingMessage): string | null =>
-  ROUTES.find((r) => r.path === request.url)?.path ?? null;
+  MOUNTED.find((r) => r.path === request.url)?.path ?? null;
 
 /** A host inside a masked network: the network's address plus 0x17. */
 function hostIn(network: unknown): string {
@@ -421,8 +437,8 @@ async function recorded(row: Row, lagMs = 3): Promise<Record<string, unknown>> {
  * route and the route itself (server/http/pipeline.ts, router.ts). The
  * recorder is not armed yet (step 5 is empty); that steps 3 and 4 refusals
  * are recorded too is the plan (docs/server-map.md, step 5). The model is
- * the server once the route is mounted (843-2): a CONTRACT_ONLY route answers
- * 404 until then.
+ * the server once this route is mounted (843-2); every other route of
+ * CONTRACT_ONLY is no route of the router (MOUNTED).
  * - On a path of the contract: what the route of that method declares
  *   (responses and errors), or 405 when no route there has the method.
  * - On another path (route none): 404.
@@ -452,7 +468,7 @@ const declaredOf = (route: (typeof ROUTES)[number]) =>
 async function answerable(method: string, route: string): Promise<ReadonlySet<number>> {
   const everywhere = [429, 499, 500];
   if (route === "none") return new Set([404, ...everywhere, 401, 403, 503]);
-  const onPath = ROUTES.filter((r) => r.path === route);
+  const onPath = MOUNTED.filter((r) => r.path === route);
   if (onPath.length === 0) return new Set();
   const own = onPath.find((r) => r.method === method);
   return new Set([
@@ -483,14 +499,18 @@ describe("answerable, for every route of the inventory", () => {
     expect(inventoried(route.inventory)).toBe(true);
     const ops = isOpsPath(route.path);
     const provider = route.access === "identity_provider";
-    const methods = new Set<string>(
-      ROUTES.filter((r) => r.path === route.path).map((r) => r.method),
-    );
+    const onPath = MOUNTED.filter((r) => r.path === route.path);
+    const methods = new Set<string>(onPath.map((r) => r.method));
     for (const method of [...SAFE, "POST", "PUT", "PATCH", "DELETE", "OTHER"]) {
-      const own = ROUTES.find((r) => r.path === route.path && r.method === method);
+      const allowed = await answerable(method, route.path);
+      // A path no mounted route has: the router's 404, route none.
+      if (onPath.length === 0) {
+        expect(allowed.size, `${method} ${route.path}`).toBe(0);
+        continue;
+      }
+      const own = onPath.find((r) => r.method === method);
       const declared = new Set(own === undefined ? [405] : declaredOf(own));
       const step7 = !SAFE.includes(method) && !(provider && method === route.method);
-      const allowed = await answerable(method, route.path);
       for (let status = 100; status < 600; status += 1) {
         const want =
           declared.has(status) ||
@@ -525,6 +545,14 @@ describe("answerable, for every route of the inventory", () => {
     }
   });
 
+  it("a route only in the contract is not mounted: GET settings values is 405", async () => {
+    const get = await answerable("GET", "/api/v1/settings/values");
+    expect(CONTRACT_ONLY).toContain("settings.values.get");
+    expect([get.has(200), get.has(405)]).toEqual([false, true]);
+    expect(MOUNTED.map((r) => r.id)).toContain("ops.events.get");
+    expect(MOUNTED.length).toBe(ROUTES.length - CONTRACT_ONLY.length + 1);
+  });
+
   it("a path outside the contract gives nothing; route none its own set", async () => {
     expect((await answerable("GET", "/api/v1/no-such-route")).size).toBe(0);
     expect([...(await answerable("GET", "none"))].sort()).toEqual([
@@ -532,6 +560,98 @@ describe("answerable, for every route of the inventory", () => {
     ]);
   });
 });
+
+/** The operator networks of the vectors' server: step 3 lets only these in. */
+const OPERATOR_NETWORKS = parseAllowedNetworks("198.51.100.0/24")!;
+/** The ports for a step 8 denial reason, and whether the request carries the cookie. */
+// A Map, so "toString" or "__proto__" as a reason finds no ports.
+const PORTS_FOR: ReadonlyMap<string, readonly [boolean, string, string]> = new Map([
+  ["not_signed_in", [false, "listed", "confirmed"]],
+  ["session_unknown", [true, "unauthenticated", "confirmed"]],
+  ["not_operator", [true, "not_listed", "confirmed"]],
+  ["second_factor_required", [true, "listed", "unconfirmed"]],
+]);
+
+/**
+ * Runs the request of a traffic.request row through the real steps 2, 3 and
+ * 8 with the real operator denial log on a fake clock, and compares what they
+ * answer and write with the rows of that request id. The ports are chosen by
+ * the step 8 row the vector has, if any; the request id is the server's own,
+ * so it is checked against the answer's X-Request-Id and then set to the row's.
+ */
+async function denialProblem(rows: readonly Row[], traffic: Row): Promise<string | undefined> {
+  const own = rows.filter((r) => r.requestId === traffic.requestId && r !== traffic);
+  const step8 = own.find((r) => r.kind === "authz.operator_denied");
+  const [cookie, listed, factor] = PORTS_FOR.get(String(step8?.fields.reason)) ?? [
+    true,
+    "listed",
+    "confirmed",
+  ];
+  const message = new IncomingMessage(new Socket());
+  Object.defineProperty(message.socket, "remoteAddress", { value: hostIn(traffic.fields.ip) });
+  message.method = String(traffic.fields.method);
+  message.url = traffic.fields.route === "none" ? NO_ROUTE_PATH : String(traffic.fields.route);
+  if (cookie) message.headers.cookie = vector("page").request.headers!.cookie!;
+  const response = new ServerResponse(message);
+  const written: Record<string, unknown>[] = [];
+  const at = own.length === 0 ? Date.parse(traffic.at) : Date.parse(own[0]!.at);
+  const log = createOperatorDenialLog({
+    write: async (record) => {
+      written.push(record as Record<string, unknown>);
+      return { ok: true } as never;
+    },
+    now: () => new Date(at),
+  });
+  // The layers as the pipeline builds them (createLayers), steps 2, 3 and 8.
+  const layers = createLayers({
+    expectedOrigin: null,
+    allowedNetworks: () => OPERATOR_NETWORKS,
+    operatorDenialLog: log,
+    secondFactor: async () => factor as Awaited<ReturnType<SecondFactor>>,
+    operators: async () => listed as Awaited<ReturnType<OperatorList>>,
+  });
+  await layers.clientIp(message, response);
+  let outcome = await layers.ipRules(message, response);
+  if (outcome === "next") outcome = await layers.operatorPolicy(message, response);
+  await new Promise((resolve) => setImmediate(resolve));
+  const status = outcome === "done" ? response.statusCode : "handler";
+  if (outcome === "done" && status !== traffic.fields.status)
+    return `steps 3 and 8 answer ${String(status)}, the row has ${String(traffic.fields.status)}`;
+  if (outcome === "next" && own.length > 0) return "a denial row for a request that passes";
+  // On this route 401 and 403 are the pipeline's alone (the summary).
+  if (
+    outcome === "next" &&
+    isOpsPath(message.url) &&
+    [401, 403].includes(Number(traffic.fields.status))
+  )
+    return "a 401 or 403 for a request steps 3 and 8 let through";
+  const id = String(response.getHeader("x-request-id") ?? "");
+  const made = written.map((record) => {
+    if (record.requestId !== id) return { seq: -1 } as Row;
+    const checked = checkEvent(
+      { ...record, requestId: traffic.requestId },
+      { routes: CONTRACT_PATHS },
+    );
+    if (!checked.ok) return { seq: -2 } as Row;
+    return asOperatorLogRow(checked.value, 0, "");
+  });
+  const strip = (r: Row) => ({ ...r, seq: 0, at: "" });
+  return JSON.stringify(made) === JSON.stringify(own.map(strip))
+    ? undefined
+    : `written ${JSON.stringify(made)}, rows ${JSON.stringify(own.map(strip))}`;
+}
+
+/** Every row other than traffic.request belongs to a request of the page, and each request checks out. */
+async function pageProblem(rows: readonly Row[]): Promise<string | undefined> {
+  const ids = new Set(trafficRows(rows).map((r) => r.requestId));
+  const orphan = rows.find((r) => r.kind !== "traffic.request" && !ids.has(r.requestId));
+  if (orphan !== undefined) return `seq ${orphan.seq} belongs to no request of the page`;
+  for (const traffic of trafficRows(rows)) {
+    const problem = await denialProblem(rows, traffic);
+    if (problem !== undefined) return `seq ${traffic.seq}: ${problem}`;
+  }
+  return undefined;
+}
 
 describe("the page vector is what the log flow writes and operator_log returns", () => {
   const page = vector("page");
@@ -577,7 +697,7 @@ describe("the page vector is what the log flow writes and operator_log returns",
   // (the review's case) and every status outside answerable, row by row.
   it("a status its route cannot answer fails the check, row by row", async () => {
     const health = trafficRows(rows).find((r) => r.fields.route === "/api/v1/health");
-    expect(health?.seq).toBe(44);
+    expect(health?.seq).toBe(45);
     const as403 = { ...health!, fields: { ...health!.fields, status: 403 } };
     expect(await statusProblem(as403)).toBeDefined();
     for (const row of trafficRows(rows)) {
@@ -591,14 +711,52 @@ describe("the page vector is what the log flow writes and operator_log returns",
     }
   });
 
+  // PREDPROVJERA on #337: authn.login_* rows had no producer that writes them
+  // to the log (the login flow reports to stderr). Every row other than
+  // traffic.request is now what a producer of this server writes: the
+  // operator denial log, through the real step 3 and step 8.
+  it("has only kinds a producer here writes, each verified below", () =>
+    expect([...new Set(rows.map((r) => r.kind))].sort()).toEqual([
+      "authz.operator_denied",
+      "traffic.ip_denied",
+      "traffic.request",
+    ]));
+
+  it.each(trafficRows(rows).map((r) => [r.seq, r] as const))(
+    "seq %d: steps 3 and 8 answer its status and write exactly its other rows",
+    async (_seq, traffic) => expect(await denialProblem(rows, traffic)).toBeUndefined(),
+  );
+
+  it.each([
+    [
+      "a login row the login flow never writes",
+      { kind: "authn.login_started", fields: { method: "aai_eduhr" } },
+    ],
+    [
+      "another reason than step 8 gives",
+      { fields: { route: "/api/v1/ops/events", reason: "not_operator" } },
+    ],
+    ["another route", { fields: { route: "/api/v1/health", reason: "not_signed_in" } }],
+    ["another request id", { requestId: "0b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8" }],
+  ])("a denial row with %s is refused", async (_name, change) => {
+    const denial = rows.find((r) => r.kind === "authz.operator_denied")!;
+    expect(await pageProblem(rows)).toBeUndefined();
+    const mutated = rows.map((r) => (r === denial ? ({ ...r, ...change } as Row) : r));
+    expect(await pageProblem(mutated)).toBeDefined();
+  });
+
+  it("a request without its denial row, or step 8 with the status of step 3, is refused", async () => {
+    const traffic = trafficRows(rows).filter((r) => r.fields.route === "/api/v1/ops/events");
+    expect(traffic.map((r) => r.fields.status)).toEqual([401, 403]);
+    expect(await pageProblem(rows.filter((r) => r.kind !== "traffic.ip_denied"))).toBeDefined();
+    const swapped = { ...traffic[0]!, fields: { ...traffic[0]!.fields, status: 403 } };
+    expect(await pageProblem(rows.map((r) => (r === traffic[0] ? swapped : r)))).toBeDefined();
+  });
+
   // Rows with one request id are one request: its traffic.request comes last,
   // and every other row falls inside that request, from its start (at minus
   // durationMs, less the lag of the clock above) to its end.
   it("rows of one request id are one request", () => {
-    const kindRoutes: Readonly<Record<string, readonly string[]>> = {
-      "authn.login_started": ["/api/v1/auth/login"],
-      "authn.login_failed": ["/api/v1/auth/login", "/api/v1/auth/callback"],
-    };
     for (const traffic of rows.filter((r) => r.kind === "traffic.request")) {
       const same = rows.filter((r) => r.requestId === traffic.requestId && r !== traffic);
       const end = Date.parse(traffic.at);
@@ -607,8 +765,8 @@ describe("the page vector is what the log flow writes and operator_log returns",
         expect(row.seq, `seq ${row.seq}`).toBeLessThan(traffic.seq);
         expect(Date.parse(row.at), `seq ${row.seq}`).toBeGreaterThanOrEqual(start);
         expect(Date.parse(row.at), `seq ${row.seq}`).toBeLessThanOrEqual(end);
-        const routes = kindRoutes[row.kind];
-        if (routes !== undefined) expect(routes, `seq ${row.seq}`).toContain(traffic.fields.route);
+        // A denial names the route of its request.
+        expect(row.fields.route, `seq ${row.seq}`).toBe(traffic.fields.route);
       }
     }
     expect(rows.filter((r) => r.requestId === rows[0]!.requestId).length).toBeGreaterThan(1);

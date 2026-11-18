@@ -396,6 +396,9 @@ describe("ops.events.get field names are the ones operator_log keeps", () => {
       ];
     }),
     ...["sessionToken", "authToken", "csrfToken", "Cookie", "setCookie", "SeSsIoN1", "aSecretB"],
+    // A digit or a long run before the word (QA self-check on #337): the
+    // lookahead must cross digits and be unbounded.
+    ...["a1token", "v2Session", "x9COOKIE", "a0Bearer", "q12345Secret", `${"a".repeat(40)}Bearer`],
     // Near misses the function keeps, and cookies, which holds cookie.
     ...["tokn", "toke", "sesion", "passwd", "pass", "secrt", "auth", "bear", "credit", "cookies"],
     ...["authorisation", "sessio", "credentia", "bearr"],
@@ -560,5 +563,45 @@ describe("the vector window-over-24-hours", () => {
     expect(query).toBeDefined();
     expect(queryOk(query)).toBe(true);
     expect(Date.parse(query!.to) - Date.parse(query!.from)).toBe(24 * 3_600_000 + 1);
+  });
+});
+
+// PREDPROVJERA on #337: a page from a 36-hour window passed, though
+// operator_log refuses it. Every vector but the 422 one has a window the
+// function reads: from before to, at most 24 hours (the 200s above all).
+describe("the window of every vector operator_log would read", () => {
+  type FileVector = {
+    name: string;
+    request: { query?: { from: string; to: string } };
+    response: { status: number };
+  };
+  const { vectors } = JSON.parse(
+    readFileSync(new URL("./vectors/ops.events.get.json", import.meta.url), "utf8"),
+  ) as { vectors: FileVector[] };
+  const DAY = 24 * 3_600_000;
+  const windowOk = (query: FileVector["request"]["query"]) => {
+    if (query === undefined || !queryOk(query)) return false;
+    const span = Date.parse(query.to) - Date.parse(query.from);
+    return span > 0 && span <= DAY;
+  };
+
+  it("there are 200 vectors, the page and the empty one", () =>
+    expect(vectors.filter((v) => v.response.status === 200).map((v) => v.name)).toEqual([
+      "page",
+      "empty",
+    ]));
+
+  it.each(vectors.map((v) => [v.name, v] as const))("%s", (_name, v) =>
+    expect(windowOk(v.request.query)).toBe(v.response.status !== 422),
+  );
+
+  it("refuses a window a day longer, an empty one and one backwards", () => {
+    const query = { from: "2026-11-18T00:00:00Z", to: "2026-11-18T12:00:00Z" };
+    expect(windowOk(query)).toBe(true);
+    expect(windowOk({ ...query, from: "2026-11-17T00:00:00Z" })).toBe(false);
+    expect(windowOk({ ...query, to: query.from })).toBe(false);
+    expect(windowOk({ from: query.to, to: query.from })).toBe(false);
+    expect(windowOk({ ...query, from: "2026-11-17T12:00:00Z" })).toBe(true);
+    expect(windowOk({ ...query, from: "2026-11-17T11:59:59.999Z" })).toBe(false);
   });
 });
