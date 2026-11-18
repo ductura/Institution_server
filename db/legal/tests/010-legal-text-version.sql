@@ -12,7 +12,7 @@ SET LOCAL search_path TO pg_catalog, pg_temp, public;
 CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA public;
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(104);
+SELECT plan(108);
 
 -- Runs `sql` as `who` (NULL: the session's superuser), with
 -- session_replication_role = replica when asked; gives back the SQLSTATE it
@@ -50,6 +50,7 @@ SELECT is(pg_temp.try_as(w.who, s.sql, w.replica), w.expected,
 FROM (VALUES ('ductus_legal_app', false, '42501'), ('ductus_legal_migrator', false, '42501'),
              (NULL, false, '55000'), (NULL, true, '55000')) w (who, replica, expected)
 CROSS JOIN unnest(ARRAY[
+  'UPDATE legal.text_version SET id = DEFAULT',
   'UPDATE legal.text_version SET version = 2',
   'UPDATE legal.text_version SET content_sha256 = ''\x00''::bytea || content_sha256',
   'UPDATE legal.text_version SET kind = ''privacy_notice''',
@@ -142,10 +143,13 @@ SELECT ok((SELECT published_at IS NOT NULL AND published_at <= clock_timestamp()
 -- DAN-848, which runs as the owner, and the owner reads every version.
 SELECT is(pg_temp.try_as('ductus_legal_migrator', format(
   $$ DO $d$ BEGIN
-       IF (SELECT count(*) FROM legal.text_version) <> %s THEN
-         RAISE EXCEPTION 'the owner does not see every version' USING ERRCODE = 'P0001';
+       IF (SELECT count(*) FROM legal.text_version) <> %s
+          OR (SELECT ROW(v.*)::text FROM legal.text_version v WHERE (kind, language, version) = ('terms_of_use', 'hr', 999001))
+             IS DISTINCT FROM %L THEN
+         RAISE EXCEPTION 'the owner does not see every version and every column' USING ERRCODE = 'P0001';
        END IF;
-     END $d$ $$, (SELECT count(*) FROM legal.text_version))), 'ok', 'the owner reads every published version');
+     END $d$ $$, (SELECT count(*) FROM legal.text_version), (SELECT ROW(b.*)::text FROM pg_temp.before b))),
+  'ok', 'the owner reads every published version, every column of it');
 SELECT is(pg_temp.try_as('ductus_legal_app', w.sql), '42501', 'the app is refused: ' || w.sql)
 FROM unnest(ARRAY[
   'SELECT count(*) FROM legal.text_version',
