@@ -3,6 +3,9 @@
 -- chain (public.log_chain_head) moves only with an append; its row of the
 -- access matrix and that of the chain's functions; and public.log_chain_verify()
 -- finds every change, deletion and insertion made behind the triggers' back.
+-- S-1K.8 (DAN-868-1a): the base of the chain (public.log_chain_base) does not
+-- change by any statement, one that touches no row included, and only its
+-- owner reads it.
 -- Plan of attack: ductura/server#125 (A, C, D; B, concurrent appends, is in
 -- tests/db/log-chain.integration.test.ts).
 --
@@ -65,7 +68,7 @@ END
 $$;
 
 
-SELECT plan(97);
+SELECT plan(184);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -124,7 +127,7 @@ BEGIN
 END
 $$;
 
--- Every right on the head, or EXECUTE on a function of the chain, held by a
+-- Every right on the head or the base, or EXECUTE on a function of the chain, held by a
 -- role that is not a superuser, or by PUBLIC, directly or by membership.
 CREATE VIEW pg_temp.chain_right AS
   WITH holder AS (
@@ -133,22 +136,24 @@ CREATE VIEW pg_temp.chain_right AS
     WHERE NOT r.rolsuper AND r.rolname NOT LIKE 'pg\_%'
     UNION ALL SELECT 'public', 'public', 0
   )
-  SELECT DISTINCT h.who || ': ' || p.privilege || ' log_chain_head'
+  SELECT DISTINCT h.who || ': ' || p.privilege || ' ' || t.name
          || CASE WHEN h.via = h.who THEN '' ELSE ' via ' || h.via END AS found
   FROM holder h
+  CROSS JOIN unnest(ARRAY['log_chain_head', 'log_chain_base']) t (name)
   CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']
               || CASE WHEN current_setting('server_version_num')::int >= 170000
                       THEN ARRAY['MAINTAIN'] ELSE '{}'::text[] END) AS p (privilege)
-  WHERE has_table_privilege(h.via, 'public.log_chain_head'::regclass, p.privilege)
+  WHERE has_table_privilege(h.via, ('public.' || t.name)::regclass, p.privilege)
      OR (p.privilege IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
-         AND has_any_column_privilege(h.via, 'public.log_chain_head'::regclass, p.privilege))
+         AND has_any_column_privilege(h.via, ('public.' || t.name)::regclass, p.privilege))
   UNION
   SELECT h.who || ': EXECUTE ' || f.name || CASE WHEN h.via = h.who THEN '' ELSE ' via ' || h.via END
   FROM holder h
   CROSS JOIN (VALUES ('log_chain_verify', 'public.log_chain_verify()'),
                      ('log_entry_digest', 'public.log_entry_digest(bytea, bigint, bigint, timestamptz, text, jsonb)'),
                      ('log_entry_chain', 'public.log_entry_chain()'),
-                     ('log_chain_head_guard', 'public.log_chain_head_guard()')) f (name, signature)
+                     ('log_chain_head_guard', 'public.log_chain_head_guard()'),
+                     ('log_chain_base_refuse_change', 'public.log_chain_base_refuse_change()')) f (name, signature)
   WHERE has_function_privilege(h.via, f.signature, 'EXECUTE');
 
 CREATE TABLE pg_temp.expected_chain_right (found text PRIMARY KEY);
@@ -157,9 +162,11 @@ INSERT INTO pg_temp.expected_chain_right VALUES
   ('ductus_logs_migrator: REFERENCES log_chain_head'), ('ductus_logs_migrator: TRIGGER log_chain_head'),
   ('ductus_logs_migrator: EXECUTE log_chain_verify'), ('ductus_logs_migrator: EXECUTE log_entry_digest'),
   ('ductus_logs_migrator: EXECUTE log_entry_chain'), ('ductus_logs_migrator: EXECUTE log_chain_head_guard'),
-  ('ductus_logs_reader: EXECUTE log_chain_verify');
+  ('ductus_logs_reader: EXECUTE log_chain_verify'),
+  ('ductus_logs_migrator: SELECT log_chain_base'), ('ductus_logs_migrator: REFERENCES log_chain_base'),
+  ('ductus_logs_migrator: TRIGGER log_chain_base'), ('ductus_logs_migrator: EXECUTE log_chain_base_refuse_change');
 INSERT INTO pg_temp.expected_chain_right
-  SELECT 'ductus_logs_migrator: MAINTAIN log_chain_head' WHERE current_setting('server_version_num')::int >= 170000;
+  SELECT 'ductus_logs_migrator: MAINTAIN ' || t FROM unnest(ARRAY['log_chain_head', 'log_chain_base']) t WHERE current_setting('server_version_num')::int >= 170000;
 CREATE VIEW pg_temp.chain_drift AS
   (SELECT '+' || x.found AS found FROM (
      SELECT found FROM pg_temp.chain_right EXCEPT SELECT found FROM pg_temp.expected_chain_right) x)
@@ -195,16 +202,47 @@ SELECT set_eq(
   ARRAY['log_chain_head_chain_read r ductus_logs_migrator using true check -',
         'log_chain_head_chain_move w ductus_logs_migrator using true check true'],
   'the head: the owner reads and moves it (for the insert trigger); no policy for the reader');
+SELECT ok(EXISTS (SELECT 1 FROM public.schema_migrations WHERE version = '20261118010000'),
+  'the base migration is in the ledger');
+SELECT is(
+  (SELECT string_agg(a.attname || ' ' || format_type(a.atttypid, a.atttypmod)
+                     || CASE WHEN a.attnotnull THEN ' not null' ELSE '' END, ', ' ORDER BY a.attnum)
+   FROM pg_attribute a WHERE a.attrelid = 'public.log_chain_base'::regclass AND a.attnum > 0 AND NOT a.attisdropped),
+  'only_row boolean not null, seq bigint not null, hash bytea not null',
+  'log_chain_base holds the seq and hash of the last row cut away');
+SELECT set_eq(
+  $$ SELECT conname || ' ' || pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.log_chain_base'::regclass $$,
+  ARRAY['log_chain_base_pkey PRIMARY KEY (only_row)', 'log_chain_base_one_row CHECK (only_row)',
+        'log_chain_base_seq CHECK ((seq >= 0))', 'log_chain_base_hash_size CHECK ((octet_length(hash) = 32))'],
+  'the base is one row, its seq at least 0 and its hash 32 bytes');
+SELECT is((SELECT array_agg(seq::text || ' ' || encode(hash, 'hex')) FROM public.log_chain_base), ARRAY['0 ' || repeat('00', 32)],
+  'the base is seq 0 and 32 zero bytes: nothing is cut');
+SELECT is((SELECT relowner::regrole::text || ' ' || (relrowsecurity AND relforcerowsecurity)::text
+             || ' ' || (SELECT proowner::regrole::text FROM pg_proc WHERE oid = 'public.log_chain_base_refuse_change()'::regprocedure)
+           FROM pg_class WHERE oid = 'public.log_chain_base'::regclass),
+  'ductus_logs_migrator true ductus_logs_migrator', 'the migrator owns the base and its trigger function; RLS on the base is enabled and forced');
+SELECT is(pg_temp.try_as('ductus_logs_migrator', $$ DO $d$ BEGIN
+    IF (SELECT count(*) FROM public.log_chain_base) <> 1 THEN RAISE EXCEPTION 'unseen' USING ERRCODE = 'P0002'; END IF;
+  END $d$ $$), 'ok', 'the owner reads the one row of the base, by its policy');
+SELECT set_eq(
+  $$ SELECT polname || ' ' || polcmd::text || ' ' || array_to_string(polroles::regrole[], ',')
+            || ' using ' || coalesce(pg_get_expr(polqual, polrelid), '-') || ' check ' || coalesce(pg_get_expr(polwithcheck, polrelid), '-')
+     FROM pg_policy WHERE polrelid = 'public.log_chain_base'::regclass $$,
+  ARRAY['log_chain_base_owner_read r ductus_logs_migrator using true check -'],
+  'the base: only the owner reads it, by a policy of its own');
 SELECT is_empty('SELECT found FROM pg_temp.chain_drift',
-  'the access matrix of the head and the functions: the reader only verifies, the owner keeps what the trigger needs, nobody else (writer, retention, PUBLIC, any other role) holds a right');
+  'the access matrix of the head, the base and the functions: the reader only verifies, the owner keeps what the trigger needs and reads the base but holds nothing to write it, nobody else (writer, retention, PUBLIC, any other role) holds a right');
 SELECT set_eq(
   $$ SELECT t.tgrelid::regclass::text || ' ' || t.tgname || ' ' || t.tgenabled::text || ' ' || t.tgtype::text
      FROM pg_trigger t
-     WHERE t.tgrelid IN ('public.log_entry'::regclass, 'public.log_chain_head'::regclass) AND NOT t.tgisinternal $$,
+     WHERE t.tgrelid IN ('public.log_entry'::regclass, 'public.log_chain_head'::regclass, 'public.log_chain_base'::regclass)
+       AND NOT t.tgisinternal $$,
   -- tgtype: 7 = ROW | BEFORE | INSERT, 27 = ROW | BEFORE | DELETE | UPDATE,
-  -- 31 = ROW | BEFORE | INSERT | DELETE | UPDATE, 34 = BEFORE | TRUNCATE.
+  -- 31 = ROW | BEFORE | INSERT | DELETE | UPDATE, 34 = BEFORE | TRUNCATE,
+  -- 62 = BEFORE | INSERT | DELETE | UPDATE | TRUNCATE, at statement level.
   ARRAY['log_entry log_entry_chain A 7', 'log_entry log_entry_no_change A 27', 'log_entry log_entry_no_truncate A 34',
-        'log_chain_head log_chain_head_guard A 31', 'log_chain_head log_chain_head_no_truncate A 34'],
+        'log_chain_head log_chain_head_guard A 31', 'log_chain_head log_chain_head_no_truncate A 34',
+        'log_chain_base log_chain_base_no_change A 62', 'log_chain_base log_chain_base_no_row_change A 31'],
   'every trigger of the chain fires ALWAYS');
 -- DAN-835-4: the head hash and the digest cover the full payload; with the
 -- rest of a row from operator_log they would let the reader guess an IPv4
@@ -218,10 +256,11 @@ SELECT set_eq(
   $$ SELECT p.proname || ' ' || array_to_string(p.proconfig, ',') || ' ' || p.prosecdef::text
      FROM pg_proc p
      WHERE p.oid IN ('public.log_entry_chain()'::regprocedure, 'public.log_chain_head_guard()'::regprocedure,
-                     'public.log_chain_verify()'::regprocedure,
+                     'public.log_chain_verify()'::regprocedure, 'public.log_chain_base_refuse_change()'::regprocedure,
                      'public.log_entry_digest(bytea, bigint, bigint, timestamptz, text, jsonb)'::regprocedure) $$,
   ARRAY['log_entry_chain search_path=pg_catalog true', 'log_chain_head_guard search_path=pg_catalog false',
-        'log_chain_verify search_path=pg_catalog, pg_temp true', 'log_entry_digest search_path=pg_catalog false'],
+        'log_chain_verify search_path=pg_catalog, pg_temp true', 'log_entry_digest search_path=pg_catalog false',
+        'log_chain_base_refuse_change search_path=pg_catalog false'],
   'every function has a fixed search path; the insert trigger and the verification (the reader has no right on log_entry, DAN-835-4) run as their owner');
 SELECT is(pg_temp.verified(), '{}', 'the chain as found is intact');
 
@@ -321,15 +360,23 @@ FROM (VALUES
       END $d$ $$, 'with the trigger off, a second successor of one row is refused (no fork)')
 ) x (sql, what);
 
--- 4. The head moves only with an append (D3).
+-- 4. The head moves only with an append (D3); the base does not change (DAN-868-1a).
 CREATE TABLE pg_temp.head_attempt (who text, sql text, replica boolean, expected text);
 INSERT INTO pg_temp.head_attempt
-  SELECT w.who, s.sql, false, CASE WHEN w.who = 'ductus_logs_migrator' AND s.sql LIKE 'UPDATE%' THEN '55000' ELSE '42501' END
+  SELECT w.who, s.sql, false, CASE WHEN w.who = 'ductus_logs_migrator' AND s.sql LIKE 'UPDATE public.log_chain_head%' THEN '55000'
+                                   WHEN w.who = 'ductus_logs_migrator' AND s.sql LIKE 'SELECT%' THEN 'ok' ELSE '42501' END
   FROM unnest(ARRAY['ductus_logs_migrator', 'ductus_logs_writer', 'ductus_logs_reader', 'ductus_logs_retention']) w (who)
   CROSS JOIN unnest(ARRAY['UPDATE public.log_chain_head SET seq = seq + 1',
                           'DELETE FROM public.log_chain_head',
                           'INSERT INTO public.log_chain_head (only_row, seq, hash) VALUES (true, 0, ''\x00'')',
-                          'TRUNCATE public.log_chain_head']) s (sql);
+                          'TRUNCATE public.log_chain_head',
+                          'SELECT 1 FROM public.log_chain_base',
+                          'UPDATE public.log_chain_base SET seq = seq + 1',
+                          'UPDATE public.log_chain_base SET seq = 1 WHERE false',
+                          'DELETE FROM public.log_chain_base',
+                          'DELETE FROM public.log_chain_base WHERE seq = 1',
+                          'INSERT INTO public.log_chain_base (only_row, seq, hash) VALUES (true, 0, ''\x00'')',
+                          'TRUNCATE public.log_chain_base']) s (sql);
 INSERT INTO pg_temp.head_attempt
   SELECT NULL, s.sql, r.replica, '55000'
   FROM unnest(ARRAY['UPDATE public.log_chain_head SET seq = seq + 1',
@@ -338,9 +385,74 @@ INSERT INTO pg_temp.head_attempt
                     'INSERT INTO public.log_chain_head (only_row, seq, hash) VALUES (false, 0, decode(repeat(''00'', 32), ''hex''))',
                     'TRUNCATE public.log_chain_head']) s (sql)
   CROSS JOIN unnest(ARRAY[false, true]) r (replica);
+-- DAN-868-1a: every statement that could write the base, one that would
+-- touch no row included, is refused before it runs, whoever runs it.
+INSERT INTO pg_temp.head_attempt
+  SELECT NULL, s.sql, r.replica, '55000'
+  FROM unnest(ARRAY['UPDATE public.log_chain_base SET seq = seq + 1',
+                    'UPDATE public.log_chain_base SET hash = decode(repeat(''ab'', 32), ''hex'')',
+                    'UPDATE public.log_chain_base SET seq = 1 WHERE false',
+                    'UPDATE public.log_chain_base SET seq = 1 WHERE seq = 1',
+                    'DELETE FROM public.log_chain_base',
+                    'DELETE FROM public.log_chain_base WHERE false',
+                    'DELETE FROM public.log_chain_base WHERE seq = 1',
+                    'INSERT INTO public.log_chain_base (only_row, seq, hash) VALUES (false, 0, decode(repeat(''00'', 32), ''hex''))',
+                    'INSERT INTO public.log_chain_base SELECT * FROM public.log_chain_base WHERE false',
+                    'INSERT INTO public.log_chain_base (only_row, seq, hash) VALUES (true, 5, decode(repeat(''ab'', 32), ''hex''))
+                       ON CONFLICT (only_row) DO UPDATE SET seq = excluded.seq, hash = excluded.hash',
+                    'INSERT INTO public.log_chain_base (only_row, seq, hash) VALUES (true, 5, decode(repeat(''ab'', 32), ''hex''))
+                       ON CONFLICT DO NOTHING',
+                    'MERGE INTO public.log_chain_base b USING (VALUES (true)) v (o) ON b.only_row = v.o
+                       WHEN MATCHED THEN UPDATE SET seq = 5',
+                    'MERGE INTO public.log_chain_base b USING (VALUES (true)) v (o) ON false
+                       WHEN NOT MATCHED THEN INSERT (only_row, seq, hash) VALUES (false, 0, decode(repeat(''00'', 32), ''hex''))',
+                    'MERGE INTO public.log_chain_base b USING (VALUES (true)) v (o) ON b.only_row = v.o
+                       WHEN MATCHED THEN DELETE',
+                    'COPY public.log_chain_base FROM PROGRAM ''true''',
+                    'WITH x AS (UPDATE public.log_chain_base SET seq = 1 WHERE false RETURNING 1) SELECT 1',
+                    'WITH x AS (DELETE FROM public.log_chain_base WHERE false RETURNING 1) SELECT 1',
+                    -- A write naming a parent passes no statement trigger of the base.
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+                     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+                     UPDATE public.base_parent SET seq = 42',
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+                     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+                     DELETE FROM public.base_parent',
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL)
+                       PARTITION BY LIST (only_row);
+                     ALTER TABLE public.base_parent ATTACH PARTITION public.log_chain_base FOR VALUES IN (true);
+                     UPDATE public.base_parent SET seq = 44',
+                    'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL)
+                       PARTITION BY LIST (only_row);
+                     ALTER TABLE public.base_parent ATTACH PARTITION public.log_chain_base FOR VALUES IN (true);
+                     DELETE FROM public.base_parent',
+                    'TRUNCATE public.log_chain_base']) s (sql)
+  CROSS JOIN unnest(ARRAY[false, true]) r (replica);
+-- The owner, who holds no right to write the base, cannot write it through
+-- a parent of its own either; nor through MERGE ... NOT MATCHED BY SOURCE
+-- (PostgreSQL 17; a syntax error before).
+INSERT INTO pg_temp.head_attempt VALUES
+  ('ductus_logs_migrator', 'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+     UPDATE public.base_parent SET seq = 42', false, '55000'),
+  ('ductus_logs_migrator', 'CREATE TABLE public.base_parent (only_row boolean NOT NULL, seq bigint NOT NULL, hash bytea NOT NULL);
+     ALTER TABLE public.log_chain_base INHERIT public.base_parent;
+     UPDATE public.base_parent SET seq = 42', true, '55000'),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN UPDATE SET seq = 5', false,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN UPDATE SET seq = 5', true,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN DELETE', false,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END),
+  (NULL, 'MERGE INTO public.log_chain_base b USING (SELECT 1 WHERE false) v (o) ON false
+     WHEN NOT MATCHED BY SOURCE THEN DELETE', true,
+   CASE WHEN current_setting('server_version_num')::int >= 170000 THEN '55000' ELSE '42601' END);
 SELECT is(pg_temp.try_as(who, sql, replica), expected,
   coalesce(who, 'the superuser') || CASE WHEN replica THEN ' with session_replication_role = replica' ELSE '' END
-  || ' is refused: ' || sql)
+  || CASE expected WHEN 'ok' THEN ' may: ' ELSE ' is refused: ' END || sql)
 FROM pg_temp.head_attempt ORDER BY who NULLS LAST, replica, sql;
 SELECT is(pg_temp.try_as(NULL, $$
   CREATE FUNCTION pg_temp.bump() RETURNS trigger LANGUAGE plpgsql AS $f$
@@ -350,6 +462,8 @@ SELECT is(pg_temp.try_as(NULL, $$
   INSERT INTO pg_temp.poke VALUES (1) $$),
   '55000', 'from a trigger, the head still moves only one step');
 SELECT is(pg_temp.verified(), '{}', 'after every attempt the chain verifies');
+SELECT is((SELECT array_agg(seq::text || ' ' || encode(hash, 'hex')) FROM public.log_chain_base), ARRAY['0 ' || repeat('00', 32)],
+  'after every attempt the base is as migrated');
 
 -- 5. The verification finds every change made behind the triggers' back (C).
 SELECT is(pg_temp.tampered(t.sql), t.expected, t.what)
@@ -430,6 +544,10 @@ GRANT SELECT ON public.log_chain_head TO ductus_app;
 SELECT set_eq('SELECT found FROM pg_temp.chain_drift', ARRAY['+ductus_app: SELECT log_chain_head'],
   'a right of the main application role on the head is caught');
 REVOKE SELECT ON public.log_chain_head FROM ductus_app;
+GRANT UPDATE (seq) ON public.log_chain_base TO ductus_app;
+SELECT set_eq('SELECT found FROM pg_temp.chain_drift', ARRAY['+ductus_app: UPDATE log_chain_base'],
+  'a column right of the main application role on the base is caught (DAN-868-1a)');
+REVOKE UPDATE (seq) ON public.log_chain_base FROM ductus_app;
 GRANT EXECUTE ON FUNCTION public.log_chain_verify() TO ductus_app;
 SELECT set_eq('SELECT found FROM pg_temp.chain_drift', ARRAY['+ductus_app: EXECUTE log_chain_verify'],
   'EXECUTE of the verification for the main application role is caught');
