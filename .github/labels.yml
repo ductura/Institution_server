@@ -1,0 +1,48 @@
+# Labele repoa ductura/server, zapis stanja na GitHubu 18. 11. 2026. (S-0.11, DAN-724).
+# Ništa ih ne sinkronizira s GitHubom (opseg DAN-724). docs/BOTS.md u odjeljku
+# "## Labele" navodi svaku labelu točno jednim retkom; scripts/engineering/bot-labels.test.ts
+# provjerava da svaka labela ima opis i da je taj popis potpun i bez suvišnih stavki.
+- { name: "area:auth", color: "1d76db", description: "Područje: prijava i ovlasti" }
+- { name: "area:ci", color: "1d76db", description: "CI, GitHub Actions workflowi, gate provjere" }
+- { name: "area:db", color: "1d76db", description: "Područje: baza" }
+- { name: "area:docs", color: "ededed", description: "Područje: dokumentacija" }
+- {
+    name: "area:platforma",
+    color: "1d76db",
+    description: "Razvojna platforma, alati, demo stog, botovi",
+  }
+- { name: "area:sync", color: "1d76db", description: "Područje: sinkronizacija" }
+- { name: "area:ui", color: "1d76db", description: "Područje: sučelje" }
+- { name: "bug", color: "d73a4a", description: "Something isn't working" }
+- { name: "claude:in-progress", color: "fbca04", description: "Claude sesija radi na ovom issueu" }
+- {
+    name: "izvjestaj-ceka",
+    color: "fbca04",
+    description: "Izvještaj sesije čeka orkestratora (SESSIONS.md §2a)",
+  }
+- { name: "pitanje-za-grok", color: "5319e7", description: "Pitanje za jednog od Grok botova" }
+- { name: "plan-napada", color: "fbca04", description: "Plan napada prije koda" }
+- {
+    name: "ready-for-claude",
+    color: "0e8a16",
+    description: "Issue je spreman da ga preuzme Claude sesija",
+  }
+- {
+    name: "risk:critical",
+    color: "b60205",
+    description: "Rizik critical: identitet, ovlasti, evidencija, predaja, workflowi; review i QA",
+  }
+- {
+    name: "risk:low",
+    color: "0e8a16",
+    description: "Rizik low: dokumentacija, copy bez promjene značenja, jednostavna konfiguracija",
+  }
+- {
+    name: "risk:standard",
+    color: "fbca04",
+    description: "Rizik standard: uobičajena promjena koda; traži review",
+  }
+- { name: "role:backend", color: "5319e7", description: "Pisac Backend" }
+- { name: "role:frontend", color: "5319e7", description: "Pisac Frontend" }
+- { name: "role:platforma", color: "5319e7", description: "Pisac Platforma" }
+- { name: "security", color: "b60205", description: "Sigurnosni nalaz ili rizik" }

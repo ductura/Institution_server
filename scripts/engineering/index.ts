@@ -1,3 +1,5 @@
+export type { Label, ParsedLabels } from "./bot-labels.ts";
+export { labelListProblems, parseLabels } from "./bot-labels.ts";
 export type { GateError, Metadata, MetadataResult, Risk } from "./risk-floor.ts";
 export {
   changedPaths,
