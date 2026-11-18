@@ -84,6 +84,9 @@ describe("classOf (N11)", () => {
     ["HEAD", "/api/v1/auth/callback", "login"],
     ["POST", "/api/v1/evidence/commit", "save"],
     ["POST", "/api/v1/evidence/commit?x=1", "save"],
+    ["POST", "/api/v1/institution/enrollments", "enroll"],
+    ["POST", "/api/v1/institution/enrollments?x=1", "enroll"],
+    ["POST", "/api/v1/institution/enrollments?", "enroll"],
   ])("%s %s is %s", (method, url, expected) => {
     expect(classOf(method, url)).toBe(expected);
   });
@@ -96,6 +99,25 @@ describe("classOf (N11)", () => {
     ["GET", "/api/v1/evidence/commit"],
     ["POST", "/api/v1/evidence/commit/"],
     ["POST", "/api/v1/evidence/open"],
+    ["POST", "/api/v1/institution/enrollments/"],
+    ["POST", "/API/v1/institution/enrollments"],
+    ["POST", "/api/v1/institution/Enrollments"],
+    ["POST", "//api/v1/institution/enrollments"],
+    ["POST", "/api/v1/institution%2Fenrollments"],
+    ["POST", "/api/v1/institution/enrollments%20"],
+    ["POST", "/api/v1/institution/enrollments#x"],
+    ["POST", "/api/v1/institution/enrollments\r\n"],
+    ["POST", "/api/v1/institution/enrollments\t"],
+    ["POST", "/api/v1/institution/enrollments\u00a0"],
+    ["POST", "/api/v1/institution/enrollments\u007f"],
+    ["POST", "https://ductura.invalid/api/v1/institution/enrollments"],
+    ["GET", "/api/v1/institution/enrollments"],
+    ["HEAD", "/api/v1/institution/enrollments"],
+    ["PUT", "/api/v1/institution/enrollments"],
+    ["post", "/api/v1/institution/enrollments"],
+    [" POST", "/api/v1/institution/enrollments"],
+    ["POST", "/api/v1/institution/enrollments/students"],
+    [undefined, "/api/v1/institution/enrollments"],
     [undefined, undefined],
   ])("%s %s falls into default, which has a limit too", (method, url) => {
     expect(classOf(method, url)).toBe("default");

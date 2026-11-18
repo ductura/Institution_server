@@ -206,6 +206,20 @@ describe("the layers record after the refusal", () => {
     expect(response.statusCode).toBe(401);
   });
 
+  it("without a list the layer lets no confirmed session through (NO_OPERATORS)", async () => {
+    const entries: Parameters<OperatorDenialLog>[0][] = [];
+    const { request, response } = exchange("/api/v1/ops/x");
+    request.headers.cookie = "__Host-ductus_session=Izmisljeni_token-zapisa_odbijanja_000000001";
+    const layer = operatorPolicyLayer(
+      async () => "confirmed",
+      undefined,
+      (e) => entries.push(e),
+    );
+    expect(await layer(request, response)).toBe("done");
+    expect(response.statusCode).toBe(403);
+    expect(entries.map((entry) => entry.reason)).toEqual(["not_operator"]);
+  });
+
   it("a pass and a path that is not an operator path record nothing", async () => {
     const entries: unknown[] = [];
     const log: OperatorDenialLog = (entry) => entries.push(entry);
@@ -217,6 +231,7 @@ describe("the layers record after the refusal", () => {
         async () => "confirmed",
         undefined,
         log,
+        async () => "listed",
       )(confirmed.request, confirmed.response),
     ).toBe("next");
     const other = exchange("/api/v1/health");

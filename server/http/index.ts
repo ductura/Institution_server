@@ -120,7 +120,9 @@ export {
   type OperatorDenialReason,
 } from "./operator-denial-log.ts";
 export {
+  NO_OPERATORS,
   NO_SECOND_FACTOR,
+  type OperatorList,
   operatorPolicyLayer,
   type SecondFactor,
 } from "./operator-policy-layer.ts";
