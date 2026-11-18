@@ -139,6 +139,11 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export {
+  createStudentAssignmentWorkRoute,
+  createStudentAssignmentWorkRouteFor,
+  type StudentAssignmentWorkRouteOptions,
+} from "./student-assignment-work.ts";
+export {
   createProblemReportRoute,
   createProblemReportRouteFor,
   PROBLEM_REPORT_MAX_BYTES,
