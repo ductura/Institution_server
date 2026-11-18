@@ -245,3 +245,42 @@ describe("backup settings at the write service", () => {
     ]);
   });
 });
+
+// DAN-1060-1 (Ductus#2028): an institution threshold reaches the port only at
+// the institution level and inside its hard limits; who may write it the
+// database decides.
+describe("an institution threshold", () => {
+  const gap = (fields: Record<string, unknown>) =>
+    body({ level: "institution", key: "thresholds.session_gap_minutes", value: 45, ...fields });
+
+  it.each([
+    ["the personal level", gap({ level: "personal" }), "SETTING_LEVEL_NOT_ALLOWED"],
+    ["the system level", gap({ level: "system" }), "SETTING_LEVEL_NOT_ALLOWED"],
+    ["the course level", gap({ level: "course", course: COURSE }), "SETTING_LEVEL_NOT_ALLOWED"],
+    ["a course at the institution level", gap({ course: COURSE }), "SETTING_COURSE_MISMATCH"],
+    ["above its limit", gap({ value: 241 }), "SETTING_INVALID_VALUE"],
+    ["zero", gap({ value: 0 }), "SETTING_INVALID_VALUE"],
+    ["a string", gap({ value: "30" }), "SETTING_INVALID_VALUE"],
+    ["a decimal", gap({ value: 1.5 }), "SETTING_INVALID_BODY"],
+    ["a named institution", gap({ institution: COURSE }), "SETTING_INVALID_BODY"],
+  ])("refuses %s", async (_name, input, code) => {
+    expect(await refused(input)).toBe(code);
+  });
+
+  it("passes the administrator's write to the port once, unchanged", async () => {
+    const { calls, service } = harness();
+    expect(await service.put(TOKEN, gap({}))).toEqual({ ok: true, value: SAVED });
+    expect(calls).toEqual([
+      {
+        token: TOKEN,
+        write: {
+          level: "institution",
+          course: null,
+          key: "thresholds.session_gap_minutes",
+          value: 45,
+          bound: null,
+        },
+      },
+    ]);
+  });
+});

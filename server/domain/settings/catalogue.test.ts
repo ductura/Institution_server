@@ -412,3 +412,91 @@ describe("backup settings", () => {
     expect(backup("backup.interval_hours", null, { min: 1, max: 24 })).toBe(null);
   });
 });
+
+// DAN-1060-1 (Ductus#2028): the thresholds P-01 to P-04 of Ductus DECISIONS
+// ("Zadane vrijednosti pragova": thresholds are settings of the institution),
+// only at the institution level; P-05 is P-02 and has no key of its own.
+describe("institution thresholds", () => {
+  const at = (
+    key: unknown,
+    value: unknown,
+    level: unknown = "institution",
+    bound: unknown = null,
+  ) => codeOf({ level, key, value, bound });
+  const LIMITS = {
+    "thresholds.session_gap_minutes": { default: 30, min: 1, max: 240 },
+    "thresholds.paste_event_chars": { default: 200, min: 1, max: 100_000 },
+    "thresholds.teacher_refresh_minutes": { default: 5, min: 1, max: 60 },
+    "thresholds.short_assignment_hours": { default: 24, min: 1, max: 168 },
+  } as const;
+  const KEYS = Object.keys(LIMITS) as (keyof typeof LIMITS)[];
+
+  it("are four integer keys, only at institution, with the decided defaults", () => {
+    const inCatalogue = SETTINGS_CATALOGUE.filter((d) => d.key.startsWith("thresholds."));
+    expect(inCatalogue.map((d) => d.key)).toEqual(KEYS);
+    for (const key of KEYS)
+      expect(settingOf(key)).toEqual({
+        key,
+        levels: ["institution"],
+        kind: "integer",
+        ...LIMITS[key],
+      });
+    // No other key reaches the institution level.
+    const atInstitution = SETTINGS_CATALOGUE.filter((d) => d.levels.includes("institution"));
+    expect(atInstitution.map((d) => d.key)).toEqual(KEYS);
+  });
+
+  it.each([
+    "thresholds",
+    "thresholds.paste_event_chars_p05",
+    "thresholds.Paste_event_chars",
+    "network.thresholds.paste_event_chars",
+    "thresholds.session_gap_minutes.",
+    "__proto__",
+    "toString",
+    ...["\t", "\r\n", " ", "\u007f", " "].map((odd) => `thresholds.session_gap_minutes${odd}`),
+  ])("know no key %j", (key) => {
+    expect(at(key, 30)).toBe("SETTING_UNKNOWN_KEY");
+  });
+
+  it.each([
+    "personal",
+    "course",
+    "system",
+    "network_security",
+    "Institution",
+    "institution ",
+    "toString",
+    null,
+  ])("refuse the level %j", (level) => {
+    for (const key of KEYS)
+      expect(at(key, LIMITS[key].default, level)).toBe("SETTING_LEVEL_NOT_ALLOWED");
+  });
+
+  it.each(
+    KEYS.flatMap((key) =>
+      [
+        0,
+        -1,
+        LIMITS[key].max + 1,
+        -0,
+        1.5,
+        String(LIMITS[key].default),
+        Number.NaN,
+        Infinity,
+        true,
+        [5],
+        { value: 5 },
+      ].map((value) => [key, value, typeof value] as const),
+    ),
+  )("refuse %s = %s (%s)", (key, value) => {
+    expect(at(key, value)).toBe("SETTING_INVALID_VALUE");
+  });
+
+  it.each(KEYS)("take %s at both hard limits and null as removal", (key) => {
+    expect(at(key, LIMITS[key].min)).toBe(null);
+    expect(at(key, LIMITS[key].max)).toBe(null);
+    expect(at(key, null, "institution", { locked: true })).toBe(null);
+    expect(at(key, null)).toBe(null);
+  });
+});
