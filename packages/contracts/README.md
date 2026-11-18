@@ -20,7 +20,7 @@ Ugovor API-ja `/api/v1` za klijente (preloader, web), U10 (DAN-742): klijent `cr
 Svaka objavljena verzija je i `.tgz` na javnom GitHub Releaseu oznake `contracts-v2.1.0`, pa instalacija ne traži token (GitHub Packages ga traži i za javne pakete):
 
 ```sh
-pnpm add https://github.com/ductura/server/releases/download/contracts-v2.1.0/ductura-contracts-2.1.0.tgz
+pnpm add https://github.com/ductura/Institution_server/releases/download/contracts-v2.1.0/ductura-contracts-2.1.0.tgz
 ```
 
 Tarball je isti onaj koji je `publish.yml` provjerio i objavio; njegov sha256 je u bilješci izdanja.

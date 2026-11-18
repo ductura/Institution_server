@@ -532,7 +532,7 @@ describe("publish.yml attach step", () => {
       ["PATH", `${dir}:${process.env.PATH ?? ""}`],
       ["TMPDIR", dir],
       ["GITHUB_REF", ref],
-      ["GITHUB_REPOSITORY", "ductura/server"],
+      ["GITHUB_REPOSITORY", "ductura/Institution_server"],
       ["FILE", file],
       ["SHA256", sum],
       ["GH_LOG", log],
@@ -549,8 +549,9 @@ describe("publish.yml attach step", () => {
     return { status, calls: calls.map((call) => call.replace(/--output \S+/u, "--output <tmp>")) };
   };
   const C = "ductura-contracts-2.1.0.tgz";
-  const VIEW = "ductura/server release view contracts-v2.1.0 --json assets --jq .assets[].name";
-  const DOWNLOAD_C = `ductura/server release download contracts-v2.1.0 --pattern ${C} --output <tmp>`;
+  const VIEW =
+    "ductura/Institution_server release view contracts-v2.1.0 --json assets --jq .assets[].name";
+  const DOWNLOAD_C = `ductura/Institution_server release download contracts-v2.1.0 --pattern ${C} --output <tmp>`;
 
   // Negative cases first: the same name with other bytes never passes or uploads.
   it.each([
@@ -591,7 +592,7 @@ describe("publish.yml attach step", () => {
       status: 0,
       calls: [
         VIEW,
-        `ductura/server release create contracts-v2.1.0 ./release/${C} --verify-tag --title contracts-v2.1.0 --notes sha256 ${sum}`,
+        `ductura/Institution_server release create contracts-v2.1.0 ./release/${C} --verify-tag --title contracts-v2.1.0 --notes sha256 ${sum}`,
       ],
     });
   });
@@ -601,8 +602,8 @@ describe("publish.yml attach step", () => {
     expect(run("refs/tags/test-fakes-v2.0.0", file, { exists: true })).toEqual({
       status: 0,
       calls: [
-        "ductura/server release view test-fakes-v2.0.0 --json assets --jq .assets[].name",
-        `ductura/server release upload test-fakes-v2.0.0 ./release/${file}`,
+        "ductura/Institution_server release view test-fakes-v2.0.0 --json assets --jq .assets[].name",
+        `ductura/Institution_server release upload test-fakes-v2.0.0 ./release/${file}`,
       ],
     });
   });
@@ -618,7 +619,7 @@ describe("publish.yml attach step", () => {
   ])("reads an asset with %s as another asset: one upload, no download", (_, name) => {
     expect(run("refs/tags/contracts-v2.1.0", C, { exists: true, assets: name })).toEqual({
       status: 0,
-      calls: [VIEW, `ductura/server release upload contracts-v2.1.0 ./release/${C}`],
+      calls: [VIEW, `ductura/Institution_server release upload contracts-v2.1.0 ./release/${C}`],
     });
   });
 

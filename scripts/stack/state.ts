@@ -25,7 +25,7 @@ export type StackState = {
 
 // The packages whose installed version decides what the stack runs.
 const MANIFEST: Readonly<Record<string, string>> = {
-  "@ductura/server": "package.json",
+  "@ductura/institution-server": "package.json",
   "@ductura/contracts": "packages/contracts/package.json",
   "@ductura/test-fakes": "packages/test-fakes/package.json",
   "oidc-provider": "node_modules/oidc-provider/package.json",

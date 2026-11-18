@@ -13,7 +13,7 @@ Sve je u `.stack/vs1/` (0700, u `.gitignore`). `VS1_STACK_DIR` premješta cijeli
 
 - `pgdata/`: vlastiti PostgreSQL klaster (`initdb` i `pg_ctl` iz `PATH`). Sluša samo na `127.0.0.1`, a socket je u `.stack/vs1/` (0700). Provizija i migracije su iste kao `pnpm db:up:native` (`scripts/db/native-db.ts`). Lozinka prijave `ductus` je u `pg-password` (0600). `initdb` ne radi kao root, pa stog odbija root.
 - `server.log`, `oidc.log`, `postgres.log`: izlaz procesa.
-- `state.json`: `repos` (SHA ovog repoa i oznaka promijenjenog stabla; `preloader` i `web` su `null` dok se utori ne priključe), verzije `@ductura/server`, `@ductura/contracts`, `@ductura/test-fakes`, `oidc-provider`, `pg`, Nodea i PostgreSQL-a, SHA-256 `dist/server.js`, okruženje, portovi te PID i naredbeni redak servera i lažnog OIDC-a.
+- `state.json`: `repos` (SHA ovog repoa i oznaka promijenjenog stabla; `preloader` i `web` su `null` dok se utori ne priključe), verzije `@ductura/institution-server`, `@ductura/contracts`, `@ductura/test-fakes`, `oidc-provider`, `pg`, Nodea i PostgreSQL-a, SHA-256 `dist/server.js`, okruženje, portovi te PID i naredbeni redak servera i lažnog OIDC-a.
 
 ## up
 
@@ -102,7 +102,7 @@ Server stoga dobiva `NODE_ENV=development`, `EVIDENCE_STORAGE_DOMAINS`, `EVIDENC
 - `evidence.test.ts`: sjeme izvan checkouta, `0600` i bez prepisivanja; nove S3 vjerodajnice za svaki `up`; oznaka bucketa; točne varijable servera. Uz produkcijski `NODE_ENV` server ne dobiva ni razvojni potpisnik ni lokalni S3 (503), a nema ni OIDC issuera (D-09).
 - `evidence.integration.test.ts`: adapter pohrane servera, iz okoline koju stog daje serveru, sprema i ponovno nalazi objekt kroz lokalni S3; potpisnik pod development potpisuje sjemenom stoga.
 - `ports.integration.test.ts`: nijedan zadani port nije onaj koji `fetch` odbija („bad port”), a 4190 jest.
-- `local-s3.integration.test.ts`: ugovorni test lokalnog S3 s pravim `S3EvidencePayloadStore` (stored, existing, conflict, čitanje, HEAD, identitet bucketa), odbijeni potpisi, putanje, veze, granica tijela i istodobni zapis, te odbijanje u produkciji (ductura/server#129, S1–S9, P1, P3).
+- `local-s3.integration.test.ts`: ugovorni test lokalnog S3 s pravim `S3EvidencePayloadStore` (stored, existing, conflict, čitanje, HEAD, identitet bucketa), odbijeni potpisi, putanje, veze, granica tijela i istodobni zapis, te odbijanje u produkciji (ductura/Institution_server#129, S1–S9, P1, P3).
 - `vs1.integration.test.ts`:
   - skripta odbija bez pokretanja ičega;
   - dok lock postoji, `up` odbija i ne dira stanje ni klaster;

@@ -1,5 +1,5 @@
 // Port of Ductus scripts/engineering/risk-floor.test.mjs for the paths of
-// ductura/server (docs/server-map.md), plus the CODEOWNERS coverage check.
+// ductura/Institution_server (docs/server-map.md), plus the CODEOWNERS coverage check.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";

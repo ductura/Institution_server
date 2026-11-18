@@ -44,7 +44,8 @@ export const SOURCE_KEY_RENAMES: readonly (readonly [source: string, port: strin
 
 const CHANGE_DECISION =
   "https://github.com/danielrisavi77-create/Ductus/issues/1836#issuecomment-6889314023";
-const NOUN_FINDING = "https://github.com/ductura/server/pull/38#issuecomment-6889516654";
+const NOUN_FINDING =
+  "https://github.com/ductura/Institution_server/pull/38#issuecomment-6889516654";
 
 /**
  * Top-level sections added after the port, with texts Ductus does not have;

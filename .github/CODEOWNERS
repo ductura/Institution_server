@@ -1,4 +1,4 @@
-# ductura/server: owners of the paths with the critical risk floor
+# ductura/Institution_server: owners of the paths with the critical risk floor
 # (CRITICAL_PATHS in scripts/engineering/risk-floor.ts).
 #
 # As in Ductus .github/CODEOWNERS, these entries only RECORD ownership. GitHub

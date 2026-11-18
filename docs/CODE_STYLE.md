@@ -1,6 +1,6 @@
 # Pravilnik koda
 
-Pravila pisanja koda u `ductura/server`. Vrijede i za ostale Ductura repozitorije u TypeScriptu, osim gdje je izričito navedeno „web repozitoriji”. Dokument je na hrvatskom, kod i identifikatori na engleskom.
+Pravila pisanja koda u `ductura/Institution_server`. Vrijede i za ostale Ductura repozitorije u TypeScriptu, osim gdje je izričito navedeno „web repozitoriji”. Dokument je na hrvatskom, kod i identifikatori na engleskom.
 
 Svako pravilo navodi **provedbu**, tj. što ga provjerava:
 
@@ -294,7 +294,7 @@ server/auth/
 
 ## 11. CSS moduli nose ime komponente
 
-Samo web repozitoriji (u `ductura/server` nema CSS-a). Stilska datoteka ima isto ime kao komponenta uz koju stoji i nastavak `.module.css`. Klase unutar modula su `camelCase`.
+Samo web repozitoriji (u `ductura/Institution_server` nema CSS-a). Stilska datoteka ima isto ime kao komponenta uz koju stoji i nastavak `.module.css`. Klase unutar modula su `camelCase`.
 
 Provedba: review; lint kad ga web repozitoriji uvedu.
 
