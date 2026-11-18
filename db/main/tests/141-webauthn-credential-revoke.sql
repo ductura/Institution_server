@@ -38,9 +38,11 @@ CREATE TEMP TABLE before AS SELECT pg_temp.snapshot() AS v;
 SELECT is(pg_temp.revoke(t, '\xa1', 6), 'ZD401: not authenticated', 'no session: ' || t)
 FROM unnest(ARRAY['anon', 'expired', 'closed', 'unknown']) AS t;
 SELECT is(pg_temp.revoke('anon', NULL, NULL), 'ZD401: not authenticated', 'the session is checked before the input');
+SELECT is(pg_temp.snapshot(), (SELECT v FROM before), 'no call without a session changed any row');
 
--- 2. Another's, unknown and revoked credentials: one answer.
-SELECT is(pg_temp.revoke(v.who, v.credential, 99), 'ZD403: not allowed', v.what)
+-- 2. Another's, unknown and revoked credentials: one answer, whatever the
+-- counter: 0, the stored one or below it (stale), above it, and the largest.
+SELECT is(pg_temp.revoke(v.who, v.credential, c.count), 'ZD403: not allowed', v.what || ', counter ' || c.count)
 FROM (VALUES ('dora', '\xa1'::bytea, 'another account of the institution'),
              ('tomo', '\xa1', 'an account of another institution'),
              ('ana', '\xd1', 'Ana with Dora''s credential'),
@@ -48,7 +50,9 @@ FROM (VALUES ('dora', '\xa1'::bytea, 'another account of the institution'),
              ('ana', '\xff', 'a credential nobody has'),
              ('ana', '\x', 'an empty credential id'),
              ('ana', decode(repeat('ab', 1024), 'hex'), 'a credential id of 1024 bytes'),
-             ('ana', '\xa3', 'Ana''s own revoked credential')) AS v (who, credential, what);
+             ('ana', '\xa3', 'Ana''s own revoked credential')) AS v (who, credential, what)
+CROSS JOIN unnest(ARRAY[0, 1, 5, 99, 4294967295]::bigint[]) AS c (count);
+SELECT is(pg_temp.snapshot(), (SELECT v FROM before), 'no call on another''s, unknown or revoked credential changed any row');
 
 -- 3. The assertion: a counter that is not accepted, or input outside the bounds.
 SELECT is(pg_temp.revoke('marko', '\x31', v.count), 'ZD409: signature counter did not increase', v.what)
@@ -58,7 +62,7 @@ FROM (VALUES ('marko', '\x31'::bytea, -1::bigint, 'a negative counter'),
              ('marko', '\x31', 4294967296, 'a counter above 32 bits'),
              ('marko', '\x31', NULL, 'no counter'),
              ('marko', NULL, 9, 'no credential id')) AS v (who, credential, count, what);
-SELECT is(pg_temp.snapshot(), (SELECT v FROM before), 'no refused call changed any row');
+SELECT is(pg_temp.snapshot(), (SELECT v FROM before), 'no refused assertion or invalid input changed any row');
 
 -- 4. Ana revokes her own; then it can be neither revoked again nor used.
 CREATE TEMP TABLE other AS SELECT * FROM identity.webauthn_credential WHERE credential_id <> '\xa1';
