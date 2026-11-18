@@ -9,6 +9,8 @@ import { Origin, ORIGIN_MAX_LENGTH } from "./origin.ts";
 // that the check is linear in the length of the value.
 
 /** isCanonicalOrigin of server/http, which contracts may not import. */
+/** The bound the contract sets, written out so the schema's constant cannot move it. */
+const LIMIT = 16384;
 const canonical = (value: string) => {
   try {
     const url = new URL(value);
@@ -19,7 +21,7 @@ const canonical = (value: string) => {
 };
 /** The subset: canonical, at most 16 KiB, no xn-- label, IPv6 [::1] or uncompressed. */
 const inSubset = (value: string) => {
-  if (value.length > ORIGIN_MAX_LENGTH || !canonical(value)) return false;
+  if (value.length > LIMIT || !canonical(value)) return false;
   const host = new URL(value).hostname;
   if (host.startsWith("[")) return host === "[::1]" || !host.includes("::");
   return !host.split(".").some((label) => label.startsWith("xn--"));
@@ -206,12 +208,14 @@ describe("Origin", () => {
   });
 
   it("rejects noise at every position of a good origin", () => {
-    for (const good of ["https://a.invalid:8443", "http://[::1]", "http://192.0.2.1:80"])
+    for (const good of ["https://a.invalid:8443", "http://[::1]", "http://192.0.2.1:8080"]) {
+      expect([good, canonical(good), check(good).accepted]).toEqual([good, true, true]);
       for (const noise of NOISE)
         for (let at = 0; at <= good.length; at++) {
           const value = good.slice(0, at) + noise + good.slice(at);
           expect([value, check(value).accepted]).toEqual([value, false]);
         }
+    }
   });
 
   it("accepts the canonical origins named in #284 but one, and more of the subset", () => {
@@ -223,14 +227,15 @@ describe("Origin", () => {
   it("accepts canonical origins of exactly 16 KiB and refuses one unit more", () => {
     const fill = (head: string, tail: string, unit: string, size: number) =>
       head + unit.repeat(size).slice(0, size - head.length - tail.length) + tail;
+    expect(ORIGIN_MAX_LENGTH).toBe(LIMIT);
     for (const [head, tail, unit] of [
       ["https://", "", "a"],
       ["http://", ":65535", "a"],
       ["https://", ".z", "b."],
     ] as const)
-      for (const size of [ORIGIN_MAX_LENGTH, ORIGIN_MAX_LENGTH + 1]) {
+      for (const size of [LIMIT, LIMIT + 1]) {
         const value = fill(head, tail, unit, size);
-        const fits = size === ORIGIN_MAX_LENGTH;
+        const fits = size === LIMIT;
         expect([value.length, canonical(value), check(value).accepted]).toEqual([size, true, fits]);
       }
   });
@@ -240,7 +245,7 @@ describe("Origin", () => {
       (n) => `https://${"a".repeat(n)}/`,
       (n) => `https://${"a".repeat(n)}\r\n`,
       (n) => `http://${"1.".repeat(n / 2)}1\u00a0`,
-      (n) => `https://${"a.".repeat(n / 2)}xn`,
+      (n) => `https://${"a.".repeat(n / 2)}xn--`,
       (n) => `https://${"-.".repeat(n / 2)}0x`,
       (n) => `https://[${"0:".repeat(n / 2)}`,
       (n) => `https://[${"1:".repeat(n / 2)}1]`,
@@ -250,8 +255,14 @@ describe("Origin", () => {
     ];
     for (const make of families)
       for (const n of [256, 512, 1024, 2048]) {
-        const [single, double] = [check(make(n)).steps, check(make(2 * n)).steps];
-        expect([make(2), double <= 2 * single + 64]).toEqual([make(2), true]);
+        const [single, double] = [check(make(n)), check(make(2 * n))];
+        const linear = double.steps <= 2 * single.steps + 64;
+        expect([make(2), single.accepted, double.accepted, linear]).toEqual([
+          make(2),
+          false,
+          false,
+          true,
+        ]);
       }
   });
 
