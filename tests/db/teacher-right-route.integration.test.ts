@@ -278,16 +278,27 @@ describe("DAN-1056-1: the teacher route only for a confirmed teacher of the acco
     await expectRefused(again, "Tečaj N1b");
   });
 
-  it("N2 the right alone, never confirmed, is 403", async () => {
+  it("N2 the right alone, never confirmed, is 403, and no one but an administrator confirms", async () => {
     expect(await eligible(who.candidate)).toBe(true);
+    await expect(roleCall(who.student, "confirm", who.candidate.userId)).rejects.toMatchObject(
+      refused,
+    );
+    expect(await trail(who.candidate)).toEqual(NONE);
     await expectRefused(who.candidate, "Tečaj N2");
   });
 
-  it("N3 an account of another institution: A's administrator cannot confirm it, and it is 403", async () => {
+  it("N3 belonging: only the account's own institution confirms it, and its course is there", async () => {
+    // A role row always names the account's own institution (foreign key on
+    // user_account), so the refusal by A leaves B's account with no role at all.
     expect(await eligible(who.staffB)).toBe(true);
     await expect(roleCall(who.adminA, "confirm", who.staffB.userId)).rejects.toMatchObject(refused);
     expect(await trail(who.staffB)).toEqual(NONE);
     await expectRefused(who.staffB, "Tečaj N3");
+    await roleCall(who.adminB, "confirm", who.staffB.userId);
+    expect(await create(who.staffB, "Tečaj N3 B")).toEqual([200, "ok"]);
+    expect((await courses("Tečaj N3 B")).rows).toEqual([
+      { institution: inst.b.id, creator: who.staffB.userId },
+    ]);
   });
 
   it("N4 a confirmed teacher whose role was revoked is 403", async () => {
@@ -322,12 +333,6 @@ describe("DAN-1056-1: the teacher route only for a confirmed teacher of the acco
     expect(await create(who.staff, "Tečaj P1")).toEqual([200, "ok"]);
     expect((await courses("Tečaj P1")).rows).toEqual([
       { institution: inst.a.id, creator: who.staff.userId },
-    ]);
-    // B's account confirmed by B's administrator: its course is in B, never in A.
-    await roleCall(who.adminB, "confirm", who.staffB.userId);
-    expect(await create(who.staffB, "Tečaj P1 B")).toEqual([200, "ok"]);
-    expect((await courses("Tečaj P1 B")).rows).toEqual([
-      { institution: inst.b.id, creator: who.staffB.userId },
     ]);
   });
 });
