@@ -12,10 +12,11 @@ Preneseno iz Ductusa `src/adapters/crypto` i porta `src/application/ports/signin
 - `aws-kms-sdk-transport.ts`: `AwsSdkKmsEd25519Transport` nad službenim SDK-om (`@aws-sdk/client-kms`), rok za svaki poziv i zatvoren skup grešaka `KmsTransportError` (poruka bez ID-a i ARN-a ključa). Transport je interni i baca; potpisnik na granici porta pretvara klasificirane kvarove u rezultat, a neklasificirane ne guta. Ne čita okolinu.
 - `development-ed25519-signer.ts`: `DevelopmentEd25519SigningKeyProvider`, kratkotrajni ključ u memoriji procesa.
 - `persistent-development-ed25519-signer.ts`: `PersistentDevelopmentEd25519SigningKeyProvider`, razvojni ključ iz datoteke sjemena (`DUCTUS_DEV_SIGNING_KEY_FILE`, apsolutna putanja izvan repozitorija, prava `0600`); nikad ga ne stvara.
+- `kms-signer-from-settings.ts` (DAN-963): `awsKmsSigningKeyProvider(settings, clientFor)` sastavlja KMS potpisnik iz postavki `server/settings` (`kmsSettings`): `KMSClient` SDK-a za regiju s vlastitim lancem vjerodajnica SDK-a (ništa se ne čita ovdje, nijedna tajna u repou), transport s rokom `KMS_CALL_TIMEOUT_MS` (5 s) i popis povjerenja samo s ARN-om konfiguriranog ključa (registra ključeva još nema). Testovi predaju `FakeKmsClient` kroz `clientFor`, pa proizvodni put ne uvozi `test-support/`. Potpisnik bira `server/http/evidence-deps.ts`.
 - `index.ts`: javno sučelje mape.
 
 Programske pogreške i dalje bacaju (§8): zaštita `NODE_ENV`, prazan ključ ili popis povjerenja u konstruktoru i poruka izvan granice KMS `RAW` (pretpostavka pozivatelja).
 
 Zaštite: oba razvojna potpisnika (i lažni KMS u `test-support/fake-kms`) odbijaju se stvoriti ako `NODE_ENV` nije `development` ili `test` (popis dopuštenih; nepostavljen, prazan ili krivo napisan znači produkciju). Kad nastane `server/settings`, ono uz to odbija razvojni potpisnik izvan lokalnog rada i CI-ja (karta, §1).
 
-Testovi su uz kod. Mapa uvozi samo `server/domain` (tipovi), `@aws-sdk/client-kms` i `node:`; prema karti smije još `settings`, `log` i `metrics`. Područja osim `http` uvoze je samo s `import type`. Sastavljanje (`KMSClient`, regija, vjerodajnice) dolazi sa sastavljačem u `http`.
+Testovi su uz kod. Mapa uvozi samo `server/domain` i `server/settings` (tipovi), `@aws-sdk/client-kms` i `node:`; prema karti smije još `log` i `metrics`. Područja osim `http` uvoze je samo s `import type`. `KMSClient` iz postavki stvara `kms-signer-from-settings.ts`, a `http` ga zove pri pokretanju.

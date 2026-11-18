@@ -84,7 +84,7 @@ function answersRequest(requested: string, returned: unknown): returned is strin
  * AwsKmsEd25519Transport over the official AWS SDK (D-71). Every call has its
  * own deadline: on expiry the request is aborted and a late answer or late
  * failure is discarded. Credentials, region and the KMSClient itself are
- * composed elsewhere (M3.8-P03); this class never reads the environment.
+ * composed in kms-signer-from-settings.ts (DAN-963); this class never reads the environment.
  */
 export class AwsSdkKmsEd25519Transport implements AwsKmsEd25519Transport {
   private readonly timeoutMs: number;

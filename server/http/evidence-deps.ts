@@ -18,9 +18,12 @@ import {
   loadEvidenceStorageConfig,
 } from "../external/storage/index.ts";
 import {
+  awsKmsSigningKeyProvider,
+  type KmsClientFactory,
   PersistentDevelopmentEd25519SigningKeyProvider,
   type SigningKeyProvider,
 } from "../external/keys/index.ts";
+import { kmsProblems, kmsSettings } from "../settings/index.ts";
 
 import type { Databases } from "./databases.ts";
 import { createEvidenceCommitRoute } from "./evidence-commit.ts";
@@ -54,8 +57,18 @@ export const REFUSING_SIGNER: Pick<SigningKeyProvider, "sign"> = Object.freeze({
   sign: () => Promise.reject(new Error("signing_key_unavailable")),
 });
 
-function signerOf(env: Env, repositoryRoot: string): Pick<SigningKeyProvider, "sign"> {
+function signerOf(
+  env: Env,
+  repositoryRoot: string,
+  kmsClient: KmsClientFactory | undefined,
+): Pick<SigningKeyProvider, "sign"> {
+  // DAN-963: a KMS configuration selects the KMS signer in every NODE_ENV; an
+  // incomplete one (which also stops the start) is no signer, never a quiet
+  // fall back to the development key.
+  if (kmsProblems(env).length > 0) return REFUSING_SIGNER;
   try {
+    const kms = kmsSettings(env);
+    if (kms !== null) return awsKmsSigningKeyProvider(kms, kmsClient);
     return new PersistentDevelopmentEd25519SigningKeyProvider(env, repositoryRoot);
   } catch {
     // signing_key_production or a fault of the seed path: no key, no signature.
@@ -81,17 +94,25 @@ function payloadsOf(env: Env): Payloads {
   }
 }
 
-/** The signer and storage of this process; `repositoryRoot` is where the server runs from. */
+/**
+ * The signer and storage of this process; `repositoryRoot` is where the server
+ * runs from. `kmsClient` replaces the SDK's KMS client, for tests only.
+ */
 export function evidenceIngestDependencies(
   env: Env,
   repositoryRoot: string,
+  options: { readonly kmsClient?: KmsClientFactory } = {},
 ): EvidenceIngestDependencies {
   // A copy, as Ductus handed over: later changes of the process environment change nothing.
   const own: Env = { ...env };
   // Only the process's own value: Ductus read env.X === "1", which an
   // inherited value (or a polluted Object.prototype) would also satisfy.
   const asyncSigning = Object.hasOwn(own, ASYNC_SIGNING_FLAG) && own[ASYNC_SIGNING_FLAG] === "1";
-  return { signer: signerOf(own, repositoryRoot), payloads: payloadsOf(own), asyncSigning };
+  return {
+    signer: signerOf(own, repositoryRoot, options.kmsClient),
+    payloads: payloadsOf(own),
+    asyncSigning,
+  };
 }
 
 /** The commit route over the main database and this process's signer and storage. */

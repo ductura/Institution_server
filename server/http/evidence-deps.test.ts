@@ -3,14 +3,15 @@
 // development or test (F-020), storage exists only from
 // EVIDENCE_STORAGE_DOMAINS, and plain http to loopback never in production.
 // Every key, id and secret below is invented for this test.
-import { randomBytes } from "node:crypto";
+import { createPublicKey, randomBytes, verify } from "node:crypto";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { DEV_SIGNING_KEY_FILE } from "../external/keys/index.ts";
+import { FakeKmsClient } from "../../test-support/fake-kms/index.ts";
+import { AwsKmsEd25519SigningKeyProvider, DEV_SIGNING_KEY_FILE } from "../external/keys/index.ts";
 import {
   EVIDENCE_STORAGE_DOMAINS,
   InstitutionRoutedPayloadStore,
@@ -97,6 +98,47 @@ describe("evidenceIngestDependencies: the signer", () => {
       error: { code: "SIGNING_KEY_IN_REPOSITORY" },
     });
   });
+});
+
+// DAN-963: a KMS configuration selects the KMS signer in every NODE_ENV; the
+// fake KMS comes only through the test's parameter (it is built here, under
+// vitest's NODE_ENV test). An incomplete one is no signer, never the development one.
+describe("evidenceIngestDependencies: the KMS signer", () => {
+  const fake = new FakeKmsClient();
+  const keyId = fake.createKey();
+  const kms = {
+    DUCTUS_KMS_PROVIDER: "aws",
+    DUCTUS_KMS_KEY_ID: keyId,
+    DUCTUS_KMS_REGION: "eu-central-1",
+  };
+  const kmsClient = () => fake;
+
+  it("an incomplete configuration with a valid seed never signs", () => {
+    const env = { NODE_ENV: "test", [DEV_SIGNING_KEY_FILE]: SEED, ...kms, DUCTUS_KMS_REGION: "" };
+    expect(evidenceIngestDependencies(env, ROOT, { kmsClient }).signer).toBe(REFUSING_SIGNER);
+  });
+
+  it.each(["test", "production", undefined])(
+    "a complete configuration signs with the KMS key under NODE_ENV %s",
+    async (nodeEnv) => {
+      const env = { NODE_ENV: nodeEnv, [DEV_SIGNING_KEY_FILE]: SEED, ...kms };
+      const { signer } = evidenceIngestDependencies(env, ROOT, { kmsClient });
+      expect(signer).toBeInstanceOf(AwsKmsEd25519SigningKeyProvider);
+      const message = randomBytes(59);
+      const signed = await signer.sign(message);
+      if (!signed.ok) throw new Error(signed.error.code);
+      expect(signed.value).toMatchObject({ keyId, keyVersion: keyId });
+      const key = await (signer as AwsKmsEd25519SigningKeyProvider).publicVerificationKey();
+      if (!key.ok) throw new Error(key.error.code);
+      const publicKey = createPublicKey({
+        key: Buffer.from(key.value.keyBase64Url, "base64url"),
+        format: "der",
+        type: "spki",
+      });
+      const signature = Buffer.from(signed.value.signatureBase64Url, "base64url");
+      expect(verify(null, message, publicKey, signature)).toBe(true);
+    },
+  );
 });
 
 describe("evidenceIngestDependencies: the storage", () => {

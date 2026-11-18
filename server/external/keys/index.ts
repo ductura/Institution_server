@@ -45,3 +45,8 @@ export {
   PersistentDevelopmentEd25519SigningKeyProvider,
   type DevelopmentSigningKeyFault,
 } from "./persistent-development-ed25519-signer.ts";
+export {
+  awsKmsSigningKeyProvider,
+  KMS_CALL_TIMEOUT_MS,
+  type KmsClientFactory,
+} from "./kms-signer-from-settings.ts";

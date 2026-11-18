@@ -40,6 +40,7 @@ import {
 } from "./http/index.ts";
 import {
   institutionsProblems,
+  kmsProblems,
   metricsIntervalMs,
   metricsIntervalProblems,
   testModeProblems,
@@ -49,7 +50,8 @@ import {
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
 //    CIDR ranges) is optional; unset, X-Forwarded-For is never read. The
 //    institutions file built into the server must pass its schema (DAN-911).
-//    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1).
+//    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1). Any
+//    DUCTUS_KMS_* variable asks for all three, usable (DAN-963).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const problems = [
   ...environmentProblems(process.env),
@@ -59,6 +61,7 @@ const problems = [
   ...metricsIntervalProblems(process.env),
   ...institutionsProblems(),
   ...testModeProblems(process.env),
+  ...kmsProblems(process.env),
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
