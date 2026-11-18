@@ -3,10 +3,10 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 // DAN-843-1 (S-1K.5-b, UGOVOR Ductus#2028): the operator's read of the log
-// chain, a contract without a handler (843-2). The source is the view of
-// S-1K.5-a, public.operator_log (db/logs/migrations, DAN-835-1): a window of
-// at most 24 hours, at most 1000 rows a call in seq order, each row masked by
-// the view. Every pattern is ASCII only ([0-9], never \d, which some
+// chain, a contract without a handler (843-2). The source is the read of
+// S-1K.5-a, the function public.operator_log (db/logs/migrations,
+// DAN-835-1): a window of at most 24 hours, at most 1000 rows a call in seq
+// order, each row masked by the function. Every pattern is ASCII only ([0-9], never \d, which some
 // validators read as any Unicode digit) and ends at the end of the input,
 // never at a final line feed ($ does in some languages).
 const END = "(?![\\s\\S])";
@@ -33,12 +33,12 @@ const Kind = Type.String({
   maxLength: 64,
   pattern: `^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*${END}`,
 });
-/** The view keeps requestId and accountKind only in these shapes, otherwise null. */
+/** operator_log keeps requestId and accountKind only in these shapes, otherwise null. */
 const RequestId = Type.String({
   pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}${END}`,
 });
 const AccountKind = Type.String({ pattern: `^[a-z_]{1,32}${END}` });
-/** The view's fields: names of ASCII letters and digits, scalar values only. */
+/** operator_log's fields: names of ASCII letters and digits, scalar values only. */
 const Fields = Type.Record(
   Type.String({ pattern: `^[A-Za-z][A-Za-z0-9]*${END}` }),
   Type.Union([Type.String(), Type.Number(), Type.Boolean(), Type.Null()]),
@@ -54,7 +54,7 @@ export const opsEventsGet = defineRoute({
   // (step 3) and a session with a confirmed WebAuthn factor (step 8).
   access: "signed_in",
   summary:
-    'The operator\'s read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator view masks it (an address only as its /24 or /48 network, no token, cookie or session value; a value the view cannot vouch for is "hidden"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3) or without a confirmed second factor (step 8), 401 unauthenticated without a live session (step 8). from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), at most 2^53-1. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.',
+    'The operator\'s read of the log: the records of a window, at most 1000 a page, in seq order, each as the operator read (operator_log) masks it (an address only as its /24 or /48 network, no token, cookie or session value; a value the read cannot vouch for is "hidden"). The pipeline decides who reaches it, before the route: 403 forbidden from a network outside the list (step 3) or without a confirmed second factor (step 8), 401 unauthenticated without a live session (step 8). from and to are UTC instants of the calendar, the window is from inclusive to exclusive, from before to and at most 24 hours apart (exactly 24 is allowed); after is the seq the page starts after (0 by default), at most 2^53-1. A repeated or unknown parameter, or a window outside these bounds, is 422 and reads nothing. next is the seq of the last event when the page is full (1000), to pass as after, and may then lead to an empty page; null when the page is shorter. A row the read cannot vouch for makes the whole answer 503, never a shorter page.',
   request: {
     query: closed({
       from: QueryInstant,

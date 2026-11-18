@@ -2,6 +2,8 @@
 // a contract and vectors only; the handler is 843-2. Closed tables over the
 // query and the 200 body, the refusals first: each case changes one place of
 // an input that passes unchanged.
+import { readFileSync } from "node:fs";
+
 import { Value } from "@sinclair/typebox/value";
 import { describe, expect, it } from "vitest";
 
@@ -58,6 +60,15 @@ describe("ops.events.get refuses the query", () => {
     "20261118T000000Z",
     "2026-02-30T00:00:00Z",
     "2026-02-29T00:00:00Z",
+    "1900-02-29T00:00:00Z",
+    "2100-02-29T00:00:00Z",
+    "0000-02-29T00:00:00Z",
+    "2026-04-31T00:00:00Z",
+    "2026-06-31T00:00:00Z",
+    "2026-09-31T00:00:00Z",
+    "2026-11-31T00:00:00Z",
+    "2026-11-32T00:00:00Z",
+    "2026-11-00T00:00:00Z",
     "2026-13-01T00:00:00Z",
     "2026-00-10T00:00:00Z",
     "0000-01-01T00:00:00Z",
@@ -160,6 +171,9 @@ describe("ops.events.get refuses the 200 body", () => {
 
   it.each([
     { "a-b": "x" },
+    Object.fromEntries([["a_b", "x"]]),
+    Object.fromEntries([["_a", "x"]]),
+    { "a.b": "x" },
     { "1a": "x" },
     { "": "x" },
     { "a\n": "x" },
@@ -195,6 +209,11 @@ describe("ops.events.get accepts", () => {
     "2026-11-18T00:00:00.12Z",
     "2026-11-18T00:00:00.123Z",
     "2028-02-29T23:59:59Z",
+    "1600-02-29T00:00:00Z",
+    "0004-02-29T00:00:00Z",
+    "9999-12-31T23:59:59.999Z",
+    "2026-01-31T00:00:00Z",
+    "2026-10-31T00:00:00Z",
     "2000-02-29T00:00:00Z",
     "0001-01-01T00:00:00Z",
   ])("from and to %j", (time) => {
@@ -207,6 +226,30 @@ describe("ops.events.get accepts", () => {
   );
 
   it("no after", () => expect(queryOk(without(QUERY, "after"))).toBe(true));
+
+  // Every day of 1999 to 2032 (both leap year rules), as the query and as at.
+  it("every day Date.toISOString gives from 1999 to 2032", () => {
+    for (let ms = Date.UTC(1999, 0, 1); ms < Date.UTC(2033, 0, 1); ms += 86_400_000 + 1_001) {
+      const at = new Date(ms).toISOString();
+      expect(withQuery("from", at), at).toBe(true);
+      expect(withEvent("at", at), at).toBe(true);
+    }
+  });
+
+  it("accountKind of 32 characters, field names with a capital, kinds with digits", () => {
+    expect(withEvent("accountKind", "a".repeat(32))).toBe(true);
+    expect(withEvent("accountKind", "network_engineer")).toBe(true);
+    expect(
+      withFields(
+        Object.fromEntries([
+          ["Network", "x"],
+          ["durationMs", 3],
+          ["a1B2", true],
+        ]),
+      ),
+    ).toBe(true);
+    expect(withEvent("kind", "s3.put2_done")).toBe(true);
+  });
 
   it("an empty page, a full page with next, and null where null is allowed", () => {
     expect(bodyOk({ events: [], next: null })).toBe(true);
@@ -229,6 +272,7 @@ describe("ops.events.get accepts", () => {
 // Unicode digit), so a client validator in another language would accept
 // more: every pattern of the route ends at the end of the input, ASCII only.
 describe("ops.events.get patterns", () => {
+  const END = "(?![\\s\\S])";
   const patterns = (node: unknown): string[] =>
     node === null || typeof node !== "object"
       ? []
@@ -244,9 +288,24 @@ describe("ops.events.get patterns", () => {
 
   it.each(all)("%s", (pattern) => {
     expect(pattern.startsWith("^")).toBe(true);
-    expect(pattern.endsWith("(?![\\s\\S])")).toBe(true);
-    expect(pattern).not.toMatch(/\\[dDwWsS](?![^[]*\])/u);
+    expect(pattern.endsWith(END)).toBe(true);
+    // Without the end, no shorthand class anywhere, inside [] or out.
+    expect(pattern.slice(0, -END.length)).not.toMatch(/\\[dDwWsS]/u);
   });
 
   it("are all found", () => expect(all.length).toBe(8));
+});
+
+// The 422 vector proves the 24-hour bound only if its query passes the schema
+// and is one millisecond over it.
+describe("the vector window-over-24-hours", () => {
+  it("is a query of the schema, 24 hours and 1 ms long", () => {
+    const file = JSON.parse(
+      readFileSync(new URL("./vectors/ops.events.get.json", import.meta.url), "utf8"),
+    ) as { vectors: { name: string; request: { query: { from: string; to: string } } }[] };
+    const query = file.vectors.find((v) => v.name === "window-over-24-hours")?.request.query;
+    expect(query).toBeDefined();
+    expect(queryOk(query)).toBe(true);
+    expect(Date.parse(query!.to) - Date.parse(query!.from)).toBe(24 * 3_600_000 + 1);
+  });
 });
