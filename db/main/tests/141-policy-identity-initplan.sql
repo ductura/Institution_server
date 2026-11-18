@@ -6,11 +6,13 @@
 --
 -- Read from the catalogue, never from a list, so a later migration is covered
 -- once it runs:
---   * identity functions: pg_catalog.current_setting, every function of the
---     database (oid at least 16384) that reads pg_settings, and every one whose
---     body names an identity function, closed over, so app.current_actor and
---     whatever calls it, at any depth, are in. Bodies are matched by name, so a
---     name in a comment counts too (more is caught, never less).
+--   * identity functions: pg_catalog.current_setting and pg_show_all_settings,
+--     and every function of the database (oid at least 16384) whose body names
+--     an identity function or a view that reads the session (pg_settings, or
+--     a view of the database whose definition names either), closed over, so
+--     app.current_actor and whatever calls it, at any depth and through views,
+--     are in. Bodies are matched by name, so a name in a comment counts too
+--     (more is caught, never less).
 --   * the calls: every function (funcid) and operator (opno, by its oprcode)
 --     in the stored node tree of pg_policy.polqual and polwithcheck, by oid,
 --     whatever the search path, quoting or overloading. Each call counts.
@@ -54,19 +56,27 @@ CREATE FUNCTION test_dan1066.shout(text) RETURNS text LANGUAGE sql IMMUTABLE AS 
 CREATE FUNCTION test_dan1066.token() RETURNS text LANGUAGE sql STABLE
   AS $$ SELECT setting FROM pg_catalog.pg_settings WHERE name = 'app.session_token' $$;
 CREATE FUNCTION test_dan1066.via_token() RETURNS text LANGUAGE sql STABLE AS $$ SELECT test_dan1066.token() $$;
+CREATE VIEW test_dan1066.actor_v AS SELECT app.current_user_id() AS id;
+CREATE FUNCTION test_dan1066.via_view() RETURNS uuid LANGUAGE plpgsql STABLE
+  AS $$ BEGIN RETURN (SELECT id FROM test_dan1066.actor_v); END $$;
 
-CREATE TEMP TABLE identity_fn AS
-  WITH RECURSIVE f (oid) AS (
-    SELECT p.oid FROM pg_proc p
-    WHERE (p.pronamespace = 'pg_catalog'::regnamespace AND p.proname = 'current_setting')
-       OR (p.oid >= 16384 AND coalesce(pg_get_function_sqlbody(p.oid), p.prosrc) ~* '\mpg_(settings|show_all_settings)\M')
+-- Readers are functions and views; a function is matched by name and "(",
+-- a view by its name alone.
+CREATE TEMP TABLE identity_reader AS
+  WITH RECURSIVE obj (kind, oid, name, body) AS (
+    SELECT 'f', p.oid, p.proname::text, coalesce(pg_get_function_sqlbody(p.oid), p.prosrc) FROM pg_proc p WHERE p.oid >= 16384
+    UNION ALL
+    SELECT 'v', c.oid, c.relname::text, pg_get_viewdef(c.oid) FROM pg_class c WHERE c.oid >= 16384 AND c.relkind = 'v'
+  ), r (kind, oid, name) AS (
+    SELECT 'f', p.oid, p.proname::text FROM pg_proc p
+    WHERE p.pronamespace = 'pg_catalog'::regnamespace AND p.proname IN ('current_setting', 'pg_show_all_settings')
+    UNION SELECT 'v', 'pg_catalog.pg_settings'::regclass::oid, 'pg_settings'
     UNION
-    SELECT p.oid FROM pg_proc p, f, pg_proc q
-    WHERE p.oid >= 16384 AND q.oid = f.oid
-      AND coalesce(pg_get_function_sqlbody(p.oid), p.prosrc)
-          ~* ('\m' || regexp_replace(q.proname, '\$', '\\$', 'g') || '"?\s*\(')
+    SELECT o.kind, o.oid, o.name FROM obj o, r
+    WHERE o.body ~* ('\m' || regexp_replace(r.name, '\$', '\\$', 'g') || CASE r.kind WHEN 'f' THEN '"?\s*\(' ELSE '\M' END)
   )
-  SELECT oid FROM f;
+  SELECT kind, oid FROM r;
+CREATE TEMP VIEW identity_fn AS SELECT oid FROM identity_reader WHERE kind = 'f';
 
 -- One InitPlan: {SUBLINK} of type 4 (EXPR) over a {QUERY} that holds no
 -- other node than its one target, a {FUNCEXPR} whose args are {CONST}s.
@@ -106,6 +116,7 @@ INSERT INTO probe_case VALUES
   ('n_coalesce', 'USING', 'owner = coalesce(app.current_user_id(), owner)'),
   ('n_case', 'USING', 'CASE WHEN label = ''x'' THEN owner = app.current_institution_id() END'),
   ('n_depth', 'USING', 'owner = test_dan1066.f2()'),
+  ('n_view', 'USING', 'owner = test_dan1066.via_view()'),
   ('n_operator', 'USING', 'owner OPERATOR(test_dan1066.===) owner'),
   ('n_restrictive', 'AS RESTRICTIVE USING', 'owner = app.current_user_id()'),
   ('n_twice', 'USING', 'owner = (SELECT app.current_user_id()) OR owner = app.current_user_id()'),
@@ -142,6 +153,7 @@ SELECT set_eq(
         't1066_n_coalesce.n_coalesce: app.current_user_id()',
         't1066_n_case.n_case: app.current_institution_id()',
         't1066_n_depth.n_depth: test_dan1066.f2()',
+        't1066_n_view.n_view: test_dan1066.via_view()',
         't1066_n_operator.n_operator: test_dan1066.mine(uuid,uuid)',
         't1066_n_restrictive.n_restrictive: app.current_user_id()',
         't1066_n_twice.n_twice: app.current_user_id()',
@@ -156,7 +168,7 @@ SELECT ok(
     'institution.actor_has_role(text)', 'institution.actor_course_ids(text[])',
     'institution.actor_assignment_ids(text[])', 'institution.work_accommodation(uuid,uuid)',
     'test_dan1066.f1()', 'test_dan1066.f2()', 'test_dan1066.mine(uuid,uuid)',
-    'test_dan1066.token()', 'test_dan1066.via_token()'],
+    'test_dan1066.token()', 'test_dan1066.via_token()', 'test_dan1066.via_view()'],
   'the identity functions include the session readers and whatever calls them, at any depth'
 );
 SELECT ok(
