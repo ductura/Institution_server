@@ -68,7 +68,7 @@ END
 $$;
 
 
-SELECT plan(184);
+SELECT plan(185);
 
 -- As 010-log-entry.sql: runs `sql` as `who` (NULL: the superuser), with
 -- session_replication_role = replica when asked; the SQLSTATE or 'ok'.
@@ -221,6 +221,12 @@ SELECT is((SELECT relowner::regrole::text || ' ' || (relrowsecurity AND relforce
              || ' ' || (SELECT proowner::regrole::text FROM pg_proc WHERE oid = 'public.log_chain_base_refuse_change()'::regprocedure)
            FROM pg_class WHERE oid = 'public.log_chain_base'::regclass),
   'ductus_logs_migrator true ductus_logs_migrator', 'the migrator owns the base and its trigger function; RLS on the base is enabled and forced');
+-- The body is pinned: the apply of logical replication runs this same body
+-- (tests/db/log-chain-base-replication.integration.test.ts cannot read its
+-- SQLSTATE), so what the cases below show for 55000 holds for it too.
+SELECT is((SELECT prosrc FROM pg_proc WHERE oid = 'public.log_chain_base_refuse_change()'::regprocedure),
+  E'\nBEGIN\n  RAISE EXCEPTION ''log_chain_base does not change: % refused'', TG_OP USING ERRCODE = ''55000'';\nEND\n',
+  'the trigger function of the base only raises 55000');
 SELECT is(pg_temp.try_as('ductus_logs_migrator', $$ DO $d$ BEGIN
     IF (SELECT count(*) FROM public.log_chain_base) <> 1 THEN RAISE EXCEPTION 'unseen' USING ERRCODE = 'P0002'; END IF;
   END $d$ $$), 'ok', 'the owner reads the one row of the base, by its policy');
