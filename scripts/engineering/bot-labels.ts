@@ -103,43 +103,67 @@ function codeSpans(line: string): string[] {
   return spans;
 }
 
+// Block quote and list item markers in front of a fence.
+const CONTAINER = /^(?: {0,3}(?:>[ \t]?|(?:[-+*]|\d{1,9}[.)])[ \t]+))*/u;
+
+/**
+ * Lines inside fenced code. Stricter than CommonMark, so that a fence can only
+ * hide too little: an opener (after container markers, at most 3 spaces; a
+ * backtick opener's info string has no backtick) hides nothing unless a closer
+ * follows, and a closer (the same character, at least as long, nothing after
+ * it) counts at any indent.
+ */
+function fencedLines(lines: readonly string[]): boolean[] {
+  const fenced = lines.map(() => false);
+  for (let i = 0; i < lines.length; i += 1) {
+    const open = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec((lines[i] ?? "").replace(CONTAINER, ""));
+    const marker = open?.[1];
+    if (marker === undefined || (marker[0] === "`" && (open?.[2] ?? "").includes("`"))) continue;
+    const close = lines.findIndex((line, j) => {
+      const run = /^[ \t]*(`{3,}|~{3,})[ \t]*$/u.exec(line.replace(CONTAINER, ""))?.[1];
+      return j > i && run !== undefined && run[0] === marker[0] && run.length >= marker.length;
+    });
+    if (close === -1) continue;
+    fenced.fill(true, i, close + 1);
+    i = close;
+  }
+  return fenced;
+}
+
 /**
  * Labels a Markdown text mentions: label-shaped inline code outside fenced
  * blocks, on a line that contains "label" or in a section whose heading does,
  * or with a label namespace on any line. `x:a|b` is `x:a` and `x:b`; `x:*` stays.
- * With `sectionsOnly`, only mentions inside a section whose heading has "label".
+ * With `section`, only mentions in the first section whose heading text is
+ * exactly `section`, its subsections included.
  */
 export function labelMentions(
   markdown: string,
   names: readonly string[],
-  options: { sectionsOnly?: boolean } = {},
+  options: { section?: string } = {},
 ): string[] {
   const prefixed = names.filter((name) => name.includes(":"));
   const namespaces = new Set([...NAMESPACES, ...prefixed.map((name) => name.split(":")[0] ?? "")]);
   const mentions = new Set<string>();
-  let fence = "";
+  const lines = markdown.split(/\r?\n/u);
+  const fenced = fencedLines(lines);
   let section = 0;
-  for (const line of markdown.split(/\r?\n/u)) {
-    // CommonMark fences: a backtick opener's info string has no backtick, and
-    // a closer is the same character, at least as long, with nothing after it.
-    const open = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec(line);
-    if (fence !== "") {
-      const close = /^ {0,3}(`{3,}|~{3,})[ \t]*$/u.exec(line)?.[1];
-      if (close !== undefined && close[0] === fence[0] && close.length >= fence.length) {
-        fence = "";
-      }
-      continue;
-    }
-    if (open?.[1] !== undefined && !(open[1][0] === "`" && (open[2] ?? "").includes("`"))) {
-      fence = open[1];
-      continue;
-    }
+  // For `options.section`: 0 before it, its heading level inside it, -1 after it.
+  let target = 0;
+  for (const [index, line] of lines.entries()) {
+    if (fenced[index] === true) continue;
     const heading = /^ {0,3}(#{1,6})(?:[ \t]|$)/u.exec(line)?.[1]?.length;
     if (heading !== undefined && (section === 0 || heading <= section)) {
       section = /label/iu.test(line) ? heading : 0;
     }
-    if (options.sectionsOnly === true && section === 0) continue;
-    const context = section !== 0 || /label/iu.test(line);
+    if (heading !== undefined && target > 0 && heading <= target) target = -1;
+    const text = line
+      .replace(/^ {0,3}#{1,6}/u, "")
+      .replace(/[ \t]+#+[ \t]*$/u, "")
+      .trim();
+    if (heading !== undefined && target === 0 && text === options.section) target = heading;
+    if (options.section !== undefined && target <= 0) continue;
+    const context = section !== 0 || target > 0 || /label/iu.test(line);
     for (const span of codeSpans(line)) {
       const token = TOKEN.exec(span.trim());
       if (token === null) continue;

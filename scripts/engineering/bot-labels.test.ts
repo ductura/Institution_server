@@ -163,8 +163,8 @@ describe("label mentions", () => {
       "```nema``` je labela.\nLabela `nema2`.",
       ["nema", "nema2"],
     ],
-    ["four spaces of indent are no fence", "    ```\nLabela `nema`.\n", ["nema"]],
-    ["a tab before ``` is no fence", "\t```\nLabela `nema`.\n", ["nema"]],
+    ["four spaces of indent are no fence", "    ```\nLabela `nema`.\n```\n", ["nema"]],
+    ["a tab before ``` is no fence", "\t```\nLabela `nema`.\n```\n", ["nema"]],
     ["a longer closer closes", "```\n````\nLabela `nema`.", ["nema"]],
     ["a closer with a trailing tab closes", "```\n```\t\nLabela `nema`.", ["nema"]],
     ["a CRLF closer closes", "```\r\nx\r\n```\r\nLabela `nema`.", ["nema"]],
@@ -173,6 +173,28 @@ describe("label mentions", () => {
     ["double backtick span", "Labela `` nema ``.", ["nema"]],
     ["fixed namespace", "Uloga `role:nema` danas.", ["role:nema"]],
     ["unclosed fence ends nothing", "Labela `nema`.\n```\n", ["nema"]],
+    ["an unclosed fence hides nothing", "```\nLabela `nema`.\n", ["nema"]],
+    ["a closer at any indent closes", "```\n    ```\nLabela `nema`.\n```\n", ["nema"]],
+    [
+      "a fence in a list item",
+      "- ```\n  x `nema-x`\n  ```\n\nStavi labelu `nema-je`.",
+      ["nema-je"],
+    ],
+    [
+      "a fence in a nested list",
+      "- a\n  - ```\n    `nema-x`\n    ```\n\nLabela `nema-je`.",
+      ["nema-je"],
+    ],
+    [
+      "a fence in an ordered list",
+      "1. ```\n   Labela `nema-x`\n   ```\n\nLabela `nema-je`.",
+      ["nema-je"],
+    ],
+    [
+      "a fence in a block quote",
+      "> ```\n> Labela `nema-x`\n> ```\n\nLabela `nema-je`.",
+      ["nema-je"],
+    ],
     [
       "code on a label paragraph (known limit)",
       "Ostaju na labelama (`issuecomment-1`).",
@@ -194,12 +216,10 @@ describe("label mentions", () => {
     ["tilde fence", "Labela:\n~~~\n`nema`\n~~~\n"],
     ["line without the word", "Pokreni `nema-je` danas."],
     ["alternatives without a namespace", "Labele `bug|nema`."],
-    ["after an unclosed fence", "```\nLabela `nema`.\n"],
     ["fence not closed by a shorter one", "````\n```\nLabela `nema`.\n````\n"],
     ["fence not closed by the other character", "```\n~~~\nLabela `nema`.\n```\n"],
     ["fence not closed by an opener with info", "```\n```js\nLabela `nema`.\n```\n"],
     ["next line of a paragraph (known limit: lines)", "Stavi labelu\n`nema-je` na issue."],
-    ["a closer indented by four is no closer", "```\n    ```\nLabela `nema`.\n```\n"],
     ["an empty heading ends the section", "## Labele\n\n##\n\n`nema-je`"],
     ["seven # open no section", "####### Labele\n\n- `nema`"],
     ["a label without a namespace gives none", "Vidi `bug:x` danas."],
@@ -229,17 +249,25 @@ describe("label mentions", () => {
   });
 
   it.each([
+    [
+      "another label section",
+      "## Labele\n\n- `bug`\n\n## Povijest labela\n\n- `risk:low`",
+      ["bug"],
+    ],
+    ["a second Labele section", "## Labele\n\n- `bug`\n\n## Labele\n\n- `risk:low`", ["bug"]],
+    ["a longer heading is not it", "## Labele i boje\n\n- `risk:low`", []],
+    ["a heading with closing #", "## Labele ##\n\n- `bug`", ["bug"]],
     ["H1 before the line", "## Labele\n\n- `bug`\n\n# Dodatak\n\n- `risk:low`", ["bug"]],
     ["H2 before the line", "## Labele\n\n- `bug`\n\n## Dalje\n\n- `risk:low`", ["bug"]],
     ["H3 keeps the section", "## Labele\n\n### Pod\n\n- `risk:low`", ["risk:low"]],
     ["a fenced # keeps it", "## Labele\n\n```\n# x\n```\n\n- `risk:low`", ["risk:low"]],
     ["a fenced ## keeps it", "## Labele\n\n```md\n## Primjer\n```\n\n- `risk:low`", ["risk:low"]],
     ["a label line outside", "Labela `bug`, razina `risk:low`.", []],
-  ])("sections only: %s", (_, markdown, expected) => {
-    expect(labelMentions(markdown, names, { sectionsOnly: true })).toEqual(expected);
+  ])("section Labele only: %s", (_, markdown, expected) => {
+    expect(labelMentions(markdown, names, { section: "Labele" })).toEqual(expected);
   });
 
-  it("without sectionsOnly a namespace counts outside the section", () => {
+  it("without a section a namespace counts outside the section", () => {
     const markdown = "## Labele\n\n- `bug`\n\n# Dodatak\n\n- `risk:low`";
     expect(labelMentions(markdown, names)).toEqual(["bug", "risk:low"]);
   });
@@ -295,7 +323,7 @@ describe("repository", () => {
   });
 
   it("the Labele section of docs/BOTS.md names every label of labels.yml", () => {
-    const listed = labelMentions(bots, names, { sectionsOnly: true });
+    const listed = labelMentions(bots, names, { section: "Labele" });
     expect(names.filter((name) => !listed.includes(name))).toEqual([]);
   });
 
