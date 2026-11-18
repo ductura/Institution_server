@@ -1,0 +1,61 @@
+// GET /api/v1/student/assignment-work (DAN-1084-1; contract Ductus#2028
+// c.6967448047) over the reader of DAN-989-2a: the state of the caller's own
+// work per assignment. Who asks comes only from the session cookie (Ductus
+// liveSessionToken, as profile-interface-locale.ts); no query, header or other
+// cookie reaches the reader. A read, so it counts no session activity. The
+// contract declares no 403, so Sec-Fetch-Site is not checked here (open
+// question on Ductus#2028). Mounted by DAN-1084-2.
+import { ROUTES } from "../contracts/index.ts";
+import { createMyAssignmentWorkReader, type MyAssignmentWorkReader } from "../database/index.ts";
+import { liveSessionTokenFromCookie } from "../session/index.ts";
+
+import type { Databases } from "./databases.ts";
+import { reportServerError } from "./error-catalog.ts";
+import { sendProblem } from "./problem.ts";
+import { requestIdOf } from "./request-id.ts";
+import { type Route, sendJson } from "./router.ts";
+
+const CONTRACT = ROUTES.find((route) => route.id === "student.assignment-work.get")!;
+
+export type StudentAssignmentWorkRouteOptions = { readonly reader: MyAssignmentWorkReader };
+
+/** The one reader code with its own answer; every other code is 503 unavailable. */
+const UNAUTHENTICATED = "MY_ASSIGNMENT_WORK_UNAUTHENTICATED";
+
+/** The route over a reader; a 200 body is built here from two named fields only. */
+export function createStudentAssignmentWorkRoute(
+  options: StudentAssignmentWorkRouteOptions,
+): Route {
+  return {
+    contract: CONTRACT,
+    async handle(request, response) {
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return sendProblem(response, 401, "unauthorized");
+      try {
+        const read = await options.reader.read(token);
+        if (!read.ok) {
+          return read.error.code === UNAUTHENTICATED
+            ? sendProblem(response, 401, "unauthorized")
+            : sendProblem(response, 503, "unavailable");
+        }
+        const assignments = read.value.map(({ assignmentId, workState }) => ({
+          assignmentId,
+          workState,
+        }));
+        sendJson(response, 200, { assignments });
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), CONTRACT.id);
+        sendProblem(response, 503, "unavailable");
+      }
+    },
+  };
+}
+
+/** The route over main's application withActor (mounted by server/server.ts in DAN-1084-2). */
+export function createStudentAssignmentWorkRouteFor(
+  main: Pick<Databases["main"], "withActor">,
+): Route {
+  return createStudentAssignmentWorkRoute({
+    reader: createMyAssignmentWorkReader(main.withActor),
+  });
+}
