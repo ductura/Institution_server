@@ -51,8 +51,9 @@ async function start(options: { networks: () => AllowedNetworks; trusted?: strin
       trustedProxies: parseTrustedProxies(options.trusted) ?? [],
       rateLimiter: { check: (r) => (limited.push(r.url ?? ""), limiter.check(r)) },
       allowedNetworks: options.networks,
-      // Step 8 (DAN-842-1) is open here, so only step 3 decides.
+      // Step 8 (DAN-842-1, DAN-1092-1) is open here, so only step 3 decides.
       secondFactor: async () => "confirmed",
+      operators: async () => "listed",
     }),
     routes: [counting(OPS, calls), counting(READ, calls)],
     databases: createDatabases(),

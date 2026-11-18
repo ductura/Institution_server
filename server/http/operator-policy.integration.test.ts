@@ -1,7 +1,7 @@
 // The access rules of operator paths on a real node:http server (S-1J.2,
 // DAN-842-1; contract Ductus#1836 c.6945827668): without an allowed network, a
-// session cookie or a confirmed second factor no operator path reaches its
-// handler. No operator route exists yet, so a test route stands on one, and
+// session cookie, an account on the server's operator list (DAN-1092-1) or a
+// confirmed second factor no operator path reaches its handler. No operator route exists yet, so a test route stands on one, and
 // every ROUTES path under /api/v1/ops joins the probes on its own.
 // Tokens are invented; addresses are loopback and documentation ranges.
 import { request as httpRequest } from "node:http";
@@ -12,7 +12,7 @@ import { ROUTES } from "../contracts/index.ts";
 import { sessionTag } from "../session/index.ts";
 import { type AllowedNetworks, isOpsPath, parseAllowedNetworks } from "../traffic/index.ts";
 import { createDatabases } from "./databases.ts";
-import type { SecondFactor } from "./operator-policy-layer.ts";
+import type { OperatorList, SecondFactor } from "./operator-policy-layer.ts";
 import { createLayers } from "./pipeline.ts";
 import type { Route } from "./router.ts";
 import { type Running, startServer } from "./start.ts";
@@ -52,9 +52,16 @@ afterEach(async () => {
 
 type Answer = { status: number; code?: string; connection?: string };
 
-async function start(options: { networks: () => AllowedNetworks; secondFactor?: SecondFactor }) {
+async function start(options: {
+  networks: () => AllowedNetworks;
+  secondFactor?: SecondFactor;
+  /** Absent: everyone is listed; null: no list port at all. */
+  operators?: OperatorList | null;
+}) {
   const calls: string[] = [];
   const tokens: string[] = [];
+  const asked: string[] = [];
+  const operators = options.operators === undefined ? listed("listed") : options.operators;
   const port: SecondFactor | undefined =
     options.secondFactor &&
     ((token) => (tokens.push(token), (options.secondFactor as SecondFactor)(token)));
@@ -67,6 +74,9 @@ async function start(options: { networks: () => AllowedNetworks; secondFactor?: 
       rateLimiter: { check: () => ({ allowed: true, limitClass: "default" }) },
       allowedNetworks: options.networks,
       ...(port === undefined ? {} : { secondFactor: port }),
+      ...(operators === null
+        ? {}
+        : { operators: (token: string) => (asked.push(token), operators(token)) }),
     }),
     routes: [...new Set([OPS, "/api/v1/ops", ...FROM_ROUTES])].map((path) => ({
       contract: { ...read!, path },
@@ -100,13 +110,15 @@ async function start(options: { networks: () => AllowedNetworks; secondFactor?: 
       req.on("error", reject);
       req.end();
     });
-  return { get, calls, tokens };
+  return { get, calls, tokens, asked };
 }
 
-const answers =
-  (outcome: unknown): SecondFactor =>
-  async () =>
-    outcome as never;
+function answers(outcome: unknown): SecondFactor {
+  return async () => outcome as never;
+}
+function listed(outcome: unknown): OperatorList {
+  return async () => outcome as never;
+}
 
 describe("operator policy on a real server", () => {
   it("has probes even while the contract has no operator route", () => {
@@ -114,16 +126,21 @@ describe("operator policy on a real server", () => {
     expect(PATHS.every((path) => isOpsPath(path))).toBe(true);
   });
 
-  // Every combination of the three conditions: network, cookie, second factor.
-  const COMBINATIONS = [false, true].flatMap((network) =>
-    [false, true].flatMap((cookie) => [false, true].map((factor) => ({ network, cookie, factor }))),
+  // Every combination of the four conditions: network, cookie, operator list
+  // and second factor (owner decision "AAI + WebAuthn + network", DAN-1092-1).
+  const BOTH = [false, true];
+  const COMBINATIONS = BOTH.flatMap((network) =>
+    BOTH.flatMap((cookie) =>
+      BOTH.flatMap((list) => BOTH.map((factor) => ({ network, cookie, list, factor }))),
+    ),
   );
-  it.each(COMBINATIONS.filter((c) => !(c.network && c.cookie && c.factor)))(
-    "refuses every operator path without all three: %o",
-    async ({ network, cookie, factor }) => {
-      const { get, calls } = await start({
+  it.each(COMBINATIONS.filter((c) => !(c.network && c.cookie && c.list && c.factor)))(
+    "refuses every operator path without all four: %o",
+    async ({ network, cookie, list, factor }) => {
+      const { get, calls, tokens, asked } = await start({
         networks: network ? INSIDE : OUTSIDE,
         secondFactor: answers(factor ? "confirmed" : "unconfirmed"),
+        operators: listed(list ? "listed" : "not_listed"),
       });
       const expected = !network
         ? { status: 403, code: "forbidden" }
@@ -135,11 +152,14 @@ describe("operator policy on a real server", () => {
         expect(answer, path).toEqual({ ...expected, connection: "close" });
       }
       expect(calls).toEqual([]);
+      // Each port is asked only once the conditions before it passed.
+      expect(asked).toEqual(network && cookie ? PATHS.map(() => TOKEN) : []);
+      expect(tokens).toEqual(network && cookie && list ? PATHS.map(() => TOKEN) : []);
     },
   );
 
-  it("lets every operator path through only with all three", async () => {
-    const { get, calls, tokens } = await start({
+  it("lets every operator path through only with all four", async () => {
+    const { get, calls, tokens, asked } = await start({
       networks: INSIDE,
       secondFactor: answers("confirmed"),
     });
@@ -150,6 +170,30 @@ describe("operator policy on a real server", () => {
     }
     expect(calls).toHaveLength(ROUTED.size);
     expect(tokens).toEqual(PATHS.map(() => TOKEN));
+    expect(asked).toEqual(PATHS.map(() => TOKEN));
+  });
+
+  it("reads the list on every request: a removal applies to the next one", async () => {
+    const next = ["listed", "not_listed"];
+    const { get, calls } = await start({
+      networks: INSIDE,
+      secondFactor: answers("confirmed"),
+      operators: async () => next.shift() as "listed",
+    });
+    expect((await get(OPS, COOKIE)).status).toBe(200);
+    expect(await get(OPS, COOKIE)).toEqual({ status: 403, code: "forbidden", connection: "close" });
+    expect(calls).toEqual([OPS]);
+  });
+
+  it("without a list port nobody is an operator, and the second factor is not asked", async () => {
+    const { get, calls, tokens } = await start({
+      networks: INSIDE,
+      secondFactor: answers("confirmed"),
+      operators: null,
+    });
+    expect(await get(OPS, COOKIE)).toEqual({ status: 403, code: "forbidden", connection: "close" });
+    expect(tokens).toEqual([]);
+    expect(calls).toEqual([]);
   });
 
   it.each([
@@ -174,20 +218,31 @@ describe("operator policy on a real server", () => {
     expect(calls).toEqual([]);
   });
 
-  it("answers 401 when the port does not know the session", async () => {
-    const { get, calls } = await start({
-      networks: INSIDE,
-      secondFactor: answers("unauthenticated"),
-    });
-    expect(await get(OPS, COOKIE)).toEqual({
-      status: 401,
-      code: "unauthenticated",
-      connection: "close",
-    });
-    expect(calls).toEqual([]);
-  });
+  // Either port; a list that answers the second factor's words (or the reverse)
+  // is no answer, so the two ports cannot be wired the wrong way round.
+  const ON_EITHER = (port: SecondFactor) =>
+    [
+      ["the second factor", { secondFactor: port }],
+      [
+        "the list",
+        { secondFactor: answers("confirmed"), operators: port as unknown as OperatorList },
+      ],
+    ] as const;
 
-  it.each([
+  it.each(ON_EITHER(answers("unauthenticated")))(
+    "answers 401 when %s does not know the session",
+    async (_port, ports) => {
+      const { get, calls } = await start({ networks: INSIDE, ...ports });
+      expect(await get(OPS, COOKIE)).toEqual({
+        status: 401,
+        code: "unauthenticated",
+        connection: "close",
+      });
+      expect(calls).toEqual([]);
+    },
+  );
+
+  const FAULTS: readonly (readonly [string, SecondFactor])[] = [
     ["unavailable", answers("unavailable")],
     ["CONFIRMED", answers("CONFIRMED")],
     ["true", answers(true)],
@@ -203,8 +258,15 @@ describe("operator policy on a real server", () => {
       }) as unknown as SecondFactor,
     ],
     ["a rejection", (async () => Promise.reject(new Error("port down"))) as SecondFactor],
-  ])("answers 503, not 500, when the port gives %s", async (_name, port) => {
-    const { get, calls } = await start({ networks: INSIDE, secondFactor: port });
+  ];
+  it.each([
+    ...FAULTS.flatMap(([name, port]) =>
+      ON_EITHER(port).map(([on, ports]) => [on, name, ports] as const),
+    ),
+    ["the second factor", "listed", ON_EITHER(answers("listed"))[0][1]] as const,
+    ["the list", "confirmed", ON_EITHER(answers("confirmed"))[1][1]] as const,
+  ])("answers 503, not 500, when %s gives %s", async (_on, _name, ports) => {
+    const { get, calls } = await start({ networks: INSIDE, ...ports });
     const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       expect(await get(OPS, COOKIE)).toEqual({
@@ -225,8 +287,8 @@ describe("operator policy on a real server", () => {
     expect(calls).toEqual([]);
   });
 
-  it("does not ask the port on other paths", async () => {
-    const { get, calls, tokens } = await start({
+  it("does not ask either port on other paths", async () => {
+    const { get, calls, tokens, asked } = await start({
       networks: OUTSIDE,
       secondFactor: answers("unconfirmed"),
     });
@@ -234,6 +296,7 @@ describe("operator policy on a real server", () => {
       expect((await get(path, COOKIE)).status, path).toBe(404);
     }
     expect(tokens).toEqual([]);
+    expect(asked).toEqual([]);
     expect(calls).toEqual([]);
   });
 

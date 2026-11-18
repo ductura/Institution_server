@@ -12,7 +12,7 @@ import type { LogWriter } from "../log/index.ts";
 import { type AllowedNetworks, parseAllowedNetworks } from "../traffic/index.ts";
 import { createDatabases } from "./databases.ts";
 import { createOperatorDenialLog, type OperatorDenialLog } from "./operator-denial-log.ts";
-import type { SecondFactor } from "./operator-policy-layer.ts";
+import type { OperatorList, SecondFactor } from "./operator-policy-layer.ts";
 import { createLayers } from "./pipeline.ts";
 import type { Route } from "./router.ts";
 import { type Running, startServer } from "./start.ts";
@@ -42,6 +42,7 @@ afterEach(async () => {
 async function start(options: {
   networks: () => AllowedNetworks;
   secondFactor?: SecondFactor;
+  operators?: OperatorList;
   log?: OperatorDenialLog;
   limited?: boolean;
 }) {
@@ -64,6 +65,7 @@ async function start(options: {
         ports.push(token),
         (options.secondFactor ?? (async () => "unconfirmed"))(token)
       ),
+      operators: options.operators ?? (async () => "listed"),
       operatorDenialLog: options.log ?? ((entry) => entries.push(entry)),
     }),
     routes: [OPS, "/api/v1/ops"].map((path): Route => ({
@@ -112,6 +114,12 @@ describe("refusals of operator paths are recorded", () => {
       { networks: INSIDE, secondFactor: async () => "unauthenticated" as const },
       COOKIE,
       401,
+    ],
+    [
+      "not_operator",
+      { networks: INSIDE, operators: async () => "not_listed" as const },
+      COOKIE,
+      403,
     ],
     ["second_factor_required", { networks: INSIDE }, COOKIE, 403],
     [

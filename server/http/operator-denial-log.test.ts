@@ -217,6 +217,7 @@ describe("the layers record after the refusal", () => {
         async () => "confirmed",
         undefined,
         log,
+        async () => "listed",
       )(confirmed.request, confirmed.response),
     ).toBe("next");
     const other = exchange("/api/v1/health");
