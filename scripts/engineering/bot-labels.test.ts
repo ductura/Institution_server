@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { findForbiddenTerms } from "../forbidden-terms/index.ts";
 import { LABEL_ERROR_CODES, type LabelErrorCode, parseLabels } from "./bot-labels.ts";
 
-const ROOT = resolve(import.meta.dirname, "..", "..");
 const VALID = '- { name: "bug", color: "d73a4a", description: "Opis !b 100%" }\n';
 const [N, C, D] = ['name: "x"', 'color: "d73a4a"', 'description: "O"'];
 const yamlWith = (entry: string): string => `${VALID}- ${entry}\n`;
@@ -52,7 +51,7 @@ const PLACES: Record<string, (tag: string) => string> = {
   sequence: (tag) => `${tag} [{ ${N}, ${C}, ${D} }]\n`,
   scalar: (tag) => `- { ${N}, ${C}, description: ${tag} "O" }\n`,
 };
-for (const tag of ["!<>", "!!str", "!foo", "!<tag:yaml.org,2002:str>"]) {
+for (const tag of ["!", "!<>", "!!str", "!foo", "!<tag:yaml.org,2002:str>"]) {
   for (const [at, make] of Object.entries(PLACES)) {
     FILES.push(["LABELS_INVALID_YAML", `tag ${tag} on a ${at}`, make(tag)]);
   }
@@ -63,30 +62,37 @@ it.each(FILES)("labels.yml, %s: %s", (code, _, text) => {
   expect(parseLabels(text)).toEqual(expected);
 });
 
-// One table per pattern of bot-labels.ts: class → representatives that pass and fail.
-type Classes = Record<string, { pass: (string | number)[]; fail: (string | number)[] }>;
+// One table per pattern of bot-labels.ts: class → representatives that pass and fail
+// (`undefined` leaves the key out). Range ends and both neighbours of each range are rows.
+type Classes = Record<string, { pass: unknown[]; fail: unknown[] }>;
 const NAME_CLASSES: Classes = {
-  "lower-case letters": { pass: ["bug", "constructor"], fail: ["Bug", "\u010d"] },
-  digit: { pass: ["2fa-v2", "area:v2"], fail: ["v\uff12"] },
-  dash: { pass: ["needs-review"], fail: ["needs_review", "a b", "a\tb", "a\r\nb"] },
+  "a-z": { pass: ["bug", "constructor", "fuzz"], fail: ["Bug", "\u010d", "a`", "a{"] },
+  digit: { pass: ["2fa-v2", "area:v2", "v0-9"], fail: ["v\uff12", "v/"] },
+  dash: { pass: ["needs-review"], fail: ["needs_review", "a.b", "a/b", "a b", "a\tb", "a\r\nb"] },
   start: { pass: ["a"], fail: ["-a", ":a", "__proto__"] },
   end: { pass: ["a1"], fail: ["a-", "a:"] },
   "double dash": { pass: ["a-b-c"], fail: ["a--b"] },
   colon: { pass: ["area:db"], fail: ["a:b:c"] },
   length: { pass: ["a".repeat(50)], fail: ["a".repeat(51)] },
+  string: { pass: ["123"], fail: [123, ["bug"], null, undefined] },
 };
 const COLOR_CLASSES: Classes = {
-  "0-9": { pass: ["012789"], fail: ["01278:"] },
-  "a-f": { pass: ["abcdef"], fail: ["abcdeg"] },
-  "A-F": { pass: ["ABCDEF"], fail: ["ABCDEG"] },
+  "0-9": { pass: ["012789"], fail: ["01278:", "01278/"] },
+  "a-f": { pass: ["abcdef"], fail: ["abcdeg", "abcde`"] },
+  "A-F": { pass: ["ABCDEF"], fail: ["ABCDEG", "ABCDE@"] },
   length: { pass: ["d73a4a"], fail: ["d73a4", "d73a4aa"] },
-  "#": { pass: ["d73a4a"], fail: ["#d73a4a"] },
+  "#": { pass: ["d73a4a"], fail: ["#d73a4a", "d73 4a", "d73a4a\nzz"] },
   string: { pass: ["123456"], fail: [123456] },
 };
-const NAME_REQUIRED = ["lower-case letters", "digit", "dash", "start", "end", "double dash"];
+const DESCRIPTION_CLASSES: Classes = {
+  string: { pass: ["O"], fail: [5, null, true, undefined] },
+  "not only JS \\s": { pass: [" O "], fail: ["", "   ", "\t\r\n", "\u00a0"] },
+};
+const NAME_REQUIRED = ["a-z", "digit", "dash", "start", "end", "double dash"];
 const PATTERNS = [
   ["name", NAME_CLASSES, "LABEL_INVALID_NAME", NAME_REQUIRED],
   ["color", COLOR_CLASSES, "LABEL_INVALID_COLOR", ["0-9", "a-f", "A-F", "length", "#"]],
+  ["description", DESCRIPTION_CLASSES, "LABEL_NO_DESCRIPTION", ["string"]],
 ] as const;
 
 describe.each(PATTERNS)("%s classes", (key, classes, code, required) => {
@@ -135,14 +141,6 @@ const RECORDS: Row[] = [
     ["toString key", `{ ${N}, ${C}, ${D}, toString: "y" }`],
     ["three extra keys, one problem", `{ ${N}, ${C}, ${D}, a: 1, b: 2, c: 3 }`],
   ]),
-  ...of("LABEL_INVALID_NAME", [["missing name", `{ ${C}, ${D} }`]]),
-  ...of("LABEL_NO_DESCRIPTION", [
-    ["missing description", `{ ${N}, ${C} }`],
-    ["null description", `{ ${N}, ${C}, description: null }`],
-    ["empty description", `{ ${N}, ${C}, description: "" }`],
-    ["tab and CRLF only", `{ ${N}, ${C}, description: "\\t\\r\\n" }`],
-    ["NBSP only", `{ ${N}, ${C}, description: "\\u00a0" }`],
-  ]),
 ];
 
 describe("a record with any problem is no label", () => {
@@ -180,7 +178,9 @@ describe("a record with any problem is no label", () => {
 });
 
 it("every error code has one Croatian text in locales/hr.json, and nothing else is there", () => {
-  const hr = JSON.parse(readFileSync(resolve(ROOT, "locales/hr.json"), "utf8")) as {
+  const hr = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, "../../locales/hr.json"), "utf8"),
+  ) as {
     labels: Record<string, string>;
   };
   expect(Object.keys(hr.labels)).toEqual(LABEL_ERROR_CODES.map((code) => code.toLowerCase()));
