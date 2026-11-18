@@ -64,7 +64,8 @@ export type RequestSpec = {
    * (DAN-930-1a): a closed object, lowercase names, every one required. It is
    * checked on those names only, never on the whole request: `content-type` is
    * `contentType`, and the browser adds the cookie and `sec-fetch-site`. A
-   * route without it may still need headers (Origin on every mutation).
+   * route without it may still need headers (Origin on every mutation but the
+   * identity provider's back-channel logout).
    */
   readonly headers?: TObject;
 };

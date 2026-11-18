@@ -126,7 +126,7 @@ const END = "(?![\\s\\S])";
 const DOMAIN = "[-!\"$&'()*+,.0-9;=_`a-z{}~]+";
 const NUMBER_LAST = `(?:[^:]*\\.)?(?:[0-9]+|0x[0-9a-f]*)\\.?(?::|${END})`;
 const OCTET = "(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])";
-const HOST = `(?:(?:${OCTET}\\.){3}${OCTET}|(?!${NUMBER_LAST})${DOMAIN}|\\[[0-9a-f:.]+\\])`;
+const HOST = `(?:(?:${OCTET}\\.){3}${OCTET}|(?!${NUMBER_LAST})${DOMAIN}|\\[[0-9a-f:]+\\])`;
 const PORT =
   "(?:0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
 const port = (fallback: string) => `(?::(?!${fallback}${END})${PORT})?`;

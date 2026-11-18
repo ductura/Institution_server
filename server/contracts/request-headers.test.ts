@@ -54,7 +54,14 @@ const BAD_ORIGIN = [
   ...["https://u:p@ductura.example.invalid", `${SITE}\r\n`, `\t${SITE}`, `${SITE}\u00a0`],
   ...[`${SITE}\u007f`, "C:\\ductura", "file:///C:/ductura", "https://Ductura.example.invalid"],
   ...[`${SITE}:443`, "http://ductura.example.invalid:80", `${SITE}:00`, `${SITE}:0443`],
-  ...[`${SITE}:65536`, `${SITE}:100000`, "https://[::1", "https://[]", "https://[::FFFF:1]"],
+  ...[
+    `${SITE}:65536`,
+    `${SITE}:100000`,
+    "https://[::1",
+    "https://[]",
+    "https://[::FFFF:1]",
+    "https://[::ffff:1.2.3.4]",
+  ],
   ...["wss://ductura.example.invalid", "http://a%41", "http://a b", "http://127.1", "http://0x."],
   ...["http://127.1:3000", "http://0x7f.0.0.1", "http://010.0.0.1", "http://999", "http://a.09"],
   ...["http://1.2.3", "http://256.0.0.1", "http://1.2.3.4.5", "http://1.2.3.04", "http://0x10"],
@@ -175,6 +182,26 @@ describe.each(Object.entries(DECLARED))("%s", (id, names) => {
         if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
           wrong.push(origin);
     }
+    // IPv4 (QA FAIL c.6966049680): every octet 0-256 in every place, also with
+    // a leading zero, agrees with URL.
+    for (const octet of Array.from({ length: 257 }, (_, n) => [`${n}`, `0${n}`]).flat())
+      for (const place of [0, 1, 2, 3]) {
+        const parts = ["192", "0", "2", "42"];
+        parts[place] = octet;
+        const origin = `http://${parts.join(".")}:3000`;
+        if (schema && Value.Check(schema, { ...full, origin }) !== canonical(origin))
+          wrong.push(origin);
+      }
+    // IPv6: every canonical literal is accepted (its interior is a known limit).
+    for (const digit of "0123456789abcdefABCDEF")
+      for (const literal of [
+        `${digit}::1`,
+        `2001:db8::${digit}${digit}`,
+        `::ffff:c000:2${digit}`,
+      ]) {
+        const origin = new URL(`https://[${literal}]:8443`).origin;
+        if (schema && !Value.Check(schema, { ...full, origin })) wrong.push(origin);
+      }
     expect(schema).toBeDefined();
     expect(wrong).toEqual([]);
   });
