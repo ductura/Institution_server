@@ -18,6 +18,8 @@ const SECRET = "tajna poruka baze s izmisljenim SQL-om";
 
 type Answer = {
   rows?: unknown;
+  /** Rows built against the fake's own counters, to see when a column is read. */
+  rowsOf?: (calls: { committed: number }) => unknown;
   throws?: unknown;
   actorThrows?: unknown;
   actorThrowsSync?: unknown;
@@ -38,7 +40,8 @@ function enroll(answer: Answer) {
         async query(text: string, values?: readonly unknown[]) {
           calls.queries.push({ text, values, token });
           if ("throws" in answer) throw answer.throws;
-          return { rows: answer.rows, rowCount: 0 };
+          const rows = answer.rowsOf ? answer.rowsOf(calls) : answer.rows;
+          return { rows, rowCount: 0 };
         },
       } as unknown as ActorTransaction;
       try {
@@ -210,4 +213,42 @@ describe("enrollWithCode outcomes", () => {
       expect([calls.fnRejected, calls.committed]).toEqual([0, 1]);
     },
   );
+});
+
+// QA FAIL on #322 (c.6980561213): the columns of the row are read only after
+// the transaction committed, never inside fn, for every outcome and for a row
+// of a wrong form. Each column is a getter that records whether the fake had
+// committed when it was read.
+describe("enrollWithCode reads the row only after commit", () => {
+  const COURSE_OR_NULL = (outcome: string) => (outcome === "enrolled" ? COURSE : null);
+  it.each([
+    ["enrolled", { status: "enrolled", courseId: COURSE }],
+    ["refused", { status: "refused" }],
+    ["too_many_attempts", { status: "too_many_attempts" }],
+    ["unknown", MALFORMED],
+  ])("%s: every column read happens after commit", async (outcome, expected) => {
+    const readAt: number[] = [];
+    const column = (calls: { committed: number }, value: unknown) => ({
+      enumerable: true,
+      get() {
+        readAt.push(calls.committed);
+        return value;
+      },
+    });
+    const { result, calls } = enroll({
+      rowsOf: (counters) => [
+        Object.defineProperties(
+          {},
+          {
+            outcome: column(counters, outcome),
+            enrolled_course_id: column(counters, COURSE_OR_NULL(outcome)),
+          },
+        ),
+      ],
+    });
+    expect(await result).toEqual(expected);
+    expect(calls.committed).toBe(1);
+    expect(readAt.length).toBeGreaterThan(0);
+    expect(readAt.every((committed) => committed === 1)).toBe(true);
+  });
 });
