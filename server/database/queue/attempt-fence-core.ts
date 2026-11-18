@@ -91,8 +91,9 @@ export function createDeadlines(
         if (at === undefined) return;
         // Released at or after its time: the attempt outlived it, stays
         // fenced, and its caller does not go on.
-        // The cell already holds this time, so the watch's wait ends at it:
-        // nothing is published and nothing is notified.
+        // The cell already holds a time no later than this one (the earliest
+        // armed), so the watch's wait ends by then: nothing is published and
+        // nothing is notified (non-blocking review note on #291).
         if (now() >= at) park();
         armed.delete(key);
         publish();

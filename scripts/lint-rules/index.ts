@@ -36,6 +36,7 @@ export {
   KEY_LITERAL_ALLOWED,
   LOADER_GLOBALS,
   NODE_IMPORTS_ALLOWED,
+  WORKER_SCRIPTS_ALLOWED,
 } from "./dynamic-load.ts";
 export {
   BUILDER_NAMES,

@@ -5,8 +5,9 @@
 // the call is inside a dependency, which the lint rule local/no-dynamic-load
 // (DAN-770) cannot see. The flag does not cover node:vm, worker_threads with
 // eval, data: imports, Module#_compile or WebAssembly: server code cannot
-// import node:vm, node:worker_threads or node:module (lint; the one exception
-// is workerData in the attempt fence watch, DAN-822-4, NODE_IMPORTS_ALLOWED),
+// import node:vm, node:worker_threads or node:module (lint; the exceptions are
+// workerData in the attempt fence watch, DAN-822-4, and Worker in the fence,
+// only for that watch by a static URL, DAN-822-5b1: NODE_IMPORTS_ALLOWED),
 // but a dependency could, and the flag would not stop it (dist/server.js has
 // none today).
 // `pnpm start` and every test that starts a server process use this list
