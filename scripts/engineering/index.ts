@@ -9,3 +9,5 @@ export {
   minimumRisk,
   normalizePath,
 } from "./risk-floor.ts";
+export type { Label, ParsedLabels } from "./bot-labels.ts";
+export { labelMentions, mentionProblems, parseLabels } from "./bot-labels.ts";
