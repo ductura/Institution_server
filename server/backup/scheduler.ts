@@ -145,7 +145,9 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   let check: Promise<void> | undefined;
   let job: Promise<void> | undefined;
   /** Reasons queued for onSkip and not yet handed over; stop() waits for them. */
-  const deliveries = new Set<Promise<void>>();
+  let undelivered = 0;
+  /** stop() calls waiting for undelivered to reach 0. */
+  let drained: (() => void)[] = [];
   /** performance.now() when the last run() ended; an unhandled point due before it is busy. */
   let jobEnded = Number.NEGATIVE_INFINITY;
   /** Grid points since the last call of run(), or since backup was last seen off. */
@@ -157,19 +159,22 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
   // changes them. A listener that blocks while a read or job is still pending
   // is the port's known limit: it counts as read delay. A failing listener
   // never stops the scheduler.
+  // Counted, not collected in promises: stop() then needs no Promise static
+  // a job may have replaced (Review and QA FAIL on #312).
   const skip = (reason: BackupSkipReason): void => {
-    const delivered = new Promise<void>((resolve) => {
-      setImmediate(() => {
-        try {
-          ignoreRejection(onSkip(reason));
-        } catch {
-          // Nothing reaches the caller.
-        }
-        resolve();
-      });
+    undelivered += 1;
+    setImmediate(() => {
+      try {
+        ignoreRejection(onSkip(reason));
+      } catch {
+        // Nothing reaches the caller.
+      }
+      undelivered -= 1;
+      if (undelivered > 0) return;
+      const waiting = drained;
+      drained = [];
+      for (const resume of waiting) resume();
     });
-    deliveries.add(delivered);
-    void delivered.then(() => deliveries.delete(delivered));
   };
 
   const once = async (at: number): Promise<void> => {
@@ -220,12 +225,13 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
       if (isPromise(result)) {
         // A native promise of any realm, read through Promise.prototype: its
         // own then is never read (Review and QA FAIL on #306).
-        // A reaction to a promise already settled is queued now, ahead of the
-        // probe; any other only once it settles, after the probe. So one that
-        // comes first ended at the return, like a synchronous job, whatever
-        // other code queued before it (QA attacker on #312).
-        returnedAt = performance.now();
+        // A reaction to a promise settled by the time then returns is queued
+        // ahead of the probe; any other only once it settles, after the probe.
+        // So one that comes first ended by then, whatever other code queued
+        // before it (QA attacker on #312). The time is read after then, which
+        // may run a constructor getter (Review and QA FAIL on #312).
         apply(promiseThen, result, [done, failed]);
+        returnedAt = performance.now();
         enqueue(() => (returnedAt = undefined));
       } else if ((typeof result === "object" && result !== null) || typeof result === "function") {
         // Any other object: Promise.resolve reads its then once.
@@ -292,7 +298,7 @@ export function createBackupScheduler(options: BackupSchedulerOptions): BackupSc
       stopped = true;
       clearTimeout(timer);
       await job;
-      await Promise.all([...deliveries]);
+      if (undelivered > 0) await new Promise<void>((resume) => drained.push(resume));
     },
   });
 }

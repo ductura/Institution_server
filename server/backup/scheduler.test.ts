@@ -1364,6 +1364,82 @@ describe("backup scheduler: results the scheduler does not follow", () => {
     expect(onSkip).not.toHaveBeenCalled();
   });
 
+  // Review and QA FAIL on #312 (baf01da): a promise settled while its reaction
+  // is being registered (here by a constructor getter that moves the clock
+  // past point 2) ends when the registration returns, not at run()'s return.
+  it("a promise settled during registration ends after it: point 2 is busy", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 15 : ms);
+    }) as never);
+    try {
+      const t0 = performance.now();
+      const calls: number[] = [];
+      const { readSettings, onSkip } = setup(on(1), {
+        run: () => {
+          calls.push((performance.now() - t0) / H);
+          if (calls.length > 1) return undefined;
+          let resolve!: () => void;
+          const job = new Promise<void>((r) => (resolve = r));
+          return Object.defineProperty(job, "constructor", {
+            get: () => {
+              vi.advanceTimersByTime(20);
+              resolve();
+              return Promise;
+            },
+          });
+        },
+      });
+      readSettings.mockImplementationOnce(
+        () => new Promise((resolve) => fakeSetTimeout(() => resolve(new Map(on(1))), H - 10)),
+      );
+      await advance(3.5 * H);
+      expect(calls.map((at) => Math.round(at * 1000) / 1000)).toEqual([2, 3]);
+      expect(onSkip.mock.calls).toEqual([["busy"]]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  // Known limit (README): a pending promise's resolve is seen only in its
+  // reaction, behind microtasks other code queued before the resolve. The end
+  // is then late, which can only make a point busy, never start a second job.
+  it("a pending promise resolved behind an earlier 20 ms microtask ends late: busy, no overlap", async () => {
+    const fakeSetTimeout = globalThis.setTimeout;
+    let scheduled = 0;
+    const spy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      fn: () => void,
+      ms: number,
+    ) => {
+      scheduled += 1;
+      return fakeSetTimeout(fn, scheduled === 2 ? ms + 15 : ms);
+    }) as never);
+    try {
+      const { run, onSkip } = setup(on(1));
+      const { calls, record } = callTimes(run);
+      record(() =>
+        calls.length === 1
+          ? new Promise<void>((resolve) =>
+              fakeSetTimeout(() => {
+                queueMicrotask(() => vi.advanceTimersByTime(20));
+                resolve();
+              }, H - 10),
+            )
+          : undefined,
+      );
+      await advance(3.5 * H);
+      expect(calls.map((at) => Math.round(at * 1000) / 1000)).toEqual([1, 3]);
+      expect(onSkip.mock.calls).toEqual([["busy"]]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   // QA attacker on #312 (06c08fa): the probe that tells a promise settled at
   // return applies only to that case; a pending one ends when it settles, so
   // a point due during it is busy even when its callback comes after the end.
@@ -1445,6 +1521,55 @@ describe("backup scheduler: results the scheduler does not follow", () => {
     await advance(2.5 * H);
     expect(calls).toEqual([1, 3]);
     expect(onSkip.mock.calls).toEqual([["busy"]]);
+  });
+
+  // Review and QA FAIL on #312 (baf01da): stop() waits for the reasons with
+  // no Promise static a job may replace, so run_failed is handed over first.
+  it("a job that replaces Promise.resolve, calls stop() and rejects: stop waits for run_failed", async () => {
+    const original = Promise.resolve;
+    const order: string[] = [];
+    const box: { stop?: () => Promise<void> } = {};
+    const { scheduler } = setup(on(1), {
+      onSkip: (reason) => void order.push(reason),
+      run: () => {
+        Promise.resolve = (() => original.call(Promise, undefined)) as never;
+        void box.stop?.().then(() => order.push("stopped"));
+        return new Promise<void>((_, reject) =>
+          setTimeout(() => reject(new Error(CANARY)), 0.5 * H),
+        );
+      },
+    });
+    box.stop = () => scheduler.stop();
+    try {
+      await advance(2 * H);
+      await advance(1);
+    } finally {
+      Promise.resolve = original;
+    }
+    await advance(1);
+    expect(order).toEqual(["run_failed", "stopped"]);
+  });
+
+  // Review and QA FAIL on #312 (baf01da): stop() resolves only once every
+  // reason on its way has been handed over, not after the first of them.
+  it("stop() waits for two reasons on their way at once: busy and run_failed", async () => {
+    const order: string[] = [];
+    const box: { stop?: () => Promise<void> } = {};
+    const { scheduler } = setup(on(1), {
+      onSkip: (reason) => void order.push(reason),
+      run: () =>
+        // At 2 h, after point 2's busy is queued and before it is handed over,
+        // stop() is called and the job rejects, which queues run_failed.
+        new Promise<void>((_, reject) =>
+          setTimeout(() => {
+            void box.stop?.().then(() => order.push("stopped"));
+            reject(new Error(CANARY));
+          }, H),
+        ),
+    });
+    box.stop = () => scheduler.stop();
+    await advance(3 * H);
+    expect(order).toEqual(["busy", "run_failed", "stopped"]);
   });
 
   it("a job that patches Promise.prototype.then is still followed to its end", async () => {
