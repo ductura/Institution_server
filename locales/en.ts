@@ -1549,6 +1549,8 @@ const en = {
     cardBody:
       "Sign in with your AAI@EduHr account, the same one you use for Studomat and Merlin. Students and teachers use the same way in.",
     button: "Sign in with AAI@EduHr",
+    // DAN-1081: shown while the browser goes to AAI@EduHr (Ductus#2028 c.6965980260).
+    redirecting: "Redirecting you to AAI@EduHr",
     passwordNote: "You enter your password only at AAI@EduHr.",
     roleTitle: "One way in. Your space.",
     roleBody:

@@ -55,6 +55,13 @@ const NOUN_FINDING = "https://github.com/ductura/server/pull/38#issuecomment-688
  */
 export const SOURCE_ADDITIONS: readonly string[] = ["errors", "clientErrors"];
 
+/**
+ * Single texts added after the port inside a ported section; the source digest
+ * is taken without them too. `signIn.redirecting`: the notice while the browser
+ * goes to AAI@EduHr (DAN-1081, Ductus#2028 c.6965980260).
+ */
+export const SOURCE_KEY_ADDITIONS: readonly string[] = ["signIn.redirecting"];
+
 /** A text the port changed on purpose: its path in the port, the source text and the new one. */
 export type TextChange = {
   readonly language: "hr" | "en";
@@ -216,13 +223,23 @@ export const SOURCE_TEXT_CHANGES: readonly TextChange[] = [
   },
 ];
 
-/** A copy of the table without the sections added after the port (SOURCE_ADDITIONS). */
+/** A copy of the table without what was added after the port (SOURCE_ADDITIONS, SOURCE_KEY_ADDITIONS). */
 export function withoutAdditions<T>(table: T): T {
   const copy = structuredClone(table);
   for (const section of SOURCE_ADDITIONS) {
     if (!isObject(copy) || !Object.hasOwn(copy, section))
       throw new Error(`no added section ${section}`);
     delete copy[section];
+  }
+  for (const path of SOURCE_KEY_ADDITIONS) {
+    const keys = path.split(".");
+    const last = keys.pop() ?? "";
+    let node: unknown = copy;
+    for (const key of keys)
+      node = isObject(node) && Object.hasOwn(node, key) ? node[key] : undefined;
+    if (!isObject(node) || typeof node[last] !== "string" || !Object.hasOwn(node, last))
+      throw new Error(`no added text ${path}`);
+    delete node[last];
   }
   return copy;
 }

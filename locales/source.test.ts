@@ -14,6 +14,7 @@ import {
   sourcePath,
   textPairs,
   SOURCE_ADDITIONS,
+  SOURCE_KEY_ADDITIONS,
   withoutAdditions,
   withSourceTexts,
 } from "./source.ts";
@@ -76,16 +77,24 @@ describe("port from Ductus", () => {
 
 describe("sections added after the port", () => {
   it.each(TABLES)(
-    "%s adds only the errors and clientErrors sections, and only at the top",
+    "%s adds only the errors and clientErrors sections at the top, and signIn.redirecting",
     (_language, table) => {
       expect(SOURCE_ADDITIONS).toEqual(["errors", "clientErrors"]);
+      expect(SOURCE_KEY_ADDITIONS).toEqual(["signIn.redirecting"]);
       const all = textPairs(table).map(([path]) => path.join("."));
       const kept = new Set(textPairs(withoutAdditions(table)).map(([path]) => path.join(".")));
       const added = all.filter((path) => !kept.has(path));
       for (const section of SOURCE_ADDITIONS)
         expect(added.filter((path) => path.startsWith(`${section}.`)).length).toBeGreaterThan(0);
+      expect(added.filter((path) => SOURCE_KEY_ADDITIONS.includes(path))).toEqual([
+        ...SOURCE_KEY_ADDITIONS,
+      ]);
       expect(
-        added.every((path) => SOURCE_ADDITIONS.some((section) => path.startsWith(`${section}.`))),
+        added.every(
+          (path) =>
+            SOURCE_KEY_ADDITIONS.includes(path) ||
+            SOURCE_ADDITIONS.some((section) => path.startsWith(`${section}.`)),
+        ),
       ).toBe(true);
     },
   );
@@ -97,6 +106,11 @@ describe("sections added after the port", () => {
     const noClient: Record<string, unknown> = { ...messagesHr };
     delete noClient["clientErrors"];
     expect(() => withoutAdditions(noClient)).toThrow("no added section clientErrors");
+    const signIn: Record<string, unknown> = { ...messagesHr.signIn };
+    delete signIn["redirecting"];
+    expect(() => withoutAdditions({ ...messagesHr, signIn })).toThrow(
+      "no added text signIn.redirecting",
+    );
   });
 });
 

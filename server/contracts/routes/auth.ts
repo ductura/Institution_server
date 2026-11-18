@@ -1,6 +1,47 @@
 import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
+import data from "./sign-in-failure.json" with { type: "json" };
+
+/** A failed login's code on the sign-in page: the one closed list (DAN-1081). */
+export type SignInFailureCode = "login_failed" | "provider_unavailable";
+
+/**
+ * Where a failed login ends (DAN-1081, Ductus#2031 V1 to V5): a 303 to `page`
+ * of the configured origin whose query `param` is one of `codes`, nothing else.
+ * The login flow sends it from DAN-1081-Sb; this part declares it only.
+ * The data @ductura/contracts publishes as auth/sign-in-failure.json; read
+ * strictly here, so a third code or a stray key fails at load.
+ */
+export const SIGN_IN_FAILURE: {
+  readonly page: "/prijava";
+  readonly param: string;
+  readonly codes: readonly { readonly code: SignInFailureCode; readonly messageKey: string }[];
+} = readSignInFailure(data);
+
+/** Reads the data strictly; exported for its test. */
+export function readSignInFailure(raw: unknown): typeof SIGN_IN_FAILURE {
+  const fail = (why: string): never => {
+    throw new Error(`sign-in-failure.json: ${why}`);
+  };
+  const keys = (o: object) => Object.keys(o).sort().join(",");
+  if (typeof raw !== "object" || raw === null) return fail("not an object");
+  const { format, page, param, codes } = raw as Record<string, unknown>;
+  if (keys(raw) !== "codes,format,page,param") fail("keys");
+  if (format !== "ductura-sign-in-failure-v1") fail("format");
+  if (page !== "/prijava") fail("page");
+  if (typeof param !== "string" || !/^[a-z]+$/u.test(param)) fail("param");
+  const wanted: readonly SignInFailureCode[] = ["login_failed", "provider_unavailable"];
+  if (!Array.isArray(codes) || codes.length !== wanted.length) return fail("codes");
+  const read = codes.map((entry: unknown, at) => {
+    if (typeof entry !== "object" || entry === null || keys(entry) !== "code,messageKey")
+      return fail(`code ${at}`);
+    const { code, messageKey } = entry as Record<string, unknown>;
+    if (code !== wanted[at] || typeof messageKey !== "string") return fail(`code ${at}`);
+    return Object.freeze({ code: code as SignInFailureCode, messageKey });
+  });
+  return Object.freeze({ page: "/prijava", param: param as string, codes: Object.freeze(read) });
+}
 
 // Login and logout are browser navigations: success is a 303, failure a page.
 const redirect = {

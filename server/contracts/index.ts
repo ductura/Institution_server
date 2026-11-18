@@ -37,6 +37,7 @@ export {
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
 };
+export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export {
   CLIENT_APP_VERSION_PATTERN,
   CLIENT_CONTEXT_VALUES,
