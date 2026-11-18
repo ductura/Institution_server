@@ -7,12 +7,13 @@
 import { ROUTES } from "../contracts/index.ts";
 import { consoleSink, type LogSink, type LogWriter } from "../log/index.ts";
 
-/** Step 3's network refusal, then step 8's four. */
+/** Step 3's network refusal, then step 8's five. */
 export const OPERATOR_DENIAL_REASONS = Object.freeze([
   "network_not_allowed",
   "not_signed_in",
   "session_unknown",
   "second_factor_required",
+  "not_operator",
   "unavailable",
 ] as const);
 export type OperatorDenialReason = (typeof OPERATOR_DENIAL_REASONS)[number];

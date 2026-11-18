@@ -1,8 +1,10 @@
 // Step 8 of the pipeline (docs/server-map.md §3): the access rules of operator
 // paths (S-1J.2, DAN-842-1; contract Ductus#1836 c.6945827668). Step 3 already
 // kept out networks outside the list; here an operator path needs a session
-// cookie and a second factor (WebAuthn, S-1E-g) the port confirms for that
-// session. Other paths pass without a call to the port.
+// cookie, an account on the server's operator list (DAN-1092-1; owner decision
+// "AAI + WebAuthn + network", Ductus#2012 c.6968801723), never an AAI
+// attribute, and then a second factor (WebAuthn, S-1E-g) the port confirms for
+// that session. Other paths pass without a call to either port.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { liveSessionTokenFromCookie } from "../session/index.ts";
@@ -29,6 +31,17 @@ export type SecondFactor = (
 /** Until a source of confirmations exists, no session has one: operator paths stay closed. */
 export const NO_SECOND_FACTOR: SecondFactor = async () => "unconfirmed";
 
+/**
+ * Does the server's operator list name the account of this token? An unknown
+ * or ended session must answer "unauthenticated"; any other answer is a fault.
+ */
+export type OperatorList = (
+  token: string,
+) => Promise<"listed" | "not_listed" | "unauthenticated" | "unavailable">;
+
+/** Until a list is configured, nobody is on it: operator paths stay closed. */
+export const NO_OPERATORS: OperatorList = async () => "not_listed";
+
 const defaultDenialLog: OperatorDenialLog = createOperatorDenialLog();
 
 /**
@@ -53,6 +66,7 @@ export function operatorPolicyLayer(
   secondFactor: SecondFactor,
   report: ServerErrorReporter = reportServerError,
   log: OperatorDenialLog = defaultDenialLog,
+  operators: OperatorList = NO_OPERATORS,
 ) {
   return async (request: IncomingMessage, response: ServerResponse): Promise<"next" | "done"> => {
     if (!isOpsPath(request.url)) return "next";
@@ -63,18 +77,42 @@ export function operatorPolicyLayer(
     };
     const token = liveSessionTokenFromCookie(request.headers.cookie);
     if (token === undefined) return deny(401, "unauthenticated", "not_signed_in");
-    let outcome: unknown;
-    try {
-      outcome = await secondFactor(token);
-    } catch (error) {
-      report("layer", error, requestIdOf(response));
+    // Asked in turn: the second factor only for an account on the list.
+    const ask = async (
+      port: () => Promise<unknown>,
+      pass: string,
+      fail: string,
+      reason: OperatorDenialReason,
+      name: string,
+    ): Promise<"next" | "done"> => {
+      let outcome: unknown;
+      try {
+        outcome = await port();
+      } catch (error) {
+        report("layer", error, requestIdOf(response));
+        return deny(503, "unavailable", "unavailable");
+      }
+      // Compared with ===, never looked up: "toString" or "__proto__" is no answer.
+      if (outcome === pass) return "next";
+      if (outcome === fail) return deny(403, "forbidden", reason);
+      if (outcome === "unauthenticated") return deny(401, "unauthenticated", "session_unknown");
+      report("layer", new Error(`${name} port: no known outcome`), requestIdOf(response));
       return deny(503, "unavailable", "unavailable");
-    }
-    // Compared with ===, never looked up: "toString" or "__proto__" is no answer.
-    if (outcome === "confirmed") return "next";
-    if (outcome === "unconfirmed") return deny(403, "forbidden", "second_factor_required");
-    if (outcome === "unauthenticated") return deny(401, "unauthenticated", "session_unknown");
-    report("layer", new Error("second factor port: no known outcome"), requestIdOf(response));
-    return deny(503, "unavailable", "unavailable");
+    };
+    const listed = await ask(
+      () => operators(token),
+      "listed",
+      "not_listed",
+      "not_operator",
+      "operator list",
+    );
+    if (listed !== "next") return listed;
+    return ask(
+      () => secondFactor(token),
+      "confirmed",
+      "unconfirmed",
+      "second_factor_required",
+      "second factor",
+    );
   };
 }
