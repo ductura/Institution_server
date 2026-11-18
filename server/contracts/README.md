@@ -55,3 +55,9 @@ Operatorska ruta se izjavljuje dvaput: staza je `/api/v1/ops` ili ispod nje (to 
 - svaka montirana ruta koja je operatorska po id-u ili po stazi na pokrenutom poslužitelju bez kolačića dobiva 401 koraka 8.
 
 Poslužitelj pokrenut tek nakon pokretanja (na zahtjev ili timer) brojač ne vidi. Test provodi samo izjavu rute: ruta izvan `/api/v1/ops` koja mijenja operatorske razine (npr. `settings.values.put`) nije operatorska ruta u tom smislu i nju štiti baza.
+
+## Zaglavlja zahtjeva (DAN-930-1a)
+
+`RequestSpec.headers` je zatvoren objekt zaglavlja koja klijent mora sam postaviti, a ugovor ih ne izražava drugdje. Imena su malim slovima i sva su obvezna. Shema se provjerava samo nad tim imenima, nikad nad cijelim zahtjevom: `content-type` je u `contentType`, a kolačić i `sec-fetch-site` dodaje preglednik. Izjavljuju ih rute zaštite dokaza (`evidence.open.post`, `evidence.commit.post`, `evidence.replay.post`, `submission.submit.post`: `origin` i `ductus-protocol`) i `live.document.get` (`ductus-protocol`). Shema `origin` opisuje oblik kanonskog origina: host malim slovima, port bez zadanog porta sheme, bez putanje i korisničkih podataka. Isti origin i dalje provjerava server usporedbom niza. `request-headers.test.ts` drži točan popis ruta i imena, zatvorenost, obveznost svakog imena i usklađenost s vektorima: vektor 426 shema odbija, ostale prihvaća.
+
+Poznate granice: generator i generirani klijent ih još ne čitaju (DAN-930-1b), pa se `generated/` ne mijenja; `openapi/v1.json` ih ne objavljuje, jer guard v1 i neobavezan novi parametar broji kao lomljivu promjenu; ostale rute sa zaštitom mutacije (npr. `live.document.put`) ne izjavljuju `origin` i oslanjaju se na preglednik; unutrašnjost IPv6 literala shema ne provjerava.

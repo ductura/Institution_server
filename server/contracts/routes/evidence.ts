@@ -115,6 +115,26 @@ function unavailable(stages: readonly string[]): ErrorSpec {
   });
 }
 
+// A serialized origin as a browser sends it (DAN-930-1a): lowercase host or an
+// IPv6 literal, a port 1-65535 without the scheme's default; no path, user or
+// space. The server still compares it with its own origin exactly.
+const LABEL = "[a-z0-9]+(?:-+[a-z0-9]+)*";
+const HOST = `(?:${LABEL}(?:\\.${LABEL})*|\\[[0-9a-f:.]+\\])`;
+const PORT =
+  "(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
+const END = "(?![\\s\\S])";
+const port = (fallback: string) => `(?::(?!${fallback}${END})${PORT})?`;
+const Origin = Type.String({
+  pattern: `^(?:https://${HOST}${port("443")}|http://${HOST}${port("80")})${END}`,
+});
+
+/** The headers readGuardedBody asks the client for: its Origin and `ductus-protocol`. */
+const guarded = (...protocols: [string, ...string[]]) =>
+  closed({
+    origin: Origin,
+    "ductus-protocol": Type.Union(protocols.map((p) => Type.Literal(p))),
+  });
+
 // readGuardedBody: method and Origin, protocol, media type, cookie, then the body under limits.
 const GUARD_ERRORS = [
   refusal(403, "forbidden"),
@@ -141,6 +161,7 @@ export const open = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     body: closed({
       assignmentId: Type.String({
         pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
@@ -183,6 +204,7 @@ export const commit = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: MAX_COMMIT_BODY_BYTES,
+    headers: guarded("1", "2"),
     body: closed({
       documentId: Type.String(),
       clientTransactionId: TransactionId,
@@ -288,6 +310,7 @@ export const submit = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     body: closed({
       documentId: Type.String({ minLength: 1 }),
       // Revision 0 is a work with nothing saved: 409 blocked no_evidence while the
@@ -367,6 +390,7 @@ export const replay = defineRoute({
   request: {
     contentType: "application/json",
     maxBodyBytes: 1024,
+    headers: guarded("1"),
     // The first page has no head; every later page has the head the first one reported.
     body: Type.Union([
       closed({ documentId: Type.String(), from: Type.Literal(0) }),
