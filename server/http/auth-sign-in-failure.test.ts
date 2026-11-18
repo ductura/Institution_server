@@ -13,7 +13,13 @@ import {
   createTestIdp,
   ISSUER,
 } from "../../test-support/test-idp/index.ts";
-import { type AuthDeps, finishLogin, LOGIN_COOKIE_NAME, startLogin } from "./auth-flow.ts";
+import {
+  type AuthDeps,
+  finishLogin,
+  LOGIN_COOKIE_NAME,
+  offSignInPage,
+  startLogin,
+} from "./auth-flow.ts";
 
 const APP = "https://ductus.test";
 const CALLBACK = `${APP}/api/v1/auth/callback`;
@@ -35,8 +41,6 @@ let deps: AuthDeps & {
   closeSession: ReturnType<typeof vi.fn>;
 };
 let logged: string[];
-/** Every code a failure sent in this file, to compare with the contract (K1). */
-const sent = new Set<string>();
 
 beforeEach(() => {
   idp = createTestIdp();
@@ -91,7 +95,6 @@ async function expectFailure(response: Response, code: string, cookies = [CLEARE
     body: "",
   });
   expect(SIGN_IN_FAILURE.codes.map((entry) => entry.code)).toContain(code);
-  sent.add(code);
   expect(logged).toHaveLength(1);
   expect(logged[0]).toMatch(new RegExp(`^login failed \\S+ \\S+ ${code}$`, "u"));
   expect(JSON.stringify(answer) + logged.join("\n")).not.toContain(CANARY);
@@ -313,7 +316,47 @@ describe("K1 K4: the codes sent are exactly the contract's", () => {
     ]);
   });
 
-  it("every code of the contract was sent by a failure above", () => {
-    expect([...sent].sort()).toEqual(SIGN_IN_FAILURE.codes.map((entry) => entry.code));
+  it("every code of the contract is sent by some failure, and nothing else", async () => {
+    const refused = await callback(`${CALLBACK}?code=x&state=y`);
+    providerDown();
+    const down = await startLogin(new Request(`${APP}/api/v1/auth/login`), deps);
+    const sent = [refused, down].map((r) =>
+      new URL(r.headers.get("location") ?? "").searchParams.getAll(SIGN_IN_FAILURE.param),
+    );
+    expect(sent).toEqual(SIGN_IN_FAILURE.codes.map((entry) => [entry.code]));
   });
+});
+
+describe("R4 S4: a login that succeeds never lands on the sign-in page", () => {
+  it.each([
+    "/prijava",
+    "/prijava?greska=provider_unavailable",
+    "/PRIJAVA?greska=login_failed",
+    "/prijava/",
+    "/prijava/x",
+    "/prij%61va?greska=login_failed",
+    "/%2570rijava",
+    "/rad/../prijava",
+    "/rad%2F..%2Fprijava",
+  ])("an attempt that stored %j goes to the default page", async (path) => {
+    const { authorize, cookie } = await begin(path);
+    const answer = await callback(approved(authorize), cookie);
+    expect(answer.headers.get("location")).toBe(`${APP}/`);
+    expect(deps.openSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("offSignInPage sends any percent-encoded first segment to the default page", () => {
+    for (const path of ["/%70rijava", "/rad%2Fx", "/%41", "/%"])
+      expect(offSignInPage(path), path).toBe("/");
+    expect(offSignInPage("/rad/%C5%A1kola?q=%2F")).toBe("/rad/%C5%A1kola?q=%2F");
+  });
+
+  it.each(["/prijavaa", "/rad/prijava", "/rad/zadatak-1?greska=login_failed"])(
+    "an attempt that stored %j goes there",
+    async (path) => {
+      const { authorize, cookie } = await begin(path);
+      const answer = await callback(approved(authorize), cookie);
+      expect(answer.headers.get("location")).toBe(`${APP}${path}`);
+    },
+  );
 });

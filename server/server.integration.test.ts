@@ -240,8 +240,9 @@ describe("dist/server.js", () => {
 
   // S-1E-a (DAN-808), D-09: the entry point mounts the login routes over its
   // own process environment. A server started with the fake provider and
-  // NODE_ENV production, or without NODE_ENV, refuses sign-in on the neutral
-  // 503 page: no attempt cookie, no variable name, no secret, in the answer
+  // NODE_ENV production, or without NODE_ENV, refuses sign-in with a 303 to
+  // /prijava?greska=provider_unavailable (DAN-1081): no attempt cookie, no
+  // variable name, no secret, in the answer
   // or in its output. Nothing here listens at the issuer: the refusal comes
   // from the configuration, before any request to a provider.
   it.each([["production"], [undefined]])(

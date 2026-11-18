@@ -92,11 +92,24 @@ function decodeAttempt(value: string | undefined): Attempt | undefined {
       state: state as string,
       nonce: nonce as string,
       codeVerifier: codeVerifier as string,
-      returnTo: safeReturnTo(returnTo),
+      returnTo: offSignInPage(safeReturnTo(returnTo)),
     };
   } catch {
     return undefined;
   }
+}
+
+/**
+ * A login that succeeds never lands on the sign-in page: its failure card
+ * would show over a live session (Ductus#2031 R4, S4). A first path segment
+ * that is "prijava" in any letter case, or that is percent-encoded at all
+ * (no page of the app needs that, and a router may decode it), goes to the
+ * default page.
+ */
+export function offSignInPage(returnTo: string): string {
+  const first = new URL(returnTo, "https://ductus.invalid").pathname.split("/")[1] ?? "";
+  const page = SIGN_IN_FAILURE.page.slice(1);
+  return first.toLowerCase() === page || first.includes("%") ? DEFAULT_RETURN_TO : returnTo;
 }
 
 function errorCode(error: unknown): string {
