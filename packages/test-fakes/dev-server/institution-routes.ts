@@ -30,7 +30,8 @@ function taughtAssignment(state: State, account: Account | null, id: string): As
   return taughtCourse(state, account, assignment.courseId) === null ? null : assignment;
 }
 
-const AI_POLICY_RANK = { prohibited: 1, partially_allowed: 2, encouraged: 3 } as const;
+/** institution.ai_policy_rank: later in the list is more permissive. */
+const AI_POLICIES = ["prohibited", "partially_allowed", "encouraged"] as const;
 
 /**
  * Whether a new version changes the rules in a way institution.publish_assignment_version
@@ -39,7 +40,7 @@ const AI_POLICY_RANK = { prohibited: 1, partially_allowed: 2, encouraged: 3 } as
  */
 function tightens(current: AssignmentContent, next: AssignmentContent): boolean {
   return (
-    AI_POLICY_RANK[next.aiPolicy] > AI_POLICY_RANK[current.aiPolicy] ||
+    AI_POLICIES.indexOf(next.aiPolicy) > AI_POLICIES.indexOf(current.aiPolicy) ||
     next.aiPurposes.some((p) => !current.aiPurposes.includes(p)) ||
     (next.evidenceProfile === "extended" && current.evidenceProfile === "basic") ||
     (next.importAllowed && !current.importAllowed) ||
