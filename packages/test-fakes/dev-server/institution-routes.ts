@@ -116,6 +116,46 @@ export const INSTITUTION_HANDLERS: Handlers = {
     if (!course.studentIds.includes(account.id)) course.studentIds.push(account.id);
     return { status: 200, body: { courseId: course.id } };
   },
+  // SRV-02 (A-2): enrolment with every outcome told apart.
+  "student.enrollments.post": ({ state, account, body, now }) => {
+    if (account === null || !account.roles.includes("student")) return { error: "forbidden" };
+    const guesses = state.enrollmentGuesses.get(account.id) ?? 0;
+    if (guesses >= MAX_ENROLLMENT_GUESSES) return { error: "too_many_attempts" };
+    const code = normalizeCode(body.code);
+    const course = /^[0-9A-Z]{8,32}$/u.test(code)
+      ? state.courses.find((c) => c.codes.some((k) => normalizeCode(k.code) === code))
+      : undefined;
+    if (course === undefined || course.removed.includes(account.id)) {
+      state.enrollmentGuesses.set(account.id, guesses + 1);
+      return { error: "invalid_code" };
+    }
+    if (course.studentIds.includes(account.id))
+      return { status: 200, body: { outcome: "already_enrolled", courseId: course.id } };
+    const valid = course.codes.some(
+      (k) => k.active && normalizeCode(k.code) === code && Date.parse(k.validUntil) > now.getTime(),
+    );
+    if (!valid) {
+      state.enrollmentGuesses.set(account.id, guesses + 1);
+      return { error: "expired_code" };
+    }
+    course.studentIds.push(account.id);
+    const outcome = state.assignments.some((a) => a.courseId === course.id)
+      ? "enrolled"
+      : "enrolled_no_assignment";
+    return { status: 200, body: { outcome, courseId: course.id } };
+  },
+  // SRV-02 (PO-7): the notice of the current version was read; the first time is kept.
+  "student.notice-read.post": ({ state, account, params, body, now }) => {
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId);
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (assignment === undefined || account === null || !course?.studentIds.includes(account.id))
+      return { error: "not_found" };
+    if (body.versionNo !== assignment.version) return { error: "conflict" };
+    const key = `${account.id}:${assignment.version}`;
+    const readAt = assignment.read.get(key) ?? now.toISOString();
+    assignment.read.set(key, readAt);
+    return { status: 200, body: { readAt } };
+  },
   "institution.acknowledgment.post": ({ state, account, params, body, now }) => {
     const assignment = state.assignments.find((a) => a.id === params.assignmentId);
     const course = state.courses.find((c) => c.id === assignment?.courseId);

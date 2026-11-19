@@ -28,7 +28,7 @@ function acceptedState(conditions?: ValidityCondition[]): RevisionRequestState {
       requestedRevision: 2,
       target,
       instruction: "Preciziraj tvrdnju.",
-      conditions,
+      ...(conditions === undefined ? {} : { conditions }),
     }),
     response: null,
   };

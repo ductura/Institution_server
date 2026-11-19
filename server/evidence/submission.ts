@@ -148,15 +148,15 @@ export async function submitWork(
         requested.id,
         decision.artifactSha256,
       ]);
-      const outcome = recorded.rows.length === 1 ? recorded.rows[0].outcome : undefined;
+      const outcome = recorded.rows.length === 1 ? recorded.rows[0]!.outcome : undefined;
       if (outcome === "unauthorized") return { status: "not_found" } as const;
       // The stored revision's hash is not the reconstructed one: never a success.
       if (outcome === "artifact_mismatch")
         return { status: "blocked", reason: "record_mismatch" } as const;
       if (outcome !== "recorded" && outcome !== "existing")
         return unavailable("submission", "submission_outcome_unknown");
-      const { rows } = await tx.query<StoredRow>(STORED_SQL, [recorded.rows[0].submission_id]);
-      return rows.length === 1 ? rows[0] : unavailable("submission", "submission_malformed");
+      const { rows } = await tx.query<StoredRow>(STORED_SQL, [recorded.rows[0]!.submission_id]);
+      return rows.length === 1 ? rows[0]! : unavailable("submission", "submission_malformed");
     });
   } catch {
     return unavailable("submission", "submission_failed");

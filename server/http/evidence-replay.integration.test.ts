@@ -240,6 +240,36 @@ describe("B. the closed body", () => {
     expect(queries).toEqual([]);
   });
 
+  // Ductus src/server/evidence/replay-route.test.ts (DAN-537): every head
+  // that is not exactly {segmentHash, segmentCount} of the right forms.
+  const later = (headValue: unknown, extra: Record<string, unknown> = {}) =>
+    JSON.stringify({ documentId: DOC, from: 1, head: headValue, ...extra });
+  const good = { segmentHash: HASH, segmentCount: 1 };
+  it.each([
+    ...[[], "head", 1, {}].map((value) => [`a head of ${JSON.stringify(value)}`, later(value)]),
+    ["a head without its count", later({ segmentHash: HASH })],
+    ["a head without its hash", later({ segmentCount: 1 })],
+    ...["a".repeat(63), "a".repeat(65), "g".repeat(64), 7, null].map((segmentHash) => [
+      `a head hash of ${JSON.stringify(segmentHash)}`,
+      later({ segmentHash, segmentCount: 1 }),
+    ]),
+    ...[-1, 1.5, "1", Number.MAX_SAFE_INTEGER + 1, null].map((segmentCount) => [
+      `a head count of ${JSON.stringify(segmentCount)}`,
+      later({ segmentHash: HASH, segmentCount }),
+    ]),
+    ["a head and a role", later(good, { role: "teacher" })],
+    ["a head and an institution", later(good, { institutionId: INSTITUTION })],
+    [
+      "__proto__ inside the head",
+      `{"documentId":"${DOC}","from":1,"head":{"segmentHash":"${HASH}","segmentCount":1,"__proto__":{}}}`,
+    ],
+  ])("%s is 422 invalid and never reaches the database", async (_name, body) => {
+    const answer = await post(body);
+    expect(answer.status).toBe(422);
+    expect(JSON.parse(answer.body)).toEqual({ status: "invalid" });
+    expect(queries).toEqual([]);
+  });
+
   it.each(["", "doc ", "a\tb", "d".repeat(257)])(
     "B11: the id %j cannot exist: 404 and the database is never asked",
     async (documentId) => {

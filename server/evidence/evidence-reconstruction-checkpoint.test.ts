@@ -57,9 +57,9 @@ const replayer: EvidenceStepReplayerV2<Doc> = {
     return parsed.steps.reduce((current, step) => {
       const node = step.stepType === "replace" ? step.slice?.content[0] : undefined;
       const offset = step.stepType === "replace" ? step.from - TEXT_START : -1;
-      if (node?.type !== "text" || offset !== current.nodes[0].text.length)
+      if (node?.type !== "text" || offset !== current.nodes[0]!.text.length)
         throw new Error("unsupported step");
-      return paragraph(current.nodes[0].text + node.text);
+      return paragraph(current.nodes[0]!.text + node.text);
     }, document);
   },
   toCanonical: (document) => ({ nodes: document.nodes.map(({ id, text }) => ({ id, text })) }),
@@ -80,7 +80,7 @@ async function buildSegment(
   sequence: number,
 ) {
   const initialDocumentHash = await documentHash(from);
-  const document = paragraph(from.nodes[0].text + text);
+  const document = paragraph(from.nodes[0]!.text + text);
   const finalDocumentHash = await documentHash(document);
   const event: EvidenceEventV2 = {
     sequence,
@@ -88,8 +88,8 @@ async function buildSegment(
     steps: [
       {
         stepType: "replace",
-        from: TEXT_START + from.nodes[0].text.length,
-        to: TEXT_START + from.nodes[0].text.length,
+        from: TEXT_START + from.nodes[0]!.text.length,
+        to: TEXT_START + from.nodes[0]!.text.length,
         slice: { content: [{ type: "text", text }] },
       },
     ],
@@ -169,7 +169,7 @@ function readers(record: Record): {
     payloads: {
       readImmutable: async ({ segmentHash }) => ({
         status: "found",
-        bytes: record.bytes[record.hashes.indexOf(segmentHash)],
+        bytes: record.bytes[record.hashes.indexOf(segmentHash)]!,
       }),
     },
   };
@@ -199,7 +199,7 @@ function checkpointStore(stored: ReadonlyMap<string, Uint8Array>) {
 async function checkpointsAt(record: Record, indexes: readonly number[]) {
   const stored = new Map<string, Uint8Array>();
   for (const index of indexes) {
-    stored.set(record.segments[index].initialDocumentHash, checkpointBytes(record.starts[index]));
+    stored.set(record.segments[index]!.initialDocumentHash, checkpointBytes(record.starts[index]!));
   }
   return stored;
 }
@@ -251,7 +251,7 @@ describe("reconstruction across gaps (DAN-293)", () => {
       breaks: [gapAt(1, 1, 5)],
     });
     expect(calls).toEqual([
-      { evidencePackageId: PACKAGE, documentHashes: [record.segments[1].initialDocumentHash] },
+      { evidencePackageId: PACKAGE, documentHashes: [record.segments[1]!.initialDocumentHash] },
     ]);
   });
 
@@ -276,19 +276,19 @@ describe("reconstruction across gaps (DAN-293)", () => {
     const { reader, calls } = checkpointStore(stored);
     expect((await reconstruct(record, reader)).status).toBe("match_across_gaps");
     const asked = [
-      record.segments[1].initialDocumentHash,
-      record.segments[2].initialDocumentHash,
+      record.segments[1]!.initialDocumentHash,
+      record.segments[2]!.initialDocumentHash,
     ].sort();
     expect(calls).toEqual([{ evidencePackageId: PACKAGE, documentHashes: asked }]);
     // The checkpoint of the start is offered but never asked for: there is no gap there.
-    expect(calls[0].documentHashes).not.toContain(record.segments[0].initialDocumentHash);
+    expect(calls[0]!.documentHashes).not.toContain(record.segments[0]!.initialDocumentHash);
   });
 
   it("rejects a checkpoint that is another valid document, or the right one not in canonical form", async () => {
     const record = await buildRecord([{ sequence: 1 }, { sequence: 5 }, { sequence: 6 }]);
-    const key = record.segments[1].initialDocumentHash;
+    const key = record.segments[1]!.initialDocumentHash;
     const forged = checkpointBytes(paragraph("Podmetnuti izmišljeni tekst. "));
-    const spaced = utf8(JSON.stringify(canonical(record.starts[1]), null, 1));
+    const spaced = utf8(JSON.stringify(canonical(record.starts[1]!), null, 1));
     for (const bytes of [forged, spaced]) {
       const { reader } = checkpointStore(new Map([[key, bytes]]));
       expect(await reconstruct(record, reader)).toEqual({
@@ -301,11 +301,12 @@ describe("reconstruction across gaps (DAN-293)", () => {
 
   it("rejects the bytes of another gap's checkpoint returned under the asked hash", async () => {
     const record = await buildRecord([{ sequence: 1 }, { sequence: 5 }, { sequence: 9 }]);
-    const [first, second] = [1, 2].map((index) => record.segments[index].initialDocumentHash);
+    const first = record.segments[1]!.initialDocumentHash;
+    const second = record.segments[2]!.initialDocumentHash;
     const { reader } = checkpointStore(
       new Map([
-        [first, checkpointBytes(record.starts[2])],
-        [second, checkpointBytes(record.starts[1])],
+        [first, checkpointBytes(record.starts[2]!)],
+        [second, checkpointBytes(record.starts[1]!)],
       ]),
     );
     expect(await reconstruct(record, reader)).toEqual({
@@ -473,24 +474,24 @@ describe("reconstruction resumed at a checkpoint (DAN-293, M3.3-P02)", () => {
     const { reader, calls } = checkpointStore(await checkpointsAt(record, [0, 1, 2]));
     expect(await resume(record, reader)).toEqual(await resumedMatch(record, 2));
     const asked = [
-      record.segments[1].initialDocumentHash,
-      record.segments[2].initialDocumentHash,
+      record.segments[1]!.initialDocumentHash,
+      record.segments[2]!.initialDocumentHash,
     ].sort();
     expect(calls).toEqual([{ evidencePackageId: PACKAGE, documentHashes: asked }]);
   });
 
   it("passes over a checkpoint the chain does not vouch for and starts at an older one, or at the beginning", async () => {
     const record = await buildRecord(CONTINUOUS);
-    const key = record.segments[2].initialDocumentHash;
+    const key = record.segments[2]!.initialDocumentHash;
     const rejected: [string, Uint8Array][] = [
       ["another valid document", checkpointBytes(paragraph("Podmetnuti izmišljeni tekst. "))],
-      ["the checkpoint of another position of the same chain", checkpointBytes(record.starts[1])],
+      ["the checkpoint of another position of the same chain", checkpointBytes(record.starts[1]!)],
       [
         "the right document not in canonical form",
-        utf8(JSON.stringify(canonical(record.starts[2]), null, 1)),
+        utf8(JSON.stringify(canonical(record.starts[2]!), null, 1)),
       ],
       ["damaged bytes", Uint8Array.of(0xff, 0xfe, 0x7b)],
-      ["cut bytes", checkpointBytes(record.starts[2]).slice(0, 9)],
+      ["cut bytes", checkpointBytes(record.starts[2]!).slice(0, 9)],
       ["no bytes", new Uint8Array()],
     ];
     const full = await reconstruct(record);
@@ -527,10 +528,10 @@ describe("reconstruction resumed at a checkpoint (DAN-293, M3.3-P02)", () => {
     // Position 3 is stored but never asked for, so the start is the gap.
     expect(await resume(record, reader)).toEqual(await resumedMatch(record, 1, [gapAt(1, 1, 5)]));
     const asked = [1, ...Array.from({ length: 32 }, (_, index) => 4 + index)];
-    const documentHashes = asked.map((index) => record.segments[index].initialDocumentHash).sort();
+    const documentHashes = asked.map((index) => record.segments[index]!.initialDocumentHash).sort();
     expect(calls).toEqual([{ evidencePackageId: PACKAGE, documentHashes }]);
     // The hash of the gap is not the smallest one, so the order above is the sort's doing.
-    expect(documentHashes[0]).not.toBe(record.segments[1].initialDocumentHash);
+    expect(documentHashes[0]).not.toBe(record.segments[1]!.initialDocumentHash);
   });
 
   it("keeps every gap in the outcome, also the ones before the start", async () => {
@@ -547,7 +548,7 @@ describe("reconstruction resumed at a checkpoint (DAN-293, M3.3-P02)", () => {
     const start = gapAt(0, 0, 3);
     const both = checkpointStore(await checkpointsAt(record, [0, 2]));
     expect(await resume(record, both.reader)).toEqual(await resumedMatch(record, 2, [start]));
-    expect(both.calls[0].documentHashes).toContain(record.segments[0].initialDocumentHash);
+    expect(both.calls[0]!.documentHashes).toContain(record.segments[0]!.initialDocumentHash);
 
     const later = checkpointStore(await checkpointsAt(record, [2]));
     expect(await resume(record, later.reader)).toEqual({
@@ -577,7 +578,7 @@ describe("reconstruction resumed at a checkpoint (DAN-293, M3.3-P02)", () => {
     });
     expect(outcome).toEqual(await reconstruct(regressed, all.reader));
     // The checkpoint behind the regression is never asked for.
-    expect(all.calls[0].documentHashes).toEqual([regressed.segments[1].initialDocumentHash]);
+    expect(all.calls[0]!.documentHashes).toEqual([regressed.segments[1]!.initialDocumentHash]);
   });
 
   it("reports a step that does not apply at or after the start as the full pass does", async () => {
@@ -679,7 +680,7 @@ describe("reconstruction resumed at a checkpoint (DAN-293, M3.3-P02)", () => {
 
   it("reads the checkpoints once, so a store that changes between two reads cannot split one pass", async () => {
     const record = await buildRecord(CONTINUOUS);
-    const key = record.segments[2].initialDocumentHash;
+    const key = record.segments[2]!.initialDocumentHash;
     const answers = [
       new Map<string, Uint8Array>(),
       await checkpointsAt(record, [2]),
@@ -689,7 +690,7 @@ describe("reconstruction resumed at a checkpoint (DAN-293, M3.3-P02)", () => {
     const changing: EvidenceCheckpointReader = {
       readCheckpoints: async () => ({
         status: "found",
-        checkpoints: answers[Math.min(reads++, answers.length - 1)],
+        checkpoints: answers[Math.min(reads++, answers.length - 1)]!,
       }),
     };
     const outcomes = [

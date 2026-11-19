@@ -96,11 +96,16 @@ export class EvidenceGateway implements EvidenceIngestPort {
 
     let signedReceipt: SignedEvidenceReceipt;
     try {
-      const signature = await this.dependencies.signer.sign(receiptDigest.bytes);
+      // Ductura's SigningKeyProvider answers a Result; a refusal is the
+      // failure that a throw was in Ductus.
+      const signed = await this.dependencies.signer.sign(receiptDigest.bytes);
+      if (!signed.ok) throw new Error("signer refused");
+      const signature = signed.value;
       if (!isSignatureEnvelope(signature)) {
         throw new Error("signer returned a malformed signature");
       }
-      if (!(await this.dependencies.signer.verify(receiptDigest.bytes, signature))) {
+      const verified = await this.dependencies.signer.verify(receiptDigest.bytes, signature);
+      if (!verified.ok || !verified.value) {
         throw new Error("signer returned unverifiable signature");
       }
       signedReceipt = {

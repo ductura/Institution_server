@@ -5,7 +5,7 @@ import {
   reply,
   unavailable,
   type Log,
-} from "./ingest-http";
+} from "./ingest-http.ts";
 import { submitWork, type SubmissionDependencies, type SubmissionOutcome } from "./submission.ts";
 
 /**
@@ -18,7 +18,7 @@ import { submitWork, type SubmissionDependencies, type SubmissionOutcome } from 
 
 export type SubmissionRouteDeps = SubmissionDependencies & {
   expectedOrigin: string | null;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
   log?: Log;
 };
 
