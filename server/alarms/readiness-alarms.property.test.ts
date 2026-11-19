@@ -1,9 +1,9 @@
 import { fc, test } from "@fast-check/vitest";
 import { expect } from "vitest";
 
-import { OPS_ALARM_KINDS, type OpsAlarmKind } from "@/domain/ops/alarm";
+import { OPS_ALARM_KINDS, type OpsAlarmKind } from "../domain/ops/alarm.ts";
 
-import { createAlarmTracker, type AlarmStore } from "./readiness-alarms";
+import { createAlarmTracker, type AlarmStore } from "./readiness-alarms.ts";
 
 // DAN-184 contract (#1836, c.6821517800): whatever the reports and store
 // failures, writes name only kinds from the closed set, each kind's writes

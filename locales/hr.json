@@ -121,6 +121,7 @@
     "unauthenticated": "Prijava nije valjana. Prijavite se ponovno.",
     "forbidden": "Upis u kolegij nije dopušten.",
     "refused": "Kôd nije prihvaćen. Provjerite kôd i pokušajte ponovno.",
+    "expired_code": "Kôd više ne vrijedi. Zatražite novi kôd od nastavnika kolegija.",
     "too_many_attempts": "Previše pokušaja upisa. Pokušajte ponovno kasnije.",
     "row_malformed": "Upis trenutačno nije moguće potvrditi. Pokušajte ponovno.",
     "database_error": "Upis trenutačno nije dostupan. Pokušajte ponovno."

@@ -1,4 +1,4 @@
-import type { WithActor } from "@/server/db/with-actor";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * DAN-230 HTTP boundary: GET /api/teacher/courses, the teacher's courses and

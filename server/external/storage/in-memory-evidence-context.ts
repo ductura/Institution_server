@@ -2,7 +2,7 @@ import type {
   EvidenceContextPort,
   EvidenceContextResolution,
   EvidencePackageContext,
-} from "@/application/ports/evidence-trust";
+} from "../../application/ports/evidence-trust.ts";
 
 export class InMemoryEvidenceContextPort implements EvidenceContextPort {
   private readonly contexts = new Map<string, EvidencePackageContext>();

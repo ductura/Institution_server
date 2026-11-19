@@ -1,15 +1,15 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { withActor as appWithActor } from "@/server/db";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { withActor as appWithActor } from "../database/index.ts";
 import { POST } from "../../../app/api/institution/assignments/[assignmentId]/versions/route";
 import {
   handleAssignmentVersionRequest,
   MAX_ASSIGNMENT_VERSION_BODY_BYTES,
-} from "./assignment-version-route";
+} from "./assignment-version-route.ts";
 
-vi.mock("@/server/db", () => ({ withActor: vi.fn() }));
+vi.mock("../database/index.ts", () => ({ withActor: vi.fn() }));
 const ORIGIN = "https://ductus.example";
 const ASSIGNMENT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const TOKEN = "A".repeat(43);

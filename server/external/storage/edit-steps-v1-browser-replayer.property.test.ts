@@ -7,12 +7,15 @@ import { expect } from "vitest";
 import {
   digestCanonicalDocumentV2,
   replayEvidenceSegmentsV2,
-} from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceSegmentV2, EvidenceStepV2 } from "@/domain/forensics/evidence-segment-v2";
-import type { JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../../domain/forensics/evidence-replay-v2.ts";
+import type {
+  EvidenceSegmentV2,
+  EvidenceStepV2,
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
-import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer";
-import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer";
+import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer.ts";
+import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
 
 /**
  * Granica 8 (#638), property: random edits, some with a forged or shifted

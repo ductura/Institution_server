@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 import {
   handleMentoredWorkRequest,
@@ -9,7 +9,7 @@ import {
   mentoredWorksOf,
   readMentoredWork,
   readMentoredWorks,
-} from "./mentored-works";
+} from "./mentored-works.ts";
 
 // Invented ids and names only (DAN-477, contract on #1091, c.6566072183).
 const TOKEN = "T".repeat(43);
