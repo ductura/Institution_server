@@ -221,6 +221,10 @@ export const INSTITUTION_HANDLERS: Handlers = {
       wordMin: body.wordMin,
       wordMax: body.wordMax,
     };
+    // UGOVORI-API: the creation's groups, outside tools and summary-only mode stay with the assignment.
+    for (const key of ["groupIds", "externalToolsAllowed", "aiSummaryOnly"] as const)
+      if (assignment.content[key] !== undefined)
+        Object.assign(content, { [key]: assignment.content[key] });
     if (content.wordMin !== null && content.wordMax !== null && content.wordMin > content.wordMax)
       return { error: "invalid_input" };
     if (content.aiPolicy === "prohibited" && content.aiPurposes.length > 0)

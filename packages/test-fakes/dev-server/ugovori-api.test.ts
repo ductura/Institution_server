@@ -55,6 +55,18 @@ describe("dev fake server: contracts ahead of their handlers", () => {
       aiSummaryOnly: true,
     });
     expect((await send(state, url, { headers: await signIn(state, "student") })).status).toBe(404);
+    // A later version carries only the content; the creation's three settings stay.
+    const published = await send(state, `${url}/versions`, {
+      body: { expectedVersion: 1, ...CONTENT, title: "Izmišljeni drugi naslov" },
+      headers: teacher,
+    });
+    expect(published.status).toBe(201);
+    expect((await send(state, url, { headers: teacher })).json).toMatchObject({
+      versionNo: 2,
+      groupIds: [IDS.groupA],
+      externalToolsAllowed: true,
+      aiSummaryOnly: true,
+    });
   });
 
   it.each([
