@@ -100,7 +100,9 @@ export async function issueSubmissionReceiptV2(
   let keyId: string;
   let keyVersion: string;
   try {
-    ({ keyId, keyVersion } = await deps.signer.publicVerificationKey());
+    const key = await deps.signer.publicVerificationKey();
+    if (!key.ok) return fail("receipt_prepare_failed");
+    ({ keyId, keyVersion } = key.value);
     const { rows } = await deps.withActor(token, (tx) =>
       tx.query<PreparedRow>(PREPARE_SQL, [expected.submissionId, keyId, keyVersion]),
     );
@@ -120,16 +122,19 @@ export async function issueSubmissionReceiptV2(
 
   let signature: unknown;
   try {
-    signature = await deps.signer.sign(checked.signingInput);
+    const signed = await deps.signer.sign(checked.signingInput);
+    if (!signed.ok) return fail("signing");
+    signature = signed.value;
     if (
       !isSignatureEnvelope(signature) ||
       signature.algorithm !== "Ed25519" ||
       signature.keyId !== keyId ||
-      signature.keyVersion !== keyVersion ||
-      (await deps.signer.verify(checked.signingInput, signature)) !== true
+      signature.keyVersion !== keyVersion
     ) {
       return fail("signing");
     }
+    const verified = await deps.signer.verify(checked.signingInput, signature);
+    if (!verified.ok || verified.value !== true) return fail("signing");
   } catch {
     return fail("signing");
   }

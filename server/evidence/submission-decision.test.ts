@@ -158,7 +158,10 @@ describe("issueSubmissionReceipt", () => {
     const digest = await digestSubmissionReceiptPayloadV1(payload);
     expect(issued.receipt.payload).toEqual(payload);
     expect(issued.receipt.payloadDigestSha256).toBe(digest.sha256);
-    expect(await signer.verify(digest.signingInput, issued.receipt.signature)).toBe(true);
+    expect(await signer.verify(digest.signingInput, issued.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
   });
 
   it("gives the same receipt for the same submission and key (A6)", async () => {

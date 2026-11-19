@@ -747,7 +747,10 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
       algorithm: "Ed25519",
       keyId: "b14-test-key",
     });
-    expect(await env.signer.verify(receiptDigest.bytes, outcome.receipt.signature)).toBe(true);
+    expect(await env.signer.verify(receiptDigest.bytes, outcome.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
 
     expect(built.document.nodes[0].text).toBe("Izmišljeni tekst za provjeru prolaza.");
     // Same document with another key order: the comparison is canonical, not textual.

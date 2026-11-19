@@ -116,7 +116,10 @@ describe("submission receipt v2: signed and bound once (DAN-291)", () => {
     expect(JSON.stringify(issued.receipt.payload)).toBe(s.payload);
     const digest = await digestSubmissionReceiptPayloadV2(issued.receipt.payload);
     expect(issued.receipt.payloadDigestSha256).toBe(sha(s.payload));
-    expect(await s.signer.verify(digest.signingInput, issued.receipt.signature)).toBe(true);
+    expect(await s.signer.verify(digest.signingInput, issued.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
   });
 
   it("returns a bound receipt without asking the signer or freezing again", async () => {

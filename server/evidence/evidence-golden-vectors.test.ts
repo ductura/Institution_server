@@ -16,6 +16,7 @@ import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "../domain/document/edit-ste
 import { MAX_EVIDENCE_SEGMENT_BYTES } from "../domain/forensics/evidence-chain-v2.ts";
 import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
 import type { SignedEvidenceReceipt } from "../domain/forensics/evidence-receipt.ts";
+import type { SignatureEnvelope } from "../domain/forensics/signature.ts";
 import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
 import {
   applyPayloadEdit,
@@ -389,7 +390,15 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
   });
 
   it("reconstructs the stored record under the stored signatures", async () => {
-    const dependencies = { ...storedRecord(), signer: goldenKey, replayer };
+    // The golden key verifies with a boolean; the reconstruction reads Ductura's
+    // SigningKeyProvider, which answers a Result.
+    const signer = {
+      verify: async (message: Uint8Array, signature: SignatureEnvelope) => ({
+        ok: true as const,
+        value: await goldenKey.verify(message, signature),
+      }),
+    };
+    const dependencies = { ...storedRecord(), signer, replayer };
     expect(
       await reconstructAndCompareEvidence(dependencies, {
         ...reconstruction,

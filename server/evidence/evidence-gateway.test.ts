@@ -11,6 +11,7 @@ import type {
   SignatureEnvelope,
   SigningKeyProvider,
 } from "../external/keys/signing-key-provider.ts";
+import type { Result } from "../domain/result.ts";
 import { DevelopmentEd25519SigningKeyProvider } from "../external/keys/development-ed25519-signer.ts";
 import { InMemoryEvidenceAcceptanceRepository } from "../external/storage/in-memory-evidence-acceptance-repository.ts";
 import { InMemoryEvidenceContextPort } from "../external/storage/in-memory-evidence-context.ts";
@@ -56,21 +57,23 @@ class ToggleSigner implements SigningKeyProvider {
   extraField = false;
   signCalls = 0;
 
-  async sign(message: Uint8Array): Promise<SignatureEnvelope> {
+  // Ductura's SigningKeyProvider answers a Result (Ductus answered the value).
+  async sign(message: Uint8Array): Promise<Result<SignatureEnvelope>> {
     this.signCalls++;
     if (this.fail) throw new Error("synthetic signer outage");
-    const signature = await this.inner.sign(message);
+    const signed = await this.inner.sign(message);
+    if (!signed.ok) return signed;
     return this.extraField
-      ? ({ ...signature, issuedTo: "student-2" } as SignatureEnvelope)
-      : signature;
+      ? { ok: true, value: { ...signed.value, issuedTo: "student-2" } as SignatureEnvelope }
+      : signed;
   }
 
-  async publicVerificationKey(): Promise<PublicVerificationKey> {
+  async publicVerificationKey(): Promise<Result<PublicVerificationKey>> {
     return this.inner.publicVerificationKey();
   }
 
-  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<boolean> {
-    if (this.verifyFail) return false;
+  async verify(message: Uint8Array, signature: SignatureEnvelope): Promise<Result<boolean>> {
+    if (this.verifyFail) return { ok: true, value: false };
     return this.inner.verify(message, signature);
   }
 }
@@ -239,7 +242,10 @@ describe("EvidenceGateway", () => {
 
     const digest = await digestEvidenceReceiptPayload(outcome.receipt.payload);
     expect(outcome.receipt.payloadDigestSha256).toBe(digest.sha256);
-    expect(await s.signer.verify(digest.bytes, outcome.receipt.signature)).toBe(true);
+    expect(await s.signer.verify(digest.bytes, outcome.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
 
     expect(outcome.receipt.payload).toMatchObject({
       receiptSchema: "ductus-evidence-receipt-v1",

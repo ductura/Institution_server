@@ -208,8 +208,8 @@ export async function projectProcessSummary(
   }
 
   const gapItems = chain.discontinuities.map(({ index }) => ({
-    previousEndedAt: segments[index - 1].observedEndedAt,
-    nextStartedAt: segments[index].observedStartedAt,
+    previousEndedAt: segments[index - 1]!.observedEndedAt,
+    nextStartedAt: segments[index]!.observedStartedAt,
   }));
 
   const sessionItems = sessionsOf(segments, sessionBreakAboveMinutes);

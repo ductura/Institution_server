@@ -13,7 +13,8 @@ export type EvidenceOutboxItem = {
   attempts: number;
   createdAt: string;
   updatedAt: string;
-  lastFailure?: EvidenceIngestOutcome["status"];
+  // exactOptionalPropertyTypes: a transition sets it to undefined explicitly.
+  lastFailure?: EvidenceIngestOutcome["status"] | undefined;
   receipt?: SignedEvidenceReceipt;
 };
 

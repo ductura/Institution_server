@@ -74,7 +74,9 @@ export function signerReceiptCheck(
     ) {
       return { status: "mismatch" };
     }
-    const valid = await signer.verify(digest.bytes, receipt.signature);
+    // A refused verification (Result, Ductura's SigningKeyProvider) is not a valid one.
+    const verified = await signer.verify(digest.bytes, receipt.signature);
+    const valid = verified.ok && verified.value;
     return valid
       ? { status: "verified", receiptId: receipt.payload.receiptId }
       : { status: "signature_invalid" };
@@ -480,7 +482,7 @@ async function reconstruct<TDocument, TResumed = never>(
   // record starts. It has to continue the starting document from event 1.
   const start = await findEvidenceStartBreakV2(
     input.initialDocument,
-    segments[0],
+    segments[0]!,
     dependencies.replayer,
   );
   if (!start.ok) return mismatch(start.reason, null);

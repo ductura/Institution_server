@@ -51,7 +51,8 @@ export type AuthorizationCheck = {
   action: AuthorizationAction;
   resource: AuthorizationResource;
   consistency: AuthorizationConsistency;
-  context?: AuthorizationContext;
+  // exactOptionalPropertyTypes: the gateway passes it through, possibly undefined.
+  context?: AuthorizationContext | undefined;
 };
 
 export type AuthorizationDecision =
