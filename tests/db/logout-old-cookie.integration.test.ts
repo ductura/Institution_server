@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createOpenSession } from "../../server/database/index.ts";
 import {
   AREA_NAMES,
+  createAdminCourseRouteFor,
   createAuthRoutes,
   createClientContextRoute,
   createDatabases,
@@ -244,6 +245,18 @@ const SESSION_ROUTES = {
     body: () => ({ teacherId: randomUUID() }),
     live: 403,
   },
+  // SRV-12: the administrator's course; not an administrator, so 403.
+  "institution.admin-courses.post": {
+    path: "/api/v1/institution/admin/courses",
+    body: () => ({
+      name: "Izmišljeni kolegij",
+      academicYear: "2026/2027",
+      aiPolicy: "encouraged",
+      holderId: randomUUID(),
+      groups: [],
+    }),
+    live: 403,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -260,6 +273,7 @@ const FACTORIES = [
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
   "createInstitutionGroupRoutesFor",
+  "createAdminCourseRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -281,6 +295,7 @@ const MOUNTED = [
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   ...createInstitutionGroupRoutesFor(databases.main),
+  createAdminCourseRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
