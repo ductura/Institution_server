@@ -153,7 +153,7 @@ export async function readAssignmentSubmissions(
 
 export interface AssignmentSubmissionsDeps {
   withActor: WithActor;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 function refuse(status: number, error: string): Response {
