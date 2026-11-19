@@ -7,7 +7,7 @@ import {
   parsePurpose,
   purposeCatalog,
   type PurposeEntry,
-} from "./purpose-catalog";
+} from "./purpose-catalog.ts";
 
 // The five keys the database CHECKs and AI_PURPOSES already accept (D-80 t. 1).
 // Version 1 is pinned to them: changing it is a new version, never an edit.

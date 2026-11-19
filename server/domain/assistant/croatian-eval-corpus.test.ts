@@ -3,8 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { findForbiddenTerms } from "../../../scripts/forbidden-terms/terms";
-import { purposeCatalog } from "./purpose-catalog";
+import { findForbiddenTerms } from "../../../scripts/forbidden-terms/terms.ts";
+import { purposeCatalog } from "./purpose-catalog.ts";
 
 /**
  * Guards the synthetic Croatian evaluation corpus (DAN-400, M9.1-P03,

@@ -1,14 +1,14 @@
-import { REVISION_ZERO_SHA256 } from "@/domain/document/revision-zero";
-import type { EvidenceChainHeadV2 } from "@/domain/forensics/evidence-chain-v2";
-import type { EvidenceSegmentV2, EvidenceSourceV2 } from "@/domain/forensics/evidence-segment-v2";
-import type { JcsJsonValue } from "@/domain/forensics/jcs";
+import { REVISION_ZERO_SHA256 } from "../document/revision-zero.ts";
+import type { EvidenceChainHeadV2 } from "../forensics/evidence-chain-v2.ts";
+import type { EvidenceSegmentV2, EvidenceSourceV2 } from "../forensics/evidence-segment-v2.ts";
+import type { JcsJsonValue } from "../forensics/jcs.ts";
 
 import {
   buildReplayTimeline,
   type ReplayChangeKind,
   type ReplayStepReplayer,
   type ReplayTimelineFailure,
-} from "./replay-timeline";
+} from "./replay-timeline.ts";
 
 /**
  * The one replay player of a work (DAN-537, rb 261, contract on #1836): the

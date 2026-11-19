@@ -1,4 +1,4 @@
-import type { WithActor } from "@/server/db/with-actor";
+import type { WithActor } from "../database/with-actor.ts";
 import { readEmptyMutation, respond, rpcErrorResponse } from "./mutation-route";
 
 export const MAX_TEACHER_ROLE_REVOCATION_BODY_BYTES = 64;

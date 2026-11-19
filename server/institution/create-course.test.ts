@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { handleCreateCourse, type CreateCourseDeps } from "./create-course";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 const ORIGIN = "http://localhost:3000";
 const URL = `${ORIGIN}/api/institution/courses`;

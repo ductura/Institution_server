@@ -155,6 +155,10 @@ export {
   createTeacherReadRoutesFor,
 } from "./teacher-reads.ts";
 export {
+  createStudentAccessLogRoute,
+  createStudentAccessLogRouteFor,
+} from "./student-access-log.ts";
+export {
   bearerMatches,
   checkProvisionBody,
   createInternalInstitutionRoutes,

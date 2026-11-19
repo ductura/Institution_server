@@ -1,5 +1,5 @@
-import { isDocumentId } from "@/domain/collaboration";
-import type { WithActor } from "@/server/db/with-actor";
+import { isDocumentId } from "../domain/collaboration/index.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * DAN-332 (contract on #826, c.6420660650), R1: the submissions of an

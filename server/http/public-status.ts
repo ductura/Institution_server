@@ -4,7 +4,7 @@
 
 import type { ComponentName, ComponentState, PublicStatus } from "@/lib/status/public-status";
 
-import type { CapabilityName, CapabilityReport } from "./ready";
+import type { CapabilityName, CapabilityReport } from "./ready.ts";
 
 /** How long one check answers every caller. */
 export const PUBLIC_STATUS_TTL_MS = 15_000;
