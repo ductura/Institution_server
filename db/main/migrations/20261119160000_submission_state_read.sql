@@ -14,6 +14,10 @@
 --                                  membership; writes nothing
 --   app.my_assignment_requirements the word range of the current version, for
 --                                  the same caller
+--   app.teacher_submission_state   the same state of one student, for a
+--                                  reader of that student's work (teacher or
+--                                  collaborator of the course, seminar group
+--                                  teacher, mentor)
 --
 -- States: none (no recorded submission), ceka (recorded, no receipt bound
 -- yet: the signer was unavailable, SRV-18 503 signing), potvrdeno (the bound
@@ -22,9 +26,11 @@
 -- not a submission. A caller with no relation gets not_found, the same as
 -- for an assignment that does not exist; no session is ZD401.
 --
--- The teacher's read (app.teacher_submission_state) logs the read in
--- audit.access_log in the same transaction (rule 17) and waits for the
--- surface (P-5 on Ductus#2028); it reuses app.submission_state_of unchanged.
+-- The teacher's read returns the state and the receipt, never the text of
+-- the work, so it is a read without content and writes nothing to
+-- audit.access_log (Ductus docs/backend/suradnja.md, DAN-294: lists without
+-- content log nothing; the submitted text is logged as submitted_text where
+-- it is read). Answer to P-5 on Ductus#2028, c.7010418731.
 SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
 GRANT CREATE ON SCHEMA app TO ductus_identity, ductus_evidence;
@@ -110,6 +116,34 @@ $$;
 REVOKE ALL ON FUNCTION app.my_assignment_requirements(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app.my_assignment_requirements(uuid) TO ductus_app;
 
+-- One student's state for a reader of that student's work. The reader and
+-- the role are those of audit.reader_role, the rule the access log is written
+-- by: the teacher of the course (holder or collaborator, within the boundary
+-- of actor_course_work), the mentor of a mentorship's assignment, or the
+-- teacher of the student's seminar group. The owner, a reader of another
+-- course or institution, an unknown or null assignment or student: ZD403,
+-- one answer for every refusal. No session: ZD401. Writes nothing.
+CREATE FUNCTION app.teacher_submission_state(p_assignment_id uuid, p_student_id uuid)
+RETURNS TABLE (
+  state text, revision bigint, requested_at timestamptz,
+  receipt_payload text, payload_digest_sha256 text, signature jsonb
+)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_institution uuid;
+BEGIN
+  SELECT r.institution_id INTO v_institution FROM institution.require_actor() r;
+  IF p_assignment_id IS NULL OR p_student_id IS NULL
+     OR audit.reader_role(v_institution, p_assignment_id, p_student_id) IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  RETURN QUERY SELECT * FROM app.submission_state_of(p_assignment_id, p_student_id);
+END
+$$;
+REVOKE ALL ON FUNCTION app.teacher_submission_state(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.teacher_submission_state(uuid, uuid) TO ductus_app;
+
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA app FROM ductus_identity, ductus_evidence;
@@ -118,6 +152,7 @@ REVOKE CREATE ON SCHEMA app FROM ductus_identity, ductus_evidence;
 -- Local only; staging and production only go forward (docs/BACKEND.md §6).
 SET LOCAL ROLE ductus_migrator;
 SET LOCAL ROLE ductus_identity;
+DROP FUNCTION app.teacher_submission_state(uuid, uuid);
 DROP FUNCTION app.my_assignment_requirements(uuid);
 DROP FUNCTION app.my_submission_state(uuid);
 RESET ROLE;

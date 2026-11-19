@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1625);
+SELECT plan(1637);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -296,9 +296,10 @@ SELECT is_empty(
      FROM (SELECT rolname::text FROM pg_roles
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
            UNION ALL SELECT 'public') AS r
-     CROSS JOIN unnest(ARRAY['app.my_submission_state(uuid)', 'app.my_assignment_requirements(uuid)']) f
+     CROSS JOIN unnest(ARRAY['app.my_submission_state(uuid)', 'app.my_assignment_requirements(uuid)',
+                             'app.teacher_submission_state(uuid,uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
-  'SRV-20: only ductus_app and the owner execute the two own-state RPCs'
+  'SRV-20: only ductus_app and the owner execute the three state RPCs'
 );
 SELECT is(
   pg_temp.ask(c.actor, format('SELECT state FROM app.my_submission_state(%s)', c.assignment)), c.state,
@@ -317,6 +318,17 @@ FROM (VALUES
   ('ana', '{z1}', 'found'), ('dora', '{z1}', 'found'), ('vesna', '{z1}', 'not_found'), ('marko', '{z1}', 'not_found'),
   ('boris', '{z1}', 'not_found'), ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'found'), ('petra', '{z3}', 'not_found')
 ) AS c (actor, assignment, outcome);
+SELECT is(
+  coalesce(substr(pg_temp.ask(c.actor, format('SELECT state FROM app.teacher_submission_state(%s, %s)', c.assignment, c.student)),
+                  1, 5), 'NULL'), c.state,
+  format('SRV-20: %s reads the state of %s on %s: %s', c.actor, c.student, c.assignment, c.state)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '{ana}', 'none'), ('vesna', '{z1}', '{dora}', 'none'), ('marko', '{z1}', '{ana}', 'ZD403'),
+  ('ana', '{z1}', '{ana}', 'ZD403'), ('dora', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('iva', '{z1}', '{ana}', 'ZD403'), ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'),
+  ('petra', '{z3}', '{tomo}', 'none'), ('vesna', '{z3}', '{tomo}', 'ZD403'), ('tomo', '{z3}', '{tomo}', 'ZD403')
+) AS c (actor, assignment, student, state);
 SELECT is(
   substr(pg_temp.ask('ana', 'SELECT state FROM app.submission_state_of({z1}, {ana})'), 1, 5), '42501',
   'SRV-20: the web role cannot call the reader of the state'
