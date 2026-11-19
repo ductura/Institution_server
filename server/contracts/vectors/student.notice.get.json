@@ -89,6 +89,31 @@
       }
     },
     {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001",
+          "sec-fetch-site": "cross-site"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000002004"
+        }
+      }
+    },
+    {
       "name": "not-found-or-not-enrolled",
       "kind": "error",
       "code": "not_found",

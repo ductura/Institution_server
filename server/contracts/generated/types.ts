@@ -356,7 +356,7 @@ export type Operations = {
     query: undefined;
     body: undefined;
     success: { status: 200; body: { "assignmentId": string; "versionNo": number; "templateVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "wordMin": number | null; "wordMax": number | null; "readAt": string | null; "acknowledgedAt": string | null }; headers: {  } };
-    errorCode: "unauthorized" | "not_found" | "unavailable";
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "submission.submit.post": {
     params: undefined;
