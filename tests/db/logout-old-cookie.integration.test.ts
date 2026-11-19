@@ -20,6 +20,7 @@ import {
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
+  createInstitutionGroupRoutesFor,
   createInterfaceLocaleRoutesFor,
   createInternalInstitutionRoutes,
   createLayers,
@@ -232,6 +233,17 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  // SRV-15: the seminar groups; not a teacher of any course, so 403.
+  "institution.course-groups.post": {
+    path: `/api/v1/institution/courses/${COURSE}/groups`,
+    body: () => ({ name: "Izmišljena grupa" }),
+    live: 403,
+  },
+  "institution.course-group-teachers.post": {
+    path: `/api/v1/institution/groups/${COURSE}/teachers`,
+    body: () => ({ teacherId: randomUUID() }),
+    live: 403,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -247,6 +259,7 @@ const FACTORIES = [
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
+  "createInstitutionGroupRoutesFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -267,6 +280,7 @@ const MOUNTED = [
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
+  ...createInstitutionGroupRoutesFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
