@@ -168,9 +168,10 @@ describe("ordering", () => {
       book([person("Zubak", "Iva")], 2000),
     ];
     expect(
-      sortBibliography(sources).map(
-        (s) => `${s.authors[0].kind === "person" ? s.authors[0].family : ""} ${s.year}`,
-      ),
+      sortBibliography(sources).map((s) => {
+        const first = s.authors[0]!;
+        return `${first.kind === "person" ? first.family : ""} ${s.year}`;
+      }),
     ).toEqual([
       "Cvitan 2001",
       "Cvitan 2019",

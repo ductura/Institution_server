@@ -4,8 +4,20 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { REVISION_ZERO_SHA256 } from "../../../server/domain/document/revision-zero.ts";
-import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import { handleEvidenceOpenRequest } from "../../../server/database/open-work.ts";
+import {
+  createActorReader,
+  createWithActor,
+  createWorkOpener,
+  type WithActor,
+} from "../../../server/database/index.ts";
+import {
+  createDatabases,
+  createEvidenceOpenRoute,
+  createLayers,
+  startServer,
+  type Running,
+} from "../../../server/http/index.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
 
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
@@ -42,6 +54,7 @@ const ORIGIN = "http://localhost:3000";
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
 let appPool: pg.Pool;
 let withActor: WithActor;
+let server: Running;
 let fixtureReady = false;
 
 type OpenRow = {
@@ -202,9 +215,22 @@ beforeAll(async () => {
   await insertFixture();
   appPool = new pg.Pool({ connectionString: applicationUrl(), max: 2 });
   withActor = createWithActor(appPool);
+  server = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin: ORIGIN }),
+    databases: createDatabases(),
+    routes: [
+      createEvidenceOpenRoute({
+        actorReader: createActorReader(withActor),
+        workOpener: createWorkOpener(withActor),
+      }),
+    ],
+  });
 });
 
 afterAll(async () => {
+  await server?.close();
   await appPool?.end();
   let cleanupError: unknown;
   try {
@@ -291,19 +317,17 @@ describe("opening a student's work concurrently", () => {
 
 describe("the open route makes a work only when asked to start it (DAN-331, F-137)", () => {
   const open = (body: unknown) =>
-    handleEvidenceOpenRequest(
-      new Request(`${ORIGIN}/api/evidence/open`, {
-        method: "POST",
-        headers: {
-          origin: ORIGIN,
-          "sec-fetch-site": "same-origin",
-          "ductus-protocol": "1",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }),
-      { withActor, expectedOrigin: ORIGIN, sessionToken: token, log: () => {} },
-    );
+    fetch(`http://127.0.0.1:${server.port}/api/v1/evidence/open`, {
+      method: "POST",
+      headers: {
+        origin: ORIGIN,
+        "sec-fetch-site": "same-origin",
+        "ductus-protocol": "1",
+        "content-type": "application/json",
+        cookie: `${SESSION_COOKIE_NAME}=${token}`,
+      },
+      body: JSON.stringify(body),
+    });
   // Every evidence and institution row of this file's institution, as text.
   const print = async () =>
     (

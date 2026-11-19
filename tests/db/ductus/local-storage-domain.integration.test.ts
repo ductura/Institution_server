@@ -16,6 +16,7 @@ import {
 } from "../../../server/external/storage/s3-signature.ts";
 
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
+import { ciMainPsqlTarget } from "./main-seed-psql.ts";
 
 // B-8 step 4b / DAN-83 (docs/BACKEND.md 4.1 and 4.13): the db/local script
 // gives an institution its storage domain in the local store of compose.yaml,
@@ -36,9 +37,16 @@ const credentials = {
   secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "ductus-local-only",
 };
 const run = promisify(execFile);
-const SCRIPT = fileURLToPath(
-  new URL("../../../db/main/local/evidence-storage-domain.mjs", import.meta.url),
-);
+const SCRIPT = new URL("../../../db/main/local/evidence-storage-domain.mjs", import.meta.url);
+const NATIVE_SCRIPT = `
+  const { main } = await import(process.argv[1]);
+  try {
+    console.log(await main(process.env, process.argv.slice(3), JSON.parse(process.argv[2])));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : "failed");
+    process.exitCode = 1;
+  }
+`;
 const suffix = randomBytes(5).toString("hex");
 const [own, other, regional] = ["own", "other", "regional"].map((name) => ({
   id: randomUUID(),
@@ -65,7 +73,19 @@ async function provision(
   extra: Record<string, string> = {},
   args = ["--institution", slug],
 ) {
-  return run(process.execPath, [SCRIPT, ...args], { env: env(extra) }).then(
+  const psql = ciMainPsqlTarget();
+  const argv =
+    psql === undefined
+      ? [fileURLToPath(SCRIPT), ...args]
+      : [
+          "--input-type=module",
+          "--eval",
+          NATIVE_SCRIPT,
+          SCRIPT.href,
+          JSON.stringify(psql),
+          ...args,
+        ];
+  return run(process.execPath, argv, { env: env(extra) }).then(
     ({ stdout }) => ({ ok: true as const, out: stdout.trim() }),
     (error: { stderr: string }) => ({ ok: false as const, out: error.stderr }),
   );

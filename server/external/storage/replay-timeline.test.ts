@@ -4,13 +4,10 @@ import type { Node as PmNode } from "@tiptap/pm/model";
 import { Transform } from "@tiptap/pm/transform";
 import { describe, expect, it } from "vitest";
 
-import {
-  createEditStepsV1Replayer,
-  removedRangeSha256,
-} from "../../external/storage/edit-steps-v1-replayer.ts";
-import { createBrowserReplayStepsV1 } from "../../external/storage/edit-steps-v1-replay-steps.ts";
-import { EDIT_STEP_FORMAT_V1 } from "../document/edit-step.ts";
-import { REVISION_ZERO_JCS } from "../document/revision-zero.ts";
+import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
+import { createBrowserReplayStepsV1 } from "./edit-steps-v1-replay-steps.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../../domain/document/edit-step.ts";
+import { REVISION_ZERO_JCS } from "../../domain/document/revision-zero.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
@@ -18,10 +15,13 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSourceV2,
   type EvidenceStepV2,
-} from "../forensics/evidence-segment-v2.ts";
-import { canonicalizeJcs, type JcsJsonValue } from "../forensics/jcs.ts";
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
-import { buildReplayTimeline, type ReplayTimelineInput } from "./replay-timeline.ts";
+import {
+  buildReplayTimeline,
+  type ReplayTimelineInput,
+} from "../../domain/projection/replay-timeline.ts";
 
 // Synthetic only: invented ids and filler text, no real work or person.
 const A = "aaaaaaaa-0000-4000-8000-000000000001";
@@ -75,7 +75,7 @@ function record(start: PmNode, plans: SegmentPlan[]) {
           !value.structure
         ) {
           value.removedSha256 = removedRangeSha256(
-            tr.docs[i],
+            tr.docs[i]!,
             value.from as number,
             value.to as number,
           );
@@ -100,8 +100,8 @@ function record(start: PmNode, plans: SegmentPlan[]) {
       documentId: "doc-ana-z1",
       sessionId: "session-ana",
       segmentId: `segment-${index + 1}`,
-      sequenceFrom: events[0].sequence,
-      sequenceTo: events[events.length - 1].sequence,
+      sequenceFrom: events[0]!.sequence,
+      sequenceTo: events[events.length - 1]!.sequence,
       observedStartedAt: `2026-10-20T${plan.at}:00.000Z`,
       observedEndedAt: `2026-10-20T${plan.until ?? plan.at}:00.000Z`,
       initialDocumentHash: initial,
@@ -148,8 +148,8 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
           { edit: (tr) => tr.insert(17, schema.text("X")).insert(18, schema.text("Y")) },
           { edit: (tr) => tr.delete(27, 28) },
           { source: "paste", edit: (tr) => tr.replaceWith(19, 26, schema.text("Zamjena")) },
-          { edit: (tr) => tr.addMark(2, 5, schema.marks.bold.create()) },
-          { edit: (tr) => tr.setBlockType(1, 1, schema.nodes.heading, { level: 1, nodeId: A }) },
+          { edit: (tr) => tr.addMark(2, 5, schema.marks.bold!.create()) },
+          { edit: (tr) => tr.setBlockType(1, 1, schema.nodes.heading!, { level: 1, nodeId: A }) },
         ],
       },
     ]);
@@ -167,7 +167,7 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
       [6, 5, "structure", "editor", A],
     ]);
     expect(timeline.changes.every((c) => c.evidenceKind === "observed")).toBe(true);
-    expect(timeline.changes[0].minute).toStrictEqual({
+    expect(timeline.changes[0]!.minute).toStrictEqual({
       from: "2026-10-20T10:00:00.000Z",
       to: "2026-10-20T10:02:00.000Z",
     });
@@ -175,7 +175,7 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
     expect(firstText(timeline.documentAt(1))).toBe("Odlomak A lorem.X");
     expect(firstText(timeline.documentAt(2))).toBe("Odlomak A lorem.XY");
     expect(timeline.documentAt(0)).toStrictEqual(start.toJSON());
-    expect(timeline.documentAt(6)).toStrictEqual(r.ends[0].toJSON());
+    expect(timeline.documentAt(6)).toStrictEqual(r.ends[0]!.toJSON());
     expect(() => timeline.documentAt(7)).toThrow(RangeError);
     expect(timeline.end).toBe("complete");
   });
@@ -228,7 +228,7 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
     expect(resumed.markers).toContainEqual({ kind: "gap", beforeIndex: 2, resumed: true });
     expect(resumed.changes).toHaveLength(2);
     expect(resumed.end).toBe("complete");
-    expect(resumed.documentAt(2)).toStrictEqual(r.ends[1].toJSON());
+    expect(resumed.documentAt(2)).toStrictEqual(r.ends[1]!.toJSON());
 
     const stopped = await build(r);
     if (!stopped.ok) throw new Error(stopped.reason);
@@ -246,17 +246,17 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
       { at: "10:00", events: [{ edit: (tr) => tr.insert(17, schema.text("X")) }] },
       { at: "10:01", events: [{ edit: (tr) => tr.delete(27, 28) }] },
     ]);
-    const changed = r.segments[1].replace("T10:01", "T10:02");
-    expect(changed).not.toBe(r.segments[1]);
-    expect(await build(r, { segments: [r.segments[0], changed] })).toStrictEqual({
+    const changed = r.segments[1]!.replace("T10:01", "T10:02");
+    expect(changed).not.toBe(r.segments[1]!);
+    expect(await build(r, { segments: [r.segments[0]!, changed] })).toStrictEqual({
       ok: false,
       reason: "chain_mismatch",
     });
-    expect(await build(r, { segments: [r.segments[0], `${r.segments[1]} `] })).toStrictEqual({
+    expect(await build(r, { segments: [r.segments[0]!, `${r.segments[1]!} `] })).toStrictEqual({
       ok: false,
       reason: "invalid_segment",
     });
-    expect(await build(r, { head: { segmentHash: r.hashes[0], segmentCount: 1 } })).toStrictEqual({
+    expect(await build(r, { head: { segmentHash: r.hashes[0]!, segmentCount: 1 } })).toStrictEqual({
       ok: false,
       reason: "chain_mismatch",
     });
@@ -276,7 +276,7 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
     ]);
     // Resealed so the chain and head verify: only the replay can find it.
     const reseal = (change: (segment: Record<string, unknown>) => void) => {
-      const segment = JSON.parse(r.segments[0]) as Record<string, unknown>;
+      const segment = JSON.parse(r.segments[0]!) as Record<string, unknown>;
       change(segment);
       const payload = canonicalizeJcs(segment as JcsJsonValue);
       return build(r, {
@@ -288,21 +288,21 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
     expect(
       await reseal((s) => {
         const events = s.events as { afterDocumentHash: string }[];
-        events[0].afterDocumentHash = other;
+        events[0]!.afterDocumentHash = other;
         s.finalDocumentHash = other;
       }),
     ).toStrictEqual({ ok: false, reason: "document_mismatch" });
     expect(
       await reseal((s) => {
         const events = s.events as { steps: { slice?: { content: { text?: string }[] } }[] }[];
-        events[0].steps[0].slice!.content[0].text = "Y";
+        events[0]!.steps[0]!.slice!.content[0]!.text = "Y";
       }),
     ).toStrictEqual({ ok: false, reason: "document_mismatch" });
     expect(
       await reseal((s) => {
         const events = s.events as { steps: { from: number; to: number }[] }[];
-        events[0].steps[0].from = 900;
-        events[0].steps[0].to = 900;
+        events[0]!.steps[0]!.from = 900;
+        events[0]!.steps[0]!.to = 900;
       }),
     ).toStrictEqual({ ok: false, reason: "step_failed" });
   });
@@ -363,7 +363,7 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
           {
             edit: (tr) =>
               tr
-                .split(9, 1, [{ type: schema.nodes.paragraph, attrs: { nodeId: null } }])
+                .split(9, 1, [{ type: schema.nodes.paragraph!, attrs: { nodeId: null } }])
                 .setNodeAttribute(10, "nodeId", D),
           },
         ],
@@ -397,8 +397,8 @@ describe("buildReplayTimeline (DAN-344 §4, D-143)", () => {
       B,
       C,
     ]);
-    expect(blocksOf(timeline.documentAt(1))[1].content?.[0]?.text).toBe("A lorem.");
-    expect(timeline.documentAt(2)).toStrictEqual(r.ends[0].toJSON());
+    expect(blocksOf(timeline.documentAt(1))[1]!.content?.[0]?.text).toBe("A lorem.");
+    expect(timeline.documentAt(2)).toStrictEqual(r.ends[0]!.toJSON());
   });
 
   it("carries no field that measures time, speed or a person", async () => {

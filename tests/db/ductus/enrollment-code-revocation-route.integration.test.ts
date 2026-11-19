@@ -1,11 +1,19 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { NextRequest } from "next/server";
 import pg from "pg";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { POST } from "../../app/api/institution/courses/[courseId]/enrollment-code/revocation/route";
-import { createWithActor } from "../../../server/database/with-actor.ts";
+import { createWithActor } from "../../../server/database/index.ts";
+import {
+  createDatabases,
+  createInstitutionCourseRoutesFor,
+  createLayers,
+  startServer,
+  type Running,
+} from "../../../server/http/index.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
+
+import { expectHttpProblem } from "./http-problem.ts";
 
 // Real PostgreSQL and ductus_app login, with entirely invented fixtures.
 const admin = new pg.Pool({
@@ -38,19 +46,20 @@ const ids = Object.values(people).map((person) => person.id);
 const expired = token(),
   closed = token();
 let course: string, foreign: string, sibling: string;
+let server: Running;
 
 const post = (session: string, target = course, body = "{}") =>
-  POST(
-    new NextRequest(`${ORIGIN}/api/institution/courses/${target}/enrollment-code/revocation`, {
+  fetch(
+    `http://127.0.0.1:${server.port}/api/v1/institution/courses/${target}/enrollment-code/revocation`,
+    {
       method: "POST",
       headers: {
         origin: ORIGIN,
         "content-type": "application/json",
-        cookie: `__Host-ductus_session=${session}`,
+        cookie: `${SESSION_COOKIE_NAME}=${session}`,
       },
       body,
-    }),
-    { params: Promise.resolve({ courseId: target }) },
+    },
   );
 const issue = (name: "teacher" | "outsider" | "nonmember", target: string) =>
   withActor(people[name].token, async (tx) => {
@@ -110,7 +119,6 @@ async function snapshot(includeCodes = false) {
 }
 
 beforeAll(async () => {
-  vi.stubEnv("OIDC_REDIRECT_URI", `${ORIGIN}/api/auth/callback`);
   const suffix = randomBytes(6).toString("hex");
   for (const [index, faculty] of faculties.entries()) {
     await admin.query("INSERT INTO identity.institution (id, slug) VALUES ($1, $2)", [
@@ -170,10 +178,17 @@ beforeAll(async () => {
       "INSERT INTO institution.course_member (course_id, user_id, institution_id, role) VALUES ($1,$2,$3,$4)",
       [course, people[name].id, faculties[0], name === "student" ? "student" : "teacher"],
     );
+  server = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin: ORIGIN }),
+    databases: createDatabases(),
+    routes: createInstitutionCourseRoutesFor({ withActor }),
+  });
 });
 
 afterAll(async () => {
-  vi.unstubAllEnvs();
+  await server?.close();
   await app.end();
   // The audit trail is append-only; only this clean-up steps around it, on its own connection and for its own rows.
   const cleaner = await admin.connect();
@@ -224,22 +239,19 @@ describe("enrollment code revocation real POST, session and database", () => {
     const before = await snapshot(true);
     for (const session of [token(), expired, closed]) {
       const response = await post(session);
-      expect(response.status).toBe(401);
       expect(response.headers.get("cache-control")).toBe("no-store");
-      expect(await response.json()).toEqual({ error: "unauthorized" });
+      await expectHttpProblem(response, 401, "unauthorized");
     }
     for (const name of ["student", "unconfirmed", "revoked", "nonmember", "outsider"] as const) {
       const response = await post(people[name].token);
-      expect(response.status).toBe(403);
       expect(response.headers.get("cache-control")).toBe("no-store");
-      expect(await response.json()).toEqual({ error: "forbidden" });
+      await expectHttpProblem(response, 403, "forbidden");
     }
     // A course of another institution, a course of the same institution the
     // teacher is not in, and a course that does not exist answer alike.
     for (const target of [foreign, sibling, randomUUID()]) {
       const response = await post(people.teacher.token, target);
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: "forbidden" });
+      await expectHttpProblem(response, 403, "forbidden");
     }
     await admin.query(
       "UPDATE institution.course_member SET member_to = now() WHERE course_id = $1 AND user_id = $2",
@@ -294,11 +306,9 @@ describe("enrollment code revocation real POST, session and database", () => {
     const code = (await activeId(course))!;
     const answers = await Promise.all([post(people.second.token), post(people.teacher.token)]);
     for (const answer of answers) expect(answer.status).toBe(200);
-    expect(
-      (await Promise.all(answers.map((answer) => answer.json())))
-        .map((body) => body.revoked)
-        .sort(),
-    ).toEqual([false, true]);
+    expect(await Promise.all(answers.map((answer) => answer.json()))).toEqual(
+      expect.arrayContaining([{ revoked: false }, { revoked: true }]),
+    );
     const rows = await events(code);
     expect(rows).toHaveLength(1);
     expect(rows[0].kind).toBe("revoked");
