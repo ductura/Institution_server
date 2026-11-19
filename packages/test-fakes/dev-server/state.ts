@@ -83,6 +83,8 @@ export type Assignment = {
   language: Language;
   /** Version of the notice each student acknowledged, by student id. */
   acknowledged: Map<string, { version: number; at: string }>;
+  /** When each student first read each version's notice (PO-7), by `${studentId}:${version}`. */
+  read: Map<string, string>;
   /** The work language exception of one student's work, by student id (both language routes). */
   studentLanguage: Map<string, Language>;
 };
@@ -324,6 +326,7 @@ export function createState(): State {
         },
         language: "hr",
         acknowledged: new Map([[IDS.student, { version: 1, at: "2026-10-02T08:15:00.000Z" }]]),
+        read: new Map([[`${IDS.student}:1`, "2026-10-02T08:14:00.000Z"]]),
         studentLanguage: new Map(),
       },
     ],
