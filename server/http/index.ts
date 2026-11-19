@@ -141,6 +141,7 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
 export {
   createInstitutionGroupRoutes,
   createInstitutionGroupRoutesFor,

@@ -118,6 +118,8 @@ export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
 export { createInstitutionAssignments } from "./institution-assignments.ts";
 export { createInstitutionGroups } from "./institution-groups.ts";
+export { createAdminCourses } from "./admin-courses.ts";
+export type { AdminCourseInput, AdminCourseOutcome, AdminCourses } from "./admin-courses.ts";
 export type {
   GroupCreateOutcome,
   GroupTeacherOutcome,
