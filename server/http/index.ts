@@ -173,6 +173,10 @@ export {
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
 export {
+  createStudentAssignmentsRoute,
+  createStudentAssignmentsRouteFor,
+} from "./student-assignments.ts";
+export {
   createStudentWriteRoutes,
   createStudentWriteRoutesFor,
   STUDENT_WRITE_TIMEOUT_MS,

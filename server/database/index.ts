@@ -217,6 +217,12 @@ export {
   ENROLLMENT_TOO_MANY_ATTEMPTS,
   ENROLLMENT_UNAUTHENTICATED,
 } from "./institution-enrollment.ts";
+export { createStudentAssignmentsReader } from "./student-assignments.ts";
+export type {
+  StudentAssignmentRow,
+  StudentAssignmentsRead,
+  StudentAssignmentsReader,
+} from "./student-assignments.ts";
 export { createStudentNoticeRead } from "./student-notice-read.ts";
 export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";

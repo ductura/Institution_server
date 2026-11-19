@@ -10,10 +10,11 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the body parsers, the notice template version, the service factory, the access log read (SRV-11) and the student's write bodies (SRV-10)", () => {
+  it("exports only the body parsers, the notice template version, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10) and the student's courses (SRV-09)", () => {
     expect(Object.keys(area).sort()).toEqual([
       "MAX_ENROLLMENT_CODE_LENGTH",
       "NOTICE_TEMPLATE_VERSION",
+      "WORK_TYPES",
       "accessLogCursorOf",
       "createInstitutionService",
       "parseAcknowledgmentBody",
@@ -26,6 +27,7 @@ describe("server/institution public interface", () => {
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
       "readStudentAccessLog",
+      "studentCoursesOf",
     ]);
   });
 
