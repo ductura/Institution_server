@@ -1,6 +1,7 @@
 // DAN-853-1b: the port of institution.enroll_with_code. A course id leaves
-// the port only with exactly one row "enrolled" and a UUID; "refused" and
-// "too_many_attempts" only with a null course. Unlike the course port, a row
+// the port only with exactly one row "enrolled", "already_enrolled" or
+// "enrolled_no_assignment" and a UUID; "invalid_code", "expired_code" and
+// "too_many_attempts" only with a null course (SRV-05, 20261119120000). Unlike the course port, a row
 // of a wrong form never rolls back: a refused guess must keep its attempt
 // (Ductus enrollment-route.ts maps the row after withActor commits). Every
 // refusal or fault has no message and no SQLSTATE of the database, and the
@@ -13,6 +14,7 @@ import {
   createInstitutionEnrollment,
   ENROLLMENT_DATABASE_ERROR,
   ENROLLMENT_ERRORS,
+  ENROLLMENT_EXPIRED_CODE,
   ENROLLMENT_FORBIDDEN,
   ENROLLMENT_REFUSED,
   ENROLLMENT_ROW_MALFORMED,
@@ -72,7 +74,10 @@ const dbError = (code: unknown) => Object.assign(new Error(SECRET), { code });
 const fail = (error: unknown) => ({ ok: false, error });
 const DATABASE = fail(ENROLLMENT_DATABASE_ERROR);
 const MALFORMED = fail(ENROLLMENT_ROW_MALFORMED);
-const enrolled = (courseId: string) => ({ ok: true, value: { courseId } });
+const enrolled = (courseId: string, outcome = "enrolled") => ({
+  ok: true,
+  value: { courseId, outcome },
+});
 
 // Review FAIL on #322 (c.6980566116): one shape of an expected failure.
 describe("enrolment errors (docs/CODE_STYLE.md §8)", () => {
@@ -92,8 +97,8 @@ describe("enrolment errors (docs/CODE_STYLE.md §8)", () => {
     ).toEqual(ENROLLMENT_ERRORS.map((e) => e.messageKey).sort());
   });
 
-  it("lists six errors with distinct UPPER_SNAKE codes and only { code, messageKey }", () => {
-    expect(new Set(ENROLLMENT_ERRORS.map((e) => e.code)).size).toBe(6);
+  it("lists seven errors with distinct UPPER_SNAKE codes and only { code, messageKey }", () => {
+    expect(new Set(ENROLLMENT_ERRORS.map((e) => e.code)).size).toBe(7);
     for (const e of ENROLLMENT_ERRORS) {
       expect(e.code).toMatch(/^ENROLLMENT_[A-Z_]+$/);
       expect(Object.keys(e).sort()).toEqual(["code", "messageKey"]);
@@ -191,11 +196,18 @@ describe("enrollWithCode rows of a wrong form: unavailable, and nothing rolls ba
     ["enrolled with a trailing NBSP", [row("enrolled", `${COURSE} `)]],
     ["enrolled with a trailing DEL", [row("enrolled", `${COURSE}\u007f`)]],
     ["enrolled with a course that is a number", [row("enrolled", 1)]],
-    ["refused with a course", [row("refused", COURSE)]],
-    ["refused without the column", [{ outcome: "refused" }]],
+    ["the retired refused", [row("refused", null)]],
+    ["invalid_code with a course", [row("invalid_code", COURSE)]],
+    ["expired_code with a course", [row("expired_code", COURSE)]],
+    ["invalid_code without the column", [{ outcome: "invalid_code" }]],
+    ["already_enrolled without a course", [row("already_enrolled", null)]],
+    [
+      "enrolled_no_assignment with a course that is not a UUID",
+      [row("enrolled_no_assignment", "x")],
+    ],
     ["too_many_attempts with a course", [row("too_many_attempts", COURSE)]],
     ["an unknown outcome", [row("toString", null)]],
-    ["an outcome in upper case", [row("REFUSED", null)]],
+    ["an outcome in upper case", [row("INVALID_CODE", null)]],
     ["an outcome that is not a string", [row(null, null)]],
     [
       "a column getter that throws",
@@ -233,7 +245,8 @@ describe("enrollWithCode rows of a wrong form: unavailable, and nothing rolls ba
 
 describe("enrollWithCode outcomes", () => {
   it.each([
-    ["refused", fail(ENROLLMENT_REFUSED)],
+    ["invalid_code", fail(ENROLLMENT_REFUSED)],
+    ["expired_code", fail(ENROLLMENT_EXPIRED_CODE)],
     ["too_many_attempts", fail(ENROLLMENT_TOO_MANY_ATTEMPTS)],
   ])("%s with a null course is %j, committed", async (outcome, expected) => {
     const { result, calls } = enroll({ rows: [{ outcome, enrolled_course_id: null }] });
@@ -253,6 +266,14 @@ describe("enrollWithCode outcomes", () => {
       expect([calls.fnRejected, calls.committed]).toEqual([0, 1]);
     },
   );
+  it.each(["already_enrolled", "enrolled_no_assignment"])(
+    "%s returns the course and names the outcome",
+    async (outcome) => {
+      const { result, calls } = enroll({ rows: [{ outcome, enrolled_course_id: COURSE }] });
+      expect(await result).toEqual(enrolled(COURSE, outcome));
+      expect([calls.fnRejected, calls.committed]).toEqual([0, 1]);
+    },
+  );
 });
 
 // QA FAIL on #322 (c.6980561213): the columns of the row are read only after
@@ -260,10 +281,12 @@ describe("enrollWithCode outcomes", () => {
 // of a wrong form. Each column is a getter that records whether the fake had
 // committed when it was read.
 describe("enrollWithCode reads the row only after commit", () => {
-  const COURSE_OR_NULL = (outcome: string) => (outcome === "enrolled" ? COURSE : null);
+  const COURSE_OR_NULL = (outcome: string) => (outcome.startsWith("enrolled") ? COURSE : null);
   it.each([
     ["enrolled", enrolled(COURSE)],
-    ["refused", fail(ENROLLMENT_REFUSED)],
+    ["enrolled_no_assignment", enrolled(COURSE, "enrolled_no_assignment")],
+    ["invalid_code", fail(ENROLLMENT_REFUSED)],
+    ["expired_code", fail(ENROLLMENT_EXPIRED_CODE)],
     ["too_many_attempts", fail(ENROLLMENT_TOO_MANY_ATTEMPTS)],
     ["unknown", MALFORMED],
   ])("%s: every column read happens after commit", async (outcome, expected) => {

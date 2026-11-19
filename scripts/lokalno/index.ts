@@ -1,6 +1,7 @@
 // Public interface of scripts/lokalno (`pnpm lokalno`, docs/LOKALNO.md).
 export {
   ACCOUNTS_FILE,
+  accountsFileFor,
   adminTarget,
   assertLocal,
   baseEnv,
@@ -14,6 +15,7 @@ export {
   oidcEnv,
   PORTS,
   seedStatements,
+  SEED_ACCOUNTS_FILE,
   serverEnv,
   stackOptions,
   TOKEN_FILE,
