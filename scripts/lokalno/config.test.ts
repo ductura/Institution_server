@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { loadAuthConfig } from "../../server/external/srce-auth/index.ts";
+import { parseSimulatedAccountsFile } from "../../packages/test-fakes/oidc/index.ts";
 import {
+  accountsFileFor,
   adminTarget,
   assertLocal,
   baseEnv,
@@ -16,6 +18,7 @@ import {
   ISSUER,
   loginUrl,
   oidcEnv,
+  SEED_ACCOUNTS_FILE,
   seedStatements,
   serverEnv,
   stackOptions,
@@ -107,6 +110,30 @@ describe("contract §1: ports, issuer and origin", () => {
     expect(() => seedStatements("\\set ON_ERROR_STOP on\n\\if x\n\\endif\n\\gset\n")).toThrow(
       "psql command",
     );
+  });
+});
+
+describe("the simulator's accounts file (SRV-01)", () => {
+  it("is .local/oidc-racuni.json when it exists, else the seed's committed file", () => {
+    const local = join("/r/.local", "oidc-racuni.json");
+    const seed = join("/r", SEED_ACCOUNTS_FILE);
+    expect(accountsFileFor("/r", "/r/.local", () => true)).toBe(local);
+    expect(accountsFileFor("/r", "/r/.local", (path) => path === seed)).toBe(seed);
+    expect(accountsFileFor("/r", "/r/.local", () => false)).toBeUndefined();
+  });
+
+  it("the committed file names demo-admin and demo-bez-uloge of demo-fakultet, as seed.sql does", () => {
+    const text = readFileSync(join(ROOT, SEED_ACCOUNTS_FILE), "utf8");
+    const accounts = parseSimulatedAccountsFile(JSON.parse(text));
+    expect(accounts.map((a) => [a.user, a.domain, a.role])).toEqual([
+      ["demo-admin", "demo.ductus.test", "nastavnik"],
+      ["demo-bez-uloge", "demo.ductus.test", "nastavnik"],
+    ]);
+    const seed = readFileSync(join(ROOT, "db/main/local/seed.sql"), "utf8");
+    // The administrator's subject is the simulator's account id; the account
+    // without a role is never made by the seed.
+    expect(seed).toContain("'sim:nastavnik:demo-admin@demo.ductus.test'");
+    expect(seed).not.toContain("'sim:nastavnik:demo-bez-uloge@demo.ductus.test'");
   });
 });
 
