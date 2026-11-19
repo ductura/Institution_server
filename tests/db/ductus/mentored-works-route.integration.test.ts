@@ -16,7 +16,7 @@ import {
   handleMentoredWorksRequest,
 } from "../../../server/institution/mentored-works.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-477 (contract on #1091, c.6566072183, attacks 1-10): both real GET
 // routes, session and database. The operator writes every row; the routes

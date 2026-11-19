@@ -22,7 +22,7 @@ import { createWithActor, type WithActor } from "../../../server/database/with-a
 import { createEvidencePayloadReader } from "../../../server/http/evidence-deps.ts";
 import { handleReplayRequest } from "../../../server/database/replay-source.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-344 PR A (contract on #923): the owner and the teacher get the same
 // replay bytes through the API (PRODUCT 5 rule 5), over the real read RPCs

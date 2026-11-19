@@ -16,7 +16,7 @@ const APP_URL =
 const DEMO_SLUG = "demo-fakultet";
 const OTHER_SLUG = "demo-bez-prijave";
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const seed = readFileSync(new URL("../../db/local/seed.sql", import.meta.url));
+const seed = readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url));
 
 function requireLocalStack() {
   for (const [name, value, user] of [
