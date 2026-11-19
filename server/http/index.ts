@@ -146,6 +146,11 @@ export {
   createStudentAssignmentsRouteFor,
 } from "./student-assignments.ts";
 export {
+  createStudentWriteRoutes,
+  createStudentWriteRoutesFor,
+  STUDENT_WRITE_TIMEOUT_MS,
+} from "./student-writes.ts";
+export {
   createStudentAccessLogRoute,
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";

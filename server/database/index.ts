@@ -170,6 +170,7 @@ export {
   createInstitutionEnrollment,
   ENROLLMENT_DATABASE_ERROR,
   ENROLLMENT_ERRORS,
+  ENROLLMENT_EXPIRED_CODE,
   ENROLLMENT_FORBIDDEN,
   ENROLLMENT_REFUSED,
   ENROLLMENT_ROW_MALFORMED,
@@ -182,6 +183,8 @@ export type {
   StudentAssignmentsRead,
   StudentAssignmentsReader,
 } from "./student-assignments.ts";
+export { createStudentNoticeRead } from "./student-notice-read.ts";
+export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
