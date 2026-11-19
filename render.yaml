@@ -1,0 +1,60 @@
+# Render Blueprint for Institution_server (docs/DEPLOY.md). The image is the
+# existing infra/web/Dockerfile (final stage, production), unchanged. Only
+# names are here: every value is entered by hand in the Render Dashboard
+# (sync: false), and Render asks for those only when the Blueprint is first
+# created. Spec: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: ductura-institution-server
+    runtime: docker
+    region: frankfurt
+    dockerfilePath: ./infra/web/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      # Public origin the browser uses (the edge on Vercel), e.g. https://ductura.org.
+      # The origin check of every state-changing request compares against it.
+      - key: APP_ORIGIN
+        sync: false
+      # Logins of provisioned roles (db/main/local, db/logs/local, db/legal/local),
+      # not the owner URL Render generates for the databases below.
+      - key: APP_DATABASE_URL
+        sync: false
+      - key: AUTH_DATABASE_URL
+        sync: false
+      - key: LOGS_DATABASE_URL
+        sync: false
+      - key: LEGAL_DATABASE_URL
+        sync: false
+      - key: TRUSTED_PROXIES
+        sync: false
+      # Production accepts only aai-eduhr; the fake provider is refused (D-09).
+      - key: DUCTUS_AUTH_PROVIDER
+        sync: false
+      - key: OIDC_ISSUER
+        sync: false
+      - key: OIDC_CLIENT_ID
+        sync: false
+      - key: OIDC_CLIENT_SECRET
+        sync: false
+      - key: OIDC_REDIRECT_URI
+        sync: false
+      - key: OIDC_POST_LOGOUT_REDIRECT_URI
+        sync: false
+      # Same value as on Aplication_server, at least 32 characters.
+      - key: DUCTURA_PROVISIONING_TOKEN
+        sync: false
+      - key: EVIDENCE_STORAGE_DOMAINS
+        sync: false
+
+databases:
+  # Main database (ductus); the legal database ductus_legal is created inside
+  # this instance by hand (docs/DEPLOY.md).
+  - name: ductura-institution-db
+    region: frankfurt
+    databaseName: ductus
+    postgresMajorVersion: "17"
+  - name: ductura-institution-logs-db
+    region: frankfurt
+    databaseName: ductus_logs
+    postgresMajorVersion: "17"
