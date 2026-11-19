@@ -1,9 +1,11 @@
 // The port of the seminar group RPCs (SRV-15, Ductus#2028 c.7008147932):
 // institution.create_seminar_group and institution.assign_group_teacher, in
 // the form of institution-courses.ts (an outcome, never a throw). Who may is
-// the RPC's (require_course_teacher: a teacher of the course, ZD403 alike for
-// another institution's or an unknown course or group); the caller comes only
-// from the session. One call is one withActor transaction of one statement.
+// the RPC's (owner decision "A opcija", c.7016215710, migration
+// 20261119170000: the teacher of the course or an administrator of its
+// institution, and for a new group a collaborator of the course team; ZD403
+// alike for another institution's or an unknown course or group); the caller
+// comes only from the session. One call is one withActor transaction of one statement.
 import { call, type Refused, single, type Unavailable } from "./institution-courses.ts";
 import type { WithActor } from "./with-actor.ts";
 
@@ -29,24 +31,10 @@ export type InstitutionGroups = {
 };
 
 const CREATE_SQL = "SELECT institution.create_seminar_group($1::uuid, $2::text) AS id";
-// Whether the teacher already taught the group must be read after any
-// concurrent assignment or removal of the group has committed: the first
-// statement takes the course's group lock that assign_group_teacher and
-// end_group_assignment take (re-entrant for the RPC), and the second reads in
-// a snapshot taken after it, then calls the RPC (Codex on #368). A group the
-// caller cannot see takes no lock, and the RPC refuses it (ZD403).
-const ASSIGN_LOCK_SQL = `SELECT pg_catalog.pg_advisory_xact_lock(
-  pg_catalog.hashtextextended('institution.seminar_group:' || g.course_id::text, 0))
-  FROM institution.seminar_group g WHERE g.id = $1::uuid AND $2::uuid IS NOT NULL`;
-const ASSIGN_SQL = `WITH earlier AS (
-  SELECT EXISTS (
-    SELECT 1 FROM institution.seminar_group_teacher t
-     WHERE t.group_id = $1::uuid AND t.user_id = $2::uuid AND t.valid_to IS NULL
-  ) AS was
-), assigned AS (
-  SELECT institution.assign_group_teacher($1::uuid, $2::uuid)
-)
-SELECT NOT earlier.was AS assigned FROM earlier, assigned`;
+// Whether a place was opened is the RPC's answer, decided under the course's
+// group lock (20261119170000): an administrator does not read the group
+// tables, so the port could not tell it from a read of its own.
+const ASSIGN_SQL = "SELECT institution.assign_group_teacher($1::uuid, $2::uuid) AS assigned";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const REFUSED = new Map([
   ["ZD401", "unauthenticated"],
@@ -80,7 +68,7 @@ export function createInstitutionGroups(withActor: WithActor): InstitutionGroups
       const outcome = await call(
         withActor,
         token,
-        [ASSIGN_LOCK_SQL, ASSIGN_SQL],
+        ASSIGN_SQL,
         [groupId, teacherId],
         readAssigned,
         REFUSED,

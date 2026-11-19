@@ -57,24 +57,22 @@ describe("createGroup", () => {
 });
 
 describe("assignGroupTeacher", () => {
-  it("answers whether the teacher is new to the group, read before the call writes", async () => {
+  it("answers the RPC's own word on whether it opened a place, in one statement", async () => {
     seen.length = 0;
     const port = createInstitutionGroups(answering([{ assigned: false }]));
     expect(await port.assignGroupTeacher(TOKEN, GROUP, TEACHER)).toEqual({
       status: "assigned",
       assigned: false,
     });
-    // The course's group lock first, then the read in a later snapshot and the call.
-    expect(seen.map((q) => q.values)).toEqual([
-      [GROUP, TEACHER],
-      [GROUP, TEACHER],
+    // assign_group_teacher decides under the course's group lock (20261119170000);
+    // an administrator reads no group table, so no read of the port's own.
+    expect(seen).toEqual([
+      {
+        token: TOKEN,
+        text: "SELECT institution.assign_group_teacher($1::uuid, $2::uuid) AS assigned",
+        values: [GROUP, TEACHER],
+      },
     ]);
-    expect(seen[0]!.text).toMatch(
-      /pg_advisory_xact_lock\([\s\S]*'institution\.seminar_group:' \|\| g\.course_id::text/,
-    );
-    expect(seen[1]!.text).toMatch(
-      /WITH earlier AS[\s\S]*assign_group_teacher\(\$1::uuid, \$2::uuid\)/,
-    );
   });
 
   it("ZD422 (a teacher who is not confirmed) is invalid; a row of another form is unavailable", async () => {
