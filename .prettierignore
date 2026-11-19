@@ -18,3 +18,6 @@ server/domain/forensics/golden-vectors/*.json
 # Ductus tests/fixtures/docx-corpus; tests/unit/docx-corpus.test.ts compares it
 # with a fresh run of the generator.
 tests/fixtures/docx-corpus/MANIFEST.json
+# Copied byte for byte from Ductus main docs/privacy (Ductus#2028 c.7019455316 (c));
+# tests/db/ductus/data-flow-inventory-catalog.integration.test.ts reads it.
+docs/privacy/08-inventar-tokova-podataka.md

@@ -41,7 +41,9 @@ requireLoopbackDatabaseUrl(
 );
 const run = promisify(execFile);
 const ROOT = new URL("../../../", import.meta.url);
-const SCRIPT = new URL("db/main/local/evidence-signing-key.mjs", ROOT);
+// The registration of db/main/local/evidence-signing-key.mjs on Ductura's
+// signer contract (Result); see development-signing-key-registration.ts.
+const SCRIPT = new URL("tests/db/ductus/development-signing-key-registration.ts", ROOT);
 const SIGNER = new URL("server/external/keys/persistent-development-ed25519-signer.ts", ROOT);
 const suffix = randomBytes(5).toString("hex");
 const login = `it_signing_${suffix}`;
