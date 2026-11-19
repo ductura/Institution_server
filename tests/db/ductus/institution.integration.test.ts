@@ -1,0 +1,1190 @@
+import { randomBytes, randomUUID } from "node:crypto";
+
+import pg from "pg";
+import { NextRequest } from "next/server";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import {
+  NOTICE_TEMPLATE_VERSION,
+  noticeFingerprint,
+} from "../../../server/domain/notice/fingerprint.ts";
+import { readNotice } from "@/components/student/assignment-notice-read";
+import { acknowledgeNotice } from "@/components/student/notice-gate";
+import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/session-token.ts";
+import { createAcknowledgmentPostHandler } from "../../../server/institution/acknowledgment-route.ts";
+import { POST as acknowledgmentPost } from "../../app/api/institution/assignments/[assignmentId]/acknowledgment/route";
+import { handleTeacherCoursesRequest } from "../../../server/institution/teacher-courses.ts";
+
+// The institution functions (B-7) over withActor and a real ductus_app login,
+// against the compose stack (pnpm stack:up, pnpm db:migrate). What pgTAP
+// cannot show is here: parallel requests, what one transaction leaves for the
+// next, and a login that tries to act as someone else (plan of attack on
+// issue #153, items 11, 12, 16, 18 and 29; for assignments 26 and 27).
+// Every person, institution, course, token and password is random or invented.
+const ADMIN_URL =
+  process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
+// The login exists only while this file runs: pgTAP (010) lists every
+// membership in a ductus_* role, and logins belong to the environment.
+const LOGIN = "it_institution_login";
+const password = randomBytes(24).toString("hex");
+const newToken = () => randomBytes(32).toString("base64url");
+
+const facultyA = randomUUID();
+const facultyB = randomUUID();
+const people = {
+  admin: { id: randomUUID(), institution: facultyA, token: newToken() },
+  teacher: { id: randomUUID(), institution: facultyA, token: newToken() },
+  student: { id: randomUUID(), institution: facultyA, token: newToken() },
+  guesser: { id: randomUUID(), institution: facultyA, token: newToken() },
+  stranger: { id: randomUUID(), institution: facultyA, token: newToken() },
+  outsider: { id: randomUUID(), institution: facultyB, token: newToken() },
+};
+const userIds = Object.values(people).map((person) => person.id);
+
+const admin = new pg.Pool({ connectionString: ADMIN_URL, max: 2 });
+const pools: pg.Pool[] = [];
+
+function appUrl() {
+  const url = new URL(ADMIN_URL);
+  url.username = LOGIN;
+  url.password = password;
+  return url.href;
+}
+
+function appPool(max: number) {
+  const pool = new pg.Pool({ connectionString: appUrl(), max });
+  pools.push(pool);
+  return pool;
+}
+
+type Enrolment = { outcome: string; enrolled_course_id: string | null };
+const ENROLL = "SELECT outcome, enrolled_course_id FROM institution.enroll_with_code($1)";
+const enroll = (withActor: WithActor, token: string, code: string | null) =>
+  withActor(token, async (tx) => (await tx.query<Enrolment>(ENROLL, [code])).rows[0]);
+
+const visibleCourses = (withActor: WithActor, token: string | null) =>
+  withActor(token, async (tx) =>
+    (await tx.query<{ id: string }>("SELECT id FROM institution.course")).rows.map((row) => row.id),
+  );
+
+const count = async (sql: string, values: unknown[]) =>
+  Number((await admin.query(sql, values)).rows[0].count);
+const attempts = (userId: string) =>
+  count("SELECT count(*) FROM institution.enrollment_attempt WHERE user_id = $1", [userId]);
+const memberships = (userId: string) =>
+  count("SELECT count(*) FROM institution.course_member WHERE user_id = $1", [userId]);
+
+type Refusal = { code?: string; message?: string };
+const refusal = (error: Refusal): Refusal => ({ code: error.code, message: error.message });
+
+// Everything of an assignment version after its title, with no word range; all of it invented.
+const CONTENT =
+  "'Upute za izmišljeni zadatak.', 'essay', now(), now() + interval '30 days', 'partially_allowed', '{proofreading}'::text[], 'basic', false, NULL, NULL";
+const PUBLISH = `SELECT institution.publish_assignment_version($1, $2, 'Esej', ${CONTENT}) AS version`;
+const ACKNOWLEDGE = `SELECT institution.acknowledge_notice($1, $2, ${NOTICE_TEMPLATE_VERSION}) AS at`;
+// With the template version as a parameter (DAN-306, E2).
+const ACKNOWLEDGE_TEMPLATE = "SELECT institution.acknowledge_notice($1, $2, $3) AS at";
+
+// A transaction of one user that the test commits when it chooses.
+async function openTransaction(token: string) {
+  const client = new pg.Client({ connectionString: appUrl() });
+  await client.connect();
+  await client.query("BEGIN");
+  await client.query("SELECT set_config('app.session_token', $1, true)", [token]);
+  return client;
+}
+
+// False while the request is still waiting after 300 ms.
+const answeredSoon = (request: Promise<unknown>) =>
+  Promise.race([
+    request.then(
+      () => true,
+      () => true,
+    ),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 300)),
+  ]);
+
+let withActor: WithActor;
+let course = "";
+let code = "";
+let assignment = "";
+
+beforeAll(async () => {
+  await admin.query(`DROP ROLE IF EXISTS ${LOGIN}`);
+  const ddl = await admin.query<{ ddl: string }>(
+    "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
+    [LOGIN, password],
+  );
+  await admin.query(ddl.rows[0].ddl);
+
+  const suffix = randomBytes(4).toString("hex");
+  await admin.query("INSERT INTO identity.institution (id, slug) VALUES ($1, $2), ($3, $4)", [
+    facultyA,
+    `it-fak-a-${suffix}`,
+    facultyB,
+    `it-fak-b-${suffix}`,
+  ]);
+  // The limit is written out: these tests must not lean on the defaults.
+  await admin.query(
+    `INSERT INTO institution.institution_settings (institution_id, display_name, enrollment_attempt_limit, enrollment_attempt_window)
+     VALUES ($1, 'Fakultet A (test)', 5, '15 minutes'), ($2, 'Fakultet B (test)', 5, '15 minutes')`,
+    [facultyA, facultyB],
+  );
+  for (const [name, person] of Object.entries(people)) {
+    await admin.query(
+      `INSERT INTO identity.user_account (id, institution_id, oidc_issuer, oidc_subject, hr_edu_person_unique_id)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        person.id,
+        person.institution,
+        `https://issuer-${suffix}.test`,
+        `sub-${name}`,
+        `${name}@it-fak.example`,
+      ],
+    );
+    await admin.query(
+      `INSERT INTO identity.session (token_hash, user_id, institution_id, expires_at)
+       VALUES (sha256(convert_to($1, 'UTF8')), $2, $3, now() + interval '1 hour')`,
+      [person.token, person.id, person.institution],
+    );
+  }
+  // The first administrator comes from the operator procedure (docs/PRODUCT.md 6,
+  // DAN-525) on an invented request; everything after it goes through the
+  // functions, as the demo data will.
+  await admin.query("SELECT institution.appoint_institution_admin($1, 'Zahtjev 1/2026')", [
+    people.admin.id,
+  ]);
+  // DAN-304: only a person whose last login gave the teacher right can be
+  // confirmed; here the right is written as that login would write it.
+  await admin.query(
+    "INSERT INTO identity.teacher_eligibility (user_id, institution_id) VALUES ($1, $2)",
+    [people.teacher.id, people.teacher.institution],
+  );
+
+  withActor = createWithActor(appPool(6));
+  await withActor(people.admin.token, (tx) =>
+    tx.query("SELECT institution.confirm_teacher_role($1)", [people.teacher.id]),
+  );
+  course = await withActor(people.teacher.token, async (tx) => {
+    const created = await tx.query<{ id: string }>(
+      "SELECT institution.create_course($1, '2026/2027', 'partially_allowed') AS id",
+      ["Uvod u izmišljeno"],
+    );
+    return created.rows[0].id;
+  });
+  code = await withActor(people.teacher.token, async (tx) => {
+    const issued = await tx.query<{ code: string }>(
+      "SELECT institution.create_enrollment_code($1, now() + interval '7 days') AS code",
+      [course],
+    );
+    return issued.rows[0].code;
+  });
+});
+
+afterAll(async () => {
+  await Promise.all(pools.map((pool) => pool.end()));
+  const institutions = [facultyA, facultyB];
+  // A version is immutable, for the operator too. Only this clean-up steps
+  // around the trigger, on its own connection and for its own rows.
+  const cleaner = new pg.Client({ connectionString: ADMIN_URL });
+  await cleaner.connect();
+  try {
+    await cleaner.query("BEGIN");
+    await cleaner.query("SET LOCAL session_replication_role = replica");
+    for (const table of ["notice_acknowledgment", "assignment_version"]) {
+      await cleaner.query(
+        `DELETE FROM institution.${table} WHERE assignment_id IN (
+           SELECT a.id FROM institution.assignment a JOIN institution.course c ON c.id = a.course_id WHERE c.institution_id = ANY ($1))`,
+        [institutions],
+      );
+    }
+    await cleaner.query(
+      "DELETE FROM institution.assignment WHERE course_id IN (SELECT id FROM institution.course WHERE institution_id = ANY ($1))",
+      [institutions],
+    );
+    // DAN-292: the audit rows of replaced and revoked codes are append-only too.
+    await cleaner.query("DELETE FROM audit.enrollment_code_event WHERE institution_id = ANY ($1)", [
+      institutions,
+    ]);
+    // DAN-338: so are the rows of removals and allowed returns.
+    await cleaner.query("DELETE FROM audit.course_member_event WHERE institution_id = ANY ($1)", [
+      institutions,
+    ]);
+    // DAN-497: and the rows of teacher role confirmations and revocations.
+    await cleaner.query("DELETE FROM audit.teacher_role_event WHERE institution_id = ANY ($1)", [
+      institutions,
+    ]);
+    await cleaner.query("COMMIT");
+  } finally {
+    await cleaner.end();
+  }
+  await admin.query("DELETE FROM institution.enrollment_attempt WHERE user_id = ANY ($1)", [
+    userIds,
+  ]);
+  await admin.query("DELETE FROM institution.course_member WHERE institution_id = ANY ($1)", [
+    institutions,
+  ]);
+  await admin.query(
+    "DELETE FROM institution.course_enrollment_code WHERE course_id IN (SELECT id FROM institution.course WHERE institution_id = ANY ($1))",
+    [institutions],
+  );
+  await admin.query("DELETE FROM institution.course WHERE institution_id = ANY ($1)", [
+    institutions,
+  ]);
+  await admin.query("DELETE FROM institution.institution_role WHERE institution_id = ANY ($1)", [
+    institutions,
+  ]);
+  await admin.query(
+    "DELETE FROM institution.institution_settings WHERE institution_id = ANY ($1)",
+    [institutions],
+  );
+  await admin.query("DELETE FROM institution.notification WHERE institution_id = ANY ($1)", [
+    institutions,
+  ]);
+  await admin.query("DELETE FROM identity.session WHERE user_id = ANY ($1)", [userIds]);
+  await admin.query("DELETE FROM identity.teacher_eligibility WHERE user_id = ANY ($1)", [userIds]);
+  await admin.query("DELETE FROM identity.user_account WHERE id = ANY ($1)", [userIds]);
+  await admin.query("DELETE FROM identity.institution WHERE id = ANY ($1)", [institutions]);
+  await admin.query(`DROP ROLE IF EXISTS ${LOGIN}`);
+  await admin.end();
+});
+
+describe("institution functions over withActor", () => {
+  it("builds a course through the functions alone, and a stranger reads none of it", async () => {
+    expect(code).toMatch(/^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/);
+    expect(await visibleCourses(withActor, people.teacher.token)).toEqual([course]);
+    for (const token of [
+      people.stranger.token,
+      people.student.token,
+      people.admin.token,
+      people.outsider.token,
+      null,
+    ]) {
+      expect(await visibleCourses(withActor, token)).toEqual([]);
+    }
+    // The stranger asks about the real course and about one that does not
+    // exist: the two refusals are the same.
+    const refusals = [];
+    for (const target of [course, randomUUID()]) {
+      const refusal = await withActor(people.stranger.token, (tx) =>
+        tx.query("SELECT institution.create_enrollment_code($1, now() + interval '1 day')", [
+          target,
+        ]),
+      ).catch((error: { code?: string; message?: string }) => ({
+        code: error.code,
+        message: error.message,
+      }));
+      refusals.push(refusal);
+    }
+    expect(refusals).toEqual([
+      { code: "ZD403", message: "forbidden" },
+      { code: "ZD403", message: "forbidden" },
+    ]);
+  });
+
+  it("ten parallel requests with the same code leave exactly one membership", async () => {
+    const answers = await Promise.all(
+      Array.from({ length: 10 }, () => enroll(withActor, people.student.token, code)),
+    );
+    expect(answers).toEqual(
+      Array.from({ length: 10 }, () => ({ outcome: "enrolled", enrolled_course_id: course })),
+    );
+    expect(await memberships(people.student.id)).toBe(1);
+    expect(await attempts(people.student.id)).toBe(0);
+    expect(await visibleCourses(withActor, people.student.token)).toEqual([course]);
+  });
+
+  it("refuses a user of another institution although the code is right", async () => {
+    expect(await enroll(withActor, people.outsider.token, code)).toEqual({
+      outcome: "refused",
+      enrolled_course_id: null,
+    });
+    expect(await memberships(people.outsider.id)).toBe(0);
+    expect(await attempts(people.outsider.id)).toBe(1);
+  });
+
+  it("parallel wrong codes cannot pass the limit, and the lock outlives the transaction", async () => {
+    const guesses = await Promise.all(
+      Array.from({ length: 12 }, (_, i) =>
+        enroll(withActor, people.guesser.token, `WRONG-CODE-${i}`),
+      ),
+    );
+    const outcomes = guesses.map((guess) => guess.outcome);
+    expect(outcomes.filter((outcome) => outcome === "refused")).toHaveLength(5);
+    expect(outcomes.filter((outcome) => outcome === "too_many_attempts")).toHaveLength(7);
+    expect(await attempts(people.guesser.id)).toBe(5);
+
+    // The right code, on fresh connections: still locked out.
+    const fresh = createWithActor(appPool(2));
+    expect(await enroll(fresh, people.guesser.token, code)).toEqual({
+      outcome: "too_many_attempts",
+      enrolled_course_id: null,
+    });
+    expect(await memberships(people.guesser.id)).toBe(0);
+    // Someone else is not locked out by it.
+    expect((await enroll(fresh, people.stranger.token, "WRONG-CODE")).outcome).toBe("refused");
+
+    // The window passes (the operator's clock stands in for fifteen minutes).
+    await admin.query(
+      "UPDATE institution.enrollment_attempt SET attempted_at = now() - interval '15 minutes' WHERE user_id = $1",
+      [people.guesser.id],
+    );
+    expect(await enroll(fresh, people.guesser.token, code)).toEqual({
+      outcome: "enrolled",
+      enrolled_course_id: course,
+    });
+    expect(await attempts(people.guesser.id)).toBe(0);
+  });
+
+  it("refuses to count attempts in a transaction that cannot see parallel ones", async () => {
+    const client = new pg.Client({ connectionString: appUrl() });
+    await client.connect();
+    try {
+      for (const level of ["REPEATABLE READ", "SERIALIZABLE"]) {
+        await client.query(`BEGIN ISOLATION LEVEL ${level}`);
+        await client.query("SELECT set_config('app.session_token', $1, true)", [
+          people.stranger.token,
+        ]);
+        await expect(client.query(ENROLL, [code])).rejects.toMatchObject({ code: "ZD500" });
+        await client.query("ROLLBACK");
+      }
+    } finally {
+      await client.end();
+    }
+    expect(await memberships(people.stranger.id)).toBe(0);
+  });
+
+  it("a ductus_app login cannot become the owner role or another user", async () => {
+    const pool = appPool(1);
+    const single = createWithActor(pool);
+    for (const statement of [
+      "SET ROLE ductus_identity",
+      "SET LOCAL ROLE ductus_identity",
+      "SET SESSION AUTHORIZATION ductus_identity",
+      "SET ROLE ductus_migrator",
+    ]) {
+      // withActor refuses the statement before it reaches the database ...
+      await expect(single(people.stranger.token, (tx) => tx.query(statement))).rejects.toThrow(
+        /not allowed/,
+      );
+      // ... and the database refuses it to the ductus_app login as well.
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await expect(client.query(statement)).rejects.toMatchObject({ code: "42501" });
+        await client.query("ROLLBACK");
+      } finally {
+        client.release();
+      }
+    }
+    // A raw user id in a setting is nobody's identity.
+    const posed = await single(people.stranger.token, async (tx) => {
+      await tx.query(
+        "SELECT set_config('app.user_id', $1, true), set_config('app.current_user_id', $1, true)",
+        [people.teacher.id],
+      );
+      const role = await tx.query<{ role: string | null }>(
+        "SELECT institution.actor_course_role($1) AS role",
+        [course],
+      );
+      const seen = await tx.query("SELECT id FROM institution.course");
+      return { role: role.rows[0].role, courses: seen.rowCount };
+    });
+    expect(posed).toEqual({ role: null, courses: 0 });
+    // Direct writes are refused whoever asks, the teacher included.
+    for (const token of [people.stranger.token, people.teacher.token]) {
+      await expect(
+        single(token, (tx) =>
+          tx.query(
+            "INSERT INTO institution.course_member (course_id, institution_id, user_id, role) VALUES ($1, $2, $3, 'teacher')",
+            [course, facultyA, people.stranger.id],
+          ),
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+    }
+    expect(await memberships(people.stranger.id)).toBe(0);
+  });
+
+  it("a transaction that ended itself and left a token behind gives the next caller nothing", async () => {
+    const pool = appPool(1);
+    const single = createWithActor(pool);
+    // What an injected multi-statement string would do (QA finding 2 on #148):
+    // end the transaction, then leave the teacher's token on the session.
+    // withActor refuses it, so the token is left on the connection directly.
+    await expect(
+      single(people.stranger.token, (tx) =>
+        tx.query(
+          `COMMIT; SELECT set_config('app.session_token', '${people.teacher.token}', false)`,
+        ),
+      ),
+    ).rejects.toThrow(/COMMIT statement is not allowed/);
+    // withActor resets the connection when it gives it back, so the token is
+    // left again before every call.
+    const leave = async () => {
+      await pool.query("SELECT set_config('app.session_token', $1, false)", [people.teacher.token]);
+      // The token is on the pooled connection now, outside withActor.
+      expect((await pool.query("SELECT app.current_user_id() AS id")).rows[0].id).toBe(
+        people.teacher.id,
+      );
+    };
+
+    await leave();
+    expect(await visibleCourses(single, null)).toEqual([]);
+    await leave();
+    expect(await visibleCourses(single, people.stranger.token)).toEqual([]);
+    await leave();
+    await expect(
+      single(null, (tx) => tx.query("SELECT institution.revoke_enrollment_code($1)", [course])),
+    ).rejects.toMatchObject({ code: "ZD401" });
+    await leave();
+    await expect(
+      single(people.stranger.token, (tx) =>
+        tx.query("SELECT institution.revoke_enrollment_code($1)", [course]),
+      ),
+    ).rejects.toMatchObject({ code: "ZD403" });
+    expect(
+      await count(
+        "SELECT count(*) FROM institution.course_enrollment_code WHERE course_id = $1 AND active",
+        [course],
+      ),
+    ).toBe(1);
+  });
+
+  it("parallel requests for a new code leave one active code, and only that one works", async () => {
+    const issued = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        withActor(people.teacher.token, async (tx) => {
+          const result = await tx.query<{ code: string }>(
+            "SELECT institution.create_enrollment_code($1, now() + interval '7 days') AS code",
+            [course],
+          );
+          return result.rows[0].code;
+        }),
+      ),
+    );
+    expect(new Set(issued).size).toBe(6);
+    const active = await admin.query<{ hash: string }>(
+      "SELECT encode(code_hash, 'hex') AS hash FROM institution.course_enrollment_code WHERE course_id = $1 AND active",
+      [course],
+    );
+    expect(active.rows).toHaveLength(1);
+    const hashes = await admin.query<{ code: string; hash: string }>(
+      "SELECT c AS code, encode(sha256(convert_to(replace(c, '-', ''), 'UTF8')), 'hex') AS hash FROM unnest($1::text[]) AS c",
+      [issued],
+    );
+    const working = hashes.rows
+      .filter((row) => row.hash === active.rows[0].hash)
+      .map((row) => row.code);
+    expect(working).toHaveLength(1);
+    code = working[0];
+
+    // The stranger tries a replaced code, then the working one.
+    const replaced = issued.find((candidate) => candidate !== code) ?? "";
+    expect((await enroll(withActor, people.stranger.token, replaced)).outcome).toBe("refused");
+    expect(await enroll(withActor, people.stranger.token, code)).toEqual({
+      outcome: "enrolled",
+      enrolled_course_id: course,
+    });
+    await admin.query("DELETE FROM institution.course_member WHERE user_id = $1", [
+      people.stranger.id,
+    ]);
+    await admin.query("DELETE FROM institution.enrollment_attempt WHERE user_id = $1", [
+      people.stranger.id,
+    ]);
+  });
+
+  it("refuses hostile input without repeating it", async () => {
+    const create = (name: string, extra = "") =>
+      withActor(people.teacher.token, (tx) =>
+        tx.query(
+          `SELECT institution.create_course(p_name => $1, p_academic_year => '2026/2027', p_ai_policy => 'prohibited'${extra})`,
+          [name],
+        ),
+      ).catch((error: { code?: string; message?: string }) => ({
+        code: error.code,
+        message: error.message,
+      }));
+
+    const long = "a".repeat(100_000);
+    expect(await create(long)).toEqual({ code: "ZD422", message: "invalid input" });
+    for (const name of ["zero​width", "bidi‮override", "two\nlines", ""]) {
+      expect(await create(name)).toEqual({ code: "ZD422", message: "invalid input" });
+    }
+    // PostgreSQL text cannot hold a zero byte; the request fails as a whole.
+    expect(await create("zero\u0000byte")).toMatchObject({ code: "22021" });
+    // A field the function does not know is no function at all.
+    expect(await create("Kolegij", `, p_created_by => '${people.stranger.id}'`)).toMatchObject({
+      code: "42883",
+    });
+    expect(
+      await count("SELECT count(*) FROM institution.course WHERE institution_id = $1", [facultyA]),
+    ).toBe(1);
+  });
+});
+
+describe("assignments and removal over withActor", () => {
+  const createWithKey = (courseId: string, requestId: string, title = "Idempotentni zadatak") =>
+    withActor(people.teacher.token, async (tx) => {
+      const created = await tx.query<{ id: string }>(
+        `SELECT institution.create_assignment(
+          $1::uuid, $2::uuid, $3::text, 'Upute za izmišljeni zadatak.', 'essay',
+          '2026-11-02T08:00:00+01:00'::timestamptz, '2026-12-01T23:59:00+01:00'::timestamptz,
+          'partially_allowed', '{proofreading}'::text[], 'basic', false, NULL, NULL
+        ) AS id`,
+        [courseId, requestId, title],
+      );
+      return created.rows[0].id;
+    });
+
+  const publish = (expected: number) =>
+    withActor(people.teacher.token, async (tx) => {
+      const result = await tx.query<{ version: number }>(PUBLISH, [assignment, expected]);
+      return result.rows[0].version;
+    });
+  const acknowledgedCurrent = (token: string) =>
+    withActor(token, async (tx) => {
+      const result = await tx.query<{ yes: boolean }>(
+        "SELECT institution.has_acknowledged_current($1) AS yes",
+        [assignment],
+      );
+      return result.rows[0].yes;
+    });
+  // What the student stored for a version, and what the TS mirror computes
+  // from the stored version (DAN-306, E1 and A13; P03: the RPC's rows are
+  // bound); instants to milliseconds.
+  const storedNotice = async (versionNo: number) =>
+    (
+      await admin.query(
+        `SELECT notice_template_version, notice_fingerprint, notice_binding FROM institution.notice_acknowledgment
+         WHERE assignment_id = $1 AND version_no = $2 AND student_id = $3`,
+        [assignment, versionNo, people.student.id],
+      )
+    ).rows[0];
+  const versionFingerprint = async (versionNo: number) => {
+    const v = (
+      await admin.query(
+        `SELECT title, instructions, work_type, date_trunc('milliseconds', opens_at) AS opens_at,
+                date_trunc('milliseconds', due_at) AS due_at, ai_policy, ai_purposes, evidence_profile, word_min, word_max
+         FROM institution.assignment_version WHERE assignment_id = $1 AND version_no = $2`,
+        [assignment, versionNo],
+      )
+    ).rows[0];
+    return noticeFingerprint({
+      templateVersion: NOTICE_TEMPLATE_VERSION,
+      title: v.title,
+      instructions: v.instructions,
+      workType: v.work_type,
+      opensAt: v.opens_at.toISOString(),
+      dueAt: v.due_at.toISOString(),
+      aiPolicy: v.ai_policy,
+      aiPurposes: v.ai_purposes,
+      evidenceProfile: v.evidence_profile,
+      wordMin: v.word_min,
+      wordMax: v.word_max,
+    });
+  };
+  const versions = async () =>
+    (
+      await admin.query<{ current_version: number; versions: number[] }>(
+        `SELECT a.current_version, array_agg(v.version_no ORDER BY v.version_no) AS versions
+         FROM institution.assignment a JOIN institution.assignment_version v ON v.assignment_id = a.id
+         WHERE a.id = $1 GROUP BY a.id`,
+        [assignment],
+      )
+    ).rows[0];
+
+  it("eight parallel publications from the same version leave one new version", async () => {
+    assignment = await withActor(people.teacher.token, async (tx) => {
+      const created = await tx.query<{ id: string }>(
+        `SELECT institution.create_assignment($1, 'Esej', ${CONTENT}) AS id`,
+        [course],
+      );
+      return created.rows[0].id;
+    });
+    expect(await versions()).toEqual({ current_version: 1, versions: [1] });
+
+    const answers = await Promise.all(Array.from({ length: 8 }, () => publish(1).catch(refusal)));
+    expect(answers.filter((answer) => answer === 2)).toHaveLength(1);
+    expect(answers.filter((answer) => answer !== 2)).toEqual(
+      Array.from({ length: 7 }, () => ({ code: "ZD409", message: "conflict" })),
+    );
+    expect(await versions()).toEqual({ current_version: 2, versions: [1, 2] });
+  });
+
+  it("concurrent assignment-create retries return one row and reject changed content or course", async () => {
+    const requestId = randomUUID();
+    const creator = await openTransaction(people.teacher.token);
+    let firstId: string;
+    try {
+      const first = await creator.query<{ id: string }>(
+        `SELECT institution.create_assignment(
+          $1::uuid, $2::uuid, $3::text, 'Upute za izmišljeni zadatak.', 'essay',
+          '2026-11-02T08:00:00+01:00'::timestamptz, '2026-12-01T23:59:00+01:00'::timestamptz,
+          'partially_allowed', '{proofreading}'::text[], 'basic', false, NULL, NULL
+        ) AS id`,
+        [course, requestId, "Idempotentni zadatak"],
+      );
+      firstId = first.rows[0].id;
+      const waitingRetry = createWithKey(course, requestId);
+      const waitingConflict = createWithKey(
+        course,
+        requestId,
+        "Utrka s promijenjenim sadržajem",
+      ).catch(refusal);
+      expect(await answeredSoon(waitingRetry)).toBe(false);
+      expect(await answeredSoon(waitingConflict)).toBe(false);
+      await creator.query("COMMIT");
+      expect(await waitingRetry).toBe(firstId);
+      expect(await waitingConflict).toEqual({ code: "ZD409", message: "conflict" });
+    } finally {
+      await creator.end();
+    }
+
+    const retries = await Promise.all(
+      Array.from({ length: 10 }, () => createWithKey(course, requestId)),
+    );
+    expect(retries).toEqual(Array.from({ length: 10 }, () => firstId));
+    expect(
+      await count(
+        "SELECT count(*) FROM institution.assignment WHERE created_by = $1 AND request_id = $2",
+        [people.teacher.id, requestId],
+      ),
+    ).toBe(1);
+    expect(await createWithKey(course, requestId, "Izmijenjen naslov").catch(refusal)).toEqual({
+      code: "ZD409",
+      message: "conflict",
+    });
+
+    const otherCourse = await withActor(people.teacher.token, async (tx) => {
+      const created = await tx.query<{ id: string }>(
+        "SELECT institution.create_course($1, '2026/2027', 'partially_allowed') AS id",
+        [`Drugi izmišljeni kolegij ${randomBytes(4).toString("hex")}`],
+      );
+      return created.rows[0].id;
+    });
+    expect(await createWithKey(otherCourse, requestId).catch(refusal)).toEqual({
+      code: "ZD409",
+      message: "conflict",
+    });
+    expect(
+      await count(
+        "SELECT count(*) FROM institution.assignment WHERE created_by = $1 AND request_id = $2",
+        [people.teacher.id, requestId],
+      ),
+    ).toBe(1);
+  });
+
+  it("a notice is confirmed for the version that is current at commit, or not at all", async () => {
+    // The student confirms version 2 and has not committed: publishing waits.
+    const student = await openTransaction(people.student.token);
+    try {
+      await student.query(ACKNOWLEDGE, [assignment, 2]);
+      const published = publish(2);
+      expect(await answeredSoon(published)).toBe(false);
+      await student.query("COMMIT");
+      expect(await published).toBe(3);
+    } finally {
+      await student.end();
+    }
+    expect(await acknowledgedCurrent(people.student.token)).toBe(false);
+
+    // The teacher publishes version 4 and has not committed: the student, who
+    // still has version 3 on screen, waits and is then told of the conflict.
+    const teacher = await openTransaction(people.teacher.token);
+    try {
+      await teacher.query(PUBLISH, [assignment, 3]);
+      const late = withActor(people.student.token, (tx) =>
+        tx.query(ACKNOWLEDGE, [assignment, 3]),
+      ).catch(refusal);
+      expect(await answeredSoon(late)).toBe(false);
+      await teacher.query("COMMIT");
+      expect(await late).toEqual({ code: "ZD409", message: "conflict" });
+    } finally {
+      await teacher.end();
+    }
+    expect(await versions()).toEqual({ current_version: 4, versions: [1, 2, 3, 4] });
+    const confirmed = () =>
+      admin.query(
+        "SELECT version_no FROM institution.notice_acknowledgment WHERE assignment_id = $1 AND student_id = $2 ORDER BY 1",
+        [assignment, people.student.id],
+      );
+    expect((await confirmed()).rows).toEqual([{ version_no: 2 }]);
+    expect(await acknowledgedCurrent(people.student.token)).toBe(false);
+    // E1 (DAN-306): the row carries the fingerprint of version 2, the version
+    // current under the lock, not that of version 3.
+    expect(await storedNotice(2)).toEqual({
+      notice_template_version: 1,
+      notice_fingerprint: await versionFingerprint(2),
+      notice_binding: "bound",
+    });
+    expect(await versionFingerprint(2)).not.toBe(await versionFingerprint(3));
+
+    // E2: the same student, the same version, two template versions. The
+    // second waits on the unique index and, after the first commits, is told
+    // of the conflict; one row with the first fingerprint stays.
+    const firstTab = await openTransaction(people.student.token);
+    let firstAt: Date;
+    try {
+      firstAt = (await firstTab.query<{ at: Date }>(ACKNOWLEDGE_TEMPLATE, [assignment, 4, 1]))
+        .rows[0].at;
+      const otherTemplate = withActor(people.student.token, (tx) =>
+        tx.query(ACKNOWLEDGE_TEMPLATE, [assignment, 4, 2]),
+      ).catch(refusal);
+      expect(await answeredSoon(otherTemplate)).toBe(false);
+      await firstTab.query("COMMIT");
+      expect(await otherTemplate).toEqual({ code: "ZD409", message: "conflict" });
+    } finally {
+      await firstTab.end();
+    }
+    expect(await storedNotice(4)).toEqual({
+      notice_template_version: 1,
+      notice_fingerprint: await versionFingerprint(4),
+      notice_binding: "bound",
+    });
+
+    // E4: ten parallel confirmations of version 4 leave one row and return the first time.
+    const repeats = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        withActor(
+          people.student.token,
+          async (tx) => (await tx.query<{ at: Date }>(ACKNOWLEDGE, [assignment, 4])).rows[0].at,
+        ),
+      ),
+    );
+    expect(repeats.map((at) => at.toISOString())).toEqual(
+      Array.from({ length: 10 }, () => firstAt.toISOString()),
+    );
+    expect((await confirmed()).rows).toEqual([{ version_no: 2 }, { version_no: 4 }]);
+    expect(await storedNotice(4)).toEqual({
+      notice_template_version: 1,
+      notice_fingerprint: await versionFingerprint(4),
+      notice_binding: "bound",
+    });
+    expect(await acknowledgedCurrent(people.student.token)).toBe(true);
+    // Nobody else has confirmed it, the teacher included.
+    expect(await acknowledgedCurrent(people.guesser.token)).toBe(false);
+    expect(await acknowledgedCurrent(people.teacher.token)).toBe(false);
+  });
+
+  it("acknowledges over the HTTP boundary with a cookie actor and preserves the database time on retry", async () => {
+    const origin = "http://localhost:3000";
+    const post = createAcknowledgmentPostHandler({
+      withActor,
+      getRedirectUri: () => `${origin}/auth/callback`,
+    });
+    // DAN-306: every request carries the fingerprint of version 4 unless a
+    // test gives another one.
+    const fp4 = await versionFingerprint(4);
+    const call = (
+      token: string | undefined,
+      versionNo: unknown = 4,
+      options: {
+        id?: string;
+        body?: string;
+        headers?: Record<string, string>;
+        fingerprint?: string;
+      } = {},
+    ) => {
+      const id = options.id ?? assignment;
+      const request = new NextRequest(
+        `${origin}/api/institution/assignments/${id}/acknowledgment`,
+        {
+          method: "POST",
+          headers: {
+            origin,
+            "sec-fetch-site": "same-origin",
+            "content-type": "application/json",
+            ...(token ? { cookie: `${SESSION_COOKIE_NAME}=${token}` } : {}),
+            ...options.headers,
+          },
+          body:
+            options.body ?? JSON.stringify({ versionNo, fingerprint: options.fingerprint ?? fp4 }),
+        },
+      );
+      return post(request, { params: Promise.resolve({ assignmentId: id }) });
+    };
+    // The browser's own call: acknowledgeNotice computes the fingerprint from
+    // the view readNotice gives the screen, and the request reaches the route
+    // with the guesser's cookie.
+    const browserSend = (async (url: string, init: RequestInit) =>
+      post(
+        new NextRequest(`${origin}${url}`, {
+          method: init.method,
+          body: init.body,
+          headers: {
+            ...(init.headers as Record<string, string>),
+            origin,
+            "sec-fetch-site": "same-origin",
+            cookie: `${SESSION_COOKIE_NAME}=${people.guesser.token}`,
+          },
+        }),
+        { params: Promise.resolve({ assignmentId: assignment }) },
+      )) as unknown as typeof fetch;
+    const rows = () =>
+      admin.query<{
+        acknowledged_at: Date;
+        notice_template_version: number;
+        notice_fingerprint: string;
+        notice_binding: string;
+      }>(
+        `SELECT acknowledged_at, notice_template_version, notice_fingerprint, notice_binding
+         FROM institution.notice_acknowledgment WHERE assignment_id = $1 AND version_no = 4 AND student_id = $2`,
+        [assignment, people.guesser.id],
+      );
+
+    expect((await rows()).rows).toHaveLength(0);
+    // #1502 B2: the fingerprint of another text records nothing.
+    const wrong = await call(people.guesser.token, 4, { fingerprint: "f".repeat(64) });
+    expect([wrong.status, await wrong.json()]).toEqual([409, { error: "notice_changed" }]);
+    expect((await rows()).rows).toHaveLength(0);
+
+    // The view the screen shows hashes to the server's fingerprint, so the
+    // client's computation and the database's agree (B1).
+    const shown = await readNotice(people.guesser.token, assignment, withActor);
+    if (shown.kind !== "available") throw new Error(`notice not available: ${shown.kind}`);
+    expect(shown.view.versionNo).toBe(4);
+
+    // Istodobnost: a request with another fingerprint racing the browser's
+    // own records only the browser's, whichever runs first.
+    const [raced, viaBrowser] = await Promise.all([
+      call(people.guesser.token, 4, { fingerprint: "e".repeat(64) }),
+      acknowledgeNotice(shown.view, browserSend),
+    ]);
+    expect([raced.status, await raced.json()]).toEqual([409, { error: "notice_changed" }]);
+    expect(viaBrowser.kind).toBe("acknowledged");
+    expect((await rows()).rows).toHaveLength(1);
+
+    const first = await call(people.guesser.token);
+    expect(first.status).toBe(200);
+    expect(first.headers.get("cache-control")).toBe("no-store");
+    const answer = await first.json();
+    expect(answer).toEqual({
+      acknowledgedAt: (await rows()).rows[0].acknowledged_at.toISOString(),
+    });
+    expect(viaBrowser).toEqual({ kind: "acknowledged", at: answer.acknowledgedAt });
+    // The route passes the server's template version, never one from the
+    // client, and the row holds the fingerprint of that version (DAN-306).
+    expect((await rows()).rows[0]).toMatchObject({
+      notice_template_version: NOTICE_TEMPLATE_VERSION,
+      notice_fingerprint: fp4,
+      notice_binding: "bound",
+    });
+    // After the row exists, another fingerprint is still refused and changes nothing.
+    const later = await call(people.guesser.token, 4, { fingerprint: "f".repeat(64) });
+    expect([later.status, await later.json()]).toEqual([409, { error: "notice_changed" }]);
+    const retry = await call(people.guesser.token);
+    expect([retry.status, await retry.json()]).toEqual([200, answer]);
+    expect((await rows()).rows).toHaveLength(1);
+
+    // Also exercise the exported Next.js route with its real application DB pool.
+    const previousRedirect = process.env.OIDC_REDIRECT_URI;
+    process.env.OIDC_REDIRECT_URI = `${origin}/auth/callback`;
+    try {
+      const request = new NextRequest(
+        `${origin}/api/institution/assignments/${assignment}/acknowledgment`,
+        {
+          method: "POST",
+          headers: {
+            origin,
+            "content-type": "application/json",
+            cookie: `${SESSION_COOKIE_NAME}=${people.guesser.token}`,
+          },
+          body: JSON.stringify({ versionNo: 4, fingerprint: fp4 }),
+        },
+      );
+      const routed = await acknowledgmentPost(request, {
+        params: Promise.resolve({ assignmentId: assignment }),
+      });
+      expect([routed.status, await routed.json()]).toEqual([200, answer]);
+    } finally {
+      if (previousRedirect === undefined) delete process.env.OIDC_REDIRECT_URI;
+      else process.env.OIDC_REDIRECT_URI = previousRedirect;
+    }
+
+    for (const token of [undefined, newToken(), "bad-token"]) {
+      const response = await call(token);
+      expect([response.status, await response.json()]).toEqual([401, { error: "unauthorized" }]);
+    }
+    for (const token of [people.teacher.token, people.admin.token, people.outsider.token]) {
+      const response = await call(token);
+      expect([response.status, await response.json()]).toEqual([403, { error: "forbidden" }]);
+    }
+    const inaccessible = await call(people.guesser.token, 4, { id: randomUUID() });
+    expect([inaccessible.status, await inaccessible.json()]).toEqual([403, { error: "forbidden" }]);
+    const stale = await call(people.guesser.token, 3);
+    expect([stale.status, await stale.json()]).toEqual([409, { error: "conflict" }]);
+    await admin.query(
+      "UPDATE identity.session SET closed_at = now(), close_reason = 'logout' WHERE user_id = $1",
+      [people.guesser.id],
+    );
+    try {
+      expect((await call(people.guesser.token)).status).toBe(401);
+    } finally {
+      await admin.query(
+        "UPDATE identity.session SET closed_at = NULL, close_reason = NULL WHERE user_id = $1",
+        [people.guesser.id],
+      );
+    }
+
+    for (const headers of [
+      { origin: "https://other.example", host: "localhost:3000" },
+      { origin: "http://localhost:3000", host: "other.example", "sec-fetch-site": "cross-site" },
+      { origin: "null" },
+      { origin: "" },
+    ] as Record<string, string>[]) {
+      expect((await call(people.guesser.token, 4, { headers })).status).toBe(403);
+    }
+    for (const [body, status] of [
+      ["{", 400],
+      [JSON.stringify({ versionNo: "4", fingerprint: fp4 }), 422],
+      [JSON.stringify({ versionNo: 4, fingerprint: fp4, studentId: people.student.id }), 422],
+      [JSON.stringify({ versionNo: 2_147_483_648, fingerprint: fp4 }), 422],
+      // #1502 B3/B4: an old client's body and another spelling of the digest.
+      [JSON.stringify({ versionNo: 4 }), 422],
+      [JSON.stringify({ versionNo: 4, fingerprint: fp4.toUpperCase() }), 422],
+      ["x".repeat(1025), 413],
+    ] as const) {
+      expect((await call(people.guesser.token, 4, { body })).status).toBe(status);
+    }
+    expect(
+      (await call(people.guesser.token, 4, { headers: { "content-type": "text/plain" } })).status,
+    ).toBe(415);
+    expect((await call(people.guesser.token, 4, { id: "bad-id" })).status).toBe(400);
+    const misconfigured = createAcknowledgmentPostHandler({
+      withActor,
+      getRedirectUri: () => "file:///bad",
+    });
+    const brokenRequest = new NextRequest(
+      `${origin}/api/institution/assignments/${assignment}/acknowledgment`,
+      {
+        method: "POST",
+        headers: {
+          origin,
+          "content-type": "application/json",
+          cookie: `${SESSION_COOKIE_NAME}=${people.guesser.token}`,
+        },
+        body: JSON.stringify({ versionNo: 4, fingerprint: fp4 }),
+      },
+    );
+    expect(
+      (
+        await misconfigured(brokenRequest, {
+          params: Promise.resolve({ assignmentId: assignment }),
+        })
+      ).status,
+    ).toBe(503);
+    const failed = createAcknowledgmentPostHandler({
+      withActor: async () => {
+        throw Object.assign(new Error("private SQL and input"), { code: "XX000" });
+      },
+      getRedirectUri: () => `${origin}/auth/callback`,
+    });
+    const failureRequest = new NextRequest(
+      `${origin}/api/institution/assignments/${assignment}/acknowledgment`,
+      {
+        method: "POST",
+        headers: {
+          origin,
+          "content-type": "application/json",
+          cookie: `${SESSION_COOKIE_NAME}=${people.guesser.token}`,
+        },
+        body: JSON.stringify({ versionNo: 4, fingerprint: fp4 }),
+      },
+    );
+    const failure = await failed(failureRequest, {
+      params: Promise.resolve({ assignmentId: assignment }),
+    });
+    expect([failure.status, await failure.json()]).toEqual([503, { error: "unavailable" }]);
+    expect((await rows()).rows).toHaveLength(1);
+  });
+
+  it("a removal racing with enrolments leaves the student out until the teacher allows the return", async () => {
+    const open = () =>
+      count(
+        "SELECT count(*) FROM institution.course_member WHERE user_id = $1 AND member_to IS NULL",
+        [people.guesser.id],
+      );
+    const asTeacher = (fn: string) =>
+      withActor(people.teacher.token, async (tx) => {
+        const result = await tx.query<{ done: boolean }>(
+          `SELECT institution.${fn}($1, $2) AS done`,
+          [course, people.guesser.id],
+        );
+        return result.rows[0].done;
+      });
+    expect(await open()).toBe(1);
+
+    const [removals, enrolments] = await Promise.all([
+      Promise.all(Array.from({ length: 4 }, () => asTeacher("remove_student"))),
+      Promise.all(Array.from({ length: 4 }, () => enroll(withActor, people.guesser.token, code))),
+    ]);
+    expect(removals.filter(Boolean)).toHaveLength(1);
+    // Each enrolment ran wholly before the removal or wholly after it.
+    for (const enrolment of enrolments) {
+      expect([
+        { outcome: "enrolled", enrolled_course_id: course },
+        { outcome: "refused", enrolled_course_id: null },
+      ]).toContainEqual(enrolment);
+    }
+    expect(await open()).toBe(0);
+    expect(await visibleCourses(withActor, people.guesser.token)).toEqual([]);
+    await expect(
+      withActor(people.guesser.token, (tx) => tx.query(ACKNOWLEDGE, [assignment, 4])),
+    ).rejects.toMatchObject({ code: "ZD403", message: "forbidden" });
+
+    // The answer to the removed student is the answer to a wrong code, and
+    // the code goes on working for someone else.
+    await admin.query("DELETE FROM institution.enrollment_attempt WHERE user_id = $1", [
+      people.guesser.id,
+    ]);
+    expect(await enroll(withActor, people.guesser.token, code)).toEqual(
+      await enroll(withActor, people.guesser.token, "WRONG-CODE"),
+    );
+    expect(await attempts(people.guesser.id)).toBe(2);
+    expect(await enroll(withActor, people.stranger.token, code)).toEqual({
+      outcome: "enrolled",
+      enrolled_course_id: course,
+    });
+
+    // Only a teacher of the course lets the student back.
+    for (const token of [
+      people.guesser.token,
+      people.student.token,
+      people.admin.token,
+      people.outsider.token,
+    ]) {
+      await expect(
+        withActor(token, (tx) =>
+          tx.query("SELECT institution.allow_student_return($1, $2)", [course, people.guesser.id]),
+        ),
+      ).rejects.toMatchObject({ code: "ZD403", message: "forbidden" });
+    }
+    expect((await enroll(withActor, people.guesser.token, code)).outcome).toBe("refused");
+    expect(await asTeacher("allow_student_return")).toBe(true);
+    expect(await enroll(withActor, people.guesser.token, code)).toEqual({
+      outcome: "enrolled",
+      enrolled_course_id: course,
+    });
+    expect(await open()).toBe(1);
+    expect(await memberships(people.guesser.id)).toBe(2);
+  });
+
+  it("a teacher whose role the administrator revokes loses the assignments in the next transaction", async () => {
+    const seen = (token: string) =>
+      withActor(token, async (tx) => {
+        const result = await tx.query(
+          "SELECT version_no FROM institution.assignment_version WHERE assignment_id = $1",
+          [assignment],
+        );
+        return result.rowCount;
+      });
+    const asAdmin = (fn: string) =>
+      withActor(people.admin.token, (tx) =>
+        tx.query(`SELECT institution.${fn}($1)`, [people.teacher.id]),
+      );
+    expect(await seen(people.teacher.token)).toBe(4);
+    // A teacher cannot revoke the role, the own one either.
+    await expect(
+      withActor(people.teacher.token, (tx) =>
+        tx.query("SELECT institution.revoke_teacher_role($1)", [people.teacher.id]),
+      ),
+    ).rejects.toMatchObject({ code: "ZD403", message: "forbidden" });
+
+    await asAdmin("revoke_teacher_role");
+    expect(await seen(people.teacher.token)).toBe(0);
+    expect(await publish(4).catch(refusal)).toEqual({ code: "ZD403", message: "forbidden" });
+    expect(await enroll(withActor, people.teacher.token, code)).toEqual({
+      outcome: "refused",
+      enrolled_course_id: null,
+    });
+    // The students of the course keep the assignment.
+    expect(await seen(people.student.token)).toBe(4);
+    expect(await versions()).toEqual({ current_version: 4, versions: [1, 2, 3, 4] });
+
+    await asAdmin("confirm_teacher_role");
+    expect(await seen(people.teacher.token)).toBe(4);
+  });
+
+  it("refuses a hostile title of an assignment without repeating it", async () => {
+    const create = (title: string, extra = "") =>
+      withActor(people.teacher.token, (tx) =>
+        tx.query(`SELECT institution.create_assignment($1, $2, ${CONTENT}${extra})`, [
+          course,
+          title,
+        ]),
+      ).catch(refusal);
+    const before = await count("SELECT count(*) FROM institution.assignment WHERE course_id = $1", [
+      course,
+    ]);
+
+    for (const title of ["a".repeat(100_000), "two\nlines", "   ", ""]) {
+      expect(await create(title)).toEqual({ code: "ZD422", message: "invalid input" });
+    }
+    // PostgreSQL text cannot hold a zero byte; the request fails as a whole.
+    expect(await create(`zero${String.fromCharCode(0)}byte`)).toMatchObject({ code: "22021" });
+    // No argument names the author of the assignment.
+    expect(await create("Esej", `, '${people.stranger.id}'`)).toMatchObject({ code: "42883" });
+    expect(
+      await count("SELECT count(*) FROM institution.assignment WHERE course_id = $1", [course]),
+    ).toBe(before);
+  });
+});
+
+describe("GET /api/teacher/courses over the real function (DAN-230)", () => {
+  const courses = (token: string | undefined) =>
+    handleTeacherCoursesRequest(new Request("http://localhost:3000/api/teacher/courses"), {
+      withActor,
+      sessionToken: token,
+    });
+
+  it("gives the teacher the own course with its assignments, and nobody else anything", async () => {
+    const response = await courses(people.teacher.token);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      courses: {
+        id: string;
+        assignments: { id: string; currentVersion: number; enrolledStudents: number }[];
+      }[];
+    };
+    const own = await admin.query<{ course_id: string }>(
+      "SELECT course_id FROM institution.course_member WHERE user_id = $1 AND role = 'teacher' AND member_to IS NULL",
+      [people.teacher.id],
+    );
+    expect(body.courses.map((c) => c.id).sort()).toEqual(own.rows.map((r) => r.course_id).sort());
+    const main = body.courses.find((c) => c.id === course);
+    expect(main).toBeDefined();
+    const students = await count(
+      "SELECT count(*) FROM institution.course_member WHERE course_id = $1 AND role = 'student' AND member_to IS NULL",
+      [course],
+    );
+    const current = await admin.query<{ id: string; current_version: number }>(
+      "SELECT id, current_version FROM institution.assignment WHERE course_id = $1 ORDER BY id",
+      [course],
+    );
+    expect(
+      main?.assignments.map((a) => [a.id, a.currentVersion, a.enrolledStudents]).sort(),
+    ).toEqual(current.rows.map((r) => [r.id, r.current_version, students]).sort());
+    // Each course carries its own rule on AI help (DAN-344 R-1), as stored.
+    const rules = await admin.query<{ id: string; ai_policy: string }>(
+      "SELECT id, ai_policy FROM institution.course WHERE id = ANY($1::uuid[])",
+      [body.courses.map((c) => c.id)],
+    );
+    expect(body.courses.map((c) => [c.id, (c as { aiPolicy?: string }).aiPolicy]).sort()).toEqual(
+      rules.rows.map((r) => [r.id, r.ai_policy]).sort(),
+    );
+    expect(JSON.stringify(body)).not.toContain(people.student.id);
+
+    for (const person of [people.student, people.outsider, people.admin, people.stranger]) {
+      const refused = await courses(person.token);
+      expect([refused.status, await refused.json()]).toStrictEqual([404, { error: "not_found" }]);
+    }
+    const anonymous = await courses(undefined);
+    expect([anonymous.status, await anonymous.json()]).toStrictEqual([
+      401,
+      { error: "unauthorized" },
+    ]);
+    const unknown = await courses(newToken());
+    expect([unknown.status, await unknown.json()]).toStrictEqual([401, { error: "unauthorized" }]);
+  });
+});
