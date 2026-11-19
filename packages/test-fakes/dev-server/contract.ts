@@ -30,6 +30,8 @@ const VECTOR_DIR = new URL("../../../server/contracts/vectors/", import.meta.url
 
 /** route id -> code -> the first error vector with that code. */
 const ERRORS = new Map<string, Map<string, ErrorVector["response"]>>();
+/** route id -> the body of its first success vector. */
+const SUCCESS = new Map<string, unknown>();
 /** Shared codes (internal, too_many_requests) may be answered by any route. */
 const SHARED = new Map<string, ErrorVector["response"]>();
 
@@ -41,6 +43,8 @@ for (const name of readdirSync(VECTOR_DIR).filter((file) => file.endsWith(".json
   const codes = new Map<string, ErrorVector["response"]>();
   const own = new Set<string>(Object.values(errorsOf(file.route)).flat());
   for (const vector of file.vectors) {
+    if (vector.kind === "success" && !SUCCESS.has(file.route))
+      SUCCESS.set(file.route, vector.response.body);
     if (vector.kind !== "error" || vector.code === undefined) continue;
     if (!own.has(vector.code)) {
       if (!SHARED.has(vector.code)) SHARED.set(vector.code, vector.response);
@@ -72,6 +76,11 @@ export function errorAnswer(route: RouteId, code: string): Answer | null {
     headers,
     body: body === undefined ? "" : typeof body === "string" ? body : JSON.stringify(body),
   };
+}
+
+/** A copy of the body of the route's first success vector (fixed data such as the settings catalogue). */
+export function successBody(route: RouteId): unknown {
+  return structuredClone(SUCCESS.get(route));
 }
 
 /** The first of `codes` that `route` answers, as its contract answer. */

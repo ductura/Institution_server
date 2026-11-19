@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 import {
   handleAssignmentSubmissionsRequest,
   readAssignmentSubmissions,
   readAssignmentSubmissionsMany,
   submissionOf,
-} from "./assignment-submissions";
+} from "./assignment-submissions.ts";
 
 // Invented ids only (DAN-332, contract on #826).
 const TOKEN = "T".repeat(43);

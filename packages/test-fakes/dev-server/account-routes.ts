@@ -5,8 +5,8 @@ import { API_VERSION, MIN_CLIENT_VERSION } from "../../../server/contracts/index
 import { clearedSessionCookie, type Handlers } from "./server.ts";
 import { INSTITUTION } from "./state.ts";
 
-/** Invented WebAuthn values: the fake never checks a ceremony. */
-const CHALLENGE = "bGF6bmktaXphem92LWxhem5vZy1zZXJ2ZXJh";
+/** Invented WebAuthn values (32 bytes as base64url): the fake never checks a ceremony. */
+const CHALLENGE = Buffer.alloc(32, 7).toString("base64url");
 const RP_ID = "localhost";
 
 export const ACCOUNT_HANDLERS: Handlers = {
@@ -41,10 +41,16 @@ export const ACCOUNT_HANDLERS: Handlers = {
     const back = typeof query?.returnTo === "string" ? query.returnTo : "/";
     return {
       status: 303,
-      headers: { location: `/__lazni/uloga?povratak=${encodeURIComponent(back)}` },
+      headers: {
+        location: `/__lazni/uloga?povratak=${encodeURIComponent(back)}`,
+        "set-cookie": [clearedSessionCookie()],
+      },
     };
   },
-  "auth.callback.get": () => ({ status: 303, headers: { location: "/" } }),
+  "auth.callback.get": () => ({
+    status: 303,
+    headers: { location: "/", "set-cookie": [clearedSessionCookie()] },
+  }),
   "auth.logout.post": ({ state, token }) => {
     if (token !== null) state.sessions.delete(token);
     return { status: 303, headers: { location: "/", "set-cookie": [clearedSessionCookie()] } };
@@ -63,7 +69,9 @@ export const ACCOUNT_HANDLERS: Handlers = {
             rpId: RP_ID,
             timeoutMs: 60_000,
             purpose: "registration",
-            userHandle: Buffer.from(account?.id ?? "").toString("base64url"),
+            userHandle: Buffer.from((account?.id ?? "").replaceAll("-", ""), "hex").toString(
+              "base64url",
+            ),
           }
         : {
             challenge: CHALLENGE,

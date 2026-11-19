@@ -6,8 +6,8 @@ import { Transform } from "@tiptap/pm/transform";
 import {
   createEditStepsV1Replayer,
   removedRangeSha256,
-} from "@/adapters/evidence/edit-steps-v1-replayer";
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
+} from "../../external/storage/edit-steps-v1-replayer.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../document/edit-step.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
@@ -15,8 +15,8 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSourceV2,
   type EvidenceStepV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../forensics/jcs.ts";
 
 /**
  * Synthetic replay records for tests (DAN-537): invented ids and filler text,

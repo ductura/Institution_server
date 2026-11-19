@@ -1,6 +1,6 @@
-import { parseWorkLanguage, type WorkLanguage } from "@/domain/assignment/work-language";
-import { isDocumentId } from "@/domain/collaboration";
-import type { WithActor } from "@/server/db/with-actor";
+import { parseWorkLanguage, type WorkLanguage } from "../domain/assignment/work-language.ts";
+import { isDocumentId } from "../domain/collaboration/index.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * DAN-386 (M2.10-P01; contract on #1091, c.6720558678): thin calls to the

@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 
-import { withActor } from "@/server/db";
-import { logEvent } from "@/server/log/logger";
+import { withActor } from "../database/index.ts";
+import { logEvent } from "../log/logger.ts";
 
-import { createAlarmTracker } from "./readiness-alarms";
+import { createAlarmTracker } from "./readiness-alarms.ts";
 
 // This process's reporter: a random UUID made when the module loads, so every
 // replica holds its own fault records in identity.ops_alarm_fault. It names

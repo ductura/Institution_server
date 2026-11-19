@@ -1,15 +1,15 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { withActor as appWithActor } from "@/server/db";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { withActor as appWithActor } from "../database/index.ts";
 import { POST } from "../../../app/api/institution/courses/[courseId]/enrollment-code/revocation/route";
 import {
   handleEnrollmentCodeRevocationRequest,
   MAX_REVOCATION_BODY_BYTES,
 } from "./enrollment-code-revocation-route";
 
-vi.mock("@/server/db", () => ({ withActor: vi.fn() }));
+vi.mock("../database/index.ts", () => ({ withActor: vi.fn() }));
 const ORIGIN = "https://ductus.example";
 const COURSE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const TOKEN = "A".repeat(43);

@@ -4,7 +4,7 @@
 // own instance (see shutdown.ts), a hanging database holds at most one probe per
 // route, and public traffic still adds none (the 15 s cache in public-status.ts).
 
-import { withActor } from "@/server/db";
+import { withActor } from "../database/index.ts";
 import { evidenceIngestDeps } from "@/server/evidence/ingest-deps";
 import { STORAGE_NOT_CONFIGURED } from "@/server/evidence/payload-reader";
 import {

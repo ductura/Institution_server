@@ -1,4 +1,4 @@
-import type { WithActor } from "@/server/db/with-actor";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * #711 step B1 (owner decision B, 25 Oct): the document `/rad?zadatak=<id>`

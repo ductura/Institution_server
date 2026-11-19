@@ -1,15 +1,15 @@
 import {
   bindPayloadReader,
   type InstitutionEvidencePayloadReader,
-} from "@/application/ports/evidence-reconstruction";
-import type { ProcessSummarySource } from "@/application/ports/process-summary-source";
-import { isDocumentId } from "@/domain/collaboration";
-import type { EvidenceChainFailureV2 } from "@/domain/forensics/evidence-chain-v2";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
+} from "../application/ports/evidence-reconstruction.ts";
+import type { ProcessSummarySource } from "../application/ports/process-summary-source.ts";
+import { isDocumentId } from "../domain/collaboration/index.ts";
+import type { EvidenceChainFailureV2 } from "../domain/forensics/evidence-chain-v2.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
 import {
   projectProcessSummary,
   type ProcessSummaryThresholds,
-} from "@/domain/projection/process-summary";
+} from "../domain/projection/process-summary.ts";
 
 /**
  * Reads the process summary of one document for whoever asks (B-13 step 2).

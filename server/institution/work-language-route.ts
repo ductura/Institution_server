@@ -1,13 +1,13 @@
-import { parseWorkLanguage, type WorkLanguage } from "@/domain/assignment/work-language";
-import { isDocumentId } from "@/domain/collaboration";
-import type { WithActor } from "@/server/db/with-actor";
+import { parseWorkLanguage, type WorkLanguage } from "../domain/assignment/work-language.ts";
+import { isDocumentId } from "../domain/collaboration/index.ts";
+import type { WithActor } from "../database/with-actor.ts";
 import { readJsonMutation, respond } from "./mutation-route";
 import {
   setAssignmentWorkLanguage,
   setWorkLanguage,
   setWorkLanguageForDocument,
   type WorkLanguageRefusal,
-} from "./work-language";
+} from "./work-language.ts";
 
 export const MAX_WORK_LANGUAGE_BODY_BYTES = 128;
 const MAX_VERSION = 2_147_483_647;
