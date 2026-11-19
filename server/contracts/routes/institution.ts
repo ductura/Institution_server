@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { MUTATION_GUARD } from "./shared.ts";
+import { Name } from "./teacher.ts";
 
 // Literal port of Ductus 078c780: src/server/institution/create-course.ts,
 // assignment-version-route.ts with create-assignment.ts (the content of a
@@ -97,6 +98,40 @@ const Instant = Type.String({
   pattern: `^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,6})?(?:Z|[+-](?:(?:0\\d|1[0-3]):[0-5]\\d|14:00))${END}`,
 });
 
+/** The content of an assignment version (create-assignment.ts parseAssignmentInput). */
+const ASSIGNMENT_CONTENT = {
+  title: Type.String({ pattern: `^(?:${codePoint("\\u0000")}){1,200}${END}` }),
+  instructions: Type.String({ pattern: `^(?:${codePoint("\\u0000")}){0,20000}${END}` }),
+  workType: Type.Union(
+    [
+      "short_paper",
+      "essay",
+      "seminar_paper",
+      "bachelor_thesis",
+      "master_thesis",
+      "specialist_thesis",
+      "doctoral_thesis",
+    ].map((type) => Type.Literal(type)),
+  ),
+  opensAt: Instant,
+  dueAt: Instant,
+  aiPolicy: AiPolicy,
+  aiPurposes: Type.Array(
+    Type.Union(
+      ["formatting", "proofreading", "literature_search", "transcription", "translation"].map(
+        (purpose) => Type.Literal(purpose),
+      ),
+    ),
+    // Repeated purposes are the server's 422: TypeBox checks uniqueItems with a hash the
+    // generated validator does not carry.
+    { maxItems: 5 },
+  ),
+  evidenceProfile: Type.Union([Type.Literal("basic"), Type.Literal("extended")]),
+  importAllowed: Type.Boolean(),
+  wordMin: WordBound,
+  wordMax: WordBound,
+};
+
 export const assignmentVersionsPost = defineRoute({
   id: "institution.assignment-versions.post",
   method: "POST",
@@ -111,36 +146,7 @@ export const assignmentVersionsPost = defineRoute({
     maxBodyBytes: 90_000,
     body: closed({
       expectedVersion: Type.Integer({ minimum: 1, maximum: MAX_VERSION }),
-      title: Type.String({ pattern: `^(?:${codePoint("\\u0000")}){1,200}${END}` }),
-      instructions: Type.String({ pattern: `^(?:${codePoint("\\u0000")}){0,20000}${END}` }),
-      workType: Type.Union(
-        [
-          "short_paper",
-          "essay",
-          "seminar_paper",
-          "bachelor_thesis",
-          "master_thesis",
-          "specialist_thesis",
-          "doctoral_thesis",
-        ].map((type) => Type.Literal(type)),
-      ),
-      opensAt: Instant,
-      dueAt: Instant,
-      aiPolicy: AiPolicy,
-      aiPurposes: Type.Array(
-        Type.Union(
-          ["formatting", "proofreading", "literature_search", "transcription", "translation"].map(
-            (purpose) => Type.Literal(purpose),
-          ),
-        ),
-        // Repeated purposes are the server's 422: TypeBox checks uniqueItems with a hash the
-        // generated validator does not carry.
-        { maxItems: 5 },
-      ),
-      evidenceProfile: Type.Union([Type.Literal("basic"), Type.Literal("extended")]),
-      importAllowed: Type.Boolean(),
-      wordMin: WordBound,
-      wordMax: WordBound,
+      ...ASSIGNMENT_CONTENT,
     }),
   },
   responses: [
@@ -262,6 +268,150 @@ export const roleRevocationPost = defineRoute({
   errors: [...MUTATION_ERRORS],
 });
 
+// SRV-03 (Ductus#2028 c.7008147932, wave 4): the administrator creates a
+// course with its holder and groups (A-7), the course team keeps its seminar
+// groups (C-7), and a teacher of the course creates an assignment (the
+// contract of the PENDING course-assignments route). The two course routes
+// are new routes, not a change of institution.courses.post: who may call it
+// and its body are part of API v1 (server/contracts/breaking.ts). Who may do
+// what is the decision of the SECURITY DEFINER RPC behind each; the caller
+// comes only from the session. No handler yet (CONTRACT_ONLY).
+
+/** institution.is_plain_label: 1 to 200 UTF-16 units, no space at either end. */
+const Label = (maxLength: number) =>
+  Type.String({ minLength: 1, maxLength, pattern: `^(?!\\s)[\\s\\S]*(?<!\\s)${END}` });
+/** A lowercase UUID, as PostgreSQL writes uuid. */
+const LowerUuid = Type.String({
+  pattern: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}${END}`,
+});
+
+export const adminCoursesPost = defineRoute({
+  id: "institution.admin-courses.post",
+  method: "POST",
+  path: "/api/v1/institution/admin/courses",
+  inventory: "app/api/institution/admin/courses/route.ts",
+  access: "institution_admin",
+  summary:
+    "An administrator of the institution creates a course: exactly {name, academicYear, aiPolicy, holderId, groups}, at most 8 KiB, sent as application/json (charset utf-8 only). holderId is a confirmed teacher of the same institution, who becomes the course's holder and a teacher of it; groups are the names of its seminar groups (0 to 20, distinct, each 1 to 80 UTF-16 units with no space at either end). The name is 1 to 160 UTF-16 units with no space at either end; the academic year is two consecutive years such as 2026/2027. A teacher who is not an administrator is 403. The same course (institution, academic year, name) sent again with the same content answers its id; with other content it is 409 conflict.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 8192,
+    body: closed({
+      name: Label(160),
+      academicYear: Type.String({ pattern: `^[0-9]{4}/[0-9]{4}${END}` }),
+      aiPolicy: AiPolicy,
+      holderId: Uuid,
+      groups: Type.Array(Label(80), { maxItems: 20 }),
+    }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "the course",
+      body: closed({
+        id: LowerUuid,
+        groups: Type.Array(closed({ id: LowerUuid, name: Type.String({ minLength: 1 }) })),
+      }),
+    },
+  ],
+  errors: [...MUTATION_ERRORS, error(409, "conflict")],
+});
+
+const GroupTeacher = closed({ id: LowerUuid, givenName: Name, familyName: Name });
+
+export const courseGroupsGet = defineRoute({
+  id: "institution.course-groups.get",
+  method: "GET",
+  path: "/api/v1/institution/courses/{courseId}/groups",
+  inventory: "app/api/institution/courses/[courseId]/groups/route.ts",
+  access: "course_teacher",
+  summary:
+    "The seminar groups of a course, for a teacher of its team or an administrator of its institution: by name (hr collation), then id, each with its open teachers (by family and given name, hr collation, then id) and the number of its open students; no student is named. A malformed course id is 422. Another institution's course and an unknown one are the same 403 (C-23).",
+  request: { params: closed({ courseId: Uuid }) },
+  responses: [
+    {
+      status: 200,
+      description: "the groups, possibly none",
+      body: closed({
+        groups: Type.Array(
+          closed({
+            id: LowerUuid,
+            name: Type.String({ minLength: 1 }),
+            teachers: Type.Array(GroupTeacher),
+            students: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+          }),
+        ),
+      }),
+    },
+  ],
+  errors: [
+    error(401, "unauthorized"),
+    error(422, "invalid_input"),
+    error(403, "forbidden"),
+    error(503, "unavailable"),
+  ],
+});
+
+export const courseGroupsPost = defineRoute({
+  id: "institution.course-groups.post",
+  method: "POST",
+  path: "/api/v1/institution/courses/{courseId}/groups",
+  inventory: "app/api/institution/courses/[courseId]/groups/route.ts",
+  access: "course_teacher",
+  summary:
+    "The holder, a collaborator of the course team (C-7) or an administrator of the institution adds a seminar group: exactly {name}, 1 to 80 UTF-16 units with no space at either end, at most 1 KiB. A group of the same name answers its id; nothing is made twice. A student is 403.",
+  request: {
+    params: closed({ courseId: Uuid }),
+    contentType: "application/json",
+    maxBodyBytes: 1024,
+    body: closed({ name: Label(80) }),
+  },
+  responses: [{ status: 200, description: "the group", body: closed({ id: LowerUuid }) }],
+  errors: [...MUTATION_ERRORS],
+});
+
+export const courseGroupTeachersPost = defineRoute({
+  id: "institution.course-group-teachers.post",
+  method: "POST",
+  path: "/api/v1/institution/groups/{groupId}/teachers",
+  inventory: "app/api/institution/groups/[groupId]/teachers/route.ts",
+  access: "course_teacher",
+  summary:
+    "A teacher of the course team or an administrator of the institution assigns a confirmed teacher of the institution to a seminar group: exactly {teacherId}, at most 1 KiB. The teacher joins the course team through the group. assigned is false when they already teach the group. A teacher who is not confirmed is 422.",
+  request: {
+    params: closed({ groupId: Uuid }),
+    contentType: "application/json",
+    maxBodyBytes: 1024,
+    body: closed({ teacherId: Uuid }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "assigned now or before",
+      body: closed({ assigned: Type.Boolean() }),
+    },
+  ],
+  errors: [...MUTATION_ERRORS],
+});
+
+export const courseAssignmentsPost = defineRoute({
+  id: "institution.course-assignments.post",
+  method: "POST",
+  path: "/api/v1/institution/courses/{courseId}/assignments",
+  inventory: "app/api/institution/courses/[courseId]/assignments/route.ts",
+  access: "course_teacher",
+  summary:
+    "A teacher of the course creates and publishes an assignment (version 1) with its rules on AI tools (aiPolicy and aiPurposes, A-14): the whole content, at most 90 000 bytes, sent as application/json (charset utf-8 only), and an Idempotency-Key header, a UUID the client makes once per form. The same key with the same content answers the same id; with other content it is 409 conflict. A malformed course id or key, a tightening the course forbids, an AI purpose under a prohibited policy, wordMin above wordMax or an impossible date is 422. Publishing sends nothing to anyone (C-17): students see it in student.assignments.get.",
+  request: {
+    params: closed({ courseId: Uuid }),
+    contentType: "application/json",
+    maxBodyBytes: 90_000,
+    body: closed(ASSIGNMENT_CONTENT),
+  },
+  responses: [{ status: 201, description: "created", body: closed({ id: LowerUuid }) }],
+  errors: [...MUTATION_ERRORS, error(409, "conflict")],
+});
+
 export const institutionRoutes = [
   coursesPost,
   assignmentVersionsPost,
@@ -271,4 +421,9 @@ export const institutionRoutes = [
   studentReturnPost,
   roleConfirmationPost,
   roleRevocationPost,
+  adminCoursesPost,
+  courseGroupsGet,
+  courseGroupsPost,
+  courseGroupTeachersPost,
+  courseAssignmentsPost,
 ] as const;

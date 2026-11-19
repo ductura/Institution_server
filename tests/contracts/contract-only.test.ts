@@ -89,10 +89,19 @@ export const DAN_931: readonly string[] = ["downloads.manifest.get"];
 // c.7008147932: contract now, handlers in SRV-10), frozen the same way.
 export const SRV_02: readonly string[] = ["student.enrollments.post", "student.notice-read.post"];
 
+// The operations of SRV-03 (the administrator's course and the groups of wave
+// 4, Ductus#2028 c.7008147932: contract now, handlers in SRV-12 and SRV-15).
+export const SRV_03: readonly string[] = [
+  "institution.admin-courses.post",
+  "institution.course-groups.get",
+  "institution.course-groups.post",
+  "institution.course-group-teachers.post",
+];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...[...DAN_989, ...DAN_931, ...SRV_02],
+  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
