@@ -1,7 +1,8 @@
 // The works a teacher mentors (contracts teacher.mentorships.get and
 // teacher.mentorship.get). Port of Ductus src/server/institution/mentored-works.ts
 // at 078c780 (SQL, mentoredWorkOf, mentoredWorksOf, query, readMentoredWorks
-// and readMentoredWork) without a change of logic; changes are of form: the
+// and readMentoredWork) without a change of logic but one (isDocumentId counts
+// code points, as evidence.document); changes are of form: the
 // token's shape is the route's (liveSessionTokenFromCookie), a failure is an
 // outcome whose reason names no SQLSTATE, and nothing is logged here. Who
 // asks comes only from the session bound into withActor; the database
@@ -23,10 +24,7 @@ const WORK_TYPES = new Set([
 ]);
 
 export type MentoredWorkType =
-  | "bachelor_thesis"
-  | "master_thesis"
-  | "specialist_thesis"
-  | "doctoral_thesis";
+  "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis";
 export type MentoredWorkState = "not_started" | "in_progress" | "submitted";
 
 export type MentoredWork = {
@@ -43,8 +41,7 @@ export type MentoredWork = {
 
 type Failure = { readonly status: "unauthenticated" | "unavailable"; readonly reason?: string };
 export type MentoredWorksOutcome =
-  | { readonly status: "ok"; readonly works: readonly MentoredWork[] }
-  | Failure;
+  { readonly status: "ok"; readonly works: readonly MentoredWork[] } | Failure;
 export type MentoredWorkOutcome =
   | { readonly status: "ok"; readonly work: MentoredWork }
   | { readonly status: "not_found" }
@@ -94,15 +91,17 @@ function isName(value: unknown): value is string {
   return typeof value === "string" && value.length >= 1 && [...value].length <= NAME_MAX;
 }
 
-/** A document id as `evidence.document` allows it: 1 to 256 characters, trimmed, no control characters. */
+/**
+ * A document id as `evidence.document` allows it: 1 to 256 code points,
+ * trimmed, no control character. Ductus src/domain/collaboration isDocumentId;
+ * the local copy in Ductus mentored-works.ts counted UTF-16 units, which
+ * refused a valid id of 129 supplementary characters and with it the whole
+ * read (Codex P2 on #349).
+ */
 function isDocumentId(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length >= 1 &&
-    value.length <= 256 &&
-    value === value.trim() &&
-    !/[\u0000-\u001f\u007f-\u009f]/.test(value)
-  );
+  if (typeof value !== "string" || value.trim() !== value) return false;
+  const length = [...value].length;
+  return length >= 1 && length <= 256 && !/\p{Cc}/u.test(value);
 }
 
 /** One row as a mentored work, or null when it is not what the read returns. */

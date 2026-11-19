@@ -134,6 +134,18 @@ describe("mentored works", () => {
     expect(mentoredWorkOf(mentored(1, { work_type: "essay" }))).toBeNull();
   });
 
+  // Codex P2 on #349: evidence.document.id counts code points (isWorkId), so
+  // 256 of them are one work id even when they take 512 UTF-16 units.
+  it("counts a document id in code points, as evidence.document does", () => {
+    const emoji = "\u{1F600}";
+    for (const id of [emoji.repeat(129), emoji.repeat(256), "a".repeat(256)]) {
+      expect(mentoredWorkOf(mentored(1, { document_id: id }))?.documentId).toBe(id);
+    }
+    for (const id of [emoji.repeat(257), "a".repeat(257), "", " rad", "a\u0085b"]) {
+      expect(mentoredWorkOf(mentored(1, { document_id: id }))).toBeNull();
+    }
+  });
+
   it("asks for the actor first; no actor is unauthenticated without the read", async () => {
     const { withActor, seen } = fake([{ user_id: null, institution_id: null }]);
     expect(await createMentoredWorksReader(withActor).readMentoredWorks(TOKEN)).toEqual({
