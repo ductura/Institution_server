@@ -9,20 +9,20 @@ import { Transform } from "@tiptap/pm/transform";
 import { build, type Rollup } from "vite";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { replayEvidenceSegmentsV2 } from "@/domain/forensics/evidence-replay-v2";
+import { replayEvidenceSegmentsV2 } from "../../domain/forensics/evidence-replay-v2.ts";
 import type {
   EvidenceEventV2,
   EvidenceSegmentV2,
   EvidenceStepV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { loadGoldenVectors } from "@/domain/forensics/golden-vectors/load";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import { loadGoldenVectors } from "../../domain/forensics/golden-vectors/load.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
 import {
   createBrowserEditStepsV1Replayer,
   removedRangeSha256WebCrypto,
-} from "./edit-steps-v1-browser-replayer";
-import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer";
+} from "./edit-steps-v1-browser-replayer.ts";
+import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
 
 /**
  * Granica 8 (#638): the browser replayer gives the server's results. Each
@@ -435,8 +435,8 @@ async function bundle(): Promise<{ code: string; warnings: string[]; nodeImports
           id !== ENTRY
             ? null
             : `
-        import { createBrowserEditStepsV1Replayer, removedRangeSha256WebCrypto } from "@/adapters/evidence/edit-steps-v1-browser-replayer";
-        import { replayEvidenceSegmentsV2 } from "@/domain/forensics/evidence-replay-v2";
+        import { createBrowserEditStepsV1Replayer, removedRangeSha256WebCrypto } from "./edit-steps-v1-browser-replayer.ts";
+        import { replayEvidenceSegmentsV2 } from "../../domain/forensics/evidence-replay-v2.ts";
         const replayer = createBrowserEditStepsV1Replayer();
         export async function apply(initial, event) {
           try {

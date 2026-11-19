@@ -1,11 +1,11 @@
-import type { EditStepV1 } from "../document/edit-step";
+import type { EditStepV1 } from "../document/edit-step.ts";
 import {
   verifyCanonicalEvidencePayloadV2,
   verifyEvidenceChainV2,
   type EvidenceChainFailureV2,
   type EvidenceChainHeadV2,
-} from "../forensics/evidence-chain-v2";
-import type { EvidenceSegment, EvidenceSourceV4 } from "../forensics/evidence-segment-v2";
+} from "../forensics/evidence-chain-v2.ts";
+import type { EvidenceSegment, EvidenceSourceV4 } from "../forensics/evidence-segment-v2.ts";
 
 /**
  * Process summary, core of B-13 (PRODUCT §7, rule 5 of §5, D-80 point 6).

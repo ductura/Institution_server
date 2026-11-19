@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
+import { canonicalizeJcs } from "../forensics/jcs.ts";
 
 import {
   NOTICE_FINGERPRINT_FIELDS,
@@ -13,7 +13,7 @@ import {
   noticeFingerprintPayload,
   prefixedSha256,
   type NoticeFingerprintInput,
-} from "./fingerprint";
+} from "./fingerprint.ts";
 
 // DAN-306 (M2.13-P02a), attack plan #1502: A2 to A14. Invented assignment
 // content only. The same two vectors are asserted in SQL by

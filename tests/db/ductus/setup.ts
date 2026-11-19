@@ -1,4 +1,4 @@
-import { foreignDatabaseUrls } from "./loopback-database-url";
+import { foreignDatabaseUrls } from "./loopback-database-url.ts";
 
 // F-019: the integration tests create, drop and write to databases, so they
 // run only against this machine's database on the local port. Each set URL is

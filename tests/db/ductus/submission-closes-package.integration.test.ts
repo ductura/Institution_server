@@ -9,7 +9,7 @@ import {
   type WithActor,
 } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-289 A1 (contract #756 I3, plan of attack #755 A9 and A10): pgTAP runs in
 // one transaction and cannot race two calls. The submission closes the

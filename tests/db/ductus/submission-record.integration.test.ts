@@ -29,7 +29,7 @@ import { handleSubmissionRequest } from "../../../server/evidence/submission-rou
 import type { SigningKeyProvider } from "../../../server/external/keys/signing-key-provider.ts";
 import { digestSubmissionReceiptPayloadV2 } from "../../../server/domain/forensics/submission-receipt-v2.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // B-12 step 4b1 / DAN-87: the reconstruction of a submission request over the
 // real database, with segments of real ductus-edit-steps-v1 steps committed

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DATABASE_URL_VARIABLES, foreignDatabaseUrls } from "../db/ductus/loopback-database-url.ts";
-import config from "../../vitest.config";
+import config from "../../vitest.config.ts";
 
 // F-019: the integration project refuses to start against a database that is
 // not this machine's. Hosts and passwords are invented.

@@ -16,7 +16,7 @@ import {
   CORPUS_DIR,
   INVENTED_NAMES,
   MANIFEST_FILE,
-} from "../fixtures/docx-corpus/generate";
+} from "../fixtures/docx-corpus/generate.ts";
 
 interface Fixture {
   file: string;

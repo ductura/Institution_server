@@ -7,7 +7,7 @@ import { REVISION_ZERO_SHA256 } from "../../../server/domain/document/revision-z
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 import { handleEvidenceOpenRequest } from "../../../server/database/open-work.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // B-8 step 2 / DAN-83 (docs/BACKEND.md 4.13, pgTAP rows): pgTAP runs in one
 // transaction and cannot race two first calls. Here two app connections open

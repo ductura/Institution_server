@@ -1,20 +1,17 @@
-import { createEditStepsV1Replayer } from "@/adapters/evidence/edit-steps-v1-replayer";
-import { createEditStepsV2Replayer } from "@/adapters/evidence/edit-steps-v2-replayer";
-import type { EvidenceReconstructionOutcome } from "@/application/evidence/evidence-reconstruction";
-import {
-  reconstructSubmission,
-  type SubmissionRecord,
-} from "@/application/evidence/submission-reconstruction";
-import { isEvidencePackageId, isSha256Hex } from "@/application/ports/evidence-ingest";
-import { isInstitutionId } from "@/application/ports/evidence-object-key";
+import { createEditStepsV1Replayer } from "../external/storage/edit-steps-v1-replayer.ts";
+import { createEditStepsV2Replayer } from "../external/storage/edit-steps-v2-replayer.ts";
+import type { EvidenceReconstructionOutcome } from "./evidence-reconstruction.ts";
+import { reconstructSubmission, type SubmissionRecord } from "./submission-reconstruction.ts";
+import { isEvidencePackageId, isSha256Hex } from "../application/ports/evidence-ingest.ts";
+import { isInstitutionId } from "../domain/evidence/object-key.ts";
 import {
   bindPayloadReader,
   type InstitutionEvidencePayloadReader,
-} from "@/application/ports/evidence-reconstruction";
-import { DOCUMENT_SCHEMA_VERSION } from "@/domain/document/schema";
-import { isEvidenceDomainId, isReceiptPrincipalId } from "@/domain/forensics/evidence-receipt";
-import type { EvidenceDomainKey } from "@/domain/forensics/evidence-receipt-verifier";
-import type { WithActor } from "@/server/db/with-actor";
+} from "../application/ports/evidence-reconstruction.ts";
+import { DOCUMENT_SCHEMA_VERSION } from "../domain/document/schema.ts";
+import { isEvidenceDomainId, isReceiptPrincipalId } from "../domain/forensics/evidence-receipt.ts";
+import type { EvidenceDomainKey } from "../domain/forensics/evidence-receipt-verifier.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 import { readEvidenceDomainKeys } from "./evidence-domain-keys";
 

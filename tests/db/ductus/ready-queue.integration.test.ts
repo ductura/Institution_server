@@ -6,8 +6,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withActor } from "../../../server/database/index.ts";
 
 import { GET } from "../../app/api/ready/route";
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
-import { holdWorkerPresence } from "./worker-presence";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { holdWorkerPresence } from "./worker-presence.ts";
 
 // DAN-585: the queue capability of /api/ready against the real catalogue, as
 // the web role reads it through withActor. A synthetic login that inherits

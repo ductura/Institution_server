@@ -5,13 +5,13 @@ import type {
   EvidenceCheckpointReader,
   EvidenceCheckpointReadResult,
   EvidencePayloadReader,
-} from "@/application/ports/evidence-reconstruction";
-import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "@/domain/document/edit-step";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
+} from "../application/ports/evidence-reconstruction.ts";
+import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "../domain/document/edit-step.ts";
+import { sha256WebCrypto } from "../domain/forensics/crypto.ts";
 import {
   digestCanonicalDocumentV2,
   type EvidenceStepReplayerV2,
-} from "@/domain/forensics/evidence-replay-v2";
+} from "../domain/forensics/evidence-replay-v2.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
@@ -19,15 +19,15 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceEventV2,
   type EvidenceSegmentV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
 import {
   reconstructAndCompareEvidence,
   reconstructEvidenceFromCheckpoint,
   type EvidenceReceiptCheck,
   type EvidenceResumedReconstructionOutcome,
-} from "./evidence-reconstruction";
-import { decideSubmission } from "./submission-decision";
+} from "./evidence-reconstruction.ts";
+import { decideSubmission } from "./submission-decision.ts";
 
 // DAN-293 (B-12, D-191 t. 4): reconstruction across a gap from a checkpoint the
 // chain vouches for. Readers are in-memory fakes and every receipt checks out,

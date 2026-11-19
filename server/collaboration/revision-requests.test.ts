@@ -3,21 +3,21 @@ import { readFileSync } from "node:fs";
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import { withActor as appWithActor } from "@/server/db";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import { withActor as appWithActor } from "../database/index.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 // B5/D4/D6: loading the old status model anywhere under this boundary fails the import.
-vi.mock("@/domain/collaboration/conditional-validity", () => {
+vi.mock("../domain/collaboration/conditional-validity.ts", () => {
   throw new Error("revision boundary loaded conditional-validity");
 });
-vi.mock("@/domain/collaboration/revision-request", () => {
+vi.mock("../domain/collaboration/revision-request.ts", () => {
   throw new Error("revision boundary loaded revision-request");
 });
-vi.mock("@/server/db", () => ({ withActor: vi.fn() }));
+vi.mock("../database/index.ts", () => ({ withActor: vi.fn() }));
 
 const { MAX_REVISION_BODY_BYTES, REVISION_ACTIONS, handleRevisionRequest } =
-  await import("./revision-requests");
+  await import("./revision-requests.ts");
 const { POST } = await import("../../../app/api/revision-requests/[action]/route");
 type Action = (typeof REVISION_ACTIONS)[number];
 

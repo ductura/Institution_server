@@ -22,7 +22,7 @@ import {
   type Misbehaviour,
   type TestAccount,
 } from "../../../test-support/test-idp/test-idp.ts";
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-196, plan #1104, A18 and A19: the whole AAI-shaped login (routes, real
 // openid-client, the in-process provider of tests/unit/auth/test-idp.ts in

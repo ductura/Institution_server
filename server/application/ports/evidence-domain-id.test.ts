@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { fromHex, loadGoldenVectors } from "@/domain/forensics/golden-vectors/load";
-import { isEvidenceIngestCommandV2, isEvidenceSegmentDescriptorV2 } from "./evidence-ingest";
+import { fromHex, loadGoldenVectors } from "../../domain/forensics/golden-vectors/load.ts";
+import { isEvidenceIngestCommandV2, isEvidenceSegmentDescriptorV2 } from "./evidence-ingest.ts";
 
 /**
  * The evidence domain of a receipt is set by the server, from the package and
