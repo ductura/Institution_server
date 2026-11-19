@@ -1,6 +1,3 @@
-// Ductus type-checks against the DOM lib; here the type comes from Node.
-import type { ReadableStreamReadResult } from "node:stream/web";
-
 /**
  * Guards for a state-changing JSON route (first user: evidence ingest, B-8j2).
  *

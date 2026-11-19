@@ -107,7 +107,7 @@ const insertText = (text: string): EvidenceSegmentV2["events"][number]["steps"][
 async function segmentOfSize(bytes: number): Promise<EvidenceSegmentV2> {
   const sized = (text: string): EvidenceSegmentV2 => {
     const value = segment();
-    value.events[0].steps = [insertText(text)];
+    value.events[0]!.steps = [insertText(text)];
     return value;
   };
   // An insertion has at least one character: measure with one ASCII byte.
@@ -379,8 +379,8 @@ describe("EvidenceGateway", () => {
         segment({
           segmentId: `segment-${index + 1}`,
           sequence: index + 1,
-          before: hashes[index],
-          after: hashes[index + 1],
+          before: hashes[index]!,
+          after: hashes[index + 1]!,
           predecessor,
           start: minute,
           end: minute,
@@ -618,8 +618,8 @@ describe("EvidenceGateway", () => {
       reason: "signer returned unverifiable signature",
     });
     expect(s.repository.records()).toHaveLength(1);
-    expect(s.repository.records()[0].status).toBe("pending_signature");
-    expect(s.repository.records()[0].signedReceipt).toBeUndefined();
+    expect(s.repository.records()[0]!.status).toBe("pending_signature");
+    expect(s.repository.records()[0]!.signedReceipt).toBeUndefined();
   });
 
   it("recovers signer failure by signing the same reserved receipt on retry", async () => {
@@ -632,7 +632,7 @@ describe("EvidenceGateway", () => {
       stage: "signing",
       reason: "synthetic signer outage",
     });
-    const pending = s.repository.records()[0];
+    const pending = s.repository.records()[0]!;
     expect(pending.status).toBe("pending_signature");
     expect(pending.receiptPayload.receiptId).toBe("receipt-1");
     expect(pending.receiptPayload.acceptedAt).toBe("2026-10-03T06:05:00.000Z");
@@ -646,7 +646,7 @@ describe("EvidenceGateway", () => {
     expect(recovered.receipt.payload.receiptId).toBe("receipt-1");
     expect(recovered.receipt.payload.acceptedAt).toBe("2026-10-03T06:05:00.000Z");
     expect(s.repository.records()).toHaveLength(1);
-    expect(s.repository.records()[0].status).toBe("signed");
+    expect(s.repository.records()[0]!.status).toBe("signed");
   });
 
   it("recovers an already accepted pending receipt even after the package closes", async () => {
@@ -655,7 +655,7 @@ describe("EvidenceGateway", () => {
     s.signer.fail = true;
 
     expect((await ingest(s, cmd)).status).toBe("unavailable");
-    expect(s.repository.records()[0].status).toBe("pending_signature");
+    expect(s.repository.records()[0]!.status).toBe("pending_signature");
     expect(s.payloadStore.size).toBe(1);
 
     s.contexts.set({
@@ -689,7 +689,7 @@ describe("EvidenceGateway", () => {
       stage: "repository",
       reason: "metadata write down",
     });
-    const pending = s.repository.records()[0];
+    const pending = s.repository.records()[0]!;
     expect(pending.status).toBe("pending_signature");
     expect(pending.receiptPayload.receiptId).toBe("receipt-1");
 
@@ -735,7 +735,7 @@ describe("EvidenceGateway", () => {
       s.contexts.unavailableReason = "synthetic db down";
       s.repository.lookupUnavailableReason = "synthetic db down";
       s.payloadStore.unavailableReason = "synthetic store down";
-      expect(await asIntruder(probes[0])).toEqual({ status: "unauthorized" });
+      expect(await asIntruder(probes[0]!)).toEqual({ status: "unauthorized" });
 
       // Authorization is asked for the id the client named, every time.
       expect(s.authorization.requests.map((r) => [r.principalId, r.resource.id])).toEqual([
@@ -795,7 +795,7 @@ describe("EvidenceGateway", () => {
       });
       expect(second.status).toBe("chain_conflict");
       expect(s.repository.records()).toHaveLength(1);
-      expect(s.repository.records()[0].principalId).toBe("ana");
+      expect(s.repository.records()[0]!.principalId).toBe("ana");
       expect(s.signer.signCalls).toBe(1);
     });
 
@@ -833,8 +833,8 @@ describe("EvidenceGateway", () => {
       const put = vi.spyOn(s.payloadStore, "putImmutable");
       expect((await ingest(s, cmd)).status).toBe("accepted");
       expect(put).toHaveBeenCalledOnce();
-      expect(put.mock.calls[0][0].institutionId).toBe(INSTITUTION_ID);
-      expect(s.repository.records()[0].storageRef).toBe(
+      expect(put.mock.calls[0]![0].institutionId).toBe(INSTITUTION_ID);
+      expect(s.repository.records()[0]!.storageRef).toBe(
         `memory:v2/${INSTITUTION_ID}/evidence-1/${cmd.descriptor.segmentHash}.json`,
       );
     });
@@ -1011,7 +1011,7 @@ describe("EvidenceGateway", () => {
         expect(await ingest(s, changed)).toEqual({ status: "invalid" });
       }
       expect(s.signer.signCalls).toBe(1);
-      expect(s.repository.records()[0].status).toBe("pending_signature");
+      expect(s.repository.records()[0]!.status).toBe("pending_signature");
 
       const recovered = await ingest(s, cmd);
       if (recovered.status !== "accepted") throw new Error("recovery failed");
@@ -1163,7 +1163,7 @@ describe("EvidenceGateway", () => {
 
       expect(await ingest(s)).toEqual(malformed);
       expect(s.signer.signCalls).toBe(0);
-      expect(s.repository.records()[0].status).toBe("pending_signature");
+      expect(s.repository.records()[0]!.status).toBe("pending_signature");
     });
 
     it("neither attaches nor returns a signature that carries an unknown field", async () => {
@@ -1177,7 +1177,7 @@ describe("EvidenceGateway", () => {
         reason: "signer returned a malformed signature",
       });
       expect(attach).not.toHaveBeenCalled();
-      expect(s.repository.records()[0].status).toBe("pending_signature");
+      expect(s.repository.records()[0]!.status).toBe("pending_signature");
     });
 
     it("does not hand out a stored acceptance that is no longer well-formed", async () => {

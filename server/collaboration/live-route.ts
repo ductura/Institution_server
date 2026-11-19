@@ -45,7 +45,7 @@ export interface LiveRouteDeps {
   withActor: WithActor;
   /** The application origin; null when it is not configured (503). */
   expectedOrigin: string | null;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 function refuse(status: number, error: string): Response {

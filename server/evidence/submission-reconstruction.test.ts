@@ -235,13 +235,13 @@ async function resign(
   change: Partial<EvidenceReceiptPayloadV2>,
   index = built.record.segments.length - 1,
 ) {
-  const receipt = built.record.segments[index].receipt!;
+  const receipt = built.record.segments[index]!.receipt!;
   const payload = {
     ...(JSON.parse(receipt.receiptPayload) as EvidenceReceiptPayloadV2),
     ...change,
   };
   built.record.segments[index] = {
-    ...built.record.segments[index],
+    ...built.record.segments[index]!,
     receipt: await stored(payload),
   };
 }
@@ -311,7 +311,7 @@ describe("reconstruction of a submission over receipts v2 (B-12 step 4b1)", () =
 
   it("blocks a segment whose acceptance has no signature and says so (P3, C9)", async () => {
     const built = await build();
-    built.record.segments[1] = { ...built.record.segments[1], receipt: null };
+    built.record.segments[1] = { ...built.record.segments[1]!, receipt: null };
     const outcome = await run(built);
     expect(outcome).toEqual({ status: "mismatch", reason: "receipt_missing", index: 1 });
     expect(decideSubmission(outcome)).toEqual({ decision: "blocked", reason: "segment_unsigned" });
@@ -319,14 +319,14 @@ describe("reconstruction of a submission over receipts v2 (B-12 step 4b1)", () =
 
   it("blocks a signature changed by one character (C9)", async () => {
     const built = await build();
-    const receipt = built.record.segments[0].receipt!;
+    const receipt = built.record.segments[0]!.receipt!;
     const signature = receipt.signature as { signatureBase64Url: string };
     // A character in the low bytes of S: still a well-formed signature, of other bytes.
     const at = 50;
     const s = signature.signatureBase64Url;
     const flipped = s.slice(0, at) + (s[at] === "A" ? "B" : "A") + s.slice(at + 1);
     built.record.segments[0] = {
-      ...built.record.segments[0],
+      ...built.record.segments[0]!,
       receipt: { ...receipt, signature: { ...signature, signatureBase64Url: flipped } },
     };
     expect(await run(built)).toEqual({
@@ -338,7 +338,7 @@ describe("reconstruction of a submission over receipts v2 (B-12 step 4b1)", () =
 
   it("blocks changed stored bytes (C8)", async () => {
     const built = await build();
-    const [first] = built.record.segments;
+    const first = built.record.segments[0]!;
     const text = new TextDecoder()
       .decode(built.bytes.get(first.segmentHash))
       .replace("Odlomak A", "Odlomak C");
@@ -363,9 +363,9 @@ describe("reconstruction of a submission over receipts v2 (B-12 step 4b1)", () =
     [
       "receipt text that is not its own JCS form",
       (built) => {
-        const receipt = built.record.segments[0].receipt!;
+        const receipt = built.record.segments[0]!.receipt!;
         built.record.segments[0] = {
-          ...built.record.segments[0],
+          ...built.record.segments[0]!,
           receipt: { ...receipt, receiptPayload: ` ${receipt.receiptPayload}` },
         };
       },
@@ -374,7 +374,7 @@ describe("reconstruction of a submission over receipts v2 (B-12 step 4b1)", () =
       "a receipt of another form",
       (built) => {
         built.record.segments[0] = {
-          ...built.record.segments[0],
+          ...built.record.segments[0]!,
           receipt: { payload: {} } as never,
         };
       },
@@ -401,9 +401,9 @@ describe("reconstruction of a submission over receipts v2 (B-12 step 4b1)", () =
 
   it("blocks a receipt signed by a key other than the registered one", async () => {
     const built = await build();
-    const receipt = built.record.segments[1].receipt!;
+    const receipt = built.record.segments[1]!.receipt!;
     built.record.segments[1] = {
-      ...built.record.segments[1],
+      ...built.record.segments[1]!,
       receipt: await stored(JSON.parse(receipt.receiptPayload) as EvidenceReceiptPayloadV2, other),
     };
     expect(await run(built)).toEqual({

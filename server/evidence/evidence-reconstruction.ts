@@ -74,9 +74,12 @@ export function signerReceiptCheck(
     ) {
       return { status: "mismatch" };
     }
-    // A refused verification (Result, Ductura's SigningKeyProvider) is not a valid one.
+    // Ductura's SigningKeyProvider answers a Result. A failure means the key or
+    // the KMS could not be reached, which Ductus threw: it is no verdict on the
+    // signature, so it stays an exception and never becomes signature_invalid.
     const verified = await signer.verify(digest.bytes, receipt.signature);
-    const valid = verified.ok && verified.value;
+    if (!verified.ok) throw new Error("signature verification unavailable");
+    const valid = verified.value;
     return valid
       ? { status: "verified", receiptId: receipt.payload.receiptId }
       : { status: "signature_invalid" };
@@ -88,7 +91,7 @@ type ReconstructionDependencies<TDocument> = {
   payloads: EvidencePayloadReader;
   replayer: EvidenceStepReplayerV2<TDocument>;
   /** Without it no break is ever crossed: the first one is the outcome. */
-  checkpoints?: EvidenceCheckpointReader;
+  checkpoints?: EvidenceCheckpointReader | undefined;
 } & (
   | { signer: Pick<SigningKeyProvider, "verify">; receipts?: undefined }
   | { receipts: EvidenceReceiptCheck; signer?: undefined }

@@ -49,6 +49,11 @@ const OTHER_SIGNATURE = {
   signatureBase64Url: "B".repeat(85) + "A",
 };
 
+const REFUSED = {
+  ok: false as const,
+  error: { code: "SIGNER_UNAVAILABLE", messageKey: "izmisljeni.kljuc" },
+};
+
 type Rows = {
   read?: unknown[];
   prepared?: unknown[];
@@ -178,14 +183,23 @@ describe("submission receipt v2: signed and bound once (DAN-291)", () => {
     [
       "a signature that does not verify",
       {},
-      (s) => vi.spyOn(s.signer, "verify").mockResolvedValue(false),
+      (s) => vi.spyOn(s.signer, "verify").mockResolvedValue({ ok: true, value: false }),
     ],
     [
       "a signature of another key",
       {},
-      (s) => s.sign.mockResolvedValue({ ...OTHER_SIGNATURE, keyId: "other-key" } as never),
+      (s) =>
+        s.sign.mockResolvedValue({
+          ok: true,
+          value: { ...OTHER_SIGNATURE, keyId: "other-key" },
+        } as never),
     ],
     ["no key", {}, (s) => s.key.mockRejectedValue(new Error("no key"))],
+    // Ductura's SigningKeyProvider answers a Result: a refusal is its form of
+    // the Ductus throw and fails closed at the same place.
+    ["a signer that refuses", {}, (s) => s.sign.mockResolvedValue(REFUSED)],
+    ["a check that refuses", {}, (s) => vi.spyOn(s.signer, "verify").mockResolvedValue(REFUSED)],
+    ["a key that is refused", {}, (s) => s.key.mockResolvedValue(REFUSED)],
     ["a v1 payload", prepared(v1Text())],
     ["a payload that is not its own JCS", prepared(" " + text())],
     [
