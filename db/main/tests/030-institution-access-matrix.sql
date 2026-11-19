@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1539);
+SELECT plan(1603);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -17,8 +17,8 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation'],
-  'the institution schema holds exactly the twenty-three tables of this matrix'
+        'work_language_override', 'work_accommodation', 'notice_read'],
+  'the institution schema holds exactly the twenty-four tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -62,7 +62,8 @@ SELECT bag_eq(
     'ductus_app SELECT mentorship_request',
     'ductus_app SELECT faculty_rule_version',
     'ductus_app SELECT work_language_override',
-    'ductus_app SELECT work_accommodation'
+    'ductus_app SELECT work_accommodation',
+    'ductus_app SELECT notice_read'
   ],
   'besides the owner only ductus_app holds a privilege on an institution table, and only SELECT'
 );
@@ -119,7 +120,9 @@ SELECT bag_eq(
     'work_language_override: work_language_override_owner ALL to ductus_identity',
     'work_language_override: work_language_override_read SELECT to ductus_app',
     'work_accommodation: work_accommodation_owner ALL to ductus_identity',
-    'work_accommodation: work_accommodation_read SELECT to ductus_app'
+    'work_accommodation: work_accommodation_read SELECT to ductus_app',
+    'notice_read: notice_read_owner ALL to ductus_identity',
+    'notice_read: notice_read_read SELECT to ductus_app'
   ],
   'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule or notification'
 );
@@ -144,7 +147,8 @@ SELECT bag_eq(
         'notice_acknowledgment: notice_acknowledgment_fingerprint_immutable 19 O',
         'notice_acknowledgment: notice_acknowledgment_binding_fill 7 O',
         'notice_acknowledgment: notice_acknowledgment_binding_immutable 19 O',
-        'work_grant: work_grant_binding_fill 23 O'],
+        'work_grant: work_grant_binding_fill 23 O',
+        'notice_read: notice_read_immutable 27 O', 'notice_read: notice_read_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -250,7 +254,10 @@ SELECT bag_eq(
     'work_accommodation(p_assignment_id uuid, p_student_id uuid) definer app',
     'set_work_accommodation(p_assignment_id uuid, p_marked boolean) definer app',
     'check_admin_event_actor() definer',
-    'admin_appoint_admin(p_user_id uuid) definer app'
+    'admin_appoint_admin(p_user_id uuid) definer app',
+    'refuse_notice_read_change()',
+    'mark_notice_read(p_assignment_id uuid) definer app',
+    'student_assignments() definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -307,7 +314,8 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
                         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
-                        'faculty_rule_version', 'work_language_override', 'work_accommodation']) WITH ORDINALITY AS t (tbl, n)
+                        'faculty_rule_version', 'work_language_override', 'work_accommodation',
+                        'notice_read']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
