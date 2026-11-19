@@ -46,7 +46,8 @@ describe("evidence routes in the contract", () => {
     expect(PENDING).not.toContain("app/api/evidence/open/route.ts");
     expect(PENDING).not.toContain("app/api/evidence/commit/route.ts");
     expect(PENDING).not.toContain("app/api/evidence/replay/route.ts");
-    expect(PENDING).toHaveLength(1);
+    // SRV-03 gave the last pending file, the course's assignments, its contract.
+    expect(PENDING).toHaveLength(0);
   });
 
   it.each(

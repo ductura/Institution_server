@@ -80,8 +80,10 @@ describe("fake server over HTTP", () => {
     // the submission and the replay (DAN-818), as the evidence routes, have two each (timeout and bad-request);
     // the client context (DAN-846) has four (no session, so no unauthorized vector);
     // the three WebAuthn routes (DAN-840-1) have four each, framing only: timeout, length twice, stream;
-    // teacher.assignment-submissions.post (DAN-903-1) five, as the fast path.
-    expect(VECTORS.length - overHttp.length).toBe(131);
+    // teacher.assignment-submissions.post (DAN-903-1) five, as the fast path;
+    // student.enrollments.post and student.notice-read.post (SRV-02) five each;
+    // the four mutation routes of SRV-03 five each.
+    expect(VECTORS.length - overHttp.length).toBe(161);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

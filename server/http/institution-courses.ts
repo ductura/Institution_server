@@ -62,7 +62,8 @@ const REVOKE_REFUSALS: Refusals = new Map<string, Refusal>([UNAUTHORIZED, FORBID
  * contracts (workIdFromPath: every UUID is a valid work id). Broken encoding
  * or a control character is "", which is never a UUID.
  */
-const decodeOnce = (segment: string | undefined): string => workIdFromPath(segment ?? "") ?? "";
+export const decodeOnce = (segment: string | undefined): string =>
+  workIdFromPath(segment ?? "") ?? "";
 
 /** Ductus readEmptyMutation: a non-null object, not an array, with no own enumerable key. */
 const isEmptyObject = (value: unknown): boolean =>
@@ -80,7 +81,7 @@ type Input = { readonly token: string; readonly value: unknown };
  * UTF-8 JSON (400). Refusals before the whole body was read close the
  * connection. Null when it already answered.
  */
-async function readInstitutionJson(
+export async function readInstitutionJson(
   request: IncomingMessage,
   response: ServerResponse,
   ids: readonly string[],
