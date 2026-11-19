@@ -83,7 +83,7 @@ describe("deriveBibliography (DAN-619 c)", () => {
       style,
     );
     expect(result.entries.map((e) => e.sourceId)).toEqual([id(1)]);
-    expect(result.entries[0].text).toBe("Prezime, Ime (2020) Izvor 1. Mjesto: Nakladnik.");
+    expect(result.entries[0]!.text).toBe("Prezime, Ime (2020) Izvor 1. Mjesto: Nakladnik.");
     expect(result.orphanCitations).toBe(0);
   });
 
@@ -162,7 +162,7 @@ describe("deriveBibliography (DAN-619 c)", () => {
       expect(
         deriveBibliography(
           doc(
-            order.map((i) => sources[i]),
+            order.map((i) => sources[i]!),
             citations,
           ),
           style,
@@ -179,7 +179,7 @@ describe("deriveBibliography (DAN-619 c)", () => {
     );
     const before = canonicalizeJcs(d);
     const bibliography = deriveBibliography(d, style);
-    const shown = (d.nodes[1].children as CitationNode[]).map((c) =>
+    const shown = (d.nodes[1]!.children as CitationNode[]).map((c) =>
       formatCitation(c, bibliography, style),
     );
     const blank = ["(Prezime, 2020:  )", "(Prezime, 2020: \u2028)", "(Prezime, 2020: \u2029)"];
@@ -285,7 +285,7 @@ describe("year suffixes past z (DAN-619 c)", () => {
       (s) => s.yearSuffix,
     );
     expect(sorted.slice(24)).toEqual(["y", "z", "aa", "ab"]);
-    expect(formatCitationInText(assignYearSuffixes(titled(27))[26], style)).toBe(
+    expect(formatCitationInText(assignYearSuffixes(titled(27))[26]!, style)).toBe(
       "(Prezime, 2020aa)",
     );
   });
