@@ -1,15 +1,15 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { withActor as appWithActor } from "@/server/db";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { withActor as appWithActor } from "../database/index.ts";
 import { POST } from "../../../app/api/institution/teachers/[teacherId]/role-confirmation/route";
 import {
   handleTeacherRoleConfirmationRequest,
   MAX_TEACHER_ROLE_CONFIRMATION_BODY_BYTES,
-} from "./teacher-role-confirmation-route";
+} from "./teacher-role-confirmation-route.ts";
 
-vi.mock("@/server/db", () => ({ withActor: vi.fn() }));
+vi.mock("../database/index.ts", () => ({ withActor: vi.fn() }));
 const ORIGIN = "https://ductus.example";
 const CANDIDATE = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const OTHER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";

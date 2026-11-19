@@ -1,4 +1,4 @@
-import type { WithActor } from "@/server/db/with-actor";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * DAN-313 (M2.11-P01, contract on #1091, comment 6572435345): the overview of

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { WORK_TYPES, facultyRulesOf, readFacultyRules } from "./faculty-rules";
+import { WORK_TYPES, facultyRulesOf, readFacultyRules } from "./faculty-rules.ts";
 
 // Invented versions only; no institution, person or rule text from any faculty.
 const TOKEN = "T".repeat(43);

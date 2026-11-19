@@ -5,7 +5,7 @@ import {
   CHECKPOINT_HASHES_MAX,
   createWorkerCheckpointReader,
   type WorkerCheckpointQuery,
-} from "./checkpoint-reader";
+} from "./checkpoint-reader.ts";
 
 // Invented ids, texts and hashes (DAN-293, M3.3-P03). The bodies here do not
 // hash to their keys: the adapter never hashes, the reconstruction does.

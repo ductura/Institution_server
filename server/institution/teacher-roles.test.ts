@@ -1,9 +1,9 @@
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { readTeacherRoles, teacherRolesOf } from "./teacher-roles";
+import { readTeacherRoles, teacherRolesOf } from "./teacher-roles.ts";
 
 // Invented people and ids only.
 const TOKEN = "T".repeat(43);

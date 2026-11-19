@@ -1,15 +1,15 @@
-import { EDIT_STEP_FORMAT_V2 } from "@/domain/document/edit-step";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
-import type { AsyncEvidenceStepReplayerV2 } from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3 } from "@/domain/forensics/evidence-segment-v2";
+import { EDIT_STEP_FORMAT_V2 } from "../../domain/document/edit-step.ts";
+import { sha256WebCrypto } from "../../domain/forensics/crypto.ts";
+import type { AsyncEvidenceStepReplayerV2 } from "../../domain/forensics/evidence-replay-v2.ts";
+import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
 
-import { refuse } from "./edit-steps-v1-rules";
+import { refuse } from "./edit-steps-v1-rules.ts";
 import {
   editStepsV2Canonical,
   loadEditStepsV2Document,
   runEditStepsV2,
   type EditStepsV2Document,
-} from "./edit-steps-v2-rules";
+} from "./edit-steps-v2-rules.ts";
 
 /**
  * Browser entry of the `ductus-edit-steps-v2` replayer: the same rules and the

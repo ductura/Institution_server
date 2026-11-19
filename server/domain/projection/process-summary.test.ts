@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { findForbiddenTerms } from "../../../scripts/forbidden-terms/terms";
-import { EDIT_STEP_FORMAT_V1 } from "../document/edit-step";
-import { sha256WebCrypto } from "../forensics/crypto";
-import type { EvidenceChainHeadV2 } from "../forensics/evidence-chain-v2";
+import { findForbiddenTerms } from "../../../scripts/forbidden-terms/terms.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../document/edit-step.ts";
+import { sha256WebCrypto } from "../forensics/crypto.ts";
+import type { EvidenceChainHeadV2 } from "../forensics/evidence-chain-v2.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
@@ -13,14 +13,14 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSourceV2,
   type EvidenceStepV2,
-} from "../forensics/evidence-segment-v2";
-import { canonicalizeJcs } from "../forensics/jcs";
+} from "../forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs } from "../forensics/jcs.ts";
 import {
   EVIDENCE_KINDS,
   projectProcessSummary,
   PROCESS_SUMMARY_FORMAT_V1,
   type ProcessSummaryV1,
-} from "./process-summary";
+} from "./process-summary.ts";
 
 // Synthetic only: invented documents, sessions and Lorem ipsum text.
 type EventSpec = { source: EvidenceSourceV2; text: string; steps?: EvidenceStepV2[] };
