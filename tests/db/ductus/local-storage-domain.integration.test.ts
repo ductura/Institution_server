@@ -15,7 +15,7 @@ import {
   sigV4Authorization,
 } from "../../../server/external/storage/s3-signature.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-8 step 4b / DAN-83 (docs/BACKEND.md 4.1 and 4.13): the db/local script
 // gives an institution its storage domain in the local store of compose.yaml,
@@ -37,7 +37,7 @@ const credentials = {
 };
 const run = promisify(execFile);
 const SCRIPT = fileURLToPath(
-  new URL("../../db/local/evidence-storage-domain.mjs", import.meta.url),
+  new URL("../../../db/main/local/evidence-storage-domain.mjs", import.meta.url),
 );
 const suffix = randomBytes(5).toString("hex");
 const [own, other, regional] = ["own", "other", "regional"].map((name) => ({

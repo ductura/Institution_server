@@ -11,7 +11,7 @@ import { expect, it } from "vitest";
 const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const k3 = readFileSync(new URL("../../db/local/demo-k3.sql", import.meta.url), "utf8");
+const k3 = readFileSync(new URL("../../../db/main/local/demo-k3.sql", import.meta.url), "utf8");
 
 function requireLocalStack() {
   const url = new URL(ADMIN_URL);

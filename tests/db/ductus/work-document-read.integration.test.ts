@@ -9,7 +9,7 @@ import {
   readWorkDocument,
 } from "../../../server/evidence/work-document-read.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // #711 step B1 (attack plan items A2, A3, A4, A6, A7, A8, A10, A20): the
 // document /rad?zadatak=<id> writes into, read under the web role's RLS

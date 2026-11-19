@@ -4,7 +4,7 @@ import { join } from "node:path";
 import pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-709 (#87 c.6811814371): every table and every database function the
 // migrations leave behind has a place in the data-flow inventory
