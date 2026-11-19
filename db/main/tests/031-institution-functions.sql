@@ -350,32 +350,34 @@ FROM (VALUES
 ) AS v (n, arguments, what)
 ORDER BY v.n;
 
--- Plan 15 and 17, owner decision 1: wrong, expired, cancelled and foreign
--- codes get the very same answer, and each counts as an attempt.
-SELECT is(pg_temp.enroll('boris', v.code), '(refused,)', 'Boris: ' || v.what || ' is refused')
+-- Plan 15 and 17; owner answer A-2 of 19 Nov 2026 (SRV-05) replaced owner
+-- decision 1: an expired or cancelled code of the institution is told apart
+-- from a wrong or foreign one, and each counts as an attempt
+-- (143-enrollment-outcomes.sql).
+SELECT is(pg_temp.enroll('boris', v.code), v.answer, 'Boris: ' || v.what || ' is refused')
 FROM (VALUES
-  (1, 'AAAA-BBBB-CCCC-DDDD', 'a code that was never issued'),
-  (2, 'KOD-K2-ISTEKAO', 'the expired code of K2'),
-  (3, 'KOD-K1-STARI', 'the cancelled code of K1'),
-  (4, 'KOD-K3-TEST', 'the working code of a course at another institution')
-) AS v (n, code, what)
+  (1, 'AAAA-BBBB-CCCC-DDDD', 'a code that was never issued', '(invalid_code,)'),
+  (2, 'KOD-K2-ISTEKAO', 'the expired code of K2', '(expired_code,)'),
+  (3, 'KOD-K1-STARI', 'the cancelled code of K1', '(expired_code,)'),
+  (4, 'KOD-K3-TEST', 'the working code of a course at another institution', '(invalid_code,)')
+) AS v (n, code, what, answer)
 ORDER BY v.n;
 SELECT is(pg_temp.attempts('boris'), 4::bigint, 'each of the four refusals is counted');
 DELETE FROM institution.enrollment_attempt;
-SELECT is(pg_temp.enroll('boris', v.code), '(refused,)', 'Boris: ' || v.what || ' is refused')
+SELECT is(pg_temp.enroll('boris', v.code), v.answer, 'Boris: ' || v.what || ' is refused')
 FROM (VALUES
-  (1, NULL, 'no code'),
-  (2, '', 'an empty code'),
-  (3, repeat('A', 100000), 'a code of 100,000 characters'),
-  (4, 'KÖD-K1-TEST', 'a code with a letter outside A to Z'),
-  (5, 'KOD-K1-TEST', 'the code that Vesna replaced')
-) AS v (n, code, what)
+  (1, NULL, 'no code', '(invalid_code,)'),
+  (2, '', 'an empty code', '(invalid_code,)'),
+  (3, repeat('A', 100000), 'a code of 100,000 characters', '(invalid_code,)'),
+  (4, 'KÖD-K1-TEST', 'a code with a letter outside A to Z', '(invalid_code,)'),
+  (5, 'KOD-K1-TEST', 'the code that Vesna replaced', '(expired_code,)')
+) AS v (n, code, what, answer)
 ORDER BY v.n;
 SELECT is(pg_temp.memberships('boris', 'k1'), '-', 'after nine refusals Boris is in no course');
 DELETE FROM institution.enrollment_attempt;
 
 SELECT is(
-  pg_temp.enroll('tomo', (SELECT code FROM issued)), '(refused,)',
+  pg_temp.enroll('tomo', (SELECT code FROM issued)), '(invalid_code,)',
   'Tomo of another institution is refused with the working code of K1 (owner decision 1)'
 );
 SELECT is(pg_temp.memberships('tomo', 'k1') || ' ' || pg_temp.attempts('tomo'), '- 1', 'Tomo is no member and the attempt is counted');
@@ -403,19 +405,19 @@ SELECT is(
   'Boris holds the teacher role at the institution, yet in K1 he is a student and cannot issue a code'
 );
 SELECT is(
-  pg_temp.enroll('boris', (SELECT code FROM issued)), format('(enrolled,%s)', pg_temp.id('k1')),
-  'the same code again gives the same answer (plan 18)'
+  pg_temp.enroll('boris', (SELECT code FROM issued)), format('(already_enrolled,%s)', pg_temp.id('k1')),
+  'the same code again names the same course (plan 18), as already_enrolled (A-2)'
 );
 SELECT is(pg_temp.memberships('boris', 'k1') || ' ' || pg_temp.attempts('boris'), 'student 0', 'still one membership, and no attempt counted');
 SELECT is(
-  pg_temp.enroll('vesna', (SELECT code FROM issued)), format('(enrolled,%s)', pg_temp.id('k1')),
+  pg_temp.enroll('vesna', (SELECT code FROM issued)), format('(already_enrolled,%s)', pg_temp.id('k1')),
   'Vesna entering the code of her own course is told she is in'
 );
 SELECT is(pg_temp.memberships('vesna', 'k1'), 'teacher', 'and stays its teacher, with one membership');
 
 -- Plan 16, owner decision 2: five wrong codes, then even the right one is
 -- refused until the window has passed. Per user, and from the settings.
-SELECT is(pg_temp.enroll('nina', 'WRONG-CODE-' || n), '(refused,)', 'Nina: wrong code number ' || n || ' is refused')
+SELECT is(pg_temp.enroll('nina', 'WRONG-CODE-' || n), '(invalid_code,)', 'Nina: wrong code number ' || n || ' is refused')
 FROM generate_series(1, 5) AS n ORDER BY n;
 SELECT is(
   pg_temp.enroll('nina', (SELECT code FROM issued)), '(too_many_attempts,)',
@@ -426,7 +428,7 @@ SELECT is(
   pg_temp.memberships('nina', 'k1') || ' ' || pg_temp.attempts('nina'), '- 5',
   'Nina is no member; calls made while locked out are not counted, so the lock ends with the window'
 );
-SELECT is(pg_temp.enroll('dora', 'WRONG-CODE-1'), '(refused,)', 'the limit is per user: Dora is not locked out by Nina');
+SELECT is(pg_temp.enroll('dora', 'WRONG-CODE-1'), '(invalid_code,)', 'the limit is per user: Dora is not locked out by Nina');
 UPDATE institution.enrollment_attempt SET attempted_at = now() - interval '14 minutes 59 seconds' WHERE user_id = pg_temp.id('nina');
 SELECT is(pg_temp.enroll('nina', (SELECT code FROM issued)), '(too_many_attempts,)', 'one second before the window ends Nina is still locked out');
 UPDATE institution.enrollment_attempt SET attempted_at = now() - interval '15 minutes' WHERE user_id = pg_temp.id('nina');
@@ -442,21 +444,21 @@ SELECT is(
   pg_temp.ask('dora', $$ SELECT string_agg(e.outcome, ' ' ORDER BY g)
                          FROM generate_series(1, 7) AS g
                          CROSS JOIN LATERAL institution.enroll_with_code('WRONG-BURST-' || g) AS e $$),
-  'refused refused refused refused refused too_many_attempts too_many_attempts',
+  'invalid_code invalid_code invalid_code invalid_code invalid_code too_many_attempts too_many_attempts',
   'Dora: seven wrong codes in one statement stop at the fifth'
 );
 
 UPDATE institution.institution_settings SET enrollment_attempt_limit = 2, enrollment_attempt_window = '1 minute'
  WHERE institution_id = pg_temp.id('fak_b');
 DELETE FROM institution.enrollment_attempt;
-SELECT is(pg_temp.enroll('tomo', 'WRONG-CODE-' || n), '(refused,)', 'fak-b with a limit of two: wrong code number ' || n)
+SELECT is(pg_temp.enroll('tomo', 'WRONG-CODE-' || n), '(invalid_code,)', 'fak-b with a limit of two: wrong code number ' || n)
 FROM generate_series(1, 2) AS n ORDER BY n;
 SELECT is(pg_temp.enroll('tomo', 'KOD-K3-TEST'), '(too_many_attempts,)', 'the third call is locked out: the limit is the setting, not a constant');
 SELECT is(pg_temp.enroll('ana', 'WRONG-CODE-1') || pg_temp.enroll('ana', 'WRONG-CODE-2') || pg_temp.enroll('ana', 'WRONG-CODE-3'),
-          '(refused,)(refused,)(refused,)', 'fak-a keeps its own limit of five');
+          '(invalid_code,)(invalid_code,)(invalid_code,)', 'fak-a keeps its own limit of five');
 UPDATE institution.enrollment_attempt SET attempted_at = now() - interval '1 minute' WHERE user_id = pg_temp.id('tomo');
 SELECT is(
-  pg_temp.enroll('tomo', 'KOD-K3-TEST'), format('(enrolled,%s)', pg_temp.id('k3')),
+  pg_temp.enroll('tomo', 'KOD-K3-TEST'), format('(already_enrolled,%s)', pg_temp.id('k3')),
   'the window is the setting too: after one minute Tomo is told he is in K3'
 );
 SELECT is(pg_temp.memberships('tomo', 'k3'), 'student', 'with the one membership he already had');
@@ -567,7 +569,7 @@ SELECT is(
 SELECT is(pg_temp.ask('vesna', 'SELECT institution.remove_student({k1}, {ana})::text'), 'false', 'removing her again finds nothing to remove');
 
 -- The removed student and the code: refused exactly like a wrong code.
-SELECT is(pg_temp.enroll('ana', (SELECT code FROM issued)), '(refused,)', 'Ana, removed by the teacher, is refused with the working code of K1');
+SELECT is(pg_temp.enroll('ana', (SELECT code FROM issued)), '(invalid_code,)', 'Ana, removed by the teacher, is refused with the working code of K1');
 SELECT is(
   pg_temp.enroll('ana', (SELECT code FROM issued)), pg_temp.enroll('ana', 'AAAA-BBBB-CCCC-DDDD'),
   'and that answer is the answer to a code that was never issued'
@@ -579,7 +581,7 @@ SELECT is(
 SELECT is(
   pg_temp.enroll('ana', (SELECT code FROM issued)) || pg_temp.enroll('ana', (SELECT code FROM issued))
   || pg_temp.enroll('ana', (SELECT code FROM issued)),
-  '(refused,)(refused,)(too_many_attempts,)', 'so the limit stops her at the fifth attempt, as it stops anyone guessing'
+  '(invalid_code,)(invalid_code,)(too_many_attempts,)', 'so the limit stops her at the fifth attempt, as it stops anyone guessing'
 );
 DELETE FROM institution.enrollment_attempt;
 -- The code stays valid for everyone else, and a student who left alone
@@ -617,7 +619,7 @@ SELECT is(
 );
 SELECT is(pg_temp.ask('vesna', 'SELECT institution.allow_student_return({k1}, {ana})::text'), 'false', 'allowing it again finds nothing to allow');
 SELECT is(
-  pg_temp.memberships('ana', 'k1') || ' ' || pg_temp.enroll('ana', 'AAAA-BBBB-CCCC-DDDD'), 'student(ended) (refused,)',
+  pg_temp.memberships('ana', 'k1') || ' ' || pg_temp.enroll('ana', 'AAAA-BBBB-CCCC-DDDD'), 'student(ended) (invalid_code,)',
   'the permission alone enrols nobody, and a wrong code is still wrong'
 );
 SELECT is(
@@ -630,7 +632,7 @@ SELECT is(
 );
 SELECT is(
   pg_temp.ask('vesna', 'SELECT institution.remove_student({k1}, {ana})::text') || ' ' || pg_temp.enroll('ana', (SELECT code FROM issued)),
-  'true (refused,)', 'removed a second time she is refused again: the earlier permission does not cover a new removal'
+  'true (invalid_code,)', 'removed a second time she is refused again: the earlier permission does not cover a new removal'
 );
 DELETE FROM institution.enrollment_attempt;
 
@@ -701,7 +703,7 @@ ORDER BY v.n;
 SELECT is(pg_temp.ask('iva', 'SELECT institution.revoke_teacher_role({vesna})::text'), 'false', 'revoking it again finds nothing to revoke');
 -- QA of part 1 (b): an open membership that opens nothing is not "enrolled".
 SELECT is(
-  pg_temp.enroll('vesna', (SELECT code FROM issued)), '(refused,)',
+  pg_temp.enroll('vesna', (SELECT code FROM issued)), '(invalid_code,)',
   'Vesna entering the code of K1 is no longer told she is in: her membership opens nothing'
 );
 SELECT is(
@@ -750,7 +752,7 @@ SELECT is(
 -- A cancelled code stops working at once.
 SELECT is(pg_temp.ask('vesna', 'SELECT institution.revoke_enrollment_code({k1})::text'), 'true', 'Vesna cancels the code of K1');
 SELECT is(pg_temp.ask('vesna', 'SELECT institution.revoke_enrollment_code({k1})::text'), 'false', 'cancelling again finds nothing to cancel');
-SELECT is(pg_temp.enroll('iva', (SELECT code FROM issued)), '(refused,)', 'the cancelled code is refused like any wrong code');
+SELECT is(pg_temp.enroll('iva', (SELECT code FROM issued)), '(expired_code,)', 'the cancelled code is refused at once, as expired_code (A-2)');
 
 -- Plan 19 for the functions: a removed teacher manages nothing from then on.
 UPDATE institution.course_member SET member_to = now() WHERE user_id = pg_temp.id('vesna') AND course_id = pg_temp.id('k1');
