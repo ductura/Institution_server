@@ -183,6 +183,22 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  // The work language routes: the account teaches no assignment, so 403.
+  "institution.work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/work-language`,
+    body: () => ({ expectedVersion: 1, language: "en" }),
+    live: 403,
+  },
+  "institution.student-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/students/${STUDENT}/work-language`,
+    body: () => ({ language: "en" }),
+    live: 403,
+  },
+  "institution.work-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
+    body: () => ({ language: null }),
+    live: 403,
+  },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
   // account does not hold is 403. The old cookie's registration carries a
