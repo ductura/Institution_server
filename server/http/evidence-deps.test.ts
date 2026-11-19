@@ -278,8 +278,7 @@ describe("evidenceIngestDependencies: protocol 2 (asynchronous signing)", () => 
 
 // Ductus ingest-deps.test.ts and payload-reader.test.ts, on Ductura's form:
 // the dependencies are made once per process by server.ts (Ductus memoized
-// them in the factory), and an environment that throws on every read is no
-// signer and no storage, never a thrown error or a value in a message.
+// them in the factory), and a configuration value that throws is no storage.
 describe("evidenceIngestDependencies: one per process", () => {
   it("server.ts makes them once and hands the same ones to commit and replay", () => {
     const source = readFileSync(resolve(ROOT, "server/server.ts"), "utf8");
@@ -289,15 +288,30 @@ describe("evidenceIngestDependencies: one per process", () => {
     expect(source).toMatch(/createEvidenceReplayRouteFor\([^)]*evidenceDeps\)/);
   });
 
-  it("an environment that throws on every read is no signer and no storage", async () => {
-    const hostile = new Proxy({} as Record<string, string | undefined>, {
-      get: () => {
-        throw new Error("izmisljena-tajna-kanarinac");
+  // Ductus payload-reader.test.ts handed the reader an environment whose every
+  // read throws. Ductura copies the environment first ({ ...env }), so the
+  // hostile value is one that throws when the storage loader uses it: the
+  // fault comes from inside the loader, as in Ductus, and must be no storage.
+  it("a configuration value that throws when read is no storage, never a thrown error", async () => {
+    let trapped = 0;
+    const hostile = new Proxy(
+      {},
+      {
+        get: () => {
+          trapped += 1;
+          throw new Error("izmisljena-tajna-kanarinac");
+        },
       },
-    });
-    const deps = evidenceIngestDependencies(hostile, ROOT);
-    expect(deps.signer).toBe(REFUSING_SIGNER);
+    );
+    const deps = evidenceIngestDependencies(
+      { NODE_ENV: "test", [EVIDENCE_STORAGE_DOMAINS]: hostile as unknown as string },
+      ROOT,
+    );
+    expect(trapped).toBeGreaterThan(0);
     expect(deps.payloads).toBe(STORAGE_NOT_CONFIGURED);
-    expect(deps.asyncSigning).toBe(false);
+    expect(await deps.payloads.readImmutable(KEY.put)).toEqual({
+      status: "unavailable",
+      reason: "storage_not_configured",
+    });
   });
 });
