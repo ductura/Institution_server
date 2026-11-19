@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { MUTATION_GUARD } from "./shared.ts";
 import { END, Name } from "./teacher.ts";
 
 // Literal port of Ductus 078c780 src/components/student/my-assignments-read.ts
@@ -15,18 +16,51 @@ const Uuid = Type.String({
   pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
 });
 
+/** ISO 8601 UTC (Date.toISOString); Ductus accepts only UTC years 1000 to 9999 (validInstant). */
+const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
+
+// SRV-02 (Ductus#2028 c.7008147932, answer A-3): what "Moji zadaci" shows of a
+// course and an assignment. Each new member is optional on the wire, because
+// API v1 takes only optional new response fields (server/contracts/breaking.ts);
+// a server of @ductura/contracts 3.0.0 sends every one of them.
+const Person = { id: Uuid, givenName: Name, familyName: Name };
+/** A teacher of the course: its holder, or a collaborator (another teacher of the course team). */
+const CourseTeacher = closed({
+  ...Person,
+  role: Type.Union([Type.Literal("holder"), Type.Literal("collaborator")]),
+});
+/** A seminar group of the course the caller is in now. */
+const MyGroup = closed({ id: Uuid, name: Type.String({ minLength: 1 }) });
+const WorkType = Type.Union(
+  [
+    ...["short_paper", "essay", "seminar_paper", "bachelor_thesis", "master_thesis"],
+    ...["specialist_thesis", "doctoral_thesis"],
+  ].map((value) => Type.Literal(value)),
+);
+
 const MyAssignment = closed({
   id: Uuid,
   title: Type.String({ minLength: 1 }),
-  /** Due time, ISO 8601 UTC (Date.toISOString); Ductus accepts only UTC years 1000 to 9999 (validInstant). */
-  dueAt: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" }),
+  /** Due time of the current version. */
+  dueAt: Instant,
   /** The current version's notice is not acknowledged yet; the work opens it first. */
   noticeFirst: Type.Boolean(),
+  workType: Type.Optional(WorkType),
+  /** The caller's mentor for this assignment, or null when the work has none. */
+  mentor: Type.Optional(Type.Union([closed(Person), Type.Null()])),
+  /** A later due time granted to the caller alone, or null; never earlier than dueAt. */
+  extendedDueAt: Type.Optional(Type.Union([Instant, Type.Null()])),
 });
 
 const MyCourse = closed({
   id: Uuid,
   name: Type.String({ minLength: 1 }),
+  /** The academic year, as `2026/2027`. */
+  academicYear: Type.Optional(Type.String({ pattern: "^\\d{4}/\\d{4}$" })),
+  /** The caller's open seminar groups of the course, by name; possibly none. */
+  groups: Type.Optional(Type.Array(MyGroup)),
+  /** The course's teachers: the holder first, then collaborators by family and given name (hr collation), then id. */
+  teachers: Type.Optional(Type.Array(CourseTeacher)),
   assignments: Type.Array(MyAssignment),
 });
 
@@ -156,8 +190,46 @@ export const studentAssignmentWorkGet = defineRoute({
   errors: [error(401, "unauthorized"), error(503, "unavailable")],
 });
 
+// SRV-02 (Ductus#2028 c.7008147932, PO-7): the student has opened the notice
+// of an assignment version, before acknowledging it. A record of reading only:
+// it opens no work and replaces no acknowledgment (institution.acknowledgment.post).
+export const studentNoticeReadPost = defineRoute({
+  id: "student.notice-read.post",
+  method: "POST",
+  path: "/api/v1/student/assignments/{assignmentId}/notice-read",
+  inventory: "app/api/student/assignments/[assignmentId]/notice-read/route.ts",
+  access: "student_enrolled",
+  summary:
+    "Records that the caller read the notice of the given version of an assignment of their open student membership (PO-7). The body is exactly {versionNo}, at most 128 bytes, sent as application/json (charset utf-8 only). Idempotent: a repeated call answers the first readAt. A malformed assignment id is 400 invalid_assignment_id, judged before the session; another's assignment and an unknown one are the same 404 (C-23); a version that is no longer current is 409 conflict and nothing is recorded.",
+  request: {
+    params: closed({ assignmentId: Type.String({ minLength: 1 }) }),
+    contentType: "application/json",
+    maxBodyBytes: 128,
+    body: closed({ versionNo: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }) }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "read (now or before)",
+      body: closed({ readAt: Instant }),
+    },
+  ],
+  errors: [
+    ...MUTATION_GUARD,
+    error(400, "invalid_assignment_id"),
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(404, "not_found"),
+    error(409, "conflict"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const studentRoutes = [
   studentAssignmentsGet,
   studentAccessLogGet,
   studentAssignmentWorkGet,
+  studentNoticeReadPost,
 ] as const;
