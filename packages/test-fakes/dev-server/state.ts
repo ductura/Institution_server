@@ -91,6 +91,37 @@ export type Work = {
   readonly studentId: string;
   state: "in_progress" | "submitted";
   language: Language | null;
+  /** Revision of the saved text (evidence commits move it). */
+  revision: number;
+  lastChangeAt: string | null;
+  /** When the submission was asked for, or null. */
+  submittedAt: string | null;
+};
+
+export type Mentorship = {
+  readonly id: string;
+  readonly mentorId: string;
+  readonly studentId: string;
+  readonly assignmentId: string;
+  readonly title: string;
+  readonly workType: "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis";
+  documentId: string | null;
+};
+
+export type AccessEntry = {
+  readonly id: string;
+  readonly documentId: string;
+  readonly readerId: string;
+  readonly at: string;
+  readonly role: "teacher" | "mentor" | "seminar_teacher" | "unknown";
+  readonly surface:
+    "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown";
+};
+
+export type SettingValue = {
+  value: boolean | number | string | null;
+  bound: { locked: true } | { min?: number; max?: number } | null;
+  updatedAt: string;
 };
 
 export type State = {
@@ -102,6 +133,13 @@ export type State = {
   works: Work[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
+  mentorships: Mentorship[];
+  /** Openings of a work by a reader, newest last. */
+  accessLog: AccessEntry[];
+  /** Setting rows by "<level>:<course or ->:<owner>:<key>". */
+  settings: Map<string, SettingValue>;
+  /** Problem reports sent, by account id. */
+  reports: Map<string, number>;
 };
 
 /** Fixed, invented ids (UUID v4 form) of the starting data. */
@@ -118,6 +156,9 @@ export const IDS = {
   groupB: "9a000000-0000-4000-8000-00000000000b",
   assignment: "a5000000-0000-4000-8000-000000000001",
   document: "d0000000-0000-4000-8000-000000000001",
+  mentorship: "3e000000-0000-4000-8000-000000000001",
+  thesis: "a5000000-0000-4000-8000-000000000002",
+  accessEntry: "ac000000-0000-4000-8000-000000000001",
 } as const;
 
 /** The enrolment codes of the starting data (the fixed texts of SRV-01). */
@@ -216,9 +257,35 @@ export function createState(): State {
         studentId: IDS.student,
         state: "in_progress",
         language: null,
+        revision: 0,
+        lastChangeAt: "2026-11-09T19:55:00.000Z",
+        submittedAt: null,
       },
     ],
     enrollmentGuesses: new Map(),
+    mentorships: [
+      {
+        id: IDS.mentorship,
+        mentorId: IDS.teacher,
+        studentId: IDS.student,
+        assignmentId: IDS.thesis,
+        title: "Završni rad: zelene površine u izmišljenom gradu",
+        workType: "bachelor_thesis",
+        documentId: null,
+      },
+    ],
+    accessLog: [
+      {
+        id: IDS.accessEntry,
+        documentId: IDS.document,
+        readerId: IDS.teacher,
+        at: "2026-11-10T08:05:00.000Z",
+        role: "teacher",
+        surface: "fast_path",
+      },
+    ],
+    settings: new Map(),
+    reports: new Map(),
   };
 }
 

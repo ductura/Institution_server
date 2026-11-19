@@ -5,6 +5,9 @@ import "../guard/index.ts";
 
 import { ACCOUNT_HANDLERS } from "./account-routes.ts";
 import { INSTITUTION_HANDLERS } from "./institution-routes.ts";
+import { SETTINGS_HANDLERS } from "./settings-routes.ts";
+import { STUDENT_HANDLERS } from "./student-routes.ts";
+import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import type { Handlers } from "./server.ts";
 
 export {
@@ -33,4 +36,10 @@ export {
 } from "./state.ts";
 
 /** The answer of every route the dev fake server knows, by operation id. */
-export const DEV_HANDLERS: Handlers = { ...ACCOUNT_HANDLERS, ...INSTITUTION_HANDLERS };
+export const DEV_HANDLERS: Handlers = {
+  ...ACCOUNT_HANDLERS,
+  ...INSTITUTION_HANDLERS,
+  ...STUDENT_HANDLERS,
+  ...TEACHER_HANDLERS,
+  ...SETTINGS_HANDLERS,
+};

@@ -36,6 +36,8 @@ Računi (vrijednosti iz SRV-01 `seed-lokalni`, w1119r):
 | `administrator` | Vesna Upravić  | `institution_admin` | potvrđuje i opoziva nastavnike                               |
 | `bez-uloge`     | Iva Neimenić   | (nijedna)           | račun bez potvrđene uloge                                    |
 
+Mentorstvo: Petar Kranjčec je mentor završnog rada Lucije Đaković („Završni rad: zelene površine u izmišljenom gradu”, još nije započet). Brzi put nastavnika dodaje zapis u dnevnik pristupa koji student vidi.
+
 Kolegiji: „Izmišljeni seminar iz ekologije grada” (grupe A i B, zadatak „Seminarski rad: kućno kompostiranje”) i „Izmišljeni praktikum iz urbane sociologije” (bez zadatka). Kodovi za upis: `UPIS2026DEMO` (valjan), `STARI2025KOD` (istekao), `PRAZNI2026DEMO` (praktikum). Fiksni ID-ovi su `IDS` u [state.ts](state.ts).
 
 Pristup proizlazi iz odnosa u stanju (nastavnik kolegija, student u kolegiju), ne iz same uloge (C-23).
@@ -52,6 +54,7 @@ Pristup proizlazi iz odnosa u stanju (nastavnik kolegija, student u kolegiju), n
 - [server.ts](server.ts): `answerDev` (jedan zahtjev, bez mreže) i `createDevServer` (HTTP).
 - [state.ts](state.ts): stanje u memoriji i početni podaci (`createState`).
 - `*-routes.ts`: odgovori po području; tip `Handlers` veže svaki odgovor uz generirane tipove ugovora, pa `tsc` odbija odgovor krivog oblika.
-- [dev-server.test.ts](dev-server.test.ts): odgovori se provjeravaju prema shemama ugovora (`checkVectors`).
+- [work.ts](work.ts): izmišljeni zapis rada (blokovi teksta i sažetak procesa) za brzi put i sažetak.
+- [testing.ts](testing.ts): pomoćnici testova (`send`, `signIn`, `contractProblems`); uspješni odgovori se provjeravaju prema shemama ugovora (`checkVectors`).
 
 Ruta bez lažnog odgovora vraća 501 `not_implemented`. Paket se ne objavljuje (kao `/pglite`); koristi se iz ovog repoa.
