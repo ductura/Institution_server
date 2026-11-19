@@ -95,10 +95,14 @@ export const DAN_989: readonly string[] = ["student.assignment-work.get"];
 // contract now, handler in DAN-932), frozen the same way.
 export const DAN_931: readonly string[] = ["downloads.manifest.get"];
 
+// The operations of SRV-02 (the student's contracts of wave 2, Ductus#2028
+// c.7008147932: contract now, handlers in SRV-10), frozen the same way.
+export const SRV_02: readonly string[] = ["student.enrollments.post", "student.notice-read.post"];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...[...DAN_989, ...DAN_931],
+  ...[...DAN_989, ...DAN_931, ...SRV_02],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be

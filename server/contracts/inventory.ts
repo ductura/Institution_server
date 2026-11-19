@@ -117,6 +117,16 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-6993786629",
   },
+  // SRV-02 (Ductus#2028 c.7008147932, A-2): the outcomes of enrolment told apart.
+  "app/api/student/enrollments/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
+  // SRV-02 (Ductus#2028 c.7008147932, PO-7): Ductus has no record of reading a notice.
+  "app/api/student/assignments/[assignmentId]/notice-read/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -152,6 +162,8 @@ export const CONTRACT_ONLY: readonly string[] = [
   "settings.values.get",
   "student.access-log.get",
   "student.assignment-work.get",
+  "student.notice-read.post",
+  "student.enrollments.post",
 ];
 
 /**
