@@ -25,6 +25,7 @@ import {
   createMeRouteFor,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
+  createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
@@ -174,6 +175,20 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  // SRV-13: the teacher's reads. An account without the teacher role reads
+  // 404 from list_teacher_courses and "denied" from the access check.
+  "teacher.courses.get": {
+    method: "GET",
+    path: "/api/v1/teacher/courses",
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.access.get": {
+    method: "GET",
+    path: "/api/v1/teacher/access",
+    body: () => undefined,
+    live: 200,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -192,6 +207,7 @@ const FACTORIES = [
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createMeRouteFor",
+  "createTeacherReadRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
   "routesOf",
@@ -210,6 +226,7 @@ const MOUNTED = [
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createMeRouteFor(databases.main),
+  ...createTeacherReadRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
   ...routesOf(AREA_NAMES),
