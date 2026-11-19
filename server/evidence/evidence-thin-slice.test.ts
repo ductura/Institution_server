@@ -81,7 +81,7 @@ const insertedText = (step: EvidenceEventV2["steps"][number]) =>
   (step.slice as InsertTextSlice | undefined)?.content[0]?.text;
 /** Changes the text an `insertText` step inserts, in place. */
 const setInsertedText = (step: EvidenceEventV2["steps"][number], text: string) => {
-  (step.slice as InsertTextSlice).content[0].text = text;
+  (step.slice as InsertTextSlice).content[0]!.text = text;
 };
 
 /**
@@ -108,7 +108,7 @@ const textReplayer: EvidenceStepReplayerV2<ReplayDocument> = {
       ) {
         throw new Error("unsupported step");
       }
-      const [node] = step.slice.content;
+      const node = step.slice.content[0]!;
       if (node.type !== "text" || node.marks !== undefined) throw new Error("unsupported step");
       const payload = {
         kind: "insert-text",
@@ -158,7 +158,7 @@ async function buildSegment(
     const event: EvidenceEventV2 = {
       sequence: sequenceFrom + index,
       source: "editor",
-      steps: [insertText(document.nodes[0].text.length, text)],
+      steps: [insertText(document.nodes[0]!.text.length, text)],
       touchedNodeIds: [NODE],
       beforeDocumentHash: hash,
       afterDocumentHash: hash,
@@ -257,7 +257,7 @@ async function ingestChain(
   const documents: ReplayDocument[] = [];
   for (const [index, text] of texts.entries()) {
     if (index === breakAt) {
-      const before = await reconstruct(env, documents[index - 1], { initial: from });
+      const before = await reconstruct(env, documents[index - 1]!, { initial: from });
       if (startAt === 1) expect(before.status).toBe("match");
       else expect(before).toEqual(startBreak(startAt, false));
     }
@@ -285,8 +285,8 @@ type Overrides = {
   payloads?: EvidencePayloadReader;
   signer?: Pick<SigningKeyProvider, "verify">;
   replayer?: EvidenceStepReplayerV2<ReplayDocument>;
-  initial?: ReplayDocument;
-  packageId?: string;
+  initial?: ReplayDocument | undefined;
+  packageId?: string | undefined;
 };
 
 /** `expected` is passed as given, so its key order is the caller's, not the replayer's. */
@@ -340,12 +340,12 @@ function payloadWith(env: Env, segmentHash: string, bytes: Uint8Array | null): O
 
 /** Canonical bytes of a valid segment that says something else at chain position `at`. */
 async function forgedBytes({ hashes, documents }: Chain, at: number, text: string) {
-  const forged = await buildSegment(at + 1, documents[at - 1], [text], hashes[at - 1]);
+  const forged = await buildSegment(at + 1, documents[at - 1]!, [text], hashes[at - 1]!);
   return utf8(canonicalEvidenceSegmentV2(forged.segment));
 }
 
 async function rewrittenReceipt(env: Env, at = 0) {
-  const original = env.repository.records()[at].signedReceipt;
+  const original = env.repository.records()[at]!.signedReceipt;
   if (!original) throw new Error("fixture: receipt not signed");
   const payload = { ...original.payload, acceptedAt: "2026-10-11T08:45:00.000Z" };
   return {
@@ -362,14 +362,14 @@ const TAMPERING: [name: string, reason: string, index: number | null, tamper: Ta
     "predecessor_mismatch",
     2,
     async (env, c) =>
-      payloadWith(env, c.hashes[1], await forgedBytes(c, 1, "Naknadno izmijenjen dio. ")),
+      payloadWith(env, c.hashes[1]!, await forgedBytes(c, 1, "Naknadno izmijenjen dio. ")),
   ],
   [
     "a changed last segment",
     "head_mismatch",
     null,
     async (env, c) =>
-      payloadWith(env, c.hashes[2], await forgedBytes(c, 2, "Drugačiji završetak.")),
+      payloadWith(env, c.hashes[2]!, await forgedBytes(c, 2, "Drugačiji završetak.")),
   ],
   [
     "stored bytes that are no longer canonical",
@@ -378,15 +378,15 @@ const TAMPERING: [name: string, reason: string, index: number | null, tamper: Ta
     (env, c) =>
       payloadWith(
         env,
-        c.hashes[1],
-        utf8(`${env.payloadStore.get(PACKAGE, c.hashes[1])?.canonicalPayload} `),
+        c.hashes[1]!,
+        utf8(`${env.payloadStore.get(PACKAGE, c.hashes[1]!)?.canonicalPayload} `),
       ),
   ],
   [
     "a payload deleted from storage",
     "missing_payload",
     0,
-    (env, c) => payloadWith(env, c.hashes[0], null),
+    (env, c) => payloadWith(env, c.hashes[0]!, null),
   ],
   [
     "the first segment removed",
@@ -398,7 +398,7 @@ const TAMPERING: [name: string, reason: string, index: number | null, tamper: Ta
     "a segment removed from the middle",
     "predecessor_mismatch",
     1,
-    (env) => chainWith(env, (s) => [s[0], s[2]]),
+    (env) => chainWith(env, (s) => [s[0]!, s[2]!]),
   ],
   [
     "the last segment removed",
@@ -410,19 +410,19 @@ const TAMPERING: [name: string, reason: string, index: number | null, tamper: Ta
     "reordered segments",
     "predecessor_mismatch",
     1,
-    (env) => chainWith(env, (s) => [s[0], s[2], s[1]]),
+    (env) => chainWith(env, (s) => [s[0]!, s[2]!, s[1]!]),
   ],
   [
     "a receipt that is still unsigned",
     "receipt_missing",
     1,
-    (env) => chainWith(env, (s) => [s[0], { ...s[1], receipt: null }, s[2]]),
+    (env) => chainWith(env, (s) => [s[0]!, { ...s[1]!, receipt: null }, s[2]!]),
   ],
   [
     "a receipt that belongs to another segment",
     "receipt_mismatch",
     1,
-    (env) => chainWith(env, (s) => [s[0], { ...s[1], receipt: s[2].receipt }, s[2]]),
+    (env) => chainWith(env, (s) => [s[0]!, { ...s[1]!, receipt: s[2]!.receipt }, s[2]!]),
   ],
   [
     "a receipt whose acceptance time was rewritten",
@@ -430,7 +430,7 @@ const TAMPERING: [name: string, reason: string, index: number | null, tamper: Ta
     0,
     async (env) => {
       const receipt = await rewrittenReceipt(env);
-      return chainWith(env, (s) => [{ ...s[0], receipt }, s[1], s[2]]);
+      return chainWith(env, (s) => [{ ...s[0]!, receipt }, s[1]!, s[2]!]);
     },
   ],
   [
@@ -518,6 +518,14 @@ const TAMPERING: [name: string, reason: string, index: number | null, tamper: Ta
 const broken = (reason: string, index: number | null) => ({ status: "mismatch", reason, index });
 const otherKey = () => new DevelopmentEd25519SigningKeyProvider("b14-test-key", "v1");
 const outage = { verify: () => Promise.reject(new Error("synthetic signer outage")) };
+// Ductura's SigningKeyProvider answers a Result. A refusal means the key or the
+// KMS could not be reached, which Ductus threw: still an outage, never a verdict.
+const refusal = {
+  verify: async () => ({
+    ok: false as const,
+    error: { code: "SIGNER_UNAVAILABLE", messageKey: "izmisljeni.kljuc" },
+  }),
+};
 const SIX = ["Jedan. ", "Dva. ", "Tri. ", "Četiri. ", "Pet. ", "Šest."];
 /** What `ingestChain(env, SIX, 4)` reconstructs to while nothing else is wrong. */
 const BREAK = {
@@ -563,7 +571,7 @@ type FaultRow = {
 const driftedReplayer: EvidenceStepReplayerV2<ReplayDocument> = {
   ...textReplayer,
   apply: (document, event) => {
-    const [step] = event.steps;
+    const step = event.steps[0]!;
     if (insertedText(step) !== SIX[1]) return textReplayer.apply(document, event);
     const changed = structuredClone(step);
     setInsertedText(changed, "Drugo. ");
@@ -571,7 +579,10 @@ const driftedReplayer: EvidenceStepReplayerV2<ReplayDocument> = {
   },
 };
 const receiptOf =
-  (segmentHash: string, receipt: AcceptedEvidenceSegment["receipt"]): Fault["listing"] =>
+  (
+    segmentHash: string,
+    receipt: AcceptedEvidenceSegment["receipt"],
+  ): NonNullable<Fault["listing"]> =>
   (segments) =>
     segments.map((entry) => (entry.segmentHash === segmentHash ? { ...entry, receipt } : entry));
 
@@ -596,13 +607,13 @@ const FAULTS: FaultRow[] = [
   {
     name: "a payload deleted from storage",
     outcome: broken("missing_payload", 0),
-    plant: (_env, c) => ({ stored: [c.hashes[0], null] }),
+    plant: (_env, c) => ({ stored: [c.hashes[0]!, null] }),
   },
   {
     name: "a changed segment",
     outcome: broken("predecessor_mismatch", 2),
     plant: async (_env, c) => ({
-      stored: [c.hashes[1], await forgedBytes(c, 1, "Naknadno izmijenjen dio. ")],
+      stored: [c.hashes[1]!, await forgedBytes(c, 1, "Naknadno izmijenjen dio. ")],
     }),
   },
   {
@@ -629,7 +640,7 @@ const FAULTS: FaultRow[] = [
   {
     name: "a missing receipt",
     outcome: broken("receipt_missing", 0),
-    plant: (_env, c) => ({ listing: receiptOf(c.hashes[0], null) }),
+    plant: (_env, c) => ({ listing: receiptOf(c.hashes[0]!, null) }),
   },
   {
     name: "another key",
@@ -639,7 +650,7 @@ const FAULTS: FaultRow[] = [
   {
     name: "a wrong signature",
     outcome: broken("receipt_signature_invalid", 2),
-    plant: async (env, c) => ({ listing: receiptOf(c.hashes[2], await rewrittenReceipt(env, 2)) }),
+    plant: async (env, c) => ({ listing: receiptOf(c.hashes[2]!, await rewrittenReceipt(env, 2)) }),
   },
   {
     name: "a gap at the start",
@@ -747,9 +758,12 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
       algorithm: "Ed25519",
       keyId: "b14-test-key",
     });
-    expect(await env.signer.verify(receiptDigest.bytes, outcome.receipt.signature)).toBe(true);
+    expect(await env.signer.verify(receiptDigest.bytes, outcome.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
 
-    expect(built.document.nodes[0].text).toBe("Izmišljeni tekst za provjeru prolaza.");
+    expect(built.document.nodes[0]!.text).toBe("Izmišljeni tekst za provjeru prolaza.");
     // Same document with another key order: the comparison is canonical, not textual.
     const target = { nodes: [{ text: "Izmišljeni tekst za provjeru prolaza.", id: NODE }] };
     expect(await reconstruct(env, target)).toEqual({
@@ -762,7 +776,7 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
   it("reconstructs a chain of segments and blocks a target that differs", async () => {
     const env = setup();
     const { target, hashes } = await ingestChain(env);
-    expect(target.nodes[0].text).toBe(THREE.join(""));
+    expect(target.nodes[0]!.text).toBe(THREE.join(""));
     expect(await reconstruct(env, target)).toMatchObject({
       status: "match",
       head: { segmentHash: hashes[2], segmentCount: 3 },
@@ -788,7 +802,7 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
   it("fails replay when the steps do not produce the recorded document hash", async () => {
     const env = setup();
     const built = await buildSegment(1, EMPTY, ["Izvorni tekst."], null);
-    setInsertedText(built.segment.events[0].steps[0], "Podmetnuti tekst.");
+    setInsertedText(built.segment.events[0]!.steps[0]!, "Podmetnuti tekst.");
     // Ingest does not replay steps, so the segment is accepted and signed.
     expect((await ingestSegment(env, built.segment)).outcome.status).toBe("accepted");
     for (const text of ["Izvorni tekst.", "Podmetnuti tekst."]) {
@@ -804,7 +818,7 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
     [
       "a step outside the text",
       "step_failed",
-      (s) => void Object.assign(s.events[0].steps[0], { from: 100, to: 100 }),
+      (s) => void Object.assign(s.events[0]!.steps[0]!, { from: 100, to: 100 }),
     ],
   ])("fails closed for %s", async (_name, reason, spoil) => {
     const env = setup();
@@ -826,7 +840,7 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
     captureContext: Record<string, unknown>;
   };
   it.each<[string, (segment: Loose) => void]>([
-    ["a step with an unknown field", (s) => void (s.events[0].steps[0].authorId = STRANGER)],
+    ["a step with an unknown field", (s) => void (s.events[0]!.steps[0]!.authorId = STRANGER)],
     [
       "a transaction format without a replayer",
       (s) => void (s.captureContext.transactionFormat = "prosemirror-step-json-v1"),
@@ -840,15 +854,17 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
 
     const chain = await ingestChain(env);
     const stored = JSON.parse(
-      env.payloadStore.get(PACKAGE, chain.hashes[1])?.canonicalPayload ?? "null",
+      env.payloadStore.get(PACKAGE, chain.hashes[1]!)?.canonicalPayload ?? "null",
     );
     spoil(stored);
     const bytes = utf8(canonicalizeJcs(stored));
-    expect(await reconstruct(env, chain.target, payloadWith(env, chain.hashes[1], bytes))).toEqual({
-      status: "mismatch",
-      reason: "invalid_segment",
-      index: 1,
-    });
+    expect(await reconstruct(env, chain.target, payloadWith(env, chain.hashes[1]!, bytes))).toEqual(
+      {
+        status: "mismatch",
+        reason: "invalid_segment",
+        index: 1,
+      },
+    );
   });
 
   // Z7 (#155): a stored record with a surplus step field is an invalid
@@ -860,16 +876,18 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
     const env = setup();
     const chain = await ingestChain(env);
     const stored = JSON.parse(
-      env.payloadStore.get(PACKAGE, chain.hashes[1])?.canonicalPayload ?? "null",
+      env.payloadStore.get(PACKAGE, chain.hashes[1]!)?.canonicalPayload ?? "null",
     );
     stored.events[0].steps[0][key] = value;
     const bytes = utf8(canonicalizeJcs(stored));
 
-    expect(await reconstruct(env, chain.target, payloadWith(env, chain.hashes[1], bytes))).toEqual({
-      status: "mismatch",
-      reason: "invalid_segment",
-      index: 1,
-    });
+    expect(await reconstruct(env, chain.target, payloadWith(env, chain.hashes[1]!, bytes))).toEqual(
+      {
+        status: "mismatch",
+        reason: "invalid_segment",
+        index: 1,
+      },
+    );
   });
 
   it("reports a break in the event sequence instead of replaying across it", async () => {
@@ -901,7 +919,7 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
     [
       "a signature that does not verify",
       broken("receipt_signature_invalid", 0),
-      () => ({ signer: { verify: async () => false } }),
+      () => ({ signer: { verify: async () => ({ ok: true as const, value: false }) } }),
     ],
     [
       "receipts signed by another key",
@@ -925,6 +943,15 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
       "a signer outage",
       { status: "unavailable", stage: "verification", reason: "synthetic signer outage" },
       () => ({ signer: outage }),
+    ],
+    [
+      "a signer that refuses to verify",
+      {
+        status: "unavailable",
+        stage: "verification",
+        reason: "signature verification unavailable",
+      },
+      () => ({ signer: refusal }),
     ],
   ])(
     "reports %s on a record with a sequence break, not the break",
@@ -1023,7 +1050,10 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
       }
       // A break at the start waits for the receipts like any other break.
       expect(
-        await reconstruct(env, chain.target, { initial, signer: { verify: async () => false } }),
+        await reconstruct(env, chain.target, {
+          initial,
+          signer: { verify: async () => ({ ok: true as const, value: false }) },
+        }),
       ).toEqual(broken("receipt_signature_invalid", 0));
       expect(await reconstruct(env, chain.target, { initial, signer: outage })).toMatchObject({
         status: "unavailable",
@@ -1054,12 +1084,12 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
   });
 
   it.each<[string, (head: EvidenceChainHeadV2, chain: Chain) => EvidenceChainHeadV2]>([
-    ["behind the last segment", (_head, c) => ({ segmentHash: c.hashes[1], segmentCount: 2 })],
+    ["behind the last segment", (_head, c) => ({ segmentHash: c.hashes[1]!, segmentCount: 2 })],
     ["ahead of the last segment", (head) => ({ ...head, segmentCount: 4 })],
     ["at the last hash with an earlier count", (head) => ({ ...head, segmentCount: 2 })],
     [
       "at an earlier hash with the full count",
-      (head, c) => ({ ...head, segmentHash: c.hashes[1] }),
+      (head, c) => ({ ...head, segmentHash: c.hashes[1]! }),
     ],
     ["at a hash that was never accepted", (head) => ({ ...head, segmentHash: "0".repeat(64) })],
   ])("blocks a head that points %s", async (_name, move) => {
@@ -1076,7 +1106,7 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
         },
       },
     };
-    for (const target of [chain.target, chain.documents[1]]) {
+    for (const target of [chain.target, chain.documents[1]!]) {
       expect(await reconstruct(env, target, moved)).toEqual(broken("head_mismatch", null));
     }
   });
@@ -1103,9 +1133,11 @@ describe("thin critical path: ingest, signed receipt, reconstruction, JCS compar
         broken("invalid_document", null),
       );
       // A fault of the record is not hidden by a target that cannot be compared.
-      expect(await reconstruct(env, invalid, { signer: { verify: async () => false } })).toEqual(
-        broken("receipt_signature_invalid", 0),
-      );
+      expect(
+        await reconstruct(env, invalid, {
+          signer: { verify: async () => ({ ok: true as const, value: false }) },
+        }),
+      ).toEqual(broken("receipt_signature_invalid", 0));
     },
   );
 

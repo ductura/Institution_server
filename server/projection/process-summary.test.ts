@@ -10,13 +10,15 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
 } from "../domain/forensics/evidence-segment-v2.ts";
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
-import { STORAGE_NOT_CONFIGURED } from "@/server/evidence/payload-reader";
+// Ductura ports Ductus src/server/evidence/payload-reader.ts STORAGE_NOT_CONFIGURED
+// in server/http/evidence-deps.ts (DAN-815 c), the same value.
+import { STORAGE_NOT_CONFIGURED } from "../http/evidence-deps.ts";
 
 import {
   handleProcessSummaryRequest,
   loadProcessSummaryThresholds,
   type ProcessSummaryRouteDeps,
-} from "./process-summary";
+} from "./process-summary.ts";
 
 // Synthetic only: invented ids, Ana (owner) and Vesna (teacher), Lorem ipsum.
 const ORIGIN = "http://localhost:3000";
@@ -75,7 +77,7 @@ async function record(documentId = DOCUMENT) {
     await store.putImmutable({
       institutionId: FAK_A,
       evidencePackageId: PACKAGE,
-      segmentHash: hashes[i],
+      segmentHash: hashes[i]!,
       canonicalPayload,
     });
   }
@@ -109,7 +111,7 @@ function post(body: unknown, headers: Record<string, string> = {}, method = "POS
       "content-type": "application/json",
       ...headers,
     },
-    body: method === "POST" ? (typeof body === "string" ? body : JSON.stringify(body)) : undefined,
+    ...(method === "POST" ? { body: typeof body === "string" ? body : JSON.stringify(body) } : {}),
   });
 }
 
@@ -146,7 +148,8 @@ describe("process summary route: one body for the owner and the teacher (B-13, D
         ),
       );
     }
-    const [ana, vesna] = answers;
+    const ana = answers[0]!;
+    const vesna = answers[1]!;
     expect(ana.status).toBe(200);
     expect(ana.headers.get("cache-control")).toBe("no-store");
     expect(ana.headers.get("content-type")).toBe("application/json; charset=utf-8");

@@ -55,7 +55,11 @@ function database(answer: Answer, session: "open" | "closed" | "down" = "open") 
 }
 
 /** A same-origin PUT with If-Match; a header given as null is left out. */
-function put(body: BodyInit | null = BYTES, headers: Record<string, string | null> = {}): Request {
+// Ductura has no DOM lib: the body type of the Fetch API from @types/node.
+function put(
+  body: RequestInit["body"] = BYTES,
+  headers: Record<string, string | null> = {},
+): Request {
   const all: Record<string, string | null> = {
     origin: ORIGIN,
     "sec-fetch-site": "same-origin",
@@ -88,7 +92,7 @@ function get(headers: Record<string, string | null> = {}, method = "GET"): Reque
 }
 
 // `token` given as undefined means no cookie; left out, the cookie is TOKEN.
-type Options = { token?: string; documentId?: string };
+type Options = { token?: string | undefined; documentId?: string };
 const tokenOf = (options: Options) => ("token" in options ? options.token : TOKEN);
 const publish = (db: ReturnType<typeof database>, request = put(), options: Options = {}) =>
   handleLivePublishRequest(request, options.documentId ?? DOC, {
@@ -115,13 +119,13 @@ describe("PUT /api/live/[documentId]: publish the last state (BACKEND 4.12 point
       "SELECT user_id, institution_id FROM app.current_actor()",
       "SELECT outcome, write_token FROM collaboration.publish_live_state($1, $2, $3)",
     ]);
-    expect(db.calls[1].values).toStrictEqual([DOC, WRITE, TEXT]);
+    expect(db.calls[1]!.values).toStrictEqual([DOC, WRITE, TEXT]);
   });
 
   it("sends a NULL token for If-None-Match: * and maps unchanged and conflict", async () => {
     const first = database({ rows: [{ outcome: "accepted", write_token: NEXT }] });
     await publish(first, put(BYTES, { "if-match": null, "if-none-match": "*" }));
-    expect(first.calls[1].values[1]).toBeNull();
+    expect(first.calls[1]!.values[1]).toBeNull();
 
     const cases: [Record<string, unknown>, number, unknown][] = [
       [{ outcome: "unchanged", write_token: WRITE }, 200, { outcome: "unchanged", token: WRITE }],
@@ -301,7 +305,7 @@ describe("GET /api/live/[documentId]: one reading for the owner and the teacher 
       `"${HASH}"`,
       "",
     ]);
-    expect(known.calls[0].values).toStrictEqual([DOC, HASH]);
+    expect(known.calls[0]!.values).toStrictEqual([DOC, HASH]);
   });
 
   it("gives the owner and the teacher the same status, bytes and ETag", async () => {
@@ -337,7 +341,7 @@ describe("GET /api/live/[documentId]: one reading for the owner and the teacher 
     ]) {
       const db = database({ rows: [{ outcome: "state", content_hash: HASH, body: TEXT }] });
       await read(db, get({ "if-none-match": header }));
-      expect(db.calls[0].values).toStrictEqual([DOC, null]);
+      expect(db.calls[0]!.values).toStrictEqual([DOC, null]);
     }
   });
 
@@ -388,7 +392,7 @@ describe("GET /api/live/[documentId]: one reading for the owner and the teacher 
       same.headers.get("ductus-live-state"),
       await same.text(),
     ]).toStrictEqual([304, `"${HASH}"`, "submitted", ""]);
-    expect(known.calls[0].values).toStrictEqual([DOC, HASH]);
+    expect(known.calls[0]!.values).toStrictEqual([DOC, HASH]);
 
     // A live state carries no mark.
     const live = await read(
