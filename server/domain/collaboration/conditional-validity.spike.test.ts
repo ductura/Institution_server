@@ -8,7 +8,10 @@ import {
   type ValidityCondition,
 } from "./conditional-validity.ts";
 
-function makeCondition(overrides: Partial<ValidityCondition> = {}): ValidityCondition {
+// An override may set a field to undefined to drop it (exactOptionalPropertyTypes).
+type ConditionOverrides = { [K in keyof ValidityCondition]?: ValidityCondition[K] | undefined };
+
+function makeCondition(overrides: ConditionOverrides = {}): ValidityCondition {
   return {
     kind: "text_range",
     revision_id: "rev-1",
@@ -18,7 +21,7 @@ function makeCondition(overrides: Partial<ValidityCondition> = {}): ValidityCond
     accepted_at: "2026-10-13T00:00:00Z",
     accepted_by: "teacher-1",
     ...overrides,
-  };
+  } as ValidityCondition;
 }
 
 describe("conditional-validity spike (S-UV1)", () => {

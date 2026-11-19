@@ -117,7 +117,7 @@ const document = fc
     // Point most generated citations at the sources that exist; the rest stay orphans.
     blocks.flat().forEach((child, i) => {
       if (child.type === "citation" && sources.length > 0 && picks[i] !== null) {
-        (child as { sourceId: string }).sourceId = sourceId(picks[i] % sources.length);
+        (child as { sourceId: string }).sourceId = sourceId(picks[i]! % sources.length);
       }
     });
     return {
