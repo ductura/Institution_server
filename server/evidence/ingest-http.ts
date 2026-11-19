@@ -1,0 +1,126 @@
+// Port of Ductus src/server/evidence/ingest-http.ts at 0cdb0f1, copied for
+// submission-route.ts (ZEL-S2). Only the imports changed: Ductura paths, and the
+// principal is read through the ActorReader port over the same withActor.
+import { DUCTUS_PROTOCOL_VERSION } from "../domain/evidence/commit-envelope.ts";
+import { createActorReader } from "../database/current-actor.ts";
+import { sessionPrincipal } from "../session/principal.ts";
+import type { WithActor } from "../database/with-actor.ts";
+import {
+  checkMutationRequest,
+  declaredLengthRefusal,
+  readBodyWithLimit,
+} from "../http/fetch-mutation-request.ts";
+import { codesLog } from "../log/index.ts";
+
+/**
+ * What both evidence routes do before and while reading a body (BACKEND 4.13
+ * t. 1): every check from the headers comes before a single body byte is
+ * read, and every answer is JSON with no echo of the input and no caching.
+ */
+
+const TOKEN = /^[A-Za-z0-9_-]{43}$/;
+
+export type Log = (message: string, ...codes: string[]) => void;
+
+/** One redacted JSON line per call (DAN-586); the name stays for the routes that default to it. */
+export const consoleLog: Log = codesLog;
+
+export function reply(
+  status: number,
+  body: Record<string, unknown>,
+  headers: Record<string, string> = {},
+): Response {
+  return Response.json(body, { status, headers: { ...headers, "cache-control": "no-store" } });
+}
+
+export function unavailable(stage: string): Response {
+  return reply(503, { status: "unavailable", stage }, { "retry-after": "5" });
+}
+
+export type GuardedRequest =
+  | { ok: true; token: string; bytes: Uint8Array; protocol: string }
+  | { ok: false; response: Response };
+
+/**
+ * Method, origin, protocol, media type and session cookie from the headers,
+ * then the body as raw bytes under a byte and a time limit. With
+ * `liveSession`, the session is asked of the database before the first body
+ * byte (F-098): a large body is never held for a cookie that only has the
+ * right form. A closed, expired or unknown session is 401, a database that
+ * cannot answer is 503 `context`. `protocols` are the exact header values
+ * the route takes; any other value, a repeated header included, is 426.
+ */
+export async function readGuardedBody(
+  request: Request,
+  expectedOrigin: string | null,
+  sessionToken: string | undefined,
+  limits: {
+    maxBytes: number;
+    timeoutMs: number;
+    liveSession?: WithActor;
+    protocols?: readonly string[];
+  },
+): Promise<GuardedRequest> {
+  const refuse = (response: Response) => ({ ok: false, response }) as const;
+  if (expectedOrigin === null) return refuse(unavailable("context"));
+  let allowed;
+  try {
+    allowed = checkMutationRequest(request, expectedOrigin);
+  } catch {
+    return refuse(unavailable("context"));
+  }
+  if (!allowed.ok) {
+    return refuse(
+      reply(allowed.status, {
+        status: allowed.status === 405 ? "method_not_allowed" : "forbidden",
+      }),
+    );
+  }
+  const protocol = request.headers.get("ductus-protocol");
+  if (protocol === null || !(limits.protocols ?? [DUCTUS_PROTOCOL_VERSION]).includes(protocol)) {
+    return refuse(reply(426, { status: "upgrade_required" }));
+  }
+  if (
+    request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
+  ) {
+    return refuse(reply(415, { status: "unsupported_media_type" }));
+  }
+  if (sessionToken === undefined || !TOKEN.test(sessionToken))
+    return refuse(reply(401, { status: "unauthenticated" }));
+  // A declared length that readBodyWithLimit refuses unread needs no database either.
+  if (
+    limits.liveSession !== undefined &&
+    declaredLengthRefusal(request, limits.maxBytes) === null
+  ) {
+    const principal = await sessionPrincipal(sessionToken, createActorReader(limits.liveSession));
+    if (principal.kind === "signed-out") return refuse(reply(401, { status: "unauthenticated" }));
+    if (principal.kind !== "signed-in") return refuse(unavailable("context"));
+  }
+  const body = await readBodyWithLimit(request, limits.maxBytes, limits.timeoutMs);
+  if (!body.ok) {
+    const status =
+      body.status === 413 ? "too_large" : body.status === 408 ? "timeout" : "bad_request";
+    return refuse(reply(body.status, { status }));
+  }
+  return { ok: true, token: sessionToken, bytes: body.bytes, protocol };
+}
+
+/**
+ * A JSON object with exactly the given keys, from strict UTF-8: a byte order
+ * mark stays a character and fails the parse. Anything else is null.
+ */
+export function parseClosedObject(
+  bytes: Uint8Array,
+  keys: readonly string[],
+): Record<string, unknown> | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
+  } catch {
+    return null;
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  const own = Object.keys(value);
+  if (own.length !== keys.length || !keys.every((key) => own.includes(key))) return null;
+  return value as Record<string, unknown>;
+}

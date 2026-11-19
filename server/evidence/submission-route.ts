@@ -5,7 +5,7 @@ import {
   reply,
   unavailable,
   type Log,
-} from "./ingest-http";
+} from "./ingest-http.ts";
 import { submitWork, type SubmissionDependencies, type SubmissionOutcome } from "./submission.ts";
 
 /**
