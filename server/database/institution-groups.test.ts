@@ -64,8 +64,15 @@ describe("assignGroupTeacher", () => {
       status: "assigned",
       assigned: false,
     });
-    expect(seen[0]!.values).toEqual([GROUP, TEACHER]);
+    // The course's group lock first, then the read in a later snapshot and the call.
+    expect(seen.map((q) => q.values)).toEqual([
+      [GROUP, TEACHER],
+      [GROUP, TEACHER],
+    ]);
     expect(seen[0]!.text).toMatch(
+      /pg_advisory_xact_lock\([\s\S]*'institution\.seminar_group:' \|\| g\.course_id::text/,
+    );
+    expect(seen[1]!.text).toMatch(
       /WITH earlier AS[\s\S]*assign_group_teacher\(\$1::uuid, \$2::uuid\)/,
     );
   });
