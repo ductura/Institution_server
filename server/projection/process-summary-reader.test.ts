@@ -96,7 +96,7 @@ async function storeOf(record: Stored): Promise<InMemoryEvidencePayloadStore> {
     await store.putImmutable({
       institutionId: INSTITUTION,
       evidencePackageId: PACKAGE,
-      segmentHash: record.hashes[index],
+      segmentHash: record.hashes[index]!,
       canonicalPayload,
     });
   }
@@ -111,7 +111,7 @@ function found(record: Stored, count = record.hashes.length): Found {
     status: "found",
     institutionId: INSTITUTION,
     evidencePackageId: PACKAGE,
-    head: count === 0 ? null : { segmentHash: segmentHashes[count - 1], segmentCount: count },
+    head: count === 0 ? null : { segmentHash: segmentHashes[count - 1]!, segmentCount: count },
     segmentHashes,
   };
 }
@@ -253,7 +253,7 @@ describe("readProcessSummary: one answer for the owner and the teacher (B-13, D-
   });
 
   it("shows a gap in the record to both viewers alike", async () => {
-    const record = await buildRecord([WORK[0], { ...WORK[1], skip: 3 }]);
+    const record = await buildRecord([WORK[0]!, { ...WORK[1]!, skip: 3 }]);
     const store = await storeOf(record);
     const ana = await readProcessSummary(deps(sourceFor(found(record)), store), DOCUMENT);
     const vesna = await readProcessSummary(deps(sourceFor(found(record)), store), DOCUMENT);
@@ -314,7 +314,10 @@ describe("readProcessSummary fails whole, never with a partial summary", () => {
       [found(record), swapped],
       [{ ...found(record), head: found(record, 2).head }, store],
       [
-        { ...found(record), segmentHashes: [record.hashes[1], record.hashes[0], record.hashes[2]] },
+        {
+          ...found(record),
+          segmentHashes: [record.hashes[1]!, record.hashes[0]!, record.hashes[2]!],
+        },
         store,
       ],
       [{ ...found(record), segmentHashes: record.hashes.slice(0, 2) }, store],

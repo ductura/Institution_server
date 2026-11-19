@@ -126,9 +126,9 @@ describe("B-10 / DAN-86 comment API contract", () => {
     });
     const res = await handleCommentRequest("list", request(VALID.list), deps);
     expect(res.status).toBe(200);
-    const { comments } = await res.json();
+    const { comments } = (await res.json()) as { comments: Record<string, unknown>[] };
     expect(comments).toHaveLength(2);
-    expect(Object.keys(comments[0]).sort()).toEqual([
+    expect(Object.keys(comments[0]!).sort()).toEqual([
       "anchor",
       "authorRole",
       "body",
@@ -140,9 +140,9 @@ describe("B-10 / DAN-86 comment API contract", () => {
       "state",
       "threadId",
     ]);
-    expect(comments[0].createdWindow).toBe("2026-10-17T10:05:00.000Z");
-    expect(comments[0].deletedWindow).toBeNull();
-    expect(comments[1].anchor).toBeNull();
+    expect(comments[0]!.createdWindow).toBe("2026-10-17T10:05:00.000Z");
+    expect(comments[0]!.deletedWindow).toBeNull();
+    expect(comments[1]!.anchor).toBeNull();
     expect((query.mock.calls[0] as unknown[])[0]).toMatch(
       /FROM collaboration\.list_comments\(\$1\)$/,
     );
@@ -162,7 +162,7 @@ describe("B-10 / DAN-86 comment API contract", () => {
     const { deps } = port({ rows: [ROW, DELETED] });
     const res = await handleCommentRequest("list", request(VALID.list), deps);
     expect(res.status).toBe(200);
-    const { comments } = await res.json();
+    const { comments } = (await res.json()) as { comments: Record<string, unknown>[] };
     expect(comments[1]).toMatchObject({
       position: 2,
       authorRole: "student",

@@ -29,7 +29,7 @@ function post(body: unknown, headers: Record<string, string | undefined> = {}, m
   return new Request(`${ORIGIN}/api/submission`, {
     method,
     headers: merged,
-    body: method === "GET" ? undefined : typeof body === "string" ? body : JSON.stringify(body),
+    ...(method === "GET" ? {} : { body: typeof body === "string" ? body : JSON.stringify(body) }),
   });
 }
 

@@ -89,14 +89,17 @@ export async function issueSubmissionReceipt(
     return { status: "unavailable", reason: "invalid_payload" };
   }
   try {
-    const signature = await signer.sign(digest.signingInput);
+    const signed = await signer.sign(digest.signingInput);
+    if (!signed.ok) return { status: "unavailable", reason: "signing" };
+    const signature = signed.value;
     const receipt = {
       payload: JSON.parse(digest.canonical) as SubmissionReceiptPayloadV1,
       payloadDigestSha256: digest.sha256,
       signature,
     };
     if (!isSignedSubmissionReceiptV1(receipt)) return { status: "unavailable", reason: "signing" };
-    if ((await signer.verify(digest.signingInput, signature)) !== true) {
+    const verified = await signer.verify(digest.signingInput, signature);
+    if (!verified.ok || verified.value !== true) {
       return { status: "unavailable", reason: "signing" };
     }
     return { status: "signed", receipt };
