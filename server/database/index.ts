@@ -116,6 +116,13 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+export { createInstitutionAssignments } from "./institution-assignments.ts";
+export type {
+  AssignmentContent,
+  AssignmentCreateOutcome,
+  AssignmentPublishOutcome,
+  InstitutionAssignments,
+} from "./institution-assignments.ts";
 export {
   createTeacherAccessReader,
   createTeacherCoursesReader,

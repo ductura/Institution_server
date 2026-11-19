@@ -9,3 +9,9 @@ export {
   parseEnrollmentCodeBody,
 } from "./schemas.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
+export {
+  type AssignmentInput,
+  isAssignmentVersion,
+  parseAssignmentInput,
+  parseAssignmentVersionBody,
+} from "./assignment-input.ts";

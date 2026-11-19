@@ -9,7 +9,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -46,7 +46,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
@@ -86,7 +86,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://drugo.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -127,7 +127,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "cross-site",
           "content-type": "application/json",
@@ -168,7 +168,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -198,7 +198,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -228,7 +228,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -270,7 +270,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -312,7 +312,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -382,7 +382,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -423,7 +423,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "text/plain",
@@ -452,7 +452,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -481,7 +481,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -522,7 +522,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
@@ -563,7 +563,7 @@
           "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
         },
         "headers": {
-          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-000000000000001",
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
           "origin": "https://ductura.example.invalid",
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",

@@ -13,8 +13,8 @@
 // leaves the port. Inputs come already checked (852-3, 852-4).
 import type { WithActor } from "./with-actor.ts";
 
-type Refused<S extends string> = { readonly status: S };
-type Unavailable = { readonly status: "unavailable"; readonly reason: string };
+export type Refused<S extends string> = { readonly status: S };
+export type Unavailable = { readonly status: "unavailable"; readonly reason: string };
 
 /** ZD401, ZD403, ZD422 by name; anything else, and a wrong row, is unavailable. */
 export type EnrollmentCodeIssueOutcome =
@@ -80,8 +80,11 @@ function codeOf(thrown: unknown): unknown {
   }
 }
 
-/** The one value read from the rows, or the outcome of a refusal or fault; never throws. */
-async function call<T, S extends string>(
+/**
+ * The one value read from the rows, or the outcome of a refusal or fault;
+ * never throws. Shared with institution-assignments.ts.
+ */
+export async function call<T, S extends string>(
   withActor: WithActor,
   token: string,
   sql: string,
@@ -106,7 +109,7 @@ async function call<T, S extends string>(
 }
 
 /** The column of exactly one row, own only. */
-function single(rows: unknown, column: string): unknown {
+export function single(rows: unknown, column: string): unknown {
   if (!Array.isArray(rows) || rows.length !== 1) return undefined;
   const row: unknown = rows[0];
   return row !== null && typeof row === "object" && Object.hasOwn(row, column)

@@ -161,7 +161,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.work-language.post",
   "institution.student-work-language.post",
   "institution.work-work-language.post",
-  "institution.assignment-versions.post",
   "institution.student-removal.post",
   "institution.student-return.post",
   "institution.role-confirmation.post",
@@ -186,7 +185,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.course-groups.get",
   "institution.course-groups.post",
   "institution.course-group-teachers.post",
-  "institution.course-assignments.post",
 ];
 
 /**

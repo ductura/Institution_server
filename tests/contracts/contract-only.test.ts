@@ -16,6 +16,7 @@ import {
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
+  createInstitutionAssignmentRoutesFor,
   createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
@@ -142,6 +143,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createInstitutionCourseRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-14: a course's new assignment and an assignment's next version.
+    call: "createInstitutionAssignmentRoutesFor(databases.main)",
+    ids: ["institution.course-assignments.post", "institution.assignment-versions.post"],
+    routes: () => createInstitutionAssignmentRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // SRV-13: the teacher's courses and access over the main database.
     call: "createTeacherReadRoutesFor(databases.main)",
     ids: ["teacher.courses.get", "teacher.access.get"],
@@ -237,9 +244,12 @@ describe("CONTRACT_ONLY", () => {
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
       // problem report (851-2d2a), the course routes (852-5a), the download
-      // manifest (DAN-932) and the teacher's reads (SRV-13) are missing too.
+      // manifest (DAN-932), the teacher's reads (SRV-13) and the assignment
+      // routes (SRV-14) are missing too, in DAN-803 order.
       [
-        ...["support.problem-report.post", "teacher.courses.get", ...INSTITUTION_COURSE_ROUTES],
+        ...["support.problem-report.post", "teacher.courses.get", "institution.courses.post"],
+        ...["institution.course-assignments.post", "institution.enrollment-code.post"],
+        ...["institution.enrollment-code-revocation.post", "institution.assignment-versions.post"],
         ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_931],
       ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
@@ -264,6 +274,8 @@ describe("routes the entry point mounts itself", () => {
       "downloads.manifest.get",
       "support.problem-report.post",
       ...INSTITUTION_COURSE_ROUTES,
+      "institution.course-assignments.post",
+      "institution.assignment-versions.post",
       "teacher.courses.get",
       "teacher.access.get",
       "auth.webauthn-challenge.post",
