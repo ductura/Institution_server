@@ -139,8 +139,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "projection.process-summary.post",
   "collaboration.comments.post",
   "collaboration.revision-requests.post",
-  "live.document.get",
-  "live.document.put",
   "teacher.fast-path.post",
   "teacher.access.get",
   "settings.catalogue.get",

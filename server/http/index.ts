@@ -78,6 +78,13 @@ export {
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
+  createLiveRoutes,
+  createLiveRoutesFor,
+  LIVE_BODY_TIMEOUT_MS,
+  LIVE_STATE_HEADER,
+  type LiveRouteOptions,
+} from "./live.ts";
+export {
   createTeacherReadRoutes,
   createTeacherReadRoutesFor,
   MAX_ASSIGNMENT_IDS,
@@ -93,6 +100,7 @@ export {
   knownError,
   problemOf,
   sendHtmlProblem,
+  sendDeclaredResponse,
   sendProblem,
   sendRouteRefusal,
   type Problem,

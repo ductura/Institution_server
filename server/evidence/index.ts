@@ -39,3 +39,10 @@ export {
   DUCTUS_PROTOCOL_VERSION,
   MAX_COMMIT_REQUEST_BYTES,
 } from "../domain/index.ts";
+// The snapshot check of the live view (B-LIVE, server/http/live.ts), as the
+// domain states it: the exact JCS bytes of a valid document, at most 2 MiB.
+export {
+  type DocumentSnapshotVerification,
+  MAX_DOCUMENT_SNAPSHOT_BYTES,
+  verifyDocumentSnapshot,
+} from "../domain/index.ts";

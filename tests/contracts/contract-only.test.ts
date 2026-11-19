@@ -9,7 +9,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
-import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
+import type {
+  ActorReader,
+  SettingsWriter,
+  WebAuthnCredentials,
+} from "../../server/database/index.ts";
 import {
   AREA_NAMES,
   createInstitutionCourseRoutesFor,
@@ -17,6 +21,7 @@ import {
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
   createTeacherReadRoutesFor,
+  createLiveRoutesFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   routesOf,
@@ -117,6 +122,7 @@ const FROZEN: readonly string[] = [
 // out, is not a mount.
 const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
 const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
+const NO_READER = {} as ActorReader;
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
   {
@@ -152,6 +158,15 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createTeacherReadRoutesFor(databases.main)",
     ids: [...TEACHER_READ_ROUTES],
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // Ductus#2028 (w1119o): the live view over the main database.
+    call: "createLiveRoutesFor(databases.main)",
+    ids: ["live.document.get", "live.document.put"],
+    routes: () =>
+      createLiveRoutesFor({ ...NO_ACTOR, actorReader: NO_READER }).map(
+        (route) => route.contract.id,
+      ),
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -250,6 +265,8 @@ describe("CONTRACT_ONLY", () => {
         ...["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840],
         ...DAN_931,
         ...TEACHER_READ_ROUTES,
+        "live.document.get",
+        "live.document.put",
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -276,6 +293,8 @@ describe("routes the entry point mounts itself", () => {
       "support.problem-report.post",
       ...INSTITUTION_COURSE_ROUTES,
       ...TEACHER_READ_ROUTES,
+      "live.document.get",
+      "live.document.put",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

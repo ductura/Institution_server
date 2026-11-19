@@ -22,7 +22,13 @@ import {
   SHARED_ERRORS,
 } from "../contracts/index.ts";
 import { sendJson } from "./json.ts";
-import { knownError, problemOf, sendBareRefusal, sendProblem } from "./problem.ts";
+import {
+  knownError,
+  problemOf,
+  sendBareRefusal,
+  sendDeclaredResponse,
+  sendProblem,
+} from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 
 const ID = "0f0e0d0c-0b0a-4908-8706-050403020100";
@@ -303,6 +309,35 @@ describe("sendBareRefusal", () => {
   ])("answers 500 internal for %s %s, which has no bare error", (id, status) => {
     const { response, answer } = fakeResponse();
     sendBareRefusal(response, route(id), status);
+    expect(answer.status).toBe(500);
+    expect(JSON.parse(answer.body ?? "{}")).toMatchObject({ code: INTERNAL.error.code });
+  });
+});
+
+describe("sendDeclaredResponse", () => {
+  const put = ROUTES.find((r) => r.id === "live.document.put")!;
+  const TOKEN = "1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9";
+
+  it("answers a response of 400 or more the contract declares, with its body", () => {
+    for (const token of [TOKEN, null]) {
+      const { response, answer } = fakeResponse();
+      response.setHeader("etag", '"x"');
+      sendDeclaredResponse(response, put, 409, { outcome: "conflict", token });
+      expect(answer.status).toBe(409);
+      expect(JSON.parse(answer.body!)).toEqual({ outcome: "conflict", token });
+      expect(answer.headers["cache-control"]).toBe("no-store");
+      expect(answer.headers.etag).toBeUndefined();
+    }
+  });
+
+  it.each<[string, number, Record<string, unknown>]>([
+    ["a body the schema refuses", 409, { outcome: "conflict", token: "nije-uuid" }],
+    ["an extra field", 409, { outcome: "conflict", token: TOKEN, revision: 1 }],
+    ["a status the contract does not declare", 410, { outcome: "conflict", token: TOKEN }],
+    ["a success status", 200, { outcome: "accepted", token: TOKEN }],
+  ])("answers 500 internal for %s", (_name, status, body) => {
+    const { response, answer } = fakeResponse();
+    sendDeclaredResponse(response, put, status, body);
     expect(answer.status).toBe(500);
     expect(JSON.parse(answer.body ?? "{}")).toMatchObject({ code: INTERNAL.error.code });
   });
