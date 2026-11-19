@@ -2,13 +2,13 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { DevelopmentEd25519SigningKeyProvider } from "@/adapters/crypto/development-ed25519-signer";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
-import { digestSubmissionReceiptPayloadV2 } from "@/domain/forensics/submission-receipt-v2";
-import type { SubmissionReceiptExpectationV2 } from "@/domain/forensics/submission-receipt-verifier-v2";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import { DevelopmentEd25519SigningKeyProvider } from "../external/keys/development-ed25519-signer.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
+import { digestSubmissionReceiptPayloadV2 } from "../domain/forensics/submission-receipt-v2.ts";
+import type { SubmissionReceiptExpectationV2 } from "../domain/forensics/submission-receipt-verifier-v2.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { issueSubmissionReceiptV2 } from "./submission-receipt";
+import { issueSubmissionReceiptV2 } from "./submission-receipt.ts";
 
 // DAN-291 (#746, 291b): invented ids; the database is a script of rows.
 const EXPECTED: SubmissionReceiptExpectationV2 = {

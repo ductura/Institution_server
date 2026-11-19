@@ -2,12 +2,12 @@ import { createHash } from "node:crypto";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { MAX_DOCUMENT_SNAPSHOT_BYTES } from "@/domain/document/snapshot";
-import { loadGoldenVectors } from "@/domain/forensics/golden-vectors/load";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import { MAX_DOCUMENT_SNAPSHOT_BYTES } from "../domain/document/snapshot.ts";
+import { loadGoldenVectors } from "../domain/forensics/golden-vectors/load.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { handleLivePublishRequest, handleLiveReadRequest } from "./live-route";
+import { handleLivePublishRequest, handleLiveReadRequest } from "./live-route.ts";
 
 // An invented document of the golden chain, as exact JCS bytes.
 const chain = loadGoldenVectors().chain;

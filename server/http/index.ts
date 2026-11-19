@@ -142,6 +142,10 @@ export {
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
 export {
+  createStudentAccessLogRoute,
+  createStudentAccessLogRouteFor,
+} from "./student-access-log.ts";
+export {
   bearerMatches,
   checkProvisionBody,
   createInternalInstitutionRoutes,

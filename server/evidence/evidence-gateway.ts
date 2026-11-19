@@ -1,7 +1,7 @@
 import {
   requiredAuthorizationConsistency,
   type AuthorizationPort,
-} from "@/application/ports/authorization";
+} from "../application/ports/authorization.ts";
 import {
   evidencePayloadExceedsLimit,
   validateEvidenceIngestCommandV2,
@@ -9,28 +9,28 @@ import {
   type EvidenceIngestOutcome,
   type EvidenceIngestPort,
   type EvidenceIngestRequestV2,
-} from "@/application/ports/evidence-ingest";
-import { isInstitutionId } from "@/application/ports/evidence-object-key";
+} from "../application/ports/evidence-ingest.ts";
+import { isInstitutionId } from "../domain/evidence/object-key.ts";
 import type {
   EvidenceAcceptanceRecord,
   EvidenceAcceptanceRepository,
   EvidenceContextPort,
   EvidencePayloadStore,
-} from "@/application/ports/evidence-trust";
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
+} from "../application/ports/evidence-trust.ts";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
 import {
   decideEvidenceRetry,
   verifyCanonicalEvidencePayloadV2,
-} from "@/domain/forensics/evidence-chain-v2";
+} from "../domain/forensics/evidence-chain-v2.ts";
 import {
   digestEvidenceReceiptPayload,
   isEvidenceReceiptPayloadV1,
   isSignedEvidenceReceipt,
   type SignedEvidenceReceipt,
-} from "@/domain/forensics/evidence-receipt";
-import type { EvidenceSegment } from "@/domain/forensics/evidence-segment-v2";
-import { isSignatureEnvelope } from "@/domain/forensics/signature";
-import { isPlainObject } from "@/domain/json";
+} from "../domain/forensics/evidence-receipt.ts";
+import type { EvidenceSegment } from "../domain/forensics/evidence-segment-v2.ts";
+import { isSignatureEnvelope } from "../domain/forensics/signature.ts";
+import { isPlainObject } from "../domain/json/index.ts";
 
 type GatewayDependencies = {
   authorization: AuthorizationPort;

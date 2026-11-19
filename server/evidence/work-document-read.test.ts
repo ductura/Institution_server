@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 import {
   OWN_WORK_DOCUMENT_SQL,
   readOwnWorkDocument,
   readWorkDocument,
   WORK_DOCUMENT_SQL,
-} from "./work-document-read";
+} from "./work-document-read.ts";
 
 // #711 step B1: which document /rad?zadatak=<id> writes into. The SQL itself
 // runs against the database in tests/integration/work-document-read; this

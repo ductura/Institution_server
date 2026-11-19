@@ -1,6 +1,6 @@
-import { isCommentBody, isDocumentId, isTextAnchorInput } from "@/domain/collaboration";
-import type { WithActor } from "@/server/db/with-actor";
-import { checkMutationRequest, readBodyWithLimit } from "@/server/http/mutation-request";
+import { isCommentBody, isDocumentId, isTextAnchorInput } from "../domain/collaboration/index.ts";
+import type { WithActor } from "../database/with-actor.ts";
+import { checkMutationRequest, readBodyWithLimit } from "../http/fetch-mutation-request.ts";
 
 export const MAX_COMMENT_BODY_BYTES = 16 * 1024;
 // A slow client must not hold the request open while it trickles the body

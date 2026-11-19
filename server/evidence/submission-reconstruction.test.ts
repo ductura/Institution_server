@@ -5,28 +5,28 @@ import { describe, expect, it } from "vitest";
 import {
   createEditStepsV1Replayer,
   removedRangeSha256,
-} from "@/adapters/evidence/edit-steps-v1-replayer";
-import { createEditStepsV2Replayer } from "@/adapters/evidence/edit-steps-v2-replayer";
-import type { EvidencePayloadReader } from "@/application/ports/evidence-reconstruction";
+} from "../external/storage/edit-steps-v1-replayer.ts";
+import { createEditStepsV2Replayer } from "../external/storage/edit-steps-v2-replayer.ts";
+import type { EvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
 import {
   REVISION_ZERO_JCS,
   REVISION_ZERO_NODE_ID,
   REVISION_ZERO_V2_JCS,
-} from "@/domain/document/revision-zero";
+} from "../domain/document/revision-zero.ts";
 import {
   digestEvidenceReceiptPayloadV2,
   type EvidenceReceiptPayloadV2,
-} from "@/domain/forensics/evidence-receipt";
-import type { EvidenceDomainKey } from "@/domain/forensics/evidence-receipt-verifier";
-import type { EvidenceStepReplayerV2 } from "@/domain/forensics/evidence-replay-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../domain/forensics/evidence-receipt.ts";
+import type { EvidenceDomainKey } from "../domain/forensics/evidence-receipt-verifier.ts";
+import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
 
-import { decideSubmission } from "./submission-decision";
+import { decideSubmission } from "./submission-decision.ts";
 import {
   reconstructSubmission,
   type StoredEvidenceReceiptV2,
   type SubmissionRecord,
-} from "./submission-reconstruction";
+} from "./submission-reconstruction.ts";
 
 // B-12 step 4b1: invented ids, synthetic text ("Odlomak A", "Odlomak B") and a
 // key made for this test only. The steps are real ductus-edit-steps-v1 steps,

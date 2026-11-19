@@ -256,7 +256,9 @@ SELECT bag_eq(
     'check_admin_event_actor() definer',
     'admin_appoint_admin(p_user_id uuid) definer app',
     'refuse_notice_read_change()',
-    'mark_notice_read(p_assignment_id uuid) definer app'
+    'mark_notice_read(p_assignment_id uuid) definer app',
+    'student_assignments() definer app',
+    'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );

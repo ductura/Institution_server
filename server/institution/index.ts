@@ -13,4 +13,10 @@ export {
   type AssignmentVersionBody,
   parseAssignmentVersionBody,
 } from "./assignment-content.ts";
+export {
+  accessLogCursorOf,
+  readStudentAccessLog,
+  type StudentAccessLogAnswer,
+  type StudentAccessLogEntry,
+} from "./student-access-log-route.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";

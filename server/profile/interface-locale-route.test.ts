@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import { withActor as appWithActor } from "@/server/db";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import { withActor as appWithActor } from "../database/index.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-vi.mock("@/server/db", () => ({ withActor: vi.fn() }));
+vi.mock("../database/index.ts", () => ({ withActor: vi.fn() }));
 
 const { MAX_INTERFACE_LOCALE_BODY_BYTES, handleInterfaceLocaleGet, handleInterfaceLocalePost } =
   await import("./interface-locale-route");

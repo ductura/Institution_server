@@ -1,10 +1,10 @@
 import type { Node as PmNode } from "@tiptap/pm/model";
 
-import type { EvidenceEventV2 } from "@/domain/forensics/evidence-segment-v2";
-import type { JcsJsonValue } from "@/domain/forensics/jcs";
-import type { ReplayStepReplayer } from "@/domain/projection/replay-timeline";
+import type { EvidenceEventV2 } from "../../domain/forensics/evidence-segment-v2.ts";
+import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
+import type { ReplayStepReplayer } from "../../domain/projection/replay-timeline.ts";
 
-import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer";
+import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer.ts";
 
 /**
  * The replay timeline's view of `ductus-edit-steps-v1` (DAN-344, contract on
