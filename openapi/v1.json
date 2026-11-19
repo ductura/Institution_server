@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.24.0",
+    "version": "1.25.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds."
   },
@@ -25747,6 +25747,345 @@
             "status": 409,
             "code": "conflict",
             "key": "errors.conflict"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/student/assignments/{assignmentId}/notice": {
+      "get": {
+        "operationId": "student.notice.get",
+        "summary": "The notice of the current version of an assignment of the caller's open student membership (E-6): the content of that version as the notice shows it, the notice template version, and when the caller first read it (PO-7, student.notice-read.post) and acknowledged it (institution.acknowledgment.post), each null until then. The fields are exactly those of the notice fingerprint (DAN-306), instants as Date.toISOString writes them; the browser computes the fingerprint from them and sends it with versionNo to institution.acknowledgment.post. aiPurposes is empty when aiPolicy is prohibited. The identity comes from the session only. Another's assignment, an unknown one and a malformed id are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
+        "x-access": "student_enrolled",
+        "x-inventory": "app/api/student/assignments/[assignmentId]/notice/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the notice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "assignmentId",
+                    "versionNo",
+                    "templateVersion",
+                    "title",
+                    "instructions",
+                    "workType",
+                    "opensAt",
+                    "dueAt",
+                    "aiPolicy",
+                    "aiPurposes",
+                    "evidenceProfile",
+                    "wordMin",
+                    "wordMax",
+                    "readAt",
+                    "acknowledgedAt"
+                  ],
+                  "properties": {
+                    "assignmentId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    "versionNo": {
+                      "minimum": 1,
+                      "maximum": 2147483647,
+                      "type": "integer"
+                    },
+                    "templateVersion": {
+                      "minimum": 1,
+                      "maximum": 2147483647,
+                      "type": "integer"
+                    },
+                    "title": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "instructions": {
+                      "type": "string"
+                    },
+                    "workType": {
+                      "anyOf": [
+                        {
+                          "const": "short_paper",
+                          "type": "string"
+                        },
+                        {
+                          "const": "essay",
+                          "type": "string"
+                        },
+                        {
+                          "const": "seminar_paper",
+                          "type": "string"
+                        },
+                        {
+                          "const": "bachelor_thesis",
+                          "type": "string"
+                        },
+                        {
+                          "const": "master_thesis",
+                          "type": "string"
+                        },
+                        {
+                          "const": "specialist_thesis",
+                          "type": "string"
+                        },
+                        {
+                          "const": "doctoral_thesis",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "opensAt": {
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                      "type": "string"
+                    },
+                    "dueAt": {
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                      "type": "string"
+                    },
+                    "aiPolicy": {
+                      "anyOf": [
+                        {
+                          "const": "prohibited",
+                          "type": "string"
+                        },
+                        {
+                          "const": "partially_allowed",
+                          "type": "string"
+                        },
+                        {
+                          "const": "encouraged",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "aiPurposes": {
+                      "maxItems": 5,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "const": "formatting",
+                            "type": "string"
+                          },
+                          {
+                            "const": "proofreading",
+                            "type": "string"
+                          },
+                          {
+                            "const": "literature_search",
+                            "type": "string"
+                          },
+                          {
+                            "const": "transcription",
+                            "type": "string"
+                          },
+                          {
+                            "const": "translation",
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "evidenceProfile": {
+                      "anyOf": [
+                        {
+                          "const": "basic",
+                          "type": "string"
+                        },
+                        {
+                          "const": "extended",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "wordMin": {
+                      "anyOf": [
+                        {
+                          "minimum": 1,
+                          "maximum": 1000000,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "wordMax": {
+                      "anyOf": [
+                        {
+                          "minimum": 1,
+                          "maximum": 1000000,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "readAt": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "acknowledgedAt": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
           },
           {
             "status": 503,
