@@ -317,8 +317,10 @@ jobs:
             nohup "$RUNNER_TEMP/rustfs/rustfs" server --address 127.0.0.1:9100 "$RUNNER_TEMP/rustfs-data" \
             > "$RUNNER_TEMP/rustfs.log" 2>&1 &
           # Ready only when the S3 layer refuses anonymous listing (403), as Ductus checks it.
-          for _ in $(seq 1 30); do
-            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9100/)" = 403 ]; then exit 0; fi
+          # Each probe is bounded, so a listener that never answers cannot hold the 30 s limit.
+          deadline=$((SECONDS + 30))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if [ "$(curl -s --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:9100/)" = 403 ]; then exit 0; fi
             sleep 1
           done
           cat "$RUNNER_TEMP/rustfs.log" >&2
