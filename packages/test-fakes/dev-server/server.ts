@@ -35,7 +35,10 @@ type Success<S> = S extends { status: infer Status; body: infer B }
   : never;
 /** A handler's answer: a contract success, or a contract error by code. */
 export type Reply<Id extends OperationId> =
-  Success<Op<Id>["success"]> | { error: Op<Id>["errorCode"] };
+  | Success<Op<Id>["success"]>
+  // An error of the route; `body` replaces the vector's body where the
+  // contract carries state in it (stale_base, stale_revision). Tests check it.
+  | { error: Op<Id>["errorCode"]; body?: Record<string, unknown> };
 
 export type Context<Id extends OperationId> = {
   readonly state: State;
@@ -46,6 +49,8 @@ export type Context<Id extends OperationId> = {
   readonly query: Op<Id>["query"];
   readonly body: Op<Id>["body"];
   readonly now: Date;
+  /** A request header by lowercase name. */
+  readonly header: (name: string) => string | undefined;
 };
 
 export type Handlers = { [Id in OperationId]?: (ctx: Context<Id>) => Reply<Id> };
@@ -241,11 +246,12 @@ export async function answerDev(
     query: query as never,
     body: body.value as never,
     now: new Date(),
+    header: (name) => header(req, name),
   });
   if ("error" in reply) {
     const answer = errorAnswer(route, reply.error);
     if (answer === null) throw new Error(`${route}: ${reply.error} is not a contract error`);
-    return answer;
+    return reply.body === undefined ? answer : { ...answer, body: JSON.stringify(reply.body) };
   }
   const headers: Record<string, string | string[]> = {
     "cache-control": "no-store",
