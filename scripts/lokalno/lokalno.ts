@@ -11,11 +11,11 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:net";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
-  ACCOUNTS_FILE,
+  accountsFileFor,
   adminTarget,
   assertLocal,
   baseEnv,
@@ -138,8 +138,7 @@ async function main(): Promise<void> {
   if ((await runOnce([join(ROOT, "scripts", "build", "server.ts")], base)) !== 0)
     throw new Error("the build failed");
 
-  const accounts = join(LOCAL_DIR, ACCOUNTS_FILE);
-  const options = stackOptions(direct, existsSync(accounts) ? accounts : undefined);
+  const options = stackOptions(direct, accountsFileFor(ROOT, LOCAL_DIR, existsSync));
   for (const [name, port] of [
     ["server", options.serverPort],
     ["oidc", options.oidcPort],
@@ -157,8 +156,8 @@ async function main(): Promise<void> {
       `  Prijava:           ${options.origin}/api/v1/auth/login?returnTo=/app/web/`,
       `  Token provisioninga: .local/${TOKEN_FILE}`,
       options.accountsFile === undefined
-        ? `  Računi simulatora: demo računi i obrazac (domena + uloga); datoteka .local/${ACCOUNTS_FILE} ne postoji`
-        : `  Računi simulatora: demo računi, obrazac i .local/${ACCOUNTS_FILE}`,
+        ? "  Računi simulatora: demo računi i obrazac (domena + uloga)"
+        : `  Računi simulatora: demo računi, obrazac i ${relative(ROOT, options.accountsFile)}`,
       direct ? "" : "  Bez edge proxyja na 8000 pokreni: pnpm lokalno --izravno",
       "Ctrl+C zaustavlja oba procesa.",
       "",
