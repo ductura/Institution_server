@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { readAssignmentWorks, readAssignmentWorksMany, worksOf } from "./assignment-works";
+import { readAssignmentWorks, readAssignmentWorksMany, worksOf } from "./assignment-works.ts";
 
 // Invented ids only.
 const TOKEN = "T".repeat(43);

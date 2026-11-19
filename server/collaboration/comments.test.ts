@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { handleCommentRequest, type CommentAction, type CommentDeps } from "./comments";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import { handleCommentRequest, type CommentAction, type CommentDeps } from "./comments.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 const ORIGIN = "http://localhost:3000";
 const TOKEN = "A".repeat(43);

@@ -14,4 +14,10 @@ export {
   studentCoursesOf,
   WORK_TYPES,
 } from "./student-assignments-route.ts";
+export {
+  accessLogCursorOf,
+  readStudentAccessLog,
+  type StudentAccessLogAnswer,
+  type StudentAccessLogEntry,
+} from "./student-access-log-route.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";

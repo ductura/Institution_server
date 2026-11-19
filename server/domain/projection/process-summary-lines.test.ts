@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { PROCESS_SUMMARY_FORMAT_V1, type ProcessSummaryV1 } from "./process-summary";
-import { processSummaryLines } from "./process-summary-lines";
+import { PROCESS_SUMMARY_FORMAT_V1, type ProcessSummaryV1 } from "./process-summary.ts";
+import { processSummaryLines } from "./process-summary-lines.ts";
 
 function summary(over: {
   items?: ProcessSummaryV1["sessions"]["items"];

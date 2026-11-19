@@ -1,18 +1,18 @@
 import { createHash } from "node:crypto";
 
-import { EDIT_STEP_FORMAT_V2 } from "@/domain/document/edit-step";
-import type { DocumentSource } from "@/domain/document/schema";
-import type { EvidenceStepReplayerV2 } from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3 } from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+import { EDIT_STEP_FORMAT_V2 } from "../../domain/document/edit-step.ts";
+import type { DocumentSource } from "../../domain/document/schema.ts";
+import type { EvidenceStepReplayerV2 } from "../../domain/forensics/evidence-replay-v2.ts";
+import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
-import { refuse } from "./edit-steps-v1-rules";
+import { refuse } from "./edit-steps-v1-rules.ts";
 import {
   editStepsV2Canonical,
   loadEditStepsV2Document,
   runEditStepsV2,
   type EditStepsV2Document,
-} from "./edit-steps-v2-rules";
+} from "./edit-steps-v2-rules.ts";
 
 /**
  * Server replayer of `ductus-edit-steps-v2` (DAN-619, contract §5). The rules

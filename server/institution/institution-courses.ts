@@ -1,6 +1,6 @@
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { compareByName, nameOf, type PersonName } from "./teacher-roles";
+import { compareByName, nameOf, type PersonName } from "./teacher-roles.ts";
 
 /**
  * DAN-313 (M2.11-P03, screen A-03; contract on #1091, comment 6692590206):

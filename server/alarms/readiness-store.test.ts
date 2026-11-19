@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const withActor = vi.fn();
-vi.mock("@/server/db", () => ({ withActor: (...args: unknown[]) => withActor(...args) }));
+vi.mock("../database/index.ts", () => ({ withActor: (...args: unknown[]) => withActor(...args) }));
 
-import { readinessAlarms } from "./readiness-store";
+import { readinessAlarms } from "./readiness-store.ts";
 
 // DAN-184: the in-app channel is written only through the two RPCs, with the
 // closed kind and the process's reporter as the only values, and not at all while the database is down.

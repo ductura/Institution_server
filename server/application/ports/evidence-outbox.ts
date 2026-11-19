@@ -2,7 +2,7 @@ import type {
   EvidenceIngestCommandV2,
   EvidenceIngestOutcome,
   SignedEvidenceReceipt,
-} from "./evidence-ingest";
+} from "./evidence-ingest.ts";
 
 export type EvidenceOutboxStatus = "pending" | "uploading" | "accepted" | "blocked";
 
