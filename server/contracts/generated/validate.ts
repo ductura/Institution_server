@@ -297,22 +297,25 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   }
   })(),
   "institution.course-assignments.post:body": (() => {
-  const local0 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){1,200}(?![\s\S])/;
-  const local1 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){0,20000}(?![\s\S])/;
-  const local2 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){1,200}(?![\s\S])/;
+  const local2 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){0,20000}(?![\s\S])/;
   const local3 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
+  const local4 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['requestKey'] === 'string') &&
+      local0.test(value['requestKey']) &&
       (typeof value['title'] === 'string') &&
-      local0.test(value['title']) &&
+      local1.test(value['title']) &&
       (typeof value['instructions'] === 'string') &&
-      local1.test(value['instructions']) &&
+      local2.test(value['instructions']) &&
       (((value['workType'] === 'short_paper')) || ((value['workType'] === 'essay')) || ((value['workType'] === 'seminar_paper')) || ((value['workType'] === 'bachelor_thesis')) || ((value['workType'] === 'master_thesis')) || ((value['workType'] === 'specialist_thesis')) || ((value['workType'] === 'doctoral_thesis'))) &&
       (typeof value['opensAt'] === 'string') &&
-      local2.test(value['opensAt']) &&
+      local3.test(value['opensAt']) &&
       (typeof value['dueAt'] === 'string') &&
-      local3.test(value['dueAt']) &&
+      local4.test(value['dueAt']) &&
       (((value['aiPolicy'] === 'prohibited')) || ((value['aiPolicy'] === 'partially_allowed')) || ((value['aiPolicy'] === 'encouraged'))) &&
       Array.isArray(value['aiPurposes']) &&
       value['aiPurposes'].length <= 5 &&
@@ -321,7 +324,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['importAllowed'] === 'boolean') &&
       (((typeof value['wordMin'] === 'number' && Number.isInteger(value['wordMin'])) && value['wordMin'] <= 1000000 && value['wordMin'] >= 1) || ((value['wordMin'] === null))) &&
       (((typeof value['wordMax'] === 'number' && Number.isInteger(value['wordMax'])) && value['wordMax'] <= 1000000 && value['wordMax'] >= 1) || ((value['wordMax'] === null))) &&
-      Object.getOwnPropertyNames(value).length === 11
+      Object.getOwnPropertyNames(value).length === 12
     )
   }
   })(),
