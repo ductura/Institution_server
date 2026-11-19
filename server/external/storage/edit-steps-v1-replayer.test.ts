@@ -18,7 +18,7 @@ import type {
 } from "../../domain/forensics/evidence-segment-v2.ts";
 import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
 import { MARK_ORDER, PLAIN_BLOCK_TYPES } from "../../domain/document/schema.ts";
-import { createEditorExtensions } from "@/editor";
+import { createEditorExtensions } from "./editor/index.ts";
 
 import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
 

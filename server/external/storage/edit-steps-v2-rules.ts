@@ -28,7 +28,7 @@ import {
 import { EvidenceContentNotSupportedV2 } from "../../domain/forensics/evidence-replay-v2.ts";
 import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
-import { createEditorExtensions } from "@/editor";
+import { createEditorExtensions } from "./editor/index.ts";
 
 import { refuse, removedRangeCanonical, type RemovedRangeClaim } from "./edit-steps-v1-rules.ts";
 

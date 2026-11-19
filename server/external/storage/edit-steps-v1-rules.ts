@@ -13,7 +13,7 @@ import { isMark, isPlainBlockType } from "../../domain/document/schema.ts";
 import { EvidenceContentNotSupportedV2 } from "../../domain/forensics/evidence-replay-v2.ts";
 import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
-import { canonicalToTiptap, tiptapToCanonical, createEditorExtensions } from "@/editor";
+import { canonicalToTiptap, tiptapToCanonical, createEditorExtensions } from "./editor/index.ts";
 
 /**
  * Rules of the `ductus-edit-steps-v1` replayer (B-12, first step), shared by
