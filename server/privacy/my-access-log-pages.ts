@@ -2,8 +2,8 @@ import {
   type AccessLogDay,
   accessLogDaysOf,
   accessLogEntryOf,
-} from "@/domain/privacy/access-log-days";
-import type { WithActor } from "@/server/db/with-actor";
+} from "../domain/privacy/access-log-days.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 import { type AccessLogCursor, cursorOf, readMyAccessLog } from "./my-access-log";
 

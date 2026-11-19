@@ -1,4 +1,4 @@
-import type { ProcessSummaryV1 } from "./process-summary";
+import type { ProcessSummaryV1 } from "./process-summary.ts";
 
 /**
  * The two lines of the fast path in the demo (#757, owner decisions O2 and O3

@@ -5,7 +5,7 @@ import {
   TEACHING_TEAM_SOURCE_MAX_ROWS,
   mapTeachingTeamSource,
   type TeachingTeamMappingContext,
-} from "./source-mapping";
+} from "./source-mapping.ts";
 
 // Every key, identifier and name below is invented (no real person or course).
 const ISSUER = "https://idp.primjer.invalid";

@@ -5,7 +5,7 @@
 // worker yet: the store listing, the database reader and the audit table come
 // with the adapters.
 
-import { evidenceObjectKey, isStorageDomainLabel } from "@/application/ports/evidence-object-key";
+import { evidenceObjectKey, isStorageDomainLabel } from "../domain/evidence/object-key.ts";
 import type {
   ScanPage,
   ScanPageRequest,
@@ -13,10 +13,10 @@ import type {
   StorageOrphanAudit,
   StorageOrphanScanSummary,
   StorageReferenceReader,
-} from "@/application/ports/storage-orphan-scan";
-import { isPlainObject } from "@/domain/json";
+} from "../application/ports/storage-orphan-scan.ts";
+import { isPlainObject } from "../domain/json/index.ts";
 
-import { parseInstant } from "./reconcile-pending-receipts";
+import { parseInstant } from "./reconcile-pending-receipts.ts";
 
 const HOUR_MS = 3_600_000;
 export const MIN_ORPHAN_THRESHOLD_MS = HOUR_MS;

@@ -4,18 +4,25 @@ import { Fragment, type Node as PmNode } from "@tiptap/pm/model";
 import { canJoin, Transform } from "@tiptap/pm/transform";
 import { expect } from "vitest";
 
-import type { DocumentSource } from "@/domain/document/schema";
+import type { DocumentSource } from "../../domain/document/schema.ts";
 import {
   digestCanonicalDocumentV2,
   replayEvidenceSegmentsV2,
-} from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3, EvidenceSegmentV2 } from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../../domain/forensics/evidence-replay-v2.ts";
+import type {
+  EvidenceEventV3,
+  EvidenceSegmentV2,
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
-import { removedRangeSha256 } from "./edit-steps-v1-replayer";
-import { createBrowserEditStepsV2Replayer } from "./edit-steps-v2-browser-replayer";
-import { createEditStepsV2Replayer, sourceRecordSha256 } from "./edit-steps-v2-replayer";
-import { editStepJsonV2, editStepsV2Schema, type EditStepsV2Document } from "./edit-steps-v2-rules";
+import { removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
+import { createBrowserEditStepsV2Replayer } from "./edit-steps-v2-browser-replayer.ts";
+import { createEditStepsV2Replayer, sourceRecordSha256 } from "./edit-steps-v2-replayer.ts";
+import {
+  editStepJsonV2,
+  editStepsV2Schema,
+  type EditStepsV2Document,
+} from "./edit-steps-v2-rules.ts";
 
 /**
  * docs/contracts/document-schema-v2.md §10, properties (f) and (g) (DAN-619

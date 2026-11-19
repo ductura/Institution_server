@@ -8,14 +8,14 @@ import {
 } from "@tiptap/pm/model";
 import { Step } from "@tiptap/pm/transform";
 
-import { validateVersionedDocument } from "@/domain/document";
+import { validateVersionedDocument } from "../../domain/document/index.ts";
 import {
   EDIT_STEP_FORMAT_V2,
   parseEditSteps,
   type EditStepBlockOf,
   type EditStepInlineV2,
   type EditStepV2,
-} from "@/domain/document/edit-step";
+} from "../../domain/document/edit-step.ts";
 import {
   canonicalMarks,
   isMark,
@@ -24,13 +24,13 @@ import {
   type DocumentSource,
   type InlineNodeV2,
   type Mark,
-} from "@/domain/document/schema";
-import { EvidenceContentNotSupportedV2 } from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3 } from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../../domain/document/schema.ts";
+import { EvidenceContentNotSupportedV2 } from "../../domain/forensics/evidence-replay-v2.ts";
+import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 import { createEditorExtensions } from "@/editor";
 
-import { refuse, removedRangeCanonical, type RemovedRangeClaim } from "./edit-steps-v1-rules";
+import { refuse, removedRangeCanonical, type RemovedRangeClaim } from "./edit-steps-v1-rules.ts";
 
 /**
  * Rules of the `ductus-edit-steps-v2` replayer (DAN-619, contract

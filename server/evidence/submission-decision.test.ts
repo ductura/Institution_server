@@ -1,19 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { DevelopmentEd25519SigningKeyProvider } from "@/adapters/crypto/development-ed25519-signer";
+import { DevelopmentEd25519SigningKeyProvider } from "../external/keys/development-ed25519-signer.ts";
 import type {
   EvidenceReconstructionFailure,
   EvidenceReconstructionOutcome,
-} from "@/application/evidence/evidence-reconstruction";
-import {
-  decideSubmission,
-  issueSubmissionReceipt,
-} from "@/application/evidence/submission-decision";
-import type { SignatureEnvelope } from "@/application/ports/signing-key-provider";
+} from "./evidence-reconstruction.ts";
+import { decideSubmission, issueSubmissionReceipt } from "./submission-decision.ts";
+import type { SignatureEnvelope } from "../external/keys/signing-key-provider.ts";
 import {
   digestSubmissionReceiptPayloadV1,
   type SubmissionReceiptPayloadV1,
-} from "@/domain/forensics/submission-receipt";
+} from "../domain/forensics/submission-receipt.ts";
 
 /** Invented data only: persona Ana (U1), assignment Z1, deadline 2 Nov 2026 12:00 Zagreb. */
 const payload: SubmissionReceiptPayloadV1 = {

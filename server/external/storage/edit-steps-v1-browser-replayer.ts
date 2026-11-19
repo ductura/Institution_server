@@ -1,9 +1,9 @@
 import type { Node as PmNode } from "@tiptap/pm/model";
 
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
-import type { AsyncEvidenceStepReplayerV2 } from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3 } from "@/domain/forensics/evidence-segment-v2";
+import { EDIT_STEP_FORMAT_V1 } from "../../domain/document/edit-step.ts";
+import { sha256WebCrypto } from "../../domain/forensics/crypto.ts";
+import type { AsyncEvidenceStepReplayerV2 } from "../../domain/forensics/evidence-replay-v2.ts";
+import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
 
 import {
   editStepsV1Canonical,
@@ -11,7 +11,7 @@ import {
   refuse,
   removedRangeCanonical,
   runEditStepsV1,
-} from "./edit-steps-v1-rules";
+} from "./edit-steps-v1-rules.ts";
 
 /**
  * Browser entry of the `ductus-edit-steps-v1` replayer (granica 8, #638): the

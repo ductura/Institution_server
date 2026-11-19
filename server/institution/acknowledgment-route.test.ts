@@ -1,10 +1,10 @@
 import { fc, test } from "@fast-check/vitest";
 import { describe, expect, it, vi } from "vitest";
 
-import { NOTICE_TEMPLATE_VERSION } from "@/domain/notice/fingerprint";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import { NOTICE_TEMPLATE_VERSION } from "../domain/notice/fingerprint.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { handleAcknowledgment } from "./acknowledgment-route";
+import { handleAcknowledgment } from "./acknowledgment-route.ts";
 
 // DAN-306 M2.13-P02b (#1502 B1-B4, B7-B9, E3): the route takes the
 // fingerprint of the notice the browser showed and never records an

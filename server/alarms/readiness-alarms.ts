@@ -3,7 +3,7 @@ import {
   readinessAlarmTargets,
   type OpsAlarmKind,
   type OpsAlarmTarget,
-} from "@/domain/ops/alarm";
+} from "../domain/ops/alarm.ts";
 
 /**
  * Where alarms are delivered: the in-app channel, identity.ops_alarm. The

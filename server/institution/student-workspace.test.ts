@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { itemsOf, readStudentWorkspace } from "./student-workspace";
+import { itemsOf, readStudentWorkspace } from "./student-workspace.ts";
 
 // Invented courses, assignments and documents only.
 const TOKEN = "T".repeat(43);
