@@ -2,13 +2,13 @@
 // POST /api/v1/institution/assignments/{assignmentId}/versions (SRV-14,
 // Ductus#2028 c.7008147932; contracts institution.course-assignments.post and
 // institution.assignment-versions.post). The HTTP edge of Ductus
-// create-assignment.ts and assignment-version-route.ts at 078c780, in front of
+// create-assignment.ts and assignment-version-route.ts at 078c780 (the
+// creation's retry key is requestKey in the body, not an Idempotency-Key
+// header, so the generated client sends it), in front of
 // the same JSON reader as the course routes (readInstitutionJson: session,
 // path ids, media type, body, JSON). Who may do what is the RPC's; the caller
 // comes only from the session. Publishing sends nothing to anyone (C-17):
 // students read the assignment in student.assignments.get.
-import type { IncomingMessage } from "node:http";
-
 import { ROUTES } from "../contracts/index.ts";
 import {
   type AssignmentCreateOutcome,
@@ -51,10 +51,13 @@ const REFUSALS: ReadonlyMap<string, readonly [number, string]> = new Map([
 
 const contractOf = (id: string) => ROUTES.find((route) => route.id === id)!;
 
-/** The one Idempotency-Key header as a UUID, or null for none, several or another form. */
-function requestKeyOf(request: IncomingMessage): string | null {
-  const keys = request.headersDistinct["idempotency-key"];
-  return keys?.length === 1 && UUID.test(keys[0] ?? "") ? keys[0]!.toLowerCase() : null;
+/** {requestKey, ...content}: the key as a lower-case UUID and the rest as the content, or null. */
+function parseCreateBody(value: unknown) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const { requestKey, ...fields } = value as Record<string, unknown>;
+  if (typeof requestKey !== "string" || !UUID.test(requestKey)) return null;
+  const content = parseAssignmentInput(fields);
+  return content === null ? null : { key: requestKey.toLowerCase(), content };
 }
 
 export function createInstitutionAssignmentRoutes(
@@ -65,12 +68,7 @@ export function createInstitutionAssignmentRoutes(
   const route = (
     id: string,
     param: string,
-    run: (
-      token: string,
-      value: unknown,
-      pathId: string,
-      request: IncomingMessage,
-    ) => Promise<Outcome | null>,
+    run: (token: string, value: unknown, pathId: string) => Promise<Outcome | null>,
     answer: (outcome: Outcome, pathId: string) => Readonly<Record<string, unknown>> | null,
   ): Route => {
     const contract = contractOf(id);
@@ -82,7 +80,7 @@ export function createInstitutionAssignmentRoutes(
         const input = await readInstitutionJson(request, response, [pathId], maxBytes, timeoutMs);
         if (input === null) return;
         try {
-          const outcome = await run(input.token, input.value, pathId, request);
+          const outcome = await run(input.token, input.value, pathId);
           if (outcome === null) return sendProblem(response, 422, "invalid_input");
           const body = answer(outcome, pathId);
           if (body === null) {
@@ -104,11 +102,15 @@ export function createInstitutionAssignmentRoutes(
     route(
       "institution.course-assignments.post",
       "courseId",
-      async (token, value, courseId, request) => {
-        const key = requestKeyOf(request);
-        const content = parseAssignmentInput(value);
-        if (key === null || content === null) return null;
-        return options.assignments.createAssignment(token, courseId.toLowerCase(), key, content);
+      async (token, value, courseId) => {
+        const body = parseCreateBody(value);
+        if (body === null) return null;
+        return options.assignments.createAssignment(
+          token,
+          courseId.toLowerCase(),
+          body.key,
+          body.content,
+        );
       },
       (outcome) => (outcome.status === "created" ? { id: outcome.id } : null),
     ),

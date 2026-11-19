@@ -401,12 +401,12 @@ export const courseAssignmentsPost = defineRoute({
   inventory: "app/api/institution/courses/[courseId]/assignments/route.ts",
   access: "course_teacher",
   summary:
-    "A teacher of the course creates and publishes an assignment (version 1) with its rules on AI tools (aiPolicy and aiPurposes, A-14): the whole content, at most 90 000 bytes, sent as application/json (charset utf-8 only), and an Idempotency-Key header, a UUID the client makes once per form. The same key with the same content answers the same id; with other content it is 409 conflict. A malformed course id or key, a tightening the course forbids, an AI purpose under a prohibited policy, wordMin above wordMax or an impossible date is 422. Publishing sends nothing to anyone (C-17): students see it in student.assignments.get.",
+    "A teacher of the course creates and publishes an assignment (version 1) with its rules on AI tools (aiPolicy and aiPurposes, A-14): {requestKey} and the whole content, at most 90 000 bytes, sent as application/json (charset utf-8 only). requestKey is a UUID the client makes once per form, in the body so the generated client sends it. The same key with the same content answers the same id; with other content it is 409 conflict. A malformed course id or key, a tightening the course forbids, an AI purpose under a prohibited policy, wordMin above wordMax or an impossible date is 422. Publishing sends nothing to anyone (C-17): students see it in student.assignments.get.",
   request: {
     params: closed({ courseId: Uuid }),
     contentType: "application/json",
     maxBodyBytes: 90_000,
-    body: closed(ASSIGNMENT_CONTENT),
+    body: closed({ requestKey: Uuid, ...ASSIGNMENT_CONTENT }),
   },
   responses: [{ status: 201, description: "created", body: closed({ id: LowerUuid }) }],
   errors: [...MUTATION_ERRORS, error(409, "conflict")],

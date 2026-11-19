@@ -162,46 +162,27 @@ describe("the arguments of the port", () => {
     const v = CREATE.find((x) => x.kind === "success")!;
     createAnswer = () => ({ status: "created", id: v.response.body.id as string });
     await start(v.request.headers.origin!);
+    const { requestKey, ...content } = v.request.body as { requestKey: string } & AssignmentContent;
     const upper = {
       ...v,
-      request: {
-        ...v.request,
-        headers: {
-          ...v.request.headers,
-          "idempotency-key": v.request.headers["idempotency-key"]!.toUpperCase(),
-        },
-      },
+      request: { ...v.request, body: { requestKey: requestKey.toUpperCase(), ...content } },
     };
-    expect(
-      (
-        await send(
-          `/api/v1/institution/courses/${v.request.params.courseId!.toUpperCase()}/assignments`,
-          upper,
-        )
-      ).status,
-    ).toBe(201);
-    const content = v.request.body as AssignmentContent;
-    expect(calls).toEqual([
-      [
-        "create",
-        tokenOf(v),
-        v.request.params.courseId,
-        v.request.headers["idempotency-key"],
-        content,
-      ],
-    ]);
+    const course = v.request.params.courseId!;
+    const path = `/api/v1/institution/courses/${course.toUpperCase()}/assignments`;
+    expect((await send(path, upper)).status).toBe(201);
+    expect(calls).toEqual([["create", tokenOf(v), course, requestKey, content]]);
   });
 
-  it("create: no key, or two keys, is 422 before the port", async () => {
+  it("create: no key, or a key that is not a UUID, is 422 before the port", async () => {
     const v = CREATE.find((x) => x.kind === "success")!;
     await start(v.request.headers.origin!);
-    const headers = { ...v.request.headers };
-    delete headers["idempotency-key"];
-    const got = await send(`/api/v1/institution/courses/${v.request.params.courseId}/assignments`, {
-      ...v,
-      request: { ...v.request, headers },
-    });
-    expect(got.status).toBe(422);
+    const content = Object.fromEntries(
+      Object.entries(v.request.body as Record<string, unknown>).filter(([k]) => k !== "requestKey"),
+    );
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    for (const body of [content, { ...content, requestKey: "x" }]) {
+      expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(422);
+    }
     expect(calls).toEqual([]);
   });
 

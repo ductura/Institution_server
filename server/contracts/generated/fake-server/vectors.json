@@ -6819,10 +6819,10 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -6857,10 +6857,10 @@
       "headers": {
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -6900,10 +6900,10 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://drugo.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -6943,10 +6943,10 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "cross-site",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -6987,10 +6987,9 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "content-length": "90001"
       },
-      "rawBody": "{\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":2500}"
+      "rawBody": "{\"requestKey\":\"b15e6f70-8192-4da4-8eb5-f60718293a05\",\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":2500}"
     },
     "response": {
       "status": 413,
@@ -7016,10 +7015,9 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05",
-        "content-length": "374"
+        "content-length": "426"
       },
-      "rawBody": "{\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":25"
+      "rawBody": "{\"requestKey\":\"b15e6f70-8192-4da4-8eb5-f60718293a05\",\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":25"
     },
     "response": {
       "status": 408,
@@ -7045,10 +7043,10 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "content-length": "-1"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -7089,10 +7087,10 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05",
-        "content-length": "414"
+        "content-length": "466"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -7133,8 +7131,7 @@
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
         "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05",
-        "content-length": "374"
+        "content-length": "426"
       },
       "rawBody": "{\""
     },
@@ -7160,10 +7157,10 @@
       "headers": {
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -7203,10 +7200,10 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "nije-uuid"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "nije-uuid",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -7246,10 +7243,9 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "text/plain",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "text/plain"
       },
-      "rawBody": "{\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":2500}"
+      "rawBody": "{\"requestKey\":\"b15e6f70-8192-4da4-8eb5-f60718293a05\",\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":2500}"
     },
     "response": {
       "status": 415,
@@ -7274,10 +7270,9 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
-      "rawBody": "{\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":2500"
+      "rawBody": "{\"requestKey\":\"b15e6f70-8192-4da4-8eb5-f60718293a05\",\"title\":\"Seminarski rad: kućno kompostiranje\",\"instructions\":\"Izmišljene upute za izmišljeni zadatak.\",\"workType\":\"seminar_paper\",\"opensAt\":\"2026-10-01T08:00:00+02:00\",\"dueAt\":\"2027-01-31T23:59:00+01:00\",\"aiPolicy\":\"partially_allowed\",\"aiPurposes\":[\"proofreading\",\"literature_search\"],\"evidenceProfile\":\"basic\",\"importAllowed\":false,\"wordMin\":1500,\"wordMax\":2500"
     },
     "response": {
       "status": 400,
@@ -7302,10 +7297,10 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -7345,10 +7340,10 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",
@@ -7388,10 +7383,10 @@
         "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
         "origin": "https://ductura.example.invalid",
         "sec-fetch-site": "same-origin",
-        "content-type": "application/json",
-        "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05"
+        "content-type": "application/json"
       },
       "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
         "title": "Seminarski rad: kućno kompostiranje",
         "instructions": "Izmišljene upute za izmišljeni zadatak.",
         "workType": "seminar_paper",

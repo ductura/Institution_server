@@ -10008,7 +10008,7 @@
     "/api/v1/institution/courses/{courseId}/assignments": {
       "post": {
         "operationId": "institution.course-assignments.post",
-        "summary": "A teacher of the course creates and publishes an assignment (version 1) with its rules on AI tools (aiPolicy and aiPurposes, A-14): the whole content, at most 90 000 bytes, sent as application/json (charset utf-8 only), and an Idempotency-Key header, a UUID the client makes once per form. The same key with the same content answers the same id; with other content it is 409 conflict. A malformed course id or key, a tightening the course forbids, an AI purpose under a prohibited policy, wordMin above wordMax or an impossible date is 422. Publishing sends nothing to anyone (C-17): students see it in student.assignments.get.",
+        "summary": "A teacher of the course creates and publishes an assignment (version 1) with its rules on AI tools (aiPolicy and aiPurposes, A-14): {requestKey} and the whole content, at most 90 000 bytes, sent as application/json (charset utf-8 only). requestKey is a UUID the client makes once per form, in the body so the generated client sends it. The same key with the same content answers the same id; with other content it is 409 conflict. A malformed course id or key, a tightening the course forbids, an AI purpose under a prohibited policy, wordMin above wordMax or an impossible date is 422. Publishing sends nothing to anyone (C-17): students see it in student.assignments.get.",
         "x-access": "course_teacher",
         "x-inventory": "app/api/institution/courses/[courseId]/assignments/route.ts",
         "parameters": [
@@ -10030,6 +10030,7 @@
                 "additionalProperties": false,
                 "type": "object",
                 "required": [
+                  "requestKey",
                   "title",
                   "instructions",
                   "workType",
@@ -10043,6 +10044,10 @@
                   "wordMax"
                 ],
                 "properties": {
+                  "requestKey": {
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                    "type": "string"
+                  },
                   "title": {
                     "pattern": "^(?:(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[^\\uD800-\\uDBFF\\u0000])){1,200}(?![\\s\\S])",
                     "type": "string"
