@@ -1,16 +1,14 @@
-// The body of POST /api/v1/institution/assignments/{assignmentId}/versions.
-// Literal port of parseAssignmentInput, validInstant and isWordCount of Ductus
-// src/server/institution/create-assignment.ts and of parseBody and isVersion
-// of src/server/institution/assignment-version-route.ts at 078c780, with the
-// order and form of every check kept. Changes are of naming, export and
-// types only: wordRangeRequired is always true here (a new version names
-// both bounds, null drops one), so parseAssignmentInput takes no flag; the
-// result narrows nothing the checks do not already require. The RPC
-// (institution.publish_assignment_version) judges tightening and versions.
-
+// The content of an assignment version (SRV-14, Ductus#2028 c.7008147932):
+// literal port of parseAssignmentInput, validInstant and isWordCount of Ductus
+// src/server/institution/create-assignment.ts at 078c780 (the copy in
+// create-assignment.ts still imports Next), with the order and form of every
+// check kept. Changes: AssignmentInput is a type, NUL is a regular expression
+// (no-hardcoded-text), and parseAssignmentVersionBody
+// is the body check of assignment-version-route.ts (parseBody). The RPCs
+// (institution.create_assignment, publish_assignment_version) judge further.
 const MAX_WORDS = 1_000_000;
-const MAX_VERSION = 2_147_483_647;
-const NUL = "\u0000";
+/** The one character the RPCs refuse in a title or instructions (Ductus NUL). */
+const NUL = /\u0000/;
 const ISO_INSTANT =
   /^(\d{4})-(\d{2})-(\d{2})T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))$/;
 const WORK_TYPES = new Set([
@@ -31,7 +29,7 @@ const AI_PURPOSES = new Set([
   "translation",
 ]);
 
-export type AssignmentContent = {
+export type AssignmentInput = {
   title: string;
   instructions: string;
   workType: string;
@@ -45,8 +43,6 @@ export type AssignmentContent = {
   wordMax: number | null;
 };
 
-export type AssignmentVersionBody = { expectedVersion: number; content: AssignmentContent };
-
 type JsonObject = Record<string, unknown>;
 
 function isObject(value: unknown): value is JsonObject {
@@ -55,8 +51,11 @@ function isObject(value: unknown): value is JsonObject {
 
 /**
  * A calendar instant whose UTC year is 1000 to 9999, as
- * institution.is_assignment_content holds it (DAN-306): below year 1000 UTC
- * PostgreSQL and JS can write different years for the same instant.
+ * institution.is_assignment_content holds it (DAN-306). The range is checked
+ * after the offset is applied: below year 1000 UTC, PostgreSQL's to_char and
+ * Date.prototype.toISOString can write different years for the same instant
+ * (1 BC is 0001 and 0000), and the notice fingerprint would not be the same
+ * bytes in both languages.
  */
 function validInstant(value: unknown): value is string {
   if (typeof value !== "string") return false;
@@ -88,8 +87,15 @@ function isWordCount(value: unknown): value is number | null {
   );
 }
 
-/** The closed content of a new assignment version, both word bounds named. */
-export function parseAssignmentInput(value: unknown): AssignmentContent | null {
+/**
+ * The closed content of an assignment version. `wordRangeRequired` is for a
+ * new version (DAN-292): there `null` drops a bound, so an absent key must
+ * not drop it silently.
+ */
+export function parseAssignmentInput(
+  value: unknown,
+  wordRangeRequired = false,
+): AssignmentInput | null {
   if (!isObject(value)) return null;
   const keys = [
     "title",
@@ -102,11 +108,11 @@ export function parseAssignmentInput(value: unknown): AssignmentContent | null {
     "evidenceProfile",
     "importAllowed",
   ];
+  // The word range (DAN-229) is optional: an absent key is null, so an older client still creates.
   const range = ["wordMin", "wordMax"].filter((key) => Object.hasOwn(value, key)).length;
-  if (range !== 2) return null;
-  if (Object.keys(value).length !== keys.length + range || keys.some((key) => !(key in value))) {
+  if (wordRangeRequired && range !== 2) return null;
+  if (Object.keys(value).length !== keys.length + range || keys.some((key) => !(key in value)))
     return null;
-  }
   const wordMin = value.wordMin ?? null;
   const wordMax = value.wordMax ?? null;
   if (
@@ -134,9 +140,9 @@ export function parseAssignmentInput(value: unknown): AssignmentContent | null {
   if (
     Array.from(value.title).length === 0 ||
     Array.from(value.title).length > 200 ||
-    value.title.includes(NUL) ||
+    NUL.test(value.title) ||
     Array.from(value.instructions).length > 20_000 ||
-    value.instructions.includes(NUL) ||
+    NUL.test(value.instructions) ||
     !WORK_TYPES.has(value.workType) ||
     !AI_POLICIES.has(value.aiPolicy) ||
     !["basic", "extended"].includes(value.evidenceProfile) ||
@@ -162,14 +168,19 @@ export function parseAssignmentInput(value: unknown): AssignmentContent | null {
   };
 }
 
+const MAX_VERSION = 2_147_483_647;
+
+/** A version number of an assignment, 1 to 2^31 - 1. */
 export const isAssignmentVersion = (value: unknown): value is number =>
   Number.isSafeInteger(value) && (value as number) >= 1 && (value as number) <= MAX_VERSION;
 
-/** `expectedVersion` and exactly the content of a version (Ductus parseBody). */
-export function parseAssignmentVersionBody(value: unknown): AssignmentVersionBody | null {
+/** `expectedVersion` and exactly the content of a version, with both word bounds named. */
+export function parseAssignmentVersionBody(
+  value: unknown,
+): { expectedVersion: number; content: AssignmentInput } | null {
   if (!isObject(value) || !Object.hasOwn(value, "expectedVersion")) return null;
   const { expectedVersion, ...fields } = value;
   if (!isAssignmentVersion(expectedVersion)) return null;
-  const content = parseAssignmentInput(fields);
+  const content = parseAssignmentInput(fields, true);
   return content && { expectedVersion, content };
 }

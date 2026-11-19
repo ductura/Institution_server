@@ -21,26 +21,12 @@ const COURSE = "7b6a5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01";
 const UNTIL = "2026-12-31T23:59:59.123456+01:00";
 const STUDENT = "9d8c7b6a-5f4e-4c3b-9a2d-1e0f9a8b7c01";
 const ASSIGNMENT = "8c7b6a5d-4e3f-4b2a-8d9c-6e5f4a3b2c01";
-const CONTENT = {
-  title: "Izmišljeni zadatak",
-  instructions: "Izmišljene upute.",
-  workType: "essay",
-  opensAt: "2026-12-01T08:00:00Z",
-  dueAt: "2026-12-15T22:00:00+01:00",
-  aiPolicy: "partially_allowed",
-  aiPurposes: ["proofreading"],
-  evidenceProfile: "basic",
-  importAllowed: false,
-  wordMin: null,
-  wordMax: 3000,
-};
 const ROWS: ReadonlyMap<string, unknown> = new Map([
   ["create_course", { id: COURSE }],
   ["create_enrollment_code", { code: "A1B2-C3D4-E5F6-0789" }],
   ["revoke_enrollment_code", { revoked: true }],
   ["remove_student", { removed: true }],
   ["allow_student_return", { allowed: false }],
-  ["publish_assignment_version", { version_no: 2 }],
   ["set_assignment_work_language", { version: 4 }],
   ["set_work_language", { language: "hr" }],
 ]);
@@ -118,7 +104,6 @@ type Rpc =
   | "revoke_enrollment_code"
   | "remove_student"
   | "allow_student_return"
-  | "publish_assignment_version"
   | "set_assignment_work_language"
   | "set_work_language";
 const STUDENT_PATH = `/api/v1/institution/courses/${COURSE}/students/${STUDENT}`;
@@ -141,14 +126,6 @@ const ROUTES: ReadonlyMap<Rpc, Case> = new Map<Rpc, Case>([
   [
     "allow_student_return",
     { path: `${STUDENT_PATH}/return-permission`, body: "{}", values: [COURSE, STUDENT] },
-  ],
-  [
-    "publish_assignment_version",
-    {
-      path: `/api/v1/institution/assignments/${ASSIGNMENT}/versions`,
-      body: JSON.stringify({ expectedVersion: 1, ...CONTENT }),
-      values: [ASSIGNMENT, 1, ...Object.values(CONTENT)],
-    },
   ],
   [
     "set_assignment_work_language",
@@ -210,10 +187,6 @@ describe("createInstitutionCourseRoutesFor(main)", () => {
     ["allow_student_return", coded("ZD401"), 401],
     ["allow_student_return", coded("ZD403"), 403],
     ["allow_student_return", coded("ZD409"), 503],
-    ["publish_assignment_version", coded("ZD401"), 401],
-    ["publish_assignment_version", coded("ZD403"), 403],
-    ["publish_assignment_version", coded("ZD409"), 409],
-    ["publish_assignment_version", coded("ZD422"), 422],
     ["set_assignment_work_language", coded("ZD401"), 401],
     ["set_assignment_work_language", coded("ZD403"), 403],
     ["set_assignment_work_language", coded("ZD409"), 409],
@@ -241,7 +214,7 @@ describe("createInstitutionCourseRoutesFor(main)", () => {
 
   it.each(rpcs)("%s accepted runs its RPC and then the touch, on one withActor", async (rpc) => {
     await start();
-    expect(await call(rpc)).toBe(rpc === "publish_assignment_version" ? 201 : 200);
+    expect(await call(rpc)).toBe(200);
     await touch;
     expect(seen.map((s) => [s.rpc, s.token])).toEqual([
       [rpc, TOKEN],

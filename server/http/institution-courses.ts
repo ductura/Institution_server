@@ -9,10 +9,10 @@
 // where create-course.ts stripped it); an accepted answer counts as session
 // activity after it is written and a failure of the touch is swallowed, as
 // the profile route (Ductus counted awaited it). Who may do what is the RPC's.
-// The same front serves student-removal-route.ts, student-return-route.ts and
-// assignment-version-route.ts (Ductus 078c780): path ids in the contract's
-// order, an empty body for the first two, 201 for a published version; and
+// The same front serves student-removal-route.ts and student-return-route.ts
+// (Ductus 078c780): path ids in the contract's order and an empty body; and
 // work-language-route.ts (DAN-386), whose documentId is a work id, not a UUID.
+// The assignment version route is institution-assignments.ts (SRV-14).
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { isWorkId, ROUTES, workIdFromPath } from "../contracts/index.ts";
@@ -78,21 +78,14 @@ const LANGUAGE_REFUSALS: Refusals = new Map<string, Refusal>([
   ["invalid", INVALID],
   ["invalid_input", INVALID],
 ]);
-// ZD422 of the version RPC is a tightening (PRODUCT rule 14), ZD409 a stale version.
-const VERSION_REFUSALS: Refusals = new Map<string, Refusal>([
-  UNAUTHORIZED,
-  FORBIDDEN,
-  ["version_conflict", [409, "version_conflict"]],
-  ["invalid", INVALID],
-  ["invalid_input", INVALID],
-]);
 
 /**
  * A path segment decoded exactly once, through the one decoder of the
  * contracts (workIdFromPath: every UUID is a valid work id). Broken encoding
  * or a control character is "", which is never a UUID.
  */
-const decodeOnce = (segment: string | undefined): string => workIdFromPath(segment ?? "") ?? "";
+export const decodeOnce = (segment: string | undefined): string =>
+  workIdFromPath(segment ?? "") ?? "";
 
 /** Ductus readEmptyMutation: a non-null object, not an array, with no own enumerable key. */
 const isEmptyObject = (value: unknown): boolean =>
@@ -110,7 +103,7 @@ type Input = { readonly token: string; readonly value: unknown };
  * UTF-8 JSON (400). Refusals before the whole body was read close the
  * connection. Null when it already answered.
  */
-async function readInstitutionJson(
+export async function readInstitutionJson(
   request: IncomingMessage,
   response: ServerResponse,
   ids: readonly string[],
@@ -142,12 +135,7 @@ async function readInstitutionJson(
  * outcome carries (body, code, ok …) can choose the answer (QA on #259).
  */
 type Answer =
-  | {
-      readonly ok: true;
-      readonly body: Readonly<Record<string, unknown>>;
-      /** 200 unless the contract's success is another status (201 for a version). */
-      readonly status?: 201;
-    }
+  | { readonly ok: true; readonly body: Readonly<Record<string, unknown>> }
   | { readonly ok: false; readonly status: unknown };
 /** A refusal of this outcome's own status; a non-string status matches no refusal (503). */
 const refused = (outcome: { readonly status: unknown }): Answer => ({
@@ -198,7 +186,7 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
             const [status, code] = known ?? [503, "unavailable"];
             return sendProblem(response, status, code);
           }
-          sendJson(response, answer.status ?? 200, answer.body);
+          sendJson(response, 200, answer.body);
         } catch (error) {
           reportServerError("route", error, requestIdOf(response), contract.id);
           return sendProblem(response, 503, "unavailable");
@@ -254,21 +242,6 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
           : refused(outcome);
       },
       true,
-    ),
-    route(
-      "institution.assignment-versions.post",
-      VERSION_REFUSALS,
-      async (token, value, [assignmentId]) => {
-        const outcome = await service.publishAssignmentVersion(token, assignmentId!, value);
-        // Ductus answers the path's id in lower case, the RPC's version as read.
-        return outcome.status === "published"
-          ? {
-              ok: true,
-              status: 201,
-              body: { assignmentId: assignmentId!.toLowerCase(), versionNo: outcome.versionNo },
-            }
-          : refused(outcome);
-      },
     ),
     route(
       "institution.work-language.post",
