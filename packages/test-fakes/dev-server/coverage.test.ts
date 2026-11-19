@@ -190,6 +190,38 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "institution.assignment-versions.post": {
     request: { path: `${A}/versions`, as: "nastavnik", body: VERSION },
   },
+  "institution.admin-courses.post": {
+    request: {
+      path: "/api/v1/institution/admin/courses",
+      as: "administrator",
+      body: {
+        name: "Izmišljeni kolegij administratorice",
+        academicYear: "2026/2027",
+        aiPolicy: "prohibited",
+        holderId: IDS.teacher2,
+        groups: ["Grupa A"],
+      },
+    },
+  },
+  "institution.course-assignments.post": {
+    request: {
+      path: `${C}/assignments`,
+      as: "nastavnik",
+      headers: { ...ORIGIN, "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05" },
+      body: (({ expectedVersion: _v, ...content }) => content)(VERSION),
+    },
+  },
+  "institution.course-group-teachers.post": {
+    request: {
+      path: `/api/v1/institution/groups/${IDS.groupA}/teachers`,
+      as: "nastavnik",
+      body: { teacherId: IDS.teacher2 },
+    },
+  },
+  "institution.course-groups.get": { request: { path: `${C}/groups`, as: "nastavnik" } },
+  "institution.course-groups.post": {
+    request: { path: `${C}/groups`, as: "nastavnik", body: { name: "Grupa C" } },
+  },
   "institution.courses.post": {
     request: {
       path: "/api/v1/institution/courses",
