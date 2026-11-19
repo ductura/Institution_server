@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import pg from "pg";
@@ -104,7 +105,11 @@ type Snapshot = {
 it("loads the K-3 course, assignment and enrolment through the RPCs, and a rerun adds nothing (#635)", () => {
   requireLocalStack();
   if (hasCiMainSocket()) {
-    // Ductura CI's migrated cluster starts without the demo institutions.
+    // The database CI job does not run db:migrate's auth provisioning or db:seed.
+    const authLogin = readFileSync(
+      new URL("../../../db/main/local/auth-login.sql", import.meta.url),
+    );
+    mainSeedPsql(authLogin, ["-v", `auth_password=${randomBytes(24).toString("hex")}`]);
     mainSeedPsql(readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url)));
   }
   const input = ["BEGIN;", SNAPSHOT, k3, SNAPSHOT, k3, SNAPSHOT, "ROLLBACK;", ""].join("\n");
