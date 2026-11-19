@@ -1,12 +1,13 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 
 import pg from "pg";
 import { expect, it } from "vitest";
 
-import { createWithActor } from "../../../server/database/with-actor.ts";
+import { createWithActor } from "../../../server/database/index.ts";
+
+import { hasCiMainSocket, mainSeedPsql } from "./main-seed-psql.ts";
 
 const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
@@ -15,7 +16,6 @@ const APP_URL =
   "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54329/ductus";
 const DEMO_SLUG = "demo-fakultet";
 const OTHER_SLUG = "demo-bez-prijave";
-const root = fileURLToPath(new URL("../../", import.meta.url));
 const seed = readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url));
 
 function requireLocalStack() {
@@ -33,9 +33,10 @@ function requireLocalStack() {
       url.search ||
       url.hash
     ) {
-      throw new Error(`${name} must target the local Compose database`);
+      throw new Error(`${name} must target the local main database`);
     }
   }
+  if (hasCiMainSocket()) return;
   if (
     process.env.DOCKER_HOST ||
     process.env.DOCKER_CONTEXT ||
@@ -59,25 +60,8 @@ function requireLocalStack() {
 }
 
 function runSeed() {
-  // This is the db:seed command and its actual file, run outside any SQL transaction.
-  execFileSync(
-    "docker",
-    [
-      "compose",
-      "exec",
-      "-T",
-      "postgres",
-      "psql",
-      "-U",
-      "ductus",
-      "-d",
-      "ductus",
-      "-v",
-      "ON_ERROR_STOP=1",
-      "-q",
-    ],
-    { cwd: root, input: seed, stdio: ["pipe", "pipe", "pipe"] },
-  );
+  // Run the actual db:seed file over the server's local socket.
+  mainSeedPsql(seed);
 }
 
 type Settings = {
@@ -90,6 +74,7 @@ type Settings = {
 
 it("seeds only the local demo settings and preserves configuration and enrollment state on rerun", async () => {
   requireLocalStack();
+  if (hasCiMainSocket()) runSeed();
   const admin = new pg.Pool({ connectionString: ADMIN_URL });
   const app = new pg.Pool({ connectionString: APP_URL });
   const withActor = createWithActor(app);
@@ -101,8 +86,8 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
   let courseId = "";
   let original: Settings | undefined;
   try {
-    // CI runs local:prepare first. Remove only this synthetic row to model a
-    // freshly migrated stack, then restore its original value in finally.
+    // Remove only this synthetic row to model a freshly migrated stack, then
+    // restore its original value in finally.
     const institutions = await admin.query<{ id: string; slug: string }>(
       "SELECT id, slug FROM identity.institution WHERE slug = ANY($1)",
       [[DEMO_SLUG, OTHER_SLUG]],

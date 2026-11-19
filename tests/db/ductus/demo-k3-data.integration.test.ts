@@ -1,16 +1,16 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 
 import pg from "pg";
 import { expect, it } from "vitest";
+
+import { hasCiMainSocket, mainSeedPsql } from "./main-seed-psql.ts";
 
 // K-3b2 / DAN-88 (#635): db/local/demo-k3.sql, the file `pnpm local:up` loads,
 // run twice through the same psql path inside one transaction that is rolled
 // back, so CI checks it without leaving a confirmed teacher for the E2E tests.
 const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
-const root = fileURLToPath(new URL("../../", import.meta.url));
 const k3 = readFileSync(new URL("../../../db/main/local/demo-k3.sql", import.meta.url), "utf8");
 
 function requireLocalStack() {
@@ -24,8 +24,9 @@ function requireLocalStack() {
     url.search ||
     url.hash
   ) {
-    throw new Error("DATABASE_URL must target the local Compose database");
+    throw new Error("DATABASE_URL must target the local main database");
   }
+  if (hasCiMainSocket()) return;
   if (
     process.env.DOCKER_HOST ||
     process.env.DOCKER_CONTEXT ||
@@ -102,28 +103,12 @@ type Snapshot = {
 
 it("loads the K-3 course, assignment and enrolment through the RPCs, and a rerun adds nothing (#635)", () => {
   requireLocalStack();
+  if (hasCiMainSocket()) {
+    // Ductura CI's migrated cluster starts without the demo institutions.
+    mainSeedPsql(readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url)));
+  }
   const input = ["BEGIN;", SNAPSHOT, k3, SNAPSHOT, k3, SNAPSHOT, "ROLLBACK;", ""].join("\n");
-  const output = execFileSync(
-    "docker",
-    [
-      "compose",
-      "exec",
-      "-T",
-      "postgres",
-      "psql",
-      "-X",
-      "-q",
-      "-t",
-      "-A",
-      "-v",
-      "ON_ERROR_STOP=1",
-      "-U",
-      "ductus",
-      "-d",
-      "ductus",
-    ],
-    { cwd: root, input, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
-  );
+  const output = mainSeedPsql(input, ["-t", "-A"]);
   const [before, first, second] = output
     .split(/\r?\n/)
     .filter((line) => line.startsWith("{"))

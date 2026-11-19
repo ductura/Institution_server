@@ -1,12 +1,20 @@
+import { strict as assert } from "node:assert";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
-import { NextRequest } from "next/server";
 import pg from "pg";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { POST } from "../../app/api/institution/courses/[courseId]/enrollment-code/route";
-import { createWithActor } from "../../../server/database/with-actor.ts";
-import { handleEnrollmentCodeRequest } from "../../../server/database/institution-courses.ts";
+import { createWithActor } from "../../../server/database/index.ts";
+import {
+  createDatabases,
+  createInstitutionCourseRoutesFor,
+  createLayers,
+  startServer,
+  type Running,
+} from "../../../server/http/index.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
+
+import { expectHttpProblem } from "./http-problem.ts";
 
 // Real PostgreSQL and ductus_app login, with entirely invented fixtures.
 const admin = new pg.Pool({
@@ -40,19 +48,27 @@ const ids = Object.values(people).map((person) => person.id);
 const expired = token(),
   closed = token();
 let course: string, foreign: string, validUntil: string;
+let server: Running;
 const hash = (code: string) => createHash("sha256").update(code.replaceAll("-", "")).digest("hex");
-const req = (session = people.teacher.token, until = validUntil) =>
-  new NextRequest(`${ORIGIN}/api/institution/courses/${course}/enrollment-code`, {
+const post = (session = people.teacher.token, target = course, until = validUntil) =>
+  fetch(`http://127.0.0.1:${server.port}/api/v1/institution/courses/${target}/enrollment-code`, {
     method: "POST",
     headers: {
       origin: ORIGIN,
       "content-type": "application/json",
-      cookie: `__Host-ductus_session=${session}`,
+      cookie: `${SESSION_COOKIE_NAME}=${session}`,
     },
     body: JSON.stringify({ validUntil: until }),
   });
-const post = (session = people.teacher.token, target = course, until = validUntil) =>
-  POST(req(session, until), { params: Promise.resolve({ courseId: target }) });
+
+async function issuedCode(response: Response): Promise<string> {
+  const body = await response.json();
+  assert(typeof body === "object" && body !== null && "code" in body);
+  expect(Object.keys(body)).toEqual(["code"]);
+  assert(typeof body.code === "string");
+  return body.code;
+}
+
 const codes = async () =>
   (
     await admin.query(
@@ -97,7 +113,6 @@ async function snapshot(includeCodes = false) {
 }
 
 beforeAll(async () => {
-  vi.stubEnv("OIDC_REDIRECT_URI", `${ORIGIN}/api/auth/callback`);
   const suffix = randomBytes(6).toString("hex");
   for (const [index, faculty] of faculties.entries()) {
     await admin.query("INSERT INTO identity.institution (id, slug) VALUES ($1, $2)", [
@@ -164,10 +179,17 @@ beforeAll(async () => {
   ).rows[0].until;
   // OF can be +00: explicit ISO timestamps use +00:00.
   if (/[-+]\d{2}$/.test(validUntil)) validUntil += ":00";
+  server = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin: ORIGIN }),
+    databases: createDatabases(),
+    routes: createInstitutionCourseRoutesFor({ withActor }),
+  });
 });
 
 afterAll(async () => {
-  vi.unstubAllEnvs();
+  await server?.close();
   await app.end();
   // The audit trail is append-only; only this clean-up steps around it, on its own connection and for its own rows.
   const cleaner = await admin.connect();
@@ -216,11 +238,10 @@ describe("enrollment code real POST, session and database", () => {
     const response = await post();
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    const body = await response.json();
-    expect(Object.keys(body)).toEqual(["code"]);
-    expect(body.code).toMatch(/^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/);
+    const firstCode = await issuedCode(response);
+    expect(firstCode).toMatch(/^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/);
     expect(await codes()).toEqual([
-      { hash: hash(body.code), active: true, created_by: people.teacher.id },
+      { hash: hash(firstCode), active: true, created_by: people.teacher.id },
     ]);
     expect(await events()).toEqual([]);
     expect(
@@ -233,19 +254,19 @@ describe("enrollment code real POST, session and database", () => {
     ).toBe(true);
     expect(await snapshot()).toEqual(before);
     const stored = JSON.stringify(await snapshot(true));
-    expect(stored.includes(body.code) || stored.includes(body.code.replaceAll("-", ""))).toBe(
+    expect(stored.includes(firstCode) || stored.includes(firstCode.replaceAll("-", ""))).toBe(
       false,
     );
     const second = await post();
     expect(second.status).toBe(200);
-    const next = (await second.json()).code;
-    expect(next).not.toBe(body.code);
+    const next = await issuedCode(second);
+    expect(next).not.toBe(firstCode);
     expect((await codes()).filter((row) => row.active)).toEqual([
       { hash: hash(next), active: true, created_by: people.teacher.id },
     ]);
-    expect((await codes()).find((row) => row.hash === hash(body.code))?.active).toBe(false);
+    expect((await codes()).find((row) => row.hash === hash(firstCode))?.active).toBe(false);
     expect(await events()).toEqual([
-      { hash: hash(body.code), kind: "replaced", actor_id: people.teacher.id },
+      { hash: hash(firstCode), kind: "replaced", actor_id: people.teacher.id },
     ]);
     expect(await snapshot()).toEqual(before);
   });
@@ -254,18 +275,15 @@ describe("enrollment code real POST, session and database", () => {
     const before = await snapshot(true);
     for (const session of [token(), expired, closed]) {
       const response = await post(session);
-      expect(response.status).toBe(401);
-      expect(await response.json()).toEqual({ error: "unauthorized" });
+      await expectHttpProblem(response, 401, "unauthorized");
     }
     for (const name of ["student", "unconfirmed", "revoked", "nonmember", "outsider"] as const) {
       const response = await post(people[name].token);
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: "forbidden" });
+      await expectHttpProblem(response, 403, "forbidden");
     }
     for (const target of [foreign, randomUUID()]) {
       const response = await post(people.teacher.token, target);
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: "forbidden" });
+      await expectHttpProblem(response, 403, "forbidden");
     }
     await admin.query(
       "UPDATE institution.course_member SET member_to=now() WHERE course_id=$1 AND user_id=$2",
@@ -291,8 +309,7 @@ describe("enrollment code real POST, session and database", () => {
     ).rows[0];
     for (const time of Object.values(times) as Date[]) {
       const response = await post(people.teacher.token, course, time.toISOString());
-      expect(response.status).toBe(422);
-      expect(await response.json()).toEqual({ error: "invalid_input" });
+      await expectHttpProblem(response, 422, "invalid_input");
     }
     expect(await snapshot(true)).toEqual(before);
   });
@@ -302,13 +319,7 @@ describe("enrollment code real POST, session and database", () => {
     const blocker = await admin.connect();
     await blocker.query("BEGIN");
     await blocker.query("SELECT id FROM institution.course WHERE id=$1 FOR UPDATE", [course]);
-    const calls = [people.teacher, people.second].map((person) =>
-      handleEnrollmentCodeRequest(req(person.token), course, {
-        withActor,
-        expectedOrigin: ORIGIN,
-        sessionToken: person.token,
-      }),
-    );
+    const calls = [people.teacher, people.second].map((person) => post(person.token));
     try {
       const deadline = Date.now() + 3000;
       let waiting = 0;
@@ -332,7 +343,7 @@ describe("enrollment code real POST, session and database", () => {
     const issued = [];
     for (const response of responses) {
       expect(response.status).toBe(200);
-      issued.push((await response.json()).code as string);
+      issued.push(await issuedCode(response));
     }
     expect(new Set(issued).size).toBe(2);
     const rows = await codes();
