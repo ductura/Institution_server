@@ -183,8 +183,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.enrollments.post",
   "institution.admin-courses.post",
   "institution.course-groups.get",
-  "institution.course-groups.post",
-  "institution.course-group-teachers.post",
 ];
 
 /**

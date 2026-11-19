@@ -25,6 +25,7 @@ import {
   createMeRouteFor,
   createTeacherReadRoutesFor,
   createInstitutionAssignmentRoutesFor,
+  createInstitutionGroupRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createWebAuthnRoutesFor,
@@ -134,6 +135,8 @@ async function main(): Promise<void> {
       ...createInstitutionCourseRoutesFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
       ...createInstitutionAssignmentRoutesFor(databases.main),
+      // A course's seminar groups and their teachers (SRV-15, Ductus#2028).
+      ...createInstitutionGroupRoutesFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
       ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;

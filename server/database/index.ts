@@ -117,6 +117,12 @@ export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
 export { createInstitutionAssignments } from "./institution-assignments.ts";
+export { createInstitutionGroups } from "./institution-groups.ts";
+export type {
+  GroupCreateOutcome,
+  GroupTeacherOutcome,
+  InstitutionGroups,
+} from "./institution-groups.ts";
 export type {
   AssignmentContent,
   AssignmentCreateOutcome,
