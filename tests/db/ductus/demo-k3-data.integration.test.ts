@@ -77,7 +77,8 @@ SELECT json_build_object(
   'codes', (SELECT count(*) FROM institution.course_enrollment_code e WHERE e.course_id IN (SELECT id FROM c)),
   'activeCodes', (SELECT count(*) FROM institution.course_enrollment_code e WHERE e.course_id IN (SELECT id FROM c) AND e.active),
   'attempts', (SELECT count(*) FROM institution.enrollment_attempt x JOIN u ON u.id = x.user_id),
-  'openSessions', (SELECT count(*) FROM identity.session s JOIN u ON u.id = s.user_id WHERE s.closed_at IS NULL),
+  'openSessions', (SELECT coalesce(json_agg(encode(s.token_hash, 'hex') ORDER BY s.token_hash), '[]'::json)
+                     FROM identity.session s JOIN u ON u.id = s.user_id WHERE s.closed_at IS NULL),
   'sessions', (SELECT count(*) FROM identity.session s JOIN u ON u.id = s.user_id),
   'documents', (SELECT count(*) FROM evidence.document d JOIN u ON u.id = d.principal_id),
   'role', current_user
@@ -96,7 +97,7 @@ type Snapshot = {
   codes: number;
   activeCodes: number;
   attempts: number;
-  openSessions: number;
+  openSessions: string[];
   sessions: number;
   documents: number;
   role: string;
@@ -127,7 +128,7 @@ it("loads the K-3 course, assignment and enrolment through the RPCs, and a rerun
     memberships: 3,
     acknowledgments: 2,
     activeCodes: 0,
-    openSessions: 0,
+    openSessions: before.openSessions,
     documents: before.documents,
     role: "ductus",
   });
