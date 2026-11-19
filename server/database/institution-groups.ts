@@ -29,8 +29,15 @@ export type InstitutionGroups = {
 };
 
 const CREATE_SQL = "SELECT institution.create_seminar_group($1::uuid, $2::text) AS id";
-// Whether the teacher already taught the group is read in the statement's
-// snapshot, before the call writes; the RPC itself writes nothing twice.
+// Whether the teacher already taught the group must be read after any
+// concurrent assignment or removal of the group has committed: the first
+// statement takes the course's group lock that assign_group_teacher and
+// end_group_assignment take (re-entrant for the RPC), and the second reads in
+// a snapshot taken after it, then calls the RPC (Codex on #368). A group the
+// caller cannot see takes no lock, and the RPC refuses it (ZD403).
+const ASSIGN_LOCK_SQL = `SELECT pg_catalog.pg_advisory_xact_lock(
+  pg_catalog.hashtextextended('institution.seminar_group:' || g.course_id::text, 0))
+  FROM institution.seminar_group g WHERE g.id = $1::uuid AND $2::uuid IS NOT NULL`;
 const ASSIGN_SQL = `WITH earlier AS (
   SELECT EXISTS (
     SELECT 1 FROM institution.seminar_group_teacher t
@@ -73,7 +80,7 @@ export function createInstitutionGroups(withActor: WithActor): InstitutionGroups
       const outcome = await call(
         withActor,
         token,
-        ASSIGN_SQL,
+        [ASSIGN_LOCK_SQL, ASSIGN_SQL],
         [groupId, teacherId],
         readAssigned,
         REFUSED,

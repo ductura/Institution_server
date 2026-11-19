@@ -87,7 +87,7 @@ function codeOf(thrown: unknown): unknown {
 export async function call<T, S extends string>(
   withActor: WithActor,
   token: string,
-  sql: string,
+  sql: string | readonly [string, string],
   params: unknown[],
   read: (rows: unknown) => T | null,
   refused: ReadonlyMap<string, S>,
@@ -95,7 +95,11 @@ export async function call<T, S extends string>(
 ): Promise<{ readonly value: T } | Refused<S> | Unavailable> {
   try {
     const value = await withActor(token, async (tx) => {
-      const found = read((await tx.query(sql, params)).rows);
+      // A pair is one statement that takes a lock, then the read in a fresh
+      // snapshot (READ COMMITTED), with the same parameters.
+      if (typeof sql !== "string") await tx.query(sql[0], params);
+      const text = typeof sql === "string" ? sql : sql[1];
+      const found = read((await tx.query(text, params)).rows);
       if (found === null) throw MALFORMED;
       return found;
     });
