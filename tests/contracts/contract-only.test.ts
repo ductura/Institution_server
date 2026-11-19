@@ -9,7 +9,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
-import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
+import type {
+  ActorReader,
+  SettingsWriter,
+  WebAuthnCredentials,
+} from "../../server/database/index.ts";
 import {
   AREA_NAMES,
   createInstitutionCourseRoutesFor,
@@ -21,8 +25,11 @@ import {
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
+  createSubmissionRouteFor,
   createWebAuthnRoutesFor,
+  REFUSING_SIGNER,
   routesOf,
+  STORAGE_NOT_CONFIGURED,
 } from "../../server/http/index.ts";
 
 // The operations of DAN-803 (c.6905207008, tables of PR1 to PR6), frozen: the
@@ -169,6 +176,17 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-18: a student's submission over the process's signer and storage.
+    call: "createSubmissionRouteFor(databases.main, evidenceDeps)",
+    ids: ["submission.submit.post"],
+    routes: () => [
+      createSubmissionRouteFor(
+        { ...NO_ACTOR, actorReader: {} as ActorReader },
+        { signer: REFUSING_SIGNER, payloads: STORAGE_NOT_CONFIGURED },
+      ).contract.id,
+    ],
+  },
+  {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
     call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
     ids: [
@@ -259,11 +277,13 @@ describe("CONTRACT_ONLY", () => {
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
       // problem report (851-2d2a), the course routes (852-5a), the download
       // manifest (DAN-932), the teacher's reads (SRV-13) and the assignment
-      // routes (SRV-14) and the group routes (SRV-15) are missing too, in task order.
+      // routes (SRV-14), the group routes (SRV-15) and the submission (SRV-18)
+      // are missing too, in task order.
       [
         ...["support.problem-report.post", "teacher.courses.get", "institution.courses.post"],
         ...["institution.course-assignments.post", "institution.enrollment-code.post"],
         ...["institution.enrollment-code-revocation.post", "institution.assignment-versions.post"],
+        "submission.submit.post",
         ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_931],
         ...["institution.admin-courses.post", "institution.course-groups.post"],
         "institution.course-group-teachers.post",
@@ -297,6 +317,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-group-teachers.post",
       "teacher.courses.get",
       "teacher.access.get",
+      "submission.submit.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

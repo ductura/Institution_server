@@ -32,6 +32,7 @@ import {
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
+  createSubmissionRouteFor,
   createSettingsValuesPutRoute,
   evidenceIngestDependencies,
   createLayers,
@@ -148,6 +149,9 @@ async function main(): Promise<void> {
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
       // DAN-818: one replay page, read from the same storage as commit writes.
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+      // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
+      // storage as commit; the time is the database's, never the client's.
+      createSubmissionRouteFor(databases.main, evidenceDeps),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
