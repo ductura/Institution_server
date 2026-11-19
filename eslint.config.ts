@@ -236,6 +236,18 @@ const DATABASE_NAMES = [
   // Result columns of the worker's pending backlog (pending-receipt-queue.ts, DAN-820) and its tests.
   "oldest_created_at",
   "pending_count",
+  // Result columns of the teacher reads (teacher-courses.ts, mentored-works.ts,
+  // assignment-submissions.ts; Ductus#2028, w1119o) and their tests.
+  "academic_year",
+  "after_deadline",
+  "assignment_id",
+  "course_id",
+  "course_name",
+  "due_at",
+  "enrolled_students",
+  "mentorship_id",
+  "opens_at",
+  "requested_minute",
   // Result column of the replay source (replay-source.ts, DAN-818) and its tests.
   "segment_hashes",
   // Result columns of the WebAuthn credential port (webauthn-credentials.ts, DAN-840) and its tests.

@@ -10,7 +10,9 @@ import { Minute as SummaryMinute, ProcessSummaryV1 } from "./process-summary-sha
 // the session; the database decides which rows. Each read answers for all of
 // its rows: a row it cannot vouch for makes the whole answer 503, never a
 // partial list. A cross-site read (Sec-Fetch-Site other than same-origin) is
-// 403. No handler yet (CONTRACT_ONLY).
+// 403. The courses, mentorship and submission reads are served by
+// server/http/teacher-reads.ts; the fast path and access have no handler yet
+// (CONTRACT_ONLY).
 
 /** Lowercase UUID, as the Ductus UUID check of these reads. */
 const Uuid = Type.String({

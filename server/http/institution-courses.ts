@@ -110,7 +110,7 @@ type Input = { readonly token: string; readonly value: unknown };
  * UTF-8 JSON (400). Refusals before the whole body was read close the
  * connection. Null when it already answered.
  */
-async function readInstitutionJson(
+export async function readInstitutionJson(
   request: IncomingMessage,
   response: ServerResponse,
   ids: readonly string[],

@@ -78,6 +78,13 @@ export {
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
+  createTeacherReadRoutes,
+  createTeacherReadRoutesFor,
+  MAX_ASSIGNMENT_IDS,
+  parseAssignmentIdsBody,
+  type TeacherReadOptions,
+} from "./teacher-reads.ts";
+export {
   declaredLengthRefusal,
   readBodyWithLimit,
   type LimitedBodyResult,

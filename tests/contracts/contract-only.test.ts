@@ -16,6 +16,7 @@ import {
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
+  createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   routesOf,
@@ -41,6 +42,15 @@ const INSTITUTION_COURSE_ROUTES = [
   "institution.work-language.post",
   "institution.student-work-language.post",
   "institution.work-work-language.post",
+] as const;
+
+/** The teacher's reads (Ductus#2028, w1119o), in the order of their factory. */
+const TEACHER_READ_ROUTES = [
+  "teacher.courses.get",
+  "teacher.mentorships.get",
+  "teacher.mentorship.get",
+  "teacher.submissions.get",
+  "teacher.assignment-submissions.post",
 ] as const;
 
 export const DAN_803: readonly string[] = [
@@ -138,6 +148,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createInstitutionCourseRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // Ductus#2028 (w1119o): the teacher's reads over the main database.
+    call: "createTeacherReadRoutesFor(databases.main)",
+    ids: [...TEACHER_READ_ROUTES],
+    routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
     call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
     ids: [
@@ -228,11 +244,12 @@ describe("CONTRACT_ONLY", () => {
     // work language routes come before the course routes.
     expect(contractOnlyProblems(withoutSettings, ids, []).sort()).toEqual(
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
-      // problem report (851-2d2a), the course routes (852-5a) and the
-      // download manifest (DAN-932) are missing too.
+      // problem report (851-2d2a), the course routes (852-5a), the
+      // download manifest (DAN-932) and the teacher's reads are missing too.
       [
         ...["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840],
         ...DAN_931,
+        ...TEACHER_READ_ROUTES,
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -258,6 +275,7 @@ describe("routes the entry point mounts itself", () => {
       "downloads.manifest.get",
       "support.problem-report.post",
       ...INSTITUTION_COURSE_ROUTES,
+      ...TEACHER_READ_ROUTES,
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
@@ -269,7 +287,7 @@ describe("routes the entry point mounts itself", () => {
     expect(CONTRACT_ONLY).not.toContain("support.problem-report.post");
     expect(mounted()).toContain("downloads.manifest.get");
     expect(CONTRACT_ONLY).not.toContain("downloads.manifest.get");
-    for (const id of INSTITUTION_COURSE_ROUTES) {
+    for (const id of [...INSTITUTION_COURSE_ROUTES, ...TEACHER_READ_ROUTES]) {
       expect(mounted()).toContain(id);
       expect(CONTRACT_ONLY).not.toContain(id);
     }

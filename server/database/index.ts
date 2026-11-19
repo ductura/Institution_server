@@ -70,6 +70,22 @@ export type {
   StudentReturnOutcome,
 } from "./institution-members.ts";
 export type {
+  AssignmentSubmission,
+  AssignmentSubmissionsOutcome,
+  AssignmentSubmissionsReader,
+} from "./assignment-submissions.ts";
+export type {
+  MentoredWork,
+  MentoredWorkOutcome,
+  MentoredWorksOutcome,
+  MentoredWorksReader,
+} from "./mentored-works.ts";
+export type {
+  TeacherCourse,
+  TeacherCoursesOutcome,
+  TeacherCoursesReader,
+} from "./teacher-courses.ts";
+export type {
   AssignmentWorkLanguageOutcome,
   WorkLanguageOutcome,
   WorkLanguages,
@@ -180,6 +196,9 @@ export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";
 export { createWorkLanguages } from "./work-language.ts";
+export { createAssignmentSubmissionsReader } from "./assignment-submissions.ts";
+export { createMentoredWorksReader } from "./mentored-works.ts";
+export { createTeacherCoursesReader } from "./teacher-courses.ts";
 export {
   createInstitutionEnrollment,
   ENROLLMENT_DATABASE_ERROR,
