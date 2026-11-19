@@ -1,5 +1,5 @@
-import type { WithActor } from "@/server/db/with-actor";
-import { parseAssignmentInput, type AssignmentInput } from "./create-assignment";
+import type { WithActor } from "../database/with-actor.ts";
+import { parseAssignmentInput, type AssignmentInput } from "./create-assignment.ts";
 import { readJsonMutation, respond, rpcErrorResponse } from "./mutation-route";
 
 export const MAX_ASSIGNMENT_VERSION_BODY_BYTES = 90_000;

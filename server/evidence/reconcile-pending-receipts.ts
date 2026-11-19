@@ -1,10 +1,10 @@
 import type {
   PendingReceiptQueue,
   PendingReceiptRow,
-} from "@/application/ports/pending-receipt-signing";
-import { isPlainObject } from "@/domain/json";
+} from "../database/pending-receipt-signing.ts";
+import { isPlainObject } from "../domain/json/index.ts";
 
-import type { SignPendingReceiptOutcome } from "./sign-pending-receipt";
+import type { SignPendingReceiptOutcome } from "./sign-pending-receipt.ts";
 
 export const MAX_RECONCILE_GRACE_MS = 86_400_000;
 export const MAX_RECONCILE_BATCH = 100;

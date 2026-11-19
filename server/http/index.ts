@@ -147,6 +147,10 @@ export {
   STUDENT_WRITE_TIMEOUT_MS,
 } from "./student-writes.ts";
 export {
+  createStudentAccessLogRoute,
+  createStudentAccessLogRouteFor,
+} from "./student-access-log.ts";
+export {
   bearerMatches,
   checkProvisionBody,
   createInternalInstitutionRoutes,

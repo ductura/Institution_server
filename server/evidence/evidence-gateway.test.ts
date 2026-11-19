@@ -4,30 +4,30 @@ import type {
   AuthorizationCheck,
   AuthorizationDecision,
   AuthorizationPort,
-} from "@/application/ports/authorization";
-import type { EvidenceAcceptanceRecord } from "@/application/ports/evidence-trust";
+} from "../application/ports/authorization.ts";
+import type { EvidenceAcceptanceRecord } from "../application/ports/evidence-trust.ts";
 import type {
   PublicVerificationKey,
   SignatureEnvelope,
   SigningKeyProvider,
-} from "@/application/ports/signing-key-provider";
-import { DevelopmentEd25519SigningKeyProvider } from "@/adapters/crypto/development-ed25519-signer";
-import { InMemoryEvidenceAcceptanceRepository } from "@/adapters/evidence/in-memory-evidence-acceptance-repository";
-import { InMemoryEvidenceContextPort } from "@/adapters/evidence/in-memory-evidence-context";
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
-import { digestEvidenceReceiptPayload } from "@/domain/forensics/evidence-receipt";
+} from "../external/keys/signing-key-provider.ts";
+import { DevelopmentEd25519SigningKeyProvider } from "../external/keys/development-ed25519-signer.ts";
+import { InMemoryEvidenceAcceptanceRepository } from "../external/storage/in-memory-evidence-acceptance-repository.ts";
+import { InMemoryEvidenceContextPort } from "../external/storage/in-memory-evidence-context.ts";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import { digestEvidenceReceiptPayload } from "../domain/forensics/evidence-receipt.ts";
 import {
   EVIDENCE_CANONICALIZATION_V2,
   EVIDENCE_HASH_ALGORITHM_V2,
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSegmentV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import { MAX_EVIDENCE_SEGMENT_BYTES } from "@/domain/forensics/evidence-chain-v2";
-import { buildEvidenceIngestCommandV2 } from "./evidence-outbox";
-import { EvidenceGateway } from "./evidence-gateway";
+} from "../domain/forensics/evidence-segment-v2.ts";
+import { sha256WebCrypto } from "../domain/forensics/crypto.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../domain/document/edit-step.ts";
+import { MAX_EVIDENCE_SEGMENT_BYTES } from "../domain/forensics/evidence-chain-v2.ts";
+import { buildEvidenceIngestCommandV2 } from "./evidence-outbox.ts";
+import { EvidenceGateway } from "./evidence-gateway.ts";
 
 // A synthetic institution; no real one is used in tests.
 const INSTITUTION_ID = "00000000-0000-4000-8000-00000000000a";
@@ -1096,12 +1096,12 @@ describe("EvidenceGateway", () => {
       // The command check compares the two sizes first, so the comparison in
       // the gateway is the second line. Here the first one is taken away.
       vi.resetModules();
-      vi.doMock("@/application/ports/evidence-ingest", async (importOriginal) => ({
+      vi.doMock("../application/ports/evidence-ingest.ts", async (importOriginal) => ({
         ...((await importOriginal()) as Record<string, unknown>),
         validateEvidenceIngestCommandV2: () => true,
       }));
       try {
-        const { EvidenceGateway: GatewayBehindLaxCheck } = await import("./evidence-gateway");
+        const { EvidenceGateway: GatewayBehindLaxCheck } = await import("./evidence-gateway.ts");
         const behindLaxCheck = (s: ReturnType<typeof setup>) =>
           new GatewayBehindLaxCheck({
             authorization: s.authorization,

@@ -1,4 +1,4 @@
-import type { WithActor } from "@/server/db/with-actor";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * F-113 decision B, step B2 (#711, contract c.6390760491): the works of one

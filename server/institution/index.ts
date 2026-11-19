@@ -15,4 +15,10 @@ export {
   parseStudentEnrollmentBody,
   type StudentEnrollmentBody,
 } from "./student-writes-route.ts";
+export {
+  accessLogCursorOf,
+  readStudentAccessLog,
+  type StudentAccessLogAnswer,
+  type StudentAccessLogEntry,
+} from "./student-access-log-route.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";

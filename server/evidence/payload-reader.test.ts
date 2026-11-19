@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { InstitutionRoutedPayloadStore } from "@/adapters/evidence/institution-routed-payload-store";
+import { InstitutionRoutedPayloadStore } from "../external/storage/institution-routed-payload-store.ts";
 
 import { createEvidencePayloadReader, STORAGE_NOT_CONFIGURED } from "./payload-reader";
 

@@ -9,22 +9,25 @@ import type {
   PendingReceiptQueue,
   PendingReceiptRow,
   PendingReceiptsRead,
-} from "@/application/ports/pending-receipt-signing";
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
-import type { EvidenceReceiptPayloadV2 } from "@/domain/forensics/evidence-receipt";
+} from "../database/pending-receipt-signing.ts";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
+import type { EvidenceReceiptPayloadV2 } from "../domain/forensics/evidence-receipt.ts";
 import {
   verifySignedEvidenceReceiptV2,
   type EvidenceDomainKey,
-} from "@/domain/forensics/evidence-receipt-verifier";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import type { SignatureEnvelope } from "@/domain/forensics/signature";
+} from "../domain/forensics/evidence-receipt-verifier.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import type { SignatureEnvelope } from "../domain/forensics/signature.ts";
 
 import {
   createReconcilePendingReceipts,
   type ReconcileDeps,
   type ReconcileSummary,
-} from "./reconcile-pending-receipts";
-import { createSignPendingReceipt, type SignPendingReceiptOutcome } from "./sign-pending-receipt";
+} from "./reconcile-pending-receipts.ts";
+import {
+  createSignPendingReceipt,
+  type SignPendingReceiptOutcome,
+} from "./sign-pending-receipt.ts";
 
 // Every value here is invented for the test.
 const NOW = Date.parse("2026-11-09T12:00:00.000Z");

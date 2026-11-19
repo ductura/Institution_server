@@ -2,16 +2,16 @@ import type {
   EvidenceIngestCommandV2,
   EvidenceIngestOutcome,
   EvidenceSegmentDescriptorV2,
-} from "@/application/ports/evidence-ingest";
-import type { EvidenceOutboxItem } from "@/application/ports/evidence-outbox";
+} from "../application/ports/evidence-ingest.ts";
+import type { EvidenceOutboxItem } from "../application/ports/evidence-outbox.ts";
 import {
   isSignedEvidenceReceipt,
   type SignedEvidenceReceipt,
-} from "@/domain/forensics/evidence-receipt";
+} from "../domain/forensics/evidence-receipt.ts";
 import {
   digestEvidenceSegment,
   type EvidenceSegment,
-} from "@/domain/forensics/evidence-segment-v2";
+} from "../domain/forensics/evidence-segment-v2.ts";
 
 function canonicalInstant(value: string): boolean {
   const time = Date.parse(value);

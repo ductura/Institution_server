@@ -2,11 +2,11 @@ import fc from "fast-check";
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { describe, expect, it } from "vitest";
 
-import { createBrowserReplayStepsV1 } from "@/adapters/evidence/edit-steps-v1-replay-steps";
-import { REVISION_ZERO_JCS } from "@/domain/document/revision-zero";
-import type { JcsJsonValue } from "@/domain/forensics/jcs";
+import { createBrowserReplayStepsV1 } from "../../external/storage/edit-steps-v1-replay-steps.ts";
+import { REVISION_ZERO_JCS } from "../document/revision-zero.ts";
+import type { JcsJsonValue } from "../forensics/jcs.ts";
 
-import { buildReplayPlayer, type ReplayRecord } from "./replay-player";
+import { buildReplayPlayer, type ReplayRecord } from "./replay-player.ts";
 import {
   BLOCK_A as A,
   BLOCK_B as B,
@@ -20,7 +20,7 @@ import {
   startNode as start,
   type BuiltRecord,
   type RecordSegmentPlan,
-} from "./replay-record.fixture";
+} from "./replay-record.fixture.ts";
 
 const steps = createBrowserReplayStepsV1();
 const recordOf = (r: BuiltRecord, over: Partial<ReplayRecord> = {}): ReplayRecord => ({
