@@ -95,6 +95,32 @@ function revisionRow(r: RevisionRequest, me: string): RevisionRow {
   } as RevisionRow;
 }
 
+/**
+ * The keys of the body each action reads. The validator accepts any body of
+ * the union; the body must be the one of its action (else 422), as the
+ * server reads the body by the action in the path.
+ */
+const COMMENT_KEYS = {
+  create: ["anchor", "body", "documentId"],
+  reply: ["body", "threadId"],
+  resolve: ["threadId"],
+  reopen: ["threadId"],
+  delete: ["commentId"],
+  list: ["documentId"],
+} as const;
+const REVISION_KEYS = {
+  create: ["anchor", "documentId", "instruction", "requestedRevision"],
+  respond: ["expectedSeq", "explanation", "kind", "requestId", "responseRevision"],
+  accept: ["acceptedAnchor", "acceptedRevision", "expectedSeq", "rangeHash", "requestId"],
+  rereview: ["expectedSeq", "instruction", "requestId", "requestedRevision"],
+  reopen: ["expectedSeq", "requestId"],
+  withdraw: ["expectedSeq", "requestId"],
+  list: ["documentId"],
+} as const;
+
+const hasKeys = (body: object, keys: readonly string[]): boolean =>
+  Object.keys(body).sort().join() === [...keys].sort().join();
+
 /** Which state each action moves a request from, and who may do it. */
 const TRANSITIONS = {
   respond: { from: ["open", "reopened"], by: "owner" },
@@ -145,6 +171,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
   },
   "collaboration.comments.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
+    if (!hasKeys(body, COMMENT_KEYS[params.action])) return { error: "invalid_input" };
     const input = body as Partial<Record<string, unknown>> & CommentBody;
     const threadOf = (id: unknown) => state.comments.find((c) => c.threadId === id);
     const documentId =
@@ -228,6 +255,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
   },
   "collaboration.revision-requests.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
+    if (!hasKeys(body, REVISION_KEYS[params.action])) return { error: "invalid_input" };
     const input = body as Partial<Record<string, unknown>> & RevisionBody;
     const found = state.revisionRequests.find((r) => r.id === input.requestId);
     const documentId = typeof input.documentId === "string" ? input.documentId : found?.documentId;

@@ -30,7 +30,10 @@ const FAKE_PUBLIC_KEY = generateKeyPairSync("ed25519")
 
 const sha256 = (text: string | Buffer): string => createHash("sha256").update(text).digest("hex");
 const minute = (now: Date): string => `${now.toISOString().slice(0, 16)}:00.000Z`;
-const microsecond = (iso: string): string => `${iso.slice(0, 23)}000Z`;
+/** An instant in the receipt form: UTC with exactly six fraction digits. */
+const microsecond = (iso: string): string => `${new Date(iso).toISOString().slice(0, 23)}000Z`;
+/** Segments per replay page (MAX_REPLAY_PAGE_SEGMENTS of the contract). */
+export const REPLAY_PAGE = 256;
 const signature = {
   algorithm: "Ed25519",
   keyId: FAKE_KEY_ID,
@@ -195,10 +198,10 @@ export const EVIDENCE_HANDLERS: Handlers = {
         segmentCount: work.segments.length,
         head,
         from: body.from,
-        next: null,
+        next: body.from + REPLAY_PAGE < work.segments.length ? body.from + REPLAY_PAGE : null,
         startDocument:
           head === null ? null : Buffer.from(EMPTY_DOCUMENT, "base64").toString("utf8"),
-        segments: work.segments.slice(body.from),
+        segments: work.segments.slice(body.from, body.from + REPLAY_PAGE),
         resumeDocuments: {},
       },
     };
@@ -226,6 +229,11 @@ export const EVIDENCE_HANDLERS: Handlers = {
     const requestedAt = now.toISOString();
     work.state = "submitted";
     work.submittedAt = requestedAt;
+    // After the submission the live view serves the submitted revision's bytes.
+    work.live = {
+      json: Buffer.from(work.document, "base64").toString("utf8"),
+      token: randomUUID(),
+    };
     const payload = {
       receiptSchema: "ductus-submission-receipt-v2",
       submissionId: randomUUID(),

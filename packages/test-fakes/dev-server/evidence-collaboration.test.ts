@@ -245,3 +245,70 @@ describe("dev fake server: live view and collaboration", () => {
     expect(contractProblems("collaboration.revision-requests.post", list)).toEqual([]);
   });
 });
+
+describe("dev fake server: review findings on #366", () => {
+  it("pages the replay at 256 segments", async () => {
+    const state = createState();
+    const work = state.works[0];
+    if (work === undefined) throw new Error("no work");
+    work.segments = Array.from({ length: 300 }, (_, i) => `{"izmisljeni":${i}}`);
+    const headers = { ...(await signIn(state, "student")), ...EVIDENCE };
+    const first = await send(state, "/api/v1/evidence/replay", {
+      body: { documentId: IDS.document, from: 0 },
+      headers,
+    });
+    expect(contractProblems("evidence.replay.post", first)).toEqual([]);
+    expect(first.json).toMatchObject({ next: 256, segmentCount: 300 });
+    expect((first.json as { segments: unknown[] }).segments).toHaveLength(256);
+  });
+
+  it("serves the submitted revision in the live view, even without a live snapshot", async () => {
+    const state = createState();
+    const headers = await signIn(state, "student");
+    await commit(state, headers, "izmisljena-1", 0);
+    await send(state, "/api/v1/submission", {
+      body: { documentId: IDS.document, revision: 1 },
+      headers: { ...headers, ...EVIDENCE },
+    });
+    const live = await send(state, `/api/v1/live/${IDS.document}`, {
+      headers: await signIn(state, "nastavnik"),
+    });
+    expect(live.status).toBe(200);
+    expect(live.headers["ductus-live-state"]).toBe("submitted");
+    expect(live.json).toEqual(JSON.parse(Buffer.from(EMPTY_DOCUMENT, "base64").toString("utf8")));
+  });
+
+  it("writes receipt instants with six fraction digits after a version with an offset", async () => {
+    const state = createState();
+    const assignment = state.assignments[0];
+    if (assignment === undefined) throw new Error("no assignment");
+    assignment.content.dueAt = "2027-01-31T23:59:00+01:00";
+    const headers = await signIn(state, "student");
+    await commit(state, headers, "izmisljena-1", 0);
+    const submitted = await send(state, "/api/v1/submission", {
+      body: { documentId: IDS.document, revision: 1 },
+      headers: { ...headers, ...EVIDENCE },
+    });
+    expect(contractProblems("submission.submit.post", submitted)).toEqual([]);
+    expect(submitted.json).toMatchObject({
+      receipt: { payload: { dueAt: "2027-01-31T22:59:00.000000Z" } },
+    });
+  });
+
+  it("refuses a body of another action with 422 and changes nothing", async () => {
+    const state = createState();
+    const teacher = await signIn(state, "nastavnik");
+    const comment = await send(state, "/api/v1/comments/create", {
+      body: { documentId: IDS.document },
+      headers: teacher,
+    });
+    expect([comment.status, comment.json]).toMatchObject([422, { error: "invalid_input" }]);
+    const request = await send(state, "/api/v1/revision-requests/create", {
+      body: { documentId: IDS.document },
+      headers: teacher,
+    });
+    expect(request.status).toBe(422);
+    expect(state.comments).toHaveLength(0);
+    expect(state.revisionRequests).toHaveLength(0);
+  });
+});
