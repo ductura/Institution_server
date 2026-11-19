@@ -48,13 +48,30 @@ Pristup proizlazi iz odnosa u stanju (nastavnik kolegija, student u kolegiju), n
 - `?__lazni_kasnjenje=<ms>` ili `x-lazni-kasnjenje: <ms>`: odgovor kasni toliko milisekundi (najviše 30 000).
 - Neispravan ulaz (tip sadržaja, JSON, parametri, upit, tijelo prema `VALIDATORS`) vraća grešku rute iz kataloga, kao pravi server. Ruta koja može vratiti 401 bez sesije vraća 401.
 
+## Dokazi i predaja: ništa nije potpisano
+
+Lažni server ne potpisuje ništa i ne čita ni ne kopira pravi ključ.
+
+- Svaka potvrda (`evidence.commit.post`, `submission.submit.post`) nosi `keyId` **`lazni-kljuc-nepotpisano`** (`FAKE_KEY_ID`) i potpis od 64 nulta bajta (`FAKE_SIGNATURE`), koji ne prolazi ni pod jednim ključem.
+- `evidence.open.post` u `receiptKeys` daje javni ključ istog imena čija je privatna polovica bačena pri pokretanju. Pravi klijent zato nijednu potvrdu lažnog servera ne može prihvatiti kao potpisanu; test to provjerava stvarnom provjerom potpisa.
+- Uz `ductus-protocol: 2` commit vraća 202 `pending_signature` i nikad potpisanu potvrdu.
+- Odsječci se čuvaju kako su poslani, bez provjere lanca; `stale_base`, `stale_revision` i `already_requested` vraćaju stvarno stanje rada.
+
+## Uživo, komentari i zahtjevi za doradu
+
+- `live.document.put` traži točno jedan preduvjet (`If-None-Match: *` ili `If-Match: "<token>"`), inače 428; zastarjeli token je 409 s trenutačnim. `live.document.get` daje ETag i 304.
+- Komentari i zahtjevi za doradu žive u memoriji; vrijeme vide samo kao petominutni prozor. Zahtjev za doradu prolazi stanja `open`, `responded`, `accepted`, `reopened`, `withdrawn`; zastarjeli `expectedSeq` je 409 `conflict`, nedopušten prijelaz 409 `not_allowed`.
+- Nastavnikovo čitanje uživo, sažetka procesa, ponovne reprodukcije i brzog puta upisuje se u dnevnik pristupa koji student vidi.
+
 ## Kod
 
 - [contract.ts](contract.ts): rute (`ROUTE_TABLE`), provjere ulaza (`VALIDATORS`) i odgovori grešaka iz vektora `server/contracts/vectors`.
 - [server.ts](server.ts): `answerDev` (jedan zahtjev, bez mreže) i `createDevServer` (HTTP).
 - [state.ts](state.ts): stanje u memoriji i početni podaci (`createState`).
-- `*-routes.ts`: odgovori po području; tip `Handlers` veže svaki odgovor uz generirane tipove ugovora, pa `tsc` odbija odgovor krivog oblika.
+- `*-routes.ts`: odgovori po području (račun i platforma, ustanova, student, nastavnik, postavke, dokazi, suradnja); tip `Handlers` veže svaki odgovor uz generirane tipove ugovora, pa `tsc` odbija odgovor krivog oblika.
 - [work.ts](work.ts): izmišljeni zapis rada (blokovi teksta i sažetak procesa) za brzi put i sažetak.
 - [testing.ts](testing.ts): pomoćnici testova (`send`, `signIn`, `contractProblems`); uspješni odgovori se provjeravaju prema shemama ugovora (`checkVectors`).
+
+- [coverage.test.ts](coverage.test.ts): za svaku rutu iz `ROUTE_TABLE` jedan scenarij koji mora vratiti odgovor (ne 501) valjan prema ugovoru, i za svaku grešku rute provjera tražene greške. **Nova ruta u ugovoru bez lažnog odgovora ili bez scenarija ruši test.**
 
 Ruta bez lažnog odgovora vraća 501 `not_implemented`. Paket se ne objavljuje (kao `/pglite`); koristi se iz ovog repoa.

@@ -4,7 +4,7 @@
 import { FormatRegistry } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
-import { checkVectors, ROUTES } from "../../../server/contracts/index.ts";
+import { checkVectors, ROUTES, SHARED_ERRORS } from "../../../server/contracts/index.ts";
 import { answerDev, DEV_HANDLERS, type AccountKey, type State } from "./index.ts";
 
 // The one string format of the contracts, as server/contracts/vectors.test.ts registers it.
@@ -17,6 +17,8 @@ if (!FormatRegistry.Has("date-time"))
   );
 
 export type Sent = {
+  /** Bytes sent as they are (a form body), instead of JSON. */
+  raw?: string;
   method?: string;
   query?: string;
   body?: unknown;
@@ -25,16 +27,21 @@ export type Sent = {
 
 /** One request through answerDev; a JSON body gets its content type. */
 export async function send(state: State, path: string, sent: Sent = {}) {
-  const body = sent.body === undefined ? "" : JSON.stringify(sent.body);
+  const body = sent.raw ?? (sent.body === undefined ? "" : JSON.stringify(sent.body));
   const headers: Record<string, string> = { ...sent.headers };
   if (sent.body !== undefined) headers["content-type"] ??= "application/json";
   const answer = await answerDev(state, DEV_HANDLERS, {
-    method: sent.method ?? (sent.body === undefined ? "GET" : "POST"),
+    method: sent.method ?? (sent.body === undefined && sent.raw === undefined ? "GET" : "POST"),
     url: path + (sent.query ?? ""),
     headers,
     body: Buffer.from(body),
   });
-  return { ...answer, json: answer.body === "" ? undefined : (JSON.parse(answer.body) as unknown) };
+  const isJson = String(answer.headers["content-type"] ?? "").startsWith("application/json");
+  return {
+    ...answer,
+    json:
+      answer.body === "" ? undefined : isJson ? (JSON.parse(answer.body) as unknown) : answer.body,
+  };
 }
 
 /** A cookie header of a session opened by the role switch. */
@@ -44,17 +51,19 @@ export async function signIn(state: State, as: AccountKey): Promise<Record<strin
   return { cookie: cookie.split(";")[0] ?? "" };
 }
 
-/** Contract problems of one success answer of `route` (empty when it fits). */
+/** Contract problems of one answer of `route` (empty when it fits); an error answer names its `code`. */
 export function contractProblems(
   route: string,
   answer: Awaited<ReturnType<typeof send>>,
+  code?: string,
 ): string[] {
   const contract = ROUTES.find((r) => r.id === route);
   if (contract === undefined) return [`no route ${route}`];
   const type = answer.headers["content-type"];
   const vector = {
     name: "lazni",
-    kind: "success",
+    kind: code === undefined ? "success" : "error",
+    ...(code === undefined ? {} : { code }),
     request: {},
     response: {
       status: answer.status,
@@ -63,7 +72,10 @@ export function contractProblems(
       ...(answer.json === undefined ? {} : { body: answer.json }),
     },
   };
-  return checkVectors([contract], { [route]: { route, vectors: [vector] } }, (s, v) =>
-    Value.Check(s, v),
+  return checkVectors(
+    [contract],
+    { [route]: { route, vectors: [vector] } },
+    (s, v) => Value.Check(s, v),
+    SHARED_ERRORS,
   ).filter((p) => p.startsWith(`${route}: lazni: `) && !p.includes("request "));
 }

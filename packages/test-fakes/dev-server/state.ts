@@ -96,6 +96,59 @@ export type Work = {
   lastChangeAt: string | null;
   /** When the submission was asked for, or null. */
   submittedAt: string | null;
+  /** The document of `revision`: standard base64 of its JSON bytes. */
+  document: string;
+  /** Segment texts in chain order (decoded from the commits). */
+  segments: string[];
+  lastSequenceTo: number;
+  /** Client transaction id -> the revision it made. */
+  transactions: Map<string, number>;
+  /** The live state (live.document.put) and its token, or null. */
+  live: { readonly json: string; readonly token: string } | null;
+};
+
+/** An empty document of one paragraph, as base64 of its JSON bytes. */
+export const EMPTY_DOCUMENT = Buffer.from(
+  '{"nodes":[{"children":[],"id":"0a000000-0000-4000-8000-000000000001","type":"paragraph"}],"schemaVersion":1}',
+).toString("base64");
+
+export type Comment = {
+  readonly id: string;
+  readonly threadId: string;
+  readonly documentId: string;
+  readonly authorId: string;
+  readonly body: string;
+  /** The anchor of the thread's first comment, else null. */
+  readonly anchor: Record<string, unknown> | null;
+  readonly at: string;
+  deletedAt: string | null;
+};
+
+export type RevisionRequest = {
+  readonly id: string;
+  readonly documentId: string;
+  readonly openerId: string;
+  readonly openedAt: string;
+  readonly anchor: Record<string, unknown>;
+  instruction: string;
+  requestedRevision: number;
+  state: "open" | "responded" | "accepted" | "reopened" | "withdrawn";
+  seq: number;
+  version: number;
+  response: {
+    kind: "done" | "declined";
+    explanation: string;
+    revision: number;
+    byId: string;
+    at: string;
+  } | null;
+  closing: {
+    as: "accepted" | "reopened" | "withdrawn";
+    byId: string;
+    at: string;
+    acceptedRevision: number | null;
+    rangeHash: string | null;
+  } | null;
 };
 
 export type Mentorship = {
@@ -140,6 +193,10 @@ export type State = {
   settings: Map<string, SettingValue>;
   /** Problem reports sent, by account id. */
   reports: Map<string, number>;
+  comments: Comment[];
+  /** Thread id -> its state. */
+  threads: Map<string, "open" | "answered" | "resolved">;
+  revisionRequests: RevisionRequest[];
 };
 
 /** Fixed, invented ids (UUID v4 form) of the starting data. */
@@ -260,6 +317,11 @@ export function createState(): State {
         revision: 0,
         lastChangeAt: "2026-11-09T19:55:00.000Z",
         submittedAt: null,
+        document: EMPTY_DOCUMENT,
+        segments: [],
+        lastSequenceTo: 0,
+        transactions: new Map(),
+        live: null,
       },
     ],
     enrollmentGuesses: new Map(),
@@ -286,6 +348,9 @@ export function createState(): State {
     ],
     settings: new Map(),
     reports: new Map(),
+    comments: [],
+    threads: new Map(),
+    revisionRequests: [],
   };
 }
 
@@ -298,6 +363,20 @@ export function accountByKey(state: State, key: AccountKey): Account {
 /** Teachers of a course: its holder and the teachers of its groups. */
 export function courseTeachers(course: Course): string[] {
   return [course.holderId, ...course.groups.flatMap((g) => g.teacherIds)];
+}
+
+/** The course of a work, when it exists. */
+export function courseOfWork(state: State, work: Work): Course | undefined {
+  const assignment = state.assignments.find((a) => a.id === work.assignmentId);
+  return state.courses.find((c) => c.id === assignment?.courseId);
+}
+
+/** How an account may read a work: as its student, as a teacher of its course, or not at all. */
+export function readerOf(state: State, work: Work | undefined, accountId: string | undefined) {
+  if (work === undefined || accountId === undefined) return null;
+  if (work.studentId === accountId) return "owner" as const;
+  const course = courseOfWork(state, work);
+  return course !== undefined && teachesCourse(course, accountId) ? ("teacher" as const) : null;
 }
 
 export function teachesCourse(course: Course, accountId: string): boolean {

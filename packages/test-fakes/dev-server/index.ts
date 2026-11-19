@@ -4,6 +4,8 @@
 import "../guard/index.ts";
 
 import { ACCOUNT_HANDLERS } from "./account-routes.ts";
+import { COLLABORATION_HANDLERS } from "./collaboration-routes.ts";
+import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { INSTITUTION_HANDLERS } from "./institution-routes.ts";
 import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
@@ -29,17 +31,25 @@ export {
   ACCOUNT_KEYS,
   CODES,
   createState,
+  EMPTY_DOCUMENT,
   IDS,
   INSTITUTION,
   type AccountKey,
   type State,
 } from "./state.ts";
 
-/** The answer of every route the dev fake server knows, by operation id. */
+export { FAKE_KEY_ID, FAKE_SIGNATURE } from "./evidence-routes.ts";
+
+/**
+ * The answer of every route of the contract, by operation id.
+ * coverage.test.ts fails for a route of ROUTE_TABLE without one.
+ */
 export const DEV_HANDLERS: Handlers = {
   ...ACCOUNT_HANDLERS,
   ...INSTITUTION_HANDLERS,
   ...STUDENT_HANDLERS,
   ...TEACHER_HANDLERS,
   ...SETTINGS_HANDLERS,
+  ...EVIDENCE_HANDLERS,
+  ...COLLABORATION_HANDLERS,
 };
