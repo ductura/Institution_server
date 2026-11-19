@@ -21,15 +21,15 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { dockerExecArgs, nativePsqlTarget } from "./psql-target.mjs";
+import { dockerExecArgs, nativePsqlTarget } from "./psql-target.ts";
 
 import {
   DEV_SIGNING_KEY_FILE,
   PersistentDevelopmentEd25519SigningKeyProvider,
   developmentSeedPath,
-} from "../../src/adapters/crypto/persistent-development-ed25519-signer.ts";
+} from "../../../server/external/keys/persistent-development-ed25519-signer.ts";
 
-const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const SQL_FILE = fileURLToPath(new URL("./evidence-signing-key.sql", import.meta.url));
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
