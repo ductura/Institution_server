@@ -45,6 +45,51 @@ export const enrollmentsPost = defineRoute({
   ],
 });
 
+// SRV-02 (Ductus#2028 c.7008147932, answer A-2): enrolment with every outcome
+// told apart. A route of its own, because a new error of
+// institution.enrollments.post would break its clients on API v1
+// (server/contracts/breaking.ts); that route stays as it is.
+export const studentEnrollmentsPost = defineRoute({
+  id: "student.enrollments.post",
+  method: "POST",
+  path: "/api/v1/student/enrollments",
+  inventory: "app/api/student/enrollments/route.ts",
+  access: "signed_in",
+  summary:
+    "Enrols the caller in the course of a code. The body is exactly {code}, at most 64 UTF-16 units and 1 KiB, sent as application/json (charset utf-8 only). The server normalizes the code (white space and hyphens removed, upper case); what is left must be 8 to 32 letters and digits, else it is invalid_code. outcome: enrolled; already_enrolled, the caller is a student of that course already and nothing changed; enrolled_no_assignment, enrolled in a course without an assignment yet. A code no course of the caller's institution has is 422 invalid_code; a code whose validity has ended is 422 expired_code. Too many guesses are 429 too_many_attempts, and each invalid or expired guess counts. The identity comes from the session only.",
+  request: {
+    contentType: "application/json",
+    maxBodyBytes: 1024,
+    body: closed({ code: Type.String({ maxLength: 64 }) }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "enrolled, already enrolled, or enrolled in a course without an assignment",
+      body: closed({
+        outcome: Type.Union([
+          Type.Literal("enrolled"),
+          Type.Literal("already_enrolled"),
+          Type.Literal("enrolled_no_assignment"),
+        ]),
+        courseId: Uuid,
+      }),
+    },
+  ],
+  errors: [
+    ...MUTATION_GUARD,
+    error(401, "unauthorized"),
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(422, "invalid_code"),
+    error(422, "expired_code"),
+    error(429, "too_many_attempts"),
+    error(403, "forbidden"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const acknowledgmentPost = defineRoute({
   id: "institution.acknowledgment.post",
   method: "POST",
@@ -166,6 +211,7 @@ export const workWorkLanguagePost = defineRoute({
 
 export const enrollmentRoutes = [
   enrollmentsPost,
+  studentEnrollmentsPost,
   acknowledgmentPost,
   workLanguagePost,
   studentWorkLanguagePost,
