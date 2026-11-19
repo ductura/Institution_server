@@ -26,11 +26,17 @@ import {
 // contract and no handler must be there. After the task the list only shrinks.
 // (`submission.submit.post`: the table's `submission.post` has no name part,
 // which checkRoute refuses.)
-/** The course routes of DAN-852, mounted by the entry point since 852-5a, in DAN_803 order. */
+/**
+ * The course routes of DAN-852, mounted by the entry point since 852-5a, and
+ * the student and version routes on the same front (Ductus#2028, w1119o).
+ */
 const INSTITUTION_COURSE_ROUTES = [
   "institution.courses.post",
   "institution.enrollment-code.post",
   "institution.enrollment-code-revocation.post",
+  "institution.student-removal.post",
+  "institution.student-return.post",
+  "institution.assignment-versions.post",
 ] as const;
 
 export const DAN_803: readonly string[] = [

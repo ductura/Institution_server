@@ -8,12 +8,17 @@
 // itself are checked by the route (852-4). The port never throws, so
 // neither does this service.
 import type {
+  AssignmentVersionOutcome,
   CourseCreateOutcome,
   EnrollmentCodeIssueOutcome,
   EnrollmentCodeRevokeOutcome,
   InstitutionCourses,
+  InstitutionMembers,
+  StudentRemovalOutcome,
+  StudentReturnOutcome,
 } from "../database/index.ts";
 
+import { parseAssignmentVersionBody } from "./assignment-content.ts";
 import { parseCourseBody, parseEnrollmentCodeBody } from "./schemas.ts";
 
 /** A body the parser refused: the route's 422 invalid_input. */
@@ -27,12 +32,24 @@ export type InstitutionService = {
     value: unknown,
   ): Promise<EnrollmentCodeIssueOutcome | InvalidInput>;
   revokeEnrollmentCode(token: string, courseId: string): Promise<EnrollmentCodeRevokeOutcome>;
+  removeStudent(token: string, courseId: string, studentId: string): Promise<StudentRemovalOutcome>;
+  allowStudentReturn(
+    token: string,
+    courseId: string,
+    studentId: string,
+  ): Promise<StudentReturnOutcome>;
+  publishAssignmentVersion(
+    token: string,
+    assignmentId: string,
+    value: unknown,
+  ): Promise<AssignmentVersionOutcome | InvalidInput>;
 };
 
 const INVALID: InvalidInput = { status: "invalid_input" };
 
 export function createInstitutionService(deps: {
   courses: InstitutionCourses;
+  members: InstitutionMembers;
 }): InstitutionService {
   return {
     async createCourse(token, value) {
@@ -45,5 +62,20 @@ export function createInstitutionService(deps: {
       return deps.courses.issueEnrollmentCode(token, courseId, body.validUntil);
     },
     revokeEnrollmentCode: (token, courseId) => deps.courses.revokeEnrollmentCode(token, courseId),
+    // The body carries nothing (the route checks it is {}); the ids come from the path.
+    removeStudent: (token, courseId, studentId) =>
+      deps.members.removeStudent(token, courseId, studentId),
+    allowStudentReturn: (token, courseId, studentId) =>
+      deps.members.allowStudentReturn(token, courseId, studentId),
+    async publishAssignmentVersion(token, assignmentId, value) {
+      const body = parseAssignmentVersionBody(value);
+      if (body === null) return INVALID;
+      return deps.members.publishAssignmentVersion(
+        token,
+        assignmentId,
+        body.expectedVersion,
+        body.content,
+      );
+    },
   };
 }

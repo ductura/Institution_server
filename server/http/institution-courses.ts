@@ -9,10 +9,18 @@
 // where create-course.ts stripped it); an accepted answer counts as session
 // activity after it is written and a failure of the touch is swallowed, as
 // the profile route (Ductus counted awaited it). Who may do what is the RPC's.
+// The same front serves student-removal-route.ts, student-return-route.ts and
+// assignment-version-route.ts (Ductus 078c780): path ids in the contract's
+// order, an empty body for the first two, 201 for a published version.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { ROUTES, workIdFromPath } from "../contracts/index.ts";
-import { createInstitutionCourses, type InstitutionCourses } from "../database/index.ts";
+import {
+  createInstitutionCourses,
+  createInstitutionMembers,
+  type InstitutionCourses,
+  type InstitutionMembers,
+} from "../database/index.ts";
 import { createInstitutionService } from "../institution/index.ts";
 import { liveSessionTokenFromCookie, recordActivity } from "../session/index.ts";
 
@@ -30,6 +38,7 @@ const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
 export type InstitutionCourseRouteOptions = {
   readonly courses: InstitutionCourses;
+  readonly members: InstitutionMembers;
   /** Session activity for an accepted answer (session/recordActivity). */
   readonly recordActivity: (token: string) => Promise<unknown>;
   /** For tests: a shorter body deadline. */
@@ -56,6 +65,14 @@ const CODE_REFUSALS: Refusals = new Map<string, Refusal>([
   ["invalid_input", INVALID],
 ]);
 const REVOKE_REFUSALS: Refusals = new Map<string, Refusal>([UNAUTHORIZED, FORBIDDEN]);
+// ZD422 of the version RPC is a tightening (PRODUCT rule 14), ZD409 a stale version.
+const VERSION_REFUSALS: Refusals = new Map<string, Refusal>([
+  UNAUTHORIZED,
+  FORBIDDEN,
+  ["version_conflict", [409, "version_conflict"]],
+  ["invalid", INVALID],
+  ["invalid_input", INVALID],
+]);
 
 /**
  * A path segment decoded exactly once, through the one decoder of the
@@ -112,14 +129,20 @@ async function readInstitutionJson(
  * outcome carries (body, code, ok …) can choose the answer (QA on #259).
  */
 type Answer =
-  | { readonly ok: true; readonly body: Readonly<Record<string, unknown>> }
+  | {
+      readonly ok: true;
+      readonly body: Readonly<Record<string, unknown>>;
+      /** 200 unless the contract's success is another status (201 for a version). */
+      readonly status?: 201;
+    }
   | { readonly ok: false; readonly status: unknown };
 /** A refusal of this outcome's own status; a non-string status matches no refusal (503). */
 const refused = (outcome: { readonly status: unknown }): Answer => ({
   ok: false,
   status: outcome.status,
 });
-type Run = (token: string, value: unknown, courseId: string) => Promise<Answer>;
+/** The path ids in the order of the contract's params (courseId, studentId …). */
+type Run = (token: string, value: unknown, ids: readonly string[]) => Promise<Answer>;
 
 /**
  * The institution course routes over the service (852-4a, 4b): the course,
@@ -127,29 +150,29 @@ type Run = (token: string, value: unknown, courseId: string) => Promise<Answer>;
  * named fields only, so no other field of an outcome ever leaves.
  */
 export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOptions): Route[] {
-  const service = createInstitutionService({ courses: options.courses });
+  const service = createInstitutionService({ courses: options.courses, members: options.members });
   const timeoutMs = options.timeoutMs ?? INSTITUTION_BODY_TIMEOUT_MS;
 
   const route = (id: string, refusals: Refusals, run: Run, empty = false): Route => {
     const contract = ROUTES.find((found) => found.id === id)!;
-    const withId = contract.request.params !== undefined;
+    const names = Object.keys(contract.request.params?.properties ?? {});
     return {
       contract,
       async handle(request, response, params) {
-        const ids = withId ? [decodeOnce(params?.courseId)] : [];
+        const ids = names.map((name) => decodeOnce(params?.[name]));
         const maxBytes = contract.request.maxBodyBytes ?? 64;
         const input = await readInstitutionJson(request, response, ids, maxBytes, timeoutMs);
         if (input === null) return;
         if (empty && !isEmptyObject(input.value)) return sendProblem(response, ...INVALID);
         try {
-          const answer = await run(input.token, input.value, ids[0] ?? "");
+          const answer = await run(input.token, input.value, ids);
           if (!answer.ok) {
             const known =
               typeof answer.status === "string" ? refusals.get(answer.status) : undefined;
             const [status, code] = known ?? [503, "unavailable"];
             return sendProblem(response, status, code);
           }
-          sendJson(response, 200, answer.body);
+          sendJson(response, answer.status ?? 200, answer.body);
         } catch (error) {
           reportServerError("route", error, requestIdOf(response), contract.id);
           return sendProblem(response, 503, "unavailable");
@@ -167,8 +190,8 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
         ? { ok: true, body: { id: outcome.id } }
         : refused(outcome);
     }),
-    route("institution.enrollment-code.post", CODE_REFUSALS, async (token, value, courseId) => {
-      const outcome = await service.issueEnrollmentCode(token, courseId, value);
+    route("institution.enrollment-code.post", CODE_REFUSALS, async (token, value, [courseId]) => {
+      const outcome = await service.issueEnrollmentCode(token, courseId!, value);
       return outcome.status === "issued"
         ? { ok: true, body: { code: outcome.code } }
         : refused(outcome);
@@ -176,13 +199,50 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
     route(
       "institution.enrollment-code-revocation.post",
       REVOKE_REFUSALS,
-      async (token, _value, courseId) => {
-        const outcome = await service.revokeEnrollmentCode(token, courseId);
+      async (token, _value, [courseId]) => {
+        const outcome = await service.revokeEnrollmentCode(token, courseId!);
         return outcome.status === "revoked"
           ? { ok: true, body: { revoked: outcome.revoked } }
           : refused(outcome);
       },
       true,
+    ),
+    route(
+      "institution.student-removal.post",
+      REVOKE_REFUSALS,
+      async (token, _value, [courseId, studentId]) => {
+        const outcome = await service.removeStudent(token, courseId!, studentId!);
+        return outcome.status === "removed"
+          ? { ok: true, body: { removed: outcome.removed } }
+          : refused(outcome);
+      },
+      true,
+    ),
+    route(
+      "institution.student-return.post",
+      REVOKE_REFUSALS,
+      async (token, _value, [courseId, studentId]) => {
+        const outcome = await service.allowStudentReturn(token, courseId!, studentId!);
+        return outcome.status === "allowed"
+          ? { ok: true, body: { allowed: outcome.allowed } }
+          : refused(outcome);
+      },
+      true,
+    ),
+    route(
+      "institution.assignment-versions.post",
+      VERSION_REFUSALS,
+      async (token, value, [assignmentId]) => {
+        const outcome = await service.publishAssignmentVersion(token, assignmentId!, value);
+        // Ductus answers the path's id in lower case, the RPC's version as read.
+        return outcome.status === "published"
+          ? {
+              ok: true,
+              status: 201,
+              body: { assignmentId: assignmentId!.toLowerCase(), versionNo: outcome.versionNo },
+            }
+          : refused(outcome);
+      },
     ),
   ];
 }
@@ -197,6 +257,7 @@ export function createInstitutionCourseRoutesFor(
 ): Route[] {
   return createInstitutionCourseRoutes({
     courses: createInstitutionCourses(main.withActor),
+    members: createInstitutionMembers(main.withActor),
     recordActivity: (token) => recordActivity(token, main.withActor),
   });
 }
