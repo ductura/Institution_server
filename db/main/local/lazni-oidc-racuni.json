@@ -1,0 +1,18 @@
+{
+  "racuni": [
+    {
+      "korisnik": "demo-admin",
+      "domena": "demo.ductus.test",
+      "uloga": "nastavnik",
+      "ime": "Vesna",
+      "prezime": "Upravić"
+    },
+    {
+      "korisnik": "demo-bez-uloge",
+      "domena": "demo.ductus.test",
+      "uloga": "nastavnik",
+      "ime": "Iva",
+      "prezime": "Neimenić"
+    }
+  ]
+}
