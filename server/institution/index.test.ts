@@ -9,12 +9,15 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the three body parsers and the service factory", () => {
+  it("exports only the body parsers, the student's write bodies (SRV-10) and the service factory", () => {
     expect(Object.keys(area).sort()).toEqual([
+      "MAX_ENROLLMENT_CODE_LENGTH",
       "createInstitutionService",
       "parseCourseBody",
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
+      "parseNoticeReadBody",
+      "parseStudentEnrollmentBody",
     ]);
   });
 

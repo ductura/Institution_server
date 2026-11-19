@@ -142,6 +142,11 @@ export {
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
 export {
+  createStudentWriteRoutes,
+  createStudentWriteRoutesFor,
+  STUDENT_WRITE_TIMEOUT_MS,
+} from "./student-writes.ts";
+export {
   bearerMatches,
   checkProvisionBody,
   createInternalInstitutionRoutes,
