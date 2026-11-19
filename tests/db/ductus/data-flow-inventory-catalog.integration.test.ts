@@ -24,7 +24,7 @@ import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 // fresh snapshots so that scratch objects of parallel test files, which they
 // drop again, do not fail it; objects that stay fail every snapshot.
 
-const ROOT = join(__dirname, "../..");
+const ROOT = join(__dirname, "../../..");
 const INVENTORY = "docs/privacy/08-inventar-tokova-podataka.md";
 const FLOWS_HEADING = "## 2. Tokovi";
 
@@ -250,13 +250,28 @@ export function stringLiterals(code: string): string {
 
 /** The inventory text and the code files its flows cite; cited documents never count. */
 const CODE_FILE = /\.(?:sql|ts|tsx|mjs|js)$/;
+// The inventory is Ductus's, copied verbatim (Ductus#2028 c.7019455316 (c)),
+// so its flows cite Ductus paths. Each is read at its Ductura place, by the
+// path table of CLAUDE.md ("Putanje: Ductus → ovdje"); a path with no place
+// here is not read, as a missing file was not read before.
+const DUCTURA_PLACES: readonly (readonly [RegExp, string])[] = [
+  [/^src\/server\/db\//, "server/database/"],
+  [/^db\/migrations\//, "db/main/migrations/"],
+  [/^src\/server\//, "server/"],
+  [/^src\/domain\//, "server/domain/"],
+  [/^src\/application\//, "server/application/"],
+];
+const ductura = (path: string): string => {
+  const place = DUCTURA_PLACES.find(([from]) => from.test(path));
+  return place === undefined ? path : path.replace(place[0], place[1]);
+};
 function readInventory(): Inventory {
   const text = readFileSync(join(ROOT, INVENTORY), "utf8");
   const lines = text.split("\n");
   const at = lines.findIndex((l) => l.trim() === FLOWS_HEADING);
   const end = lines.findIndex((l, i) => i > at && l.startsWith("## "));
   const section = lines.slice(at + 1, end < 0 ? undefined : end).join("\n");
-  const paths = [...new Set([...section.matchAll(/`([^`]+)`/g)].map((m) => m[1]))];
+  const paths = [...new Set([...section.matchAll(/`([^`]+)`/g)].map((m) => ductura(m[1]!)))];
   const cited = paths
     .filter(
       (p) => CODE_FILE.test(p) && existsSync(join(ROOT, p)) && statSync(join(ROOT, p)).isFile(),
