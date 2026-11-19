@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import type { EvidenceSegmentDescriptorV2 } from "../../../server/domain/evidence/object-key.ts";
+import type { EvidenceSegmentDescriptorV2 } from "../../../server/application/ports/evidence-ingest.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 import {
   commitEvidenceSegment,

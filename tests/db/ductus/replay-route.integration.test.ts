@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -18,9 +19,20 @@ import {
   EVIDENCE_HASH_ALGORITHM_V2,
   EVIDENCE_SEGMENT_SCHEMA_V2,
 } from "../../../server/domain/forensics/evidence-segment-v2.ts";
-import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import { createEvidencePayloadReader } from "../../../server/http/evidence-deps.ts";
-import { handleReplayRequest } from "../../../server/database/replay-source.ts";
+import {
+  createActorReader,
+  createWithActor,
+  type WithActor,
+} from "../../../server/database/index.ts";
+import {
+  createDatabases,
+  createEvidenceReplayRoute,
+  createLayers,
+  evidenceIngestDependencies,
+  startServer,
+  type Running,
+} from "../../../server/http/index.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
 
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
@@ -73,7 +85,7 @@ const bucket = `ductus-replay-${suffix}`;
 
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
 // The same factory the route uses, over one domain for this run's institution.
-const store = createEvidencePayloadReader({
+const storageEnv = {
   EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
     requestTimeoutMs: 5_000,
     domains: [
@@ -99,7 +111,12 @@ const store = createEvidencePayloadReader({
   EVIDENCE_S3_LOCAL_KEY_ID: s3Credentials.accessKeyId,
   EVIDENCE_S3_LOCAL_SECRET: s3Credentials.secretAccessKey,
   NODE_ENV: "test",
-});
+};
+const { payloads: store } = evidenceIngestDependencies(
+  storageEnv,
+  fileURLToPath(new URL("../../../", import.meta.url)),
+);
+let server: Running;
 // Ingest writes through the same router; a refused configuration fails here.
 function writer(): InstitutionRoutedPayloadStore {
   if (!(store instanceof InstitutionRoutedPayloadStore))
@@ -425,20 +442,16 @@ function ask(name: keyof typeof tokens, body: unknown = { documentId, from: 0 })
 }
 
 function askWith(sessionToken: string, body: unknown = { documentId, from: 0 }) {
-  const request = new Request(`${ORIGIN}/api/evidence/replay`, {
+  return fetch(`http://127.0.0.1:${server.port}/api/v1/evidence/replay`, {
     method: "POST",
     headers: {
       origin: ORIGIN,
       "sec-fetch-site": "same-origin",
       "content-type": "application/json",
+      "ductus-protocol": "1",
+      cookie: `${SESSION_COOKIE_NAME}=${sessionToken}`,
     },
     body: JSON.stringify(body),
-  });
-  return handleReplayRequest(request, {
-    withActor,
-    payloads: store,
-    expectedOrigin: ORIGIN,
-    sessionToken,
   });
 }
 beforeAll(async () => {
@@ -454,9 +467,23 @@ beforeAll(async () => {
   url.password = password;
   appPool = new pg.Pool({ connectionString: url.href, max: 2 });
   withActor = createWithActor(appPool);
+  server = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin: ORIGIN }),
+    databases: createDatabases(),
+    routes: [
+      createEvidenceReplayRoute({
+        actorReader: createActorReader(withActor),
+        withActor,
+        payloads: store,
+      }),
+    ],
+  });
 });
 
 afterAll(async () => {
+  await server?.close();
   await appPool?.end();
   let cleanupError: unknown;
   try {
@@ -498,7 +525,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
 
     const dora = await ask("dora");
     expect(dora.status).toBe(404);
-    expect(await dora.json()).toStrictEqual({ error: "not_found" });
+    expect(await dora.json()).toStrictEqual({ status: "not_found" });
 
     // PRODUCT 5 rule 17: Vesna's opening is one row; Ana's own read and Dora's refused one write none.
     expect(await openings()).toStrictEqual(["vesna teacher replay of ana"]);
@@ -547,7 +574,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     });
     expect(changed.status).toBe(409);
     expect(changed.headers.get("cache-control")).toBe("no-store");
-    expect(await changed.json()).toStrictEqual({ error: "record_changed" });
+    expect(await changed.json()).toStrictEqual({ status: "record_changed" });
 
     // Dora may not see the work: 404 whatever head she sends, never 409.
     for (const head of [
@@ -556,7 +583,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     ]) {
       const dora = await ask("dora", { documentId, from: 1, head });
       expect(dora.status).toBe(404);
-      expect(await dora.json()).toStrictEqual({ error: "not_found" });
+      expect(await dora.json()).toStrictEqual({ status: "not_found" });
     }
   });
 
@@ -564,7 +591,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     for (const sessionToken of Object.values(notOpen)) {
       const response = await askWith(sessionToken);
       expect(response.status).toBe(401);
-      expect(await response.json()).toStrictEqual({ error: "unauthorized" });
+      expect(await response.json()).toStrictEqual({ status: "unauthenticated" });
     }
     expect((await ask("ana")).status).toBe(200);
   });
@@ -603,7 +630,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
       const second = await ask("vesna", { documentId, from, head });
       expect(second.status).toBe(409);
       expect(second.headers.get("cache-control")).toBe("no-store");
-      expect(await second.json()).toStrictEqual({ error: "record_changed" });
+      expect(await second.json()).toStrictEqual({ status: "record_changed" });
     }
 
     // Starting again gives the cut record, and its pages read on from its own head.
@@ -626,6 +653,6 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     // Dora still may not see the work: 404 with the old head, never 409.
     const dora = await ask("dora", { documentId, from: 1, head });
     expect(dora.status).toBe(404);
-    expect(await dora.json()).toStrictEqual({ error: "not_found" });
+    expect(await dora.json()).toStrictEqual({ status: "not_found" });
   });
 });
