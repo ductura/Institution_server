@@ -208,7 +208,7 @@ describe("falsification pairs: the record cannot tell these apart (#384 30, 31)"
       ),
     );
     expect(new Set(summaries.map((summary) => canonicalizeJcs(summary))).size).toBe(1);
-    expect(summaries[0].pastes).toMatchObject({ listed: [], smallerCount: 0 });
+    expect(summaries[0]!.pastes).toMatchObject({ listed: [], smallerCount: 0 });
   });
 
   it("pasting one's notes and pasting external AI text keep the same unobserved origin (#55)", async () => {
@@ -473,14 +473,14 @@ describe("gaps and record state (#384 F, G)", () => {
       ok: false,
       reason: "head_mismatch",
     });
-    const tampered = [stored.payloads[0].replace("Lorem", "Lorex"), stored.payloads[1]];
+    const tampered = [stored.payloads[0]!.replace("Lorem", "Lorex"), stored.payloads[1]!];
     const result = await projectProcessSummary({
       payloads: tampered,
       head: stored.head,
       thresholds: THRESHOLDS,
     });
     expect(result.ok).toBe(false);
-    const reordered = [stored.payloads[1], stored.payloads[0]];
+    const reordered = [stored.payloads[1]!, stored.payloads[0]!];
     expect(
       (
         await projectProcessSummary({

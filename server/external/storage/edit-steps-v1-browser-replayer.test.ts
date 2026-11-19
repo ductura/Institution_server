@@ -45,7 +45,7 @@ const paragraphs = (...values: string[]): JcsJsonValue => ({
   schemaVersion: 1,
   nodes: values.map((value, i) => ({
     type: "paragraph",
-    id: [A, B, C][i],
+    id: [A, B, C][i]!,
     children: value ? [text(value)] : [],
   })),
 });
@@ -81,7 +81,7 @@ function capture(
     const json = step.toJSON() as Record<string, unknown>;
     const [from, to] = [json.from as number, json.to as number];
     if (json.stepType === "replace" && to > from && !json.structure) {
-      json.removedSha256 = removedRangeSha256(tr.docs[i], from, to);
+      json.removedSha256 = removedRangeSha256(tr.docs[i]!, from, to);
     }
     return JSON.parse(JSON.stringify(json)) as unknown;
   });
@@ -119,7 +119,7 @@ function segmentOf(
   } as EvidenceSegmentV2;
 }
 
-type Case = { name: string; initial: JcsJsonValue; steps: unknown[]; after?: PmNode };
+type Case = { name: string; initial: JcsJsonValue; steps: unknown[]; after?: PmNode | undefined };
 const doc = server.load(start);
 const edit = (
   name: string,
@@ -131,7 +131,7 @@ const edit = (
 };
 const forge = (base: Case, name: string, change: (step: Record<string, unknown>) => void): Case => {
   const steps = structuredClone(base.steps) as Record<string, unknown>[];
-  change(steps[0]);
+  change(steps[0]!);
   return { name, initial: base.initial, steps, after: base.after };
 };
 const raw = (name: string, steps: unknown[], initial: JcsJsonValue = start): Case => ({
@@ -144,7 +144,7 @@ const nfd = paragraphs("čž".normalize("NFD"));
 const empty = paragraphs("x", "", "y");
 const del = edit("deleting a range", (tr) => tr.delete(19, 28));
 const setType = edit("changing a block type", (tr) =>
-  tr.setBlockType(1, 1, schema.nodes.heading, { level: 1, nodeId: A }),
+  tr.setBlockType(1, 1, schema.nodes.heading!, { level: 1, nodeId: A }),
 );
 const open = {
   content: [
@@ -163,7 +163,7 @@ const itemStart: JcsJsonValue = {
   ],
 };
 const toItem = edit("making a bullet item", (tr) =>
-  tr.setBlockType(1, 1, schema.nodes.bulletItem, { nodeId: A }),
+  tr.setBlockType(1, 1, schema.nodes.bulletItem!, { nodeId: A }),
 );
 // E1 part 2: so is a quote paragraph.
 const quoteStart: JcsJsonValue = {
@@ -175,7 +175,7 @@ const quoteStart: JcsJsonValue = {
 };
 const toQuote = edit(
   "an item to a quote paragraph",
-  (tr) => tr.setBlockType(1, 1, schema.nodes.quote, { nodeId: A }),
+  (tr) => tr.setBlockType(1, 1, schema.nodes.quote!, { nodeId: A }),
   itemStart,
 );
 const same = {
@@ -198,34 +198,34 @@ const accepted: Case[] = [
   edit("joining two blocks", (tr) => tr.join(18)),
   edit("splitting and naming the new block", (tr) =>
     tr
-      .split(5, 1, [{ type: schema.nodes.paragraph, attrs: { nodeId: null } }])
+      .split(5, 1, [{ type: schema.nodes.paragraph!, attrs: { nodeId: null } }])
       .setNodeAttribute(6, "nodeId", D),
   ),
   setType,
-  edit("a mark across a block boundary", (tr) => tr.addMark(16, 22, schema.marks.bold.create())),
+  edit("a mark across a block boundary", (tr) => tr.addMark(16, 22, schema.marks.bold!.create())),
   edit("typing", (tr) => tr.insert(19, schema.text("Novo "))),
   edit("deleting an empty block", (tr) => tr.delete(3, 5), empty),
   toItem,
   edit(
     "an item back to a paragraph",
-    (tr) => tr.setBlockType(1, 1, schema.nodes.paragraph, { nodeId: A }),
+    (tr) => tr.setBlockType(1, 1, schema.nodes.paragraph!, { nodeId: A }),
     itemStart,
   ),
   edit(
     "Enter at the end of an item, and the new item's id",
-    (tr) => tr.split(17, 1, [{ type: schema.nodes.bulletItem }]).setNodeAttribute(18, "nodeId", D),
+    (tr) => tr.split(17, 1, [{ type: schema.nodes.bulletItem! }]).setNodeAttribute(18, "nodeId", D),
     itemStart,
   ),
   edit("cutting across an item", (tr) => tr.delete(10, 22), itemStart),
   toQuote,
   edit(
     "a quote paragraph back to a paragraph",
-    (tr) => tr.setBlockType(1, 1, schema.nodes.paragraph, { nodeId: A }),
+    (tr) => tr.setBlockType(1, 1, schema.nodes.paragraph!, { nodeId: A }),
     quoteStart,
   ),
   edit(
     "Enter at the end of a quote paragraph, and the new one's id",
-    (tr) => tr.split(17, 1, [{ type: schema.nodes.quote }]).setNodeAttribute(18, "nodeId", D),
+    (tr) => tr.split(17, 1, [{ type: schema.nodes.quote! }]).setNodeAttribute(18, "nodeId", D),
     quoteStart,
   ),
   edit("cutting across a quote paragraph", (tr) => tr.delete(10, 22), quoteStart),
@@ -311,27 +311,27 @@ const refused: [Case, string][] = [
   ],
   [
     forge(setType, "replaceAround that takes another id", (s) => {
-      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0].attrs.nodeId = C;
+      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0]!.attrs.nodeId = C;
     }),
     "replace_around_identity",
   ],
   [raw("replaceAround that changes nothing", [same]), "replace_around_unchanged"],
   [
     forge(toItem, "an item wrapper that takes another id", (s) => {
-      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0].attrs.nodeId = C;
+      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0]!.attrs.nodeId = C;
     }),
     "replace_around_identity",
   ],
   [
     forge(toItem, "an item with a level", (s) => {
-      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0].attrs.level = 1;
+      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0]!.attrs.level = 1;
     }),
     "unknown_field",
   ],
   [raw("an item made again", toItem.steps, itemStart), "replace_around_unchanged"],
   [
     forge(toQuote, "a quote wrapper that takes another id", (s) => {
-      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0].attrs.nodeId = C;
+      (s.slice as { content: { attrs: Record<string, unknown> }[] }).content[0]!.attrs.nodeId = C;
     }),
     "replace_around_identity",
   ],
@@ -416,7 +416,7 @@ async function bundle(): Promise<{ code: string; warnings: string[]; nodeImports
     configFile: false,
     logLevel: "silent",
     root,
-    resolve: { alias: [{ find: /^@\//, replacement: `${root.replaceAll("\\", "/")}src/` }] },
+    resolve: { alias: [{ find: /^@\//, replacement: `${root.replaceAll("\\", "/")}server/` }] },
     define: { "process.env.NODE_ENV": '"production"' },
     plugins: [
       {
@@ -435,8 +435,8 @@ async function bundle(): Promise<{ code: string; warnings: string[]; nodeImports
           id !== ENTRY
             ? null
             : `
-        import { createBrowserEditStepsV1Replayer, removedRangeSha256WebCrypto } from "./edit-steps-v1-browser-replayer.ts";
-        import { replayEvidenceSegmentsV2 } from "../../domain/forensics/evidence-replay-v2.ts";
+        import { createBrowserEditStepsV1Replayer, removedRangeSha256WebCrypto } from "@/external/storage/edit-steps-v1-browser-replayer.ts";
+        import { replayEvidenceSegmentsV2 } from "@/domain/forensics/evidence-replay-v2.ts";
         const replayer = createBrowserEditStepsV1Replayer();
         export async function apply(initial, event) {
           try {
@@ -462,7 +462,7 @@ async function bundle(): Promise<{ code: string; warnings: string[]; nodeImports
       },
     },
   })) as Rollup.RollupOutput[];
-  return { code: out[0].output[0].code, warnings, nodeImports };
+  return { code: out[0]!.output[0].code, warnings, nodeImports };
 }
 
 /** Runs the bundle in a context with browser globals only. */
@@ -511,7 +511,7 @@ describe("browser bundle of the edit steps v1 replayer (granica 8, #638)", () =>
 
   it("replays the golden chain of evidence-v2.json to its last document hash on both sides", async () => {
     const { chain } = loadGoldenVectors();
-    const initial = chain.documentStates[0].value;
+    const initial = chain.documentStates[0]!.value;
     const segments = chain.segments.map((vector) => vector.segment);
     const expected = { ok: true, documentSha256: chain.documentStates.at(-1)!.sha256 };
     const onServer = await serverReplay(initial, segments);
@@ -561,7 +561,7 @@ describe("browser bundle of the edit steps v1 replayer (granica 8, #638)", () =>
       ...segmentOf(start, typed.steps, typed.after, 2),
       initialDocumentHash: first.finalDocumentHash,
     };
-    second.events[0].beforeDocumentHash = first.finalDocumentHash;
+    second.events[0]!.beforeDocumentHash = first.finalDocumentHash;
     const cases: [string, JcsJsonValue, EvidenceSegmentV2[], object][] = [
       [
         "two chained segments",
@@ -584,7 +584,7 @@ describe("browser bundle of the edit steps v1 replayer (granica 8, #638)", () =>
       [
         "a wrong after hash",
         start,
-        [{ ...first, events: [{ ...first.events[0], afterDocumentHash: OTHER_HASH }] }],
+        [{ ...first, events: [{ ...first.events[0]!, afterDocumentHash: OTHER_HASH }] }],
         { ok: false, reason: "document_hash_mismatch", segmentIndex: 0, sequence: 1 },
       ],
       [
@@ -606,7 +606,7 @@ describe("browser bundle of the edit steps v1 replayer (granica 8, #638)", () =>
           segmentOf(
             start,
             capture(doc, (tr) =>
-              tr.split(5, 1, [{ type: schema.nodes.paragraph, attrs: { nodeId: null } }]),
+              tr.split(5, 1, [{ type: schema.nodes.paragraph!, attrs: { nodeId: null } }]),
             ).steps,
             null,
           ),
@@ -623,7 +623,7 @@ describe("browser bundle of the edit steps v1 replayer (granica 8, #638)", () =>
 
   it("keeps two replays apart when they run at the same time", async () => {
     const good = segmentOf(start, del.steps, del.after!);
-    const bad = segmentOf(start, refused[0][0].steps, null);
+    const bad = segmentOf(start, refused[0]![0]!.steps, null);
     const runs = await Promise.all(
       [good, bad, good, bad].map((segment) => browserReplay(start, [segment])),
     );

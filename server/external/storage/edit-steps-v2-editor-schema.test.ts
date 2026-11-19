@@ -13,7 +13,7 @@ import {
   canonicalToTiptapV2,
   tiptapToCanonicalV2,
   createEditorExtensionsV2,
-} from "../../editor";
+} from "./editor/index.ts";
 
 import { createEditStepsV2Replayer } from "./edit-steps-v2-replayer.ts";
 import { editStepJsonV2, editStepsV2Schema } from "./edit-steps-v2-rules.ts";

@@ -151,9 +151,24 @@ describe("notice fingerprint (DAN-306)", () => {
   });
 
   it("A11: the fields are the notice view's shown fields, the policy and the template version", () => {
-    const source = readFileSync("src/components/student/assignment-notice-read.ts", "utf8");
-    const body = /export interface NoticeView \{([\s\S]*?)\n\}/.exec(source)?.[1] ?? "";
-    const viewKeys = [...body.matchAll(/^\s+(\w+):/gm)].map((match) => match[1]);
+    // The notice view is the web client's (Ductus src/components/student/
+    // assignment-notice-read.ts, NoticeView at 0cdb0f1); Ductura's server has no
+    // copy to read, so its keys are held here as they stand there.
+    const viewKeys = [
+      "assignmentId",
+      "versionNo",
+      "title",
+      "instructions",
+      "workType",
+      "evidenceProfile",
+      "opensAt",
+      "dueAt",
+      "aiPolicy",
+      "aiPurposes",
+      "wordMin",
+      "wordMax",
+      "acknowledgedAt",
+    ];
     expect(viewKeys.length).toBeGreaterThan(5);
     const shown = viewKeys.filter(
       (key) => !["assignmentId", "versionNo", "acknowledgedAt"].includes(key),
@@ -219,7 +234,7 @@ describe("notice fingerprint (DAN-306)", () => {
       fc.asyncProperty(purposes, fc.array(fc.nat(10)), async (set, picks) => {
         const shuffled = [
           ...set,
-          ...picks.filter((i) => i < set.length).map((i) => set[i]),
+          ...picks.filter((i) => i < set.length).map((i) => set[i]!),
         ].reverse();
         expect(await fingerprint({ aiPurposes: shuffled })).toBe(
           await fingerprint({ aiPurposes: set }),
