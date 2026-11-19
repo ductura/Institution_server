@@ -18,7 +18,7 @@ import type {
 } from "../../domain/forensics/evidence-segment-v2.ts";
 import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
 import { MARK_ORDER, PLAIN_BLOCK_TYPES } from "../../domain/document/schema.ts";
-import { createEditorExtensions } from "@/editor";
+import { createEditorExtensions } from "./editor/index.ts";
 
 import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
 
@@ -73,7 +73,7 @@ function capture(
     const from = json.from as number;
     const to = json.to as number;
     if (json.stepType === "replace" && to > from && !json.structure) {
-      json.removedSha256 = removedRangeSha256(tr.docs[i], from, to);
+      json.removedSha256 = removedRangeSha256(tr.docs[i]!, from, to);
     }
     return JSON.parse(JSON.stringify(json)) as unknown;
   });
@@ -233,7 +233,7 @@ describe("edit steps v1 replayer: positions, identity and fail-closed", () => {
     const D = "aaaaaaaa-0000-4000-8000-000000000004";
     const { steps, after } = capture(doc, (tr) =>
       tr
-        .split(5, 1, [{ type: schema.nodes.paragraph, attrs: { nodeId: null } }])
+        .split(5, 1, [{ type: schema.nodes.paragraph!, attrs: { nodeId: null } }])
         .setNodeAttribute(6, "nodeId", D),
     );
     const replayed = replayer.apply(doc, event(steps));
@@ -247,7 +247,7 @@ describe("edit steps v1 replayer: positions, identity and fail-closed", () => {
 
   it("refuses an event that leaves a block without an id or repeats one", () => {
     const { steps } = capture(doc, (tr) =>
-      tr.split(5, 1, [{ type: schema.nodes.paragraph, attrs: { nodeId: null } }]),
+      tr.split(5, 1, [{ type: schema.nodes.paragraph!, attrs: { nodeId: null } }]),
     );
     const split = replayer.apply(doc, event(steps));
     expect(() => replayer.toCanonical(split)).toThrow("block_identity");
@@ -260,12 +260,12 @@ describe("edit steps v1 replayer: positions, identity and fail-closed", () => {
 
   it("changes a block type only with replaceAround that keeps its id", () => {
     const { steps, after } = capture(doc, (tr) =>
-      tr.setBlockType(1, 1, schema.nodes.heading, { level: 1, nodeId: A }),
+      tr.setBlockType(1, 1, schema.nodes.heading!, { level: 1, nodeId: A }),
     );
     expect(replayer.apply(doc, event(steps)).toJSON()).toEqual(after.toJSON());
     const around = steps[0] as { slice: { content: { attrs: Record<string, unknown> }[] } };
     const stolen = structuredClone(around);
-    stolen.slice.content[0].attrs.nodeId = C;
+    stolen.slice.content[0]!.attrs.nodeId = C;
     refused(doc, [stolen]).toThrow("replace_around_identity");
     const same = {
       stepType: "replaceAround",
@@ -312,7 +312,7 @@ describe("edit steps v1 replayer: positions, identity and fail-closed", () => {
   });
 
   it("accepts a mark across a block boundary", () => {
-    const { steps, after } = capture(doc, (tr) => tr.addMark(16, 22, schema.marks.bold.create()));
+    const { steps, after } = capture(doc, (tr) => tr.addMark(16, 22, schema.marks.bold!.create()));
     expect(replayer.apply(doc, event(steps)).toJSON()).toEqual(after.toJSON());
   });
 
@@ -483,7 +483,7 @@ describe("edit steps v1 replayer inside replayEvidenceSegmentsV2", () => {
     expect(result).toMatchObject({ ok: true, documentSha256: good.finalDocumentHash });
 
     const forged = structuredClone(good);
-    (forged.events[0].steps[0] as Record<string, JcsJsonValue>).removedSha256 = OTHER_HASH;
+    (forged.events[0]!.steps[0] as Record<string, JcsJsonValue>).removedSha256 = OTHER_HASH;
     expect(await replayEvidenceSegmentsV2(start, [forged], replayer)).toEqual({
       ok: false,
       reason: "step_failed",

@@ -92,7 +92,7 @@ function capture(edit: (tr: Transform) => void, from: EditStepsV2Document = stat
     const json = editStepJsonV2(step.toJSON()) as Record<string, unknown>;
     const [a, b] = [json.from as number, json.to as number];
     if (json.stepType === "replace" && b > a && !json.structure) {
-      json.removedSha256 = removedRangeSha256(tr.docs[i], a, b);
+      json.removedSha256 = removedRangeSha256(tr.docs[i]!, a, b);
     }
     return JSON.parse(JSON.stringify(json)) as unknown;
   });
@@ -158,7 +158,7 @@ describe("removing a citation (§5.2, class 25)", () => {
 
   it("replaces a citation with another only with the hash of the old one", () => {
     const { steps, after } = capture((tr) =>
-      tr.replaceWith(7, 8, schema.nodes.citation.create({ sourceId: S2, locator: null })),
+      tr.replaceWith(7, 8, schema.nodes.citation!.create({ sourceId: S2, locator: null })),
     );
     expect(steps).toEqual([
       {
@@ -196,7 +196,7 @@ describe("structure and headings around a citation (§3.1, class 26)", () => {
     refused([toHeading(0, 18, A)]).toThrow("step_does_not_apply");
     // The same step on paragraph C, which holds no citation, goes through.
     const { steps } = capture((tr) =>
-      tr.setBlockType(27, 27, schema.nodes.heading, { level: 2, nodeId: C }),
+      tr.setBlockType(27, 27, schema.nodes.heading!, { level: 2, nodeId: C }),
     );
     expect(steps).toEqual([toHeading(26, 42, C)]);
     expect(replayer.toCanonical(apply(steps))).toMatchObject({
@@ -216,7 +216,7 @@ describe("structure and headings around a citation (§3.1, class 26)", () => {
   });
 
   it("keeps a citation unmarked when a mark covers it", () => {
-    const { steps } = capture((tr) => tr.addMark(1, 17, schema.marks.bold.create()));
+    const { steps } = capture((tr) => tr.addMark(1, 17, schema.marks.bold!.create()));
     const marked = apply(steps);
     expect(citations(marked)).toEqual([{ locator: "str. 12", sourceId: S1, marks: 0 }]);
     expect(replayer.toCanonical(marked)).toMatchObject({
@@ -228,7 +228,7 @@ describe("structure and headings around a citation (§3.1, class 26)", () => {
     });
     // With the text around it bold already, ProseMirror writes a step for the
     // citation alone: the editor's own step, accepted, changing nothing (§5.1).
-    const again = capture((tr) => tr.addMark(1, 17, schema.marks.bold.create()), marked);
+    const again = capture((tr) => tr.addMark(1, 17, schema.marks.bold!.create()), marked);
     expect(again.steps).toEqual([{ stepType: "addMark", from: 7, to: 8, mark: { type: "bold" } }]);
     expect(apply(again.steps, marked).doc.eq(marked.doc)).toBe(true);
     // A step that changes nothing even before the citation is unmarked is refused.

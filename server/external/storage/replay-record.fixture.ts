@@ -3,11 +3,8 @@ import { createHash } from "node:crypto";
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { Transform } from "@tiptap/pm/transform";
 
-import {
-  createEditStepsV1Replayer,
-  removedRangeSha256,
-} from "../../external/storage/edit-steps-v1-replayer.ts";
-import { EDIT_STEP_FORMAT_V1 } from "../document/edit-step.ts";
+import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../../domain/document/edit-step.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
@@ -15,8 +12,8 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSourceV2,
   type EvidenceStepV2,
-} from "../forensics/evidence-segment-v2.ts";
-import { canonicalizeJcs, type JcsJsonValue } from "../forensics/jcs.ts";
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
 /**
  * Synthetic replay records for tests (DAN-537): invented ids and filler text,
@@ -48,7 +45,12 @@ export const jcsOf = (document: PmNode) => canonicalizeJcs(serverReplayer.toCano
 
 export type RecordEdit = { source?: EvidenceSourceV2; edit: (tr: Transform) => void };
 /** `from` starts the segment from another document: a break in the chain. */
-export type RecordSegmentPlan = { at: string; until?: string; events: RecordEdit[]; from?: PmNode };
+export type RecordSegmentPlan = {
+  at: string;
+  until?: string;
+  events: RecordEdit[];
+  from?: PmNode | undefined;
+};
 
 export function buildRecord(start: PmNode, plans: RecordSegmentPlan[]) {
   const segments: string[] = [];
@@ -70,7 +72,7 @@ export function buildRecord(start: PmNode, plans: RecordSegmentPlan[]) {
           !value.structure
         ) {
           value.removedSha256 = removedRangeSha256(
-            tr.docs[i],
+            tr.docs[i]!,
             value.from as number,
             value.to as number,
           );
@@ -95,8 +97,8 @@ export function buildRecord(start: PmNode, plans: RecordSegmentPlan[]) {
       documentId: RECORD_DOCUMENT_ID,
       sessionId: "session-test",
       segmentId: `segment-${index + 1}`,
-      sequenceFrom: events[0].sequence,
-      sequenceTo: events[events.length - 1].sequence,
+      sequenceFrom: events[0]!.sequence,
+      sequenceTo: events[events.length - 1]!.sequence,
       observedStartedAt: `2026-10-20T${plan.at}:00.000Z`,
       observedEndedAt: `2026-10-20T${plan.until ?? plan.at}:00.000Z`,
       initialDocumentHash: initial,

@@ -37,6 +37,14 @@ function sources(dir: string): string[] {
 }
 
 const LOADER = path.join(ROOT, "forensics", "golden-vectors", "load.ts");
+// Test data outside the folder that copied Ductus tests read, never code:
+// the forbidden-terms dictionary (Ductus docs/PRODUCT.md §5) and the revision
+// text cases shared with tests/db/ductus/revision-input-agreement.
+const TEST_FILES_OUTSIDE = new Set(
+  ["scripts/forbidden-terms/terms.ts", "tests/unit/revision-text-cases.ts"].map((file) =>
+    path.resolve(ROOT, "..", "..", file),
+  ),
+);
 const URL_REF = /new URL\(\s*["'`]([^"'`$]+)["'`]\s*,\s*import\.meta\.url\s*\)/g;
 
 function inside(file: string, spec: string): boolean {
@@ -54,16 +62,25 @@ describe("server/domain imports nothing outside itself", () => {
     expect([...folders].sort()).toEqual([
       "",
       "assignment",
+      "assistant",
+      "citation",
       "collaboration",
+      "course-team",
       "document",
       "evidence",
       "forensics",
       "jobs",
       "json",
+      "notice",
+      "ops",
+      "privacy",
       "profile",
+      "projection",
       "settings",
       "support",
       "sync",
+      "text",
+      "time",
     ]);
   });
 
@@ -72,8 +89,12 @@ describe("server/domain imports nothing outside itself", () => {
     const allowed = file.endsWith(".test.ts") || file === LOADER ? TEST_PACKAGES : CODE_PACKAGES;
     const specs = ts.preProcessFile(text, true, true).importedFiles.map((ref) => ref.fileName);
     for (const spec of specs) {
-      if (spec.startsWith(".")) expect(inside(file, spec), spec).toBe(true);
-      else expect(allowed.has(spec), spec).toBe(true);
+      if (spec.startsWith(".")) {
+        const testData =
+          file.endsWith(".test.ts") &&
+          TEST_FILES_OUTSIDE.has(path.resolve(path.dirname(file), spec));
+        expect(testData || inside(file, spec), spec).toBe(true);
+      } else expect(allowed.has(spec), spec).toBe(true);
     }
     for (const [, spec] of text.matchAll(URL_REF)) {
       if (spec !== undefined) expect(inside(file, spec), spec).toBe(true);
