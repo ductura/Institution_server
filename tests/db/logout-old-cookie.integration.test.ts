@@ -21,10 +21,12 @@ import {
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createInternalInstitutionRoutes,
+  createLiveRoutesFor,
   createLayers,
   createMeRouteFor,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
+  createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
@@ -69,8 +71,20 @@ let server: Running;
 // 404s are reached only with a live actor (the functions check it first).
 // `method` is POST unless given; `old` is the 401 body each contract gives.
 const EVIDENCE_401 = { status: "unauthenticated" };
+/** A valid document whose JSON.stringify is its JCS form (the vector of a first write). */
+const LIVE_DOCUMENT: unknown = (
+  JSON.parse(
+    readFileSync(
+      join(import.meta.dirname, "../../server/contracts/vectors/live.document.put.json"),
+      "utf8",
+    ),
+  ) as { vectors: { name: string; request: { body: unknown } }[] }
+).vectors.find((v) => v.name === "first-write")!.request.body;
 /** A course that does not exist: a non-teacher is refused as for any course (C-23). */
 const COURSE = randomUUID();
+/** A student and an assignment that do not exist either (C-23). */
+const STUDENT = randomUUID();
+const ASSIGNMENT = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -150,6 +164,101 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 403,
   },
+  // Ductus#2028 (w1119o): the student and version routes on the same front.
+  // The account teaches no course or assignment: each RPC refuses with 403.
+  "institution.student-removal.post": {
+    path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/removal`,
+    body: () => ({}),
+    live: 403,
+  },
+  "institution.student-return.post": {
+    path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/return-permission`,
+    body: () => ({}),
+    live: 403,
+  },
+  "institution.assignment-versions.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/versions`,
+    body: () => ({
+      expectedVersion: 1,
+      title: "Izmišljeni zadatak",
+      instructions: "Izmišljene upute.",
+      workType: "essay",
+      opensAt: "2099-01-01T08:00:00Z",
+      dueAt: "2099-02-01T08:00:00Z",
+      aiPolicy: "encouraged",
+      aiPurposes: [],
+      evidenceProfile: "basic",
+      importAllowed: false,
+      wordMin: null,
+      wordMax: null,
+    }),
+    live: 403,
+  },
+  // The work language routes: the account teaches no assignment, so 403.
+  "institution.work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/work-language`,
+    body: () => ({ expectedVersion: 1, language: "en" }),
+    live: 403,
+  },
+  "institution.student-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/students/${STUDENT}/work-language`,
+    body: () => ({ language: "en" }),
+    live: 403,
+  },
+  "institution.work-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
+    body: () => ({ language: null }),
+    live: 403,
+  },
+  // Ductus#2028 (w1119o): the teacher's reads. The account teaches and
+  // mentors nothing: the course list is 404 (ZD403 of list_teacher_courses,
+  // as Ductus), the mentorship 404, the other reads their empty answer.
+  "teacher.courses.get": {
+    method: "GET",
+    path: "/api/v1/teacher/courses",
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.mentorships.get": {
+    method: "GET",
+    path: "/api/v1/teacher/mentorships",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.mentorship.get": {
+    method: "GET",
+    path: `/api/v1/teacher/mentorships/${ASSIGNMENT}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submissions.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions`,
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.assignment-submissions.post": {
+    path: "/api/v1/teacher/assignment-submissions",
+    body: () => ({ assignmentIds: [ASSIGNMENT] }),
+    live: 200,
+  },
+  // Ductus#2028 (w1119o): the live view of a work the account does not own
+  // or teach is the same 404 as a missing one. GET carries the protocol, PUT
+  // the precondition of a first write and the exact JCS bytes of a document.
+  "live.document.get": {
+    method: "GET",
+    path: "/api/v1/live/izmisljeni-rad-uzivo",
+    body: () => undefined,
+    headers: { "ductus-protocol": "1" },
+    live: 404,
+  },
+  "live.document.put": {
+    method: "PUT",
+    path: "/api/v1/live/izmisljeni-rad-uzivo",
+    body: () => LIVE_DOCUMENT,
+    headers: { "if-none-match": "*" },
+    live: 404,
+  },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
   // account does not hold is 403. The old cookie's registration carries a
@@ -188,6 +297,8 @@ const FACTORIES = [
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
+  "createTeacherReadRoutesFor",
+  "createLiveRoutesFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -206,6 +317,8 @@ const MOUNTED = [
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
+  ...createTeacherReadRoutesFor(databases.main),
+  ...createLiveRoutesFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
@@ -236,11 +349,18 @@ async function signIn(count: number): Promise<string[]> {
   return tokens;
 }
 
-function post(path: string, token: string, body?: unknown, method = "POST"): Promise<Response> {
+function post(
+  path: string,
+  token: string,
+  body?: unknown,
+  method = "POST",
+  extra: Readonly<Record<string, string>> = {},
+): Promise<Response> {
   const headers: Record<string, string> = {
     origin: ORIGIN,
     "sec-fetch-site": "same-origin",
     cookie: `__Host-ductus_session=${token}`,
+    ...extra,
   };
   if (body !== undefined) {
     headers["content-type"] = "application/json";
@@ -255,8 +375,13 @@ function post(path: string, token: string, body?: unknown, method = "POST"): Pro
 }
 
 const call = (id: SessionRouteId, token: string, body?: unknown) => {
-  const route: { path: string; body: () => unknown; method?: string } = SESSION_ROUTES[id];
-  return post(route.path, token, body ?? route.body(), route.method);
+  const route: {
+    path: string;
+    body: () => unknown;
+    method?: string;
+    headers?: Readonly<Record<string, string>>;
+  } = SESSION_ROUTES[id];
+  return post(route.path, token, body ?? route.body(), route.method, route.headers);
 };
 
 const LOCALE = "/api/v1/profile/interface-locale";
@@ -415,6 +540,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
+        id.startsWith("teacher.") ||
+        id.startsWith("live.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
