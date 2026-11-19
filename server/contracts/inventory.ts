@@ -127,6 +127,20 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
   },
+  // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
+  // course and no group routes; the shapes are the plan's (A-7, C-7).
+  "app/api/institution/admin/courses/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
+  "app/api/institution/courses/[courseId]/groups/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
+  "app/api/institution/groups/[groupId]/teachers/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -147,7 +161,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.work-language.post",
   "institution.student-work-language.post",
   "institution.work-work-language.post",
-  "institution.assignment-versions.post",
   "institution.student-removal.post",
   "institution.student-return.post",
   "institution.role-confirmation.post",
@@ -157,25 +170,22 @@ export const CONTRACT_ONLY: readonly string[] = [
   "collaboration.revision-requests.post",
   "live.document.get",
   "live.document.put",
-  "teacher.courses.get",
   "teacher.submissions.get",
   "teacher.mentorships.get",
   "teacher.mentorship.get",
   "teacher.fast-path.post",
   "teacher.assignment-submissions.post",
-  "teacher.access.get",
   "settings.catalogue.get",
   "settings.values.get",
   "student.access-log.get",
   "student.assignment-work.get",
   "student.notice-read.post",
   "student.enrollments.post",
+  "institution.course-groups.get",
 ];
 
 /**
  * Inventory files whose contracts follow in the next PR (DAN-736, part 2). This
  * list may only shrink: a file moves out of it when its contract lands.
  */
-export const PENDING: readonly string[] = [
-  "app/api/institution/courses/[courseId]/assignments/route.ts",
-];
+export const PENDING: readonly string[] = [];

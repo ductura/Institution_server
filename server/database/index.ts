@@ -116,6 +116,34 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+export { createInstitutionAssignments } from "./institution-assignments.ts";
+export { createInstitutionGroups } from "./institution-groups.ts";
+export { createAdminCourses } from "./admin-courses.ts";
+export type { AdminCourseInput, AdminCourseOutcome, AdminCourses } from "./admin-courses.ts";
+export type {
+  GroupCreateOutcome,
+  GroupTeacherOutcome,
+  InstitutionGroups,
+} from "./institution-groups.ts";
+export type {
+  AssignmentContent,
+  AssignmentCreateOutcome,
+  AssignmentPublishOutcome,
+  InstitutionAssignments,
+} from "./institution-assignments.ts";
+export {
+  createTeacherAccessReader,
+  createTeacherCoursesReader,
+  teacherCoursesOf,
+} from "./teacher-reads.ts";
+export type {
+  TeacherAccessReader,
+  TeacherAccessResult,
+  TeacherAssignment,
+  TeacherCourse,
+  TeacherCoursesReader,
+  TeacherCoursesResult,
+} from "./teacher-reads.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export {
