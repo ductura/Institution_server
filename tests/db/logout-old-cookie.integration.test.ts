@@ -71,6 +71,9 @@ let server: Running;
 const EVIDENCE_401 = { status: "unauthenticated" };
 /** A course that does not exist: a non-teacher is refused as for any course (C-23). */
 const COURSE = randomUUID();
+/** A student and an assignment that do not exist either (C-23). */
+const STUDENT = randomUUID();
+const ASSIGNMENT = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -148,6 +151,52 @@ const SESSION_ROUTES = {
   "institution.enrollment-code-revocation.post": {
     path: `/api/v1/institution/courses/${COURSE}/enrollment-code/revocation`,
     body: () => ({}),
+    live: 403,
+  },
+  // Ductus#2028 (w1119o): the student and version routes on the same front.
+  // The account teaches no course or assignment: each RPC refuses with 403.
+  "institution.student-removal.post": {
+    path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/removal`,
+    body: () => ({}),
+    live: 403,
+  },
+  "institution.student-return.post": {
+    path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/return-permission`,
+    body: () => ({}),
+    live: 403,
+  },
+  "institution.assignment-versions.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/versions`,
+    body: () => ({
+      expectedVersion: 1,
+      title: "Izmišljeni zadatak",
+      instructions: "Izmišljene upute.",
+      workType: "essay",
+      opensAt: "2099-01-01T08:00:00Z",
+      dueAt: "2099-02-01T08:00:00Z",
+      aiPolicy: "encouraged",
+      aiPurposes: [],
+      evidenceProfile: "basic",
+      importAllowed: false,
+      wordMin: null,
+      wordMax: null,
+    }),
+    live: 403,
+  },
+  // The work language routes: the account teaches no assignment, so 403.
+  "institution.work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/work-language`,
+    body: () => ({ expectedVersion: 1, language: "en" }),
+    live: 403,
+  },
+  "institution.student-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/students/${STUDENT}/work-language`,
+    body: () => ({ language: "en" }),
+    live: 403,
+  },
+  "institution.work-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
+    body: () => ({ language: null }),
     live: 403,
   },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
