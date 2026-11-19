@@ -7,7 +7,7 @@
 BEGIN;
 \ir fixtures/institution.inc
 SET LOCAL lc_messages TO 'C';
-SELECT plan(32);
+SELECT plan(35);
 
 CREATE FUNCTION pg_temp.create(p_actor text, p_args text) RETURNS text
 LANGUAGE sql AS $$
@@ -15,6 +15,26 @@ LANGUAGE sql AS $$
 $$;
 CREATE FUNCTION pg_temp.courses() RETURNS bigint
 LANGUAGE sql AS $$ SELECT count(*) FROM institution.course $$;
+-- How a role row is locked, read from its tuple header as in
+-- 123-course-handover.sql: share while a transaction holds it FOR SHARE.
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+CREATE FUNCTION pg_temp.role_lock(p_name text, p_role text) RETURNS text
+LANGUAGE sql VOLATILE AS $$
+  SELECT CASE WHEN i.t_infomask & 4096 <> 0 THEN (
+                SELECT CASE WHEN bool_or(x.mode = 'sh') THEN 'share'
+                            WHEN bool_or(x.mode = 'keysh') THEN 'key share'
+                            ELSE 'none' END
+                  FROM pg_get_multixact_members(i.t_xmax) x)
+              WHEN i.t_infomask & 80 = 80 THEN 'share'
+              WHEN i.t_infomask & 80 = 16 THEN 'key share'
+              ELSE 'none' END
+    FROM institution.institution_role r
+    CROSS JOIN LATERAL heap_page_items(get_raw_page('institution.institution_role', (r.ctid::text::point)[0]::integer)) i
+   WHERE r.user_id = pg_temp.id(p_name) AND r.role = p_role AND r.revoked_at IS NULL
+     AND i.lp = (r.ctid::text::point)[1]::integer
+$$;
+SELECT isnt(pg_temp.role_lock('iva', 'admin') || ' ' || pg_temp.role_lock('marko', 'teacher'), 'share share',
+            'before any call nothing holds Iva''s administrator row or Marko''s teacher row FOR SHARE');
 
 -- 1. Only an administrator of the institution.
 SELECT is(pg_temp.create(v.actor, $$ 'Izmišljeni seminar', '2026/2027', 'encouraged', {marko} $$), v.answer, v.actor || ': ' || v.what)
@@ -51,6 +71,9 @@ SELECT is(pg_temp.courses(), 3::bigint, 'the refused calls created no course');
 CREATE TEMP TABLE created AS
 SELECT pg_temp.create('iva', $$ 'Izmišljeni seminar', '2026/2027', 'encouraged', {marko} $$) AS id;
 SELECT matches((SELECT id FROM created), '^[0-9a-f-]{36}$', 'Iva creates the course with Marko as holder');
+-- Codex finding on #362: a revocation of either role waits for the creation.
+SELECT is(pg_temp.role_lock('iva', 'admin'), 'share', 'the creation holds Iva''s administrator row FOR SHARE');
+SELECT is(pg_temp.role_lock('marko', 'teacher'), 'share', 'and Marko''s teacher row');
 SELECT is(
   (SELECT concat_ws(' ', c.institution_id = pg_temp.id('fak_a'), c.created_by = pg_temp.id('iva'), c.name, c.academic_year, c.ai_policy)
      FROM institution.course c WHERE c.id = (SELECT id::uuid FROM created)),

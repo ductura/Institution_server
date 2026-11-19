@@ -30,7 +30,14 @@ DECLARE
   v_holder uuid;
 BEGIN
   SELECT * INTO actor FROM institution.require_actor();
-  IF NOT institution.actor_has_role('admin') THEN
+  -- The administrator role row FOR SHARE until the end, as hand_over_course
+  -- (20261111233000): a revocation waits for this transaction, and one that
+  -- committed first, even while this call waited for the row, leaves no row.
+  PERFORM 1 FROM institution.institution_role r
+   WHERE r.institution_id = actor.institution_id AND r.user_id = actor.user_id AND r.role = 'admin'
+     AND r.confirmed_at IS NOT NULL AND r.revoked_at IS NULL
+   FOR SHARE OF r;
+  IF NOT FOUND THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
   -- Checked here, before the table constraints, whose errors quote the row.
