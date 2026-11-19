@@ -16,6 +16,10 @@ import {
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
+  createInstitutionAssignmentRoutesFor,
+  createInstitutionGroupRoutesFor,
+  createAdminCourseRouteFor,
+  createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   routesOf,
@@ -28,7 +32,7 @@ import {
 // which checkRoute refuses.)
 /**
  * The course routes of DAN-852, mounted by the entry point since 852-5a, and
- * the student and version routes on the same front (Ductus#2028, w1119o).
+ * the student routes on the same front (Ductus#2028, w1119o).
  */
 const INSTITUTION_COURSE_ROUTES = [
   "institution.courses.post",
@@ -36,7 +40,6 @@ const INSTITUTION_COURSE_ROUTES = [
   "institution.enrollment-code-revocation.post",
   "institution.student-removal.post",
   "institution.student-return.post",
-  "institution.assignment-versions.post",
 ] as const;
 
 export const DAN_803: readonly string[] = [
@@ -95,10 +98,19 @@ export const DAN_931: readonly string[] = ["downloads.manifest.get"];
 // c.7008147932: contract now, handlers in SRV-10), frozen the same way.
 export const SRV_02: readonly string[] = ["student.enrollments.post", "student.notice-read.post"];
 
+// The operations of SRV-03 (the administrator's course and the groups of wave
+// 4, Ductus#2028 c.7008147932: contract now, handlers in SRV-12 and SRV-15).
+export const SRV_03: readonly string[] = [
+  "institution.admin-courses.post",
+  "institution.course-groups.get",
+  "institution.course-groups.post",
+  "institution.course-group-teachers.post",
+];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...[...DAN_989, ...DAN_931, ...SRV_02],
+  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
@@ -136,6 +148,30 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createInstitutionCourseRoutesFor(databases.main)",
     ids: [...INSTITUTION_COURSE_ROUTES],
     routes: () => createInstitutionCourseRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-14: a course's new assignment and an assignment's next version.
+    call: "createInstitutionAssignmentRoutesFor(databases.main)",
+    ids: ["institution.course-assignments.post", "institution.assignment-versions.post"],
+    routes: () => createInstitutionAssignmentRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-12: the administrator's course over the main database.
+    call: "createAdminCourseRouteFor(databases.main)",
+    ids: ["institution.admin-courses.post"],
+    routes: () => [createAdminCourseRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // SRV-15: a course's seminar groups and their teachers.
+    call: "createInstitutionGroupRoutesFor(databases.main)",
+    ids: ["institution.course-groups.post", "institution.course-group-teachers.post"],
+    routes: () => createInstitutionGroupRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-13: the teacher's courses and access over the main database.
+    call: "createTeacherReadRoutesFor(databases.main)",
+    ids: ["teacher.courses.get", "teacher.access.get"],
+    routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -226,11 +262,18 @@ describe("CONTRACT_ONLY", () => {
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
-      // problem report (851-2d2a), the course routes (852-5a) and the
-      // download manifest (DAN-932) are missing too.
+      // problem report (851-2d2a), the course routes (852-5a), the download
+      // manifest (DAN-932), the teacher's reads (SRV-13), the student routes
+      // (w1119o), the assignment routes (SRV-14) and the group routes (SRV-15)
+      // are missing too, in task order.
       [
-        ...["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840],
-        ...DAN_931,
+        ...["support.problem-report.post", "teacher.courses.get", "institution.courses.post"],
+        ...["institution.course-assignments.post", "institution.enrollment-code.post"],
+        ...["institution.enrollment-code-revocation.post", "institution.student-removal.post"],
+        ...["institution.student-return.post", "institution.assignment-versions.post"],
+        ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_931],
+        ...["institution.admin-courses.post", "institution.course-groups.post"],
+        "institution.course-group-teachers.post",
       ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
   });
@@ -254,6 +297,13 @@ describe("routes the entry point mounts itself", () => {
       "downloads.manifest.get",
       "support.problem-report.post",
       ...INSTITUTION_COURSE_ROUTES,
+      "institution.course-assignments.post",
+      "institution.assignment-versions.post",
+      "institution.admin-courses.post",
+      "institution.course-groups.post",
+      "institution.course-group-teachers.post",
+      "teacher.courses.get",
+      "teacher.access.get",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

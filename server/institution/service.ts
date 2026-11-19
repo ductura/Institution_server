@@ -8,7 +8,6 @@
 // itself are checked by the route (852-4). The port never throws, so
 // neither does this service.
 import type {
-  AssignmentVersionOutcome,
   CourseCreateOutcome,
   EnrollmentCodeIssueOutcome,
   EnrollmentCodeRevokeOutcome,
@@ -18,7 +17,6 @@ import type {
   StudentReturnOutcome,
 } from "../database/index.ts";
 
-import { parseAssignmentVersionBody } from "./assignment-content.ts";
 import { parseCourseBody, parseEnrollmentCodeBody } from "./schemas.ts";
 
 /** A body the parser refused: the route's 422 invalid_input. */
@@ -38,11 +36,6 @@ export type InstitutionService = {
     courseId: string,
     studentId: string,
   ): Promise<StudentReturnOutcome>;
-  publishAssignmentVersion(
-    token: string,
-    assignmentId: string,
-    value: unknown,
-  ): Promise<AssignmentVersionOutcome | InvalidInput>;
 };
 
 const INVALID: InvalidInput = { status: "invalid_input" };
@@ -67,15 +60,5 @@ export function createInstitutionService(deps: {
       deps.members.removeStudent(token, courseId, studentId),
     allowStudentReturn: (token, courseId, studentId) =>
       deps.members.allowStudentReturn(token, courseId, studentId),
-    async publishAssignmentVersion(token, assignmentId, value) {
-      const body = parseAssignmentVersionBody(value);
-      if (body === null) return INVALID;
-      return deps.members.publishAssignmentVersion(
-        token,
-        assignmentId,
-        body.expectedVersion,
-        body.content,
-      );
-    },
   };
 }

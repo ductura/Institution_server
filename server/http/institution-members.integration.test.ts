@@ -1,17 +1,16 @@
-// The student removal, student return and assignment version routes on a real
-// server with the real pipeline, over the real institution service and a fake
-// InstitutionMembers port: every vector of the three contracts a socket can
+// The student removal and student return routes on a real server with the
+// real pipeline, over the real institution service and a fake
+// InstitutionMembers port: every vector of the two contracts a socket can
 // reach is sent as its bytes; a refusal before the port leaves it uncalled.
-// Port of the HTTP edge of Ductus student-removal-route.ts,
-// student-return-route.ts and assignment-version-route.ts at 078c780. All
-// values are invented.
+// Port of the HTTP edge of Ductus student-removal-route.ts and
+// student-return-route.ts at 078c780 (the assignment version route is
+// institution-assignments.integration.test.ts, SRV-14). All values are invented.
 import { readFileSync } from "node:fs";
 import { connect } from "node:net";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import type {
-  AssignmentVersionOutcome,
   InstitutionCourses,
   InstitutionMembers,
   StudentRemovalOutcome,
@@ -40,7 +39,7 @@ const vectorsOf = (id: string): Vector[] =>
     ) as { vectors: Vector[] }
   ).vectors;
 
-type Kind = "removal" | "return" | "version";
+type Kind = "removal" | "return";
 const ROUTES: Record<Kind, { id: string; path: (p: Record<string, string>) => string }> = {
   removal: {
     id: "institution.student-removal.post",
@@ -50,10 +49,6 @@ const ROUTES: Record<Kind, { id: string; path: (p: Record<string, string>) => st
     id: "institution.student-return.post",
     path: (p) =>
       `/api/v1/institution/courses/${p.courseId}/students/${p.studentId}/return-permission`,
-  },
-  version: {
-    id: "institution.assignment-versions.post",
-    path: (p) => `/api/v1/institution/assignments/${p.assignmentId}/versions`,
   },
 };
 const ORIGIN = vectorsOf(ROUTES.removal.id)[0]!.request.headers.origin!;
@@ -73,9 +68,6 @@ async function start() {
   const members = {
     removeStudent: record("removeStudent") as () => Promise<StudentRemovalOutcome>,
     allowStudentReturn: record("allowStudentReturn") as () => Promise<StudentReturnOutcome>,
-    publishAssignmentVersion: record(
-      "publishAssignmentVersion",
-    ) as () => Promise<AssignmentVersionOutcome>,
   } satisfies InstitutionMembers;
   server = await startServer({
     host: "127.0.0.1",
@@ -152,17 +144,10 @@ const OUTCOME: Record<Kind, Record<string, unknown>> = {
     forbidden: { status: "forbidden" },
     unavailable: { status: "unavailable", reason: "database_error" },
   },
-  version: {
-    published: { status: "published", versionNo: 2 },
-    forbidden: { status: "forbidden" },
-    "version-conflict": { status: "version_conflict" },
-    unavailable: { status: "unavailable", reason: "database_error" },
-  },
 };
 const METHOD: Record<Kind, string> = {
   removal: "removeStudent",
   return: "allowStudentReturn",
-  version: "publishAssignmentVersion",
 };
 
 const cases = (Object.keys(ROUTES) as Kind[]).flatMap((kind) =>
@@ -193,14 +178,14 @@ describe("every vector a socket can reach", () => {
 });
 
 describe("what reaches the port", () => {
-  const published = vectorsOf(ROUTES.version.id).find((v) => v.name === "published")!;
-  const headers = Object.entries(published.request.headers);
-  const ASSIGNMENT = published.request.params.assignmentId!;
+  const removed = vectorsOf(ROUTES.removal.id).find((v) => v.name === "true")!;
+  const headers = Object.entries(removed.request.headers);
+  const STUDENT = removed.request.params.studentId!;
 
   it("the ids come from the path, in order; the body {} carries nothing", async () => {
     outcome = { status: "removed", removed: true };
     await start();
-    const params = { courseId: "7B6A5C4D-3E2F-4A1B-9C8D-7E6F5A4B3C01", studentId: ASSIGNMENT };
+    const params = { courseId: "7B6A5C4D-3E2F-4A1B-9C8D-7E6F5A4B3C01", studentId: STUDENT };
     expect((await send(raw(ROUTES.removal.path(params), headers, "{}"))).status).toBe(200);
     outcome = { status: "allowed", allowed: true };
     expect((await send(raw(ROUTES.return.path(params), headers, "{}"))).status).toBe(200);
@@ -210,42 +195,10 @@ describe("what reaches the port", () => {
     ]);
   });
 
-  it("a version answers 201 with the path's id in lower case and the port's version", async () => {
-    outcome = { status: "published", versionNo: 7 };
-    await start();
-    const upper = ASSIGNMENT.toUpperCase();
-    const got = await send(
-      raw(
-        ROUTES.version.path({ assignmentId: upper }),
-        headers,
-        JSON.stringify(published.request.body),
-      ),
-    );
-    expect(got.status).toBe(201);
-    expect(JSON.parse(got.body)).toEqual({ assignmentId: ASSIGNMENT, versionNo: 7 });
-    const { expectedVersion, ...content } = published.request.body as Record<string, unknown>;
-    expect(calls[0]!.args).toEqual([activity[0], upper, expectedVersion, content]);
-  });
-
-  it("a tightening the RPC refuses is 422 invalid_input; an unknown status is 503", async () => {
-    for (const [answer, status] of [
-      [{ status: "invalid" }, 422],
-      [{ status: "conflict" }, 503],
-    ] as const) {
-      outcome = answer;
-      await start();
-      const body = JSON.stringify(published.request.body);
-      const got = await send(raw(ROUTES.version.path({ assignmentId: ASSIGNMENT }), headers, body));
-      expect(got.status).toBe(status);
-      await server?.close();
-      server = undefined;
-    }
-  });
-
   it("a non-empty body on removal or return is 422 without a call", async () => {
     outcome = { status: "removed", removed: true };
     await start();
-    const params = { courseId: ASSIGNMENT, studentId: ASSIGNMENT };
+    const params = { courseId: STUDENT, studentId: STUDENT };
     for (const body of ['{"studentId":"x"}', "[]", "null", '""']) {
       expect((await send(raw(ROUTES.removal.path(params), headers, body))).status).toBe(422);
       expect((await send(raw(ROUTES.return.path(params), headers, body))).status).toBe(422);

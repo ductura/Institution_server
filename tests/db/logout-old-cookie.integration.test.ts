@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createOpenSession } from "../../server/database/index.ts";
 import {
   AREA_NAMES,
+  createAdminCourseRouteFor,
   createAuthRoutes,
   createClientContextRoute,
   createDatabases,
@@ -18,13 +19,16 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createHealthRoute,
+  createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
+  createInstitutionGroupRoutesFor,
   createInterfaceLocaleRoutesFor,
   createInternalInstitutionRoutes,
   createLayers,
   createMeRouteFor,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
+  createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
@@ -71,9 +75,8 @@ let server: Running;
 const EVIDENCE_401 = { status: "unauthenticated" };
 /** A course that does not exist: a non-teacher is refused as for any course (C-23). */
 const COURSE = randomUUID();
-/** A student and an assignment that do not exist either (C-23). */
+/** A student who does not exist either (C-23). */
 const STUDENT = randomUUID();
-const ASSIGNMENT = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -153,8 +156,8 @@ const SESSION_ROUTES = {
     body: () => ({}),
     live: 403,
   },
-  // Ductus#2028 (w1119o): the student and version routes on the same front.
-  // The account teaches no course or assignment: each RPC refuses with 403.
+  // Ductus#2028 (w1119o): the student routes on the same front. The account
+  // teaches no course: each RPC refuses with 403.
   "institution.student-removal.post": {
     path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/removal`,
     body: () => ({}),
@@ -163,24 +166,6 @@ const SESSION_ROUTES = {
   "institution.student-return.post": {
     path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/return-permission`,
     body: () => ({}),
-    live: 403,
-  },
-  "institution.assignment-versions.post": {
-    path: `/api/v1/institution/assignments/${ASSIGNMENT}/versions`,
-    body: () => ({
-      expectedVersion: 1,
-      title: "Izmišljeni zadatak",
-      instructions: "Izmišljene upute.",
-      workType: "essay",
-      opensAt: "2099-01-01T08:00:00Z",
-      dueAt: "2099-02-01T08:00:00Z",
-      aiPolicy: "encouraged",
-      aiPurposes: [],
-      evidenceProfile: "basic",
-      importAllowed: false,
-      wordMin: null,
-      wordMax: null,
-    }),
     live: 403,
   },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
@@ -207,6 +192,85 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  // SRV-13: the teacher's reads. An account without the teacher role reads
+  // 404 from list_teacher_courses and "denied" from the access check.
+  "teacher.courses.get": {
+    method: "GET",
+    path: "/api/v1/teacher/courses",
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.access.get": {
+    method: "GET",
+    path: "/api/v1/teacher/access",
+    body: () => undefined,
+    live: 200,
+  },
+  // SRV-14: a new assignment and a next version; no role and no course, so
+  // a live session is 403 from each RPC and writes nothing.
+  "institution.course-assignments.post": {
+    path: `/api/v1/institution/courses/${COURSE}/assignments`,
+    body: () => ({
+      requestKey: randomUUID(),
+      ...{
+        title: "Izmišljeni zadatak",
+        instructions: "Izmišljene upute.",
+        workType: "essay",
+        opensAt: "2026-11-01T08:00:00+01:00",
+        dueAt: "2027-02-28T23:59:00+01:00",
+        aiPolicy: "encouraged",
+        aiPurposes: [],
+        evidenceProfile: "basic",
+        importAllowed: false,
+        wordMin: null,
+        wordMax: null,
+      },
+    }),
+    live: 403,
+  },
+  "institution.assignment-versions.post": {
+    path: `/api/v1/institution/assignments/${COURSE}/versions`,
+    body: () => ({
+      expectedVersion: 1,
+      ...{
+        title: "Izmišljeni zadatak",
+        instructions: "Izmišljene upute.",
+        workType: "essay",
+        opensAt: "2026-11-01T08:00:00+01:00",
+        dueAt: "2027-02-28T23:59:00+01:00",
+        aiPolicy: "encouraged",
+        aiPurposes: [],
+        evidenceProfile: "basic",
+        importAllowed: false,
+        wordMin: null,
+        wordMax: null,
+      },
+    }),
+    live: 403,
+  },
+  // SRV-15: the seminar groups; not a teacher of any course, so 403.
+  "institution.course-groups.post": {
+    path: `/api/v1/institution/courses/${COURSE}/groups`,
+    body: () => ({ name: "Izmišljena grupa" }),
+    live: 403,
+  },
+  "institution.course-group-teachers.post": {
+    path: `/api/v1/institution/groups/${COURSE}/teachers`,
+    body: () => ({ teacherId: randomUUID() }),
+    live: 403,
+  },
+  // SRV-12: the administrator's course; not an administrator, so 403.
+  "institution.admin-courses.post": {
+    path: "/api/v1/institution/admin/courses",
+    body: () => ({
+      name: "Izmišljeni kolegij",
+      academicYear: "2026/2027",
+      aiPolicy: "encouraged",
+      holderId: randomUUID(),
+      groups: [],
+    }),
+    live: 403,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -221,10 +285,14 @@ const FACTORIES = [
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
+  "createInstitutionAssignmentRoutesFor",
+  "createInstitutionGroupRoutesFor",
+  "createAdminCourseRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createMeRouteFor",
+  "createTeacherReadRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
   "routesOf",
@@ -239,10 +307,14 @@ const MOUNTED = [
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
+  ...createInstitutionAssignmentRoutesFor(databases.main),
+  ...createInstitutionGroupRoutesFor(databases.main),
+  createAdminCourseRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createMeRouteFor(databases.main),
+  ...createTeacherReadRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
   ...routesOf(AREA_NAMES),
