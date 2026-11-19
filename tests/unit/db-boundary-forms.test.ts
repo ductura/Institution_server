@@ -8,7 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 // F-019 (DAN-156): the database boundary in eslint.config.mjs over the forms
 // the import rules alone did not see.
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
-const eslint = new ESLint({ cwd: REPO_ROOT });
+const eslint = new ESLint({ cwd: REPO_ROOT, flags: ["unstable_native_nodejs_ts_config"] });
 const BOUNDARY_RULES = new Set([
   "no-restricted-imports",
   "database-boundary/no-restricted-dynamic-imports",
@@ -18,6 +18,7 @@ const BOUNDARY_RULES = new Set([
 // comment switched off still reports here.
 const withoutInlineConfig = new ESLint({
   cwd: REPO_ROOT,
+  flags: ["unstable_native_nodejs_ts_config"],
   allowInlineConfig: false,
   ruleFilter: ({ ruleId }) => BOUNDARY_RULES.has(ruleId),
 });

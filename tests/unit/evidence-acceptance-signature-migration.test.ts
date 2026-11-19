@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 // 20261017130000 as it was, so a local rollback restores the earlier
 // contract exactly. The copy is checked here instead of by eye.
 function migration(name: string): string {
-  return readFileSync(new URL(`../../db/migrations/${name}`, import.meta.url), "utf8");
+  return readFileSync(new URL(`../../db/main/migrations/${name}`, import.meta.url), "utf8");
 }
 const EARLIER = migration("20261017130000_evidence_acceptance.sql");
 const STEP_3 = migration("20261019170000_evidence_acceptance_signature.sql");

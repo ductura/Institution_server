@@ -69,14 +69,14 @@ describe("notice fingerprint (DAN-306)", () => {
     expect(canonicalizeJcs(noticeFingerprintPayload(BASE))).toBe(BASE_CANONICAL);
     expect(await noticeFingerprint(BASE)).toBe(GOLDEN_BASE);
     expect(await noticeFingerprint(EDGE)).toBe(GOLDEN_EDGE);
-    const sql = readFileSync("db/tests/105-notice-fingerprint.sql", "utf8");
+    const sql = readFileSync("db/main/tests/105-notice-fingerprint.sql", "utf8");
     expect(sql).toContain(GOLDEN_BASE);
     expect(sql).toContain(GOLDEN_EDGE);
   });
 
   it("A2: the lower edge of the supported years has the same fingerprint as in SQL", async () => {
     expect(await noticeFingerprint(RANGE_EDGE)).toBe(GOLDEN_RANGE_EDGE);
-    const sql = readFileSync("db/tests/105-notice-fingerprint.sql", "utf8");
+    const sql = readFileSync("db/main/tests/105-notice-fingerprint.sql", "utf8");
     expect(sql).toContain(GOLDEN_RANGE_EDGE);
   });
 

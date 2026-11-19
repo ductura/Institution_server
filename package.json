@@ -13,7 +13,7 @@
     "start": "node --disallow-code-generation-from-strings dist/server.js",
     "stack:vs1": "node scripts/stack/vs1.ts",
     "lokalno": "node scripts/lokalno/lokalno.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ductus-tests.json",
     "lint": "eslint --flag unstable_native_nodejs_ts_config -c eslint.config.ts --max-warnings 0 .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
