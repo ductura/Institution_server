@@ -9,12 +9,14 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the three body parsers and the service factory", () => {
+  it("exports only the three body parsers, the service factory and the student's courses (SRV-09)", () => {
     expect(Object.keys(area).sort()).toEqual([
+      "WORK_TYPES",
       "createInstitutionService",
       "parseCourseBody",
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
+      "studentCoursesOf",
     ]);
   });
 

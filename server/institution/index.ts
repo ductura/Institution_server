@@ -8,4 +8,10 @@ export {
   parseEnrollmentBody,
   parseEnrollmentCodeBody,
 } from "./schemas.ts";
+export {
+  type StudentAssignment,
+  type StudentCourse,
+  studentCoursesOf,
+  WORK_TYPES,
+} from "./student-assignments-route.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";

@@ -176,6 +176,12 @@ export {
   ENROLLMENT_TOO_MANY_ATTEMPTS,
   ENROLLMENT_UNAUTHENTICATED,
 } from "./institution-enrollment.ts";
+export { createStudentAssignmentsReader } from "./student-assignments.ts";
+export type {
+  StudentAssignmentRow,
+  StudentAssignmentsRead,
+  StudentAssignmentsReader,
+} from "./student-assignments.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the
