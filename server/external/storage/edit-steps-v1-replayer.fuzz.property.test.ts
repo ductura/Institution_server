@@ -82,7 +82,7 @@ const documentArb: fc.Arbitrary<JcsJsonValue> = fc
         ({ ...shape, id: IDS[i], children: [{ type: "text", text, marks: [] }] }) as JcsJsonValue,
     ),
   }));
-const schema = server.load(fc.sample(documentArb, { seed: 1, numRuns: 1 })[0]).type.schema;
+const schema = server.load(fc.sample(documentArb, { seed: 1, numRuns: 1 })[0]!).type.schema;
 
 type Spot = { block: PmNode; start: number; cuts: number[]; splits: number[] };
 /** Per block: where it starts, the positions between characters and those inside a surrogate pair. */
@@ -100,11 +100,11 @@ function spots(document: PmNode): Spot[] {
   });
   return out;
 }
-const pick = <T>(list: readonly T[], n: number): T => list[n % list.length];
+const pick = <T>(list: readonly T[], n: number): T => list[n % list.length]!;
 /** A non-empty range of whole characters inside one block. */
 function rangeIn(spot: Spot, a: number, b: number): [number, number] {
   const i = a % (spot.cuts.length - 1);
-  return [spot.cuts[i], spot.cuts[i + 1 + (b % (spot.cuts.length - 1 - i))]];
+  return [spot.cuts[i]!, spot.cuts[i + 1 + (b % (spot.cuts.length - 1 - i))]!];
 }
 
 type Edit = {
@@ -131,7 +131,7 @@ function capture(document: PmNode, edit: Edit): { steps: StepJson[]; after: PmNo
   if (edit.kind === "delete") tr.delete(from, to);
   if (edit.kind === "insert") tr.insert(from, schema.text(edit.text));
   if (edit.kind === "mark")
-    tr.addMark(from, to, schema.marks[pick(["bold", "italic"], edit.b)].create());
+    tr.addMark(from, to, schema.marks[pick(["bold", "italic"], edit.b)]!.create());
   if (edit.kind === "split")
     tr.split(from, 1, [{ type: spot.block.type, attrs: { ...spot.block.attrs, nodeId: null } }]);
   if (edit.kind === "retype") {
@@ -139,7 +139,7 @@ function capture(document: PmNode, edit: Edit): { steps: StepJson[]; after: PmNo
       (s) => s.type !== spot.block.type.name || s.level !== (spot.block.attrs.level as unknown),
     );
     const { type, ...attrs } = pick(others, edit.a);
-    tr.setBlockType(from, from, schema.nodes[type], {
+    tr.setBlockType(from, from, schema.nodes[type]!, {
       ...attrs,
       nodeId: spot.block.attrs.nodeId as string,
     });
@@ -147,7 +147,7 @@ function capture(document: PmNode, edit: Edit): { steps: StepJson[]; after: PmNo
   const steps = tr.steps.map((step, i) => {
     const json = JSON.parse(JSON.stringify(step.toJSON())) as StepJson;
     if (json.stepType === "replace" && json.to > json.from)
-      json.removedSha256 = removedRangeSha256(tr.docs[i], json.from, json.to);
+      json.removedSha256 = removedRangeSha256(tr.docs[i]!, json.from, json.to);
     return json;
   });
   return { steps, after: tr.doc };
@@ -313,7 +313,7 @@ describe("P5 parseEditSteps fuzz (N-23)", () => {
   test.prop([format, fc.constantFrom(...Object.keys(hostile))])(
     "K4: a hostile object is refused, never thrown",
     (name, kind) => {
-      const result = parseEditSteps(name, hostile[kind]());
+      const result = parseEditSteps(name, hostile[kind]!());
       expect(result.ok).toBe(false);
       expect(EDIT_STEP_REJECTIONS).toContain((result as { code: string }).code);
     },
@@ -484,10 +484,10 @@ describe("P6 edit steps v1 replayer fuzz, server and browser driver", () => {
     async (given, block, beyond, notPosition, mark) => {
       // One emoji at the end of the first block, so that a position inside a pair always exists.
       const nodes = (given as { nodes: { children: { text: string }[] }[] }).nodes;
-      nodes[0].children[0].text += "\u{1F600}";
+      nodes[0]!.children[0]!.text += "\u{1F600}";
       const document = server.load(given);
       const outside = document.content.size + 1 + beyond;
-      const inPair = pick(spots(document)[0].splits, block);
+      const inPair = pick(spots(document)[0]!.splits, block);
       const text = { content: [{ type: "text", text: "a" }] };
       const shapes = (p: number, from: number, to: number) => [
         { stepType: "replace", from: p, to: p, slice: text },
@@ -525,7 +525,7 @@ describe("P6 edit steps v1 replayer fuzz, server and browser driver", () => {
       const wrap = around.steps[0] as Wrapped;
       expect(wrap.stepType).toBe("replaceAround");
       expect(await alike(initial, [wrap], around.after)).toBe(applied(around.after));
-      expect(await edited(wrap, (s) => (s.slice.content[0].attrs.nodeId = foreign))).toBe(
+      expect(await edited(wrap, (s) => (s.slice.content[0]!.attrs.nodeId = foreign))).toBe(
         "refused:replace_around_identity",
       );
       const { level } = spot.block.attrs as { level?: number };
@@ -540,10 +540,10 @@ describe("P6 edit steps v1 replayer fuzz, server and browser driver", () => {
       const divided = capture(document, { kind: "split", block, a, b: 0, text: "" });
       const split = divided.steps[0] as Wrapped;
       expect(await alike(initial, [split], divided.after)).toBe(applied(divided.after));
-      expect(await edited(split, (s) => (s.slice.content[0].attrs.nodeId = foreign))).toBe(
+      expect(await edited(split, (s) => (s.slice.content[0]!.attrs.nodeId = foreign))).toBe(
         "refused:open_start_block",
       );
-      expect(await edited(split, (s) => (s.slice.content[1].attrs.nodeId = foreign))).toBe(
+      expect(await edited(split, (s) => (s.slice.content[1]!.attrs.nodeId = foreign))).toBe(
         "refused:open_end_block",
       );
     },
@@ -571,7 +571,7 @@ describe("P6 edit steps v1 replayer fuzz, server and browser driver", () => {
   );
 
   it("N-35: the first replays of a fresh module, started together, build the schema once and agree", async () => {
-    const [initial] = fc.sample(documentArb, { seed: 7, numRuns: 1 });
+    const initial = fc.sample(documentArb, { seed: 7, numRuns: 1 })[0]!;
     const { steps, after } = capture(server.load(initial), {
       kind: "delete",
       block: 0,
@@ -590,11 +590,11 @@ describe("P6 edit steps v1 replayer fuzz, server and browser driver", () => {
     ];
     const together = await Promise.all(
       [0, 1, 2, 3, 4, 5].map((i) =>
-        fresh.replayEvidenceSegmentsV2(initial, [segment], drivers[i % 2]),
+        fresh.replayEvidenceSegmentsV2(initial, [segment], drivers[i % 2]!),
       ),
     );
     for (const result of together) expect(result).toEqual(expected);
-    expect(drivers[0].load(initial).type.schema).toBe(drivers[1].load(initial).type.schema);
-    expect(drivers[0].load(initial).type.schema).not.toBe(schema);
+    expect(drivers[0]!.load(initial).type.schema).toBe(drivers[1]!.load(initial).type.schema);
+    expect(drivers[0]!.load(initial).type.schema).not.toBe(schema);
   });
 });

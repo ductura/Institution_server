@@ -98,11 +98,16 @@ function editorName(editor: Person): string {
 
 function formatAccessed(iso: string, label: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
-  const date = match ? new Date(Date.UTC(+match[1], +match[2] - 1, +match[3])) : undefined;
-  if (!match || !date || date.getUTCMonth() !== +match[2] - 1 || date.getUTCDate() !== +match[3]) {
+  const date = match ? new Date(Date.UTC(+match[1]!, +match[2]! - 1, +match[3]!)) : undefined;
+  if (
+    !match ||
+    !date ||
+    date.getUTCMonth() !== +match[2]! - 1 ||
+    date.getUTCDate() !== +match[3]!
+  ) {
     throw new CitationInputError("accessed must be a valid YYYY-MM-DD date");
   }
-  return `(${label} ${+match[3]}. ${+match[2]}. ${match[1]}.)`;
+  return `(${label} ${+match[3]!}. ${+match[2]!}. ${match[1]!}.)`;
 }
 
 function body(source: Source, style: CitationStyle): string {
@@ -153,7 +158,7 @@ function sortKey(author: Author): string {
 function compareSources(a: Source, b: Source): number {
   const length = Math.min(a.authors.length, b.authors.length);
   for (let i = 0; i < length; i++) {
-    const byName = collator.compare(sortKey(a.authors[i]), sortKey(b.authors[i]));
+    const byName = collator.compare(sortKey(a.authors[i]!), sortKey(b.authors[i]!));
     if (byName !== 0) return byName;
   }
   if (a.authors.length !== b.authors.length) return a.authors.length - b.authors.length;

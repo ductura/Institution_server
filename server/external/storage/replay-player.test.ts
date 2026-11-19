@@ -2,11 +2,11 @@ import fc from "fast-check";
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { describe, expect, it } from "vitest";
 
-import { createBrowserReplayStepsV1 } from "../../external/storage/edit-steps-v1-replay-steps.ts";
-import { REVISION_ZERO_JCS } from "../document/revision-zero.ts";
-import type { JcsJsonValue } from "../forensics/jcs.ts";
+import { createBrowserReplayStepsV1 } from "./edit-steps-v1-replay-steps.ts";
+import { REVISION_ZERO_JCS } from "../../domain/document/revision-zero.ts";
+import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
-import { buildReplayPlayer, type ReplayRecord } from "./replay-player.ts";
+import { buildReplayPlayer, type ReplayRecord } from "../../domain/projection/replay-player.ts";
 import {
   BLOCK_A as A,
   BLOCK_B as B,
@@ -103,7 +103,7 @@ describe("buildReplayPlayer (DAN-537, rb 261)", () => {
       },
     ]);
     expect(player.documentAt(0)).toStrictEqual(start.toJSON());
-    expect(player.documentAt(3)).toStrictEqual(r.ends[1].toJSON());
+    expect(player.documentAt(3)).toStrictEqual(r.ends[1]!.toJSON());
   });
 
   it("has no gap for a record from revision 0, and no pause however far apart the segments are", async () => {
@@ -131,7 +131,7 @@ describe("buildReplayPlayer (DAN-537, rb 261)", () => {
       2,
     ]);
     expect(player.end).toBe("complete");
-    expect(player.documentAt(2)).toStrictEqual(r.ends[1].toJSON());
+    expect(player.documentAt(2)).toStrictEqual(r.ends[1]!.toJSON());
   });
 
   it("ends a break with no document to resume from in a gap, and replays nothing after it", async () => {
@@ -230,7 +230,7 @@ describe("buildReplayPlayer (DAN-537, rb 261)", () => {
     expect(empty.ok && [empty.total, empty.entries, empty.end]).toStrictEqual([0, [], "complete"]);
 
     const r = buildRecord(start, [{ at: "10:00", events: [typeAt(17, "X")] }]);
-    const tampered = r.segments[0].replace('"X"', '"W"');
+    const tampered = r.segments[0]!.replace('"X"', '"W"');
     expect(await play(r, { segments: [tampered] })).toStrictEqual({
       ok: false,
       reason: "chain_mismatch",
