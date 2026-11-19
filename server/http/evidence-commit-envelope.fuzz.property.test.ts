@@ -3,12 +3,16 @@ import { describe, expect, it, vi } from "vitest";
 
 import { verifyDocumentSnapshot } from "../domain/document/snapshot.ts";
 import { verifyCanonicalEvidencePayloadV2 } from "../domain/forensics/evidence-chain-v2.ts";
-import type { WithActor } from "../database/with-actor.ts";
+import type { EvidenceCommitter } from "../database/index.ts";
+import { createEvidenceService, type EvidenceCommitRequest } from "../evidence/index.ts";
 
-import { parseCommitEnvelope } from "./commit-route";
-import { commitEvidenceRequest, type EvidenceCommitRequest } from "./evidence-commit-request";
+import { parseCommitEnvelope } from "./evidence-commit.ts";
 
 /**
+ * Ductus src/server/evidence/commit-envelope.fuzz.property.test.ts, on
+ * Ductura's parser (server/http/evidence-commit.ts parseCommitEnvelope) and
+ * service (server/evidence/service.ts, t. 3.1 before the context is read).
+ *
  * DAN-320, plan #1504 (PR A): fuzz of the commit envelope (P4): the closed
  * key set, strict base64 and the form checks of BACKEND 4.13 t. 3.1, which
  * run before any state is read. Generated content only.
@@ -50,14 +54,23 @@ const body = (e: Fields): Record<string, unknown> => ({
 const parse = (value: unknown) =>
   parseCommitEnvelope(enc(typeof value === "string" ? value : JSON.stringify(value)));
 
-/** t. 3.1 must answer before the context is read, so `withActor` is never called. */
+/** t. 3.1 must answer before the context is read, so the committer is never called. */
 async function formOutcome(request: EvidenceCommitRequest) {
-  const withActor = vi.fn<WithActor>(async () => {
+  const readContext = vi.fn<EvidenceCommitter["readContext"]>(async () => {
     throw new Error("context must not be read");
   });
+  const commit = vi.fn<EvidenceCommitter["commit"]>(async () => {
+    throw new Error("must not commit");
+  });
   const payloads = { putImmutable: vi.fn(), storageRefFor: vi.fn() };
-  const outcome = await commitEvidenceRequest({ withActor, payloads } as never, "t", request);
-  expect(withActor).not.toHaveBeenCalled();
+  const service = createEvidenceService({
+    committer: { readContext, commit },
+    payloads: payloads as never,
+  });
+  const outcome = await service.commit("t", request);
+  expect(readContext).not.toHaveBeenCalled();
+  expect(commit).not.toHaveBeenCalled();
+  expect(payloads.putImmutable).not.toHaveBeenCalled();
   return outcome;
 }
 

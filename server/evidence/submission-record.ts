@@ -13,7 +13,7 @@ import { isEvidenceDomainId, isReceiptPrincipalId } from "../domain/forensics/ev
 import type { EvidenceDomainKey } from "../domain/forensics/evidence-receipt-verifier.ts";
 import type { WithActor } from "../database/with-actor.ts";
 
-import { readEvidenceDomainKeys } from "./evidence-domain-keys";
+import { readEvidenceDomainKeys } from "./evidence-domain-keys.ts";
 
 /**
  * B-12 step 4b1 (docs/BACKEND.md 4.6; contract on #385): the record of a

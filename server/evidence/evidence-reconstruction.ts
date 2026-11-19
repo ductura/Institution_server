@@ -74,7 +74,12 @@ export function signerReceiptCheck(
     ) {
       return { status: "mismatch" };
     }
-    const valid = await signer.verify(digest.bytes, receipt.signature);
+    // Ductura's SigningKeyProvider answers a Result. A failure means the key or
+    // the KMS could not be reached, which Ductus threw: it is no verdict on the
+    // signature, so it stays an exception and never becomes signature_invalid.
+    const verified = await signer.verify(digest.bytes, receipt.signature);
+    if (!verified.ok) throw new Error("signature verification unavailable");
+    const valid = verified.value;
     return valid
       ? { status: "verified", receiptId: receipt.payload.receiptId }
       : { status: "signature_invalid" };
@@ -86,7 +91,7 @@ type ReconstructionDependencies<TDocument> = {
   payloads: EvidencePayloadReader;
   replayer: EvidenceStepReplayerV2<TDocument>;
   /** Without it no break is ever crossed: the first one is the outcome. */
-  checkpoints?: EvidenceCheckpointReader;
+  checkpoints?: EvidenceCheckpointReader | undefined;
 } & (
   | { signer: Pick<SigningKeyProvider, "verify">; receipts?: undefined }
   | { receipts: EvidenceReceiptCheck; signer?: undefined }
@@ -480,7 +485,7 @@ async function reconstruct<TDocument, TResumed = never>(
   // record starts. It has to continue the starting document from event 1.
   const start = await findEvidenceStartBreakV2(
     input.initialDocument,
-    segments[0],
+    segments[0]!,
     dependencies.replayer,
   );
   if (!start.ok) return mismatch(start.reason, null);

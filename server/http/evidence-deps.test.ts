@@ -4,16 +4,20 @@
 // EVIDENCE_STORAGE_DOMAINS, and plain http to loopback never in production.
 // Every key, id and secret below is invented for this test.
 import { randomBytes } from "node:crypto";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
-import { DEV_SIGNING_KEY_FILE } from "../external/keys/index.ts";
+import {
+  DEV_SIGNING_KEY_FILE,
+  PersistentDevelopmentEd25519SigningKeyProvider,
+} from "../external/keys/index.ts";
 import {
   EVIDENCE_STORAGE_DOMAINS,
   InstitutionRoutedPayloadStore,
+  STORAGE_UNAVAILABLE,
 } from "../external/storage/index.ts";
 
 import {
@@ -28,6 +32,7 @@ const dir = mkdtempSync(join(tmpdir(), "dan815-signer-"));
 const SEED = join(dir, "seed");
 writeFileSync(SEED, randomBytes(32), { mode: 0o600 });
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
+afterEach(() => vi.restoreAllMocks());
 
 const KEY_VAR = "EVIDENCE_S3_FAK_A_KEY_ID";
 const SECRET_VAR = "EVIDENCE_S3_FAK_A_SECRET";
@@ -62,7 +67,9 @@ const KEY = {
 };
 
 describe("evidenceIngestDependencies: the signer", () => {
-  it.each([undefined, "", "production", "Production", "staging"])(
+  // "Development" and "test " are the rows of Ductus receipt-signer.test.ts
+  // (T9): the allowlist is exact, neither case nor whitespace is folded.
+  it.each([undefined, "", "production", "Production", "staging", "Development", "test "])(
     "NODE_ENV %s never signs, even with a seed",
     async (nodeEnv) => {
       const { signer } = evidenceIngestDependencies(
@@ -86,6 +93,18 @@ describe("evidenceIngestDependencies: the signer", () => {
     },
   );
 
+  // Ductus receipt-signer.test.ts (T5): outside production it is the
+  // persistent development signer, and with no seed configured it makes no
+  // key of its own: there is no fallback to a key in memory.
+  it("NODE_ENV development without a seed is the development signer with no key (T5)", async () => {
+    const { signer } = evidenceIngestDependencies({ NODE_ENV: "development" }, ROOT);
+    expect(signer).toBeInstanceOf(PersistentDevelopmentEd25519SigningKeyProvider);
+    expect(await signer.sign(new Uint8Array(59))).toMatchObject({
+      ok: false,
+      error: { code: "SIGNING_KEY_NOT_CONFIGURED" },
+    });
+  });
+
   it("a valid seed inside the repository root is no signature, without throwing", async () => {
     // A seed the adapter would take anywhere else (32 bytes, 0600): only the root refuses it.
     const { signer } = evidenceIngestDependencies(
@@ -107,6 +126,8 @@ describe("evidenceIngestDependencies: the storage", () => {
       "a domain without its secret",
       { ...storage("https://s3.example.invalid"), [SECRET_VAR]: undefined },
     ],
+    // Ductus payload-reader.test.ts: plain http is storage only on loopback.
+    ["plain http to a host that is not loopback", storage("http://s3.example.invalid")],
   ])("%s is no storage at all, never a default bucket", async (_name, env) => {
     const { payloads } = evidenceIngestDependencies({ NODE_ENV: "development", ...env }, ROOT);
     expect(payloads).toBe(STORAGE_NOT_CONFIGURED);
@@ -185,6 +206,23 @@ describe("evidenceIngestDependencies: the storage", () => {
     },
   );
 
+  // Ductus payload-reader.test.ts (P2): the storage built from the
+  // environment never reads an institution without a domain from another one.
+  it("never reads an institution without a domain from another one (P2)", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetch = vi.spyOn(globalThis, "fetch");
+    const { payloads } = evidenceIngestDependencies(
+      { NODE_ENV: "test", ...storage("https://s3.example.invalid") },
+      ROOT,
+    );
+    const other = { ...KEY.put, institutionId: "00000000-0000-4000-8000-00000000000b" };
+    await expect(payloads.readImmutable(other)).resolves.toEqual({
+      status: "unavailable",
+      reason: STORAGE_UNAVAILABLE,
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("an https domain is storage in production", () => {
     const { payloads } = evidenceIngestDependencies(
       { NODE_ENV: "production", ...storage("https://s3.example.invalid") },
@@ -235,5 +273,45 @@ describe("evidenceIngestDependencies: protocol 2 (asynchronous signing)", () => 
 
   it('the process\'s own value exactly "1" is on', () => {
     expect(flag({ [ASYNC_SIGNING_FLAG]: "1" })).toBe(true);
+  });
+});
+
+// Ductus ingest-deps.test.ts and payload-reader.test.ts, on Ductura's form:
+// the dependencies are made once per process by server.ts (Ductus memoized
+// them in the factory), and a configuration value that throws is no storage.
+describe("evidenceIngestDependencies: one per process", () => {
+  it("server.ts makes them once and hands the same ones to commit and replay", () => {
+    const source = readFileSync(resolve(ROOT, "server/server.ts"), "utf8");
+    expect(source.match(/evidenceIngestDependencies\(/g)).toHaveLength(1);
+    expect(source).toMatch(/const evidenceDeps = evidenceIngestDependencies\(/);
+    expect(source).toMatch(/createEvidenceCommitRouteFor\([^)]*evidenceDeps\)/);
+    expect(source).toMatch(/createEvidenceReplayRouteFor\([^)]*evidenceDeps\)/);
+  });
+
+  // Ductus payload-reader.test.ts handed the reader an environment whose every
+  // read throws. Ductura copies the environment first ({ ...env }), so the
+  // hostile value is one that throws when the storage loader uses it: the
+  // fault comes from inside the loader, as in Ductus, and must be no storage.
+  it("a configuration value that throws when read is no storage, never a thrown error", async () => {
+    let trapped = 0;
+    const hostile = new Proxy(
+      {},
+      {
+        get: () => {
+          trapped += 1;
+          throw new Error("izmisljena-tajna-kanarinac");
+        },
+      },
+    );
+    const deps = evidenceIngestDependencies(
+      { NODE_ENV: "test", [EVIDENCE_STORAGE_DOMAINS]: hostile as unknown as string },
+      ROOT,
+    );
+    expect(trapped).toBeGreaterThan(0);
+    expect(deps.payloads).toBe(STORAGE_NOT_CONFIGURED);
+    expect(await deps.payloads.readImmutable(KEY.put)).toEqual({
+      status: "unavailable",
+      reason: "storage_not_configured",
+    });
   });
 });
