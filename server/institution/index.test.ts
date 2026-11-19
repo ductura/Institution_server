@@ -9,10 +9,14 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the three body parsers, the service factory and the access log read (SRV-11)", () => {
+  it("exports only the body parsers, the service factory and the access log read (SRV-11, SRV-14)", () => {
     expect(Object.keys(area).sort()).toEqual([
       "accessLogCursorOf",
       "createInstitutionService",
+      // SRV-14: the content of an assignment version (assignment-input.ts).
+      "isAssignmentVersion",
+      "parseAssignmentInput",
+      "parseAssignmentVersionBody",
       "parseCourseBody",
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
