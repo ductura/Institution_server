@@ -14,10 +14,10 @@
 import { spawn } from "node:child_process";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
-import { signS3Request } from "../../src/adapters/evidence/s3-signature.ts";
-import { dockerExecArgs, nativePsqlTarget } from "./psql-target.mjs";
+import { signS3Request } from "../../../server/external/storage/s3-signature.ts";
+import { dockerExecArgs, nativePsqlTarget } from "./psql-target.ts";
 
-const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
