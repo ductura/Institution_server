@@ -34,3 +34,9 @@ export {
   parseAssignmentInput,
   parseAssignmentVersionBody,
 } from "./assignment-input.ts";
+export {
+  type AssignmentWorkLanguageBody,
+  parseAssignmentWorkLanguageBody,
+  parseWorkLanguageExceptionBody,
+  type WorkLanguageExceptionBody,
+} from "./work-language-bodies.ts";

@@ -14,6 +14,8 @@ import type {
   EnrollmentCodeIssueOutcome,
   EnrollmentCodeRevokeOutcome,
   InstitutionCourses,
+  InstitutionMembers,
+  WorkLanguages,
 } from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
@@ -41,6 +43,8 @@ const TOKEN = COOKIE.slice("__Host-ductus_session=".length);
 const ID = CREATED.response.body.id as string;
 const GOOD = CREATED.request.body as CourseInput;
 
+// The student and version routes are institution-members.integration.test.ts.
+const NO_MEMBERS = {} as InstitutionMembers;
 let server: Running | undefined;
 const calls = {
   port: [] as [string, CourseInput][],
@@ -82,6 +86,8 @@ async function start() {
     databases: createDatabases(),
     routes: createInstitutionCourseRoutes({
       courses,
+      members: NO_MEMBERS,
+      languages: {} as WorkLanguages,
       recordActivity: (token) => {
         calls.activity.push(token);
         return activity();

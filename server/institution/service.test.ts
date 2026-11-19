@@ -4,7 +4,7 @@
 // port's outcome is passed on unchanged. Every token and value is invented.
 import { describe, expect, it } from "vitest";
 
-import type { InstitutionCourses } from "../database/index.ts";
+import type { InstitutionCourses, InstitutionMembers, WorkLanguages } from "../database/index.ts";
 
 import { createInstitutionService } from "./service.ts";
 
@@ -27,7 +27,16 @@ function fake(answer: unknown = { status: "unavailable", reason: "database_error
     issueEnrollmentCode: record("issueEnrollmentCode"),
     revokeEnrollmentCode: record("revokeEnrollmentCode"),
   } as unknown as InstitutionCourses;
-  return { service: createInstitutionService({ courses }), calls };
+  const members = {
+    removeStudent: record("removeStudent"),
+    allowStudentReturn: record("allowStudentReturn"),
+  } as unknown as InstitutionMembers;
+  const languages = {
+    setAssignmentWorkLanguage: record("setAssignmentWorkLanguage"),
+    setWorkLanguage: record("setWorkLanguage"),
+    setWorkLanguageForDocument: record("setWorkLanguageForDocument"),
+  } as unknown as WorkLanguages;
+  return { service: createInstitutionService({ courses, members, languages }), calls };
 }
 
 describe("createCourse refuses a body before the port", () => {
@@ -97,5 +106,70 @@ describe("the service passes the port's outcome on unchanged", () => {
     expect(await service.createCourse(TOKEN, { ...BODY })).toBe(outcome);
     expect(await service.issueEnrollmentCode(TOKEN, COURSE, { validUntil: UNTIL })).toBe(outcome);
     expect(await service.revokeEnrollmentCode(TOKEN, COURSE)).toBe(outcome);
+  });
+});
+
+const STUDENT = "9d8c7b6a-5f4e-4c3b-9a2d-1e0f9a8b7c01";
+const ASSIGNMENT = "3c2b1a09-8f7e-4d6c-9b5a-4f3e2d1c0b01";
+
+describe("the student operations", () => {
+  it("removal and return pass the path ids to the port and its outcome back unchanged", async () => {
+    const outcome = { status: "removed", removed: true };
+    const { service, calls } = fake(outcome);
+    expect(await service.removeStudent(TOKEN, COURSE, STUDENT)).toBe(outcome);
+    expect(await service.allowStudentReturn(TOKEN, COURSE, STUDENT)).toBe(outcome);
+    expect(calls).toEqual([
+      { method: "removeStudent", args: [TOKEN, COURSE, STUDENT] },
+      { method: "allowStudentReturn", args: [TOKEN, COURSE, STUDENT] },
+    ]);
+  });
+});
+
+describe("the work language operations", () => {
+  it("pass the checked body to the port and its outcome back unchanged", async () => {
+    const outcome = { status: "updated", language: "hr" };
+    const { service, calls } = fake(outcome);
+    const body = { expectedVersion: 3, language: "en" };
+    expect(await service.setAssignmentWorkLanguage(TOKEN, ASSIGNMENT, body)).toBe(outcome);
+    expect(await service.setWorkLanguage(TOKEN, ASSIGNMENT, STUDENT, { language: null })).toBe(
+      outcome,
+    );
+    expect(
+      await service.setWorkLanguageForDocument(TOKEN, ASSIGNMENT, "rad", { language: "en" }),
+    ).toBe(outcome);
+    expect(calls).toEqual([
+      { method: "setAssignmentWorkLanguage", args: [TOKEN, ASSIGNMENT, 3, "en"] },
+      { method: "setWorkLanguage", args: [TOKEN, ASSIGNMENT, STUDENT, null] },
+      { method: "setWorkLanguageForDocument", args: [TOKEN, ASSIGNMENT, "rad", "en"] },
+    ]);
+  });
+
+  it.each<[string, unknown]>([
+    ["no version", { language: "en" }],
+    ["version 0", { expectedVersion: 0, language: "en" }],
+    ["version 1.5", { expectedVersion: 1.5, language: "en" }],
+    ["a null language", { expectedVersion: 1, language: null }],
+    ["an upper-case language", { expectedVersion: 1, language: "EN" }],
+    ["an extra key", { expectedVersion: 1, language: "en", studentId: STUDENT }],
+    ["inherited keys", Object.create({ expectedVersion: 1, language: "en" }) as unknown],
+  ])("the assignment language refuses %s", async (_name, value) => {
+    const { service, calls } = fake();
+    expect(await service.setAssignmentWorkLanguage(TOKEN, ASSIGNMENT, value)).toEqual(INVALID);
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each<[string, unknown]>([
+    ["an empty object", {}],
+    ["a language with a space", { language: "en " }],
+    ["a version too", { language: "en", expectedVersion: 1 }],
+    ["an array", [{ language: "en" }]],
+    ["null", null],
+  ])("one work's exception refuses %s", async (_name, value) => {
+    const { service, calls } = fake();
+    expect(await service.setWorkLanguage(TOKEN, ASSIGNMENT, STUDENT, value)).toEqual(INVALID);
+    expect(await service.setWorkLanguageForDocument(TOKEN, ASSIGNMENT, "rad", value)).toEqual(
+      INVALID,
+    );
+    expect(calls).toHaveLength(0);
   });
 });

@@ -19,19 +19,28 @@ describe("server/institution public interface", () => {
       "isAssignmentVersion",
       "parseAssignmentInput",
       "parseAssignmentVersionBody",
+      "parseAssignmentWorkLanguageBody",
       "parseCourseBody",
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
       "parseNoticeReadBody",
       "parseStudentEnrollmentBody",
+      "parseWorkLanguageExceptionBody",
       "readStudentAccessLog",
       "studentCoursesOf",
     ]);
   });
 
-  it("has a service of three methods and closed bodies", () => {
+  it("has a service of eight methods and closed bodies", () => {
     expectTypeOf<keyof InstitutionService>().toEqualTypeOf<
-      "createCourse" | "issueEnrollmentCode" | "revokeEnrollmentCode"
+      | "createCourse"
+      | "issueEnrollmentCode"
+      | "revokeEnrollmentCode"
+      | "removeStudent"
+      | "allowStudentReturn"
+      | "setAssignmentWorkLanguage"
+      | "setWorkLanguage"
+      | "setWorkLanguageForDocument"
     >();
     expectTypeOf<keyof CourseBody>().toEqualTypeOf<"name" | "academicYear" | "aiPolicy">();
     expectTypeOf<EnrollmentCodeBody>().toEqualTypeOf<{ validUntil: string }>();
