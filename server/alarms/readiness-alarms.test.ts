@@ -1,9 +1,9 @@
 import { fc, test } from "@fast-check/vitest";
 import { describe, expect, it } from "vitest";
 
-import type { OpsAlarmKind } from "@/domain/ops/alarm";
+import type { OpsAlarmKind } from "../domain/ops/alarm.ts";
 
-import { createAlarmTracker, REFRESH_MS, type AlarmStore } from "./readiness-alarms";
+import { createAlarmTracker, REFRESH_MS, type AlarmStore } from "./readiness-alarms.ts";
 
 type Call = [op: "raise" | "resolve", kind: OpsAlarmKind];
 

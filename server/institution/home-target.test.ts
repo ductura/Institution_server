@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { homeTarget } from "./home-target";
+import { homeTarget } from "./home-target.ts";
 
 const TOKEN = "T".repeat(43);
 const COURSE = {

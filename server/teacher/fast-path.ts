@@ -1,17 +1,17 @@
-import { isInstitutionId } from "@/application/ports/evidence-object-key";
-import type { InstitutionEvidencePayloadReader } from "@/application/ports/evidence-reconstruction";
-import { readProcessSummary } from "@/application/projection/process-summary-reader";
-import { isDocumentId } from "@/domain/collaboration";
-import { verifyDocumentSnapshot } from "@/domain/document/snapshot";
-import { textBlocksOf, type TextBlock } from "@/domain/document/text-blocks";
+import { isInstitutionId } from "../domain/evidence/object-key.ts";
+import type { InstitutionEvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
+import { readProcessSummary } from "../projection/process-summary-reader.ts";
+import { isDocumentId } from "../domain/collaboration/index.ts";
+import { verifyDocumentSnapshot } from "../domain/document/snapshot.ts";
+import { textBlocksOf, type TextBlock } from "../domain/document/text-blocks.ts";
 import type {
   ProcessSummaryThresholds,
   ProcessSummaryV1,
-} from "@/domain/projection/process-summary";
-import { processSummaryLines } from "@/domain/projection/process-summary-lines";
-import { compareHr } from "@/domain/text/compare-hr";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { checkMutationRequest, readBodyWithLimit } from "@/server/http/mutation-request";
+} from "../domain/projection/process-summary.ts";
+import { processSummaryLines } from "../domain/projection/process-summary-lines.ts";
+import { compareHr } from "../domain/text/compare-hr.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { checkMutationRequest, readBodyWithLimit } from "../http/fetch-mutation-request.ts";
 
 /**
  * B-11c (#757, DAN-308): the teacher's fast path through the works of one

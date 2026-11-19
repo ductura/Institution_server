@@ -1,9 +1,9 @@
-import { isEvidencePackageId, isSha256Hex } from "@/application/ports/evidence-ingest";
+import { isEvidencePackageId, isSha256Hex } from "../application/ports/evidence-ingest.ts";
 import type {
   EvidenceCheckpointReader,
   EvidenceCheckpointReadResult,
-} from "@/application/ports/evidence-reconstruction";
-import { isEvidenceDomainId } from "@/domain/forensics/evidence-receipt";
+} from "../application/ports/evidence-reconstruction.ts";
+import { isEvidenceDomainId } from "../domain/forensics/evidence-receipt.ts";
 
 /**
  * One statement on the worker's connection (ductus_worker). The adapter needs
