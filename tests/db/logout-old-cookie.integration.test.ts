@@ -18,6 +18,7 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createHealthRoute,
+  createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createInternalInstitutionRoutes,
@@ -189,6 +190,48 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-14: a new assignment and a next version; no role and no course, so
+  // a live session is 403 from each RPC and writes nothing.
+  "institution.course-assignments.post": {
+    path: `/api/v1/institution/courses/${COURSE}/assignments`,
+    body: () => ({
+      requestKey: randomUUID(),
+      ...{
+        title: "Izmišljeni zadatak",
+        instructions: "Izmišljene upute.",
+        workType: "essay",
+        opensAt: "2026-11-01T08:00:00+01:00",
+        dueAt: "2027-02-28T23:59:00+01:00",
+        aiPolicy: "encouraged",
+        aiPurposes: [],
+        evidenceProfile: "basic",
+        importAllowed: false,
+        wordMin: null,
+        wordMax: null,
+      },
+    }),
+    live: 403,
+  },
+  "institution.assignment-versions.post": {
+    path: `/api/v1/institution/assignments/${COURSE}/versions`,
+    body: () => ({
+      expectedVersion: 1,
+      ...{
+        title: "Izmišljeni zadatak",
+        instructions: "Izmišljene upute.",
+        workType: "essay",
+        opensAt: "2026-11-01T08:00:00+01:00",
+        dueAt: "2027-02-28T23:59:00+01:00",
+        aiPolicy: "encouraged",
+        aiPurposes: [],
+        evidenceProfile: "basic",
+        importAllowed: false,
+        wordMin: null,
+        wordMax: null,
+      },
+    }),
+    live: 403,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -203,6 +246,7 @@ const FACTORIES = [
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
+  "createInstitutionAssignmentRoutesFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -222,6 +266,7 @@ const MOUNTED = [
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
+  ...createInstitutionAssignmentRoutesFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
