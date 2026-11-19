@@ -13,7 +13,7 @@
 --                    column is here so the read does not change shape when it is
 --   groups           names of the caller's own open seminar group places in the
 --                    course, sorted; never another student's
---   mentors          [{id, name}] of the open teachers of those groups
+--   mentors          [{id, name}] of the open, confirmed teachers of those groups
 --   teachers         [{id, name, role}] of the open, confirmed teachers of the
 --                    course, role 'holder' for the open holder, else 'collaborator'
 --   acknowledged     the caller acknowledged the current version's notice
@@ -77,7 +77,9 @@ BEGIN
                 LEFT JOIN identity.person_name pn
                   ON pn.user_id = gt.user_id AND pn.institution_id = v_institution
                WHERE s.course_id = c.id AND s.user_id = v_user AND s.institution_id = v_institution
-                 AND s.valid_to IS NULL) t), '[]'::jsonb),
+                 AND s.valid_to IS NULL
+                 -- A group place outlives a revoked teacher role (revoke_teacher_role).
+                 AND institution.is_confirmed_teacher(gt.user_id, c.id)) t), '[]'::jsonb),
     coalesce((
       SELECT jsonb_agg(jsonb_build_object('id', t.user_id, 'name', t.name, 'role', t.role)
                        ORDER BY t.role DESC, t.user_id)

@@ -8,7 +8,7 @@
 BEGIN;
 \ir fixtures/institution.inc
 SET LOCAL lc_messages TO 'C';
-SELECT plan(24);
+SELECT plan(26);
 
 -- K1: Vesna holds it, Marko collaborates, Nina is a member whose teacher role
 -- nobody confirmed. Group A: Ana, taught by Marko; group B: Dora, by Vesna.
@@ -90,6 +90,11 @@ SELECT is(pg_temp.read('ana', 's.notice_read::text') || ' ' || pg_temp.read('dor
 
 -- 3. No other student is named, and the end of a place or membership counts.
 SELECT unalike(pg_temp.read('ana', 's::text'), '%Dora%', 'nothing Ana reads names Dora');
+-- Codex finding on #359: a revoked teacher role ends the group teacher too.
+SELECT is(pg_temp.ask('iva', 'SELECT institution.revoke_teacher_role({marko})::text'), 'true', 'Iva revokes Marko''s teacher role');
+SELECT is(pg_temp.read('ana', 's.mentors::text') || ' ' || pg_temp.read('ana', 's.teachers::text'),
+          '[] ' || jsonb_build_array(pg_temp.person('vesna', 'Vesna Izmišljena', 'holder'))::text,
+          'Marko is no longer Ana''s group teacher, nor a teacher of K1');
 UPDATE institution.seminar_group_member SET valid_to = now() WHERE user_id = pg_temp.id('ana');
 SELECT is(pg_temp.read('ana', 's.groups::text || s.mentors::text'), '{}[]', 'an ended group place is no longer shown');
 SELECT is(pg_temp.ask('vesna', 'SELECT institution.remove_student({k1}, {dora})::text'), 'true', 'Vesna removes Dora from K1');
