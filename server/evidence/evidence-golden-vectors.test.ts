@@ -2,21 +2,21 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { DevelopmentEd25519SigningKeyProvider } from "@/adapters/crypto/development-ed25519-signer";
-import { InMemoryEvidenceAcceptanceRepository } from "@/adapters/evidence/in-memory-evidence-acceptance-repository";
-import { InMemoryEvidenceContextPort } from "@/adapters/evidence/in-memory-evidence-context";
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
-import type { AuthorizationPort } from "@/application/ports/authorization";
-import type { EvidenceSegmentDescriptorV2 } from "@/application/ports/evidence-ingest";
+import { DevelopmentEd25519SigningKeyProvider } from "../external/keys/development-ed25519-signer.ts";
+import { InMemoryEvidenceAcceptanceRepository } from "../external/storage/in-memory-evidence-acceptance-repository.ts";
+import { InMemoryEvidenceContextPort } from "../external/storage/in-memory-evidence-context.ts";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import type { AuthorizationPort } from "../application/ports/authorization.ts";
+import type { EvidenceSegmentDescriptorV2 } from "../application/ports/evidence-ingest.ts";
 import type {
   EvidenceChainReader,
   EvidencePayloadReader,
-} from "@/application/ports/evidence-reconstruction";
-import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "@/domain/document/edit-step";
-import { MAX_EVIDENCE_SEGMENT_BYTES } from "@/domain/forensics/evidence-chain-v2";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import type { SignedEvidenceReceipt } from "@/domain/forensics/evidence-receipt";
-import type { EvidenceStepReplayerV2 } from "@/domain/forensics/evidence-replay-v2";
+} from "../application/ports/evidence-reconstruction.ts";
+import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "../domain/document/edit-step.ts";
+import { MAX_EVIDENCE_SEGMENT_BYTES } from "../domain/forensics/evidence-chain-v2.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import type { SignedEvidenceReceipt } from "../domain/forensics/evidence-receipt.ts";
+import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
 import {
   applyPayloadEdit,
   fromHex,
@@ -24,10 +24,10 @@ import {
   loadGoldenVectors,
   toHex,
   type GoldenSegmentVector,
-} from "@/domain/forensics/golden-vectors/load";
-import { EvidenceGateway } from "./evidence-gateway";
-import { buildEvidenceIngestCommandV2 } from "./evidence-outbox";
-import { reconstructAndCompareEvidence } from "./evidence-reconstruction";
+} from "../domain/forensics/golden-vectors/load.ts";
+import { EvidenceGateway } from "./evidence-gateway.ts";
+import { buildEvidenceIngestCommandV2 } from "./evidence-outbox.ts";
+import { reconstructAndCompareEvidence } from "./evidence-reconstruction.ts";
 
 // A synthetic institution; no real one is used in tests.
 const INSTITUTION_ID = "00000000-0000-4000-8000-00000000000a";
@@ -293,20 +293,16 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
           accepted: false,
           bytes: applyPayloadEdit(fromHex(chain.segments[edit.base].canonicalUtf8Hex), edit),
         })),
-      ...vectors.eventTime.formerSegments
-        .slice(0, 1)
-        .map((former) => ({
-          name: former.name,
-          accepted: false,
-          bytes: fromHex(former.canonicalUtf8Hex),
-        })),
-      ...vectors.stepFormat.formerSegments
-        .slice(0, 1)
-        .map((former) => ({
-          name: former.name,
-          accepted: false,
-          bytes: fromHex(former.canonicalUtf8Hex),
-        })),
+      ...vectors.eventTime.formerSegments.slice(0, 1).map((former) => ({
+        name: former.name,
+        accepted: false,
+        bytes: fromHex(former.canonicalUtf8Hex),
+      })),
+      ...vectors.stepFormat.formerSegments.slice(0, 1).map((former) => ({
+        name: former.name,
+        accepted: false,
+        bytes: fromHex(former.canonicalUtf8Hex),
+      })),
       { name: "format-v1-rewritten", accepted: true, bytes: withFormat(EDIT_STEP_FORMAT_V1) },
       ...[
         "ductus-test-insert-text-v0",

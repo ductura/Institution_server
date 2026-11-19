@@ -9,23 +9,26 @@ import {
   EDIT_STEP_FORMAT_V2,
   EDIT_STEP_REJECTIONS,
   parseEditSteps,
-} from "@/domain/document/edit-step";
+} from "../../domain/document/edit-step.ts";
 import {
   digestCanonicalDocumentV2,
   EvidenceContentNotSupportedV2,
   replayEvidenceSegmentsV2,
   type AsyncEvidenceStepReplayerV2,
-} from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3, EvidenceSegmentV2 } from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../../domain/forensics/evidence-replay-v2.ts";
+import type {
+  EvidenceEventV3,
+  EvidenceSegmentV2,
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
-import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer";
+import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer.ts";
 import {
   createEditStepsV1Replayer,
   EditStepReplayRefusal,
   removedRangeSha256,
-} from "./edit-steps-v1-replayer";
-import { removedRangeCanonical } from "./edit-steps-v1-rules";
+} from "./edit-steps-v1-replayer.ts";
+import { removedRangeCanonical } from "./edit-steps-v1-rules.ts";
 
 /**
  * DAN-320, plan #1504 (PR B): fuzz of the edit step parser (P5) and of the
@@ -580,10 +583,10 @@ describe("P6 edit steps v1 replayer fuzz, server and browser driver", () => {
     const expected = await replayEvidenceSegmentsV2(initial, [segment], server);
     expect(expected.ok).toBe(true);
     vi.resetModules(); // the schema of the rules module is built on first use
-    const fresh = await import("@/domain/forensics/evidence-replay-v2");
+    const fresh = await import("../../domain/forensics/evidence-replay-v2.ts");
     const drivers: Driver[] = [
-      (await import("./edit-steps-v1-replayer")).createEditStepsV1Replayer(),
-      (await import("./edit-steps-v1-browser-replayer")).createBrowserEditStepsV1Replayer(),
+      (await import("./edit-steps-v1-replayer.ts")).createEditStepsV1Replayer(),
+      (await import("./edit-steps-v1-browser-replayer.ts")).createBrowserEditStepsV1Replayer(),
     ];
     const together = await Promise.all(
       [0, 1, 2, 3, 4, 5].map((i) =>

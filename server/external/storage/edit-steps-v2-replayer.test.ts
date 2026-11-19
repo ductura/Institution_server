@@ -4,18 +4,25 @@ import { createHash } from "node:crypto";
 import { Transform } from "@tiptap/pm/transform";
 import { describe, expect, it } from "vitest";
 
-import type { DocumentSource } from "@/domain/document/schema";
+import type { DocumentSource } from "../../domain/document/schema.ts";
 import {
   digestCanonicalDocumentV2,
   replayEvidenceSegmentsV2,
-} from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3, EvidenceSegmentV2 } from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../../domain/forensics/evidence-replay-v2.ts";
+import type {
+  EvidenceEventV3,
+  EvidenceSegmentV2,
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
-import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer";
-import { removedRangeCanonical } from "./edit-steps-v1-rules";
-import { createEditStepsV2Replayer, sourceRecordSha256 } from "./edit-steps-v2-replayer";
-import { editStepJsonV2, editStepsV2Schema, type EditStepsV2Document } from "./edit-steps-v2-rules";
+import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
+import { removedRangeCanonical } from "./edit-steps-v1-rules.ts";
+import { createEditStepsV2Replayer, sourceRecordSha256 } from "./edit-steps-v2-replayer.ts";
+import {
+  editStepJsonV2,
+  editStepsV2Schema,
+  type EditStepsV2Document,
+} from "./edit-steps-v2-rules.ts";
 
 /**
  * Replay of `ductus-edit-steps-v2`, docs/contracts/document-schema-v2.md §5

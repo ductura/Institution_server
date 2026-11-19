@@ -7,13 +7,13 @@ import {
   type CapabilityReport,
   type CapabilityStatus,
   checkCapabilities,
-} from "./ready";
+} from "./ready.ts";
 import {
   PUBLIC_STATUS_TTL_MS,
   publicComponents,
   publicStatusCache,
   publicStatusResponse,
-} from "./public-status";
+} from "./public-status.ts";
 
 const report = (c: CapabilityReport["capabilities"]): CapabilityReport => ({
   ready: c.database === "ok",

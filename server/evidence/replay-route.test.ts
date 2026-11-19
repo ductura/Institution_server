@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../domain/document/edit-step.ts";
+import { sha256WebCrypto } from "../domain/forensics/crypto.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
   EVIDENCE_HASH_ALGORITHM_V2,
   EVIDENCE_SEGMENT_SCHEMA_V2,
-} from "@/domain/forensics/evidence-segment-v2";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+} from "../domain/forensics/evidence-segment-v2.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 import { STORAGE_NOT_CONFIGURED } from "@/server/evidence/payload-reader";
 
 import { handleReplayRequest, type ReplayRouteDeps } from "./replay-route";

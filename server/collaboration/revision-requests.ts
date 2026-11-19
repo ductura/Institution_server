@@ -1,6 +1,6 @@
 // Direct module paths: the collaboration index also re-exports
 // conditional-validity, which this boundary must never load (B5/D4/D6).
-import { isDocumentId, isTextAnchorInput } from "@/domain/collaboration/comment";
+import { isDocumentId, isTextAnchorInput } from "../domain/collaboration/comment.ts";
 import {
   isExpectedSeq,
   isRangeHash,
@@ -8,10 +8,10 @@ import {
   isRevisionKind,
   isRevisionNumber,
   isRevisionText,
-} from "@/domain/collaboration/revision-input";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import type { WithActor } from "@/server/db/with-actor";
-import { checkMutationRequest, readBodyWithLimit } from "@/server/http/mutation-request";
+} from "../domain/collaboration/revision-input.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import type { WithActor } from "../database/with-actor.ts";
+import { checkMutationRequest, readBodyWithLimit } from "../http/fetch-mutation-request.ts";
 
 /**
  * DAN-314 step 2f HTTP boundary (docs/backend/suradnja.md 4.14, #1506). The

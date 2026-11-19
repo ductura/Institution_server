@@ -1,13 +1,13 @@
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
-import { isSignatureEnvelope } from "@/domain/forensics/signature";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
+import { isSignatureEnvelope } from "../domain/forensics/signature.ts";
 import {
   digestSubmissionReceiptPayloadV2,
   isSignedSubmissionReceiptV2,
   isSubmissionReceiptPayloadV2,
   type SignedSubmissionReceiptV2,
-} from "@/domain/forensics/submission-receipt-v2";
-import type { SubmissionReceiptExpectationV2 } from "@/domain/forensics/submission-receipt-verifier-v2";
-import type { WithActor } from "@/server/db/with-actor";
+} from "../domain/forensics/submission-receipt-v2.ts";
+import type { SubmissionReceiptExpectationV2 } from "../domain/forensics/submission-receipt-verifier-v2.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * DAN-291 (#746, 291b): the submission receipt v2 is signed and bound once,

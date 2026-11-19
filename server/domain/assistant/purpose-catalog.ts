@@ -64,9 +64,7 @@ function catalogueOf(version: unknown): readonly PurposeEntry[] | undefined {
   return CATALOGUES.get(version as PurposeCatalogVersion);
 }
 
-export function purposeCatalog(
-  version: unknown,
-):
+export function purposeCatalog(version: unknown):
   | {
       readonly ok: true;
       readonly version: PurposeCatalogVersion;

@@ -1,11 +1,11 @@
-import type { EvidenceReconstructionOutcome } from "@/application/evidence/evidence-reconstruction";
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
+import type { EvidenceReconstructionOutcome } from "./evidence-reconstruction.ts";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
 import {
   digestSubmissionReceiptPayloadV1,
   isSignedSubmissionReceiptV1,
   type SignedSubmissionReceiptV1,
   type SubmissionReceiptPayloadV1,
-} from "@/domain/forensics/submission-receipt";
+} from "../domain/forensics/submission-receipt.ts";
 
 /**
  * Why a submission was not carried out. The interface turns the code into a
