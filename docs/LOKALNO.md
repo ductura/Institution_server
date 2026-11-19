@@ -90,7 +90,7 @@ Stranica simulatora („Demo prijava”) nudi tri vrste izmišljenih računa:
 
 1. **Demo računi** (gumbi): ustanove iz `seed.sql`, `demo.ductus.test` i `b.demo.ductus.test`.
 2. **Račun bilo koje ustanove** (obrazac): domena ustanove, uloga (`student` ili `nastavnik`) i neobavezno korisničko ime. Simulator izdaje `hrEduPersonHomeOrg` jednak domeni, `hrEduPersonUniqueID` `<korisnik>@<domena>` i `hrEduPersonAffiliation` `student` ili `djelatnik`. Nakon što admin na `/admin` doda ustanovu s domenom X (Ductus#2028 §2 i §3.4), račun iz X se prijavljuje bez ponovnog pokretanja.
-3. **Imenovani računi** iz `.local/oidc-racuni.json`, kao gumbi:
+3. **Imenovani računi** iz `.local/oidc-racuni.json`, kao gumbi; bez te datoteke simulator dobiva `db/main/local/lazni-oidc-racuni.json` s računima lokalnog seeda (README, „Lokalni računi”):
 
 ```json
 {
