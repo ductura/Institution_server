@@ -175,7 +175,7 @@ describe("every vector a socket can reach", () => {
 });
 
 describe("what reaches the port", () => {
-  const set = (kind: Kind) => vectorsOf(ROUTES[kind].id).find((v) => v.name === "updated")!;
+  const set = (kind: Kind) => vectorsOf(ROUTES[kind].id).find((v) => v.name === "set")!;
   const headers = Object.entries(set("assignment").request.headers);
   const { assignmentId, studentId } = set("student").request.params as Record<string, string>;
 
