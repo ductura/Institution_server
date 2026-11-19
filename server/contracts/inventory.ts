@@ -61,6 +61,7 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
  * would be (pathOf gives its path), `source` the Ductus file of its shape.
  */
 const WEBAUTHN_SOURCE = "danielrisavi77-create/Ductus@b36c82b:docs/DECISIONS.md#D-297";
+const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecomment-7009405737";
 
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
@@ -127,6 +128,22 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
   },
+  "app/api/student/assignments/[assignmentId]/submission/route.ts": {
+    methods: ["GET"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
+  "app/api/student/assignments/[assignmentId]/requirements/route.ts": {
+    methods: ["GET"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
+  "app/api/student/assignments/[assignmentId]/submission-notes/route.ts": {
+    methods: ["GET"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
+  "app/api/student/submission-notes/route.ts": {
+    methods: ["POST"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
   "app/api/institution/admin/courses/route.ts": {
@@ -180,6 +197,10 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.access-log.get",
   "student.assignment-work.get",
   "student.notice-read.post",
+  "student.submission.get",
+  "student.assignment-requirements.get",
+  "student.submission-notes.get",
+  "student.submission-notes.post",
   "student.enrollments.post",
   "institution.course-groups.get",
 ];
