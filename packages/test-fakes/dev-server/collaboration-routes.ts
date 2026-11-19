@@ -6,7 +6,13 @@ import { createHash, randomUUID } from "node:crypto";
 
 import type { Operations } from "../../contracts/index.ts";
 import type { Handlers } from "./server.ts";
-import { readerOf, type AccessEntry, type RevisionRequest, type State } from "./state.ts";
+import {
+  readerOf,
+  recordOpening,
+  type AccessEntry,
+  type RevisionRequest,
+  type State,
+} from "./state.ts";
 import { processSummary } from "./work.ts";
 
 type RevisionRow = Extract<
@@ -29,14 +35,7 @@ function logRead(
   now: Date,
   surface: AccessEntry["surface"],
 ) {
-  state.accessLog.push({
-    id: randomUUID(),
-    documentId,
-    readerId,
-    at: now.toISOString(),
-    role: "teacher",
-    surface,
-  });
+  recordOpening(state, { documentId, readerId, role: "teacher", surface }, now);
 }
 
 function revisionRow(r: RevisionRequest, me: string): RevisionRow {
@@ -108,7 +107,7 @@ const TRANSITIONS = {
 export const COLLABORATION_HANDLERS: Handlers = {
   "live.document.get": ({ state, account, params, header, now }) => {
     const work = state.works.find((w) => w.documentId === params.documentId);
-    const reader = readerOf(state, work, account?.id);
+    const reader = readerOf(state, work, account);
     if (work === undefined || reader === null || account === null) return { error: "not_found" };
     if (work.live === null) return { status: 204 };
     if (reader === "teacher") logRead(state, work.documentId, account.id, now, "live_view");
@@ -120,7 +119,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
   },
   "live.document.put": ({ state, account, params, body, header }) => {
     const work = state.works.find((w) => w.documentId === params.documentId);
-    if (work === undefined || readerOf(state, work, account?.id) === null)
+    if (work === undefined || readerOf(state, work, account) === null)
       return { error: "not_found" };
     if (work.studentId !== account?.id) return { error: "forbidden" };
     if (!Array.isArray(body.nodes)) return { error: "invalid_document" };
@@ -139,7 +138,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
   },
   "projection.process-summary.post": ({ state, account, body, now }) => {
     const work = state.works.find((w) => w.documentId === body.documentId);
-    const reader = readerOf(state, work, account?.id);
+    const reader = readerOf(state, work, account);
     if (work === undefined || reader === null || account === null) return { error: "not_found" };
     if (reader === "teacher") logRead(state, work.documentId, account.id, now, "process_summary");
     return { status: 200, body: processSummary(work) };
@@ -155,7 +154,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
             ?.documentId;
     const work = state.works.find((w) => w.documentId === documentId);
     if (work === undefined) return { error: "not_found" };
-    const reader = readerOf(state, work, account.id);
+    const reader = readerOf(state, work, account);
     if (reader === null) return { error: "forbidden" };
     const at = now.toISOString();
     switch (params.action) {
@@ -233,7 +232,7 @@ export const COLLABORATION_HANDLERS: Handlers = {
     const found = state.revisionRequests.find((r) => r.id === input.requestId);
     const documentId = typeof input.documentId === "string" ? input.documentId : found?.documentId;
     const work = state.works.find((w) => w.documentId === documentId);
-    const reader = readerOf(state, work, account.id);
+    const reader = readerOf(state, work, account);
     if (work === undefined || reader === null) return { error: "forbidden" };
     const at = now.toISOString();
     if (params.action === "list") {

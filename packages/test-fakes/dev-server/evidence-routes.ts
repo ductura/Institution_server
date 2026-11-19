@@ -7,7 +7,14 @@
 import { createHash, generateKeyPairSync, randomUUID } from "node:crypto";
 
 import type { Handlers } from "./server.ts";
-import { EMPTY_DOCUMENT, readerOf, type Account, type State, type Work } from "./state.ts";
+import {
+  EMPTY_DOCUMENT,
+  readerOf,
+  recordOpening,
+  type Account,
+  type State,
+  type Work,
+} from "./state.ts";
 
 /** The key id of every fake receipt: unsigned, never a real key. */
 export const FAKE_KEY_ID = "lazni-kljuc-nepotpisano";
@@ -64,7 +71,6 @@ export const EVIDENCE_HANDLERS: Handlers = {
         assignmentId,
         studentId: account.id,
         state: "in_progress",
-        language: null,
         revision: 0,
         lastChangeAt: now.toISOString(),
         submittedAt: null,
@@ -168,7 +174,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
   },
   "evidence.replay.post": ({ state, account, body, now }) => {
     const work = state.works.find((w) => w.documentId === body.documentId);
-    const reader = readerOf(state, work, account?.id);
+    const reader = readerOf(state, work, account);
     if (work === undefined || reader === null || account === null) return { error: "not_found" };
     const head =
       work.segments.length === 0
@@ -177,14 +183,11 @@ export const EVIDENCE_HANDLERS: Handlers = {
     if ("head" in body && body.head.segmentHash !== head?.segmentHash)
       return { error: "record_changed" };
     if (reader === "teacher")
-      state.accessLog.push({
-        id: randomUUID(),
-        documentId: work.documentId,
-        readerId: account.id,
-        at: now.toISOString(),
-        role: "teacher",
-        surface: "replay",
-      });
+      recordOpening(
+        state,
+        { documentId: work.documentId, readerId: account.id, role: "teacher", surface: "replay" },
+        now,
+      );
     return {
       status: 200,
       body: {

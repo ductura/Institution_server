@@ -141,7 +141,8 @@ describe("dev fake server: live view and collaboration", () => {
     const etag = String(read.headers.etag);
     const unchanged = await send(state, url, { headers: { ...teacher, "if-none-match": etag } });
     expect(unchanged.status).toBe(304);
-    expect(state.accessLog.filter((e) => e.surface === "live_view")).toHaveLength(2);
+    // Two reads in one five-minute window are one row of the access log.
+    expect(state.accessLog.filter((e) => e.surface === "live_view")).toHaveLength(1);
   });
 
   it("keeps comment threads and hides a deleted comment's text", async () => {

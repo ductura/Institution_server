@@ -170,3 +170,70 @@ describe("dev fake server: settings and support", () => {
     expect(over.status).toBe(429);
   });
 });
+
+describe("dev fake server: review findings on #363", () => {
+  it("records openings on the five-minute grid, once per window", async () => {
+    const state = createState();
+    const headers = await signIn(state, "nastavnik");
+    for (let i = 0; i < 2; i++)
+      await send(state, "/api/v1/teacher/fast-path", {
+        body: { assignmentId: IDS.assignment },
+        headers,
+      });
+    expect(state.accessLog).toHaveLength(2);
+    expect(state.accessLog[1]?.at).toMatch(/:[0-5][05]:00\.000Z$/u);
+    const log = await send(state, `/api/v1/student/works/${IDS.document}/access-log`, {
+      headers: await signIn(state, "student"),
+    });
+    expect(contractProblems("student.access-log.get", log)).toEqual([]);
+  });
+
+  it("a group teacher sees only the students of their own groups", async () => {
+    const state = createState();
+    const headers = await signIn(state, "nastavnik-2");
+    const fast = await send(state, "/api/v1/teacher/fast-path", {
+      body: { assignmentId: IDS.assignment },
+      headers,
+    });
+    expect(fast.json).toEqual({ kind: "ok", students: [] });
+    const list = await send(state, `/api/v1/teacher/assignments/${IDS.assignment}/submissions`, {
+      headers,
+    });
+    expect(list.json).toEqual({ submissions: [] });
+    expect(state.accessLog).toHaveLength(1);
+  });
+
+  it("refuses a bound at the personal level and a range the key cannot hold", async () => {
+    const state = createState();
+    const put = (body: Record<string, unknown>, headers: Record<string, string>) =>
+      send(state, "/api/v1/settings/values", { method: "PUT", body, headers });
+    const personal = await put(
+      {
+        level: "personal",
+        course: null,
+        key: "notifications.email",
+        value: false,
+        locked: true,
+        min: null,
+        max: null,
+      },
+      await signIn(state, "student"),
+    );
+    expect(personal.status).toBe(422);
+    const admin = await signIn(state, "administrator");
+    const base = {
+      level: "institution",
+      course: null,
+      key: "thresholds.session_gap_minutes",
+      locked: false,
+    };
+    for (const range of [
+      { value: 30, min: 100, max: 20 },
+      { value: 30, min: 0, max: null },
+      { value: 30, min: 40, max: null },
+    ])
+      expect((await put({ ...base, ...range }, admin)).status, JSON.stringify(range)).toBe(422);
+    const ok = await put({ ...base, value: 30, min: 10, max: 60 }, admin);
+    expect(contractProblems("settings.values.put", ok)).toEqual([]);
+  });
+});
