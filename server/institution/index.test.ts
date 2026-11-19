@@ -9,8 +9,10 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the body parsers, the service factory and the access log read (SRV-11, SRV-14)", () => {
+  it("exports only the body parsers, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10), the student's courses (SRV-09) and the assignment content (SRV-14)", () => {
     expect(Object.keys(area).sort()).toEqual([
+      "MAX_ENROLLMENT_CODE_LENGTH",
+      "WORK_TYPES",
       "accessLogCursorOf",
       "createInstitutionService",
       // SRV-14: the content of an assignment version (assignment-input.ts).
@@ -20,7 +22,10 @@ describe("server/institution public interface", () => {
       "parseCourseBody",
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
+      "parseNoticeReadBody",
+      "parseStudentEnrollmentBody",
       "readStudentAccessLog",
+      "studentCoursesOf",
     ]);
   });
 
