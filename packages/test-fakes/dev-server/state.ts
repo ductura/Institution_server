@@ -81,7 +81,7 @@ export type Assignment = {
   language: Language;
   /** Version of the notice each student acknowledged, by student id. */
   acknowledged: Map<string, { version: number; at: string }>;
-  /** Work language set for one student, by student id. */
+  /** The work language exception of one student's work, by student id (both language routes). */
   studentLanguage: Map<string, Language>;
 };
 
@@ -90,7 +90,6 @@ export type Work = {
   readonly assignmentId: string;
   readonly studentId: string;
   state: "in_progress" | "submitted";
-  language: Language | null;
 };
 
 export type State = {
@@ -103,6 +102,25 @@ export type State = {
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
 };
+
+/**
+ * A valid instant as ISO UTC with milliseconds, or null for an impossible
+ * date (2027-02-30 passes the contract pattern and Date.parse rolls it over).
+ */
+export function parseInstant(text: string): string | null {
+  const time = Date.parse(text);
+  const date = /^(\d{4})-(\d{2})-(\d{2})T/u.exec(text);
+  if (Number.isNaN(time) || date === null) return null;
+  const [year, month, day] = [Number(date[1]), Number(date[2]), Number(date[3])];
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  if (calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) return null;
+  return new Date(time).toISOString();
+}
+
+/** An enrolment code as institution.enroll_with_code compares it: no whitespace or hyphen, upper case. */
+export function normalizeCode(code: string): string {
+  return code.replace(/[\s-]/gu, "").toUpperCase();
+}
 
 /** Fixed, invented ids (UUID v4 form) of the starting data. */
 export const IDS = {
@@ -215,7 +233,6 @@ export function createState(): State {
         assignmentId: IDS.assignment,
         studentId: IDS.student,
         state: "in_progress",
-        language: null,
       },
     ],
     enrollmentGuesses: new Map(),
@@ -233,6 +250,10 @@ export function courseTeachers(course: Course): string[] {
   return [course.holderId, ...course.groups.flatMap((g) => g.teacherIds)];
 }
 
-export function teachesCourse(course: Course, accountId: string): boolean {
-  return courseTeachers(course).includes(accountId);
+/**
+ * A teacher of the course: one of its teachers who still holds a confirmed
+ * teacher role, as institution.actor_course_role asks; a revoked role ends it.
+ */
+export function teachesCourse(course: Course, account: Account): boolean {
+  return account.roles.includes("teacher") && courseTeachers(course).includes(account.id);
 }

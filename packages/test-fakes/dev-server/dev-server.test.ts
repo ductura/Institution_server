@@ -213,3 +213,105 @@ describe("dev fake server: platform and institution", () => {
     expect(me.json).toMatchObject({ roles: ["teacher"] });
   });
 });
+
+describe("dev fake server: institution rules as the database keeps them", () => {
+  const A = `/api/v1/institution/assignments/${IDS.assignment}`;
+
+  it("refuses an impossible expiry with 422 and keeps the working code", async () => {
+    const state = createState();
+    const headers = await signIn(state, "nastavnik");
+    for (const validUntil of ["2027-99-99T00:00:00Z", "2027-02-30T00:00:00Z"]) {
+      const answer = await send(
+        state,
+        `/api/v1/institution/courses/${IDS.course}/enrollment-code`,
+        {
+          body: { validUntil },
+          headers,
+        },
+      );
+      expect([answer.status, answer.json]).toMatchObject([422, { error: "invalid_input" }]);
+    }
+    const student = await signIn(state, "student-2");
+    const enrolled = await send(state, "/api/v1/institution/enrollments", {
+      body: { code: CODES.valid },
+      headers: student,
+    });
+    expect(enrolled.status).toBe(200);
+  });
+
+  it("compares enrolment codes without case, spaces or hyphens", async () => {
+    const state = createState();
+    const headers = await signIn(state, "student-2");
+    const answer = await send(state, "/api/v1/institution/enrollments", {
+      body: { code: " upis-2026-demo " },
+      headers,
+    });
+    expect(answer.json).toEqual({ courseId: IDS.course });
+  });
+
+  it("ends a teacher's course access when the role is revoked", async () => {
+    const state = createState();
+    await send(state, `/api/v1/institution/teachers/${IDS.teacher}/role-revocation`, {
+      body: {},
+      headers: await signIn(state, "administrator"),
+    });
+    const answer = await send(state, `/api/v1/institution/courses/${IDS.course}/enrollment-code`, {
+      body: { validUntil: "2027-06-30T21:59:00Z" },
+      headers: await signIn(state, "nastavnik"),
+    });
+    expect(answer.status).toBe(403);
+  });
+
+  it("refuses a version that tightens the rules and stores instants in UTC", async () => {
+    const state = createState();
+    const headers = await signIn(state, "nastavnik");
+    const version = {
+      expectedVersion: 1,
+      title: "Izmišljeni naslov",
+      instructions: "Izmišljene upute.",
+      workType: "seminar_paper",
+      opensAt: "2026-10-01T08:00:00+02:00",
+      dueAt: "2027-01-31T23:59:00+01:00",
+      aiPolicy: "partially_allowed",
+      aiPurposes: ["proofreading"],
+      evidenceProfile: "basic",
+      importAllowed: false,
+      wordMin: 1500,
+      wordMax: 2500,
+    };
+    for (const change of [
+      { wordMin: 2000 },
+      { wordMax: 2000 },
+      { aiPolicy: "encouraged" },
+      { aiPurposes: ["translation"] },
+      { importAllowed: true },
+    ]) {
+      const refused = await send(state, `${A}/versions`, {
+        body: { ...version, ...change },
+        headers,
+      });
+      expect(refused.status, JSON.stringify(change)).toBe(422);
+    }
+    const ok = await send(state, `${A}/versions`, { body: { ...version, wordMin: 1000 }, headers });
+    expect(ok.status).toBe(201);
+    expect(state.assignments[0]?.content).toMatchObject({
+      opensAt: "2026-10-01T06:00:00.000Z",
+      dueAt: "2027-01-31T22:59:00.000Z",
+    });
+  });
+
+  it("keeps one work-language exception for both addressing forms", async () => {
+    const state = createState();
+    const headers = await signIn(state, "nastavnik");
+    await send(state, `${A}/students/${IDS.student}/work-language`, {
+      body: { language: "en" },
+      headers,
+    });
+    const cleared = await send(state, `${A}/works/${IDS.document}/work-language`, {
+      body: { language: null },
+      headers,
+    });
+    expect(cleared.json).toEqual({ language: "hr" });
+    expect(state.assignments[0]?.studentLanguage.has(IDS.student)).toBe(false);
+  });
+});

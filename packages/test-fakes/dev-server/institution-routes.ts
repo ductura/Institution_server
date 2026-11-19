@@ -6,6 +6,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 
 import type { Handlers } from "./server.ts";
 import {
+  normalizeCode,
+  parseInstant,
   teachesCourse,
   type Account,
   type AssignmentContent,
@@ -19,15 +21,31 @@ export const MAX_ENROLLMENT_GUESSES = 5;
 
 function taughtCourse(state: State, account: Account | null, courseId: string): Course | null {
   const course = state.courses.find((c) => c.id === courseId);
-  return course !== undefined && account !== null && teachesCourse(course, account.id)
-    ? course
-    : null;
+  return course !== undefined && account !== null && teachesCourse(course, account) ? course : null;
 }
 
 function taughtAssignment(state: State, account: Account | null, id: string): Assignment | null {
   const assignment = state.assignments.find((a) => a.id === id);
   if (assignment === undefined) return null;
   return taughtCourse(state, account, assignment.courseId) === null ? null : assignment;
+}
+
+const AI_POLICY_RANK = { prohibited: 1, partially_allowed: 2, encouraged: 3 } as const;
+
+/**
+ * Whether a new version changes the rules in a way institution.publish_assignment_version
+ * refuses (422): a more permissive AI policy, a purpose that was not allowed, extended
+ * evidence after basic, import after none, or a word bound added or tightened (rule 14).
+ */
+function tightens(current: AssignmentContent, next: AssignmentContent): boolean {
+  return (
+    AI_POLICY_RANK[next.aiPolicy] > AI_POLICY_RANK[current.aiPolicy] ||
+    next.aiPurposes.some((p) => !current.aiPurposes.includes(p)) ||
+    (next.evidenceProfile === "extended" && current.evidenceProfile === "basic") ||
+    (next.importAllowed && !current.importAllowed) ||
+    (next.wordMin !== null && (current.wordMin === null || next.wordMin > current.wordMin)) ||
+    (next.wordMax !== null && (current.wordMax === null || next.wordMax < current.wordMax))
+  );
 }
 
 const isAdmin = (account: Account | null): boolean =>
@@ -64,9 +82,12 @@ export const INSTITUTION_HANDLERS: Handlers = {
   "institution.enrollment-code.post": ({ state, account, params, body }) => {
     const course = taughtCourse(state, account, params.courseId);
     if (course === null) return { error: "forbidden" };
+    const validUntil = parseInstant(body.validUntil);
+    // An impossible date passes the pattern; the contract answers it 422, with nothing changed.
+    if (validUntil === null) return { error: "invalid_input" };
     for (const code of course.codes) code.active = false;
     const code = newCode();
-    course.codes.push({ code, validUntil: new Date(body.validUntil).toISOString(), active: true });
+    course.codes.push({ code, validUntil, active: true });
     return { status: 200, body: { code } };
   },
   "institution.enrollment-code-revocation.post": ({ state, account, params }) => {
@@ -80,9 +101,11 @@ export const INSTITUTION_HANDLERS: Handlers = {
     if (account === null || !account.roles.includes("student")) return { error: "forbidden" };
     const guesses = state.enrollmentGuesses.get(account.id) ?? 0;
     if (guesses >= MAX_ENROLLMENT_GUESSES) return { error: "too_many_attempts" };
+    const code = normalizeCode(body.code);
     const course = state.courses.find((c) =>
       c.codes.some(
-        (k) => k.active && k.code === body.code && Date.parse(k.validUntil) > now.getTime(),
+        (k) =>
+          k.active && normalizeCode(k.code) === code && Date.parse(k.validUntil) > now.getTime(),
       ),
     );
     if (course === undefined || course.removed.includes(account.id)) {
@@ -106,12 +129,15 @@ export const INSTITUTION_HANDLERS: Handlers = {
     const assignment = taughtAssignment(state, account, params.assignmentId);
     if (assignment === null) return { error: "forbidden" };
     if (body.expectedVersion !== assignment.version) return { error: "version_conflict" };
+    const opensAt = parseInstant(body.opensAt);
+    const dueAt = parseInstant(body.dueAt);
+    if (opensAt === null || dueAt === null) return { error: "invalid_input" };
     const content: AssignmentContent = {
       title: body.title,
       instructions: body.instructions,
       workType: body.workType,
-      opensAt: body.opensAt,
-      dueAt: body.dueAt,
+      opensAt,
+      dueAt,
       aiPolicy: body.aiPolicy,
       aiPurposes: body.aiPurposes,
       evidenceProfile: body.evidenceProfile,
@@ -123,6 +149,7 @@ export const INSTITUTION_HANDLERS: Handlers = {
       return { error: "invalid_input" };
     if (content.aiPolicy === "prohibited" && content.aiPurposes.length > 0)
       return { error: "invalid_input" };
+    if (tightens(assignment.content, content)) return { error: "invalid_input" };
     assignment.version += 1;
     assignment.content = content;
     return { status: 201, body: { assignmentId: assignment.id, versionNo: assignment.version } };
@@ -181,7 +208,9 @@ export const INSTITUTION_HANDLERS: Handlers = {
       (w) => w.documentId === params.documentId && w.assignmentId === assignment?.id,
     );
     if (assignment === null || work === undefined) return { error: "forbidden" };
-    work.language = body.language;
+    // The same exception as the student-keyed route: one override per student's work.
+    if (body.language === null) assignment.studentLanguage.delete(work.studentId);
+    else assignment.studentLanguage.set(work.studentId, body.language);
     return { status: 200, body: { language: body.language ?? assignment.language } };
   },
 };
