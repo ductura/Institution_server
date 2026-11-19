@@ -6,7 +6,7 @@ import {
   unavailable,
   type Log,
 } from "./ingest-http";
-import { submitWork, type SubmissionDependencies, type SubmissionOutcome } from "./submission";
+import { submitWork, type SubmissionDependencies, type SubmissionOutcome } from "./submission.ts";
 
 /**
  * B-12 step 4b2: `POST /api/submission`. The guards of the evidence routes

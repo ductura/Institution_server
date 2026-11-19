@@ -6,9 +6,9 @@ import type {
   StorageOrphanScanSummary,
   StorageReferenceEntry,
   StoredObjectEntry,
-} from "@/application/ports/storage-orphan-scan";
+} from "../application/ports/storage-orphan-scan.ts";
 
-import { countStorageOrphans } from "./count-storage-orphans";
+import { countStorageOrphans } from "./count-storage-orphans.ts";
 
 // Every value here is invented for the test.
 const DOMAIN = "test-domain";

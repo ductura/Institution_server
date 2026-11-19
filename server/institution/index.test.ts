@@ -10,8 +10,9 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the six body parsers and the service factory", () => {
+  it("exports only the six body parsers, the service factory and the access log read (SRV-11)", () => {
     expect(Object.keys(area).sort()).toEqual([
+      "accessLogCursorOf",
       "createInstitutionService",
       "parseAssignmentVersionBody",
       "parseAssignmentWorkLanguageBody",
@@ -19,6 +20,7 @@ describe("server/institution public interface", () => {
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
       "parseWorkLanguageExceptionBody",
+      "readStudentAccessLog",
     ]);
   });
 

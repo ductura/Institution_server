@@ -1,5 +1,5 @@
-import { checkMutationRequest, readBodyWithLimit } from "@/server/http/mutation-request";
-import type { WithActor } from "@/server/db/with-actor";
+import { checkMutationRequest, readBodyWithLimit } from "../http/fetch-mutation-request.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 const MAX_REQUEST_BYTES = 90_000;
 const MAX_WORDS = 1_000_000;

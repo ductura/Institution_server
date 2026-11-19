@@ -5,9 +5,9 @@ import type { Transaction } from "@tiptap/pm/state";
 import { Step } from "@tiptap/pm/transform";
 import { describe, expect, it } from "vitest";
 
-import type { DocumentSource } from "../../domain/document/schema";
-import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2";
-import type { JcsJsonValue } from "../../domain/forensics/jcs";
+import type { DocumentSource } from "../../domain/document/schema.ts";
+import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
+import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
 import {
   CITATION_UNMARK_META,
   canonicalToTiptapV2,
@@ -15,8 +15,8 @@ import {
   createEditorExtensionsV2,
 } from "../../editor";
 
-import { createEditStepsV2Replayer } from "./edit-steps-v2-replayer";
-import { editStepJsonV2, editStepsV2Schema } from "./edit-steps-v2-rules";
+import { createEditStepsV2Replayer } from "./edit-steps-v2-replayer.ts";
+import { editStepJsonV2, editStepsV2Schema } from "./edit-steps-v2-rules.ts";
 
 /**
  * DAN-620 a: the v2 editor's schema and the replayer's v2 schema give the same

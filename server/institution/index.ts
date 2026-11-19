@@ -19,4 +19,10 @@ export {
   parseWorkLanguageExceptionBody,
   type WorkLanguageExceptionBody,
 } from "./work-language-bodies.ts";
+export {
+  accessLogCursorOf,
+  readStudentAccessLog,
+  type StudentAccessLogAnswer,
+  type StudentAccessLogEntry,
+} from "./student-access-log-route.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";

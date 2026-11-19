@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 import { handleEnrollmentCodeRequest } from "./enrollment-code-route";
 import { readEmptyMutation, readJsonMutation, respond, rpcErrorResponse } from "./mutation-route";
-import { expectedOrigin } from "@/server/auth/config";
+import { expectedOrigin } from "../external/srce-auth/config.ts";
 
 const ORIGIN = "https://ductus.example";
 const COURSE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";

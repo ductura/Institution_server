@@ -5,34 +5,34 @@ import type {
   EvidenceChainReadResult,
   EvidencePayloadReader,
   EvidencePayloadReadResult,
-} from "@/application/ports/evidence-reconstruction";
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
+} from "../application/ports/evidence-reconstruction.ts";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
 import {
   verifyCanonicalEvidencePayloadV2,
   verifyEvidenceChainV2,
   type EvidenceChainDiscontinuityV2,
   type EvidenceChainFailureV2,
   type EvidenceChainHeadV2,
-} from "@/domain/forensics/evidence-chain-v2";
+} from "../domain/forensics/evidence-chain-v2.ts";
 import {
   evidenceCheckpointHashesV2,
   evidenceResumeHashesV2,
   replayEvidenceAcrossGapsV2,
   replayEvidenceFromCheckpointV2,
   type EvidenceGapReplayResultV2,
-} from "@/domain/forensics/evidence-checkpoint-v2";
+} from "../domain/forensics/evidence-checkpoint-v2.ts";
 import {
   digestEvidenceReceiptPayload,
   isSignedEvidenceReceipt,
-} from "@/domain/forensics/evidence-receipt";
+} from "../domain/forensics/evidence-receipt.ts";
 import {
   findEvidenceStartBreakV2,
   replayEvidenceSegmentsV2,
   type EvidenceReplayFailureV2,
   type EvidenceStepReplayerV2,
-} from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceSegment } from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../domain/forensics/evidence-replay-v2.ts";
+import type { EvidenceSegment } from "../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
 
 /**
  * What a receipt check says about the stored receipt of one segment (not
