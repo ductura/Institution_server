@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 
 import type { Node as PmNode } from "@tiptap/pm/model";
 
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import type { EvidenceStepReplayerV2 } from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3 } from "@/domain/forensics/evidence-segment-v2";
+import { EDIT_STEP_FORMAT_V1 } from "../../domain/document/edit-step.ts";
+import type { EvidenceStepReplayerV2 } from "../../domain/forensics/evidence-replay-v2.ts";
+import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
 
 import {
   editStepsV1Canonical,
@@ -12,7 +12,7 @@ import {
   refuse,
   removedRangeCanonical,
   runEditStepsV1,
-} from "./edit-steps-v1-rules";
+} from "./edit-steps-v1-rules.ts";
 
 /**
  * Server replayer of `ductus-edit-steps-v1` (B-12, first step). The rules are
@@ -21,7 +21,7 @@ import {
  * rules ask for it. The browser driver is `edit-steps-v1-browser-replayer.ts`.
  */
 
-export { EditStepReplayRefusal } from "./edit-steps-v1-rules";
+export { EditStepReplayRefusal } from "./edit-steps-v1-rules.ts";
 
 const sha256Hex = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 

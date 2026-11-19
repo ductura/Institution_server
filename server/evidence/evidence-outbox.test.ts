@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-import type { EvidenceOutboxItem } from "@/application/ports/evidence-outbox";
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import type { SignedEvidenceReceipt } from "@/domain/forensics/evidence-receipt";
+import type { EvidenceOutboxItem } from "../application/ports/evidence-outbox.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../domain/document/edit-step.ts";
+import type { SignedEvidenceReceipt } from "../domain/forensics/evidence-receipt.ts";
 import {
   EVIDENCE_CANONICALIZATION_V2,
   EVIDENCE_HASH_ALGORITHM_V2,
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSegment,
   type EvidenceSegmentV2,
-} from "@/domain/forensics/evidence-segment-v2";
+} from "../domain/forensics/evidence-segment-v2.ts";
 import {
   applyEvidenceOutboxOutcome,
   beginEvidenceOutboxAttempt,
   buildEvidenceIngestCommandV2,
   createEvidenceOutboxItem,
-} from "./evidence-outbox";
+} from "./evidence-outbox.ts";
 
 const A = "a".repeat(64);
 const B = "b".repeat(64);

@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 import {
   academicYearsOf,
@@ -9,7 +9,7 @@ import {
   isAcademicYear,
   readAcademicYears,
   readInstitutionCourses,
-} from "./institution-courses";
+} from "./institution-courses.ts";
 
 // Invented courses, groups, people and ids only.
 const TOKEN = "T".repeat(43);

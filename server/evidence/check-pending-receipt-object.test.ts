@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
-import type { EvidencePayloadLocator } from "@/application/ports/evidence-trust";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import type { EvidencePayloadLocator } from "../application/ports/evidence-trust.ts";
 import type {
   EvidencePayloadPresence,
   PendingReceiptObjectSource,
-} from "@/application/ports/pending-receipt-object";
-import type { EvidenceReceiptPayloadV2 } from "@/domain/forensics/evidence-receipt";
-import { MAX_EVIDENCE_SEGMENT_BYTES } from "@/domain/forensics/evidence-chain-v2";
+} from "../application/ports/pending-receipt-object.ts";
+import type { EvidenceReceiptPayloadV2 } from "../domain/forensics/evidence-receipt.ts";
+import { MAX_EVIDENCE_SEGMENT_BYTES } from "../domain/forensics/evidence-chain-v2.ts";
 
 import {
   createCheckPendingReceiptObject,

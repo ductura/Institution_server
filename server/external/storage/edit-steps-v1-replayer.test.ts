@@ -10,17 +10,17 @@ import {
   digestCanonicalDocumentV2,
   EvidenceContentNotSupportedV2,
   replayEvidenceSegmentsV2,
-} from "@/domain/forensics/evidence-replay-v2";
+} from "../../domain/forensics/evidence-replay-v2.ts";
 import type {
   EvidenceEventV2,
   EvidenceSegmentV2,
   EvidenceStepV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import type { JcsJsonValue } from "@/domain/forensics/jcs";
-import { MARK_ORDER, PLAIN_BLOCK_TYPES } from "@/domain/document/schema";
+} from "../../domain/forensics/evidence-segment-v2.ts";
+import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
+import { MARK_ORDER, PLAIN_BLOCK_TYPES } from "../../domain/document/schema.ts";
 import { createEditorExtensions } from "@/editor";
 
-import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer";
+import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
 
 // Synthetic only: invented ids and filler text, no real work or person.
 const A = "aaaaaaaa-0000-4000-8000-000000000001";

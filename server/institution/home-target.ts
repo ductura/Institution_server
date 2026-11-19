@@ -1,6 +1,6 @@
-import type { WithActor } from "@/server/db/with-actor";
+import type { WithActor } from "../database/with-actor.ts";
 
-import { readTeacherCourses } from "./teacher-courses";
+import { readTeacherCourses } from "./teacher-courses.ts";
 
 /**
  * Where a signed-in person's own page is, for "/" and "/prijava" (DAN-325,

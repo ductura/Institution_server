@@ -1,5 +1,5 @@
-import type { WithActor } from "@/server/db/with-actor";
-import { readNamedStudents, type NamedStudentsRead } from "@/server/institution/course-students";
+import type { WithActor } from "../database/with-actor.ts";
+import { readNamedStudents, type NamedStudentsRead } from "../institution/course-students.ts";
 
 /**
  * DAN-344 R-2 (#923, contract c.6434766713 point 3; D-170 as amended on #87):

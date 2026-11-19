@@ -1,22 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
-import { readProcessSummary } from "@/application/projection/process-summary-reader";
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import { headingNode, paragraphNode, textNode, type NodeId } from "@/domain/document/schema";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import { readProcessSummary } from "../projection/process-summary-reader.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../domain/document/edit-step.ts";
+import { headingNode, paragraphNode, textNode, type NodeId } from "../domain/document/schema.ts";
+import { sha256WebCrypto } from "../domain/forensics/crypto.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
   EVIDENCE_HASH_ALGORITHM_V2,
   EVIDENCE_SEGMENT_SCHEMA_V2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+} from "../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 import { STORAGE_NOT_CONFIGURED } from "@/server/evidence/payload-reader";
 import { handleProcessSummaryRequest } from "@/server/projection/process-summary";
 
-import { handleFastPathRequest, readFastPath, type FastPathRouteDeps } from "./fast-path";
+import { handleFastPathRequest, readFastPath, type FastPathRouteDeps } from "./fast-path.ts";
 
 // Synthetic only: invented ids and names (Ana Testić, Čedo Izmišljeni, Branka
 // Primjer), Vesna the teacher, Lorem ipsum text.

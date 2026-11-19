@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
 
-import { expectedOrigin } from "@/server/auth/config";
-import { SESSION_COOKIE_NAME } from "@/server/auth/session-token";
-import { withActor } from "@/server/db";
-import type { WithActor } from "@/server/db/with-actor";
-import { createAssignmentResponse } from "@/server/institution/create-assignment";
+import { expectedOrigin } from "../external/srce-auth/config.ts";
+import { SESSION_COOKIE_NAME } from "../session/session-token.ts";
+import { withActor } from "../database/index.ts";
+import type { WithActor } from "../database/with-actor.ts";
+import { createAssignmentResponse } from "./create-assignment.ts";
 
 type AssignmentPostDependencies = {
   withActor?: WithActor;
