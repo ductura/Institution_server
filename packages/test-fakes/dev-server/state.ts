@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 // The in-memory state of the dev fake server and its invented starting data.
 // People, courses, codes and the assignment are the values of SRV-01
 // (db/main/local/seed.sql and db/main/local/lazni-oidc-racuni.json on
@@ -81,7 +83,7 @@ export type Assignment = {
   language: Language;
   /** Version of the notice each student acknowledged, by student id. */
   acknowledged: Map<string, { version: number; at: string }>;
-  /** Work language set for one student, by student id. */
+  /** The work language exception of one student's work, by student id (both language routes). */
   studentLanguage: Map<string, Language>;
 };
 
@@ -90,7 +92,6 @@ export type Work = {
   readonly assignmentId: string;
   readonly studentId: string;
   state: "in_progress" | "submitted";
-  language: Language | null;
   /** Revision of the saved text (evidence commits move it). */
   revision: number;
   lastChangeAt: string | null;
@@ -141,6 +142,25 @@ export type State = {
   /** Problem reports sent, by account id. */
   reports: Map<string, number>;
 };
+
+/**
+ * A valid instant as ISO UTC with milliseconds, or null for an impossible
+ * date (2027-02-30 passes the contract pattern and Date.parse rolls it over).
+ */
+export function parseInstant(text: string): string | null {
+  const time = Date.parse(text);
+  const date = /^(\d{4})-(\d{2})-(\d{2})T/u.exec(text);
+  if (Number.isNaN(time) || date === null) return null;
+  const [year, month, day] = [Number(date[1]), Number(date[2]), Number(date[3])];
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  if (calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) return null;
+  return new Date(time).toISOString();
+}
+
+/** An enrolment code as institution.enroll_with_code compares it: no whitespace or hyphen, upper case. */
+export function normalizeCode(code: string): string {
+  return code.replace(/[\s-]/gu, "").toUpperCase();
+}
 
 /** Fixed, invented ids (UUID v4 form) of the starting data. */
 export const IDS = {
@@ -256,7 +276,6 @@ export function createState(): State {
         assignmentId: IDS.assignment,
         studentId: IDS.student,
         state: "in_progress",
-        language: null,
         revision: 0,
         lastChangeAt: "2026-11-09T19:55:00.000Z",
         submittedAt: null,
@@ -300,6 +319,43 @@ export function courseTeachers(course: Course): string[] {
   return [course.holderId, ...course.groups.flatMap((g) => g.teacherIds)];
 }
 
-export function teachesCourse(course: Course, accountId: string): boolean {
-  return courseTeachers(course).includes(accountId);
+/**
+ * The students of a course whose works `account` may see: all of them for the
+ * holder, only those of the teacher's own groups for a group teacher
+ * (app.teacher_assignment_students through institution.actor_group_work).
+ */
+export function visibleStudents(course: Course, account: Account): string[] {
+  if (!teachesCourse(course, account)) return [];
+  if (course.holderId === account.id) return [...course.studentIds];
+  const own = course.groups.filter((g) => g.teacherIds.includes(account.id));
+  return course.studentIds.filter((id) => own.some((g) => g.studentIds.includes(id)));
+}
+
+/**
+ * Records that a reader opened a work, as the access log stores it: on the
+ * five-minute grid, one row per reader, work, surface and window.
+ */
+export function recordOpening(
+  state: State,
+  entry: Omit<AccessEntry, "id" | "at">,
+  now: Date,
+): void {
+  const time = now.getTime();
+  const at = new Date(time - (time % 300_000)).toISOString();
+  const same = state.accessLog.some(
+    (e) =>
+      e.documentId === entry.documentId &&
+      e.readerId === entry.readerId &&
+      e.surface === entry.surface &&
+      e.at === at,
+  );
+  if (!same) state.accessLog.push({ ...entry, id: randomUUID(), at });
+}
+
+/**
+ * A teacher of the course: one of its teachers who still holds a confirmed
+ * teacher role, as institution.actor_course_role asks; a revoked role ends it.
+ */
+export function teachesCourse(course: Course, account: Account): boolean {
+  return account.roles.includes("teacher") && courseTeachers(course).includes(account.id);
 }

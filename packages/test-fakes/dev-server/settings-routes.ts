@@ -28,7 +28,7 @@ function scope(
   if (level === "personal") return course === null ? `personal:-:${account.id}` : null;
   if (level === "course") {
     const found = state.courses.find((c) => c.id === course?.toLowerCase());
-    return found !== undefined && teachesCourse(found, account.id) ? `course:${found.id}:-` : null;
+    return found !== undefined && teachesCourse(found, account) ? `course:${found.id}:-` : null;
   }
   if (level === "institution" && course === null && account.roles.includes("institution_admin"))
     return "institution:-:-";
@@ -46,6 +46,27 @@ function validValue(key: string, level: Level, value: unknown): boolean {
     Number.isInteger(value) &&
     value >= (spec.min ?? Number.MIN_SAFE_INTEGER) &&
     value <= (spec.max ?? Number.MAX_SAFE_INTEGER)
+  );
+}
+
+/** Levels that may hold a bound (server/domain/settings BOUND_LEVELS). */
+const BOUND_LEVELS: readonly Level[] = ["institution", "system", "network_security"];
+
+/**
+ * The bound checks of checkWriteOf: a bound only at a bound level, a lock or
+ * an integer range whose ends fit the key, min <= max, and a value inside it.
+ */
+function validBound(key: string, level: Level, value: unknown, bound: Bound): boolean {
+  if (bound === null) return true;
+  if (!BOUND_LEVELS.includes(level)) return false;
+  if ("locked" in bound) return true;
+  if (catalogue().keys.find((k) => k.key === key)?.kind !== "integer") return false;
+  const { min, max } = bound;
+  if (![min, max].every((end) => end === undefined || validValue(key, level, end))) return false;
+  if (min !== undefined && max !== undefined && min > max) return false;
+  return (
+    typeof value !== "number" ||
+    ((min === undefined || value >= min) && (max === undefined || value <= max))
   );
 }
 
@@ -74,9 +95,6 @@ export const SETTINGS_HANDLERS: Handlers = {
   "settings.values.put": ({ state, account, body, now }) => {
     if (!validValue(body.key, body.level, body.value)) return { error: "invalid_input" };
     if (body.locked && (body.min !== null || body.max !== null)) return { error: "invalid_input" };
-    const owner = scope(state, account, body.level, body.course);
-    if (owner === null) return { error: "not_found" };
-    const name = `${owner}:${body.key}`;
     const bound: Bound = body.locked
       ? { locked: true }
       : body.min === null && body.max === null
@@ -85,6 +103,11 @@ export const SETTINGS_HANDLERS: Handlers = {
             ...(body.min === null ? {} : { min: body.min }),
             ...(body.max === null ? {} : { max: body.max }),
           };
+    // The catalogue refuses (422) before the level is checked (404).
+    if (!validBound(body.key, body.level, body.value, bound)) return { error: "invalid_input" };
+    const owner = scope(state, account, body.level, body.course);
+    if (owner === null) return { error: "not_found" };
+    const name = `${owner}:${body.key}`;
     const old = state.settings.get(name);
     const changed =
       JSON.stringify([old?.value ?? null, old?.bound ?? null]) !==

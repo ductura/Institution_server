@@ -1,12 +1,14 @@
 // Teacher routes of the dev fake server: own courses, submissions, the fast
 // path and mentorships. An assignment the caller does not teach reads as an
 // empty list, as the contract says; the role alone opens no work (C-23).
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 
 import type { Operations } from "../../contracts/index.ts";
 import type { Handlers } from "./server.ts";
 import {
+  recordOpening,
   teachesCourse,
+  visibleStudents,
   type Account,
   type Assignment,
   type Mentorship,
@@ -22,37 +24,44 @@ function taught(state: State, account: Account | null, assignmentId: string): As
   return assignment !== undefined &&
     course !== undefined &&
     account !== null &&
-    teachesCourse(course, account.id)
+    teachesCourse(course, account)
     ? assignment
     : null;
 }
 
-function submissions(state: State, assignment: Assignment | null) {
-  if (assignment === null) return [];
+/** Students of the assignment's course whose works the caller may see. */
+function studentsOf(state: State, account: Account | null, assignment: Assignment): string[] {
   const course = state.courses.find((c) => c.id === assignment.courseId);
-  return [...(course?.studentIds ?? [])].sort().map((studentId) => {
-    const work = state.works.find(
-      (w) => w.assignmentId === assignment.id && w.studentId === studentId,
-    );
-    const documentId = work?.documentId ?? null;
-    if (work?.submittedAt == null)
+  return course === undefined || account === null ? [] : visibleStudents(course, account);
+}
+
+function submissions(state: State, account: Account | null, assignment: Assignment | null) {
+  if (assignment === null) return [];
+  return studentsOf(state, account, assignment)
+    .sort()
+    .map((studentId) => {
+      const work = state.works.find(
+        (w) => w.assignmentId === assignment.id && w.studentId === studentId,
+      );
+      const documentId = work?.documentId ?? null;
+      if (work?.submittedAt == null)
+        return {
+          studentId,
+          documentId,
+          submitted: false,
+          revision: null,
+          requestedMinute: null,
+          afterDeadline: null,
+        } as const;
       return {
         studentId,
         documentId,
-        submitted: false,
-        revision: null,
-        requestedMinute: null,
-        afterDeadline: null,
+        submitted: true,
+        revision: work.revision,
+        requestedMinute: `${work.submittedAt.slice(0, 16)}:00.000Z`,
+        afterDeadline: work.submittedAt > assignment.content.dueAt,
       } as const;
-    return {
-      studentId,
-      documentId,
-      submitted: true,
-      revision: work.revision,
-      requestedMinute: `${work.submittedAt.slice(0, 16)}:00.000Z`,
-      afterDeadline: work.submittedAt > assignment.content.dueAt,
-    } as const;
-  });
+    });
 }
 
 function mentorshipWork(state: State, m: Mentorship) {
@@ -84,7 +93,7 @@ export const TEACHER_HANDLERS: Handlers = {
   "teacher.courses.get": ({ state, account }) => {
     if (account === null || !account.roles.includes("teacher")) return { error: "forbidden" };
     const courses = state.courses
-      .filter((c) => teachesCourse(c, account.id))
+      .filter((c) => teachesCourse(c, account))
       .sort(
         (a, b) =>
           b.academicYear.localeCompare(a.academicYear) || a.name.localeCompare(b.name, "hr"),
@@ -111,13 +120,13 @@ export const TEACHER_HANDLERS: Handlers = {
   },
   "teacher.submissions.get": ({ state, account, params }) => ({
     status: 200,
-    body: { submissions: submissions(state, taught(state, account, params.assignmentId)) },
+    body: { submissions: submissions(state, account, taught(state, account, params.assignmentId)) },
   }),
   "teacher.assignment-submissions.post": ({ state, account, body }) => {
     const ids = [...new Set(body.assignmentIds.map((id) => id.toLowerCase()))];
     const assignments = ids.map((assignmentId) => ({
       assignmentId,
-      submissions: submissions(state, taught(state, account, assignmentId)),
+      submissions: submissions(state, account, taught(state, account, assignmentId)),
     }));
     return { status: 200, body: { assignments } };
   },
@@ -125,8 +134,7 @@ export const TEACHER_HANDLERS: Handlers = {
     const assignment = taught(state, account, body.assignmentId);
     if (assignment === null || account === null)
       return { status: 200, body: { kind: "ok", students: [] } };
-    const course = state.courses.find((c) => c.id === assignment.courseId);
-    const students = (course?.studentIds ?? []).flatMap((id): FastPathStudent[] => {
+    const students = studentsOf(state, account, assignment).flatMap((id): FastPathStudent[] => {
       const student = state.accounts.find((a) => a.id === id);
       if (student === undefined) return [];
       const names = { id, givenName: student.givenName, surname: student.familyName };
@@ -141,14 +149,16 @@ export const TEACHER_HANDLERS: Handlers = {
             record: null,
           } as const,
         ];
-      state.accessLog.push({
-        id: randomUUID(),
-        documentId: work.documentId,
-        readerId: account.id,
-        at: now.toISOString(),
-        role: "teacher",
-        surface: "fast_path",
-      });
+      recordOpening(
+        state,
+        {
+          documentId: work.documentId,
+          readerId: account.id,
+          role: "teacher",
+          surface: "fast_path",
+        },
+        now,
+      );
       return [
         {
           ...names,
