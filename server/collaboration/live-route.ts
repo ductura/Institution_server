@@ -8,6 +8,7 @@ import {
 import { DUCTUS_PROTOCOL_VERSION } from "../domain/evidence/commit-envelope.ts";
 import { sessionPrincipal } from "../session/principal.ts";
 import type { WithActor } from "../database/with-actor.ts";
+import { createActorReader } from "../database/current-actor.ts";
 import {
   checkMutationRequest,
   declaredLengthRefusal,
@@ -44,7 +45,7 @@ export interface LiveRouteDeps {
   withActor: WithActor;
   /** The application origin; null when it is not configured (503). */
   expectedOrigin: string | null;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 function refuse(status: number, error: string): Response {
@@ -77,7 +78,7 @@ function expectedTokenOf(headers: Headers): { token: string | null } | null {
   if (none !== null) return none.trim() === "*" ? { token: null } : null;
   if (match === null) return null;
   const quoted = /^"([^"]*)"$/.exec(match.trim());
-  return quoted && UUID.test(quoted[1]) ? { token: quoted[1] } : null;
+  return quoted && UUID.test(quoted[1]!) ? { token: quoted[1]! } : null;
 }
 
 export async function handleLivePublishRequest(
@@ -110,7 +111,8 @@ export async function handleLivePublishRequest(
   // for a cookie that only has the right form. A declared length the reader
   // refuses unread needs no database either.
   if (declaredLengthRefusal(request, MAX_DOCUMENT_SNAPSHOT_BYTES) === null) {
-    const principal = await sessionPrincipal(token, deps.withActor);
+    // Ductura reads the principal through the ActorReader port over the same withActor.
+    const principal = await sessionPrincipal(token, createActorReader(deps.withActor));
     if (principal.kind === "signed-out") return refuse(401, "unauthorized");
     if (principal.kind !== "signed-in") return refuse(503, "unavailable");
   }

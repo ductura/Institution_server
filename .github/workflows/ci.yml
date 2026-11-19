@@ -298,6 +298,33 @@ jobs:
             -o "-p $DUCTUS_NATIVE_PGPORT -k $RUNNER_TEMP -c listen_addresses=127.0.0.1"
           PATH="$PGBIN:$PATH" pnpm db:up:native
           PATH="$PGBIN:$PATH" pnpm db:up:native
+      # ZEL-S1 (Ductus#2028 c.7020129567): the local S3 of the copied Ductus
+      # tests in pnpm test:database (tests/db/ductus/*payload*, *storage*), as
+      # Ductus runs it: RustFS 1.0.0 on 127.0.0.1:9100 with the public
+      # local-only keys of Ductus compose.yaml (no secret). Natively, as Ductus
+      # scripts/local/native/up.mjs starts it, so S-0.14 holds. The archive is
+      # checked against the published SHA-256 before it is unpacked or run.
+      - name: Lokalni S3 (RustFS 1.0.0, nativno)
+        env:
+          RUSTFS_URL: https://github.com/rustfs/rustfs/releases/download/1.0.0/rustfs-linux-x86_64-gnu-v1.0.0.zip
+          RUSTFS_SHA256: 2d5059501745682664c3d345b22274b66079c952fbec7e1ce66980ef4515cd42
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/rustfs.zip" "$RUSTFS_URL"
+          echo "$RUSTFS_SHA256  $RUNNER_TEMP/rustfs.zip" | sha256sum -c --strict -
+          unzip -q "$RUNNER_TEMP/rustfs.zip" rustfs -d "$RUNNER_TEMP/rustfs"
+          mkdir -p "$RUNNER_TEMP/rustfs-data"
+          RUSTFS_ACCESS_KEY=ductus-local RUSTFS_SECRET_KEY=ductus-local-only RUSTFS_CONSOLE_ENABLE=false \
+            nohup "$RUNNER_TEMP/rustfs/rustfs" server --address 127.0.0.1:9100 "$RUNNER_TEMP/rustfs-data" \
+            > "$RUNNER_TEMP/rustfs.log" 2>&1 &
+          # Ready only when the S3 layer refuses anonymous listing (403), as Ductus checks it.
+          # Each probe is bounded, so a listener that never answers cannot hold the 30 s limit.
+          deadline=$((SECONDS + 30))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if [ "$(curl -s --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:9100/)" = 403 ]; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/rustfs.log" >&2
+          exit 1
       - name: Testovi migracija
         env:
           DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus

@@ -16,6 +16,7 @@ import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "../domain/document/edit-ste
 import { MAX_EVIDENCE_SEGMENT_BYTES } from "../domain/forensics/evidence-chain-v2.ts";
 import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
 import type { SignedEvidenceReceipt } from "../domain/forensics/evidence-receipt.ts";
+import type { SignatureEnvelope } from "../domain/forensics/signature.ts";
 import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
 import {
   applyPayloadEdit,
@@ -42,8 +43,16 @@ const vectors = loadGoldenVectors();
 const { chain } = vectors;
 const utf8 = new TextEncoder();
 const goldenKey = goldenKeyVerifier(chain.verificationKey);
-const emptyDocument = chain.documentStates[0];
-const finalDocument = chain.documentStates[chain.documentStates.length - 1];
+const emptyDocument = chain.documentStates[0]!;
+const finalDocument = chain.documentStates[chain.documentStates.length - 1]!;
+// The golden key verifies with a boolean; the reconstruction reads Ductura's
+// SigningKeyProvider, which answers a Result.
+const goldenResultSigner = {
+  verify: async (message: Uint8Array, signature: SignatureEnvelope) => ({
+    ok: true as const,
+    value: await goldenKey.verify(message, signature),
+  }),
+};
 
 type TextNode = { type: "text"; text: string; marks: [] };
 type ParagraphDocument = {
@@ -158,7 +167,7 @@ const matched = { status: "match", head: chain.head, documentSha256: finalDocume
 describe("golden vectors: test replayer", () => {
   // QA M1 (#257): a paragraph of several text nodes, or one with marks, is
   // refused rather than replayed from its first node only.
-  const [event] = chain.segments[0].segment.events;
+  const event = chain.segments[0]!.segment.events[0]!;
   // Marks are outside the replayed subset, so the document is built untyped.
   const paragraph = (children: unknown[]) =>
     ({
@@ -213,8 +222,8 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
       {
         institutionId: INSTITUTION_ID,
         evidencePackageId: chain.evidencePackageId,
-        documentId: chain.segments[0].segment.documentId,
-        evidenceProfileId: chain.segments[0].segment.evidenceProfileId,
+        documentId: chain.segments[0]!.segment.documentId,
+        evidenceProfileId: chain.segments[0]!.segment.evidenceProfileId,
         maxPayloadBytes: MAX_EVIDENCE_SEGMENT_BYTES,
         acceptsEvidence: true,
       },
@@ -222,8 +231,8 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
     const payloadStore = new InMemoryEvidencePayloadStore();
     // Time and receipt id are the two inputs the server adds; the file fixes them.
     const repository = new InMemoryEvidenceAcceptanceRepository({
-      clock: () => chain.segments[current].receipt.payload.acceptedAt,
-      idFactory: () => chain.segments[current].receipt.payload.receiptId,
+      clock: () => chain.segments[current]!.receipt.payload.acceptedAt,
+      idFactory: () => chain.segments[current]!.receipt.payload.receiptId,
     });
     const signer = new DevelopmentEd25519SigningKeyProvider("zlatni-vektori-dev", "v1");
     const sign = vi.spyOn(signer, "sign");
@@ -248,7 +257,7 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
       // The development key is new on every run, so its signature cannot be
       // pinned. What is pinned are the bytes the gateway hands to the signer:
       // they are the bytes the stored signature was made over.
-      const signedBytes = sign.mock.calls[index][0];
+      const signedBytes = sign.mock.calls[index]![0];
       expect(toHex(signedBytes)).toBe(vector.receipt.canonicalUtf8Hex);
       expect(await goldenKey.verify(signedBytes, vector.receipt.signature)).toBe(true);
 
@@ -271,7 +280,7 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
   });
 
   it("leaves no object, no record and no signature for a refused segment (D-24, D-56, DAN-183)", async () => {
-    const [base] = chain.segments;
+    const base = chain.segments[0]!;
     // The base with only its transaction format changed, written as canonical
     // JCS: the format is closed, so every value but ductus-edit-steps-v1 is refused.
     const withFormat = (transactionFormat: string) => {
@@ -291,7 +300,7 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
         .map((edit) => ({
           name: edit.name,
           accepted: false,
-          bytes: applyPayloadEdit(fromHex(chain.segments[edit.base].canonicalUtf8Hex), edit),
+          bytes: applyPayloadEdit(fromHex(chain.segments[edit.base]!.canonicalUtf8Hex), edit),
         })),
       ...vectors.eventTime.formerSegments.slice(0, 1).map((former) => ({
         name: former.name,
@@ -326,7 +335,7 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
         "time-form-other-zone",
         "time-in-capture-context",
         "former-odsjecak-zv-1",
-        vectors.stepFormat.formerSegments[0].name,
+        vectors.stepFormat.formerSegments[0]!.name,
         'format-"ductus-test-insert-text-v0"',
       ]),
     );
@@ -389,7 +398,15 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
   });
 
   it("reconstructs the stored record under the stored signatures", async () => {
-    const dependencies = { ...storedRecord(), signer: goldenKey, replayer };
+    // The golden key verifies with a boolean; the reconstruction reads Ductura's
+    // SigningKeyProvider, which answers a Result.
+    const signer = {
+      verify: async (message: Uint8Array, signature: SignatureEnvelope) => ({
+        ok: true as const,
+        value: await goldenKey.verify(message, signature),
+      }),
+    };
+    const dependencies = { ...storedRecord(), signer, replayer };
     expect(
       await reconstructAndCompareEvidence(dependencies, {
         ...reconstruction,
@@ -407,20 +424,21 @@ describe("golden vectors: server side (gateway and reconstruction)", () => {
     expect(
       await reconstructAndCompareEvidence(dependencies, {
         ...reconstruction,
-        expectedDocument: chain.documentStates[2].value,
+        expectedDocument: chain.documentStates[2]!.value,
       }),
     ).toEqual({ status: "mismatch", reason: "target_mismatch", index: null });
   });
 
   it("does not accept a stored signature moved to the other receipt", async () => {
-    const [first, second] = chain.segments;
+    const first = chain.segments[0]!;
+    const second = chain.segments[1]!;
     const swapped = storedRecord((vector) => ({
       ...signedReceiptOf(vector),
       signature: (vector === first ? second : first).receipt.signature,
     }));
     expect(
       await reconstructAndCompareEvidence(
-        { ...swapped, signer: goldenKey, replayer },
+        { ...swapped, signer: goldenResultSigner, replayer },
         { ...reconstruction, expectedDocument: finalDocument.value },
       ),
     ).toEqual({ status: "mismatch", reason: "receipt_signature_invalid", index: 0 });

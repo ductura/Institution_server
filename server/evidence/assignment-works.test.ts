@@ -1,15 +1,15 @@
-import { readFileSync } from "node:fs";
-
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
+import { readAssignmentSubmissionsMany } from "./assignment-submissions.ts";
 import { readAssignmentWorks, readAssignmentWorksMany, worksOf } from "./assignment-works.ts";
 
 // Invented ids only.
 const TOKEN = "T".repeat(43);
 const CANARY = "kanarinac-radovi-3c9d";
 const Z1 = "00000000-0000-4000-8000-0000000000a1";
+const Z2 = "00000000-0000-4000-8000-0000000000a2";
 const ANA = "00000000-0000-4000-8000-000000000104";
 const DORA = "00000000-0000-4000-8000-000000000105";
 
@@ -137,7 +137,6 @@ describe("B2: the works of an assignment for its teacher", () => {
 });
 
 describe("F-142: the works of many assignments in one read", () => {
-  const Z2 = "00000000-0000-4000-8000-0000000000a2";
   const Z3 = "00000000-0000-4000-8000-0000000000a3";
 
   it("asks once, in one transaction, with every well-formed id once, and groups the rows by assignment", async () => {
@@ -203,9 +202,17 @@ describe("F-142: the works of many assignments in one read", () => {
 
   // DAN-332 PR 4: the page now takes its works from the submissions read (R1), which
   // carries each work with the state of its submission; F-142 still holds there.
-  it("the teacher's home page reads the works once, never once per assignment", () => {
-    const page = readFileSync(new URL("../../../app/nastavnik/page.tsx", import.meta.url), "utf8");
-    expect(page.match(/readAssignmentSubmissionsMany\(/g)).toHaveLength(1);
-    expect(page).not.toMatch(/readAssignmentWorks(Many)?\(|readAssignmentSubmissions\(/);
+  // Ductus scanned its own app/nastavnik/page.tsx for one call of that read. In
+  // Ductura the page lives in the web repo and reaches the server only through
+  // teacher.assignment-submissions.post, whose read is readAssignmentSubmissionsMany,
+  // so the server side of F-142 is held here: every assignment of the page in
+  // one query, never one per assignment.
+  it("the teacher's home page reads the works once, never once per assignment", async () => {
+    const db = database({ rows: [] });
+    const ids = [Z1, Z2, Z3];
+    const read = await readAssignmentSubmissionsMany(TOKEN, ids, db.withActor);
+    expect(read.kind).toBe("ok");
+    expect(db.calls).toHaveLength(1);
+    expect(db.calls[0]?.values).toEqual([ids]);
   });
 });
