@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createOpenSession } from "../../server/database/index.ts";
 import {
   AREA_NAMES,
+  createAcknowledgmentRouteFor,
   createAuthRoutes,
   createClientContextRoute,
   createDatabases,
@@ -259,6 +260,13 @@ const SESSION_ROUTES = {
     headers: { "if-none-match": "*" },
     live: 404,
   },
+  // Ductus#2028 (w1119o): the notice of an assignment the account is not
+  // enrolled in is refused by acknowledge_notice (403) and nothing is recorded.
+  "institution.acknowledgment.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/acknowledgment`,
+    body: () => ({ versionNo: 1, fingerprint: "0".repeat(64) }),
+    live: 403,
+  },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
   // account does not hold is 403. The old cookie's registration carries a
@@ -299,6 +307,7 @@ const FACTORIES = [
   "createInstitutionCourseRoutesFor",
   "createTeacherReadRoutesFor",
   "createLiveRoutesFor",
+  "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -319,6 +328,7 @@ const MOUNTED = [
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createLiveRoutesFor(databases.main),
+  createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
