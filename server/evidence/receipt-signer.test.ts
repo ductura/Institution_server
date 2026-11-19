@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   DevelopmentSigningKeyError,
   PersistentDevelopmentEd25519SigningKeyProvider,
-} from "@/adapters/crypto/persistent-development-ed25519-signer";
+} from "../external/keys/persistent-development-ed25519-signer.ts";
 
 import { createEvidenceReceiptSigner } from "./receipt-signer";
 

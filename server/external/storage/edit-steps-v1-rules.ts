@@ -2,17 +2,17 @@ import { getSchema } from "@tiptap/core";
 import type { Node as PmNode, ResolvedPos, Schema } from "@tiptap/pm/model";
 import { Step } from "@tiptap/pm/transform";
 
-import { validateDocument } from "@/domain/document";
+import { validateDocument } from "../../domain/document/index.ts";
 import {
   EDIT_STEP_FORMAT_V1,
   parseEditSteps,
   type EditStepBlock,
   type EditStepV1,
-} from "@/domain/document/edit-step";
-import { isMark, isPlainBlockType } from "@/domain/document/schema";
-import { EvidenceContentNotSupportedV2 } from "@/domain/forensics/evidence-replay-v2";
-import type { EvidenceEventV3 } from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../../domain/document/edit-step.ts";
+import { isMark, isPlainBlockType } from "../../domain/document/schema.ts";
+import { EvidenceContentNotSupportedV2 } from "../../domain/forensics/evidence-replay-v2.ts";
+import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
 import { canonicalToTiptap, tiptapToCanonical, createEditorExtensions } from "@/editor";
 
 /**

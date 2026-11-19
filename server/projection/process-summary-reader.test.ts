@@ -1,27 +1,27 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
 import type {
   EvidencePayloadReadResult,
   InstitutionEvidencePayloadReader,
-} from "@/application/ports/evidence-reconstruction";
+} from "../application/ports/evidence-reconstruction.ts";
 import type {
   ProcessSummarySource,
   ProcessSummarySourceResult,
-} from "@/application/ports/process-summary-source";
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
+} from "../application/ports/process-summary-source.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../domain/document/edit-step.ts";
+import { sha256WebCrypto } from "../domain/forensics/crypto.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
   EVIDENCE_HASH_ALGORITHM_V2,
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSourceV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import { projectProcessSummary } from "@/domain/projection/process-summary";
+} from "../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import { projectProcessSummary } from "../domain/projection/process-summary.ts";
 
-import { readProcessSummary, type ProcessSummaryReaderDeps } from "./process-summary-reader";
+import { readProcessSummary, type ProcessSummaryReaderDeps } from "./process-summary-reader.ts";
 
 // Synthetic only: invented ids, people (Ana, Vesna, Boris, Iva) and Lorem ipsum.
 const INSTITUTION = "11111111-1111-4111-8111-111111111111";

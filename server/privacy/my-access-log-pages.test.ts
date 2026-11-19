@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 import { ACCESS_LOG_PAGE } from "./my-access-log";
-import { type AccessLogQuery, olderHref, readMyAccessLogPage } from "./my-access-log-pages";
+import { type AccessLogQuery, olderHref, readMyAccessLogPage } from "./my-access-log-pages.ts";
 
 // DAN-294 (S-42; narrowed round after review FAIL c.6819070024, contract on
 // #1836 c.6819193865): "Prikaži starije dane" as a cursor in the address, one
