@@ -13,4 +13,10 @@ export {
   type AssignmentVersionBody,
   parseAssignmentVersionBody,
 } from "./assignment-content.ts";
+export {
+  type AssignmentWorkLanguageBody,
+  parseAssignmentWorkLanguageBody,
+  parseWorkLanguageExceptionBody,
+  type WorkLanguageExceptionBody,
+} from "./work-language-bodies.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";

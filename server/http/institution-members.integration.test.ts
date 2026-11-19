@@ -16,6 +16,7 @@ import type {
   InstitutionMembers,
   StudentRemovalOutcome,
   StudentReturnOutcome,
+  WorkLanguages,
 } from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
@@ -84,6 +85,7 @@ async function start() {
     databases: createDatabases(),
     routes: createInstitutionCourseRoutes({
       courses: {} as InstitutionCourses,
+      languages: {} as WorkLanguages,
       members,
       recordActivity: async (token) => activity.push(token),
       timeoutMs: 300,

@@ -41,6 +41,8 @@ const ROWS: ReadonlyMap<string, unknown> = new Map([
   ["remove_student", { removed: true }],
   ["allow_student_return", { allowed: false }],
   ["publish_assignment_version", { version_no: 2 }],
+  ["set_assignment_work_language", { version: 4 }],
+  ["set_work_language", { language: "hr" }],
 ]);
 
 let server: Running | undefined;
@@ -116,7 +118,9 @@ type Rpc =
   | "revoke_enrollment_code"
   | "remove_student"
   | "allow_student_return"
-  | "publish_assignment_version";
+  | "publish_assignment_version"
+  | "set_assignment_work_language"
+  | "set_work_language";
 const STUDENT_PATH = `/api/v1/institution/courses/${COURSE}/students/${STUDENT}`;
 type Case = { readonly path: string; readonly body: string; readonly values: readonly unknown[] };
 const ROUTES: ReadonlyMap<Rpc, Case> = new Map<Rpc, Case>([
@@ -144,6 +148,22 @@ const ROUTES: ReadonlyMap<Rpc, Case> = new Map<Rpc, Case>([
       path: `/api/v1/institution/assignments/${ASSIGNMENT}/versions`,
       body: JSON.stringify({ expectedVersion: 1, ...CONTENT }),
       values: [ASSIGNMENT, 1, ...Object.values(CONTENT)],
+    },
+  ],
+  [
+    "set_assignment_work_language",
+    {
+      path: `/api/v1/institution/assignments/${ASSIGNMENT}/work-language`,
+      body: '{"expectedVersion":3,"language":"en"}',
+      values: [ASSIGNMENT, 3, "en"],
+    },
+  ],
+  [
+    "set_work_language",
+    {
+      path: `/api/v1/institution/assignments/${ASSIGNMENT}/students/${STUDENT}/work-language`,
+      body: '{"language":null}',
+      values: [ASSIGNMENT, STUDENT, null],
     },
   ],
 ]);
@@ -194,6 +214,12 @@ describe("createInstitutionCourseRoutesFor(main)", () => {
     ["publish_assignment_version", coded("ZD403"), 403],
     ["publish_assignment_version", coded("ZD409"), 409],
     ["publish_assignment_version", coded("ZD422"), 422],
+    ["set_assignment_work_language", coded("ZD401"), 401],
+    ["set_assignment_work_language", coded("ZD403"), 403],
+    ["set_assignment_work_language", coded("ZD409"), 409],
+    ["set_assignment_work_language", coded("ZD422"), 422],
+    ["set_work_language", coded("ZD409"), 409],
+    ["set_work_language", coded("ZD422"), 422],
     ...rpcs.map((rpc): [Rpc, unknown, number] => [rpc, coded("XX000"), 503]),
     ...rpcs.map((rpc): [Rpc, unknown, number] => [rpc, new Error("izmišljeno"), 503]),
   ];

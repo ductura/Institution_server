@@ -11,15 +11,18 @@
 // the profile route (Ductus counted awaited it). Who may do what is the RPC's.
 // The same front serves student-removal-route.ts, student-return-route.ts and
 // assignment-version-route.ts (Ductus 078c780): path ids in the contract's
-// order, an empty body for the first two, 201 for a published version.
+// order, an empty body for the first two, 201 for a published version; and
+// work-language-route.ts (DAN-386), whose documentId is a work id, not a UUID.
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { ROUTES, workIdFromPath } from "../contracts/index.ts";
+import { isWorkId, ROUTES, workIdFromPath } from "../contracts/index.ts";
 import {
   createInstitutionCourses,
   createInstitutionMembers,
+  createWorkLanguages,
   type InstitutionCourses,
   type InstitutionMembers,
+  type WorkLanguages,
 } from "../database/index.ts";
 import { createInstitutionService } from "../institution/index.ts";
 import { liveSessionTokenFromCookie, recordActivity } from "../session/index.ts";
@@ -39,6 +42,7 @@ const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export type InstitutionCourseRouteOptions = {
   readonly courses: InstitutionCourses;
   readonly members: InstitutionMembers;
+  readonly languages: WorkLanguages;
   /** Session activity for an accepted answer (session/recordActivity). */
   readonly recordActivity: (token: string) => Promise<unknown>;
   /** For tests: a shorter body deadline. */
@@ -65,6 +69,15 @@ const CODE_REFUSALS: Refusals = new Map<string, Refusal>([
   ["invalid_input", INVALID],
 ]);
 const REVOKE_REFUSALS: Refusals = new Map<string, Refusal>([UNAUTHORIZED, FORBIDDEN]);
+// The work language RPCs (Ductus work-language.ts refusalOf): ZD409 is a stale
+// version or a work already asked to be submitted, ZD422 a refused input.
+const LANGUAGE_REFUSALS: Refusals = new Map<string, Refusal>([
+  UNAUTHORIZED,
+  FORBIDDEN,
+  ["conflict", [409, "conflict"]],
+  ["invalid", INVALID],
+  ["invalid_input", INVALID],
+]);
 // ZD422 of the version RPC is a tightening (PRODUCT rule 14), ZD409 a stale version.
 const VERSION_REFUSALS: Refusals = new Map<string, Refusal>([
   UNAUTHORIZED,
@@ -150,7 +163,11 @@ type Run = (token: string, value: unknown, ids: readonly string[]) => Promise<An
  * named fields only, so no other field of an outcome ever leaves.
  */
 export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOptions): Route[] {
-  const service = createInstitutionService({ courses: options.courses, members: options.members });
+  const service = createInstitutionService({
+    courses: options.courses,
+    members: options.members,
+    languages: options.languages,
+  });
   const timeoutMs = options.timeoutMs ?? INSTITUTION_BODY_TIMEOUT_MS;
 
   const route = (id: string, refusals: Refusals, run: Run, empty = false): Route => {
@@ -160,9 +177,18 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
       contract,
       async handle(request, response, params) {
         const ids = names.map((name) => decodeOnce(params?.[name]));
+        // Every path id is a UUID but a work's documentId, which Ductus checks
+        // (isDocumentId) after the body is read; both refusals are 422.
+        const uuids = ids.filter((_, at) => names[at] !== "documentId");
         const maxBytes = contract.request.maxBodyBytes ?? 64;
-        const input = await readInstitutionJson(request, response, ids, maxBytes, timeoutMs);
+        const input = await readInstitutionJson(request, response, uuids, maxBytes, timeoutMs);
         if (input === null) return;
+        if (
+          ids.length !== uuids.length &&
+          !ids.every((one, at) => names[at] !== "documentId" || isWorkId(one))
+        ) {
+          return sendProblem(response, ...INVALID);
+        }
         if (empty && !isEmptyObject(input.value)) return sendProblem(response, ...INVALID);
         try {
           const answer = await run(input.token, input.value, ids);
@@ -244,6 +270,41 @@ export function createInstitutionCourseRoutes(options: InstitutionCourseRouteOpt
           : refused(outcome);
       },
     ),
+    route(
+      "institution.work-language.post",
+      LANGUAGE_REFUSALS,
+      async (token, value, [assignmentId]) => {
+        const outcome = await service.setAssignmentWorkLanguage(token, assignmentId!, value);
+        return outcome.status === "updated"
+          ? { ok: true, body: { version: outcome.version } }
+          : refused(outcome);
+      },
+    ),
+    route(
+      "institution.student-work-language.post",
+      LANGUAGE_REFUSALS,
+      async (token, value, [assignmentId, studentId]) => {
+        const outcome = await service.setWorkLanguage(token, assignmentId!, studentId!, value);
+        return outcome.status === "updated"
+          ? { ok: true, body: { language: outcome.language } }
+          : refused(outcome);
+      },
+    ),
+    route(
+      "institution.work-work-language.post",
+      LANGUAGE_REFUSALS,
+      async (token, value, [assignmentId, documentId]) => {
+        const outcome = await service.setWorkLanguageForDocument(
+          token,
+          assignmentId!,
+          documentId!,
+          value,
+        );
+        return outcome.status === "updated"
+          ? { ok: true, body: { language: outcome.language } }
+          : refused(outcome);
+      },
+    ),
   ];
 }
 
@@ -258,6 +319,7 @@ export function createInstitutionCourseRoutesFor(
   return createInstitutionCourseRoutes({
     courses: createInstitutionCourses(main.withActor),
     members: createInstitutionMembers(main.withActor),
+    languages: createWorkLanguages(main.withActor),
     recordActivity: (token) => recordActivity(token, main.withActor),
   });
 }

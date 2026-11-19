@@ -16,10 +16,17 @@ import type {
   InstitutionMembers,
   StudentRemovalOutcome,
   StudentReturnOutcome,
+  WorkLanguageOutcome,
+  WorkLanguages,
+  AssignmentWorkLanguageOutcome,
 } from "../database/index.ts";
 
 import { parseAssignmentVersionBody } from "./assignment-content.ts";
 import { parseCourseBody, parseEnrollmentCodeBody } from "./schemas.ts";
+import {
+  parseAssignmentWorkLanguageBody,
+  parseWorkLanguageExceptionBody,
+} from "./work-language-bodies.ts";
 
 /** A body the parser refused: the route's 422 invalid_input. */
 export type InvalidInput = { readonly status: "invalid_input" };
@@ -43,6 +50,24 @@ export type InstitutionService = {
     assignmentId: string,
     value: unknown,
   ): Promise<AssignmentVersionOutcome | InvalidInput>;
+  setAssignmentWorkLanguage(
+    token: string,
+    assignmentId: string,
+    value: unknown,
+  ): Promise<AssignmentWorkLanguageOutcome | InvalidInput>;
+  setWorkLanguage(
+    token: string,
+    assignmentId: string,
+    studentId: string,
+    value: unknown,
+  ): Promise<WorkLanguageOutcome | InvalidInput>;
+  /** documentId is already a checked work id (the route's isWorkId). */
+  setWorkLanguageForDocument(
+    token: string,
+    assignmentId: string,
+    documentId: string,
+    value: unknown,
+  ): Promise<WorkLanguageOutcome | InvalidInput>;
 };
 
 const INVALID: InvalidInput = { status: "invalid_input" };
@@ -50,6 +75,7 @@ const INVALID: InvalidInput = { status: "invalid_input" };
 export function createInstitutionService(deps: {
   courses: InstitutionCourses;
   members: InstitutionMembers;
+  languages: WorkLanguages;
 }): InstitutionService {
   return {
     async createCourse(token, value) {
@@ -75,6 +101,31 @@ export function createInstitutionService(deps: {
         assignmentId,
         body.expectedVersion,
         body.content,
+      );
+    },
+    async setAssignmentWorkLanguage(token, assignmentId, value) {
+      const body = parseAssignmentWorkLanguageBody(value);
+      if (body === null) return INVALID;
+      return deps.languages.setAssignmentWorkLanguage(
+        token,
+        assignmentId,
+        body.expectedVersion,
+        body.language,
+      );
+    },
+    async setWorkLanguage(token, assignmentId, studentId, value) {
+      const body = parseWorkLanguageExceptionBody(value);
+      if (body === null) return INVALID;
+      return deps.languages.setWorkLanguage(token, assignmentId, studentId, body.language);
+    },
+    async setWorkLanguageForDocument(token, assignmentId, documentId, value) {
+      const body = parseWorkLanguageExceptionBody(value);
+      if (body === null) return INVALID;
+      return deps.languages.setWorkLanguageForDocument(
+        token,
+        assignmentId,
+        documentId,
+        body.language,
       );
     },
   };

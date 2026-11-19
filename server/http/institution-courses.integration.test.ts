@@ -15,6 +15,7 @@ import type {
   EnrollmentCodeRevokeOutcome,
   InstitutionCourses,
   InstitutionMembers,
+  WorkLanguages,
 } from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
@@ -86,6 +87,7 @@ async function start() {
     routes: createInstitutionCourseRoutes({
       courses,
       members: NO_MEMBERS,
+      languages: {} as WorkLanguages,
       recordActivity: (token) => {
         calls.activity.push(token);
         return activity();

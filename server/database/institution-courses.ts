@@ -72,7 +72,7 @@ const MALFORMED: unique symbol = Symbol("institution-courses malformed row");
 const unavailable = (reason: string): Unavailable => ({ status: "unavailable", reason });
 
 /** The code of a database error, read as Ductus does; a getter or Proxy that throws has none. */
-function codeOf(thrown: unknown): unknown {
+export function codeOf(thrown: unknown): unknown {
   try {
     return thrown && typeof thrown === "object" && "code" in thrown ? thrown.code : undefined;
   } catch {

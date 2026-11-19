@@ -10,17 +10,19 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the four body parsers and the service factory", () => {
+  it("exports only the six body parsers and the service factory", () => {
     expect(Object.keys(area).sort()).toEqual([
       "createInstitutionService",
       "parseAssignmentVersionBody",
+      "parseAssignmentWorkLanguageBody",
       "parseCourseBody",
       "parseEnrollmentBody",
       "parseEnrollmentCodeBody",
+      "parseWorkLanguageExceptionBody",
     ]);
   });
 
-  it("has a service of six methods and closed bodies", () => {
+  it("has a service of nine methods and closed bodies", () => {
     expectTypeOf<keyof InstitutionService>().toEqualTypeOf<
       | "createCourse"
       | "issueEnrollmentCode"
@@ -28,6 +30,9 @@ describe("server/institution public interface", () => {
       | "removeStudent"
       | "allowStudentReturn"
       | "publishAssignmentVersion"
+      | "setAssignmentWorkLanguage"
+      | "setWorkLanguage"
+      | "setWorkLanguageForDocument"
     >();
     expectTypeOf<keyof AssignmentVersionBody>().toEqualTypeOf<"expectedVersion" | "content">();
     expectTypeOf<keyof CourseBody>().toEqualTypeOf<"name" | "academicYear" | "aiPolicy">();

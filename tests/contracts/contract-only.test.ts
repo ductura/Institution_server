@@ -28,7 +28,8 @@ import {
 // which checkRoute refuses.)
 /**
  * The course routes of DAN-852, mounted by the entry point since 852-5a, and
- * the student and version routes on the same front (Ductus#2028, w1119o).
+ * the student, version and work language routes on the same front
+ * (Ductus#2028, w1119o).
  */
 const INSTITUTION_COURSE_ROUTES = [
   "institution.courses.post",
@@ -37,6 +38,9 @@ const INSTITUTION_COURSE_ROUTES = [
   "institution.student-removal.post",
   "institution.student-return.post",
   "institution.assignment-versions.post",
+  "institution.work-language.post",
+  "institution.student-work-language.post",
+  "institution.work-work-language.post",
 ] as const;
 
 export const DAN_803: readonly string[] = [
@@ -220,14 +224,18 @@ describe("CONTRACT_ONLY", () => {
       contractOnlyProblems(["student.assignments.get", "teacher.courses.get"], routeIds, []),
     ).toEqual([]);
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
-    expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
+    // Compared as sets: the problems follow the order of FROZEN, in which the
+    // work language routes come before the course routes.
+    expect(contractOnlyProblems(withoutSettings, ids, []).sort()).toEqual(
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
       // problem report (851-2d2a), the course routes (852-5a) and the
       // download manifest (DAN-932) are missing too.
       [
         ...["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840],
         ...DAN_931,
-      ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
+      ]
+        .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
+        .sort(),
     );
   });
 

@@ -4,7 +4,7 @@
 // port's outcome is passed on unchanged. Every token and value is invented.
 import { describe, expect, it } from "vitest";
 
-import type { InstitutionCourses, InstitutionMembers } from "../database/index.ts";
+import type { InstitutionCourses, InstitutionMembers, WorkLanguages } from "../database/index.ts";
 
 import { createInstitutionService } from "./service.ts";
 
@@ -32,7 +32,12 @@ function fake(answer: unknown = { status: "unavailable", reason: "database_error
     allowStudentReturn: record("allowStudentReturn"),
     publishAssignmentVersion: record("publishAssignmentVersion"),
   } as unknown as InstitutionMembers;
-  return { service: createInstitutionService({ courses, members }), calls };
+  const languages = {
+    setAssignmentWorkLanguage: record("setAssignmentWorkLanguage"),
+    setWorkLanguage: record("setWorkLanguage"),
+    setWorkLanguageForDocument: record("setWorkLanguageForDocument"),
+  } as unknown as WorkLanguages;
+  return { service: createInstitutionService({ courses, members, languages }), calls };
 }
 
 describe("createCourse refuses a body before the port", () => {
@@ -178,5 +183,54 @@ describe("the student and version operations", () => {
       versionNo: 2,
     });
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("the work language operations", () => {
+  it("pass the checked body to the port and its outcome back unchanged", async () => {
+    const outcome = { status: "updated", language: "hr" };
+    const { service, calls } = fake(outcome);
+    const body = { expectedVersion: 3, language: "en" };
+    expect(await service.setAssignmentWorkLanguage(TOKEN, ASSIGNMENT, body)).toBe(outcome);
+    expect(await service.setWorkLanguage(TOKEN, ASSIGNMENT, STUDENT, { language: null })).toBe(
+      outcome,
+    );
+    expect(
+      await service.setWorkLanguageForDocument(TOKEN, ASSIGNMENT, "rad", { language: "en" }),
+    ).toBe(outcome);
+    expect(calls).toEqual([
+      { method: "setAssignmentWorkLanguage", args: [TOKEN, ASSIGNMENT, 3, "en"] },
+      { method: "setWorkLanguage", args: [TOKEN, ASSIGNMENT, STUDENT, null] },
+      { method: "setWorkLanguageForDocument", args: [TOKEN, ASSIGNMENT, "rad", "en"] },
+    ]);
+  });
+
+  it.each<[string, unknown]>([
+    ["no version", { language: "en" }],
+    ["version 0", { expectedVersion: 0, language: "en" }],
+    ["version 1.5", { expectedVersion: 1.5, language: "en" }],
+    ["a null language", { expectedVersion: 1, language: null }],
+    ["an upper-case language", { expectedVersion: 1, language: "EN" }],
+    ["an extra key", { expectedVersion: 1, language: "en", studentId: STUDENT }],
+    ["inherited keys", Object.create({ expectedVersion: 1, language: "en" }) as unknown],
+  ])("the assignment language refuses %s", async (_name, value) => {
+    const { service, calls } = fake();
+    expect(await service.setAssignmentWorkLanguage(TOKEN, ASSIGNMENT, value)).toEqual(INVALID);
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each<[string, unknown]>([
+    ["an empty object", {}],
+    ["a language with a space", { language: "en " }],
+    ["a version too", { language: "en", expectedVersion: 1 }],
+    ["an array", [{ language: "en" }]],
+    ["null", null],
+  ])("one work's exception refuses %s", async (_name, value) => {
+    const { service, calls } = fake();
+    expect(await service.setWorkLanguage(TOKEN, ASSIGNMENT, STUDENT, value)).toEqual(INVALID);
+    expect(await service.setWorkLanguageForDocument(TOKEN, ASSIGNMENT, "rad", value)).toEqual(
+      INVALID,
+    );
+    expect(calls).toHaveLength(0);
   });
 });
