@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { OPS_ALARM_KINDS, opsAlarmCategory, readinessAlarmTargets } from "./alarm";
+import { OPS_ALARM_KINDS, opsAlarmCategory, readinessAlarmTargets } from "./alarm.ts";
 
 // DAN-184 contract (#1836, c.6821517800), input classes (1) to (6).
 describe("readinessAlarmTargets", () => {

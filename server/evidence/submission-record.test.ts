@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
 
-import { reconstructSubmissionRecord } from "./submission-record";
+import { reconstructSubmissionRecord } from "./submission-record.ts";
 
 // Invented ids and hashes. The record below is well formed but has no stored
 // bytes, so a reconstruction of it ends in `mismatch` (missing payload): what

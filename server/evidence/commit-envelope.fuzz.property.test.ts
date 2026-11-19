@@ -1,9 +1,9 @@
 import { fc, test } from "@fast-check/vitest";
 import { describe, expect, it, vi } from "vitest";
 
-import { verifyDocumentSnapshot } from "@/domain/document/snapshot";
-import { verifyCanonicalEvidencePayloadV2 } from "@/domain/forensics/evidence-chain-v2";
-import type { WithActor } from "@/server/db/with-actor";
+import { verifyDocumentSnapshot } from "../domain/document/snapshot.ts";
+import { verifyCanonicalEvidencePayloadV2 } from "../domain/forensics/evidence-chain-v2.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 import { parseCommitEnvelope } from "./commit-route";
 import { commitEvidenceRequest, type EvidenceCommitRequest } from "./evidence-commit-request";

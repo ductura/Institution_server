@@ -1,15 +1,18 @@
 import { createHash } from "node:crypto";
 
-import { isDocumentId } from "@/domain/collaboration";
-import { MAX_DOCUMENT_SNAPSHOT_BYTES, verifyDocumentSnapshot } from "@/domain/document/snapshot";
-import { DUCTUS_PROTOCOL_VERSION } from "@/domain/evidence/commit-envelope";
-import { sessionPrincipal } from "@/server/auth/principal";
-import type { WithActor } from "@/server/db/with-actor";
+import { isDocumentId } from "../domain/collaboration/index.ts";
+import {
+  MAX_DOCUMENT_SNAPSHOT_BYTES,
+  verifyDocumentSnapshot,
+} from "../domain/document/snapshot.ts";
+import { DUCTUS_PROTOCOL_VERSION } from "../domain/evidence/commit-envelope.ts";
+import { sessionPrincipal } from "../session/principal.ts";
+import type { WithActor } from "../database/with-actor.ts";
 import {
   checkMutationRequest,
   declaredLengthRefusal,
   readBodyWithLimit,
-} from "@/server/http/mutation-request";
+} from "../http/fetch-mutation-request.ts";
 
 /**
  * B-LIVE step 3 HTTP boundary (BACKEND 4.12 point 6): the student owner

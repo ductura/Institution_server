@@ -1,17 +1,14 @@
-import { EDIT_STEP_FORMAT_V1, parseEditSteps, type EditStepV1 } from "@/domain/document/edit-step";
-import { REVISION_ZERO_SHA256 } from "@/domain/document/revision-zero";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
-import {
-  verifyEvidenceChainV2,
-  type EvidenceChainHeadV2,
-} from "@/domain/forensics/evidence-chain-v2";
-import { EvidenceContentNotSupportedV2 } from "@/domain/forensics/evidence-replay-v2";
+import { EDIT_STEP_FORMAT_V1, parseEditSteps, type EditStepV1 } from "../document/edit-step.ts";
+import { REVISION_ZERO_SHA256 } from "../document/revision-zero.ts";
+import { sha256WebCrypto } from "../forensics/crypto.ts";
+import { verifyEvidenceChainV2, type EvidenceChainHeadV2 } from "../forensics/evidence-chain-v2.ts";
+import { EvidenceContentNotSupportedV2 } from "../forensics/evidence-replay-v2.ts";
 import type {
   EvidenceEventV2,
   EvidenceSegmentV2,
   EvidenceSourceV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../forensics/jcs.ts";
 
 /**
  * The replay timeline of one work (DAN-344, contract on #923 §4; D-143): one

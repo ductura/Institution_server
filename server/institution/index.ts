@@ -24,4 +24,10 @@ export {
   NOTICE_TEMPLATE_VERSION,
   parseAcknowledgmentBody,
 } from "./acknowledgment-body.ts";
+export {
+  accessLogCursorOf,
+  readStudentAccessLog,
+  type StudentAccessLogAnswer,
+  type StudentAccessLogEntry,
+} from "./student-access-log-route.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
