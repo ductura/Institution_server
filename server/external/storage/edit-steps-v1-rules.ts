@@ -159,15 +159,15 @@ function* checkReplace(
     }
   }
   const slice = step.slice;
-  if (!slice || slice.content[0].type === "text") {
+  if (!slice || slice.content[0]!.type === "text") {
     return;
   }
   const blocks = slice.content as EditStepBlock[];
-  if ("openStart" in slice && ($from.depth !== 1 || !sameBlock(blocks[0], $from.parent))) {
+  if ("openStart" in slice && ($from.depth !== 1 || !sameBlock(blocks[0]!, $from.parent))) {
     refuse("open_start_block");
   }
   if ("openEnd" in slice) {
-    const last = blocks[blocks.length - 1];
+    const last = blocks[blocks.length - 1]!;
     const sameParent = $from.depth === 1 && $to.depth === 1 && $from.before() === $to.before();
     const ok = sameParent
       ? last.attrs.nodeId === null

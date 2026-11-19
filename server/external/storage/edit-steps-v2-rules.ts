@@ -85,7 +85,8 @@ export function editStepsV2Schema(): Schema {
   const heading = f1.spec.nodes.get("heading");
   if (!heading) throw new Error("F1 schema has no heading");
   v2Schema = new Schema({
-    topNode: f1.spec.topNode,
+    // Tiptap's getSchema always names the top node.
+    topNode: f1.spec.topNode!,
     nodes: f1.spec.nodes
       .update("heading", { ...heading, content: "text*" })
       .addToEnd("citation", CITATION_SPEC),
@@ -164,11 +165,11 @@ function* checkReplace(
     return;
   }
   const blocks = slice.content as Block[];
-  if ("openStart" in slice && ($from.depth !== 1 || !sameBlock(blocks[0], $from.parent))) {
+  if ("openStart" in slice && ($from.depth !== 1 || !sameBlock(blocks[0]!, $from.parent))) {
     refuse("open_start_block");
   }
   if ("openEnd" in slice) {
-    const last = blocks[blocks.length - 1];
+    const last = blocks[blocks.length - 1]!;
     const sameParent = $from.depth === 1 && $to.depth === 1 && $from.before() === $to.before();
     const ok = sameParent
       ? last.attrs.nodeId === null
@@ -314,7 +315,7 @@ function* applySourceStep(
   const index = sources.findIndex((source) => source.id === id);
   if (step.stepType === "sourceRemove") {
     if (index < 0) refuse("unknown_source");
-    yield { canonical: sourceCanonical(sources[index]), recorded: step.removedSha256 };
+    yield { canonical: sourceCanonical(sources[index]!), recorded: step.removedSha256 };
     return sources.filter((_, i) => i !== index);
   }
   if (index < 0) {
@@ -323,7 +324,7 @@ function* applySourceStep(
     return [...sources, step.source];
   }
   if (!("removedSha256" in step)) refuse("removed_range_record");
-  const old = sourceCanonical(sources[index]);
+  const old = sourceCanonical(sources[index]!);
   yield { canonical: old, recorded: step.removedSha256 };
   if (sourceCanonical(step.source) === old) refuse("step_changes_nothing");
   return sources.map((source, i) => (i === index ? step.source : source));
