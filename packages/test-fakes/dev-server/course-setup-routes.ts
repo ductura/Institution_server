@@ -115,14 +115,15 @@ export const COURSE_SETUP_HANDLERS: Handlers = {
     group.teacherIds.push(teacherId);
     return { status: 200, body: { assigned: true } };
   },
-  "institution.course-assignments.post": ({ state, account, params, body, header }) => {
+  "institution.course-assignments.post": ({ state, account, params, body }) => {
     const course = state.courses.find((c) => c.id === params.courseId);
     if (course === undefined || account === null || !teachesCourse(course, account))
       return { error: "forbidden" };
     const opensAt = parseInstant(body.opensAt);
     const dueAt = parseInstant(body.dueAt);
     if (opensAt === null || dueAt === null) return { error: "invalid_input" };
-    const content: AssignmentContent = { ...body, opensAt, dueAt };
+    const { requestKey, ...fields } = body;
+    const content: AssignmentContent = { ...fields, opensAt, dueAt };
     if (
       (content.wordMin !== null && content.wordMax !== null && content.wordMin > content.wordMax) ||
       (content.aiPolicy === "prohibited" && content.aiPurposes.length > 0) ||
@@ -130,17 +131,17 @@ export const COURSE_SETUP_HANDLERS: Handlers = {
       AI_POLICIES.indexOf(content.aiPolicy) > AI_POLICIES.indexOf(course.aiPolicy)
     )
       return { error: "invalid_input" };
-    const key = (body as { requestKey?: string }).requestKey ?? header("idempotency-key");
+    const key = requestKey.toLowerCase();
     const seen = requests.get(state) ?? new Map<string, { id: string; content: string }>();
     requests.set(state, seen);
     const text = JSON.stringify(content);
-    const earlier = key === undefined ? undefined : seen.get(key.toLowerCase());
+    const earlier = seen.get(key);
     if (earlier !== undefined) {
       if (earlier.content !== text) return { error: "conflict" };
       return { status: 201, body: { id: earlier.id } };
     }
     const id = randomUUID();
-    if (key !== undefined) seen.set(key.toLowerCase(), { id, content: text });
+    seen.set(key, { id, content: text });
     state.assignments.push({
       id,
       courseId: course.id,

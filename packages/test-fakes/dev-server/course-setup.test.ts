@@ -75,18 +75,23 @@ describe("dev fake server: course setup", () => {
     expect((await send(state, groups, { headers: student })).status).toBe(403);
   });
 
-  it("a teacher creates an assignment once per key; other content under the key is 409", async () => {
+  it("a teacher creates an assignment once per requestKey; other content under the key is 409", async () => {
     const state = createState();
     const url = `/api/v1/institution/courses/${IDS.course}/assignments`;
     const teacher = await signIn(state, "nastavnik");
-    const headers = { ...teacher, "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05" };
-    const made = await send(state, url, { body: CONTENT, headers });
+    const headers = teacher;
+    const body = { requestKey: "b15e6f70-8192-4da4-8eb5-f60718293a05", ...CONTENT };
+    const made = await send(state, url, { body, headers });
     expect(contractProblems("institution.course-assignments.post", made)).toEqual([]);
-    expect((await send(state, url, { body: CONTENT, headers })).json).toEqual(made.json);
-    expect((await send(state, url, { body: { ...CONTENT, title: "Drugi" }, headers })).status).toBe(
+    expect((await send(state, url, { body, headers })).json).toEqual(made.json);
+    expect((await send(state, url, { body: { ...body, title: "Drugi" }, headers })).status).toBe(
       409,
     );
-    const wider = { ...CONTENT, aiPolicy: "encouraged" };
+    const wider = {
+      ...body,
+      requestKey: "b15e6f70-8192-4da4-8eb5-f60718293a06",
+      aiPolicy: "encouraged",
+    };
     expect((await send(state, url, { body: wider, headers: teacher })).status).toBe(422);
   });
 });

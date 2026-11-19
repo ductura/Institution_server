@@ -207,8 +207,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: {
       path: `${C}/assignments`,
       as: "nastavnik",
-      headers: { ...ORIGIN, "idempotency-key": "b15e6f70-8192-4da4-8eb5-f60718293a05" },
-      body: (({ expectedVersion: _v, ...content }) => content)(VERSION),
+      body: (({ expectedVersion: _v, ...content }) => ({
+        requestKey: "b15e6f70-8192-4da4-8eb5-f60718293a05",
+        ...content,
+      }))(VERSION),
     },
   },
   "institution.course-group-teachers.post": {
