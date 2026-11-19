@@ -299,6 +299,20 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/student/assignment-work", as: "student" },
   },
   "student.assignments.get": { request: { path: "/api/v1/student/assignments", as: "student" } },
+  "student.enrollments.post": {
+    request: {
+      path: "/api/v1/student/enrollments",
+      as: "student-2",
+      body: { code: "UPIS2026DEMO" },
+    },
+  },
+  "student.notice-read.post": {
+    request: {
+      path: `${A.replace("/institution/", "/student/")}/notice-read`,
+      as: "student",
+      body: { versionNo: 1 },
+    },
+  },
   "submission.submit.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: {
