@@ -34,9 +34,9 @@ requireLoopbackDatabaseUrl(
   "The signing key test runs only against a loopback database (DATABASE_URL).",
 );
 const run = promisify(execFile);
-const ROOT = new URL("../../", import.meta.url);
-const SCRIPT = new URL("db/local/evidence-signing-key.mjs", ROOT);
-const SIGNER = new URL("src/adapters/crypto/persistent-development-ed25519-signer.ts", ROOT);
+const ROOT = new URL("../../../", import.meta.url);
+const SCRIPT = new URL("db/main/local/evidence-signing-key.mjs", ROOT);
+const SIGNER = new URL("server/external/keys/persistent-development-ed25519-signer.ts", ROOT);
 const suffix = randomBytes(5).toString("hex");
 const login = `it_signing_${suffix}`;
 const password = randomBytes(24).toString("hex");
