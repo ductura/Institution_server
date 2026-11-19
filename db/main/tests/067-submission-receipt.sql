@@ -7,6 +7,9 @@ SELECT no_plan();
 SELECT has_table('evidence', 'submission_receipt', 'bound receipts have their own table');
 SELECT has_function('app', 'attach_submission_receipt', ARRAY['uuid','text','jsonb'], 'the bind RPC exists');
 SELECT has_function('app', 'read_submission_receipt', ARRAY['uuid'], 'the read RPC exists');
+SELECT has_function('app', 'submission_state_of', ARRAY['uuid','uuid'], 'SRV-20: the one reader of the state exists');
+SELECT has_function('app', 'my_submission_state', ARRAY['uuid'], 'SRV-20: the student''s state RPC exists');
+SELECT has_function('app', 'my_assignment_requirements', ARRAY['uuid'], 'SRV-20: the requirements RPC exists');
 
 SELECT is(pg_temp.call('ana','pkg-a','request-1',pg_temp.descriptor(),0,repeat('a',64),repeat('d',64),repeat('b',64)),
   'reserved', 'fixture: revision one exists');
@@ -48,6 +51,16 @@ CREATE FUNCTION pg_temp.read(p_actor text, p_submission text DEFAULT '{submissio
   SELECT pg_temp.ask(p_actor, format(
     'SELECT concat_ws(''|'',outcome,receipt_payload,payload_digest_sha256,signature::text) FROM app.read_submission_receipt(%s::uuid)',
     p_submission))
+$$;
+-- SRV-20: state|revision|requestedAt|payload|digest|signature; NULL parts are left out.
+CREATE FUNCTION pg_temp.mine(p_actor text, p_assignment text DEFAULT '{z1}') RETURNS text LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, format(
+    'SELECT concat_ws(''|'',state,revision,requested_at,receipt_payload,payload_digest_sha256,signature::text) FROM app.my_submission_state(%s::uuid)',
+    p_assignment))
+$$;
+CREATE FUNCTION pg_temp.needs(p_actor text, p_assignment text DEFAULT '{z1}') RETURNS text LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, format(
+    'SELECT concat_ws(''|'',outcome,word_min,word_max) FROM app.my_assignment_requirements(%s::uuid)', p_assignment))
 $$;
 CREATE FUNCTION pg_temp.prepare(p_name text, p_key text) RETURNS text LANGUAGE sql AS $$
   INSERT INTO ref SELECT p_name, pg_temp.ask('ana', format(
@@ -103,6 +116,46 @@ WITH i AS (INSERT INTO evidence.submission_receipt_issuance
 INSERT INTO ref SELECT CASE key_id WHEN 'key-retired' THEN 'i_retired' WHEN 'key-ending' THEN 'i_ending' ELSE 'i_future' END, id::text FROM i;
 
 SELECT is(pg_temp.read('ana'),'none','own submission without a bound receipt');
+
+-- SRV-20: the state by assignment. Catalogue first: who may call what.
+SELECT bag_eq($$ SELECT r||' '||f FROM unnest(ARRAY['ductus_app','ductus_worker','ductus_retention','ductus_identity',
+  'ductus_auth','ductus_evidence','ductus_migrator','ductus_test_stranger']) r CROSS JOIN
+  unnest(ARRAY['app.submission_state_of(uuid,uuid)','app.my_submission_state(uuid)','app.my_assignment_requirements(uuid)']) f
+  WHERE has_function_privilege(r,f,'EXECUTE') $$,
+  ARRAY['ductus_identity app.submission_state_of(uuid,uuid)','ductus_evidence app.submission_state_of(uuid,uuid)',
+        'ductus_app app.my_submission_state(uuid)','ductus_identity app.my_submission_state(uuid)',
+        'ductus_app app.my_assignment_requirements(uuid)','ductus_identity app.my_assignment_requirements(uuid)'],
+  'the web role calls the two own-state RPCs, never the reader itself; owners keep their own');
+SELECT bag_eq($$ SELECT p.oid::regprocedure::text||' '||p.proowner::regrole::text||' '||p.provolatile::text
+  FROM pg_proc p WHERE p.oid IN ('app.submission_state_of(uuid,uuid)'::regprocedure,
+    'app.my_submission_state(uuid)'::regprocedure,'app.my_assignment_requirements(uuid)'::regprocedure)
+    AND p.prosecdef AND 'search_path=""'=ANY(p.proconfig) $$,
+  ARRAY['app.submission_state_of(uuid,uuid) ductus_evidence s','app.my_submission_state(uuid) ductus_identity s',
+        'app.my_assignment_requirements(uuid) ductus_identity s'],
+  'all three are STABLE SECURITY DEFINER with an empty search_path: the reader of the evidence role, the RPCs of the identity role');
+SELECT is(substr(pg_temp.ask('ana','SELECT state FROM app.submission_state_of({z1},{ana})'),1,5),'42501',
+  'the web role cannot call the reader, not even for itself');
+SELECT is(pg_temp.mine('ana'),
+  (SELECT concat_ws('|','ceka',revision,requested_at) FROM evidence.submission WHERE id=pg_temp.id('submission')),
+  'recorded, no receipt bound yet: ceka with the revision and the request time');
+SELECT is(pg_temp.mine('dora'),'none','a student of the course without a submission: none');
+SELECT is(pg_temp.mine(a),'not_found','not the caller''s own: '||a) FROM unnest(ARRAY['vesna','marko','boris','tomo','iva']) a;
+SELECT is(pg_temp.mine('ana','{nobody}'),'not_found','unknown assignment: the same answer');
+SELECT is(pg_temp.mine('ana','NULL'),'not_found','null assignment: the same answer');
+SELECT is(pg_temp.mine('ana','{z3}'),'not_found','an assignment of another institution: the same answer');
+SELECT is(substr(pg_temp.mine('anon'),1,5),'ZD401','no session');
+SELECT is(pg_temp.needs('ana'),'found','no range on the current version: both bounds null');
+SELECT is(pg_temp.needs(a),'not_found','requirements, not a student of the course: '||a)
+  FROM unnest(ARRAY['vesna','marko','boris','tomo']) a;
+SELECT is(pg_temp.needs('ana','{nobody}'),'not_found','requirements of an unknown assignment');
+SELECT is(substr(pg_temp.needs('anon'),1,5),'ZD401','requirements without a session');
+-- The fixture made every constraint immediate; create_assignment writes the
+-- assignment before its first version.
+SET CONSTRAINTS institution.assignment_current_version_institution_fkey DEFERRED;
+INSERT INTO ref SELECT 'z_range', pg_temp.ask('vesna', $$ SELECT institution.create_assignment({k1},'Raspon','Upute za izmišljeni zadatak.',
+  'essay',now(),now()+interval '30 days','partially_allowed',ARRAY['proofreading'],'extended',true,300,900)::text $$);
+SELECT is(pg_temp.needs(a,'{z_range}'),'found|300|900','the range of the current version: '||a) FROM unnest(ARRAY['ana','dora']) a;
+SELECT is(pg_temp.mine('ana','{z_range}'),'none','another assignment of the course: none');
 SELECT is(pg_temp.attach('anon','i1',pg_temp.sig('key-a')),'unauthorized','no session binds nothing');
 SELECT is(pg_temp.attach('ana',NULL,pg_temp.sig('key-a'),repeat('0',64)),'invalid','null attempt');
 SELECT is(pg_temp.attach('ana','i1',pg_temp.sig('key-a'),upper(pg_temp.h('x'))),'invalid','upper-case digest');
@@ -146,6 +199,11 @@ SELECT results_eq($$ SELECT row_to_json(r)::text FROM evidence.submission_receip
   $$ SELECT row_to_json(b)::text FROM bound b $$,'one row, unchanged');
 SELECT is(pg_temp.read('ana'),(SELECT concat_ws('|','found',receipt_payload,payload_digest_sha256,signature::text) FROM bound),
   'read returns the stored row');
+SELECT is(pg_temp.mine('ana'),(SELECT concat_ws('|','potvrdeno',x.revision,x.requested_at,b.receipt_payload,
+    b.payload_digest_sha256,b.signature::text) FROM bound b JOIN evidence.submission x ON x.id=b.submission_id),
+  'SRV-20: potvrdeno with the bound receipt byte for byte');
+SELECT is(pg_temp.mine('dora'),'none','SRV-20: another student still sees only the own state');
+SELECT is((SELECT count(*) FROM audit.access_log),0::bigint,'SRV-20: the student''s reads log nothing');
 SELECT is(pg_temp.read(a),'not_found','read: '||a) FROM unnest(ARRAY['boris','vesna','tomo']) a;
 SELECT is(pg_temp.read('ana','{nobody}'),'not_found','read: unknown submission');
 SELECT is(pg_temp.read('ana','NULL'),'not_found','read: null submission');
@@ -198,5 +256,7 @@ UPDATE institution.course_member SET member_to=greatest(now(),member_from)
   WHERE course_id=pg_temp.id('k1') AND user_id=pg_temp.id('ana');
 SELECT is(pg_temp.attach('ana','i2',pg_temp.sig('key-a')),'not_found','removed student cannot bind');
 SELECT is(split_part(pg_temp.read('ana'),'|',1),'found','removed student still reads the stored receipt');
+SELECT is(pg_temp.mine('ana'),'not_found','SRV-20: a removed student has no state on the assignment');
+SELECT is(pg_temp.needs('ana'),'not_found','SRV-20: nor its requirements');
 SELECT * FROM finish();
 ROLLBACK;

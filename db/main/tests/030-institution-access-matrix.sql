@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1603);
+SELECT plan(1625);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -276,6 +276,50 @@ SELECT is_empty(
      WHERE p.pronamespace = 'institution'::regnamespace
        AND (p.proowner <> 'ductus_identity'::regrole OR NOT coalesce('search_path=""' = ANY (p.proconfig), false)) $$,
   'every institution function belongs to the NOLOGIN owner role and pins an empty search_path'
+);
+
+-- 1b. SRV-20: the submission state by assignment lives in schema app; its
+-- reader app.submission_state_of is never the web role's. One cell per actor
+-- of the fixture on Z1 of K1 (no submission in this fixture, so a student of
+-- the course reads none) and on Z3 of fak-b.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.submission_state_of(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-20: only its owner and the identity role execute app.submission_state_of, never ductus_app'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.my_submission_state(uuid)', 'app.my_assignment_requirements(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-20: only ductus_app and the owner execute the two own-state RPCs'
+);
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT state FROM app.my_submission_state(%s)', c.assignment)), c.state,
+  format('SRV-20: %s reads the own submission state on %s: %s', c.actor, c.assignment, c.state)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'none'), ('dora', '{z1}', 'none'), ('vesna', '{z1}', 'not_found'), ('marko', '{z1}', 'not_found'),
+  ('boris', '{z1}', 'not_found'), ('iva', '{z1}', 'not_found'), ('nina', '{z1}', 'not_found'),
+  ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'none'), ('ana', '{z3}', 'not_found'), ('petra', '{z3}', 'not_found')
+) AS c (actor, assignment, state);
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT outcome FROM app.my_assignment_requirements(%s)', c.assignment)), c.outcome,
+  format('SRV-20: %s reads the requirements of %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'found'), ('dora', '{z1}', 'found'), ('vesna', '{z1}', 'not_found'), ('marko', '{z1}', 'not_found'),
+  ('boris', '{z1}', 'not_found'), ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'found'), ('petra', '{z3}', 'not_found')
+) AS c (actor, assignment, outcome);
+SELECT is(
+  substr(pg_temp.ask('ana', 'SELECT state FROM app.submission_state_of({z1}, {ana})'), 1, 5), '42501',
+  'SRV-20: the web role cannot call the reader of the state'
 );
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
