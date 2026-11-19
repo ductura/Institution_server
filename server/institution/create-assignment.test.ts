@@ -2,12 +2,12 @@ import fc from "fast-check";
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { noticeFingerprint } from "@/domain/notice/fingerprint";
+import { noticeFingerprint } from "../domain/notice/fingerprint.ts";
 
-import { SESSION_COOKIE_NAME } from "@/server/auth/session-token";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { createAssignmentPostHandler } from "./assignment-route";
-import { createAssignmentResponse, parseAssignmentInput } from "./create-assignment";
+import { SESSION_COOKIE_NAME } from "../session/session-token.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { createAssignmentPostHandler } from "./assignment-route.ts";
+import { createAssignmentResponse, parseAssignmentInput } from "./create-assignment.ts";
 
 type QueryRow = Record<string, unknown>;
 

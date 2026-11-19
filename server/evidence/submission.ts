@@ -1,15 +1,12 @@
-import {
-  decideSubmission,
-  type SubmissionBlockReason,
-} from "@/application/evidence/submission-decision";
-import type { InstitutionEvidencePayloadReader } from "@/application/ports/evidence-reconstruction";
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
-import { isSubmissionInstant } from "@/domain/forensics/submission-receipt";
-import type { SignedSubmissionReceiptV2 } from "@/domain/forensics/submission-receipt-v2";
-import type { WithActor } from "@/server/db/with-actor";
+import { decideSubmission, type SubmissionBlockReason } from "./submission-decision.ts";
+import type { InstitutionEvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
+import { isSubmissionInstant } from "../domain/forensics/submission-receipt.ts";
+import type { SignedSubmissionReceiptV2 } from "../domain/forensics/submission-receipt-v2.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
-import { issueSubmissionReceiptV2 } from "./submission-receipt";
-import { reconstructSubmissionRecord } from "./submission-record";
+import { issueSubmissionReceiptV2 } from "./submission-receipt.ts";
+import { reconstructSubmissionRecord } from "./submission-record.ts";
 
 /**
  * B-12 step 4b2 (docs/BACKEND.md 4.6; contract on #385): a student's

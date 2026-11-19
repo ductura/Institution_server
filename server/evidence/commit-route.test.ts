@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
-import { MAX_DOCUMENT_SNAPSHOT_BYTES } from "@/domain/document/snapshot";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
+import { MAX_DOCUMENT_SNAPSHOT_BYTES } from "../domain/document/snapshot.ts";
 import {
   DUCTUS_ASYNC_COMMIT_PROTOCOL,
   MAX_COMMIT_REQUEST_BYTES,
-} from "@/domain/evidence/commit-envelope";
-import { MAX_EVIDENCE_SEGMENT_BYTES } from "@/domain/forensics/evidence-chain-v2";
-import { loadGoldenVectors } from "@/domain/forensics/golden-vectors/load";
-import type { EvidenceReceiptPayloadV2 } from "@/domain/forensics/evidence-receipt";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+} from "../domain/evidence/commit-envelope.ts";
+import { MAX_EVIDENCE_SEGMENT_BYTES } from "../domain/forensics/evidence-chain-v2.ts";
+import { loadGoldenVectors } from "../domain/forensics/golden-vectors/load.ts";
+import type { EvidenceReceiptPayloadV2 } from "../domain/forensics/evidence-receipt.ts";
+import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
 import {
   commitResponse,

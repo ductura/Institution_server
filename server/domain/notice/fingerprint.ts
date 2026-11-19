@@ -1,4 +1,4 @@
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
+import { canonicalizeJcs } from "../forensics/jcs.ts";
 
 /**
  * The fingerprint of the assignment notice a student acknowledges (DAN-306,

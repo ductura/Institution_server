@@ -1,27 +1,27 @@
 import { describe, expect, it } from "vitest";
 
-import { DevelopmentEd25519SigningKeyProvider } from "@/adapters/crypto/development-ed25519-signer";
-import { InMemoryEvidenceAcceptanceRepository } from "@/adapters/evidence/in-memory-evidence-acceptance-repository";
-import { InMemoryEvidenceContextPort } from "@/adapters/evidence/in-memory-evidence-context";
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
-import type { AuthorizationPort } from "@/application/ports/authorization";
+import { DevelopmentEd25519SigningKeyProvider } from "../external/keys/development-ed25519-signer.ts";
+import { InMemoryEvidenceAcceptanceRepository } from "../external/storage/in-memory-evidence-acceptance-repository.ts";
+import { InMemoryEvidenceContextPort } from "../external/storage/in-memory-evidence-context.ts";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import type { AuthorizationPort } from "../application/ports/authorization.ts";
 import type {
   AcceptedEvidenceSegment,
   EvidenceChainReader,
   EvidencePayloadReader,
-} from "@/application/ports/evidence-reconstruction";
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
-import { sha256WebCrypto } from "@/domain/forensics/crypto";
+} from "../application/ports/evidence-reconstruction.ts";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
+import { sha256WebCrypto } from "../domain/forensics/crypto.ts";
 import {
   MAX_EVIDENCE_SEGMENT_BYTES,
   type EvidenceChainHeadV2,
-} from "@/domain/forensics/evidence-chain-v2";
-import { digestEvidenceReceiptPayload } from "@/domain/forensics/evidence-receipt";
+} from "../domain/forensics/evidence-chain-v2.ts";
+import { digestEvidenceReceiptPayload } from "../domain/forensics/evidence-receipt.ts";
 import {
   digestCanonicalDocumentV2,
   replayEvidenceSegmentsV2,
   type EvidenceStepReplayerV2,
-} from "@/domain/forensics/evidence-replay-v2";
+} from "../domain/forensics/evidence-replay-v2.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
@@ -29,14 +29,14 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceEventV2,
   type EvidenceSegmentV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
-import { createForensicEvent } from "@/domain/forensics/ledger";
-import { applyForensicEvent, type ReplayDocument } from "@/domain/forensics/replay";
-import { EvidenceGateway } from "./evidence-gateway";
-import { buildEvidenceIngestCommandV2 } from "./evidence-outbox";
-import { reconstructAndCompareEvidence } from "./evidence-reconstruction";
-import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "@/domain/document/edit-step";
+} from "../domain/forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
+import { createForensicEvent } from "../domain/forensics/ledger.ts";
+import { applyForensicEvent, type ReplayDocument } from "../domain/forensics/replay.ts";
+import { EvidenceGateway } from "./evidence-gateway.ts";
+import { buildEvidenceIngestCommandV2 } from "./evidence-outbox.ts";
+import { reconstructAndCompareEvidence } from "./evidence-reconstruction.ts";
+import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "../domain/document/edit-step.ts";
 
 // A synthetic institution; no real one is used in tests.
 const INSTITUTION_ID = "00000000-0000-4000-8000-00000000000a";

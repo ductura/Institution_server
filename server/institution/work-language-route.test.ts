@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { withActor as appWithActor } from "@/server/db";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { withActor as appWithActor } from "../database/index.ts";
 import { POST as ASSIGNMENT_POST } from "../../../app/api/institution/assignments/[assignmentId]/work-language/route";
 import { POST as WORK_POST } from "../../../app/api/institution/assignments/[assignmentId]/students/[studentId]/work-language/route";
 import { POST as DOCUMENT_POST } from "../../../app/api/institution/assignments/[assignmentId]/works/[documentId]/work-language/route";
@@ -12,12 +12,12 @@ import {
   handleWorkLanguageRequest,
   MAX_WORK_LANGUAGE_BODY_BYTES,
   type WorkLanguageRouteDeps,
-} from "./work-language-route";
+} from "./work-language-route.ts";
 
 // DAN-386 (M2.10-P02b, contract on #1091): the classes of input of both work
 // language routes, written before the routes. Each class names its status and
 // error, and whether the database may be reached at all.
-vi.mock("@/server/db", () => ({ withActor: vi.fn() }));
+vi.mock("../database/index.ts", () => ({ withActor: vi.fn() }));
 const ORIGIN = "https://ductus.example";
 const ASSIGNMENT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const STUDENT = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";

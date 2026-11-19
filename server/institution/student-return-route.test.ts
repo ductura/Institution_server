@@ -1,12 +1,15 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { withActor as appWithActor } from "@/server/db";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { withActor as appWithActor } from "../database/index.ts";
 import { POST } from "../../../app/api/institution/courses/[courseId]/students/[studentId]/return-permission/route";
-import { handleStudentReturnRequest, MAX_STUDENT_RETURN_BODY_BYTES } from "./student-return-route";
+import {
+  handleStudentReturnRequest,
+  MAX_STUDENT_RETURN_BODY_BYTES,
+} from "./student-return-route.ts";
 
-vi.mock("@/server/db", () => ({ withActor: vi.fn() }));
+vi.mock("../database/index.ts", () => ({ withActor: vi.fn() }));
 const ORIGIN = "https://ductus.example";
 const COURSE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const STUDENT = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";

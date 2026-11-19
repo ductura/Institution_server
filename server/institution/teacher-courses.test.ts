@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { coursesOf, handleTeacherCoursesRequest, readTeacherCourses } from "./teacher-courses";
+import { coursesOf, handleTeacherCoursesRequest, readTeacherCourses } from "./teacher-courses.ts";
 
 // Invented courses and assignments only.
 const ORIGIN = "http://localhost:3000";
