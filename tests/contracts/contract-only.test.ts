@@ -16,6 +16,7 @@ import {
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
+  createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   routesOf,
@@ -141,6 +142,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createInstitutionCourseRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-13: the teacher's courses and access over the main database.
+    call: "createTeacherReadRoutesFor(databases.main)",
+    ids: ["teacher.courses.get", "teacher.access.get"],
+    routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
     call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
     ids: [
@@ -229,11 +236,11 @@ describe("CONTRACT_ONLY", () => {
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
     expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
-      // problem report (851-2d2a), the course routes (852-5a) and the
-      // download manifest (DAN-932) are missing too.
+      // problem report (851-2d2a), the course routes (852-5a), the download
+      // manifest (DAN-932) and the teacher's reads (SRV-13) are missing too.
       [
-        ...["support.problem-report.post", ...INSTITUTION_COURSE_ROUTES, ...DAN_806, ...DAN_840],
-        ...DAN_931,
+        ...["support.problem-report.post", "teacher.courses.get", ...INSTITUTION_COURSE_ROUTES],
+        ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_931],
       ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
   });
@@ -257,6 +264,8 @@ describe("routes the entry point mounts itself", () => {
       "downloads.manifest.get",
       "support.problem-report.post",
       ...INSTITUTION_COURSE_ROUTES,
+      "teacher.courses.get",
+      "teacher.access.get",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

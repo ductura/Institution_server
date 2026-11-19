@@ -142,6 +142,11 @@ export {
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
 export {
+  createTeacherAccessRoute,
+  createTeacherCoursesRoute,
+  createTeacherReadRoutesFor,
+} from "./teacher-reads.ts";
+export {
   bearerMatches,
   checkProvisionBody,
   createInternalInstitutionRoutes,

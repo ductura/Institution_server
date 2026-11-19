@@ -116,6 +116,19 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+export {
+  createTeacherAccessReader,
+  createTeacherCoursesReader,
+  teacherCoursesOf,
+} from "./teacher-reads.ts";
+export type {
+  TeacherAccessReader,
+  TeacherAccessResult,
+  TeacherAssignment,
+  TeacherCourse,
+  TeacherCoursesReader,
+  TeacherCoursesResult,
+} from "./teacher-reads.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export {

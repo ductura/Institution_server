@@ -23,6 +23,7 @@ import {
   createInstitutionCourseRoutesFor,
   createInternalInstitutionRoutes,
   createMeRouteFor,
+  createTeacherReadRoutesFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createWebAuthnRoutesFor,
@@ -140,6 +141,8 @@ async function main(): Promise<void> {
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
+      // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
+      ...createTeacherReadRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
       ...createInternalInstitutionRoutes({ env: process.env }),
