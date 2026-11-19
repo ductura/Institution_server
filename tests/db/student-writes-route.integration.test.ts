@@ -162,5 +162,8 @@ describe("SRV-10: enrolment with the seed's codes and the notice read", () => {
     expect(Date.parse(String(read.body.readAt))).not.toBeNaN();
     expect(await readNotice(assignment.version)).toEqual(read);
     expect((await readNotice(assignment.version, tokens.stranger)).status).toBe(404);
+    // A well-formed cookie with no session behind it is 401, not the 404 of a hidden assignment.
+    const unknown = randomBytes(32).toString("base64url");
+    expect((await readNotice(assignment.version, unknown)).status).toBe(401);
   });
 });
