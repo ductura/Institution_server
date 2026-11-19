@@ -12,7 +12,8 @@
     "./services": "./services/index.ts",
     "./fido2": "./fido2/index.ts",
     "./hostile-inputs": "./hostile-inputs/index.ts",
-    "./pglite": "./pglite/index.ts"
+    "./pglite": "./pglite/index.ts",
+    "./dev-server": "./dev-server/index.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.3.14",
