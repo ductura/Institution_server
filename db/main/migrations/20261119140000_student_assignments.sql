@@ -1,0 +1,126 @@
+-- migrate:up
+-- SRV-08 (Ductus#2028, c.7008147932; owner answer A-3 of 19 Nov 2026): the
+-- student's assignments with what the "Moji zadaci" screen shows beside each
+-- one. It takes no parameter: who asks comes only from the session. One row
+-- per assignment of every course where the caller holds an open student
+-- membership in their own institution (the reach of app.student_workspace,
+-- 20261102150000); nothing of a course the caller is not enrolled in.
+--
+-- Beside the assignment's current version it gives:
+--   academic_year    of the course
+--   work_type        of the current version
+--   extended_due_at  always NULL: no extended deadline is stored yet; the
+--                    column is here so the read does not change shape when it is
+--   groups           names of the caller's own open seminar group places in the
+--                    course, sorted; never another student's
+--   mentors          [{id, name}] of the open, confirmed teachers of those groups
+--   teachers         [{id, name, role}] of the open, confirmed teachers of the
+--                    course, role 'holder' for the open holder, else 'collaborator'
+--   acknowledged     the caller acknowledged the current version's notice
+--   notice_read      the caller marked the notice as read (20261119130000)
+-- A name is "given family" from identity.person_name, NULL while there is none.
+-- No other student is named. SECURITY DEFINER because ductus_app may not read
+-- names, holders or group teachers; every predicate is written out here.
+SET LOCAL ROLE ductus_migrator;
+-- Only while this migration runs; revoked at the end.
+GRANT CREATE ON SCHEMA institution TO ductus_identity;
+SET LOCAL ROLE ductus_identity;
+
+CREATE FUNCTION institution.student_assignments()
+RETURNS TABLE (
+  assignment_id uuid,
+  course_id uuid,
+  course_name text,
+  academic_year text,
+  title text,
+  work_type text,
+  opens_at timestamptz,
+  due_at timestamptz,
+  extended_due_at timestamptz,
+  current_version integer,
+  acknowledged boolean,
+  notice_read boolean,
+  groups text[],
+  mentors jsonb,
+  teachers jsonb
+)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE
+  v_user uuid;
+  v_institution uuid;
+BEGIN
+  -- ZD401 without a live session.
+  SELECT r.user_id, r.institution_id INTO v_user, v_institution FROM institution.require_actor() r;
+  RETURN QUERY
+  SELECT a.id, c.id, c.name, c.academic_year, v.title, v.work_type, v.opens_at, v.due_at,
+    NULL::timestamptz,
+    a.current_version,
+    EXISTS (
+      SELECT 1 FROM institution.notice_acknowledgment n
+       WHERE n.assignment_id = a.id AND n.version_no = a.current_version
+         AND n.student_id = v_user AND n.institution_id = v_institution),
+    EXISTS (
+      SELECT 1 FROM institution.notice_read r
+       WHERE r.assignment_id = a.id AND r.student_id = v_user AND r.institution_id = v_institution),
+    coalesce((
+      SELECT array_agg(g.name ORDER BY g.name)
+        FROM institution.seminar_group_member s
+        JOIN institution.seminar_group g ON g.id = s.group_id AND g.institution_id = v_institution
+       WHERE s.course_id = c.id AND s.user_id = v_user AND s.institution_id = v_institution
+         AND s.valid_to IS NULL), '{}'::text[]),
+    coalesce((
+      SELECT jsonb_agg(jsonb_build_object('id', t.user_id, 'name', t.name) ORDER BY t.user_id)
+        FROM (SELECT DISTINCT gt.user_id, nullif(concat_ws(' ', pn.given_name, pn.family_name), '') AS name
+                FROM institution.seminar_group_member s
+                JOIN institution.seminar_group_teacher gt
+                  ON gt.group_id = s.group_id AND gt.institution_id = v_institution AND gt.valid_to IS NULL
+                LEFT JOIN identity.person_name pn
+                  ON pn.user_id = gt.user_id AND pn.institution_id = v_institution
+               WHERE s.course_id = c.id AND s.user_id = v_user AND s.institution_id = v_institution
+                 AND s.valid_to IS NULL
+                 -- A group place outlives a revoked teacher role (revoke_teacher_role).
+                 AND institution.is_confirmed_teacher(gt.user_id, c.id)) t), '[]'::jsonb),
+    coalesce((
+      SELECT jsonb_agg(jsonb_build_object('id', t.user_id, 'name', t.name, 'role', t.role)
+                       ORDER BY t.role DESC, t.user_id)
+        FROM (SELECT tm.user_id, nullif(concat_ws(' ', pn.given_name, pn.family_name), '') AS name,
+                     CASE WHEN EXISTS (
+                       SELECT 1 FROM institution.course_holder h
+                        WHERE h.course_id = c.id AND h.institution_id = v_institution
+                          AND h.user_id = tm.user_id AND h.valid_to IS NULL)
+                     THEN 'holder' ELSE 'collaborator' END AS role
+                FROM institution.course_member tm
+                LEFT JOIN identity.person_name pn
+                  ON pn.user_id = tm.user_id AND pn.institution_id = v_institution
+               WHERE tm.course_id = c.id AND tm.institution_id = v_institution
+                 AND tm.role = 'teacher' AND tm.member_to IS NULL
+                 AND institution.is_confirmed_teacher(tm.user_id, c.id)) t), '[]'::jsonb)
+    FROM institution.course_member m
+    JOIN institution.course c
+      ON c.id = m.course_id AND c.institution_id = v_institution
+    JOIN institution.assignment a
+      ON a.course_id = c.id AND a.institution_id = v_institution
+    JOIN institution.assignment_version v
+      ON v.assignment_id = a.id AND v.version_no = a.current_version
+   WHERE m.user_id = v_user AND m.institution_id = v_institution
+     AND m.role = 'student' AND m.member_to IS NULL
+   ORDER BY c.id, v.due_at, a.id;
+END
+$$;
+
+REVOKE ALL ON FUNCTION institution.student_assignments() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION institution.student_assignments() TO ductus_app;
+
+RESET ROLE;
+SET LOCAL ROLE ductus_migrator;
+REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
+
+-- migrate:down
+-- Local only; staging and production only go forward (docs/BACKEND.md §6).
+SET LOCAL ROLE ductus_migrator;
+GRANT CREATE ON SCHEMA institution TO ductus_identity;
+SET LOCAL ROLE ductus_identity;
+DROP FUNCTION institution.student_assignments();
+RESET ROLE;
+SET LOCAL ROLE ductus_migrator;
+REVOKE CREATE ON SCHEMA institution FROM ductus_identity;

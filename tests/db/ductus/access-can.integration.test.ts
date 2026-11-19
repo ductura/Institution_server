@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-351 (M2.7-P02, with M2.15-P03): institution.can(action, document) as a
 // new caller reaches it, through the real withActor over a ductus_app login.

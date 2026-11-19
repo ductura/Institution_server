@@ -10,7 +10,7 @@ import { POST as DOCUMENT_POST } from "../../app/api/institution/assignments/[as
 import { readWorkLanguageException } from "@/components/teacher/work-language-exception-read";
 import { createWithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-386 (M2.10-P02b, contract on #1091): both work language routes through
 // the real POST, session cookie, ductus_app login and the existing RPCs. Every

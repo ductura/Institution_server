@@ -2,10 +2,13 @@ import fc from "fast-check";
 import pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
-import { isRangeHash, isRevisionText } from "@/domain/collaboration/revision-input";
+import {
+  isRangeHash,
+  isRevisionText,
+} from "../../../server/domain/collaboration/revision-input.ts";
 
-import { BLANKS, TEXT_CASES } from "../unit/revision-text-cases";
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { BLANKS, TEXT_CASES } from "../../unit/revision-text-cases.ts";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-314 step 2d (contract on #1091, c.6696530499; plan of attack #1506
 // class 8, docs/backend/suradnja.md 4.14 G1 to G9): the route refuses early

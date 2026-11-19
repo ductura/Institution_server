@@ -17,8 +17,8 @@ import {
   type JobQueueSettings,
 } from "../../../server/database/queue/job-queue.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
-import { holdWorkerPresence } from "./worker-presence";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { holdWorkerPresence } from "./worker-presence.ts";
 
 // DAN-517, attack plan #1826: the worker's side of the queue against the real
 // schema the migrations install, under logins made and dropped here. Every

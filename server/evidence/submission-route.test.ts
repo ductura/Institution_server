@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { InMemoryEvidencePayloadStore } from "@/adapters/evidence/in-memory-evidence-payload-store";
-import type { SigningKeyProvider } from "@/application/ports/signing-key-provider";
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
+import { InMemoryEvidencePayloadStore } from "../external/storage/in-memory-evidence-payload-store.ts";
+import type { SigningKeyProvider } from "../external/keys/signing-key-provider.ts";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import type { SubmissionOutcome } from "./submission";
+import type { SubmissionOutcome } from "./submission.ts";
 import {
   handleSubmissionRequest,
   submissionResponse,
   type SubmissionRouteDeps,
-} from "./submission-route";
+} from "./submission-route.ts";
 
 // B-12 step 4b2: invented ids; the database is a script of rows.
 const ORIGIN = "http://localhost:3000";

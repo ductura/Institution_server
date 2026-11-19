@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 // The in-memory state of the dev fake server and its invented starting data.
 // People, courses, codes and the assignment are the values of SRV-01
 // (db/main/local/seed.sql and db/main/local/lazni-oidc-racuni.json on
@@ -90,6 +92,90 @@ export type Work = {
   readonly assignmentId: string;
   readonly studentId: string;
   state: "in_progress" | "submitted";
+  /** Revision of the saved text (evidence commits move it). */
+  revision: number;
+  lastChangeAt: string | null;
+  /** When the submission was asked for, or null. */
+  submittedAt: string | null;
+  /** The document of `revision`: standard base64 of its JSON bytes. */
+  document: string;
+  /** Segment texts in chain order (decoded from the commits). */
+  segments: string[];
+  lastSequenceTo: number;
+  /** Client transaction id -> the revision it made. */
+  transactions: Map<string, number>;
+  /** The live state (live.document.put) and its token, or null. */
+  live: { readonly json: string; readonly token: string } | null;
+};
+
+/** An empty document of one paragraph, as base64 of its JSON bytes. */
+export const EMPTY_DOCUMENT = Buffer.from(
+  '{"nodes":[{"children":[],"id":"0a000000-0000-4000-8000-000000000001","type":"paragraph"}],"schemaVersion":1}',
+).toString("base64");
+
+export type Comment = {
+  readonly id: string;
+  readonly threadId: string;
+  readonly documentId: string;
+  readonly authorId: string;
+  readonly body: string;
+  /** The anchor of the thread's first comment, else null. */
+  readonly anchor: Record<string, unknown> | null;
+  readonly at: string;
+  deletedAt: string | null;
+};
+
+export type RevisionRequest = {
+  readonly id: string;
+  readonly documentId: string;
+  readonly openerId: string;
+  readonly openedAt: string;
+  readonly anchor: Record<string, unknown>;
+  instruction: string;
+  requestedRevision: number;
+  state: "open" | "responded" | "accepted" | "reopened" | "withdrawn";
+  seq: number;
+  version: number;
+  response: {
+    kind: "done" | "declined";
+    explanation: string;
+    revision: number;
+    byId: string;
+    at: string;
+  } | null;
+  closing: {
+    as: "accepted" | "reopened" | "withdrawn";
+    byId: string;
+    at: string;
+    acceptedRevision: number | null;
+    rangeHash: string | null;
+  } | null;
+};
+
+export type Mentorship = {
+  readonly id: string;
+  readonly mentorId: string;
+  readonly studentId: string;
+  readonly assignmentId: string;
+  readonly title: string;
+  readonly workType: "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis";
+  documentId: string | null;
+};
+
+export type AccessEntry = {
+  readonly id: string;
+  readonly documentId: string;
+  readonly readerId: string;
+  readonly at: string;
+  readonly role: "teacher" | "mentor" | "seminar_teacher" | "unknown";
+  readonly surface:
+    "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown";
+};
+
+export type SettingValue = {
+  value: boolean | number | string | null;
+  bound: { locked: true } | { min?: number; max?: number } | null;
+  updatedAt: string;
 };
 
 export type State = {
@@ -101,6 +187,17 @@ export type State = {
   works: Work[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
+  mentorships: Mentorship[];
+  /** Openings of a work by a reader, newest last. */
+  accessLog: AccessEntry[];
+  /** Setting rows by "<level>:<course or ->:<owner>:<key>". */
+  settings: Map<string, SettingValue>;
+  /** Problem reports sent, by account id. */
+  reports: Map<string, number>;
+  comments: Comment[];
+  /** Thread id -> its state. */
+  threads: Map<string, "open" | "answered" | "resolved">;
+  revisionRequests: RevisionRequest[];
 };
 
 /**
@@ -136,6 +233,9 @@ export const IDS = {
   groupB: "9a000000-0000-4000-8000-00000000000b",
   assignment: "a5000000-0000-4000-8000-000000000001",
   document: "d0000000-0000-4000-8000-000000000001",
+  mentorship: "3e000000-0000-4000-8000-000000000001",
+  thesis: "a5000000-0000-4000-8000-000000000002",
+  accessEntry: "ac000000-0000-4000-8000-000000000001",
 } as const;
 
 /** The enrolment codes of the starting data (the fixed texts of SRV-01). */
@@ -233,9 +333,43 @@ export function createState(): State {
         assignmentId: IDS.assignment,
         studentId: IDS.student,
         state: "in_progress",
+        revision: 0,
+        lastChangeAt: "2026-11-09T19:55:00.000Z",
+        submittedAt: null,
+        document: EMPTY_DOCUMENT,
+        segments: [],
+        lastSequenceTo: 0,
+        transactions: new Map(),
+        live: null,
       },
     ],
     enrollmentGuesses: new Map(),
+    mentorships: [
+      {
+        id: IDS.mentorship,
+        mentorId: IDS.teacher,
+        studentId: IDS.student,
+        assignmentId: IDS.thesis,
+        title: "Završni rad: zelene površine u izmišljenom gradu",
+        workType: "bachelor_thesis",
+        documentId: null,
+      },
+    ],
+    accessLog: [
+      {
+        id: IDS.accessEntry,
+        documentId: IDS.document,
+        readerId: IDS.teacher,
+        at: "2026-11-10T08:05:00.000Z",
+        role: "teacher",
+        surface: "fast_path",
+      },
+    ],
+    settings: new Map(),
+    reports: new Map(),
+    comments: [],
+    threads: new Map(),
+    revisionRequests: [],
   };
 }
 
@@ -248,6 +382,58 @@ export function accountByKey(state: State, key: AccountKey): Account {
 /** Teachers of a course: its holder and the teachers of its groups. */
 export function courseTeachers(course: Course): string[] {
   return [course.holderId, ...course.groups.flatMap((g) => g.teacherIds)];
+}
+
+/** The course of a work, when it exists. */
+export function courseOfWork(state: State, work: Work): Course | undefined {
+  const assignment = state.assignments.find((a) => a.id === work.assignmentId);
+  return state.courses.find((c) => c.id === assignment?.courseId);
+}
+
+/**
+ * How an account may read a work: as its student, as a teacher who may see
+ * that student (visibleStudents), or not at all.
+ */
+export function readerOf(state: State, work: Work | undefined, account: Account | null) {
+  if (work === undefined || account === null) return null;
+  if (work.studentId === account.id) return "owner" as const;
+  const course = courseOfWork(state, work);
+  return course !== undefined && visibleStudents(course, account).includes(work.studentId)
+    ? ("teacher" as const)
+    : null;
+}
+
+/**
+ * The students of a course whose works `account` may see: all of them for the
+ * holder, only those of the teacher's own groups for a group teacher
+ * (app.teacher_assignment_students through institution.actor_group_work).
+ */
+export function visibleStudents(course: Course, account: Account): string[] {
+  if (!teachesCourse(course, account)) return [];
+  if (course.holderId === account.id) return [...course.studentIds];
+  const own = course.groups.filter((g) => g.teacherIds.includes(account.id));
+  return course.studentIds.filter((id) => own.some((g) => g.studentIds.includes(id)));
+}
+
+/**
+ * Records that a reader opened a work, as the access log stores it: on the
+ * five-minute grid, one row per reader, work, surface and window.
+ */
+export function recordOpening(
+  state: State,
+  entry: Omit<AccessEntry, "id" | "at">,
+  now: Date,
+): void {
+  const time = now.getTime();
+  const at = new Date(time - (time % 300_000)).toISOString();
+  const same = state.accessLog.some(
+    (e) =>
+      e.documentId === entry.documentId &&
+      e.readerId === entry.readerId &&
+      e.surface === entry.surface &&
+      e.at === at,
+  );
+  if (!same) state.accessLog.push({ ...entry, id: randomUUID(), at });
 }
 
 /**

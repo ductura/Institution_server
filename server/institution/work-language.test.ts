@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ActorTransaction, WithActor } from "@/server/db/with-actor";
-import { readWorkLanguage, setAssignmentWorkLanguage, setWorkLanguage } from "./work-language";
+import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
+import { readWorkLanguage, setAssignmentWorkLanguage, setWorkLanguage } from "./work-language.ts";
 
 const ASSIGNMENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const STUDENT = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";

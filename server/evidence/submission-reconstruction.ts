@@ -1,25 +1,25 @@
-import type { EvidencePayloadReader } from "@/application/ports/evidence-reconstruction";
-import { DOCUMENT_SCHEMA_VERSION, DOCUMENT_SCHEMA_VERSION_V2 } from "@/domain/document/schema";
-import { REVISION_ZERO_JCS, REVISION_ZERO_V2_JCS } from "@/domain/document/revision-zero";
+import type { EvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
+import { DOCUMENT_SCHEMA_VERSION, DOCUMENT_SCHEMA_VERSION_V2 } from "../domain/document/schema.ts";
+import { REVISION_ZERO_JCS, REVISION_ZERO_V2_JCS } from "../domain/document/revision-zero.ts";
 import {
   digestEvidenceReceiptPayloadV2,
   isEvidenceReceiptPayloadV2,
   isSignedEvidenceReceiptV2,
   type EvidenceReceiptPayloadV2,
-} from "@/domain/forensics/evidence-receipt";
+} from "../domain/forensics/evidence-receipt.ts";
 import {
   EVIDENCE_VERIFICATION_UNAVAILABLE,
   verifySignedEvidenceReceiptV2,
   type EvidenceDomainKey,
-} from "@/domain/forensics/evidence-receipt-verifier";
-import type { EvidenceStepReplayerV2 } from "@/domain/forensics/evidence-replay-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../domain/forensics/evidence-receipt-verifier.ts";
+import type { EvidenceStepReplayerV2 } from "../domain/forensics/evidence-replay-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../domain/forensics/jcs.ts";
 
 import {
   reconstructAndCompareEvidence,
   type EvidenceReceiptCheck,
   type EvidenceReconstructionOutcome,
-} from "./evidence-reconstruction";
+} from "./evidence-reconstruction.ts";
 
 /**
  * B-12 step 4b1 (docs/BACKEND.md 4.6, 4.10 t. 1 and 3; contract on #385):

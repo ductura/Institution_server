@@ -1,7 +1,7 @@
 import type {
   EvidenceChainReadResult,
   EvidenceChainReader,
-} from "@/application/ports/evidence-reconstruction";
+} from "../../application/ports/evidence-reconstruction.ts";
 import type {
   EvidenceAcceptanceIdentity,
   EvidenceAcceptanceRecord,
@@ -9,12 +9,12 @@ import type {
   LookupEvidenceAcceptanceResult,
   ReserveEvidenceAcceptanceInput,
   ReserveEvidenceAcceptanceResult,
-} from "@/application/ports/evidence-trust";
+} from "../../application/ports/evidence-trust.ts";
 import {
   digestEvidenceReceiptPayload,
   EVIDENCE_RECEIPT_SCHEMA_V1,
-} from "@/domain/forensics/evidence-receipt";
-import { canonicalizeJcs } from "@/domain/forensics/jcs";
+} from "../../domain/forensics/evidence-receipt.ts";
+import { canonicalizeJcs } from "../../domain/forensics/jcs.ts";
 
 type ChainHead = {
   segmentHash: string;

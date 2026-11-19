@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { ActorTransaction } from "@/server/db/with-actor";
+import type { ActorTransaction } from "../database/with-actor.ts";
 
 import { readEvidenceDomainKeys } from "./evidence-domain-keys";
 

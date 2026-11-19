@@ -7,10 +7,10 @@ import { describe, expect, it } from "vitest";
 import {
   createEditStepsV1Replayer,
   removedRangeSha256,
-} from "@/adapters/evidence/edit-steps-v1-replayer";
-import { createBrowserReplayStepsV1 } from "@/adapters/evidence/edit-steps-v1-replay-steps";
-import { EDIT_STEP_FORMAT_V1 } from "@/domain/document/edit-step";
-import { REVISION_ZERO_JCS } from "@/domain/document/revision-zero";
+} from "../../external/storage/edit-steps-v1-replayer.ts";
+import { createBrowserReplayStepsV1 } from "../../external/storage/edit-steps-v1-replay-steps.ts";
+import { EDIT_STEP_FORMAT_V1 } from "../document/edit-step.ts";
+import { REVISION_ZERO_JCS } from "../document/revision-zero.ts";
 import {
   canonicalEvidenceSegmentV2,
   EVIDENCE_CANONICALIZATION_V2,
@@ -18,10 +18,10 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
   type EvidenceSourceV2,
   type EvidenceStepV2,
-} from "@/domain/forensics/evidence-segment-v2";
-import { canonicalizeJcs, type JcsJsonValue } from "@/domain/forensics/jcs";
+} from "../forensics/evidence-segment-v2.ts";
+import { canonicalizeJcs, type JcsJsonValue } from "../forensics/jcs.ts";
 
-import { buildReplayTimeline, type ReplayTimelineInput } from "./replay-timeline";
+import { buildReplayTimeline, type ReplayTimelineInput } from "./replay-timeline.ts";
 
 // Synthetic only: invented ids and filler text, no real work or person.
 const A = "aaaaaaaa-0000-4000-8000-000000000001";

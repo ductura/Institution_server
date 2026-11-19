@@ -7,7 +7,7 @@ import { createWithActor, type WithActor } from "../../../server/database/with-a
 import { readAssignmentStudentNames } from "../../../server/evidence/assignment-names.ts";
 import { readCourseStudents } from "../../../server/institution/course-students.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-344 R-2 (#923, contract c.6434766713 points 2 and 3): both readers over
 // withActor and a real ductus_app login against the compose stack, so the

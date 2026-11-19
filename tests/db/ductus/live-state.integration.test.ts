@@ -11,7 +11,7 @@ import {
 } from "../../../server/collaboration/live-route.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // B-LIVE step 3 (DAN-216, BACKEND 4.12 point 6): the live view route over the
 // real RPCs under withActor. The owner and the teacher read the same bytes

@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // B-12 step 3 / DAN-87 (plan #385 A6, owner decisions P5 and P8): pgTAP runs
 // in one transaction and cannot race two calls. Here two app connections

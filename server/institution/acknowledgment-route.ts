@@ -1,11 +1,11 @@
 import type { NextRequest } from "next/server";
 
-import { NOTICE_TEMPLATE_VERSION } from "@/domain/notice/fingerprint";
-import { expectedOrigin } from "@/server/auth/config";
-import { SESSION_COOKIE_NAME } from "@/server/auth/session-token";
-import { withActor } from "@/server/db";
-import type { WithActor } from "@/server/db/with-actor";
-import { checkMutationRequest, readBodyWithLimit } from "@/server/http/mutation-request";
+import { NOTICE_TEMPLATE_VERSION } from "../domain/notice/fingerprint.ts";
+import { expectedOrigin } from "../external/srce-auth/config.ts";
+import { SESSION_COOKIE_NAME } from "../session/session-token.ts";
+import { withActor } from "../database/index.ts";
+import type { WithActor } from "../database/with-actor.ts";
+import { checkMutationRequest, readBodyWithLimit } from "../http/fetch-mutation-request.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;

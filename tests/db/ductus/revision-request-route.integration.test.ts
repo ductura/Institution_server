@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { snapshotHash } from "@/domain/collaboration/snapshot-hash";
+import { snapshotHash } from "../../../server/domain/collaboration/snapshot-hash.ts";
 import { canonicalizeJcs } from "../../../server/domain/forensics/jcs.ts";
 import {
   handleRevisionRequest,
@@ -11,7 +11,7 @@ import {
 } from "../../../server/collaboration/revision-requests.ts";
 import { createWithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url";
+import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-314 step 2f (contract on #1091, c.6696530499; plan of attack #1506):
 // the route handler over the real createWithActor and the real RPCs, end to
