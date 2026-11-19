@@ -11,6 +11,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 import {
   type ActorReader,
+  type ActorTransaction,
+  createWorkOpener,
   OPEN_WORK_DATABASE_ERROR,
   OPEN_WORK_NOT_ACCEPTING,
   OPEN_WORK_NOT_CONFIGURED,
@@ -19,6 +21,7 @@ import {
   OPEN_WORK_ROW_MALFORMED,
   OPEN_WORK_UNAUTHENTICATED,
   type OpenWorkResult,
+  type WithActor,
   type WorkOpener,
 } from "../database/index.ts";
 
@@ -260,5 +263,128 @@ describe("E. failures of the opener", () => {
     next = async () => ({ ok: true, value: { ...open.value, snapshot } });
     const answer = await post(`{"assignmentId":"${A1}"}`);
     expect(Buffer.from(JSON.parse(answer.body).document, "base64").toString("utf8")).toBe(snapshot);
+  });
+});
+
+// Ductus src/server/evidence/open-route.test.ts tested the route and its SQL
+// as one module. Ductura splits them (this route, server/database/open-work.ts);
+// the cases that only held across both run here: this route over the real
+// opener and a scripted transaction. Every value is invented.
+describe("Ductus open-route: the route over the real opener", () => {
+  const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
+  const OPENED = {
+    outcome: "opened",
+    document_id: "dokument-izmisljeni-1",
+    evidence_profile_id: "standard-v1",
+    current_revision: "2",
+    document_hash: "a".repeat(64),
+    head_segment_hash: "b".repeat(64),
+    last_sequence_to: "7",
+    snapshot: '{"nodes":[],"naslov":"Izmišljeni"}',
+  };
+  const KEY = {
+    key_id: "kljuc-r",
+    key_version: "1",
+    evidence_domain_id: DOMAIN,
+    purpose: "receipt",
+    algorithm: "Ed25519",
+    key_base64url: "MCowBQYDK2VwAyEA" + "A".repeat(43),
+    valid_from: "2026-11-01T10:00:00.000Z",
+    valid_to: null,
+    revoked_at: null,
+  };
+  const seen: { text: string; values: readonly unknown[] | undefined }[] = [];
+  function realOpener(submitted: Record<string, unknown>[]) {
+    seen.length = 0;
+    const withActor = (async (_token, fn) => {
+      const tx: ActorTransaction = {
+        async query(text, values) {
+          seen.push({ text, values });
+          const rows = text.includes("open_student_work")
+            ? [OPENED]
+            : text.includes("work_submitted")
+              ? submitted
+              : text.includes("evidence.package")
+                ? [{ evidence_domain_id: DOMAIN }]
+                : [KEY];
+          return { rows: rows as never[], rowCount: rows.length };
+        },
+      };
+      return fn(tx);
+    }) as WithActor;
+    const real = createWorkOpener(withActor);
+    next = () => {
+      const call = calls.at(-1)!;
+      return real.openWork(call.token, call.assignmentId, call.start);
+    };
+  }
+
+  it("opens with its state and keys; package and institution never go on the wire", async () => {
+    realOpener([{ submitted: false }]);
+    const answer = await post(`{"assignmentId":"${A1}"}`);
+    expect(answer.status).toBe(200);
+    const body = JSON.parse(answer.body) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      status: "opened",
+      documentId: "dokument-izmisljeni-1",
+      currentRevision: 2,
+      headSegmentHash: "b".repeat(64),
+      lastSequenceTo: 7,
+      receiptKeys: [expect.objectContaining({ keyId: "kljuc-r", purpose: "receipt" })],
+      submitted: false,
+    });
+    expect(answer.body).not.toMatch(/package|institution/i);
+    expect(seen.map((q) => q.values)).toEqual([
+      [A1, false],
+      [A1],
+      ["dokument-izmisljeni-1"],
+      [DOMAIN],
+    ]);
+    expect(seen[0]?.text).toMatch(/app\.open_student_work\(\$1::uuid, \$2::boolean\)/);
+    expect(seen[1]?.text).toMatch(/app\.work_submitted\(\$1::uuid\)/);
+  });
+
+  it.each([true, false])(
+    "carries submitted exactly as the database answers it (%s)",
+    async (value) => {
+      realOpener([{ submitted: value }]);
+      const answer = await post(`{"assignmentId":"${A1}","start":true}`);
+      expect(answer.status).toBe(200);
+      expect(JSON.parse(answer.body).submitted).toBe(value);
+      expect(seen[0]?.values).toEqual([A1, true]);
+    },
+  );
+
+  it.each([
+    ["a string", [{ submitted: "true" }]],
+    ["a number", [{ submitted: 0 }]],
+    ["null", [{ submitted: null }]],
+    ["no column", [{}]],
+    ["no row", []],
+    ["two rows", [{ submitted: true }, { submitted: true }]],
+  ])("is 503 context when submitted is %s, never false by assumption", async (_name, rows) => {
+    realOpener(rows);
+    const answer = await post(`{"assignmentId":"${A1}"}`);
+    expect(answer.status).toBe(503);
+    expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
+  });
+
+  // DAN-518: protocol 2 is the commit route's alone; open takes only "1".
+  it.each([
+    ["Ductus-Protocol 2", { "ductus-protocol": "2" }],
+    ["Ductus-Protocol 0", { "ductus-protocol": "0" }],
+  ])("refuses %s as 426 before the opener", async (_name, headers) => {
+    expect(OPEN_PROTOCOLS).toEqual(["1"]);
+    const answer = await post(`{"assignmentId":"${A1}"}`, headers);
+    expect(answer.status).toBe(426);
+    expect(JSON.parse(answer.body)).toEqual({ status: "upgrade_required" });
+    expect(calls).toEqual([]);
+  });
+
+  it("never lets the database default decide: the opener names both arguments", () => {
+    const source = readFileSync(new URL("../database/open-work.ts", import.meta.url), "utf8");
+    expect(source.match(/open_student_work\([^)]*\)/g)).toEqual([
+      "open_student_work($1::uuid, $2::boolean)",
+    ]);
   });
 });
