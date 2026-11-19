@@ -30,6 +30,21 @@ pnpm contracts:breaking [ref] # ruši se kad ugovor lomi klijente openapi/v1.jso
 
 Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm build`); skripte i testovi se pokreću izravno (Node 24, `tsx`), bez koraka prevođenja. Neispravna okolina zaustavlja pokretanje prije slušanja, s izlaznim kodom 1 i retkom koji imenuje varijablu, nikad vrijednost. Baza se pri pokretanju ne otvara.
 
+### Lokalni računi
+
+`pnpm lokalno` i `pnpm db:seed` učitavaju `db/main/local/seed.sql`: izmišljene osobe, kolegije i rad u ustanovi `demo-fakultet` (Ductus#2028, SRV-01). Prijava je na stranici simulatora (`http://localhost:8090`), gumbom računa. Svi podaci su izmišljeni; prijava je samo lokalna (D-09).
+
+| Račun            | Uloga                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------------- |
+| `demo-admin`     | administrator ustanove (imenovan kroz `appoint_institution_admin`)                       |
+| `demo-teacher`   | nastavnik, nositelj obaju kolegija; jednom otvorio rad `demo-student` (dnevnik pristupa) |
+| `demo-teacher-2` | nastavnica, suradnica (vodi grupu B)                                                     |
+| `demo-student`   | upisan u seminar, grupa A, obavijest potvrđena, rad otvoren                              |
+| `demo-student-2` | nije upisan (prazni „Moji zadaci”)                                                       |
+| `demo-bez-uloge` | djelatnik bez potvrđene uloge                                                            |
+
+`demo-admin` i `demo-bez-uloge` su u `db/main/local/lazni-oidc-racuni.json` (`FAKE_OIDC_ACCOUNTS_FILE`); vlastita `.local/oidc-racuni.json` je zamjenjuje. Kolegiji (2026./2027.): „Izmišljeni seminar iz ekologije grada” (grupe A i B, objavljen zadatak „Seminarski rad: kućno kompostiranje”) i „Izmišljeni praktikum iz urbane sociologije” (bez zadatka). Kodovi za upis: `UPIS2026DEMO` (seminar, valjan), `STARI2025KOD` (seminar, istekao i zamijenjen), `PRAZNI2026DEMO` (praktikum, valjan).
+
 ## Struktura
 
 | Mapa                | Sadržaj                                                                                                                                               |

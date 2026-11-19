@@ -103,6 +103,26 @@ const SECRETS_FILE = "lokalno-tajne.json";
 export const TOKEN_FILE = "provisioning-token";
 /** The simulator's named accounts (packages/test-fakes/oidc/simulated-accounts.ts). */
 export const ACCOUNTS_FILE = "oidc-racuni.json";
+/**
+ * The committed accounts of the local seed (SRV-01): demo-admin and
+ * demo-bez-uloge of demo-fakultet, relative to the repository root.
+ */
+export const SEED_ACCOUNTS_FILE = "db/main/local/lazni-oidc-racuni.json";
+
+/**
+ * The accounts file the simulator gets: .local/oidc-racuni.json when the
+ * developer keeps one (it replaces the seed's), else the seed's committed file.
+ */
+export function accountsFileFor(
+  root: string,
+  localDir: string,
+  exists: (path: string) => boolean,
+): string | undefined {
+  const local = join(localDir, ACCOUNTS_FILE);
+  if (exists(local)) return local;
+  const seed = join(root, SEED_ACCOUNTS_FILE);
+  return exists(seed) ? seed : undefined;
+}
 
 const SECRET_RE = /^[A-Za-z0-9_-]{32,128}$/u;
 const newSecret = (): string => randomBytes(32).toString("base64url");
