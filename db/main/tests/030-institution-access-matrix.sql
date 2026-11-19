@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1637);
+SELECT plan(1639);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -327,7 +327,8 @@ FROM (VALUES
   ('vesna', '{z1}', '{ana}', 'none'), ('vesna', '{z1}', '{dora}', 'none'), ('marko', '{z1}', '{ana}', 'ZD403'),
   ('ana', '{z1}', '{ana}', 'ZD403'), ('dora', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
   ('iva', '{z1}', '{ana}', 'ZD403'), ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'),
-  ('petra', '{z3}', '{tomo}', 'none'), ('vesna', '{z3}', '{tomo}', 'ZD403'), ('tomo', '{z3}', '{tomo}', 'ZD403')
+  ('petra', '{z3}', '{tomo}', 'none'), ('vesna', '{z3}', '{tomo}', 'ZD403'), ('tomo', '{z3}', '{tomo}', 'ZD403'),
+  ('vesna', '{z1}', '{boris}', 'ZD403'), ('vesna', '{z1}', '{tomo}', 'ZD403')
 ) AS c (actor, assignment, student, state);
 SELECT is(
   substr(pg_temp.ask('ana', 'SELECT state FROM app.submission_state_of({z1}, {ana})'), 1, 5), '42501',

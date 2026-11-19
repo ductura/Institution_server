@@ -3,6 +3,11 @@
 BEGIN;
 SET LOCAL lc_messages TO 'C';
 \ir fixtures/evidence-acceptance.inc
+-- SRV-20: the mentorships (Marko mentors Ana's zm1) for the reader's check;
+-- mentorship.inc writes an assignment before its first version, as in 038.
+SET CONSTRAINTS institution.assignment_current_version_institution_fkey DEFERRED;
+\ir fixtures/mentorship.inc
+SET CONSTRAINTS institution.assignment_current_version_institution_fkey IMMEDIATE;
 SELECT no_plan();
 SELECT has_table('evidence', 'submission_receipt', 'bound receipts have their own table');
 SELECT has_function('app', 'attach_submission_receipt', ARRAY['uuid','text','jsonb'], 'the bind RPC exists');
@@ -151,6 +156,12 @@ SELECT is(pg_temp.mine('ana'),
 SELECT is(pg_temp.mine('dora'),'none','a student of the course without a submission: none');
 SELECT is(pg_temp.theirs('vesna'),pg_temp.mine('ana'),'the teacher of the course reads the same ceka as the student');
 SELECT is(pg_temp.theirs('vesna','{dora}'),'none','the teacher reads none for a student without a submission');
+SELECT is(substr(pg_temp.theirs('vesna',u),1,5),'ZD403','not a student of the assignment: the same refusal as no reader ('||u||')')
+  FROM unnest(ARRAY['{boris}','{marko}','{iva}','{nobody}','{tomo}']) u;
+SELECT is(pg_temp.theirs('marko','{ana}','{zm1}'),'none','the mentor reads the state of the mentorship''s student');
+SELECT is(substr(pg_temp.theirs('marko',u,'{zm1}'),1,5),'ZD403','the mentor, not the mentorship''s student ('||u||')')
+  FROM unnest(ARRAY['{dora}','{boris}']) u;
+SELECT is(substr(pg_temp.theirs('vesna','{ana}','{zm1}'),1,5),'ZD403','a teacher of Ana''s course is no reader of her mentorship');
 SELECT is(substr(pg_temp.theirs(a),1,5),'ZD403','no reader of Ana''s work: '||a)
   FROM unnest(ARRAY['ana','dora','marko','boris','iva','nina','tomo','petra']) a;
 SELECT is(substr(pg_temp.theirs('vesna','{ana}','{nobody}'),1,5),'ZD403','unknown assignment: the same refusal');

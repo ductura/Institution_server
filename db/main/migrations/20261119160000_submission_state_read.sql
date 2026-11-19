@@ -120,9 +120,14 @@ GRANT EXECUTE ON FUNCTION app.my_assignment_requirements(uuid) TO ductus_app;
 -- the role are those of audit.reader_role, the rule the access log is written
 -- by: the teacher of the course (holder or collaborator, within the boundary
 -- of actor_course_work), the mentor of a mentorship's assignment, or the
--- teacher of the student's seminar group. The owner, a reader of another
--- course or institution, an unknown or null assignment or student: ZD403,
--- one answer for every refusal. No session: ZD401. Writes nothing.
+-- teacher of the student's seminar group. The student must be one of the
+-- assignment: a student of its course, now or before (the work of a removed
+-- student stays readable, as through actor_role), or the student of its
+-- mentorship. The owner, a reader of another course or institution, an
+-- unknown or null assignment, a user who is not a student of the assignment
+-- or of another institution: ZD403, one answer for every refusal. No
+-- session: ZD401. Both checks and the read are one STABLE read; writes
+-- nothing.
 CREATE FUNCTION app.teacher_submission_state(p_assignment_id uuid, p_student_id uuid)
 RETURNS TABLE (
   state text, revision bigint, requested_at timestamptz,
@@ -135,7 +140,16 @@ DECLARE
 BEGIN
   SELECT r.institution_id INTO v_institution FROM institution.require_actor() r;
   IF p_assignment_id IS NULL OR p_student_id IS NULL
-     OR audit.reader_role(v_institution, p_assignment_id, p_student_id) IS NULL THEN
+     OR audit.reader_role(v_institution, p_assignment_id, p_student_id) IS NULL
+     OR NOT EXISTS (
+       SELECT 1 FROM institution.assignment s
+        WHERE s.id = p_assignment_id AND s.institution_id = v_institution
+          AND (EXISTS (SELECT 1 FROM institution.course_member m
+                        WHERE m.course_id = s.course_id AND m.institution_id = s.institution_id
+                          AND m.user_id = p_student_id AND m.role = 'student')
+               OR EXISTS (SELECT 1 FROM institution.mentorship t
+                           WHERE t.id = s.mentorship_id AND t.institution_id = s.institution_id
+                             AND t.student_id = p_student_id))) THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
   RETURN QUERY SELECT * FROM app.submission_state_of(p_assignment_id, p_student_id);
