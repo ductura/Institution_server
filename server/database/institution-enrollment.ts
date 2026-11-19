@@ -22,8 +22,10 @@ export const ENROLLMENT_UNAUTHENTICATED = error(
 );
 /** ZD403; the RPC does not raise it today, kept from Ductus. */
 export const ENROLLMENT_FORBIDDEN = error("ENROLLMENT_FORBIDDEN", "enrollment.forbidden");
-/** A wrong or expired code; the attempt is stored. */
+/** invalid_code: a wrong, malformed or foreign code; the attempt is stored. */
 export const ENROLLMENT_REFUSED = error("ENROLLMENT_REFUSED", "enrollment.refused");
+/** expired_code: a code of the institution past its time or revoked; the attempt is stored. */
+export const ENROLLMENT_EXPIRED_CODE = error("ENROLLMENT_EXPIRED_CODE", "enrollment.expired_code");
 /** The caller's attempts in the window are used up. */
 export const ENROLLMENT_TOO_MANY_ATTEMPTS = error(
   "ENROLLMENT_TOO_MANY_ATTEMPTS",
@@ -43,12 +45,15 @@ export const ENROLLMENT_ERRORS: readonly AppError[] = [
   ENROLLMENT_UNAUTHENTICATED,
   ENROLLMENT_FORBIDDEN,
   ENROLLMENT_REFUSED,
+  ENROLLMENT_EXPIRED_CODE,
   ENROLLMENT_TOO_MANY_ATTEMPTS,
   ENROLLMENT_ROW_MALFORMED,
   ENROLLMENT_DATABASE_ERROR,
 ];
 
-export type Enrollment = { readonly courseId: string };
+/** SRV-05 (owner answer A-2): what the RPC did with a code that names a course. */
+export type EnrollmentOutcome = "enrolled" | "already_enrolled" | "enrolled_no_assignment";
+export type Enrollment = { readonly courseId: string; readonly outcome: EnrollmentOutcome };
 
 export type InstitutionEnrollment = {
   enrollWithCode(token: string, code: string): Promise<Result<Enrollment>>;
@@ -56,6 +61,16 @@ export type InstitutionEnrollment = {
 
 const SQL = "SELECT outcome, enrolled_course_id FROM institution.enroll_with_code($1::text)";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SUCCESS: ReadonlySet<unknown> = new Set([
+  "enrolled",
+  "already_enrolled",
+  "enrolled_no_assignment",
+]);
+const NO_COURSE: ReadonlyMap<unknown, AppError> = new Map<unknown, AppError>([
+  ["invalid_code", ENROLLMENT_REFUSED],
+  ["expired_code", ENROLLMENT_EXPIRED_CODE],
+  ["too_many_attempts", ENROLLMENT_TOO_MANY_ATTEMPTS],
+]);
 const REFUSED: ReadonlyMap<string, AppError> = new Map([
   ["ZD401", ENROLLMENT_UNAUTHENTICATED],
   ["ZD403", ENROLLMENT_FORBIDDEN],
@@ -82,17 +97,19 @@ function onlyRow(rows: unknown): { outcome: unknown; course: unknown } | null {
   return { outcome: own("outcome"), course: own("enrolled_course_id") };
 }
 
-/** Ductus: enrolled with a UUID, refused or too_many_attempts with null; anything else is malformed. */
+/**
+ * enrolled, already_enrolled or enrolled_no_assignment with a UUID; invalid_code,
+ * expired_code or too_many_attempts with null (20261119120000); anything else is malformed.
+ */
 function resultOf(rows: unknown): Result<Enrollment> {
   const row = onlyRow(rows);
-  if (row?.outcome === "enrolled" && typeof row.course === "string" && UUID.test(row.course)) {
-    return { ok: true, value: { courseId: row.course } };
+  if (row === null) return fail(ENROLLMENT_ROW_MALFORMED);
+  const { outcome, course } = row;
+  if (SUCCESS.has(outcome) && typeof course === "string" && UUID.test(course)) {
+    return { ok: true, value: { courseId: course, outcome: outcome as EnrollmentOutcome } };
   }
-  if (row?.course === null && row.outcome === "refused") return fail(ENROLLMENT_REFUSED);
-  if (row?.course === null && row.outcome === "too_many_attempts") {
-    return fail(ENROLLMENT_TOO_MANY_ATTEMPTS);
-  }
-  return fail(ENROLLMENT_ROW_MALFORMED);
+  const refusal = course === null ? NO_COURSE.get(outcome) : undefined;
+  return fail(refusal ?? ENROLLMENT_ROW_MALFORMED);
 }
 
 export function createInstitutionEnrollment(withActor: WithActor): InstitutionEnrollment {
