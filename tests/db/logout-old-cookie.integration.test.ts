@@ -25,6 +25,7 @@ import {
   createMeRouteFor,
   createProblemReportRouteFor,
   createSettingsValuesPutRoute,
+  createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
@@ -199,6 +200,38 @@ const SESSION_ROUTES = {
     body: () => ({ language: null }),
     live: 403,
   },
+  // Ductus#2028 (w1119o): the teacher's reads. The account teaches and
+  // mentors nothing: the course list is 404 (ZD403 of list_teacher_courses,
+  // as Ductus), the mentorship 404, the other reads their empty answer.
+  "teacher.courses.get": {
+    method: "GET",
+    path: "/api/v1/teacher/courses",
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.mentorships.get": {
+    method: "GET",
+    path: "/api/v1/teacher/mentorships",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.mentorship.get": {
+    method: "GET",
+    path: `/api/v1/teacher/mentorships/${ASSIGNMENT}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submissions.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions`,
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.assignment-submissions.post": {
+    path: "/api/v1/teacher/assignment-submissions",
+    body: () => ({ assignmentIds: [ASSIGNMENT] }),
+    live: 200,
+  },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
   // account does not hold is 403. The old cookie's registration carries a
@@ -237,6 +270,7 @@ const FACTORIES = [
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
+  "createTeacherReadRoutesFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
@@ -255,6 +289,7 @@ const MOUNTED = [
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
+  ...createTeacherReadRoutesFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
@@ -464,6 +499,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
+        id.startsWith("teacher.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
