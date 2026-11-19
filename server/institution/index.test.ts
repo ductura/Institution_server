@@ -10,9 +10,11 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the six body parsers and the service factory", () => {
+  it("exports only the seven body parsers, the notice template version and the service factory", () => {
     expect(Object.keys(area).sort()).toEqual([
+      "NOTICE_TEMPLATE_VERSION",
       "createInstitutionService",
+      "parseAcknowledgmentBody",
       "parseAssignmentVersionBody",
       "parseAssignmentWorkLanguageBody",
       "parseCourseBody",

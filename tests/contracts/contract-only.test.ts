@@ -22,6 +22,7 @@ import {
   createProblemReportRouteFor,
   createTeacherReadRoutesFor,
   createLiveRoutesFor,
+  createAcknowledgmentRouteFor,
   createSettingsValuesPutRoute,
   createWebAuthnRoutesFor,
   routesOf,
@@ -169,6 +170,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       ),
   },
   {
+    // Ductus#2028 (w1119o): the notice acknowledgment over the main database.
+    call: "createAcknowledgmentRouteFor(databases.main)",
+    ids: ["institution.acknowledgment.post"],
+    routes: () => [createAcknowledgmentRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
     call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
     ids: [
@@ -267,6 +274,7 @@ describe("CONTRACT_ONLY", () => {
         ...TEACHER_READ_ROUTES,
         "live.document.get",
         "live.document.put",
+        "institution.acknowledgment.post",
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -295,6 +303,7 @@ describe("routes the entry point mounts itself", () => {
       ...TEACHER_READ_ROUTES,
       "live.document.get",
       "live.document.put",
+      "institution.acknowledgment.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

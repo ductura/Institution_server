@@ -78,6 +78,22 @@ export {
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
+  ACKNOWLEDGMENT_BODY_TIMEOUT_MS,
+  type AcknowledgmentRouteOptions,
+  createAcknowledgmentRoute,
+  createAcknowledgmentRouteFor,
+} from "./acknowledgment.ts";
+export {
+  createSubmissionRoute,
+  createSubmissionRouteFor,
+  SUBMISSION_MAX_BYTES,
+  SUBMISSION_TIMEOUT_MS,
+  submissionAnswer,
+  type SubmissionOutcome,
+  type SubmissionRouteOptions,
+  type SubmitWork,
+} from "./submission.ts";
+export {
   createLiveRoutes,
   createLiveRoutesFor,
   LIVE_BODY_TIMEOUT_MS,
