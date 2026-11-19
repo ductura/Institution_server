@@ -80,6 +80,18 @@ export const INSTITUTION_HANDLERS: Handlers = {
     });
     return { status: 200, body: { id } };
   },
+  // UGOVORI-API (wweb18): whether the course has a code; never the code itself (A-8).
+  "institution.enrollment-code-state.get": ({ state, account, params }) => {
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu.test(params.courseId))
+      return { error: "invalid_input" };
+    const course = taughtCourse(state, account, params.courseId.toLowerCase());
+    if (course === null) return { error: "not_found" };
+    const current = course.codes.find((code) => code.active);
+    return {
+      status: 200,
+      body: { current: current === undefined ? null : { validUntil: current.validUntil } },
+    };
+  },
   "institution.enrollment-code.post": ({ state, account, params, body }) => {
     const course = taughtCourse(state, account, params.courseId);
     if (course === null) return { error: "forbidden" };

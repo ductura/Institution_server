@@ -104,7 +104,11 @@ export const SRV_03: readonly string[] = [
 
 // The operations of UGOVORI-API (every /api/v1 contract ahead of its handler,
 // Ductus#2028 c.7023902063; scope c.7022752457), frozen the same way.
-export const UGOVORI_API: readonly string[] = ["student.notice.get"];
+export const UGOVORI_API: readonly string[] = [
+  "student.notice.get",
+  "institution.assignment.get",
+  "institution.enrollment-code-state.get",
+];
 
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
