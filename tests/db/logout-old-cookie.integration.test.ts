@@ -22,6 +22,7 @@ import {
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
+  createTeacherFastPathRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
@@ -307,6 +308,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-8E: an assignment the caller does not teach is the same empty list, 200.
+  "teacher.fast-path.post": {
+    path: "/api/v1/teacher/fast-path",
+    body: () => ({ assignmentId: ASSIGNMENT }),
+    live: 200,
+  },
   "teacher.assignment-submissions.post": {
     path: "/api/v1/teacher/assignment-submissions",
     body: () => ({ assignmentIds: [ASSIGNMENT] }),
@@ -487,6 +494,7 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
+  "createTeacherFastPathRouteFor",
   "createStudentSubmissionRoutesFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
@@ -520,6 +528,7 @@ const MOUNTED = [
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
+  createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
   ...createStudentSubmissionRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
