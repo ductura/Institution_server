@@ -189,6 +189,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
   },
+  "app/api/sources/lookup/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7036755565",
+  },
 };
 
 /**

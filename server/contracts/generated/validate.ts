@@ -677,6 +677,16 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "sources.lookup.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['kind'] === 'doi')) || ((value['kind'] === 'isbn'))) &&
+      (typeof value['identifier'] === 'string') &&
+      value['identifier'].length <= 512 &&
+      value['identifier'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
   "student.access-log.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

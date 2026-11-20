@@ -12,6 +12,7 @@ import {
   AREA_NAMES,
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
+  createAssignmentCurrentVersionRouteFor,
   createAuthRoutes,
   createClientContextRoute,
   createDatabases,
@@ -34,7 +35,9 @@ import {
   createLayers,
   createMeRouteFor,
   createProblemReportRouteFor,
+  createSettingsReadRoutes,
   createSettingsValuesPutRoute,
+  createSourceLookupRouteFor,
   createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
@@ -163,6 +166,18 @@ const SESSION_ROUTES = {
       max: null,
     }),
     live: 404,
+  },
+  "settings.catalogue.get": {
+    method: "GET",
+    path: "/api/v1/settings/catalogue",
+    body: () => undefined,
+    live: 200,
+  },
+  "settings.values.get": {
+    method: "GET",
+    path: "/api/v1/settings/values?level=personal",
+    body: () => undefined,
+    live: 200,
   },
   // DAN-851-1d2: the interface language. A live POST saves `en` for the
   // account; the old cookie's POST sends `hr`, which must never land.
@@ -351,6 +366,17 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  "sources.lookup.post": {
+    path: "/api/v1/sources/lookup",
+    body: () => ({ kind: "doi", identifier: "10.99999/izmisljeni" }),
+    live: 503,
+  },
+  "institution.assignment.get": {
+    method: "GET",
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}`,
+    body: () => undefined,
+    live: 404,
+  },
   "institution.assignment-versions.post": {
     path: `/api/v1/institution/assignments/${COURSE}/versions`,
     body: () => ({
@@ -412,12 +438,15 @@ const FACTORIES = [
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
+  "createSourceLookupRouteFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
+  "createSettingsReadRoutes",
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
+  "createAssignmentCurrentVersionRouteFor",
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
@@ -441,12 +470,15 @@ const MOUNTED = [
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
+  createSourceLookupRouteFor(databases.main, ENV),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
+  ...createSettingsReadRoutes(databases.main),
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
+  createAssignmentCurrentVersionRouteFor(databases.main),
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
@@ -672,9 +704,10 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       );
       const body: unknown = await answer.json();
       const old =
-        id === "settings.values.put" ||
+        id.startsWith("settings.") ||
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
+        id === "sources.lookup.post" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("live.") ||

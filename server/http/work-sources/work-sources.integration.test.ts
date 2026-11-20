@@ -73,31 +73,53 @@ const put = (url: string, body: unknown, headers: Record<string, string> = HEADE
   fetch(url, { method: "PUT", headers, body: JSON.stringify(body) });
 const refusal = (code: string) => Object.assign(new Error("refused"), { code });
 
-it("reads the list, saves a source with its DOI and ISBN, and removes it", async () => {
-  const { list, one, spy } = await fixture(async (sql) => {
-    if (sql.includes("work_sources(")) return [row({ requirement: "required" })];
-    if (sql.includes("save_work_source")) return [row({ doi: "10.1234/x", isbn: "9780000000002" })];
-    return [{ removed: true }];
+it("reads assigned sources, adds and edits a student source, then removes it", async () => {
+  const assigned = ["recommended", "required"].map((requirement, index) => {
+    const id = "00000000-0000-4000-8000-00000000c0b" + index;
+    return row({ id, record: { ...RECORD, id }, requirement });
   });
-  const read = await fetch(list, { headers: { cookie: COOKIE } });
+  let own: object[] = [];
+  const { list, one, spy } = await fixture(async (sql, values) => {
+    if (sql.includes("institution.work_sources(")) return [...assigned, ...own];
+    if (sql.includes("institution.save_work_source(")) {
+      own = [row({ record: JSON.parse(String(values?.[1])), doi: values?.[2], isbn: values?.[3] })];
+      return own;
+    }
+    if (sql.includes("institution.delete_work_source(")) {
+      own = [];
+      return [{ removed: true }];
+    }
+    return [{ touched: true }];
+  });
+  const readList = () => fetch(list, { headers: { cookie: COOKIE } });
+  const read = await readList();
   expect(read.status).toBe(200);
   expect(read.headers.get("cache-control")).toBe("no-store");
-  expect(await read.json()).toEqual({ sources: [wire({ requirement: "required" })] });
+  expect(await read.json()).toEqual({ sources: assigned.map(wire) });
+  expect(spy).toHaveBeenCalledWith(expect.stringContaining("institution.work_sources("), [
+    ASSIGNMENT,
+    null,
+  ]);
 
   const saved = await put(one, { record: RECORD, doi: "10.1234/x", isbn: "9780000000002" });
   expect(saved.status).toBe(200);
   expect(await saved.json()).toEqual(wire({ doi: "10.1234/x", isbn: "9780000000002" }));
-  expect(spy).toHaveBeenCalledWith(expect.stringContaining("save_work_source"), [
-    ASSIGNMENT,
-    JSON.stringify(RECORD),
-    "10.1234/x",
-    "9780000000002",
-    false,
-  ]);
+  const saveCall = spy.mock.calls.find(([sql]) => sql.includes("institution.save_work_source("));
+  const [assignmentId, record, ...metadata] = saveCall?.[1] ?? [];
+  expect(assignmentId).toBe(ASSIGNMENT);
+  expect(JSON.parse(String(record))).toEqual(RECORD);
+  expect(metadata).toEqual(["10.1234/x", "9780000000002", false]);
+
+  const edited = { ...RECORD, title: "Dopunjena izmišljena knjiga" };
+  expect((await put(one, { record: edited })).status).toBe(200);
+  expect(await (await readList()).json()).toEqual({
+    sources: [...assigned.map(wire), wire({ record: edited })],
+  });
 
   const removed = await fetch(one, { method: "DELETE", headers: HEADERS });
   expect(removed.status).toBe(204);
   expect(await removed.text()).toBe("");
+  expect(await (await readList()).json()).toEqual({ sources: assigned.map(wire) });
 });
 
 it("refuses a bad session, origin, body or record before any SQL", async () => {
@@ -125,13 +147,25 @@ it("refuses a bad session, origin, body or record before any SQL", async () => {
   const web = { ...RECORD, type: "web" };
   for (const body of [
     { record: RECORD, extra: 1 },
+    { record: RECORD, requirement: "required" },
     { record: { ...RECORD, id: "00000000-0000-4000-8000-00000000c0a9" } },
     { record: { ...RECORD, studentId: SOURCE } },
     { record: { ...RECORD, title: " leading space" } },
+    { record: { ...RECORD, title: "Prvi\u202e drugi" } },
     { record: { ...RECORD, year: 999 } },
     { record: web },
+    {
+      record: {
+        ...web,
+        place: undefined,
+        publisher: undefined,
+        url: "https://izvor.invalid",
+        accessed: "2026-02-29",
+      },
+    },
     { record: RECORD, doi: "NIJE-DOI" },
     { record: RECORD, isbn: "123" },
+    { record: RECORD, isbn: "9780000000003" },
   ]) {
     const response = await put(one, body);
     expect(response.status).toBe(422);
@@ -167,5 +201,8 @@ it("answers 404 when a delete finds nothing, and 503 for a row that is not a sou
   rows = [row({ record: { ...RECORD, type: "film" } })];
   expect((await fetch(list, { headers: { cookie: COOKIE } })).status).toBe(503);
   rows = [row(), row()];
+  expect((await put(one, { record: RECORD })).status).toBe(503);
+  const otherId = "00000000-0000-4000-8000-00000000c0a9";
+  rows = [row({ id: otherId, record: { ...RECORD, id: otherId } })];
   expect((await put(one, { record: RECORD })).status).toBe(503);
 });

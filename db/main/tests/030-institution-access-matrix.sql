@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1766);
+SELECT plan(1794);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -268,7 +268,9 @@ SELECT bag_eq(
     'work_source_access(p_assignment_id uuid, p_student_id uuid)',
     'save_work_source(p_assignment_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean) definer app',
     'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',
-    'work_sources(p_assignment_id uuid, p_student_id uuid) definer app'
+    'work_sources(p_assignment_id uuid, p_student_id uuid) definer app',
+    'save_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_record jsonb, p_requirement text, p_doi text, p_isbn text, p_undated boolean) definer app',
+    'delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -460,6 +462,26 @@ SELECT is(
   c.outcome, format('SRV-7B: %s removes the source on Z1: %s', c.actor, c.outcome)
 )
 FROM (VALUES (1, 'vesna', 'ZD403'), (2, 'marko', 'ZD403'), (3, 'dora', 'true'), (4, 'dora', 'false'))
+  AS c (n, actor, outcome)
+ORDER BY c.n;
+SELECT is(
+  substr(pg_temp.ask(c.actor, format(
+    'SELECT ''ok'' FROM institution.save_teacher_work_source(%s, %s, %L::jsonb, ''required'')',
+    c.assignment, c.student, replace(pg_temp.source_json(), 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                                     'cccccccc-cccc-4ccc-8ccc-cccccccccccc'))), 1, 5),
+  c.outcome, format('SRV-7B: %s adds a required source to the work of %s on %s: %s', c.actor, c.student, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '{ana}', 'ok'), ('marko', '{z1}', '{ana}', 'ZD403'), ('ana', '{z1}', '{ana}', 'ZD403'),
+  ('dora', '{z1}', '{ana}', 'ZD403'), ('iva', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'), ('petra', '{z3}', '{tomo}', 'ok'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403'), ('anon', '{z1}', '{ana}', 'ZD401')
+) AS c (actor, assignment, student, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.delete_teacher_work_source({z1}, {ana}, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc')::text $$), 1, 5),
+  c.outcome, format('SRV-7B: %s removes the required source of Ana on Z1: %s', c.actor, c.outcome)
+)
+FROM (VALUES (1, 'ana', 'ZD403'), (2, 'marko', 'ZD403'), (3, 'vesna', 'true'), (4, 'vesna', 'false'))
   AS c (n, actor, outcome)
 ORDER BY c.n;
 
@@ -686,6 +708,35 @@ FROM (VALUES
 ) AS v (n, actor, tbl, what, statement)
 ORDER BY v.n;
 
+-- SRV-7E: the app's settings RPC reads the session institution and gives
+-- each account only the settings it may see.
+INSERT INTO settings.value (level, institution_id, key, value) VALUES
+  ('institution', pg_temp.id('fak_a'), 'citation.style', '"apa"'),
+  ('institution', pg_temp.id('fak_a'), 'lekta.profile', '"demo-profile-a"'),
+  ('institution', pg_temp.id('fak_a'), 'thresholds.paste_event_chars', '250'),
+  ('institution', pg_temp.id('fak_b'), 'citation.style', '"chicago"');
+
+SELECT is(pg_temp.ask(m.actor, $$
+  SELECT string_agg(concat_ws(':', CASE WHEN editor_only THEN 'editor' ELSE 'full' END, key, value), ', ' ORDER BY key)
+  FROM settings.read_institution_values()
+$$), m.expected, format('SRV-7E: settings scope for %s', m.actor))
+FROM (VALUES
+  ('iva', 'full:citation.style:"apa", full:lekta.profile:"demo-profile-a", full:thresholds.paste_event_chars:250'),
+  ('ana', 'editor:citation.style:"apa", editor:lekta.profile:"demo-profile-a"'),
+  ('vesna', 'editor:citation.style:"apa", editor:lekta.profile:"demo-profile-a"'),
+  ('lea', 'full:citation.style:"chicago"'),
+  ('tomo', 'editor:citation.style:"chicago"'),
+  ('nina', 'ZD403: not allowed'),
+  ('boris', 'ZD403: not allowed'),
+  ('closed', 'ZD401: not authenticated'),
+  ('anon', 'ZD401: not authenticated')
+) AS m(actor, expected);
+
+SELECT ok((SELECT prosecdef AND proowner = 'ductus_identity'::regrole AND provolatile = 's'
+                  AND proconfig = ARRAY['search_path=""']::text[]
+           FROM pg_proc WHERE oid = 'settings.read_institution_values()'::regprocedure),
+          'SRV-7E: settings RPC is a confined STABLE definer');
+
 -- 5. Removal works at once: no cached decision (plan 19).
 UPDATE institution.course_member SET member_to = now() WHERE user_id = pg_temp.id('ana');
 SELECT is(
@@ -717,6 +768,10 @@ SELECT is(
   pg_temp.sees('iva'), 'courses: - | members: - | codes: 0 | roles: - | settings: -' || pg_temp.none(),
   'administrator whose role was revoked sees nothing'
 );
+
+SELECT is(pg_temp.ask(a.actor, 'SELECT count(*)::text FROM settings.read_institution_values()'),
+          'ZD403: not allowed', format('SRV-7E: settings denied immediately after revocation for %s', a.actor))
+FROM unnest(ARRAY['ana', 'marko', 'iva']) AS a(actor);
 
 -- 6. Grants by mistake (docs/TESTING.md 5). Every role gets the schema and
 -- every privilege on every table; what still holds is RLS itself. Vesna is

@@ -146,6 +146,7 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/evidence/replay.ts": ["TextDecoder"],
   "server/session/return-to.ts": ["decodeURIComponent"],
   "server/contracts/work-id.ts": ["decodeURIComponent"],
+  "server/source-lookup/identifier.ts": ["decodeURIComponent"],
   // Link targets in the repository's Markdown (a docs check, S-0.x).
   "server/docs-links.ts": ["decodeURI"],
   "server/domain/document/snapshot.ts": ["TextDecoder"],

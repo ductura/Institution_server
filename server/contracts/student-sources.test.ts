@@ -26,13 +26,21 @@ const valid = (record: object) => Value.Check(WorkSourceRecord, record);
 
 describe("the source record of a work", () => {
   it("accepts real calendar dates and refuses the others, leap years included", () => {
-    for (const accessed of ["2026-11-02", "2024-02-29", "2000-02-29", "2026-04-30", "2026-12-31"]) {
+    for (const accessed of [
+      "0400-02-29",
+      "2026-11-02",
+      "2024-02-29",
+      "2000-02-29",
+      "2026-04-30",
+      "2026-12-31",
+    ]) {
       expect(valid({ ...WEB, accessed }), accessed).toBe(true);
     }
     for (const accessed of [
       "2026-02-31",
       "2026-02-29",
       "2100-02-29",
+      "0500-02-29",
       "2026-04-31",
       "2026-13-01",
       "2026-00-10",
@@ -40,6 +48,12 @@ describe("the source record of a work", () => {
     ]) {
       expect(valid({ ...WEB, accessed }), accessed).toBe(false);
     }
+  });
+
+  it.each(["http://", "https://"])("counts the %s prefix in the 2048-character limit", (prefix) => {
+    const url = prefix + "x".repeat(2048 - prefix.length);
+    expect(valid({ ...WEB, url })).toBe(true);
+    expect(valid({ ...WEB, url: url + "x" })).toBe(false);
   });
 
   it("refuses the FORBIDDEN code points and white space at either end, as the document does", () => {

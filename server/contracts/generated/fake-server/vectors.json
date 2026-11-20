@@ -14833,7 +14833,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.29.0",
+        "apiVersion": "1.30.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -14849,7 +14849,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.29.0",
+        "apiVersion": "1.30.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -16085,6 +16085,157 @@
               "vancouver",
               "fusnote"
             ]
+          },
+          {
+            "key": "lekta.profile",
+            "levels": [
+              "institution"
+            ],
+            "kind": "enum",
+            "default": "fpzg-opci-akademski-rad",
+            "values": [
+              "adu-dramaturgija-diplomski",
+              "adu-ftv-rezija-diplomski",
+              "adu-gluma-diplomski",
+              "adu-kazalisna-rezija-diplomski",
+              "adu-montaza-diplomski",
+              "adu-opci-diplomski",
+              "adu-produkcija-diplomski",
+              "adu-snimanje-diplomski",
+              "agr-diplomski",
+              "agr-doktorski",
+              "agr-zavrsni",
+              "alu-diplomski",
+              "alu-doktorski",
+              "alu-grafika-diplomski",
+              "alu-kiparstvo-diplomski",
+              "alu-konzerviranje-diplomski",
+              "alu-nastavnicki-diplomski",
+              "alu-novi-mediji-diplomski",
+              "alu-slikarstvo-diplomski",
+              "arh-diplomski",
+              "arh-doktorski",
+              "dizajn-diplomski",
+              "efzg-diplomski",
+              "efzg-doktorski",
+              "efzg-seminarski",
+              "efzg-specijalisticki",
+              "efzg-strucni-racunovodstvo",
+              "efzg-zavrsni",
+              "erf-diplomski",
+              "erf-doktorski",
+              "fbf-doktorski",
+              "fbf-specijalisticki",
+              "fer-diplomski",
+              "fer-doktorski",
+              "fer-zavrsni",
+              "ffrz-bakalaureatski",
+              "ffrz-diplomski",
+              "ffrz-doktorski",
+              "ffzg-arheologija-graduate",
+              "ffzg-etnologija-graduate",
+              "ffzg-filozofija-diplomski",
+              "ffzg-informacijske-zavrsni",
+              "ffzg-kroatistika-graduate",
+              "ffzg-lingvistika-diplomski",
+              "ffzg-pedagogija-graduate",
+              "ffzg-povijest-umjetnosti-diplomski",
+              "ffzg-psihologija-diplomski",
+              "ffzg-sociologija-diplomski",
+              "ffzg-svedski-zavrsni",
+              "fhs-diplomski",
+              "fhs-doktorski",
+              "fhs-zavrsni",
+              "fkit-diplomski",
+              "fkit-doktorski",
+              "fkit-zavrsni",
+              "foi-diplomski",
+              "foi-zavrsni",
+              "fpz-diplomski",
+              "fpz-zavrsni",
+              "fpzg-doktorski-politologija",
+              "fpzg-mes-master-thesis",
+              "fpzg-nacionalna-sigurnost-diplomski",
+              "fpzg-novinarstvo-diplomski",
+              "fpzg-novinarstvo-zavrsni-av",
+              "fpzg-novinarstvo-zavrsni-tekst",
+              "fpzg-opci-akademski-rad",
+              "fpzg-politologija-diplomski",
+              "fpzg-politologija-zavrsni",
+              "fpzg-specijalisticki-odnosi-s-javnoscu",
+              "fpzg-specijalisticki-prilagodba-eu",
+              "fpzg-specijalisticki-sigurnosna-politika-rh",
+              "fpzg-specijalisticki-vanjska-politika-diplomacija",
+              "fsb-diplomski",
+              "fsb-doktorski",
+              "fsb-opci-akademski-rad",
+              "fsb-zavrsni",
+              "geof-diplomski",
+              "geof-doktorski",
+              "geof-opci-akademski-rad",
+              "geoteh-diplomski",
+              "geoteh-doktorski",
+              "geoteh-zavrsni",
+              "grad-diplomski",
+              "grad-doktorski",
+              "grad-zavrsni",
+              "grf-diplomski",
+              "grf-doktorski",
+              "grf-zavrsni",
+              "kbf-diplomski",
+              "kbf-doktorski",
+              "kbf-zavrsni",
+              "kif-diplomski",
+              "kif-doktorski",
+              "kif-specijalisticki",
+              "mef-diplomski",
+              "mef-doktorski",
+              "muza-diplomski",
+              "muza-doktorski",
+              "mvi-diplomski",
+              "mvi-prijediplomski",
+              "pbf-diplomski",
+              "pbf-doktorski",
+              "pmf-biologija-graduate",
+              "pmf-biologija-zavrsni",
+              "pmf-fizika-graduate",
+              "pmf-geofizika-graduate",
+              "pmf-geografija-diplomski",
+              "pmf-geologija-graduate",
+              "pmf-geologija-zavrsni",
+              "pmf-matematika-graduate",
+              "pravo-doktorski-pravne-znanosti",
+              "pravo-integrirani-diplomski",
+              "pravo-javna-uprava-diplomski",
+              "pravo-javna-uprava-prijediplomski",
+              "pravo-opci-pravni-akademski-rad",
+              "pravo-porezni-prijediplomski",
+              "pravo-socijalna-politika-diplomski",
+              "pravo-socijalne-djelatnosti-doktorski",
+              "pravo-socijalne-djelatnosti-specijalisticki",
+              "pravo-socijalni-opci-akademski-rad",
+              "pravo-socijalni-rad-diplomski",
+              "pravo-socijalni-rad-zavrsni",
+              "pravo-specijalisticki-pravni-opci",
+              "rgnf-diplomski",
+              "rgnf-zavrsni",
+              "sfzg-diplomski",
+              "sfzg-doktorski",
+              "simet-zavrsni",
+              "sumfak-diplomski",
+              "sumfak-zavrsni",
+              "ttf-diplomski",
+              "ttf-dizajn-diplomski",
+              "ttf-dizajn-zavrsni",
+              "ttf-doktorski",
+              "ttf-zavrsni",
+              "ufzg-diplomski",
+              "ufzg-doktorski",
+              "ufzg-zavrsni",
+              "vef-diplomski",
+              "vef-doktorski",
+              "vef-specijalisticki"
+            ]
           }
         ]
       }
@@ -16227,6 +16378,48 @@
         "course": "0b9f6c1e-1d2a-4c3b-8e4f-5a6b7c8d9e01",
         "values": [],
         "inherited": []
+      }
+    }
+  },
+  {
+    "route": "settings.values.get",
+    "name": "institution-editor",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-postavki-00000000000000001"
+      },
+      "query": {
+        "level": "institution"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "level": "institution",
+        "course": null,
+        "values": [
+          {
+            "key": "citation.style",
+            "value": "apa",
+            "bound": null,
+            "updatedAt": "2026-11-20T10:00:00.000Z"
+          }
+        ],
+        "inherited": [
+          {
+            "key": "citation.style",
+            "value": "fpzg",
+            "source": "default",
+            "bound": null
+          },
+          {
+            "key": "lekta.profile",
+            "value": "fpzg-opci-akademski-rad",
+            "source": "default",
+            "bound": null
+          }
+        ]
       }
     }
   },
@@ -16886,6 +17079,422 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "doi-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "source": {
+          "type": "article",
+          "title": "Izmišljeni rad",
+          "authors": [],
+          "year": 2025
+        }
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "isbn-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "isbn",
+        "identifier": "9780000000422"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "source": null
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "origin-missing",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "origin-mismatch",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "cross-site",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "body-too-large",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "4097"
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "50"
+      },
+      "rawBody": "{\"kind\":"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "content-length-invalid",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "x"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "50"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "50"
+      },
+      "rawBody": "{\"kind\":"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{kind:"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "unauthorized",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      }
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "isbn",
+        "identifier": "9780000000420"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "too-many-requests",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 429,
+      "contentType": "application/json",
+      "body": {
+        "error": "too_many_requests"
+      },
+      "headers": {
+        "retry-after": "1"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "timeout"
       }
     }
   },

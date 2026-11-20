@@ -3,6 +3,7 @@
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
+export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export {
   CLIENT_CONTEXT_MAX_BYTES,
   createClientContextRoute,
@@ -142,7 +143,6 @@ export {
   createRouter,
   routePath,
   type Handler,
-  type PathParams,
   type Route,
   type Router,
   sendJson,

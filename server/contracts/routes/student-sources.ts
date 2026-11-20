@@ -53,16 +53,14 @@ const Organization = closed({
 });
 const Authors = Type.Array(Type.Union([Person, Organization]), { minItems: 1, maxItems: 50 });
 const Year = Type.Integer({ minimum: 1000, maximum: 9999 });
-const Url = Type.String({ pattern: `^https?://[\\x21-\\x7e]{0,2040}${END}`, maxLength: 2048 });
+const Url = Type.String({ pattern: `^https?://[\\x21-\\x7e]*${END}`, maxLength: 2048 });
 // A real calendar date (the validator's isAccessedDate): 30 and 31 day months,
 // February to the 28th, and the 29th only in a leap year.
-const LEAP_CENTURIES = Array.from({ length: 90 }, (_, i) => i + 10)
-  .filter((century) => century % 4 === 0)
-  .join("|");
-const LEAP_YEAR = `(?:[1-9]\\d(?:0[48]|[2468][048]|[13579][26])|(?:${LEAP_CENTURIES})00)`;
+const MULTIPLE_OF_FOUR = "(?:0[48]|[2468][048]|[13579][26])";
+const LEAP_YEAR = `(?:\\d{2}${MULTIPLE_OF_FOUR}|${MULTIPLE_OF_FOUR}00)`;
 const AccessedDate = Type.String({
   pattern:
-    "^(?:[1-9]\\d{3}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))" +
+    "^(?:\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))" +
     `|${LEAP_YEAR}-02-29)${END}`,
 });
 
