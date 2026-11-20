@@ -254,7 +254,7 @@ async function removeFixture() {
 }
 
 function asVesna(sql: string, values: unknown[]) {
-  return withActor(tokens.vesna, async (tx) => (await tx.query(sql, values)).rows[0]);
+  return withActor(tokens.vesna, async (tx) => (await tx.query(sql, values)).rows[0]!);
 }
 
 function can(person: Person, documentId: string) {
@@ -262,7 +262,7 @@ function can(person: Person, documentId: string) {
     tokens[person],
     async (tx) =>
       (await tx.query<{ can: boolean }>("SELECT institution.can('read', $1) AS can", [documentId]))
-        .rows[0].can,
+        .rows[0]!.can,
   );
 }
 
@@ -300,7 +300,7 @@ async function race(student: Person, assignmentId: string, change: Array<[string
         "SELECT outcome, document_id FROM app.open_student_work($1)",
         [assignmentId],
       )
-    ).rows[0];
+    ).rows[0]!;
     expect(row.outcome).toBe("opened");
     documentId = row.document_id;
     opened();
@@ -331,7 +331,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   // Three connections: the teacher's and the student's transactions stay
   // open on two while the third asks.
@@ -399,7 +399,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -468,7 +468,7 @@ async function returnDuringAssignment<T>(
     assigned();
     await holdAssignment;
     committedAfter = (await tx.query<{ at: string }>("SELECT clock_timestamp()::text AS at"))
-      .rows[0].at;
+      .rows[0]!.at;
   });
   let studentRun: Promise<T> | undefined;
   let finishedBeforeCommit = false;
@@ -500,7 +500,7 @@ function enroll(person: Person) {
           "SELECT outcome FROM institution.enroll_with_code($1::text)",
           [enrollmentCode],
         )
-      ).rows[0].outcome,
+      ).rows[0]!.outcome,
   );
 }
 
@@ -519,7 +519,7 @@ describe("a course return racing the assignment of a group teacher (DAN-351, #13
                 "SELECT outcome, document_id FROM app.open_student_work($1)",
                 [returnAssignmentId],
               )
-            ).rows[0],
+            ).rows[0]!,
         );
         return { outcome, work };
       },
@@ -677,7 +677,7 @@ describe("a student removed after an assignment of a group teacher began (DAN-35
               "SELECT outcome, document_id FROM app.open_student_work($1)",
               [returnAssignmentId],
             )
-          ).rows[0],
+          ).rows[0]!,
       );
       expect(work.outcome).toBe("opened");
       documentId = work.document_id;
@@ -745,7 +745,7 @@ async function changeAtTie(
   });
   let teacherNow = "";
   const teacherRun = withActor(tokens.vesna, async (tx) => {
-    teacherNow = (await tx.query<{ at: string }>("SELECT now()::text AS at")).rows[0].at;
+    teacherNow = (await tx.query<{ at: string }>("SELECT now()::text AS at")).rows[0]!.at;
     begun();
     await holdChange;
     for (const [sql, values] of change) await tx.query(sql, values);
@@ -761,7 +761,7 @@ async function changeAtTie(
             "SELECT outcome, document_id FROM app.open_student_work($1)",
             [assignmentId],
           )
-        ).rows[0],
+        ).rows[0]!,
     );
     expect(work.outcome).toBe("opened");
     documentId = work.document_id;

@@ -141,7 +141,7 @@ async function resetCase() {
 function call<T>(who: Person, sql: string, params: unknown[] = []) {
   return withActor(tokens[who], async (tx) => {
     const row = await tx.query<{ v: T }>(sql, params);
-    return row.rows[0].v;
+    return row.rows[0]!.v;
   });
 }
 
@@ -201,7 +201,7 @@ async function untilLockWait(waiter: { user: string } | { pid: number }) {
          WHERE wait_event_type = 'Lock' AND (usename = $1 OR pid = $2)`,
         "user" in waiter ? [waiter.user, null] : [null, waiter.pid],
       );
-      if (row.rows[0].waiting > 0) return;
+      if (row.rows[0]!.waiting > 0) return;
       await new Promise((resolve) => setImmediate(resolve));
     }
     throw new Error("no statement waited on the lock");
@@ -229,7 +229,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   const url = new URL(SAFE_ADMIN_URL);
   url.username = login;
@@ -253,7 +253,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -326,7 +326,7 @@ describe("faculty rule publication under concurrency (DAN-315)", () => {
     await operator.connect();
     let revocation: Promise<unknown> | undefined;
     try {
-      const pid = (await operator.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]
+      const pid = (await operator.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]!
         .pid;
       revocation = operator.query(
         `UPDATE institution.institution_role SET revoked_at = now()

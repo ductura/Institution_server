@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { Transform } from "@tiptap/pm/transform";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
 import { createBrowserReplayStepsV1 } from "./edit-steps-v1-replay-steps.ts";
@@ -22,6 +22,9 @@ import {
   buildReplayTimeline,
   type ReplayTimelineInput,
 } from "../../domain/projection/replay-timeline.ts";
+
+// Building and replaying the evidence records involves real cryptography.
+vi.setConfig({ testTimeout: 30_000 });
 
 // Synthetic only: invented ids and filler text, no real work or person.
 const A = "aaaaaaaa-0000-4000-8000-000000000001";

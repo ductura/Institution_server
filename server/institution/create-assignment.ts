@@ -4,7 +4,7 @@ import type { WithActor } from "../database/with-actor.ts";
 const MAX_REQUEST_BYTES = 90_000;
 const MAX_WORDS = 1_000_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const NUL = String.fromCodePoint(0);
+const NUL = "\u0000";
 const ISO_INSTANT =
   /^(\d{4})-(\d{2})-(\d{2})T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))$/;
 const WORK_TYPES = new Set([
@@ -25,7 +25,7 @@ const AI_PURPOSES = new Set([
   "translation",
 ]);
 
-export interface AssignmentInput {
+export type AssignmentInput = {
   title: string;
   instructions: string;
   workType: string;
@@ -37,11 +37,15 @@ export interface AssignmentInput {
   importAllowed: boolean;
   wordMin: number | null;
   wordMax: number | null;
-}
+};
 
 type JsonObject = Record<string, unknown>;
 
-function json(body: unknown, status: number, headers?: ResponseInit["headers"]): Response {
+function json(
+  body: unknown,
+  status: number,
+  headers?: ConstructorParameters<typeof Headers>[0],
+): Response {
   const responseHeaders = new Headers(headers);
   responseHeaders.set("content-type", "application/json; charset=utf-8");
   responseHeaders.set("cache-control", "no-store");

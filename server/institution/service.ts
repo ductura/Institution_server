@@ -12,9 +12,19 @@ import type {
   EnrollmentCodeIssueOutcome,
   EnrollmentCodeRevokeOutcome,
   InstitutionCourses,
+  InstitutionMembers,
+  StudentRemovalOutcome,
+  StudentReturnOutcome,
+  WorkLanguageOutcome,
+  WorkLanguages,
+  AssignmentWorkLanguageOutcome,
 } from "../database/index.ts";
 
 import { parseCourseBody, parseEnrollmentCodeBody } from "./schemas.ts";
+import {
+  parseAssignmentWorkLanguageBody,
+  parseWorkLanguageExceptionBody,
+} from "./work-language-bodies.ts";
 
 /** A body the parser refused: the route's 422 invalid_input. */
 export type InvalidInput = { readonly status: "invalid_input" };
@@ -27,12 +37,38 @@ export type InstitutionService = {
     value: unknown,
   ): Promise<EnrollmentCodeIssueOutcome | InvalidInput>;
   revokeEnrollmentCode(token: string, courseId: string): Promise<EnrollmentCodeRevokeOutcome>;
+  removeStudent(token: string, courseId: string, studentId: string): Promise<StudentRemovalOutcome>;
+  allowStudentReturn(
+    token: string,
+    courseId: string,
+    studentId: string,
+  ): Promise<StudentReturnOutcome>;
+  setAssignmentWorkLanguage(
+    token: string,
+    assignmentId: string,
+    value: unknown,
+  ): Promise<AssignmentWorkLanguageOutcome | InvalidInput>;
+  setWorkLanguage(
+    token: string,
+    assignmentId: string,
+    studentId: string,
+    value: unknown,
+  ): Promise<WorkLanguageOutcome | InvalidInput>;
+  /** documentId is already a checked work id (the route's isWorkId). */
+  setWorkLanguageForDocument(
+    token: string,
+    assignmentId: string,
+    documentId: string,
+    value: unknown,
+  ): Promise<WorkLanguageOutcome | InvalidInput>;
 };
 
 const INVALID: InvalidInput = { status: "invalid_input" };
 
 export function createInstitutionService(deps: {
   courses: InstitutionCourses;
+  members: InstitutionMembers;
+  languages: WorkLanguages;
 }): InstitutionService {
   return {
     async createCourse(token, value) {
@@ -45,5 +81,35 @@ export function createInstitutionService(deps: {
       return deps.courses.issueEnrollmentCode(token, courseId, body.validUntil);
     },
     revokeEnrollmentCode: (token, courseId) => deps.courses.revokeEnrollmentCode(token, courseId),
+    // The body carries nothing (the route checks it is {}); the ids come from the path.
+    removeStudent: (token, courseId, studentId) =>
+      deps.members.removeStudent(token, courseId, studentId),
+    allowStudentReturn: (token, courseId, studentId) =>
+      deps.members.allowStudentReturn(token, courseId, studentId),
+    async setAssignmentWorkLanguage(token, assignmentId, value) {
+      const body = parseAssignmentWorkLanguageBody(value);
+      if (body === null) return INVALID;
+      return deps.languages.setAssignmentWorkLanguage(
+        token,
+        assignmentId,
+        body.expectedVersion,
+        body.language,
+      );
+    },
+    async setWorkLanguage(token, assignmentId, studentId, value) {
+      const body = parseWorkLanguageExceptionBody(value);
+      if (body === null) return INVALID;
+      return deps.languages.setWorkLanguage(token, assignmentId, studentId, body.language);
+    },
+    async setWorkLanguageForDocument(token, assignmentId, documentId, value) {
+      const body = parseWorkLanguageExceptionBody(value);
+      if (body === null) return INVALID;
+      return deps.languages.setWorkLanguageForDocument(
+        token,
+        assignmentId,
+        documentId,
+        body.language,
+      );
+    },
   };
 }

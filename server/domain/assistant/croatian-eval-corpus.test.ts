@@ -20,24 +20,24 @@ const ITEM_KEYS = ["id", "purpose", "level", "instruction", "input", "criteria"]
 const CRITERION_KEYS = ["id", "subject", "text"] as const;
 const MIN_ITEMS_PER_PURPOSE = 2;
 
-interface Criterion {
+type Criterion = {
   id: string;
   subject: string;
   text: string;
-}
-interface Item {
+};
+type Item = {
   id: string;
   purpose: string;
   level: number;
   instruction: string;
   input: string;
   criteria: string[];
-}
-interface Corpus {
+};
+type Corpus = {
   catalogVersion: number;
   criteria: Criterion[];
   items: Item[];
-}
+};
 
 /** Up to three spaces, dots, slashes or dashes between the digit groups of a number. */
 const PHONE_GAP = String.raw`[\s./\u2010-\u2014-]{0,3}`;

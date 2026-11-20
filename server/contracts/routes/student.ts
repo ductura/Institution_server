@@ -2,8 +2,9 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { SignedSubmissionReceipt } from "./evidence.ts";
 import { MUTATION_GUARD } from "./shared.ts";
-import { END, Name } from "./teacher.ts";
+import { CODE_POINT, END, Name } from "./teacher.ts";
 
 // Literal port of Ductus 078c780 src/components/student/my-assignments-read.ts
 // (#711, "Moji zadaci"): Ductus reads it in a server component, so the route
@@ -227,9 +228,162 @@ export const studentNoticeReadPost = defineRoute({
   ],
 });
 
+// UGOVORI-API (Ductus#2028 c.7019543739, approved as SRV-NG in c.7019668458):
+// the notice of the current version of an assignment, as E-6 shows it before
+// the work opens. Every member of the notice fingerprint (DAN-306,
+// server/domain/notice/fingerprint.ts NOTICE_FINGERPRINT_FIELDS) is here, so
+// the browser computes the fingerprint it acknowledges from exactly what it
+// showed; the fingerprint itself is never sent. No handler yet (CONTRACT_ONLY).
+const AiPurpose = oneOf([
+  ...["formatting", "proofreading", "literature_search", "transcription", "translation"],
+]);
+const WordCount = Type.Integer({ minimum: 1, maximum: 1_000_000 });
+const WordBound = Type.Union([WordCount, Type.Null()]);
+
+export const studentNoticeGet = defineRoute({
+  id: "student.notice.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/notice",
+  inventory: "app/api/student/assignments/[assignmentId]/notice/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The notice of the current version of an assignment of the caller's open student membership (E-6): the content of that version as the notice shows it, the notice template version, and when the caller first read it (PO-7, student.notice-read.post) and acknowledged it (institution.acknowledgment.post), each null until then. The fields are exactly those of the notice fingerprint (DAN-306), instants as Date.toISOString writes them; the browser computes the fingerprint from them and sends it with versionNo to institution.acknowledgment.post. aiPurposes is empty when aiPolicy is prohibited. The identity comes from the session only. Sec-Fetch-Site, when sent, other than same-origin is 403. Another's assignment, an unknown one and a malformed id are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
+  request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "the notice",
+      body: closed({
+        assignmentId: LowerUuid,
+        versionNo: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+        /** NOTICE_TEMPLATE_VERSION of the static text the notice shows around these fields. */
+        templateVersion: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+        title: Type.String({ minLength: 1 }),
+        instructions: Type.String(),
+        workType: WorkType,
+        opensAt: Instant,
+        dueAt: Instant,
+        aiPolicy: oneOf(["prohibited", "partially_allowed", "encouraged"]),
+        aiPurposes: Type.Array(AiPurpose, { maxItems: 5 }),
+        evidenceProfile: oneOf(["basic", "extended"]),
+        wordMin: WordBound,
+        wordMax: WordBound,
+        readAt: Type.Union([Instant, Type.Null()]),
+        acknowledgedAt: Type.Union([Instant, Type.Null()]),
+      }),
+    },
+  ],
+  errors: [
+    error(401, "unauthorized"),
+    error(403, "forbidden"),
+    error(404, "not_found"),
+    error(503, "unavailable"),
+  ],
+});
+
+// SRV-19 adds routes because a new member of an existing closed body would
+// require a major release of @ductura/contracts.
+const { revision, requestedAt } = SignedSubmissionReceipt.properties.payload.properties;
+const assignmentParams = closed({ assignmentId: Type.String({ minLength: 1 }) });
+const assignmentReadErrors = [
+  error(401, "unauthorized"),
+  error(404, "not_found"),
+  error(503, "unavailable"),
+] as const;
+
+export const StudentSubmissionState = Type.Union([
+  closed({ state: Type.Literal("none") }),
+  closed({ state: Type.Literal("ceka"), revision, requestedAt }),
+  closed({ state: Type.Literal("potvrdeno"), receipt: SignedSubmissionReceipt }),
+]);
+
+export const studentSubmissionGet = defineRoute({
+  id: "student.submission.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/submission",
+  inventory: "app/api/student/assignments/[assignmentId]/submission/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The caller's submission for this assignment. An accessible assignment with no submission returns none. ceka means the submission was recorded but no signed receipt is attached yet. potvrdeno carries the same signed receipt as submission.submit.post. An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: assignmentParams },
+  responses: [{ status: 200, description: "submission state", body: StudentSubmissionState }],
+  errors: assignmentReadErrors,
+});
+
+const WordRange = Type.Union([
+  closed({ min: WordCount, max: WordBound }),
+  closed({ min: Type.Null(), max: WordCount }),
+  Type.Null(),
+]);
+
+export const studentAssignmentRequirementsGet = defineRoute({
+  id: "student.assignment-requirements.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/requirements",
+  inventory: "app/api/student/assignments/[assignmentId]/requirements/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The word range of the current assignment version. A null bound leaves that end open; when both bounds are present min is at most max. A null range means neither bound is set. An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: assignmentParams },
+  responses: [{ status: 200, description: "word range", body: closed({ wordRange: WordRange }) }],
+  errors: assignmentReadErrors,
+});
+
+const NoteText = Type.String({
+  pattern: `^(?=[\\s\\S]*\\S)(?:${CODE_POINT}|[^\\u0000\\uD800-\\uDFFF]){1,600}${END}`,
+});
+const SubmissionNote = closed({ id: LowerUuid, text: NoteText, createdAt: Instant });
+
+export const studentSubmissionNotesGet = defineRoute({
+  id: "student.submission-notes.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/submission-notes",
+  inventory: "app/api/student/assignments/[assignmentId]/submission-notes/route.ts",
+  access: "student_enrolled",
+  summary: "The caller's notes for an accessible assignment, oldest first, then by id.",
+  request: { params: assignmentParams },
+  responses: [
+    {
+      status: 200,
+      description: "notes, possibly empty",
+      body: closed({ notes: Type.Array(SubmissionNote) }),
+    },
+  ],
+  errors: assignmentReadErrors,
+});
+
+export const studentSubmissionNotesPost = defineRoute({
+  id: "student.submission-notes.post",
+  method: "POST",
+  path: "/api/v1/student/submission-notes",
+  inventory: "app/api/student/submission-notes/route.ts",
+  access: "student_enrolled",
+  summary:
+    "Adds a note for the caller's assignment. The text has 1 to 600 Unicode code points and contains a non-whitespace character. Notes are append-only and stay separate from the submission and signed receipt.",
+  request: {
+    contentType: "application/json",
+    // Fits 600 supplementary characters even when sent as escaped surrogate pairs.
+    maxBodyBytes: 8192,
+    body: closed({ assignmentId: LowerUuid, text: NoteText }),
+  },
+  responses: [{ status: 201, description: "added note", body: SubmissionNote }],
+  errors: [
+    ...MUTATION_GUARD,
+    ...assignmentReadErrors,
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+  ],
+});
+
 export const studentRoutes = [
   studentAssignmentsGet,
   studentAccessLogGet,
   studentAssignmentWorkGet,
   studentNoticeReadPost,
+  studentNoticeGet,
+  studentSubmissionGet,
+  studentAssignmentRequirementsGet,
+  studentSubmissionNotesGet,
+  studentSubmissionNotesPost,
 ] as const;

@@ -13,13 +13,12 @@ export type EvidenceOutboxItem = {
   attempts: number;
   createdAt: string;
   updatedAt: string;
-  // exactOptionalPropertyTypes: a transition sets it to undefined explicitly.
   lastFailure?: EvidenceIngestOutcome["status"] | undefined;
   receipt?: SignedEvidenceReceipt;
 };
 
-export interface EvidenceOutboxStore {
+export type EvidenceOutboxStore = {
   put(item: EvidenceOutboxItem): Promise<void>;
   get(id: string): Promise<EvidenceOutboxItem | null>;
   listPending(limit: number): Promise<readonly EvidenceOutboxItem[]>;
-}
+};

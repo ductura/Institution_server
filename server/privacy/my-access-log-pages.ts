@@ -1,11 +1,13 @@
-import {
-  type AccessLogDay,
-  accessLogDaysOf,
-  accessLogEntryOf,
-} from "../domain/privacy/access-log-days.ts";
+import { type AccessLogDay, accessLogDaysOf } from "../domain/privacy/access-log-days.ts";
 import type { WithActor } from "../database/with-actor.ts";
 
-import { type AccessLogCursor, cursorOf, readMyAccessLog } from "./my-access-log";
+import {
+  type AccessLogCursor,
+  MY_ACCESS_LOG_CURSOR_INVALID,
+  MY_ACCESS_LOG_NOT_FOUND,
+  MY_ACCESS_LOG_UNAUTHENTICATED,
+  createMyAccessLogReader,
+} from "../database/my-access-log.ts";
 
 /**
  * DAN-294 (S-42; review FAIL c.6819070024, contract on #1836 c.6819193865):
@@ -24,10 +26,10 @@ import { type AccessLogCursor, cursorOf, readMyAccessLog } from "./my-access-log
  */
 
 /** The query of the page as Next.js hands it; any other parameter, `stranica` too, is ignored. */
-export interface AccessLogQuery {
-  prije?: string | string[];
-  zapis?: string | string[];
-}
+export type AccessLogQuery = {
+  prije?: string | string[] | undefined;
+  zapis?: string | string[] | undefined;
+};
 
 export type MyAccessLogPage =
   /** `next` is the cursor of an older page, null when there is none; `continued` when read from a cursor. */
@@ -41,11 +43,11 @@ const FIRST_INSTANT = Date.parse("0001-01-01T00:00:00Z");
 function cursorParam(query: AccessLogQuery, now: number): AccessLogCursor | null {
   const { prije, zapis } = query;
   if (typeof prije !== "string" || typeof zapis !== "string") return null;
-  const checked = cursorOf({ beforeAt: prije, beforeId: zapis });
-  if (checked === null) return null;
-  const at = Date.parse(checked[0]);
-  if (at > now || at < FIRST_INSTANT) return null;
-  return { beforeAt: checked[0], beforeId: checked[1] };
+  // The reader checks the grid and the uuid (MY_ACCESS_LOG_CURSOR_INVALID);
+  // here only what it does not: not in the future, not before year one.
+  const at = Date.parse(prije);
+  if (Number.isNaN(at) || at > now || at < FIRST_INSTANT) return null;
+  return { beforeAt: prije, beforeId: zapis };
 }
 
 /** The address of the next older page. */
@@ -60,15 +62,31 @@ export async function readMyAccessLogPage(
   query: AccessLogQuery,
   now: number = Date.now(),
 ): Promise<MyAccessLogPage> {
-  const cursor = cursorParam(query, now);
-  const read = await readMyAccessLog(sessionToken, withActor, documentId, cursor ?? undefined);
-  if (read.kind !== "ok") return { kind: read.kind };
-  if (cursor === null) return { kind: "ok", days: read.days, next: read.next, continued: false };
-  const edge = Date.parse(cursor.beforeAt);
-  const older = read.rows.filter(
-    (r) => (accessLogEntryOf(r)?.at ?? Number.NEGATIVE_INFINITY) < edge,
+  const reader = createMyAccessLogReader(withActor);
+  let cursor = cursorParam(query, now);
+  let read = await reader.read(sessionToken, documentId, cursor);
+  if (!read.ok && cursor !== null && read.error.code === MY_ACCESS_LOG_CURSOR_INVALID.code) {
+    // An address the reader refuses is read as no cursor; nothing was sent to the database.
+    cursor = null;
+    read = await reader.read(sessionToken, documentId, null);
+  }
+  if (!read.ok) {
+    if (read.error.code === MY_ACCESS_LOG_UNAUTHENTICATED.code) return { kind: "unauthorized" };
+    if (read.error.code === MY_ACCESS_LOG_NOT_FOUND.code) return { kind: "not_found" };
+    return { kind: "unavailable" };
+  }
+  // The reader has already left out what is not older than the cursor. The days
+  // are built by the domain from rows, so the entries go back to the row shape.
+  const days = accessLogDaysOf(
+    read.value.entries.map((e) => ({
+      entry_id: e.id,
+      opened_at: new Date(e.at),
+      reader_role: e.role,
+      surface: e.surface,
+      reader_given_name: e.reader?.givenName ?? null,
+      reader_family_name: e.reader?.familyName ?? null,
+    })),
   );
-  const days = accessLogDaysOf(older);
   if (days === null) return { kind: "unavailable" };
-  return { kind: "ok", days, next: read.next, continued: true };
+  return { kind: "ok", days, next: read.value.next, continued: cursor !== null };
 }

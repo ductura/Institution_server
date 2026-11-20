@@ -251,8 +251,11 @@ FROM (VALUES
   ('vesna', $$ SELECT 'ok' FROM institution.set_course_holder({k3}, {vesna}) $$, 'ZD403', 'holder of a course of another institution'),
   ('vesna', $$ SELECT 'ok' FROM institution.create_seminar_group({k1}, 'Grupa C') $$, 'ok', 'a group in her own course'),
   ('marko', $$ SELECT 'ok' FROM institution.create_seminar_group({k1}, 'Grupa D') $$, 'ZD403', 'a group in a course of someone else'),
-  ('goran', $$ SELECT 'ok' FROM institution.create_seminar_group({k1}, 'Grupa D') $$, 'ZD403', 'a group in the course of his group'),
-  ('iva', $$ SELECT 'ok' FROM institution.create_seminar_group({k1}, 'Grupa D') $$, 'ZD403', 'a group as administrator'),
+  -- SRV-15, owner decision "A opcija" (Ductus#2028 c.7016215710): a collaborator
+  -- of the course team only adds a group; an administrator of the course's
+  -- institution manages them all.
+  ('goran', $$ SELECT 'ok' FROM institution.create_seminar_group({k1}, 'Grupa D') $$, 'ok', 'a group in the course of his group'),
+  ('iva', $$ SELECT 'ok' FROM institution.create_seminar_group({k1}, 'Grupa E') $$, 'ok', 'a group as administrator'),
   ('petra', $$ SELECT 'ok' FROM institution.create_seminar_group({k1}, 'Grupa D') $$, 'ZD403', 'a group in a course of another institution'),
   ('vesna', $$ SELECT 'ok' FROM institution.create_seminar_group({k3}, 'Grupa D') $$, 'ZD403', 'a group in a course of another institution'),
   ('vesna', $$ SELECT 'ok' FROM institution.assign_group_student({ga}, {dora}) $$, 'ok', 'a student of her course into her group'),
@@ -261,9 +264,11 @@ FROM (VALUES
   ('vesna', $$ SELECT 'ok' FROM institution.assign_group_student({ga}, {tomo}) $$, 'ZD422', 'a student of another institution into her group'),
   ('vesna', $$ SELECT 'ok' FROM institution.assign_group_student({gb}, {tomo}) $$, 'ZD403', 'a student into a group of another institution'),
   ('petra', $$ SELECT 'ok' FROM institution.assign_group_teacher({ga}, {petra}) $$, 'ZD403', 'herself into a group of another institution'),
+  ('goran', $$ SELECT 'ok' FROM institution.assign_group_teacher({ga}, {hana}) $$, 'ZD403', 'a teacher into the group he teaches'),
   ('vesna', $$ SELECT 'ok' FROM institution.assign_group_teacher({ga}, {petra}) $$, 'ZD422', 'a teacher of another institution into her group'),
   ('vesna', $$ SELECT 'ok' FROM institution.end_group_assignment({gb}, {tomo}) $$, 'ZD403', 'ends a place in a group of another institution'),
   ('marko', $$ SELECT 'ok' FROM institution.end_group_assignment({ga}, {ana}) $$, 'ZD403', 'ends a place in a group of someone else'),
+  ('goran', $$ SELECT 'ok' FROM institution.end_group_assignment({ga}, {ana}) $$, 'ZD403', 'ends a place in the group he teaches'),
   ('vesna', $$ SELECT 'ok' FROM institution.end_group_assignment({ga}, {dora}) $$, 'ok', 'ends a place in her own group'),
   ('anon', $$ SELECT institution.grant_work_access({zm1}, {ana}, {vesna}, 'committee', '{read_text}', NULL, now() + interval '1 day')::text $$, 'ZD401', 'a grant without a session'),
   ('ana', $$ SELECT institution.grant_work_access({zm1}, {ana}, {vesna}, 'committee', '{read_text}', NULL, now() + interval '1 day')::text $$, 'ZD403', 'a grant on her own work'),

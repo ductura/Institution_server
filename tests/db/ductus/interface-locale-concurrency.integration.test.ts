@@ -46,10 +46,10 @@ const save = (locale: string) => async (tx: ActorTransaction) =>
     await tx.query<{ locale: string }>("SELECT identity.set_interface_locale($1) AS locale", [
       locale,
     ])
-  ).rows[0].locale;
+  ).rows[0]!.locale;
 const read = async (tx: ActorTransaction) =>
   (await tx.query<{ locale: string | null }>("SELECT identity.interface_locale() AS locale"))
-    .rows[0].locale;
+    .rows[0]!.locale;
 
 /** Waits until a statement naming `fn` is in PostgreSQL and blocked by another transaction. */
 async function waitForBlocked(fn = "set_interface_locale", timeoutMs = 5_000) {
@@ -92,8 +92,8 @@ function hold<T>(token: string, step: (tx: ActorTransaction) => Promise<T>) {
 }
 
 const logout = async (tx: ActorTransaction) =>
-  (await tx.query<{ closed: boolean }>("SELECT identity.close_current_session() AS closed")).rows[0]
-    .closed;
+  (await tx.query<{ closed: boolean }>("SELECT identity.close_current_session() AS closed"))
+    .rows[0]!.closed;
 
 /** Opens one more live session of `name` and returns its token. */
 async function openSession(name: Name) {

@@ -30,6 +30,9 @@ import {
 } from "./edit-steps-v1-replayer.ts";
 import { removedRangeCanonical } from "./edit-steps-v1-rules.ts";
 
+// The fuzz cases replay each variant through both drivers and the full segment chain.
+vi.setConfig({ testTimeout: 120_000 });
+
 /**
  * DAN-320, plan #1504 (PR B): fuzz of the edit step parser (P5) and of the
  * `ductus-edit-steps-v1` replayer through both drivers (P6), over the input

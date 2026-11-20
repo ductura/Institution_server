@@ -4,21 +4,11 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { REVISION_ZERO_SHA256 } from "../../../server/domain/document/revision-zero.ts";
-import {
-  createActorReader,
-  createWithActor,
-  createWorkOpener,
-  type WithActor,
-} from "../../../server/database/index.ts";
-import {
-  createDatabases,
-  createEvidenceOpenRoute,
-  createLayers,
-  startServer,
-  type Running,
-} from "../../../server/http/index.ts";
-import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
+import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
+import { createActorReader, createWorkOpener } from "../../../server/database/index.ts";
+import { createEvidenceOpenRoute } from "../../../server/http/index.ts";
 
+import { postTestRoute, startTestRoute } from "./http-route.ts";
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-8 step 2 / DAN-83 (docs/BACKEND.md 4.13, pgTAP rows): pgTAP runs in one
@@ -54,7 +44,7 @@ const ORIGIN = "http://localhost:3000";
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
 let appPool: pg.Pool;
 let withActor: WithActor;
-let server: Running;
+let server: Awaited<ReturnType<typeof startTestRoute>>;
 let fixtureReady = false;
 
 type OpenRow = {
@@ -211,22 +201,17 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   appPool = new pg.Pool({ connectionString: applicationUrl(), max: 2 });
   withActor = createWithActor(appPool);
-  server = await startServer({
-    host: "127.0.0.1",
-    port: 0,
-    layers: createLayers({ expectedOrigin: ORIGIN }),
-    databases: createDatabases(),
-    routes: [
-      createEvidenceOpenRoute({
-        actorReader: createActorReader(withActor),
-        workOpener: createWorkOpener(withActor),
-      }),
-    ],
-  });
+  server = await startTestRoute(
+    createEvidenceOpenRoute({
+      actorReader: createActorReader(withActor),
+      workOpener: createWorkOpener(withActor),
+    }),
+    ORIGIN,
+  );
 });
 
 afterAll(async () => {
@@ -243,7 +228,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -264,7 +249,7 @@ describe("opening a student's work concurrently", () => {
     });
 
     const firstRun = withActor(token, async (tx) => {
-      const row = (await tx.query<OpenRow>(openSql, [assignmentId])).rows[0];
+      const row = (await tx.query<OpenRow>(openSql, [assignmentId])).rows[0]!;
       firstResult(row);
       await holdFirst; // Keep the uncommitted work until the second call waits on it.
       return row;
@@ -277,10 +262,10 @@ describe("opening a student's work concurrently", () => {
       firstRow = await firstQuery;
       secondRun = withActor(
         token,
-        async (tx) => (await tx.query<OpenRow>(openSql, [assignmentId])).rows[0],
+        async (tx) => (await tx.query<OpenRow>(openSql, [assignmentId])).rows[0]!,
       );
       secondAnsweredBeforeRelease = await Promise.race([
-        secondRun.then(
+        secondRun!.then(
           () => true,
           () => true,
         ),
@@ -317,17 +302,7 @@ describe("opening a student's work concurrently", () => {
 
 describe("the open route makes a work only when asked to start it (DAN-331, F-137)", () => {
   const open = (body: unknown) =>
-    fetch(`http://127.0.0.1:${server.port}/api/v1/evidence/open`, {
-      method: "POST",
-      headers: {
-        origin: ORIGIN,
-        "sec-fetch-site": "same-origin",
-        "ductus-protocol": "1",
-        "content-type": "application/json",
-        cookie: `${SESSION_COOKIE_NAME}=${token}`,
-      },
-      body: JSON.stringify(body),
-    });
+    postTestRoute(server, ORIGIN, "/api/v1/evidence/open", token, body);
   // Every evidence and institution row of this file's institution, as text.
   const print = async () =>
     (
@@ -351,7 +326,7 @@ describe("the open route makes a work only when asked to start it (DAN-331, F-13
           "SELECT count(*) FROM evidence.project WHERE institution_id = $1 AND assignment_id = $2",
           [institutionId, assignment],
         )
-      ).rows[0].count,
+      ).rows[0]!.count,
     );
 
   it("answers 409 not_started and writes nothing without start, then makes one work with it", async () => {

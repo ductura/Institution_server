@@ -62,6 +62,28 @@ export type {
   EnrollmentCodeRevokeOutcome,
   InstitutionCourses,
 } from "./institution-courses.ts";
+export type {
+  InstitutionMembers,
+  StudentRemovalOutcome,
+  StudentReturnOutcome,
+} from "./institution-members.ts";
+export type {
+  AssignmentSubmission,
+  AssignmentSubmissionsOutcome,
+  AssignmentSubmissionsReader,
+} from "./assignment-submissions.ts";
+export type { LivePublishOutcome, LiveReadOutcome, LiveStates } from "./live-state.ts";
+export type {
+  MentoredWork,
+  MentoredWorkOutcome,
+  MentoredWorksOutcome,
+  MentoredWorksReader,
+} from "./mentored-works.ts";
+export type {
+  AssignmentWorkLanguageOutcome,
+  WorkLanguageOutcome,
+  WorkLanguages,
+} from "./work-language.ts";
 export type { Enrollment, InstitutionEnrollment } from "./institution-enrollment.ts";
 export type {
   AccessLogCursor,
@@ -121,6 +143,9 @@ export { createInstitutionGroups } from "./institution-groups.ts";
 export { createAdminCourses } from "./admin-courses.ts";
 export type { AdminCourseInput, AdminCourseOutcome, AdminCourses } from "./admin-courses.ts";
 export type {
+  CourseGroup,
+  CourseGroupsOutcome,
+  CourseGroupTeacher,
   GroupCreateOutcome,
   GroupTeacherOutcome,
   InstitutionGroups,
@@ -175,6 +200,19 @@ export {
 } from "./my-assignment-work.ts";
 export type { AssignmentWork, MyAssignmentWorkReader, WorkState } from "./my-assignment-work.ts";
 export {
+  createMySubmissionStateReader,
+  MY_SUBMISSION_STATE_DATABASE_ERROR,
+  MY_SUBMISSION_STATE_ERRORS,
+  MY_SUBMISSION_STATE_NOT_FOUND,
+  MY_SUBMISSION_STATE_ROW_MALFORMED,
+  MY_SUBMISSION_STATE_UNAUTHENTICATED,
+} from "./my-submission-state.ts";
+export type {
+  MySubmissionStateReader,
+  StoredSubmissionState,
+  StoredWordRange,
+} from "./my-submission-state.ts";
+export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,
   INTERFACE_LOCALE_ERRORS,
@@ -194,6 +232,11 @@ export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
+export { createInstitutionMembers } from "./institution-members.ts";
+export { createWorkLanguages } from "./work-language.ts";
+export { createAssignmentSubmissionsReader } from "./assignment-submissions.ts";
+export { createMentoredWorksReader } from "./mentored-works.ts";
+export { createLiveStates } from "./live-state.ts";
 export {
   createInstitutionEnrollment,
   ENROLLMENT_DATABASE_ERROR,

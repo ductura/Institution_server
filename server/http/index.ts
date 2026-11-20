@@ -78,6 +78,31 @@ export {
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
+  createLiveRoutes,
+  createLiveRoutesFor,
+  LIVE_BODY_TIMEOUT_MS,
+  LIVE_STATE_HEADER,
+  type LiveRouteOptions,
+} from "./live.ts";
+export {
+  createSubmissionRoute,
+  createSubmissionRouteFor,
+  SUBMISSION_MAX_BYTES,
+  SUBMISSION_TIMEOUT_MS,
+  submissionAnswer,
+  type SubmissionOutcome,
+  type SubmissionRouteOptions,
+  type SubmitWork,
+} from "./submission.ts";
+export {
+  createProcessSummaryRoute,
+  createProcessSummaryRouteFor,
+  parseProcessSummaryBody,
+  PROCESS_SUMMARY_TIMEOUT_MS,
+  type ProcessSummaryRouteOptions,
+  type ReadProcessSummary,
+} from "./process-summary.ts";
+export {
   declaredLengthRefusal,
   readBodyWithLimit,
   type LimitedBodyResult,
@@ -86,6 +111,7 @@ export {
   knownError,
   problemOf,
   sendHtmlProblem,
+  sendDeclaredResponse,
   sendProblem,
   sendRouteRefusal,
   type Problem,
@@ -141,6 +167,7 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
 export {
   createInstitutionGroupRoutes,
@@ -153,7 +180,11 @@ export {
 export {
   createTeacherAccessRoute,
   createTeacherCoursesRoute,
+  createTeacherReadRoutes,
   createTeacherReadRoutesFor,
+  MAX_ASSIGNMENT_IDS,
+  parseAssignmentIdsBody,
+  type TeacherReadOptions,
 } from "./teacher-reads.ts";
 export {
   createStudentAssignmentsRoute,
@@ -168,6 +199,10 @@ export {
   createStudentAccessLogRoute,
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
+export {
+  createStudentSubmissionRoutes,
+  createStudentSubmissionRoutesFor,
+} from "./student-submission.ts";
 export {
   bearerMatches,
   checkProvisionBody,

@@ -1,11 +1,11 @@
 // Teacher routes of the dev fake server: own courses, submissions, the fast
 // path and mentorships. An assignment the caller does not teach reads as an
 // empty list, as the contract says; the role alone opens no work (C-23).
-import { createHash } from "node:crypto";
 
 import type { Operations } from "../../contracts/index.ts";
 import type { Handlers } from "./server.ts";
 import {
+  fakeJournalScope,
   recordOpening,
   teachesCourse,
   visibleStudents,
@@ -84,7 +84,7 @@ function mentorshipWork(state: State, m: Mentorship) {
 export const TEACHER_HANDLERS: Handlers = {
   "teacher.access.get": ({ account }) => {
     if (account === null) return { error: "unauthorized" };
-    const scope = createHash("sha256").update(account.id).digest("hex");
+    const scope = fakeJournalScope(account.id);
     return {
       status: 200,
       body: { access: account.roles.includes("teacher") ? "allowed" : "denied", scope },

@@ -7,7 +7,7 @@
 // domains are invented (D-09: the provider runs here under NODE_ENV
 // development, started by this test).
 import { type ChildProcess, spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,6 +27,7 @@ import {
 } from "../../server/http/index.ts";
 import { SESSION_COOKIE_NAME } from "../../server/session/index.ts";
 import { baseEnv, oidcEnv, serverEnv, type StackOptions } from "./config.ts";
+import { signIn as signInForSeed } from "./seed-predaja.ts";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const EXPIRES = new Date("2030-01-01T12:00:00Z");
@@ -186,6 +187,19 @@ function expectSession(answer: Response, origin: string): void {
 }
 
 describe("pnpm lokalno: login through the AAI@EduHr simulator", () => {
+  it("the submission seeder signs in with a committed fake account", async () => {
+    const accounts = JSON.parse(
+      readFileSync(join(ROOT, "db/main/local/lazni-oidc-racuni.json"), "utf8"),
+    ) as object;
+    const { origin, issuer, opened } = await stack(accounts);
+    const subject = "sim:student:demo-student-3@demo.ductus.test";
+    const api = await signInForSeed(origin, issuer, subject);
+    expect(opened).toEqual([expect.objectContaining({ subject, teacherEligible: false })]);
+    const logout = await api("auth/logout", {});
+    expect(logout.status).toBe(303);
+    await logout.body?.cancel();
+  }, 30_000);
+
   it("a typed domain and role sign in as an account of that institution", async () => {
     const { origin, issuer, opened } = await stack();
     const { answer, page } = await signIn(origin, {

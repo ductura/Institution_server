@@ -9,7 +9,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // ETag for the owner and the teacher (PRODUCT §5 rule 5). The request headers
 // a route relies on are not in RequestSpec yet, so they are named in the
 // summary and the vectors, as ductus-protocol is for evidence (docs/vs1-rute.md).
-// No handler yet (CONTRACT_ONLY).
+// Served by server/http/live.ts.
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 /** isDocumentId: 1 to 256 code points, trimmed, no control character. */
