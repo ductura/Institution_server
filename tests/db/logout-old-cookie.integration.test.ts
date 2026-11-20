@@ -17,6 +17,7 @@ import {
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
@@ -30,6 +31,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
+  createStudentNoticeRouteFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -46,6 +48,7 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createMerlinRosterRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
@@ -203,6 +206,18 @@ const SESSION_ROUTES = {
   },
   // SRV-1101: the same for the text check configuration.
   // SRV-1102: the proofs of a source; a live session that is no student of the work gets 404.
+  "work.milestones.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/milestones`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.milestones.patch": {
+    method: "PATCH",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}`,
+    body: () => ({ dueAt: "2026-12-02T12:00:00.000Z" }),
+    live: 404,
+  },
   "student.source-proofs.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`,
@@ -277,6 +292,13 @@ const SESSION_ROUTES = {
   "teacher.submission-receipt.get": {
     method: "GET",
     path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-NG: a live session naming an assignment it is no student of gets 404.
+  "student.notice.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/notice`,
     body: () => undefined,
     live: 404,
   },
@@ -422,6 +444,19 @@ const SESSION_ROUTES = {
   "teacher.deadline-extension.post": {
     path: `/api/v1/teacher/assignments/${randomUUID()}/deadline-extensions`,
     body: () => ({ scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" }),
+    live: 404,
+  },
+  // SRV-1109: a live session that teaches no such assignment gets 404.
+  "teacher.merlin-roster.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/merlin/roster`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.merlin-roster-csv.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/merlin/csv`,
+    body: () => undefined,
     live: 404,
   },
   "teacher.assignment-submissions.post": {
@@ -615,6 +650,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createConsultationRecordRoutesFor",
+  "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -625,9 +661,11 @@ const FACTORIES = [
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
   "createStudentSubmissionRoutesFor",
+  "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createDeadlineExtensionRoutesFor",
+  "createMerlinRosterRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
@@ -659,6 +697,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
+  ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
@@ -669,9 +708,11 @@ const MOUNTED = [
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
   ...createStudentSubmissionRoutesFor(databases.main),
+  createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
+  ...createMerlinRosterRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),

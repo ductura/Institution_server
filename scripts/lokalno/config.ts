@@ -182,9 +182,13 @@ export type StackOptions = {
 };
 
 /** The default options of contract §1. */
-export function stackOptions(direct: boolean, accountsFile?: string): StackOptions {
+export function stackOptions(
+  direct: boolean,
+  accountsFile?: string,
+  origin?: string,
+): StackOptions {
   return {
-    origin: direct ? DIRECT_ORIGIN : EDGE_ORIGIN,
+    origin: origin ?? (direct ? DIRECT_ORIGIN : EDGE_ORIGIN),
     serverPort: PORTS.server,
     oidcPort: PORTS.oidc,
     issuer: ISSUER,

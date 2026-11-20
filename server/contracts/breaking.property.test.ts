@@ -39,6 +39,10 @@ describe("breaking changes on the real contract", () => {
     expect(fields.length).toBeGreaterThan(5);
   });
 
+  // One run edits and compares the whole published contract, so the time grows
+  // with the number of routes; the default 5 s was exceeded on CI (runs
+  // 44803706644, 44805251704). An explicit limit as the oneOf test below has;
+  // no run is dropped and every route is still covered.
   it("removing any route is reported", () => {
     fc.assert(
       fc.property(fc.constantFrom(...operations), ({ path, method }) => {
@@ -48,7 +52,7 @@ describe("breaking changes on the real contract", () => {
         );
       }),
     );
-  });
+  }, 30_000);
 
   it("removing any field of a success body is reported", () => {
     fc.assert(
@@ -68,7 +72,7 @@ describe("breaking changes on the real contract", () => {
         );
       }),
     );
-  });
+  }, 30_000);
 });
 
 // DAN-791: every oneOf of the published document has a discriminator, so a new
