@@ -32,6 +32,13 @@ export const DOCUMENT_SCHEMA_VERSION_V2 = 2;
  */
 export const DOCUMENT_SCHEMA_VERSION_V3 = 3;
 
+/**
+ * Document v4: rich content, marks with attributes and the cover
+ * (docs/contracts/document-schema-v4.md). Accepted by
+ * `validateVersionedDocument` only, and no work changes version.
+ */
+export const DOCUMENT_SCHEMA_VERSION_V4 = 4;
+
 declare const nodeIdBrand: unique symbol;
 
 /**
@@ -174,12 +181,26 @@ export const DOCUMENT_BLOCK_TYPES_BY_VERSION: ReadonlyMap<number, ReadonlySet<st
   [DOCUMENT_SCHEMA_VERSION, new Set<string>(["heading", ...PLAIN_BLOCK_TYPES])],
   [DOCUMENT_SCHEMA_VERSION_V2, new Set<string>(["heading", ...PLAIN_BLOCK_TYPES])],
   [DOCUMENT_SCHEMA_VERSION_V3, new Set<string>(["heading", ...PLAIN_BLOCK_TYPES])],
+  [
+    DOCUMENT_SCHEMA_VERSION_V4,
+    new Set<string>([
+      "heading",
+      ...PLAIN_BLOCK_TYPES,
+      "codeBlock",
+      "box",
+      "table",
+      "image",
+      "formula",
+      "pageBreak",
+    ]),
+  ],
 ]);
 
 export type DocumentSchemaVersion =
   | typeof DOCUMENT_SCHEMA_VERSION
   | typeof DOCUMENT_SCHEMA_VERSION_V2
-  | typeof DOCUMENT_SCHEMA_VERSION_V3;
+  | typeof DOCUMENT_SCHEMA_VERSION_V3
+  | typeof DOCUMENT_SCHEMA_VERSION_V4;
 
 export function isAcceptedDocumentSchemaVersion(value: unknown): value is DocumentSchemaVersion {
   return typeof value === "number" && DOCUMENT_BLOCK_TYPES_BY_VERSION.has(value);
@@ -327,7 +348,8 @@ export type CanonicalDocumentV2 = {
 };
 
 /** A document of any accepted version. */
-export type VersionedDocument = CanonicalDocument | CanonicalDocumentV2 | CanonicalDocumentV3;
+export type VersionedDocument =
+  CanonicalDocument | CanonicalDocumentV2 | CanonicalDocumentV3 | CanonicalDocumentV4;
 
 export function citationNode(sourceId: SourceId, locator?: string): CitationNode {
   return locator === undefined
@@ -397,11 +419,8 @@ export function crossReferenceNode(targetId: NodeId): CrossReferenceNode {
 }
 
 // ---------------------------------------------------------------------------
-// Document v4 (docs/contracts/document-schema-v4.md §1 to §4). Read by
-// `validateDocumentV4` only until the consumers take v4 (contract §11); it
-// is not yet in `DOCUMENT_BLOCK_TYPES_BY_VERSION` or `VersionedDocument`.
-
-export const DOCUMENT_SCHEMA_VERSION_V4 = 4;
+// Document v4 (docs/contracts/document-schema-v4.md §1 to §4), read by
+// `validateDocumentV4` and, through it, by `validateVersionedDocument`.
 
 /** Longest `tex` of a block formula and of an inline formula (§4.1). */
 export const MAX_FORMULA_TEX_CODE_POINTS = 4000;

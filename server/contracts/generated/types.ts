@@ -67,7 +67,7 @@ export type Operations = {
   "collaboration.comments.post": {
     params: { "action": "create" | "reply" | "resolve" | "reopen" | "delete" | "list" };
     query: undefined;
-    body: { "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "body": string; "documentId": string } | { "body": string; "threadId": string } | { "threadId": string } | { "commentId": string } | { "documentId": string };
+    body: { "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number }; "body": string; "documentId": string } | { "body": string; "threadId": string } | { "threadId": string } | { "commentId": string } | { "documentId": string } | { "anchor": null; "body": string; "documentId": string };
     success: { status: 200; body: { "id": string } | { "comments": ({ "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": null } | { "threadId": string; "commentId": string; "position": number; "authorRole": "teacher" | "student"; "isOwn": boolean; "body": null; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string; "deletedWindow": string })[] }; headers: {  } } | { status: 204; body: undefined; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "conflict" | "not_found" | "unavailable";
   };
@@ -407,6 +407,27 @@ export type Operations = {
     success: { status: 200; body: { "filename": "potvrda-predaje.pdf"; "pdfBase64": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.source-proof-image.get": {
+    params: { "assignmentId": string; "sourceId": string; "proofId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.source-proofs.get": {
+    params: { "assignmentId": string; "sourceId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "proofs": ({ "id": string; "page": string; "note": string | null; "imagePath": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.source-proofs.post": {
+    params: { "assignmentId": string; "sourceId": string };
+    query: undefined;
+    body: { "image": Blob; "page": string; "note"?: string };
+    success: { status: 201; body: { "id": string; "page": string; "note": string | null; "imagePath": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_input";
+  };
   "student.submission-notes.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -505,6 +526,20 @@ export type Operations = {
     success: { status: 200; body: { "courses": ({ "id": string; "name": string; "academicYear": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "assignments": ({ "id": string; "title": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "currentVersion": number; "enrolledStudents": number })[] })[] }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.deadline-extension.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "scope": "one"; "studentId": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" } | { "scope": "all"; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" };
+    success: { status: 201; body: { "extension": { "id": string; "scope": "one" | "all"; "studentId": string | null; "previousDueAt": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" | null; "createdBy": string; "createdAt": string }; "existingSubmissionsUnchanged": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "teacher.deadline-extensions.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "extensions": ({ "id": string; "scope": "one" | "all"; "studentId": string | null; "previousDueAt": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" | null; "createdBy": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "teacher.fast-path.post": {
     params: undefined;
     query: undefined;
@@ -574,6 +609,27 @@ export type Operations = {
     body: { "imageBase64": string };
     success: { status: 200; body: { "attachmentId": string; "attachmentSha256": string; "mediaType": "image/png" | "image/jpeg"; "byteSize": number; "pixelWidth": number | null; "pixelHeight": number | null; "created": boolean }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.consultation-additions.post": {
+    params: { "documentId": string; "recordId": string };
+    query: undefined;
+    body: { "text": string };
+    success: { status: 201; body: { "id": string; "text": string; "createdAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "work.consultation-records.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "records": ({ "id": string; "heldOn": string; "revision": number; "topic": string; "agreement": string; "additions": ({ "id": string; "text": string; "createdAt": string })[] })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.consultation-records.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "heldOn": string; "revision": number; "topic": string; "agreement": string };
+    success: { status: 201; body: { "id": string; "heldOn": string; "revision": number; "topic": string; "agreement": string; "additions": ({ "id": string; "text": string; "createdAt": string })[] }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "work.versions.get": {
     params: { "documentId": string };

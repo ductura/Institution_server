@@ -254,6 +254,13 @@ export {
   type WorkSources,
 } from "./work-sources/index.ts";
 export {
+  createSourceProofs,
+  isSourceProofJpeg,
+  SOURCE_PROOF_MAX_BYTES,
+  type SourceProof,
+  type SourceProofs,
+} from "./source-proofs/index.ts";
+export {
   createWorkAttachments,
   isWorkAttachmentMediaType,
   WORK_ATTACHMENT_MAX_BYTES,
@@ -268,12 +275,32 @@ export {
   type WorkAttachments,
 } from "./work-attachments/index.ts";
 export {
+  createDeadlineExtensions,
+  type DeadlineExtension,
+  type DeadlineExtensionAdd,
+  type DeadlineExtensionInput,
+  type DeadlineExtensionList,
+  type DeadlineExtensions,
+} from "./deadline-extensions/index.ts";
+export {
   createWorkVersionsReader,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
   type WorkVersionsPage,
   type WorkVersionsReader,
 } from "./work-versions/index.ts";
+export {
+  createConsultationRecords,
+  isCalendarDate,
+  recordsOf,
+  type AddAnswer,
+  type Addition,
+  type ConsultationRecord,
+  type ConsultationRecords,
+  type CreateAnswer,
+  type ListAnswer,
+  type RecordInput,
+} from "./consultation-records/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";
@@ -301,6 +328,8 @@ export type {
 } from "./student-assignments.ts";
 export { createStudentNoticeRead } from "./student-notice-read.ts";
 export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
+export { createTeacherNotes, TEMPLATE_KINDS } from "./teacher-notes.ts";
+export type { CommentTemplate, TeacherNote, TeacherNotes, TemplateKind } from "./teacher-notes.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";
 export { findRefusedLabels, MIGRATION, readRule, report } from "./plain-label-check.ts";
 // A registry over an environment of the caller's own, for tests/db; in the

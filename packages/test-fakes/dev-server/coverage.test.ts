@@ -34,6 +34,17 @@ const commit = (txid: string, baseRevision: number): Step => ({
     document: EMPTY_DOCUMENT,
   },
 });
+const CREATE_CONSULTATION: Step = {
+  path: `/api/v1/works/${IDS.document}/consultation-records`,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: {
+    heldOn: "2026-11-18",
+    revision: 1,
+    topic: "Izmišljena struktura rada",
+    agreement: "Dodati zaključak.",
+  },
+};
 const ANCHOR = {
   nodeId: "0a000000-0000-4000-8000-000000000001",
   quote: "Izmišljeno",
@@ -118,6 +129,26 @@ const SAVE_SOURCE: Step = {
   method: "PUT",
   headers: ORIGIN,
   body: { record: WORK_SOURCE },
+};
+
+// SRV-1102: an invented JPEG excerpt in a multipart form.
+const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0xff, 0xd9]);
+const BOUNDARY = "izmisljena-granica";
+const PROOF_FORM = Buffer.concat([
+  Buffer.from(`--${BOUNDARY}\r\nContent-Disposition: form-data; name="page"\r\n\r\n14\r\n`),
+  Buffer.from(
+    `--${BOUNDARY}\r\nContent-Disposition: form-data; name="image"; filename="isjecak.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`,
+  ),
+  JPEG,
+  Buffer.from(`\r\n--${BOUNDARY}--\r\n`),
+]);
+const PROOFS = `${STUDENT_ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`;
+const ADD_PROOF: Step = {
+  path: PROOFS,
+  as: "student",
+  method: "POST",
+  headers: { ...ORIGIN, "content-type": `multipart/form-data; boundary=${BOUNDARY}` },
+  raw: PROOF_FORM,
 };
 
 const SUBMIT: Step = {
@@ -431,6 +462,15 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.text-check-config.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/text-check-config`, as: "student" },
   },
+  "student.source-proofs.get": {
+    before: [SAVE_SOURCE, ADD_PROOF],
+    request: { path: PROOFS, as: "student" },
+  },
+  "student.source-proofs.post": { before: [SAVE_SOURCE], request: ADD_PROOF },
+  "student.source-proof-image.get": {
+    before: [SAVE_SOURCE, ADD_PROOF],
+    request: { path: `${PROOFS}/00000000-0000-4000-8000-d00000000001/image`, as: "student" },
+  },
   "student.work-sources.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/sources`, as: "student" },
   },
@@ -452,6 +492,23 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
+  "work.consultation-records.get": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
+    request: { path: `/api/v1/works/${IDS.document}/consultation-records`, as: "student" },
+  },
+  "work.consultation-records.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { ...CREATE_CONSULTATION, as: "nastavnik" },
+  },
+  "work.consultation-additions.post": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
+    request: {
+      path: `/api/v1/works/${IDS.document}/consultation-records/000000c0-0000-4000-8000-000000000001/additions`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { text: "Izmišljena dopuna." },
+    },
+  },
   "work.versions.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
@@ -508,6 +565,20 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: "/api/v1/teacher/mentorship-requests/decision",
       as: "nastavnik",
       body: { requestId: IDS.mentorship, decision: "approve" },
+    },
+  },
+  "teacher.deadline-extensions.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/deadline-extensions`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.deadline-extension.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/deadline-extensions`,
+      as: "nastavnik",
+      body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
 };

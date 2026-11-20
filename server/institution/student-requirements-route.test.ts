@@ -15,6 +15,7 @@ function port(answer: Awaited<ReturnType<MySubmissionStateReader["requirements"]
   const reader: MySubmissionStateReader = {
     state: () => Promise.reject(new Error("not this read")),
     requirements: async (...args) => (calls.push(args), answer),
+    teacherState: () => Promise.reject(new Error("not this read")),
   };
   return { reader, calls };
 }
