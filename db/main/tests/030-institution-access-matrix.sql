@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1639);
+SELECT plan(1658);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -337,6 +337,54 @@ SELECT is(
   substr(pg_temp.ask('ana', 'SELECT state FROM app.submission_state_of({z1}, {ana})'), 1, 5), '42501',
   'SRV-20: the web role cannot call the reader of the state'
 );
+
+-- 1c. SRV-21: a student's notes (evidence.submission_note) only through the
+-- two RPCs; the writer and the reader of the table are never the web role's.
+-- One cell per actor of the fixture on Z1 of K1 and Z3 of fak-b; the rest of
+-- the matrix (seminar group, collaborator, mentor, removal, append-only) is
+-- in 147-submission-note.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.submission_note_append(uuid,uuid,text)', 'app.submission_notes_of(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-21: only their owner and the identity role execute the writer and the reader of the notes'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.add_submission_note(uuid,text)', 'app.submission_notes(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-21: only ductus_app and the owner execute the two note RPCs'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT ''ok'' FROM app.add_submission_note(%s, %L)', c.assignment, 'Napomena ' || c.actor)), 1, 5),
+  c.outcome, format('SRV-21: %s adds a note on %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'ok'), ('dora', '{z1}', 'ok'), ('vesna', '{z1}', 'ZD403'), ('marko', '{z1}', 'ZD403'),
+  ('boris', '{z1}', 'ZD403'), ('iva', '{z1}', 'ZD403'), ('tomo', '{z1}', 'ZD403'), ('tomo', '{z3}', 'ok'),
+  ('petra', '{z3}', 'ZD403')
+) AS c (actor, assignment, outcome);
+SELECT is(
+  substr(pg_temp.ask('ana', format('SELECT ''ok'' FROM app.add_submission_note({z1}, %L)', repeat('a', 601))), 1, 5), 'ZD422',
+  'SRV-21: a note of 601 characters is refused'
+);
+SELECT is(
+  coalesce(substr(pg_temp.ask(c.actor, format('SELECT string_agg(text, ''|'') FROM app.submission_notes(%s, %s)',
+                                              c.assignment, c.student)), 1, 13), 'NULL'), c.result,
+  format('SRV-21: %s reads the notes of %s on %s: %s', c.actor, c.student, c.assignment, c.result)
+)
+FROM (VALUES
+  ('ana', '{z1}', '{ana}', 'Napomena ana'), ('vesna', '{z1}', '{ana}', 'Napomena ana'),
+  ('dora', '{z1}', '{ana}', 'ZD403: forbid'), ('marko', '{z1}', '{ana}', 'ZD403: forbid'),
+  ('iva', '{z1}', '{ana}', 'ZD403: forbid'), ('petra', '{z3}', '{tomo}', 'Napomena tomo'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
+) AS c (actor, assignment, student, result);
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
