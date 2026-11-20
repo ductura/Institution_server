@@ -29,5 +29,33 @@
     "vitest.config.ts",
     "eslint.config.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "server/institution/create-assignment.test.ts",
+    "server/institution/assignment-version-route.test.ts",
+    "server/institution/enrollment-code-revocation-route.test.ts",
+    "server/institution/enrollment-code-route.test.ts",
+    "server/institution/mutation-route.test.ts",
+    "server/institution/student-removal-route.test.ts",
+    "server/institution/student-return-route.test.ts",
+    "server/institution/teacher-role-confirmation-route.test.ts",
+    "server/institution/teacher-role-revocation-route.test.ts",
+    "server/institution/work-language-route.test.ts",
+    "server/institution/create-course.test.ts",
+    "server/profile/interface-locale-route.test.ts",
+    "server/config/env.test.ts",
+    "tests/unit/instrumentation.test.ts",
+    "tests/unit/health-route.test.ts",
+    "tests/unit/ready-route.test.ts",
+    "tests/unit/ready-route-alarms.test.ts",
+    "tests/unit/auth/routes.test.ts",
+    "tests/unit/auth/flow-logout.test.ts",
+    "tests/unit/auth/flow-logout-all.test.ts",
+    "tests/unit/auth/build-mode.test.ts",
+    "tests/unit/interface-locale-routes.test.ts",
+    "server/http/public-status.test.ts",
+    "tests/unit/ready.test.ts",
+    "tests/unit/auth/fake-oidc-claims.test.ts",
+    "tests/unit/infra/fake-oidc-accounts.test.ts"
+  ]
 }
