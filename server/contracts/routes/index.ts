@@ -1,5 +1,6 @@
 export { authRoutes, readSignInFailure, SIGN_IN_FAILURE, type SignInFailureCode } from "./auth.ts";
 export { downloadsRoutes } from "./downloads.ts";
+export { receiptPdfRoutes } from "./receipt-pdf.ts";
 export { CLIENT_APP_VERSION_PATTERN, CLIENT_CONTEXT_VALUES, clientRoutes } from "./client.ts";
 export { evidenceRoutes, MAX_COMMIT_BODY_BYTES } from "./evidence.ts";
 export {
@@ -16,6 +17,7 @@ export { profileRoutes } from "./profile.ts";
 export { StudentSubmissionState, studentRoutes } from "./student.ts";
 export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
 export { teacherRoutes } from "./teacher.ts";
+export { versionsRoutes } from "./versions.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { sourceLookupPost } from "./source-lookup.ts";

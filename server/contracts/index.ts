@@ -14,6 +14,7 @@ import {
   platformRoutes,
   profileRoutes,
   projectionRoutes,
+  receiptPdfRoutes,
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   settingsRoutes,
@@ -23,6 +24,7 @@ import {
   supportRoutes,
   teacherRoutes,
   TOO_MANY_REQUESTS,
+  versionsRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -84,7 +86,9 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherRoutes,
   ...settingsRoutes,
   ...downloadsRoutes,
+  ...receiptPdfRoutes,
   sourceLookupPost,
+  ...versionsRoutes,
 ];
 
 /**

@@ -248,6 +248,13 @@ export {
   type WorkSourceSave,
   type WorkSources,
 } from "./work-sources/index.ts";
+export {
+  createWorkVersionsReader,
+  WORK_VERSIONS_PAGE_SIZE,
+  type WorkVersionsItem,
+  type WorkVersionsPage,
+  type WorkVersionsReader,
+} from "./work-versions/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";

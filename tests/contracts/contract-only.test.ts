@@ -152,10 +152,13 @@ const SRV_19 = [
   "student.submission-notes.post",
 ];
 
+const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
   ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03, ...UGOVORI_API, ...SRV_19],
+  ...SRV_9C,
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
