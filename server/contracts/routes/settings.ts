@@ -3,10 +3,8 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 // Settings by level (S-1J-f, DAN-806; D-298, D-297; contract on Ductus#1836
-// c.6906291102). Born on the server: Ductus has no settings route. Contract
-// only for now (CONTRACT_ONLY); the handlers and the read function of the
-// database follow in S-1J-g. The database decides who writes which level
-// (settings.set_value, DAN-801); `access` only declares that a session is
+// c.6906291102). The handlers are part of S-1J-g and SRV-7E. The database
+// decides who writes which level (settings.set_value, DAN-801); `access` declares that a session is
 // needed. The catalogue itself is server/domain/settings; this package
 // imports nothing from it, so tests/contracts/settings-catalogue.test.ts
 // holds the vector of settings.catalogue.get equal to it.
