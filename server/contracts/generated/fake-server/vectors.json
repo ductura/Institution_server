@@ -14833,7 +14833,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.26.0",
+        "apiVersion": "1.27.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -14849,7 +14849,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.26.0",
+        "apiVersion": "1.27.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15405,7 +15405,8 @@
         "roles": [
           "student"
         ],
-        "displayName": "Ana Primjer"
+        "displayName": "Ana Primjer",
+        "journalScope": "4e84fd38a2f8f663661b8e1b2fc52bad9b9da56f8accead18bfd24ca20b96d12"
       }
     }
   },
@@ -15429,7 +15430,8 @@
           "institution_admin",
           "teacher"
         ],
-        "displayName": null
+        "displayName": null,
+        "journalScope": "c3c10a7bd4a52fae73329070fefa320aa45810a01f113936745f05b769698a45"
       }
     }
   },

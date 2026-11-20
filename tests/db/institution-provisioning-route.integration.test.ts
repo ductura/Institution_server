@@ -222,8 +222,32 @@ describe("provisioning of an institution instance on PostgreSQL", () => {
         institution: { slug: BODY.slug, displayName: BODY.displayName },
         roles: ["student"],
         displayName: "Ana Primjer",
+        journalScope: expect.stringMatching(/^[0-9a-f]{64}$/),
       },
     ]);
+
+    // SRV-JS: the same person in a second session has the same journal scope,
+    // another person of the same institution a different one.
+    const meIn = async (subject: string, uniqueId: string, givenName: string) => {
+      const token = randomBytes(32).toString("base64url");
+      const session = await createOpenSession(auth)({
+        issuer: ISSUER,
+        subject,
+        uniqueId,
+        homeOrg: BODY.aaiHomeOrg,
+        givenName,
+        familyName: "Primjer",
+        teacherEligible: false,
+        tokenHash: createHash("sha256").update(token, "utf8").digest(),
+      });
+      expect(session.ok).toBe(true);
+      const me = await send("GET", "/api/v1/me", { cookie: `__Host-ductus_session=${token}` });
+      expect(me.status).toBe(200);
+      return json(me).journalScope;
+    };
+    const scope = json(answer).journalScope;
+    expect(await meIn(`sub-${suffix}`, `ana@${BODY.aaiHomeOrg}`, "Ana")).toBe(scope);
+    expect(await meIn(`sub-${suffix}-b`, `iva@${BODY.aaiHomeOrg}`, "Iva")).not.toBe(scope);
     const anonymous = await send("GET", "/api/v1/me", {
       cookie: `__Host-ductus_session=${randomBytes(32).toString("base64url")}`,
     });

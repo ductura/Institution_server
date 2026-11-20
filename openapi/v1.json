@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.26.0",
+    "version": "1.27.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds."
   },
@@ -21847,7 +21847,8 @@
                   "required": [
                     "institution",
                     "roles",
-                    "displayName"
+                    "displayName",
+                    "journalScope"
                   ],
                   "properties": {
                     "institution": {
@@ -21906,6 +21907,10 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "journalScope": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
                     }
                   }
                 }
