@@ -347,6 +347,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { documentId: IDS.document },
     },
   },
+  "projection.process-summary-details.post": {
+    request: {
+      path: "/api/v1/process-summary/details",
+      as: "nastavnik",
+      body: { documentId: IDS.document },
+    },
+  },
   "settings.catalogue.get": { request: { path: "/api/v1/settings/catalogue", as: "student" } },
   "settings.values.get": {
     request: {
