@@ -32,6 +32,7 @@ import {
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -311,6 +312,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createConsultationRecordRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createWorkMilestonesRoutesFor(databases.main)",
+    ids: ["work.milestones.get", "work.milestones.patch"],
+    routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createAcknowledgmentRouteFor(databases.main)",
     ids: ["institution.acknowledgment.post"],
     routes: () => [createAcknowledgmentRouteFor(NO_ACTOR).contract.id],
@@ -522,6 +528,8 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-records.get",
       "work.consultation-records.post",
       "work.consultation-additions.post",
+      "work.milestones.get",
+      "work.milestones.patch",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",

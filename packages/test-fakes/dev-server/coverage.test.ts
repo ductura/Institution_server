@@ -492,6 +492,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
+  "work.milestones.get": {
+    request: { path: `/api/v1/works/${IDS.document}/milestones`, as: "student" },
+  },
+  "work.milestones.patch": {
+    request: {
+      method: "PATCH",
+      path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { dueAt: "2026-12-03T15:30:00Z" },
+    },
+  },
   "work.consultation-records.get": {
     before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
     request: { path: `/api/v1/works/${IDS.document}/consultation-records`, as: "student" },
@@ -701,6 +713,29 @@ describe("dev fake server covers the whole contract", () => {
       expect(contractProblems(route, answer, code), code).toEqual([]);
     }
   });
+});
+
+it("shares the changed milestone deadline and refuses changes after submission", async () => {
+  const state = createState();
+  const read = SCENARIOS["work.milestones.get"].request;
+  const change = SCENARIOS["work.milestones.patch"].request;
+  expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  expect((await run(state, { ...change, as: "student" })).status).toBe(403);
+
+  const updated = await run(state, change);
+  expect(updated.status).toBe(200);
+  expect(updated.json).toMatchObject({ id: IDS.milestone, dueAt: "2026-12-03T15:30:00.000Z" });
+  for (const as of ["student", "nastavnik"] as const) {
+    expect((await run(state, { ...read, as })).json).toEqual({ milestones: [updated.json] });
+  }
+
+  const submit = SCENARIOS["submission.submit.post"];
+  for (const step of submit.before ?? []) expect((await run(state, step)).status).toBe(200);
+  expect((await run(state, submit.request)).status).toBe(200);
+  expect((await run(state, { ...change, body: { dueAt: "2026-12-04T12:00:00Z" } })).status).toBe(
+    409,
+  );
+  expect((await run(state, read)).json).toEqual({ milestones: [updated.json] });
 });
 
 describe("student submission on the dev fake server", () => {

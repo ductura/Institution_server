@@ -9,6 +9,7 @@ export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
 } from "./consultation-records/index.ts";
+export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export {
   createDeadlineExtensionRoutes,

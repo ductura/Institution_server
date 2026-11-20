@@ -17,6 +17,7 @@ import {
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
@@ -204,6 +205,18 @@ const SESSION_ROUTES = {
   },
   // SRV-1101: the same for the text check configuration.
   // SRV-1102: the proofs of a source; a live session that is no student of the work gets 404.
+  "work.milestones.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/milestones`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.milestones.patch": {
+    method: "PATCH",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}`,
+    body: () => ({ dueAt: "2026-12-02T12:00:00.000Z" }),
+    live: 404,
+  },
   "student.source-proofs.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`,
@@ -622,6 +635,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createConsultationRecordRoutesFor",
+  "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -667,6 +681,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
+  ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
