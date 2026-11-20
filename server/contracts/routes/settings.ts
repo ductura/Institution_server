@@ -3,9 +3,8 @@ import { Type } from "@sinclair/typebox";
 import { closed, defineRoute, error } from "../schema/index.ts";
 
 // Settings by level (S-1J-f, DAN-806; D-298, D-297; contract on Ductus#1836
-// c.6906291102). Born on the server: Ductus has no settings route. Contract
-// only for now (CONTRACT_ONLY); the handlers and the read function of the
-// database follow in S-1J-g. The database decides who writes which level
+// c.6906291102). The handlers are part of S-1J-g and SRV-7E. The database
+// decides who writes which level
 // (settings.set_value, DAN-801); `access` only declares that a session is
 // needed. The catalogue itself is server/domain/settings; this package
 // imports nothing from it, so tests/contracts/settings-catalogue.test.ts
@@ -79,7 +78,7 @@ export const settingsValuesGet = defineRoute({
   inventory: "app/api/settings/values/route.ts",
   access: "signed_in",
   summary:
-    "The rows of one level in the caller's scope (course names the course for the course level and is absent for every other), and for every catalogue key of that level the value that holds without it (source: a higher level or default) and the narrowest higher bound. A level or course that is not the caller's gives 404, the same as a course that does not exist (C-23: another's is nonexistent).",
+    "The rows of one level in the caller's scope (course names the course for the course level and is absent for every other), and for every visible catalogue key of that level the value that holds without it (source: a higher level or default) and the narrowest higher bound. Students and teachers can read only citation.style and lekta.profile of their own institution at the institution level. A level or course that is not the caller's gives 404, the same as a course that does not exist (C-23: another's is nonexistent).",
   request: {
     query: closed({ level: Level, course: Type.Optional(Uuid) }),
   },

@@ -5,6 +5,8 @@
 // bounds of higher levels; this catalogue decides what a key may hold.
 import type { AppError, Result } from "../index.ts";
 
+import { LEKTA_PROFILE_IDS } from "./lekta-profiles.ts";
+
 /** Levels, lowest first, as in settings.value.level. */
 export const SETTING_LEVELS = [
   "personal",
@@ -138,6 +140,13 @@ export const SETTINGS_CATALOGUE: readonly SettingDefinition[] = Object.freeze([
     kind: "enum",
     default: "fpzg",
     values: ["fpzg", "apa", "chicago", "ieee", "vancouver", "fusnote"],
+  }),
+  define({
+    key: "lekta.profile",
+    levels: ["institution"],
+    kind: "enum",
+    default: "fpzg-opci-akademski-rad",
+    values: LEKTA_PROFILE_IDS,
   }),
 ]);
 

@@ -106,6 +106,48 @@
       }
     },
     {
+      "name": "institution-editor",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-postavki-00000000000000001"
+        },
+        "query": {
+          "level": "institution"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "level": "institution",
+          "course": null,
+          "values": [
+            {
+              "key": "citation.style",
+              "value": "apa",
+              "bound": null,
+              "updatedAt": "2026-11-20T10:00:00.000Z"
+            }
+          ],
+          "inherited": [
+            {
+              "key": "citation.style",
+              "value": "fpzg",
+              "source": "default",
+              "bound": null
+            },
+            {
+              "key": "lekta.profile",
+              "value": "fpzg-opci-akademski-rad",
+              "source": "default",
+              "bound": null
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "signed-out",
       "kind": "error",
       "code": "unauthorized",

@@ -34,6 +34,7 @@ import {
   createLayers,
   createMeRouteFor,
   createProblemReportRouteFor,
+  createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
@@ -163,6 +164,18 @@ const SESSION_ROUTES = {
       max: null,
     }),
     live: 404,
+  },
+  "settings.catalogue.get": {
+    method: "GET",
+    path: "/api/v1/settings/catalogue",
+    body: () => undefined,
+    live: 200,
+  },
+  "settings.values.get": {
+    method: "GET",
+    path: "/api/v1/settings/values?level=personal",
+    body: () => undefined,
+    live: 200,
   },
   // DAN-851-1d2: the interface language. A live POST saves `en` for the
   // account; the old cookie's POST sends `hr`, which must never land.
@@ -414,6 +427,7 @@ const FACTORIES = [
   "createStudentNotesRoutesFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
+  "createSettingsReadRoutes",
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
   "createInstitutionCourseRoutesFor",
@@ -443,6 +457,7 @@ const MOUNTED = [
   ...createStudentNotesRoutesFor(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
+  ...createSettingsReadRoutes(databases.main),
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
@@ -672,7 +687,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       );
       const body: unknown = await answer.json();
       const old =
-        id === "settings.values.put" ||
+        id.startsWith("settings.") ||
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
