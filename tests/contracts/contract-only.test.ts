@@ -169,7 +169,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   {
     // SRV-15: a course's seminar groups and their teachers.
     call: "createInstitutionGroupRoutesFor(databases.main)",
-    ids: ["institution.course-groups.post", "institution.course-group-teachers.post"],
+    ids: [
+      "institution.course-groups.get",
+      "institution.course-groups.post",
+      "institution.course-group-teachers.post",
+    ],
     routes: () => createInstitutionGroupRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -276,8 +280,8 @@ describe("CONTRACT_ONLY", () => {
         ...["institution.course-assignments.post", "institution.enrollment-code.post"],
         ...["institution.enrollment-code-revocation.post", "institution.assignment-versions.post"],
         ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_989, ...DAN_931],
-        ...["institution.admin-courses.post", "institution.course-groups.post"],
-        "institution.course-group-teachers.post",
+        ...["institution.admin-courses.post", "institution.course-groups.get"],
+        ...["institution.course-groups.post", "institution.course-group-teachers.post"],
       ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
   });
@@ -305,6 +309,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.admin-courses.post",
+      "institution.course-groups.get",
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       "teacher.courses.get",

@@ -245,6 +245,13 @@ const SESSION_ROUTES = {
     body: () => ({ teacherId: randomUUID() }),
     live: 403,
   },
+  // Not of the course team nor an administrator: 403 from course_groups.
+  "institution.course-groups.get": {
+    method: "GET",
+    path: `/api/v1/institution/courses/${COURSE}/groups`,
+    body: () => undefined,
+    live: 403,
+  },
   // SRV-12: the administrator's course; not an administrator, so 403.
   "institution.admin-courses.post": {
     path: "/api/v1/institution/admin/courses",

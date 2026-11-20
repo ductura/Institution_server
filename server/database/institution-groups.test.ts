@@ -88,3 +88,71 @@ describe("assignGroupTeacher", () => {
     ).toEqual({ status: "unavailable", reason: "assign_teacher_malformed" });
   });
 });
+
+describe("readCourseGroups", () => {
+  const TEACHER_ROW = { id: TEACHER, given_name: "Izmišljena", family_name: "Suradnica" };
+  const ROW = { id: GROUP, name: "Grupa A", students: 2, teachers: [TEACHER_ROW] };
+
+  it("reads course_groups for the course in the contract's order; names become camelCase", async () => {
+    seen.length = 0;
+    const port = createInstitutionGroups(answering([ROW]));
+    expect(await port.readCourseGroups(TOKEN, COURSE)).toEqual({
+      status: "read",
+      groups: [
+        {
+          id: GROUP,
+          name: "Grupa A",
+          students: 2,
+          teachers: [{ id: TEACHER, givenName: "Izmišljena", familyName: "Suradnica" }],
+        },
+      ],
+    });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.values).toEqual([COURSE]);
+    expect(seen[0]!.text).toMatch(/FROM institution\.course_groups\(\$1::uuid\) g/);
+    expect(seen[0]!.text).toMatch(/ORDER BY g\.name COLLATE "hr-x-icu", g\.group_id$/);
+    expect(seen[0]!.text).toMatch(
+      /\(t ->> 'family_name'\) COLLATE "hr-x-icu",\s+\(t ->> 'given_name'\) COLLATE "hr-x-icu", t ->> 'id'/,
+    );
+  });
+
+  it("no group is an empty list", async () => {
+    expect(await createInstitutionGroups(answering([])).readCourseGroups(TOKEN, COURSE)).toEqual({
+      status: "read",
+      groups: [],
+    });
+  });
+
+  it.each([
+    ["ZD401", { status: "unauthenticated" }],
+    ["ZD403", { status: "forbidden" }],
+    ["ZD422", { status: "unavailable", reason: "database_error" }],
+    ["08006", { status: "unavailable", reason: "database_error" }],
+  ])("%s", async (code, outcome) => {
+    expect(await createInstitutionGroups(failing(code)).readCourseGroups(TOKEN, COURSE)).toEqual(
+      outcome,
+    );
+  });
+
+  it.each([
+    ["a teacher without a name", { ...ROW, teachers: [{ ...TEACHER_ROW, given_name: null }] }],
+    [
+      "a teacher with an empty family name",
+      { ...ROW, teachers: [{ ...TEACHER_ROW, family_name: "" }] },
+    ],
+    [
+      "a teacher id in upper case",
+      { ...ROW, teachers: [{ ...TEACHER_ROW, id: TEACHER.toUpperCase() }] },
+    ],
+    ["teachers that are not a list", { ...ROW, teachers: {} }],
+    ["a negative count", { ...ROW, students: -1 }],
+    ["a count that is not an integer", { ...ROW, students: "2" }],
+    ["an empty name", { ...ROW, name: "" }],
+    ["a group id that is not a UUID", { ...ROW, id: "grupa-a" }],
+    ["a row that is not an object", null],
+  ])("one row of another form (%s) makes the whole answer unavailable", async (_what, bad) => {
+    expect(
+      await createInstitutionGroups(answering([ROW, bad])).readCourseGroups(TOKEN, COURSE),
+    ).toEqual({ status: "unavailable", reason: "course_groups_malformed" });
+  });
+});
