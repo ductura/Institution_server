@@ -649,10 +649,10 @@ INSERT INTO settings.value (level, institution_id, key, value) VALUES
   ('institution', pg_temp.id('fak_a'), 'thresholds.paste_event_chars', '250'),
   ('institution', pg_temp.id('fak_b'), 'citation.style', '"chicago"');
 
-SELECT is(pg_temp.ask(m.actor, $
+SELECT is(pg_temp.ask(m.actor, $$
   SELECT string_agg(concat_ws(':', CASE WHEN editor_only THEN 'editor' ELSE 'full' END, key, value), ', ' ORDER BY key)
   FROM settings.read_institution_values()
-$), m.expected, format('SRV-7E: settings scope for %s', m.actor))
+$$), m.expected, format('SRV-7E: settings scope for %s', m.actor))
 FROM (VALUES
   ('iva', 'full:citation.style:"apa", full:lekta.profile:"demo-profile-a", full:thresholds.paste_event_chars:250'),
   ('ana', 'editor:citation.style:"apa", editor:lekta.profile:"demo-profile-a"'),
