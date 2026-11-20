@@ -42068,12 +42068,12 @@
         ]
       }
     },
-    "/api/v1/works/attachments/{attachmentId}": {
+    "/api/v1/work-attachments/{attachmentId}": {
       "get": {
         "operationId": "work.attachments.get",
         "summary": "Read an attachment as standard Base64 after authorization against the work that owns the attachment and verification of the stored bytes. An unknown or inaccessible attachment returns 404.",
         "x-access": "owner_or_course_teacher",
-        "x-inventory": "app/api/works/attachments/[attachmentId]/route.ts",
+        "x-inventory": "app/api/work-attachments/[attachmentId]/route.ts",
         "parameters": [
           {
             "name": "attachmentId",

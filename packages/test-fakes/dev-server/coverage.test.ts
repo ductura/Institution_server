@@ -476,7 +476,7 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "work.attachments.get": {
     before: [ADD_ATTACHMENT],
     request: {
-      path: "/api/v1/works/attachments/00000000-0000-4000-8000-a00000000001",
+      path: "/api/v1/work-attachments/00000000-0000-4000-8000-a00000000001",
       as: "student",
     },
   },

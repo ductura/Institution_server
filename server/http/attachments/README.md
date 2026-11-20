@@ -1,7 +1,7 @@
 # HTTP rute privitaka
 
 - `POST /api/v1/student/assignments/{assignmentId}/attachments` prima JSON s `imageBase64` (PNG ili JPEG do 5 MiB). Vraća metapodatke privitka i `created`.
-- `GET /api/v1/works/attachments/{attachmentId}` vraća metapodatke i `imageBase64`. Vlasnik rada i čitatelji kojima postojeći odnos daje pristup mogu čitati sliku.
+- `GET /api/v1/work-attachments/{attachmentId}` vraća metapodatke i `imageBase64`. Vlasnik rada i čitatelji kojima postojeći odnos daje pristup mogu čitati sliku.
 
 `server/server.ts` montira obje rute preko `createAttachmentRoutesFor`. Pozivatelj iz odgovora za prijenos uzima `attachmentId` i `attachmentSha256` za blok slike v4. HTTP test pokreće stvarni router i datotečnu pohranu s probnim RPC odgovorima.
 

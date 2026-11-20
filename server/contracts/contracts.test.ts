@@ -103,7 +103,7 @@ describe("route inventory", () => {
       "student.work-sources.put: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
       "student.work-sources.delete: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
       "work.attachments.post: app/api/student/assignments/[assignmentId]/attachments/route.ts is not in the inventory",
-      "work.attachments.get: app/api/works/attachments/[attachmentId]/route.ts is not in the inventory",
+      "work.attachments.get: app/api/work-attachments/[attachmentId]/route.ts is not in the inventory",
       "student.source-proofs.get: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/route.ts is not in the inventory",
       "student.source-proofs.post: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/route.ts is not in the inventory",
       "student.source-proof-image.get: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts is not in the inventory",

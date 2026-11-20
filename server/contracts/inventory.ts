@@ -233,7 +233,7 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "ductura/Institution_server#471",
   },
-  "app/api/works/attachments/[attachmentId]/route.ts": {
+  "app/api/work-attachments/[attachmentId]/route.ts": {
     methods: ["GET"],
     source: "ductura/Institution_server#471",
   },

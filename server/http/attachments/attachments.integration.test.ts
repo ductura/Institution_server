@@ -110,7 +110,7 @@ async function fixture() {
         body: JSON.stringify({ imageBase64 }),
       }),
     download: (token: string) =>
-      fetch(`${api}/works/attachments/${ATTACHMENT}`, { headers: { cookie: cookie(token) } }),
+      fetch(`${api}/work-attachments/${ATTACHMENT}`, { headers: { cookie: cookie(token) } }),
     corrupt: () => writeFile(join(root, saved!.storageRef), "damaged bytes"),
     put,
     read,

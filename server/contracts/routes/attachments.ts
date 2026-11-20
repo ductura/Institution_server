@@ -56,8 +56,8 @@ export const workAttachmentPost = defineRoute({
 export const workAttachmentGet = defineRoute({
   id: "work.attachments.get",
   method: "GET",
-  path: "/api/v1/works/attachments/{attachmentId}",
-  inventory: "app/api/works/attachments/[attachmentId]/route.ts",
+  path: "/api/v1/work-attachments/{attachmentId}",
+  inventory: "app/api/work-attachments/[attachmentId]/route.ts",
   access: "owner_or_course_teacher",
   summary:
     "Read an attachment as standard Base64 after authorization against the work that owns the attachment and verification of the stored bytes. An unknown or inaccessible attachment returns 404.",
