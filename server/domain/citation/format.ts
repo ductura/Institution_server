@@ -173,10 +173,13 @@ function compareYearSuffixes(a: string, b: string): number {
 }
 
 /** The suffix at `index`: 0 is `a`, 25 is `z`, 26 is `aa`, 701 is `zz`, 702 is `aaa`. */
+// The year suffixes a, b, …, z, aa, … (written out: no text is built from codes).
+const LATIN_LETTERS = "abcdefghijklmnopqrstuvwxyz";
+
 function yearSuffixAt(index: number): string {
   let suffix = "";
   for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) {
-    suffix = String.fromCharCode(97 + ((n - 1) % 26)) + suffix;
+    suffix = LATIN_LETTERS.charAt((n - 1) % 26) + suffix;
   }
   return suffix;
 }

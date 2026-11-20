@@ -59,9 +59,9 @@ export type EvidenceIngestOutcome =
       reason: string;
     };
 
-export interface EvidenceIngestPort {
+export type EvidenceIngestPort = {
   ingest(request: EvidenceIngestRequestV2): Promise<EvidenceIngestOutcome>;
-}
+};
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 // Becomes part of an object key (`v2/<institution>/<package>/<hash>.json`,

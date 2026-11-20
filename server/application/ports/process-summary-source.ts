@@ -46,6 +46,6 @@ export type ProcessSummarySourceResult =
   | { status: "unauthenticated" }
   | { status: "unavailable"; reason: string };
 
-export interface ProcessSummarySource {
+export type ProcessSummarySource = {
   readSource(documentId: string): Promise<ProcessSummarySourceResult>;
-}
+};

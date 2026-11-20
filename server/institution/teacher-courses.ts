@@ -29,12 +29,12 @@ const WORK_TYPES = new Set([
   "doctoral_thesis",
 ]);
 
-export interface TeacherCoursesDeps {
+export type TeacherCoursesDeps = {
   withActor: WithActor;
   sessionToken?: string | undefined;
-}
+};
 
-export interface TeacherAssignment {
+export type TeacherAssignment = {
   id: string;
   title: string;
   workType: string;
@@ -42,15 +42,15 @@ export interface TeacherAssignment {
   dueAt: string;
   currentVersion: number;
   enrolledStudents: number;
-}
+};
 
-export interface TeacherCourse {
+export type TeacherCourse = {
   id: string;
   name: string;
   academicYear: string;
   aiPolicy: CourseAiPolicy;
   assignments: TeacherAssignment[];
-}
+};
 
 type Row = Record<string, unknown>;
 
