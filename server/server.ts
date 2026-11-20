@@ -29,6 +29,7 @@ import {
   createWorkSourceRoutesFor,
   createWorkVersionsRouteFor,
   createSourceLookupRouteFor,
+  createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -142,6 +143,8 @@ async function main(): Promise<void> {
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
+      // The public check of a receipt (SRV-9B, C-6): no session read or issued (D-09).
+      createPublicVerificationRouteFor(databases.main),
       // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
       createDownloadsManifestRoute(),
       // Settings by level (S-1J-g, DAN-826; SRV-7E).
