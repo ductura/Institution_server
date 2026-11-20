@@ -18,7 +18,7 @@ Samo ulaz funkcija. Ne otvara bazu, pohranu ni mrežu.
 
 ## Što izvozi
 
-`buildExportModel`, `renderDocx`, `A4_PAGE` i tipovi iz `index.ts`.
+`buildExportModel`, `renderDocx`, `A4_PAGE`, `writeZip` (deterministički ZIP; paket za Merlin, SRV-1110) i tipovi iz `index.ts`.
 
 ## Otvorene stavke
 

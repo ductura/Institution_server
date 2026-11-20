@@ -11,10 +11,20 @@ export {
   createMerlinRosterReader,
   merlinRosterCsv,
   type MerlinLabels,
+  type MerlinRosterDeps,
   type MerlinRosterRead,
   type MerlinRosterReader,
   type MerlinRosterRow,
 } from "./merlin/roster/index.ts";
+export {
+  buildMerlinPackageZip,
+  createMerlinPackageService,
+  MERLIN_PACKAGE_CSV,
+  MERLIN_PACKAGE_FINGERPRINTS,
+  type MerlinPackageAsk,
+  type MerlinPackageService,
+  type MerlinPackageServiceDeps,
+} from "./merlin/packages/index.ts";
 export {
   createDownloadsService,
   DOWNLOADS_ERRORS,

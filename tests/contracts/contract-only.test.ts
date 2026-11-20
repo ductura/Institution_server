@@ -28,6 +28,7 @@ import {
   createTeacherReadRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
+  createMerlinPackageRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -281,6 +282,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMerlinRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-1110: the Merlin package of an assignment and its download over the main database.
+    call: "...createMerlinPackageRoutesFor(databases.main)",
+    ids: [
+      "teacher.merlin-packages.post",
+      "teacher.merlin-package.get",
+      "teacher.merlin-package-download.get",
+    ],
+    routes: () => createMerlinPackageRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createTeacherMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_31,
     routes: () =>
@@ -507,6 +518,9 @@ describe("routes the entry point mounts itself", () => {
       "teacher.deadline-extension.post",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",
+      "teacher.merlin-packages.post",
+      "teacher.merlin-package.get",
+      "teacher.merlin-package-download.get",
       ...SRV_31,
       "live.document.get",
       "live.document.put",

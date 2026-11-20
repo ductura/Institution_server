@@ -364,7 +364,54 @@ export const TEACHER_HANDLERS: Handlers = {
             "content-disposition": 'attachment; filename="merlin-popis.csv"',
           },
         },
+  // SRV-1110: the Merlin package without state. The id comes from the caller,
+  // the assignment and the key, so the same key is the same package; every
+  // package of a taught assignment reads as built, with a stand-in
+  // fingerprint, since the fake renders no files.
+  "teacher.merlin-packages.post": ({ state, account, params, body }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null || account === null) return { error: "not_found" };
+    return {
+      status: 202,
+      body: { id: merlinPackageId(account.id, assignment.id, body.requestKey), state: "ready" },
+    };
+  },
+  "teacher.merlin-package.get": ({ state, account, params, now }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null || !LOWER_UUID.test(params.packageId)) return { error: "not_found" };
+    return {
+      status: 200,
+      body: {
+        id: params.packageId,
+        state: "ready",
+        downloadPath: `/api/v1/teacher/assignments/${assignment.id}/merlin/packages/${params.packageId}/download`,
+        expiresAt: new Date(now.getTime() + 24 * 3_600_000).toISOString(),
+        sha256: merlinFakeSha256(params.packageId),
+      },
+    };
+  },
+  "teacher.merlin-package-download.get": ({ state, account, params }) =>
+    taught(state, account, params.assignmentId) === null || !LOWER_UUID.test(params.packageId)
+      ? { error: "not_found" }
+      : {
+          status: 200,
+          headers: {
+            "content-type": "application/zip",
+            "content-disposition": 'attachment; filename="merlin-paket.zip"',
+            "x-content-sha256": merlinFakeSha256(params.packageId),
+          },
+        },
 };
+
+const LOWER_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+const merlinFakeSha256 = (packageId: string) =>
+  createHash("sha256").update(`merlin-paket-${packageId}`).digest("hex");
+
+/** A UUID v4 shape from the caller, the assignment and the key. */
+function merlinPackageId(accountId: string, assignmentId: string, key: string): string {
+  const h = createHash("sha256").update(`${accountId}|${assignmentId}|${key}`).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
 
 type MerlinRow = Operations["teacher.merlin-roster.get"]["success"]["body"]["rows"][number];
 
