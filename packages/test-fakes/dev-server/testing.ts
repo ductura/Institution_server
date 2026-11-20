@@ -59,7 +59,7 @@ if (!FormatRegistry.Has("date-time"))
 
 export type Sent = {
   /** Bytes sent as they are (a form body), instead of JSON. */
-  raw?: string;
+  raw?: string | Uint8Array;
   method?: string;
   query?: string;
   body?: unknown;
@@ -75,8 +75,11 @@ export async function send(state: State, path: string, sent: Sent = {}) {
     method: sent.method ?? (sent.body === undefined && sent.raw === undefined ? "GET" : "POST"),
     url: path + (sent.query ?? ""),
     headers,
-    body: Buffer.from(body),
+    body: typeof body === "string" ? Buffer.from(body) : body,
   });
+  // A binary answer is read in Base64, as the vectors write it.
+  if (answer.bytes !== undefined)
+    return { ...answer, json: Buffer.from(answer.bytes).toString("base64") as unknown };
   const isJson = String(answer.headers["content-type"] ?? "").startsWith("application/json");
   return {
     ...answer,

@@ -16,6 +16,7 @@ export {
 export { profileRoutes } from "./profile.ts";
 export { StudentSubmissionState, studentRoutes } from "./student.ts";
 export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
+export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
@@ -30,3 +31,4 @@ export { enrollmentRoutes } from "./enrollment.ts";
 export { institutionRoutes } from "./institution.ts";
 export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
+export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";

@@ -1,5 +1,5 @@
 -- SRV-1106 (Val 11, Ductus#2051; E§3.5 mentor2 "Poruke", PO-22): the short
--- messages next to a work (20261121130000). The access matrix: the student of
+-- messages next to a work (20261121140000). The access matrix: the student of
 -- the work and the teachers of its assignment write and read the same
 -- conversation in the order of writing; another student, a stranger, an
 -- administrator, a teacher of another course, a teacher who has not been

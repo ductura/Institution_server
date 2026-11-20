@@ -254,6 +254,13 @@ export {
   type WorkSources,
 } from "./work-sources/index.ts";
 export {
+  createSourceProofs,
+  isSourceProofJpeg,
+  SOURCE_PROOF_MAX_BYTES,
+  type SourceProof,
+  type SourceProofs,
+} from "./source-proofs/index.ts";
+export {
   createWorkAttachments,
   isWorkAttachmentMediaType,
   WORK_ATTACHMENT_MAX_BYTES,
@@ -267,6 +274,14 @@ export {
   type WorkAttachmentRecord,
   type WorkAttachments,
 } from "./work-attachments/index.ts";
+export {
+  createDeadlineExtensions,
+  type DeadlineExtension,
+  type DeadlineExtensionAdd,
+  type DeadlineExtensionInput,
+  type DeadlineExtensionList,
+  type DeadlineExtensions,
+} from "./deadline-extensions/index.ts";
 export {
   createWorkVersionsReader,
   WORK_VERSIONS_PAGE_SIZE,

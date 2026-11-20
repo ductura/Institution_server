@@ -44,8 +44,13 @@ export type ErrorSpec = {
 export type SuccessSpec = {
   readonly status: number;
   readonly description: string;
-  /** JSON body; omitted means no body. */
+  /** JSON body; omitted means no body, unless contentType names a binary one. */
   readonly body?: TSchema;
+  /**
+   * A binary body of this media type instead of JSON (SRV-1102: the JPEG of a
+   * source proof). Such an answer has no `body` schema.
+   */
+  readonly contentType?: "image/jpeg";
   /** Response headers the caller relies on. */
   readonly headers?: readonly string[];
 };
@@ -58,7 +63,12 @@ export type RequestSpec = {
    * the body (collaboration.comments.post {action}).
    */
   readonly body?: TObject | TUnion<TObject[]>;
-  readonly contentType?: "application/json" | "application/x-www-form-urlencoded";
+  /**
+   * multipart/form-data (SRV-1102): `body` names the form fields; a field with
+   * `contentMediaType` is a file part holding those bytes.
+   */
+  readonly contentType?:
+    "application/json" | "application/x-www-form-urlencoded" | "multipart/form-data";
   readonly maxBodyBytes?: number;
 };
 

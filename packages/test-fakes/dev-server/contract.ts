@@ -13,6 +13,8 @@ export type Answer = {
   readonly status: number;
   readonly headers: Record<string, string | string[]>;
   readonly body: string;
+  /** A binary answer (SRV-1102, image/jpeg) is sent as these bytes; `body` is then empty. */
+  readonly bytes?: Uint8Array;
 };
 
 type ErrorVector = {
