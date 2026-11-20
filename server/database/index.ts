@@ -218,6 +218,16 @@ export type {
   StoredWordRange,
 } from "./my-submission-state.ts";
 export {
+  createStudentNoticeReader,
+  STUDENT_NOTICE_DATABASE_ERROR,
+  STUDENT_NOTICE_ERRORS,
+  STUDENT_NOTICE_NOT_FOUND,
+  STUDENT_NOTICE_ROW_MALFORMED,
+  STUDENT_NOTICE_UNAUTHENTICATED,
+  type StoredNotice,
+  type StudentNoticeReader,
+} from "./student-notice.ts";
+export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,
   INTERFACE_LOCALE_ERRORS,
