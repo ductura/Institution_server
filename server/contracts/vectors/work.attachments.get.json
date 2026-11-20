@@ -1,0 +1,111 @@
+{
+  "route": "work.attachments.get",
+  "vectors": [
+    {
+      "name": "read-png",
+      "kind": "success",
+      "request": {
+        "params": {
+          "attachmentId": "00000000-0000-4000-8000-000000000010"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "attachmentId": "00000000-0000-4000-8000-000000000010",
+          "attachmentSha256": "42b601bc0d93dfca6e350b46d113bf8e7ff9e40a87a0c57ab9b3c9c219062423",
+          "mediaType": "image/png",
+          "byteSize": 120,
+          "pixelWidth": 1,
+          "pixelHeight": 1,
+          "imageBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAANSURBVBhXY2BgYGAAAAAFAAGKM+MAAAAAAElFTkSuQmCC"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "attachmentId": "00000000-0000-4000-8000-000000000010"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000030"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "attachmentId": "00000000-0000-4000-8000-000000000010"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000000030"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "attachmentId": "00000000-0000-4000-8000-000000000010"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000030"
+        }
+      }
+    }
+  ]
+}
