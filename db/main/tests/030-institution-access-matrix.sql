@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1907);
+SELECT plan(1971);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -17,8 +17,9 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment'],
-  'the institution schema holds exactly the twenty-six tables of this matrix'
+        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment',
+        'consultation_slot'],
+  'the institution schema holds exactly the twenty-seven tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -124,9 +125,10 @@ SELECT bag_eq(
     'notice_read: notice_read_owner ALL to ductus_identity',
     'notice_read: notice_read_read SELECT to ductus_app',
     'work_source: work_source_owner ALL to ductus_identity',
-    'work_attachment: work_attachment_owner ALL to ductus_identity'
+    'work_attachment: work_attachment_owner ALL to ductus_identity',
+    'consultation_slot: consultation_slot_owner ALL to ductus_identity'
   ],
-  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source or work_attachment'
+  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source, work_attachment or consultation_slot'
 );
 -- A version is immutable by its triggers, one of a mentorship's assignment
 -- stays within the faculty's rule, an administrator comes and goes only
@@ -276,7 +278,10 @@ SELECT bag_eq(
     'refuse_work_attachment_change()',
     'add_work_attachment(p_assignment_id uuid, p_media_type text, p_byte_size integer, p_sha256 text, p_storage_ref text, p_pixel_width integer, p_pixel_height integer) definer app',
     'work_attachments(p_assignment_id uuid, p_student_id uuid) definer app',
-    'read_work_attachment(p_attachment_id uuid) definer app'
+    'read_work_attachment(p_attachment_id uuid) definer app',
+    'consultation_slots(p_document_id text) definer app',
+    'request_consultation_slot(p_document_id text, p_starts_at timestamp with time zone) definer app',
+    'act_on_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_starts_at timestamp with time zone) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -604,12 +609,12 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source', 'work_attachment']) WITH ORDINALITY AS t (tbl, n)
+                        'notice_read', 'work_source', 'work_attachment', 'consultation_slot']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'consultation_slot') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
