@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { createReceiptSigner, type ReceiptSigner, type SignedReceipt } from "./receipt-signer.ts";
 
@@ -255,6 +255,17 @@ export const CODES = {
 } as const;
 
 export const INSTITUTION = { slug: "demo-fakultet", displayName: "Demo fakultet (test)" } as const;
+
+/**
+ * The invented journal scope of a fake account, one derivation for every
+ * route that names it (profile.me.get journalScope, teacher.access.get scope),
+ * as the real server uses principalScope for both. Never a real identifier.
+ */
+export function fakeJournalScope(accountId: string): string {
+  return createHash("sha256")
+    .update(`ductura-fake-journal-scope-v1\n${accountId}`, "utf8")
+    .digest("hex");
+}
 
 function account(
   key: AccountKey,
