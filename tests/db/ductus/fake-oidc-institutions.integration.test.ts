@@ -10,11 +10,10 @@ import { createWithActor } from "../../../server/database/with-actor.ts";
 
 import {
   ACCOUNTS,
-  findDemoAccount,
   DEMO_HOME_ORG,
   DEMO_HOME_ORG_B,
   demoAccountClaims,
-} from "../../../packages/test-fakes/oidc/accounts.ts";
+} from "../../infra/fake-oidc/accounts.mjs";
 
 // DAN-483: the two invented institutions of db/local/seed.sql share the fake
 // provider's issuer, so only the home organisation and the realm of the
@@ -46,20 +45,12 @@ function loginPool(login: string) {
 type Variant = { homeOrg?: string; realm?: string; subject?: string };
 
 /** The claims of a fake account under this run's subject, optionally altered. */
-function account(id: string) {
-  const value = findDemoAccount(id);
-  if (!value) throw new Error(`Unknown test account: ${id}`);
-  return value;
-}
-
 function claimsOf(id: string, variant: Variant = {}) {
-  const claims = demoAccountClaims(id);
-  if (!claims) throw new Error(`Unknown test account: ${id}`);
-  const own = account(id).homeOrg;
+  const own = ACCOUNTS[id].homeOrg;
   const sub = variant.subject ?? `${id}-it-${suffix}`;
   if (!subjects.includes(sub)) subjects.push(sub);
   return {
-    ...claims,
+    ...demoAccountClaims(id)!,
     sub,
     hrEduPersonUniqueID: [`${sub}@${variant.realm ?? own}`],
     hrEduPersonHomeOrg: [variant.homeOrg ?? own],
@@ -120,7 +111,7 @@ const sessionCount = async (tokenHash: Buffer) =>
       "SELECT count(*)::int AS n FROM identity.session WHERE token_hash = $1",
       [tokenHash],
     )
-  ).rows[0]!.n;
+  ).rows[0].n;
 
 beforeAll(async () => {
   const seeded = await admin.query<{ id: string; aai_home_org: string }>(
@@ -144,7 +135,7 @@ beforeAll(async () => {
       "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE %I', $1::text, $2::text, $3::text) AS ddl",
       [name, password, group],
     );
-    await admin.query(ddl.rows[0]!.ddl);
+    await admin.query(ddl.rows[0].ddl);
   }
   auth = loginPool(AUTH_LOGIN);
 });
@@ -179,7 +170,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
       expect(result.ok, id).toBe(true);
       expect(await accountsOf(claims.sub)).toEqual([
         {
-          institution_id: institutionOf.get(account(id).homeOrg),
+          institution_id: institutionOf.get(ACCOUNTS[id].homeOrg),
           hr_edu_person_unique_id: claims.hrEduPersonUniqueID[0],
         },
       ]);
@@ -226,7 +217,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
     const withActor = createWithActor(loginPool(APP_LOGIN));
     for (const id of ["demo-student", "demo-b-student", "demo-teacher", "demo-b-teacher"]) {
       const claims = claimsOf(id, { subject: `${id}-right-${suffix}` });
-      const staff = account(id).affiliation === "djelatnik";
+      const staff = ACCOUNTS[id].affiliation === "djelatnik";
       expect(identityOf(claims).teacherEligible, id).toBe(staff);
       const { result, token } = await login(claims);
       expect(result.ok, id).toBe(true);
@@ -237,7 +228,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
         [ISSUER, claims.sub],
       );
       expect(rights.rows, id).toEqual(
-        staff ? [{ institution_id: institutionOf.get(account(id).homeOrg) }] : [],
+        staff ? [{ institution_id: institutionOf.get(ACCOUNTS[id].homeOrg) }] : [],
       );
       await expect(
         withActor(token, (tx) =>
@@ -266,7 +257,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
       const before = await accountsOf(subject);
       expect(before).toEqual([
         {
-          institution_id: institutionOf.get(account(id).homeOrg),
+          institution_id: institutionOf.get(ACCOUNTS[id].homeOrg),
           hr_edu_person_unique_id: own.hrEduPersonUniqueID[0],
         },
       ]);
