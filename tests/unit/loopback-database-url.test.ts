@@ -3,12 +3,9 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  isLoopbackDatabaseUrl,
-  requireLoopbackDatabaseUrl,
-} from "../db/ductus/loopback-database-url.ts";
+import { isLoopbackDatabaseUrl, requireLoopbackDatabaseUrl } from "../db/loopback-database-url.ts";
 
-const INTEGRATION = fileURLToPath(new URL("../integration/", import.meta.url));
+const INTEGRATION = fileURLToPath(new URL("../db/", import.meta.url));
 
 /** Names X in `new URL(X).hostname` that hold a database URL rather than an S3 or HTTP endpoint. */
 function hostnameOnlyDatabaseGuards(source: string): string[] {

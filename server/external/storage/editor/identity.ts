@@ -409,8 +409,11 @@ export function mintMissingIds(
  * one it has no JSON form (see `toJSON`).
  */
 class SetNodeIds extends Step {
-  constructor(readonly fixes: readonly Fix[]) {
+  readonly fixes: readonly Fix[];
+
+  constructor(fixes: readonly Fix[]) {
     super();
+    this.fixes = fixes;
   }
 
   apply(doc: PmNode): StepResult {

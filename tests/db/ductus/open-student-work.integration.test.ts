@@ -9,7 +9,7 @@ import { createActorReader, createWorkOpener } from "../../../server/database/in
 import { createEvidenceOpenRoute } from "../../../server/http/index.ts";
 
 import { postTestRoute, startTestRoute } from "./http-route.ts";
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-8 step 2 / DAN-83 (docs/BACKEND.md 4.13, pgTAP rows): pgTAP runs in one
 // transaction and cannot race two first calls. Here two app connections open

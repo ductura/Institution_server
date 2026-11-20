@@ -1,6 +1,7 @@
 // Tests copied from Ductus that cannot run until the task named on each group
-// lands (ZEL-S4). The list holds sources too, copied from Ductus. Each task deletes its own rows. vitest.config.ts reads this list and
-// tsconfig.json "exclude" repeats it; pending-tests.test.ts keeps the two equal.
+// lands (ZEL-S4). The list includes copied sources as well. Each task removes
+// its own rows. Vitest reads this list and pending-tests.test.ts checks that
+// both TypeScript projects exclude these paths.
 export const PENDING_TESTS: readonly string[] = [
   // do SRV-10 / SRV-12 (the routes these test are written there; Ductus mutation-route, enrollment-*, create-course are not ported)
   "server/institution/create-assignment.test.ts",
@@ -32,10 +33,6 @@ export const PENDING_TESTS: readonly string[] = [
   "tests/unit/health-route.test.ts",
   "tests/unit/ready-route.test.ts",
   "tests/unit/ready-route-alarms.test.ts",
-  "tests/unit/auth/routes.test.ts",
-  "tests/unit/auth/flow-logout.test.ts",
-  "tests/unit/auth/flow-logout-all.test.ts",
-  "tests/unit/auth/build-mode.test.ts",
   "tests/unit/interface-locale-routes.test.ts",
   // do DAN-839-3 (the copied probes and status still use the Ductus readiness names; server/http/ready.ts is the Ductura port)
   "server/http/public-status.test.ts",
@@ -44,14 +41,10 @@ export const PENDING_TESTS: readonly string[] = [
   "tests/unit/ready.test.ts",
   // Ductus layout (src/, app/, docs/backend, db/migrations, tests/integration do not exist here); replacement with SRV-10/12 and the database lane
   "tests/unit/shutdown-process.test.ts",
-  "tests/unit/problem-report-routes.test.ts",
   "tests/unit/db-boundary-forms.test.ts",
-  "tests/unit/pg-import-boundary.test.ts",
-  "tests/unit/pg-import-boundary.hardening.test.ts",
   "tests/unit/rpc-http-inventory.test.ts",
   "tests/unit/server-route-inventory.test.ts",
   "tests/unit/auth/session-activity-routes.test.ts",
-  "tests/unit/auth/open-session-boundary.test.ts",
   // do U9 (@ductura/test-fakes, infra/fake-oidc has moved)
   "tests/unit/auth/fake-oidc-claims.test.ts",
   "tests/unit/infra/fake-oidc-accounts.test.ts",

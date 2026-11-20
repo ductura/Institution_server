@@ -19,7 +19,7 @@ import { evidenceIngestDependencies } from "../../../server/http/evidence-deps.t
 import { readProcessSummary } from "../../../server/projection/process-summary-reader.ts";
 import { processSummarySource } from "./process-summary-source.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-13 steps 3 and 4 / DAN-85, PLAN-DEMO B-13 criterion: the owner and the
 // teacher get the same bytes through the API (D-80 point 6), over the real
