@@ -25,6 +25,7 @@ import {
   createMeRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createStudentNotesRoutesFor,
   createTeacherReadRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -132,6 +133,7 @@ async function main(): Promise<void> {
       createClientContextRoute(),
       createEvidenceOpenRoute(databases.main),
       createStudentAssignmentWorkRouteFor(databases.main),
+      ...createStudentNotesRoutesFor(databases.main),
       // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
       createDownloadsManifestRoute(),
       // Settings by level (S-1J-g, DAN-826): the write over settings.set_value.

@@ -1,6 +1,7 @@
 // Public interface of server/http, the only composition root; only the entry
 // point (server/server.ts) and test-server import it (docs/server-map.md §2).
 export { createAuthRoutes } from "./auth.ts";
+export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export {
   CLIENT_CONTEXT_MAX_BYTES,
   createClientContextRoute,

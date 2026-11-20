@@ -16,6 +16,7 @@ describe("server/institution public interface", () => {
       "WORK_TYPES",
       "accessLogCursorOf",
       "createInstitutionService",
+      "createStudentNotes",
       // SRV-14: the content of an assignment version (assignment-input.ts).
       "isAssignmentVersion",
       "parseAcknowledgmentBody",

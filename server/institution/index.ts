@@ -50,6 +50,7 @@ export {
   parseAcknowledgmentBody,
 } from "./acknowledgment-body.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
+export { createStudentNotes } from "./student-notes-route.ts";
 export {
   type AssignmentInput,
   isAssignmentVersion,

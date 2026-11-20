@@ -30,6 +30,7 @@ import {
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createWebAuthnRoutesFor,
@@ -169,6 +170,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createStudentAssignmentWorkRouteFor(databases.main)",
     ids: ["student.assignment-work.get"],
     routes: () => [createStudentAssignmentWorkRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    call: "createStudentNotesRoutesFor(databases.main)",
+    ids: ["student.submission-notes.get", "student.submission-notes.post"],
+    routes: () => createStudentNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
@@ -378,6 +384,8 @@ describe("CONTRACT_ONLY", () => {
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
         "institution.assignment.get",
         ...["student.submission.get", "student.assignment-requirements.get"],
+        "student.submission-notes.get",
+        "student.submission-notes.post",
         "live.document.get",
         "live.document.put",
         "institution.acknowledgment.post",
@@ -401,6 +409,8 @@ describe("routes the entry point mounts itself", () => {
   it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
       "student.assignment-work.get",
+      "student.submission-notes.get",
+      "student.submission-notes.post",
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",

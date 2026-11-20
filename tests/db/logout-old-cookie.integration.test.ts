@@ -22,6 +22,7 @@ import {
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createStudentAssignmentWorkRouteFor,
+  createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
@@ -122,6 +123,17 @@ const SESSION_ROUTES = {
     path: "/api/v1/student/assignment-work",
     body: () => undefined,
     live: 200,
+  },
+  "student.submission-notes.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/submission-notes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.submission-notes.post": {
+    path: "/api/v1/student/submission-notes",
+    body: () => ({ assignmentId: ASSIGNMENT, text: "Izmišljena napomena o radu." }),
+    live: 404,
   },
   // SRV-22: a live session naming an assignment it is no student of gets 404.
   "student.submission.get": {
@@ -399,6 +411,7 @@ const FACTORIES = [
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
+  "createStudentNotesRoutesFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
@@ -427,6 +440,7 @@ const MOUNTED = [
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
+  ...createStudentNotesRoutesFor(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
