@@ -777,6 +777,53 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.source-proof-image.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      (typeof value['proofId'] === 'string') &&
+      value['proofId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }),
+  "student.source-proofs.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.source-proofs.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.source-proofs.post:body": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,30}(?<!\s)(?![\s\S])/;
+  const local1 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|\n|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,2000}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['image'] === 'string') &&
+      value['image'].length >= 1 &&
+      (typeof value['page'] === 'string') &&
+      local0.test(value['page']) &&
+      (value['note'] !== undefined ? ((typeof value['note'] === 'string') && local1.test(value['note'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['image', 'page', 'note'].includes(key))
+    )
+  }
+  })(),
   "student.submission-notes.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -916,6 +963,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['courseId'] === 'string') &&
       value['courseId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.deadline-extension.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.deadline-extension.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const local2 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (value['scope'] === 'one') && (typeof value['studentId'] === 'string') && local0.test(value['studentId']) && (typeof value['dueAt'] === 'string') && local1.test(value['dueAt']) && (((value['reasonId'] === 'justified')) || ((value['reasonId'] === 'technical')) || ((value['reasonId'] === 'agreement'))) && Object.getOwnPropertyNames(value).length === 4) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (value['scope'] === 'all') && (typeof value['dueAt'] === 'string') && local2.test(value['dueAt']) && (((value['reasonId'] === 'justified')) || ((value['reasonId'] === 'technical')) || ((value['reasonId'] === 'agreement')) || ((value['reasonId'] === 'all'))) && Object.getOwnPropertyNames(value).length === 3))
+    )
+  }
+  })(),
+  "teacher.deadline-extensions.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

@@ -17,6 +17,7 @@ import {
   type Answer,
   type RouteId,
 } from "./contract.ts";
+import { multipartFields } from "../fake-server/index.ts";
 import { ACCOUNT_KEYS, createState, type Account, type AccountKey, type State } from "./state.ts";
 
 export const SESSION_COOKIE = "ductura_lazna_sesija";
@@ -183,6 +184,13 @@ function readBody(
       ok: false,
       answer: firstError(route, ["unsupported_media_type", "bad_request"]) ?? NOT_FOUND,
     };
+  // A file part arrives in Base64, as the vectors write it; the handler decodes it.
+  if (type === "multipart/form-data") {
+    const parts = multipartFields(req.body);
+    return parts === null
+      ? { ok: false, answer: firstError(route, ["invalid_input", "bad_request"]) ?? NOT_FOUND }
+      : { ok: true, value: { ...parts } };
+  }
   const text = Buffer.from(req.body).toString("utf8");
   if (type === "application/x-www-form-urlencoded")
     return { ok: true, value: fields(new URLSearchParams(text)) };
@@ -258,6 +266,15 @@ export async function answerDev(
     ...reply.headers,
   };
   if (reply.body === undefined) return { status: reply.status, headers, body: "" };
+  if (reply.body instanceof Blob) {
+    const bytes = new Uint8Array(await reply.body.arrayBuffer());
+    return {
+      status: reply.status,
+      headers: { "content-type": reply.body.type, ...headers },
+      body: "",
+      bytes,
+    };
+  }
   return {
     status: reply.status,
     headers: { "content-type": "application/json", ...headers },
@@ -280,7 +297,7 @@ export function createDevServer(handlers: Handlers, state: State = createState()
       }).then(
         (out) => {
           res.writeHead(out.status, out.headers);
-          res.end(out.body);
+          res.end(out.bytes ?? out.body);
         },
         (error: unknown) => {
           console.error(error);
