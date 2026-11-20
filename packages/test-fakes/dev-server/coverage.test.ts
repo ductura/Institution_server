@@ -483,6 +483,30 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
     },
   },
+  "teacher.course-students.get": {
+    request: { path: `/api/v1/teacher/courses/${IDS.course}/students`, as: "nastavnik" },
+  },
+  "teacher.assignment-overview.get": {
+    before: SUBMIT_STEPS,
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/overview`, as: "nastavnik" },
+  },
+  "teacher.submission-receipt.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/submission`,
+      as: "nastavnik",
+    },
+  },
+  "teacher.mentorship-requests.get": {
+    request: { path: "/api/v1/teacher/mentorship-requests", as: "nastavnik" },
+  },
+  "teacher.mentorship-request-decision.post": {
+    request: {
+      path: "/api/v1/teacher/mentorship-requests/decision",
+      as: "nastavnik",
+      body: { requestId: IDS.mentorship, decision: "approve" },
+    },
+  },
 };
 
 async function run(state: State, step: Step) {

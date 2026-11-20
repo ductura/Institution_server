@@ -1,0 +1,159 @@
+{
+  "route": "teacher.course-students.get",
+  "vectors": [
+    {
+      "name": "course-students",
+      "kind": "success",
+      "request": {
+        "params": {
+          "courseId": "00000000-0000-4000-8000-0000000000c1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": [
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e1",
+              "givenName": "Demo",
+              "familyName": "Kompost",
+              "groupName": "Grupa A",
+              "assignments": [
+                {
+                  "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+                  "documentId": "izmisljeni-rad-predaje-0001",
+                  "workState": "submitted"
+                }
+              ]
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e2",
+              "givenName": null,
+              "familyName": null,
+              "groupName": "Grupa B",
+              "assignments": [
+                {
+                  "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+                  "documentId": "izmisljeni-rad-0002",
+                  "workState": "in_progress"
+                }
+              ]
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e3",
+              "givenName": "Demo",
+              "familyName": "Vrt",
+              "groupName": "Grupa B",
+              "assignments": [
+                {
+                  "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+                  "documentId": null,
+                  "workState": "not_started"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty-roster",
+      "kind": "success",
+      "request": {
+        "params": {
+          "courseId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "courseId": "00000000-0000-4000-8000-0000000000c1"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+          "sec-fetch-site": "cross-site"
+        },
+        "params": {
+          "courseId": "00000000-0000-4000-8000-0000000000c1"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000003"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        },
+        "params": {
+          "courseId": "00000000-0000-4000-8000-0000000000c1"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000004"
+        }
+      }
+    }
+  ]
+}
