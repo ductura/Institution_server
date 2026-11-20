@@ -348,7 +348,7 @@ function validateAtom(
  * `""` is refused so one meaning has one form. `via` and `rq` are fields of
  * v3 only; in v2 they are UNKNOWN_FIELD.
  */
-function validateCitation(
+export function validateCitation(
   raw: Record<string, unknown>,
   path: string,
   rules: DocumentSchemaVersion,
@@ -394,7 +394,7 @@ function validateCitation(
 }
 
 /** A footnote atom (contract v3 §3.3): tidy plain text of 1 to 2000 code points. */
-function validateFootnote(
+export function validateFootnote(
   raw: Record<string, unknown>,
   path: string,
   errors: ValidationError[],
@@ -411,7 +411,7 @@ function validateFootnote(
  * A cross reference atom (contract v3 §3.4). Whether a block with the target
  * id exists, and is a heading, is not checked: either way it is valid.
  */
-function validateCrossReference(
+export function validateCrossReference(
   raw: Record<string, unknown>,
   path: string,
   errors: ValidationError[],
