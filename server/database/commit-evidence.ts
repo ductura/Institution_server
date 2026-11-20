@@ -105,6 +105,24 @@ function fault(stage: "signing" | "repository", code: EvidenceCommitFault): neve
   throw new CommitFault(stage, code);
 }
 
+/** The code of a database error; a getter or Proxy that throws has none. */
+function codeOf(thrown: unknown): unknown {
+  try {
+    return thrown && typeof thrown === "object" && "code" in thrown ? thrown.code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * SRV-33B (Ductus docs/contracts/document-schema-v2.md §7 t. 4 and 6): the
+ * database refuses a revision whose schemaVersion is not that of the work's
+ * revision 0 (evidence.keep_document_schema_version) with ZD422, after the
+ * whole transaction is rolled back. That is the client's input, 422 invalid,
+ * never 503; the service refuses it earlier, this covers every other way in.
+ */
+const SCHEMA_REFUSAL = "ZD422";
+
 function conflictState(row: Row): EvidenceCommitState {
   const currentRevision = count(row.current_revision);
   const lastSequenceTo = count(row.last_sequence_to);
@@ -309,8 +327,11 @@ export function createEvidenceCommitter(
       try {
         return await withActor(token, (tx) => runCommit(tx, signer, input, signing));
       } catch (error) {
-        return error instanceof CommitFault
-          ? { status: "unavailable", stage: error.stage, code: error.code }
+        if (error instanceof CommitFault) {
+          return { status: "unavailable", stage: error.stage, code: error.code };
+        }
+        return codeOf(error) === SCHEMA_REFUSAL
+          ? { status: "invalid" }
           : { status: "unavailable", stage: "repository", code: "commit_failed" };
       }
     },
