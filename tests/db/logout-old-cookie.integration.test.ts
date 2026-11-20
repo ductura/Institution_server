@@ -15,6 +15,7 @@ import {
   createAssignmentCurrentVersionRouteFor,
   createAuthRoutes,
   createClientContextRoute,
+  createCollaborationCommentsRouteFor,
   createDatabases,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
@@ -124,6 +125,11 @@ const SESSION_ROUTES = {
     path: "/api/v1/evidence/replay",
     body: () => ({ documentId: randomUUID(), from: 0 }),
     live: 404,
+  },
+  "collaboration.comments.post": {
+    path: "/api/v1/comments/list",
+    body: () => ({ documentId: randomUUID() }),
+    live: 403,
   },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
   "submission.submit.post": {
@@ -521,6 +527,7 @@ const FACTORIES = [
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
+  "createCollaborationCommentsRouteFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -559,6 +566,7 @@ const MOUNTED = [
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
+  createCollaborationCommentsRouteFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
@@ -791,6 +799,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("live.") ||
+        id.startsWith("collaboration.") ||
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
         id.startsWith("work.") ||
