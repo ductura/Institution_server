@@ -42,7 +42,7 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
   let courseId = "";
   let original: Settings | undefined;
   try {
-    // CI runs local:prepare first. Remove only this synthetic row to model a
+    // The seed has prepared both demo institutions. Remove only this synthetic row to model a
     // freshly migrated stack, then restore its original value in finally.
     const institutions = await admin.query<{ id: string; slug: string }>(
       "SELECT id, slug FROM identity.institution WHERE slug = ANY($1)",
@@ -146,7 +146,7 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
           )
         ).rows[0]!.outcome,
     );
-    expect(wrong).toBe("refused");
+    expect(wrong).toBe("invalid_code");
     const attempt = (
       await admin.query<{ id: string }>(
         "SELECT id FROM institution.enrollment_attempt WHERE user_id = $1",
@@ -202,7 +202,7 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
           )
         ).rows[0],
     );
-    expect(enrolled).toEqual({ outcome: "enrolled", enrolled_course_id: courseId });
+    expect(enrolled).toEqual({ outcome: "enrolled_no_assignment", enrolled_course_id: courseId });
     await expect(
       withActor(tokens[4], (tx) =>
         tx.query("SELECT outcome FROM institution.enroll_with_code($1)", [code]),

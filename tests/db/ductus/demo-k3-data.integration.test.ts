@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import pg from "pg";
@@ -10,6 +11,10 @@ import { expect, it } from "vitest";
 // back, so CI checks it without leaving a confirmed teacher for the E2E tests.
 const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
+const authLogin = readFileSync(
+  new URL("../../../db/main/local/auth-login.sql", import.meta.url),
+  "utf8",
+);
 const seed = readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url), "utf8");
 const k3 = readFileSync(new URL("../../../db/main/local/demo-k3.sql", import.meta.url), "utf8");
 
@@ -70,7 +75,19 @@ type Snapshot = {
 };
 
 it("loads the K-3 course, assignment and enrolment through the RPCs, and a rerun adds nothing (#635)", () => {
-  const input = ["BEGIN;", seed, SNAPSHOT, k3, SNAPSHOT, k3, SNAPSHOT, "ROLLBACK;", ""].join("\n");
+  const input = [
+    "BEGIN;",
+    `\\set auth_password ${randomBytes(24).toString("hex")}`,
+    authLogin,
+    seed,
+    SNAPSHOT,
+    k3,
+    SNAPSHOT,
+    k3,
+    SNAPSHOT,
+    "ROLLBACK;",
+    "",
+  ].join("\n");
   const output = runLocalSql(ADMIN_URL, input);
   const [before, first, second] = output
     .split(/\r?\n/)
