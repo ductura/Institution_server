@@ -173,7 +173,11 @@ export { createAssignmentCurrentVersionRouteFor } from "./assignment-current-ver
 export {
   createTeacherAccessRoute,
   createTeacherCoursesRoute,
+  createTeacherReadRoutes,
   createTeacherReadRoutesFor,
+  MAX_ASSIGNMENT_IDS,
+  parseAssignmentIdsBody,
+  type TeacherReadOptions,
 } from "./teacher-reads.ts";
 export {
   createStudentAssignmentsRoute,
