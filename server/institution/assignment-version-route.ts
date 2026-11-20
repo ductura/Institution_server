@@ -12,7 +12,7 @@ const PUBLISH = `SELECT institution.publish_assignment_version(
 export interface AssignmentVersionDeps {
   withActor: WithActor;
   expectedOrigin: string;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 const isVersion = (value: unknown): value is number =>

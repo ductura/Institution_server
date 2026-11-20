@@ -13,7 +13,7 @@ export type EvidenceOutboxItem = {
   attempts: number;
   createdAt: string;
   updatedAt: string;
-  lastFailure?: EvidenceIngestOutcome["status"];
+  lastFailure?: EvidenceIngestOutcome["status"] | undefined;
   receipt?: SignedEvidenceReceipt;
 };
 

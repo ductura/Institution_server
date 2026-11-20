@@ -2,7 +2,7 @@
 import { fc, test } from "@fast-check/vitest";
 import { Fragment, type Node as PmNode } from "@tiptap/pm/model";
 import { canJoin, Transform } from "@tiptap/pm/transform";
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 
 import type { DocumentSource } from "../../domain/document/schema.ts";
 import {
@@ -23,6 +23,9 @@ import {
   editStepsV2Schema,
   type EditStepsV2Document,
 } from "./edit-steps-v2-rules.ts";
+
+// Every generated edit runs both drivers, including real Web Crypto digests.
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * docs/contracts/document-schema-v2.md §10, properties (f) and (g) (DAN-619

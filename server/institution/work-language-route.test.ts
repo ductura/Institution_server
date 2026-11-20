@@ -34,7 +34,7 @@ const request = (
   new Request(url, {
     method,
     headers: { origin: ORIGIN, "content-type": "application/json", ...headers },
-    body: method === "GET" ? undefined : typeof body === "string" ? body : JSON.stringify(body),
+    ...(method === "GET" ? {} : { body: typeof body === "string" ? body : JSON.stringify(body) }),
   });
 
 type Row = Record<string, unknown>;

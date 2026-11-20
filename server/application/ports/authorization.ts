@@ -51,7 +51,7 @@ export type AuthorizationCheck = {
   action: AuthorizationAction;
   resource: AuthorizationResource;
   consistency: AuthorizationConsistency;
-  context?: AuthorizationContext;
+  context?: AuthorizationContext | undefined;
 };
 
 export type AuthorizationDecision =
