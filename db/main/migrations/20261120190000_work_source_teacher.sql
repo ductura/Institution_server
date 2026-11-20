@@ -1,7 +1,7 @@
 -- migrate:up
 -- SRV-7B step (b) (Ductus#2028, c.7037154952: "preporučene i obvezne izvore
 -- dodaje nastavnik"): a teacher of a student's work adds a recommended or
--- required source to that work's source list (20261120170000), changes it or
+-- required source to that work's source list (20261120180000), changes it or
 -- removes it. "A teacher of the work" is a reader of it as in
 -- institution.work_source_access: the teacher or collaborator of the course,
 -- the teacher of the student's seminar group, the mentor.
