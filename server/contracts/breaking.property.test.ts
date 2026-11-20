@@ -48,7 +48,9 @@ describe("breaking changes on the real contract", () => {
         );
       }),
     );
-  });
+    // Each run clones and compares the whole published document, which grows
+    // with every route; the 5 s default no longer holds on CI (as the oneOf test below).
+  }, 30_000);
 
   it("removing any field of a success body is reported", () => {
     fc.assert(
@@ -68,7 +70,7 @@ describe("breaking changes on the real contract", () => {
         );
       }),
     );
-  });
+  }, 30_000);
 });
 
 // DAN-791: every oneOf of the published document has a discriminator, so a new
