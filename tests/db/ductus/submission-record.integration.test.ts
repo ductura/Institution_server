@@ -19,11 +19,11 @@ import {
 import { canonicalizeJcs, type JcsJsonValue } from "../../../server/domain/forensics/jcs.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 import {
-  readEvidenceCommitContext,
+  createEvidenceCommitter,
   type EvidenceCommitContext,
-} from "../../../server/database/commit-evidence.ts";
-import { commitEvidenceRequest } from "../../../server/evidence/service.ts";
-import { createEvidenceReceiptSigner } from "../../../server/http/evidence-deps.ts";
+} from "../../../server/database/index.ts";
+import { createEvidenceService } from "../../../server/evidence/index.ts";
+import { PersistentDevelopmentEd25519SigningKeyProvider } from "../../../server/external/keys/index.ts";
 import { reconstructSubmissionRecord } from "../../../server/evidence/submission-record.ts";
 import { handleSubmissionRequest } from "../../../server/evidence/submission-route.ts";
 import type { SigningKeyProvider } from "../../../server/external/keys/signing-key-provider.ts";
@@ -42,13 +42,17 @@ requireLoopbackDatabaseUrl(
   SAFE_ADMIN_URL,
   "The submission record test runs only against a loopback database (DATABASE_URL).",
 );
-const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const suffix = randomBytes(5).toString("hex");
 const login = `it_subrec_${suffix}`;
 const password = randomBytes(24).toString("hex");
-const [token, classmateToken, expiredToken, closingToken] = Array.from({ length: 4 }, () =>
-  randomBytes(32).toString("base64url"),
-);
+const newToken = () => randomBytes(32).toString("base64url");
+const [token, classmateToken, expiredToken, closingToken] = [
+  newToken(),
+  newToken(),
+  newToken(),
+  newToken(),
+] as const;
 const [institutionId, teacherId, studentId, classmateId, courseId, assignmentId] = Array.from(
   { length: 6 },
   () => randomUUID(),
@@ -72,7 +76,7 @@ const chain = {
 
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const signer = () =>
-  createEvidenceReceiptSigner(
+  new PersistentDevelopmentEd25519SigningKeyProvider(
     { NODE_ENV: "test", DUCTUS_DEV_SIGNING_KEY_FILE: join(dir, "seed") },
     ROOT,
   );
@@ -101,17 +105,17 @@ async function commit(steps: unknown[]) {
     captureContext: { editorModel: "prosemirror", transactionFormat: "ductus-edit-steps-v1" },
     evidenceProfileId: context.evidenceProfileId,
   });
-  const outcome = await commitEvidenceRequest(
-    { withActor, signer: signer(), payloads: store },
-    token,
-    {
-      documentId,
-      clientTransactionId: `tx-${suffix}-${n}`,
-      baseRevision: n - 1,
-      segment: new TextEncoder().encode(segment),
-      document: new TextEncoder().encode(document),
-    },
-  );
+  const evidence = createEvidenceService({
+    committer: createEvidenceCommitter(withActor, signer()),
+    payloads: store,
+  });
+  const outcome = await evidence.commit(token, {
+    documentId,
+    clientTransactionId: `tx-${suffix}-${n}`,
+    baseRevision: n - 1,
+    segment: new TextEncoder().encode(segment),
+    document: new TextEncoder().encode(document),
+  });
   expect(outcome).toMatchObject({ status: "committed", revision: n });
   Object.assign(chain, {
     document: after,
@@ -133,8 +137,10 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
-  const key = await signer().publicVerificationKey();
+  await admin.query(ddl.rows[0]!.ddl);
+  const keyResult = await signer().publicVerificationKey();
+  if (!keyResult.ok) throw new Error("Expected the fixture signing key");
+  const key = keyResult.value;
   const statements: [string, unknown[]][] = [
     [
       "INSERT INTO identity.institution (id, slug) VALUES ($1, $2)",
@@ -227,8 +233,12 @@ beforeAll(async () => {
     ),
   );
   expect(opened.rows[0]).toMatchObject({ outcome: "opened", document_hash: REVISION_ZERO_SHA256 });
-  documentId = opened.rows[0].document_id;
-  const resolved = await readEvidenceCommitContext(withActor, token, documentId, `tx-${suffix}-0`);
+  documentId = opened.rows[0]!.document_id;
+  const resolved = await createEvidenceCommitter(withActor, signer()).readContext(
+    token,
+    documentId,
+    `tx-${suffix}-0`,
+  );
   if (resolved.status !== "ok") throw new Error(`no commit context: ${resolved.status}`);
   context = resolved.context;
 
@@ -240,8 +250,8 @@ beforeAll(async () => {
       [documentId],
     ),
   );
-  expect(requested.rows[0].outcome).toBe("requested");
-  requestId = requested.rows[0].submission_request_id;
+  expect(requested.rows[0]!.outcome).toBe("requested");
+  requestId = requested.rows[0]!.submission_request_id;
 });
 
 afterAll(async () => {
@@ -282,7 +292,7 @@ afterAll(async () => {
     "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
     [login],
   );
-  await admin.query(drop.rows[0].ddl);
+  await admin.query(drop.rows[0]!.ddl);
   await admin.end();
   if (dir) await rm(dir, { recursive: true, force: true });
 });
@@ -389,7 +399,7 @@ async function submissions() {
     "SELECT count(*)::text AS n FROM evidence.submission WHERE institution_id = $1",
     [institutionId],
   );
-  return rows[0].n;
+  return rows[0]!.n;
 }
 
 describe("POST /api/submission (B-12 step 4b2)", () => {
@@ -459,9 +469,10 @@ describe("POST /api/submission (B-12 step 4b2)", () => {
         return signature;
       },
     };
-    const [first, second] = await Promise.all(
-      [1, 2].map(() => submit(store, token, undefined, counting)),
-    );
+    const [first, second] = await Promise.all([
+      submit(store, token, undefined, counting),
+      submit(store, token, undefined, counting),
+    ]);
     expect([first.status, second.status, signs]).toEqual([200, 200, 2]);
     const text = await first.text();
     expect(await second.text()).toBe(text);
