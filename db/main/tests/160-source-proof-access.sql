@@ -12,7 +12,7 @@ SET CONSTRAINTS institution.assignment_current_version_institution_fkey DEFERRED
 SET CONSTRAINTS institution.assignment_current_version_institution_fkey IMMEDIATE;
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(99);
+SELECT plan(101);
 
 INSERT INTO ref VALUES
   ('src_a', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -234,6 +234,10 @@ SELECT is((SELECT count(*) FROM institution.source_proof WHERE source_id = pg_te
 SELECT is((SELECT count(*) FROM institution.source_proof WHERE student_id = pg_temp.id('ana')
              AND assignment_id = pg_temp.id('z1') AND source_id = pg_temp.id('src_a')), 3::bigint,
   'the proofs of source A stay');
+SELECT is(pg_temp.ask('vesna', $$ SELECT institution.delete_teacher_work_source({z1}, {ana}, {src_d})::text $$),
+  'true', 'Vesna removes the required source D');
+SELECT is((SELECT count(*) FROM institution.source_proof WHERE source_id = pg_temp.id('src_d')), 0::bigint,
+  'Ana''s proof of D went with it, with no cascading foreign key');
 
 -- 9. At most 200 proofs per work.
 INSERT INTO institution.source_proof (institution_id, assignment_id, student_id, source_id, page, image, byte_size, sha256)

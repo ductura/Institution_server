@@ -11,7 +11,9 @@
 -- A proof is "attached by the student"; Ductura does not claim that the
 -- source says what the student writes, and nothing here compares the two.
 -- The proof is not evidence: it is outside the document and its hash. When
--- the student removes the source, its proofs go with it (ON DELETE CASCADE).
+-- a source is removed (delete_work_source, delete_teacher_work_source), its
+-- proofs are removed first in the same RPC; no foreign key cascades
+-- (033-institution-key.sql), and each pairs institution_id with institution_id.
 --
 -- Only through the RPCs: no role but the owner holds a privilege on the
 -- table, and its only policy is the owner's. Access comes from the caller's
@@ -37,6 +39,11 @@ SET LOCAL ROLE ductus_migrator;
 -- Only while this migration runs; revoked at the end.
 GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
+
+-- The parent key of a proof: the source of the work, with its institution, so
+-- the foreign key below pairs institution_id (033-institution-key.sql A5).
+ALTER TABLE institution.work_source
+  ADD CONSTRAINT work_source_institution_key UNIQUE (assignment_id, student_id, id, institution_id);
 
 -- A page ("14", "xii", "14-15") or a note: 1 to p_max characters, no control
 -- character (a note may hold line breaks), no white space at either end.
@@ -69,8 +76,8 @@ CREATE TABLE institution.source_proof (
   CHECK (byte_size = octet_length(image)),
   CHECK (sha256 = encode(pg_catalog.sha256(image), 'hex')),
   CHECK (id::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'),
-  FOREIGN KEY (assignment_id, student_id, source_id)
-    REFERENCES institution.work_source (assignment_id, student_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (assignment_id, student_id, source_id, institution_id)
+    REFERENCES institution.work_source (assignment_id, student_id, id, institution_id),
   FOREIGN KEY (assignment_id, institution_id) REFERENCES institution.assignment (id, institution_id),
   FOREIGN KEY (student_id, institution_id) REFERENCES identity.user_account (id, institution_id)
 );
@@ -194,6 +201,70 @@ GRANT EXECUTE ON FUNCTION institution.add_source_proof(uuid, uuid, text, text, b
 GRANT EXECUTE ON FUNCTION institution.source_proofs(uuid, uuid, uuid) TO ductus_app;
 GRANT EXECUTE ON FUNCTION institution.read_source_proof_image(uuid, uuid, uuid, uuid) TO ductus_app;
 
+-- The student of the work removes an own source (20261120180000), now with
+-- its proofs first: no foreign key cascades. Same answers as before.
+CREATE OR REPLACE FUNCTION institution.delete_work_source(p_assignment_id uuid, p_source_id uuid) RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_user uuid;
+  v_institution uuid;
+BEGIN
+  SELECT r.user_id, r.institution_id INTO v_user, v_institution FROM institution.require_actor() r;
+  IF institution.work_source_access(p_assignment_id, v_user) IS DISTINCT FROM 'student' THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  -- The proofs of the source, only when the source itself is removed below.
+  DELETE FROM institution.source_proof s
+   USING institution.work_source w
+   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
+     AND w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
+     AND w.requirement IS NULL;
+  DELETE FROM institution.work_source w
+   WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
+     AND w.requirement IS NULL;
+  IF FOUND THEN
+    RETURN true;
+  END IF;
+  IF EXISTS (SELECT 1 FROM institution.work_source w
+              WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  RETURN false;
+END
+$$;
+
+-- A teacher of the work removes a recommended or required source
+-- (20261120190000), now with its proofs first.
+CREATE OR REPLACE FUNCTION institution.delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  PERFORM institution.require_actor();
+  IF institution.work_source_access(p_assignment_id, p_student_id) IS DISTINCT FROM 'reader' THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  -- The proofs of the source, only when the source itself is removed below.
+  DELETE FROM institution.source_proof s
+   USING institution.work_source w
+   WHERE s.assignment_id = w.assignment_id AND s.student_id = w.student_id AND s.source_id = w.id
+     AND w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
+     AND w.requirement IS NOT NULL;
+  DELETE FROM institution.work_source w
+   WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
+     AND w.requirement IS NOT NULL;
+  IF FOUND THEN
+    RETURN true;
+  END IF;
+  IF EXISTS (SELECT 1 FROM institution.work_source w
+              WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  RETURN false;
+END
+$$;
+
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
@@ -203,10 +274,59 @@ REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
 SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
+-- The delete RPCs as 20261120180000 and 20261120190000 wrote them.
+CREATE OR REPLACE FUNCTION institution.delete_work_source(p_assignment_id uuid, p_source_id uuid) RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_user uuid;
+  v_institution uuid;
+BEGIN
+  SELECT r.user_id, r.institution_id INTO v_user, v_institution FROM institution.require_actor() r;
+  IF institution.work_source_access(p_assignment_id, v_user) IS DISTINCT FROM 'student' THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  DELETE FROM institution.work_source w
+   WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id
+     AND w.requirement IS NULL;
+  IF FOUND THEN
+    RETURN true;
+  END IF;
+  IF EXISTS (SELECT 1 FROM institution.work_source w
+              WHERE w.assignment_id = p_assignment_id AND w.student_id = v_user AND w.id = p_source_id) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  RETURN false;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION institution.delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  PERFORM institution.require_actor();
+  IF institution.work_source_access(p_assignment_id, p_student_id) IS DISTINCT FROM 'reader' THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  DELETE FROM institution.work_source w
+   WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id
+     AND w.requirement IS NOT NULL;
+  IF FOUND THEN
+    RETURN true;
+  END IF;
+  IF EXISTS (SELECT 1 FROM institution.work_source w
+              WHERE w.assignment_id = p_assignment_id AND w.student_id = p_student_id AND w.id = p_source_id) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  RETURN false;
+END
+$$;
 DROP FUNCTION institution.read_source_proof_image(uuid, uuid, uuid, uuid);
 DROP FUNCTION institution.source_proofs(uuid, uuid, uuid);
 DROP FUNCTION institution.add_source_proof(uuid, uuid, text, text, bytea);
 DROP TABLE institution.source_proof;
+ALTER TABLE institution.work_source DROP CONSTRAINT work_source_institution_key;
 DROP FUNCTION institution.source_proof_text_valid(text, integer, boolean);
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;

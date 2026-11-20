@@ -46,6 +46,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
+  createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
   createTextCheckConfigRoute,
   evidenceIngestDependencies,
@@ -181,6 +182,32 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // SRV-1101: the same for the text check configuration.
+  // SRV-1102: the proofs of a source; a live session that is no student of the work gets 404.
+  "student.source-proofs.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.source-proofs.post": {
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`,
+    body: () => undefined,
+    // A valid form, so the answer comes from the database and not from the input check.
+    form: () => {
+      const form = new FormData();
+      form.append("page", "14");
+      const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0xff, 0xd9]);
+      form.append("image", new Blob([jpeg], { type: "image/jpeg" }), "isjecak.jpg");
+      return form;
+    },
+    live: 404,
+  },
+  "student.source-proof-image.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs/${WORK_SOURCE.id}/image`,
+    body: () => undefined,
+    live: 404,
+  },
   "student.text-check-config.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/text-check-config`,
@@ -525,6 +552,7 @@ const FACTORIES = [
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
   "createWorkSourceRoutesFor",
+  "createSourceProofRoutesFor",
   "createTextCheckConfigRoute",
   "createSourceLookupRouteFor",
   "createPublicVerificationRouteFor",
@@ -565,6 +593,7 @@ const MOUNTED = [
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
   ...createWorkSourceRoutesFor(databases.main),
+  ...createSourceProofRoutesFor(databases.main),
   createTextCheckConfigRoute(databases.main),
   createSourceLookupRouteFor(databases.main, ENV),
   createPublicVerificationRouteFor(databases.main),
@@ -650,7 +679,19 @@ const call = (id: SessionRouteId, token: string, body?: unknown) => {
     body: () => unknown;
     method?: string;
     headers?: Readonly<Record<string, string>>;
+    form?: () => FormData;
   } = SESSION_ROUTES[id];
+  // A multipart route (SRV-1102): fetch writes the form and its content type.
+  if (route.form !== undefined)
+    return fetch(`http://127.0.0.1:${server.port}${route.path}`, {
+      method: "POST",
+      headers: {
+        origin: ORIGIN,
+        "sec-fetch-site": "same-origin",
+        cookie: `__Host-ductus_session=${token}`,
+      },
+      body: route.form(),
+    });
   return post(route.path, token, body ?? route.body(), route.method, route.headers);
 };
 

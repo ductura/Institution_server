@@ -11,6 +11,7 @@ import {
   type FakeVector,
 } from "./generated/fake-server/index.ts";
 import { createClient } from "./generated/index.ts";
+import { ROUTES } from "./index.ts";
 
 const server = createFakeServer();
 let port = 0;
@@ -32,7 +33,7 @@ function send(
   method: string,
   path: string,
   headers: Record<string, string> = {},
-  body = "",
+  body: string | Buffer = "",
 ): Promise<Reply> {
   return new Promise((resolve, reject) => {
     const req = request({ host: "127.0.0.1", port, method, path, headers }, (res) => {
@@ -42,13 +43,37 @@ function send(
         resolve({
           status: res.statusCode ?? 0,
           headers: res.headers,
-          body: Buffer.concat(chunks).toString("utf8"),
+          // A JPEG answer (SRV-1102) is compared in Base64, as the vector writes it.
+          body: Buffer.concat(chunks).toString(
+            res.headers["content-type"] === "image/jpeg" ? "base64" : "utf8",
+          ),
         }),
       );
     });
     req.on("error", reject);
     req.end(body);
   });
+}
+
+/** A multipart body (SRV-1102): a contentMediaType field is a file part, Base64 in the vector. */
+function multipartOf(v: FakeVector, body: Record<string, string>): Buffer {
+  const boundary = /boundary=([^;]+)/u.exec(v.request.headers?.["content-type"] ?? "")?.[1];
+  const schema = ROUTES.find((r) => r.id === v.route)?.request.body as
+    { properties?: Record<string, { contentMediaType?: string }> } | undefined;
+  const parts = Object.entries(body).map(([name, value]) => {
+    const type = schema?.properties?.[name]?.contentMediaType;
+    const head =
+      type === undefined
+        ? `Content-Disposition: form-data; name="${name}"`
+        : `Content-Disposition: form-data; name="${name}"; filename="isjecak.jpg"\r\nContent-Type: ${type}`;
+    const bytes = type === undefined ? Buffer.from(value) : Buffer.from(value, "base64");
+    return Buffer.concat([
+      Buffer.from(`--${boundary}\r\n${head}\r\n\r\n`),
+      bytes,
+      Buffer.from("\r\n"),
+    ]);
+  });
+  return Buffer.concat([...parts, Buffer.from(`--${boundary}--\r\n`)]);
 }
 
 function sendVector(v: FakeVector): Promise<Reply> {
@@ -62,11 +87,13 @@ function sendVector(v: FakeVector): Promise<Reply> {
   const { body, rawBody } = v.request;
   const text =
     rawBody ??
-    (body === undefined
-      ? ""
-      : route.body === "application/x-www-form-urlencoded"
-        ? new URLSearchParams(body as Record<string, string>).toString()
-        : JSON.stringify(body));
+    (body !== undefined && route.body === "multipart/form-data"
+      ? multipartOf(v, body as Record<string, string>)
+      : body === undefined
+        ? ""
+        : route.body === "application/x-www-form-urlencoded"
+          ? new URLSearchParams(body as Record<string, string>).toString()
+          : JSON.stringify(body));
   return send(route.method, path, { ...v.request.headers, [FAKE_VECTOR_HEADER]: v.name }, text);
 }
 
@@ -87,7 +114,8 @@ describe("fake server over HTTP", () => {
     // the detailed process summary (SRV-9D) adds five more.
     // public.verification.post (SRV-9B) four.
     // teacher.mentorship-request-decision.post (SRV-27) five.
-    expect(VECTORS.length - overHttp.length).toBe(195);
+    // student.source-proofs.post (SRV-1102) five.
+    expect(VECTORS.length - overHttp.length).toBe(200);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

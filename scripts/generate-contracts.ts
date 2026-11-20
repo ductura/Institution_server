@@ -47,7 +47,8 @@ function ts(schema: Schema): string {
   if (Array.isArray(schema.anyOf)) return (schema.anyOf as Schema[]).map(ts).join(" | ");
   switch (schema.type) {
     case "string":
-      return "string";
+      // A multipart file part (SRV-1102): the client sends a Blob.
+      return typeof schema.contentMediaType === "string" ? "Blob" : "string";
     case "number":
     case "integer":
       return "number";
@@ -101,6 +102,14 @@ function openapi(routes: RouteContract[]): unknown {
             }
           : {}),
         ...(s.body ? { content: { "application/json": { schema: plain(s.body) } } } : {}),
+        // A binary answer (SRV-1102, image/jpeg): its bytes, no JSON schema.
+        ...(s.contentType
+          ? {
+              content: {
+                [s.contentType]: { schema: { type: "string", contentMediaType: s.contentType } },
+              },
+            }
+          : {}),
       };
     }
     for (const status of [...new Set(r.errors.map((e) => e.status))]) {
@@ -206,7 +215,10 @@ function types(routes: RouteContract[]): string {
     const head = (names: readonly string[] = []) =>
       `{ ${names.map((h) => `${JSON.stringify(h)}?: ${h === "set-cookie" ? "string[]" : "string"}`).join("; ")} }`;
     const ok = r.responses
-      .map((s) => `{ status: ${s.status}; body: ${part(s.body)}; headers: ${head(s.headers)} }`)
+      .map(
+        (s) =>
+          `{ status: ${s.status}; body: ${s.contentType ? "Blob" : part(s.body)}; headers: ${head(s.headers)} }`,
+      )
       .join(" | ");
     const codes = r.errors.map((e) => JSON.stringify(e.code)).join(" | ") || "never";
     return `  ${JSON.stringify(r.id)}: {\n    params: ${part(r.request.params)};\n    query: ${part(r.request.query)};\n    body: ${part(r.request.body)};\n    success: ${ok};\n    errorCode: ${codes};\n  };`;
@@ -403,11 +415,20 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     const init: RequestInit = { method: route.method, redirect: "manual" };
     if (route.body === "application/json") init.body = canonicalJson(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
-    if (route.body !== null) init.headers = { "content-type": route.body };
+    // A multipart body: fetch writes the content type with its boundary itself.
+    if (route.body === "multipart/form-data") {
+      const form = new FormData();
+      for (const [name, value] of Object.entries(input.body as Record<string, string | Blob | undefined>)) {
+        if (value !== undefined) form.append(name, value);
+      }
+      init.body = form;
+    } else if (route.body !== null) init.headers = { "content-type": route.body };
     const res = await fetchImpl(new URL(path, baseUrl), init);
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
-    const body: unknown = res.headers.get("content-type")?.startsWith("application/json") ? await res.json() : undefined;
+    const type = res.headers.get("content-type") ?? "";
+    // A binary answer (image/jpeg) is read as a Blob; it is never a problem body.
+    const body: unknown = type.startsWith("application/json") ? await res.json() : type.startsWith("image/") && res.status < 400 ? await res.blob() : undefined;
     // A status the contract lists as an answer is one even at 400 or above
     // (live.document.put 409 {outcome, token}), unless its body is a problem
     // body: the same status can also be an error (revision-requests 409).
@@ -505,7 +526,7 @@ export type FakeRequest = {
 export type FakeAnswer = {
   readonly status: number;
   readonly headers: Record<string, string | string[]>;
-  readonly body: string;
+  readonly body: string | Uint8Array;
 };
 
 const MATCHERS = Object.entries(ROUTE_TABLE).map(([id, r]) => ({
@@ -563,12 +584,52 @@ function sameBody(type: string | null, expected: FakeVector["request"], body: Ui
   if (expected.rawBody !== undefined) return Buffer.compare(Buffer.from(expected.rawBody), body) === 0;
   if (expected.body === undefined) return body.length === 0;
   try {
+    if (type === "multipart/form-data") {
+      const parts = multipartFields(body);
+      return parts !== null && same(parts, expected.body);
+    }
     const text = new TextDecoder("utf-8", { fatal: true }).decode(body);
     if (type !== "application/x-www-form-urlencoded") return same(JSON.parse(text), expected.body);
     const form = fields(new URLSearchParams(text));
     return form !== null && same(form, expected.body);
   } catch {
     return false;
+  }
+}
+
+/**
+ * The fields of a multipart body (SRV-1102), the boundary taken from its first
+ * line: a file part (with a filename) in Base64, any other as UTF-8 text. A
+ * repeated name or a broken body matches no vector.
+ */
+export function multipartFields(body: Uint8Array): Record<string, string> | null {
+  const buf = Buffer.from(body);
+  const firstEnd = buf.indexOf("\r\n");
+  if (firstEnd < 3 || buf[0] !== 0x2d || buf[1] !== 0x2d) return null;
+  const delimiter = Buffer.from("\r\n" + buf.subarray(0, firstEnd).toString("latin1"), "latin1");
+  const out = dictionary();
+  let at = firstEnd + 2;
+  for (;;) {
+    const headEnd = buf.indexOf("\r\n\r\n", at);
+    if (headEnd < 0) return null;
+    const head = buf.subarray(at, headEnd).toString("utf8");
+    const next = buf.indexOf(delimiter, headEnd + 4);
+    if (next < 0) return null;
+    const content = buf.subarray(headEnd + 4, next);
+    const name = /;\s*name="([^"]*)"/i.exec(head)?.[1];
+    if (name === undefined || Object.hasOwn(out, name)) return null;
+    try {
+      out[name] = /;\s*filename="/i.test(head)
+        ? content.toString("base64")
+        : new TextDecoder("utf-8", { fatal: true }).decode(content);
+    } catch {
+      return null;
+    }
+    at = next + delimiter.length;
+    const tail = buf.subarray(at, at + 2).toString("latin1");
+    if (tail === "--") return out;
+    if (tail !== "\r\n") return null;
+    at += 2;
   }
 }
 
@@ -619,6 +680,9 @@ function reply(v: FakeVector): FakeAnswer {
   const sent: Record<string, string | string[]> = {};
   for (const [name, value] of Object.entries(headers)) sent[name] = typeof value === "string" ? value : [...value];
   if (contentType !== undefined) sent["content-type"] = contentType;
+  // A binary answer (image/jpeg) is written in Base64 in the vector.
+  if (contentType === "image/jpeg" && typeof body === "string")
+    return { status, headers: sent, body: Buffer.from(body, "base64") };
   const text = body === undefined ? "" : typeof body === "string" ? body : JSON.stringify(body);
   return { status, headers: sent, body: text };
 }
