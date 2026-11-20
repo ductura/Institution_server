@@ -41,12 +41,12 @@ const NO_STORE = { "cache-control": "no-store" };
 export const LIVE_STATE_HEADER = "ductus-live-state";
 const SUBMITTED = { [LIVE_STATE_HEADER]: "submitted" };
 
-export interface LiveRouteDeps {
+export type LiveRouteDeps = {
   withActor: WithActor;
   /** The application origin; null when it is not configured (503). */
   expectedOrigin: string | null;
   sessionToken?: string | undefined;
-}
+};
 
 function refuse(status: number, error: string): Response {
   return Response.json({ error }, { status, headers: NO_STORE });

@@ -12,6 +12,7 @@ import {
   NODE_IMPORTS_ALLOWED,
   TEST_ONLY_RE,
 } from "../../scripts/lint-rules/index.ts";
+import { PENDING_TESTS } from "../../scripts/pending-tests/index.ts";
 
 // S-1A-c (DAN-770): server code loads modules only by a static import, through
 // an allow-list (contract Ductus#1836 c.6891713609). The fixtures cover every
@@ -501,9 +502,11 @@ describe("local/no-dynamic-load (DAN-770)", () => {
 const DATA_EXTENSIONS = new Set([".md", ".json", ".txt"]);
 
 describe("the rule covers the whole of server/", () => {
+  // Copied files of PENDING_TESTS are out of lint, tsc and vitest until their
+  // task; scripts/pending-tests checks that nothing else imports them.
   const tracked = execFileSync("git", ["ls-files", "-z", "server"], { cwd: ROOT, encoding: "utf8" })
     .split("\0")
-    .filter(Boolean);
+    .filter((file) => file !== "" && !PENDING_TESTS.includes(file));
 
   it("lints every production file and leaves out only test files that production cannot import", async () => {
     const production: string[] = [];

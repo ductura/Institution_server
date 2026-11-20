@@ -107,7 +107,8 @@ describe("vitest.config.ts", () => {
     expect(project("integration")).toMatch(/exclude: \[DATABASE, PG\],/u);
     expect(project("integration")).toContain('env: { DUCTURA_TEST_DATABASE: "pglite" }');
     expect(project("database")).toMatch(/exclude: \[PG\],/u);
-    expect(project("unit")).toMatch(/exclude: \[PROPERTY, INTEGRATION\],/u);
+    // The unit project also leaves out the copied tests that wait for their task (ZEL-S4).
+    expect(project("unit")).toMatch(/exclude: \[PROPERTY, INTEGRATION, \.\.\.PENDING_TESTS\],/u);
     // Only integration-pg names postgres; the PG glob is included nowhere else.
     expect(CONFIG.match(/DUCTURA_TEST_DATABASE: "postgres"/gu)).toHaveLength(1);
     expect(CONFIG.match(/include: \[[^\]]*\bPG\b/gu)).toHaveLength(1);

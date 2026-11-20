@@ -14,13 +14,13 @@ const STATES = new Set(["open", "answered", "resolved"]);
 
 export type CommentAction = "create" | "reply" | "resolve" | "reopen" | "delete" | "list";
 
-export interface CommentDeps {
+export type CommentDeps = {
   withActor: WithActor;
   expectedOrigin: string;
   sessionToken?: string;
-}
+};
 
-export interface CommentView {
+export type CommentView = {
   threadId: string;
   commentId: string;
   position: number;
@@ -33,14 +33,14 @@ export interface CommentView {
   createdWindow: string;
   /** Start of the 5-minute window of the deletion; null while the comment stands. */
   deletedWindow: string | null;
-}
+};
 
-interface Spec {
+type Spec = {
   keys: string[];
   valid(input: Record<string, unknown>): boolean;
   sql: string;
   params(input: Record<string, unknown>): unknown[];
-}
+};
 
 const isThreadId = (value: unknown) => typeof value === "string" && UUID.test(value);
 

@@ -68,9 +68,9 @@ export type AuthorizationDecision =
  * up, so an adapter that told the two apart would let anyone probe which ids
  * exist.
  */
-export interface AuthorizationPort {
+export type AuthorizationPort = {
   check(request: AuthorizationCheck): Promise<AuthorizationDecision>;
-}
+};
 
 const HIGH_CONSISTENCY_ACTIONS = new Set<AuthorizationAction>([
   "read_private_draft",

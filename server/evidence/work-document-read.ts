@@ -29,14 +29,14 @@ export type WorkDocumentRead =
   | { kind: "notAccepting" }
   | { kind: "none" };
 
-interface Row {
+type Row = {
   user_id: string | null;
   role: string | null;
   version_no: number | null;
   open: boolean | null;
   acknowledged: boolean | null;
   document_id: string | null;
-}
+};
 
 export const WORK_DOCUMENT_SQL = `WITH me AS (
   SELECT app.current_user_id() AS user_id, app.current_institution_id() AS institution_id)

@@ -26,10 +26,10 @@ import {
  */
 
 /** The query of the page as Next.js hands it; any other parameter, `stranica` too, is ignored. */
-export interface AccessLogQuery {
+export type AccessLogQuery = {
   prije?: string | string[] | undefined;
   zapis?: string | string[] | undefined;
-}
+};
 
 export type MyAccessLogPage =
   /** `next` is the cursor of an older page, null when there is none; `continued` when read from a cursor. */
