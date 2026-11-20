@@ -26,6 +26,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNotesRoutesFor,
+  createTextCheckConfigRoute,
   createWorkSourceRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
@@ -143,6 +144,7 @@ async function main(): Promise<void> {
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
+      createTextCheckConfigRoute(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
       // The public check of a receipt (SRV-9B, C-6): no session read or issued (D-09).
       createPublicVerificationRouteFor(databases.main),

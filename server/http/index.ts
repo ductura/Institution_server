@@ -4,6 +4,7 @@ export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
 export { createAttachmentRoutesFor } from "./attachments/index.ts";
+export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
