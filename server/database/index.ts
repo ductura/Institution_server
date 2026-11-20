@@ -268,6 +268,14 @@ export {
   type WorkAttachments,
 } from "./work-attachments/index.ts";
 export {
+  createDeadlineExtensions,
+  type DeadlineExtension,
+  type DeadlineExtensionAdd,
+  type DeadlineExtensionInput,
+  type DeadlineExtensionList,
+  type DeadlineExtensions,
+} from "./deadline-extensions/index.ts";
+export {
   createWorkVersionsReader,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
