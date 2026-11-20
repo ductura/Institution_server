@@ -159,6 +159,28 @@ describe("table merges and fills (class 57)", () => {
     );
   });
 
+  it("refuses a coordinate that is not a number without throwing, in any position", () => {
+    const hostile = { toString: null, valueOf: null };
+    for (const key of ["row", "column"]) {
+      const odd = { ...merge(0, 1, 1, 2), [key]: hostile };
+      for (const merges of [
+        [merge(0, 0, 1, 2), odd],
+        [odd, merge(1, 0, 1, 2)],
+      ]) {
+        const codes = errorsOf(table({ rows: grid, merges })).map(([, code]) => code);
+        expect(codes).toContain("TABLE_MERGE_INVALID");
+      }
+      const fills = [
+        { color: "#fff2cc", column: 0, row: 0 },
+        { color: "#fff2cc", column: 1, row: 1, [key]: hostile },
+      ];
+      for (const cellFills of [fills, [...fills].reverse()]) {
+        const codes = errorsOf(table({ cellFills })).map(([, code]) => code);
+        expect(codes).toContain("TABLE_FILL_INVALID");
+      }
+    }
+  });
+
   it("allows headerFill only with a header", () => {
     expect(errorsOf(table({ header: false, headerFill: "#d9d9d9" }))).toEqual(
       at(".headerFill", "TABLE_FILL_INVALID"),

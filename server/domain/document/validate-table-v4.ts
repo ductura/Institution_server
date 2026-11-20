@@ -154,6 +154,13 @@ function validateRows(value: unknown, path: string, errors: ValidationError[]): 
   return ok ? rows : null;
 }
 
+function hasCoordinates(item: Raw): item is Raw & { row: number; column: number } {
+  return (
+    isInteger(item.row, 0, Number.MAX_SAFE_INTEGER) &&
+    isInteger(item.column, 0, Number.MAX_SAFE_INTEGER)
+  );
+}
+
 /** A non-empty array of closed objects, in strictly ascending (row, column). */
 function cellList(
   value: unknown,
@@ -169,18 +176,23 @@ function cellList(
   const items = Array.from(value);
   let ok = true;
   items.forEach((item: unknown, i) => {
-    if (!isPlainObject(item) || !keys.every((key) => Object.hasOwn(item, key))) {
+    // Coordinates are checked before any comparison: a JSON object in their
+    // place must give an error, never reach `>` (which could throw).
+    if (
+      !isPlainObject(item) ||
+      !keys.every((key) => Object.hasOwn(item, key)) ||
+      !hasCoordinates(item)
+    ) {
       errors.push({ path: `${path}[${i}]`, code });
       ok = false;
       return;
     }
     checkUnknownFields(item, new Set(keys), `${path}[${i}]`, errors);
-    const previous = items[i - 1] as Raw | undefined;
+    const previous: unknown = items[i - 1];
     if (
-      previous &&
       isPlainObject(previous) &&
-      ((previous.row as number) > (item.row as number) ||
-        (previous.row === item.row && (previous.column as number) >= (item.column as number)))
+      hasCoordinates(previous) &&
+      (previous.row > item.row || (previous.row === item.row && previous.column >= item.column))
     ) {
       errors.push({ path: `${path}[${i}]`, code });
       ok = false;
