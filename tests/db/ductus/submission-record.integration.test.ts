@@ -511,7 +511,10 @@ describe("POST /api/submission (B-12 step 4b2)", () => {
     expect(body.receipt.payload.receiptSchema).toBe("ductus-submission-receipt-v2");
     const digest = await digestSubmissionReceiptPayloadV2(body.receipt.payload);
     expect(body.receipt.payloadDigestSha256).toBe(digest.sha256);
-    expect(await base.verify(digest.signingInput, body.receipt.signature)).toBe(true);
+    expect(await base.verify(digest.signingInput, body.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
 
     // A later request reads the bound receipt and never asks the signer.
     const again = await submit(store, token, undefined, counting);
