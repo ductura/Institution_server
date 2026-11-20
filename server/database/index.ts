@@ -178,6 +178,19 @@ export {
 } from "./my-assignment-work.ts";
 export type { AssignmentWork, MyAssignmentWorkReader, WorkState } from "./my-assignment-work.ts";
 export {
+  createMySubmissionStateReader,
+  MY_SUBMISSION_STATE_DATABASE_ERROR,
+  MY_SUBMISSION_STATE_ERRORS,
+  MY_SUBMISSION_STATE_NOT_FOUND,
+  MY_SUBMISSION_STATE_ROW_MALFORMED,
+  MY_SUBMISSION_STATE_UNAUTHENTICATED,
+} from "./my-submission-state.ts";
+export type {
+  MySubmissionStateReader,
+  StoredSubmissionState,
+  StoredWordRange,
+} from "./my-submission-state.ts";
+export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,
   INTERFACE_LOCALE_ERRORS,

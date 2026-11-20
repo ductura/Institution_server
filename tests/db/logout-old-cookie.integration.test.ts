@@ -21,6 +21,7 @@ import {
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createStudentAssignmentWorkRouteFor,
+  createStudentSubmissionRoutesFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -107,6 +108,19 @@ const SESSION_ROUTES = {
     path: "/api/v1/student/assignment-work",
     body: () => undefined,
     live: 200,
+  },
+  // SRV-22: a live session naming an assignment it is no student of gets 404.
+  "student.submission.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.assignment-requirements.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/requirements`,
+    body: () => undefined,
+    live: 404,
   },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
   // writes nothing, so the accounts of this file keep no settings row.
@@ -308,6 +322,7 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
+  "createStudentSubmissionRoutesFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createInternalInstitutionRoutes",
@@ -333,6 +348,7 @@ const MOUNTED = [
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
+  ...createStudentSubmissionRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
@@ -542,7 +558,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("projection.") ||
-        id === "student.assignment-work.get" ||
+        id.startsWith("student.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
