@@ -7,6 +7,7 @@ export {
   type EvidenceService,
 } from "./service.ts";
 export {
+  isReplayDocumentId,
   MAX_REPLAY_PAGE_SEGMENTS,
   readReplayPage,
   REPLAY_FORMAT,
@@ -14,6 +15,8 @@ export {
   type ReplayReadResult,
   type ReplayReaderDeps,
 } from "./replay.ts";
+// SRV-9A: the versions of a work, the same page for its owner and its teacher.
+export { answerWorkVersions, type WorkVersionsAnswer } from "./versions/index.ts";
 // The worker's signing of a pending receipt v2 (DAN-820, 820c); only the
 // worker process builds it, over its own store and signer (D-71, D-102).
 export { createSignPendingReceipt, type SignPendingReceiptDeps } from "./sign-pending-receipt.ts";
@@ -50,3 +53,12 @@ export {
   MAX_DOCUMENT_SNAPSHOT_BYTES,
   verifyDocumentSnapshot,
 } from "../domain/index.ts";
+
+// The comparison of two versions of a work (SRV-9E): both texts reconstructed
+// from the record by the replayers the caller gives, the difference by blocks.
+export {
+  compareWorkVersions,
+  type CompareDeps,
+  type CompareEntry,
+  type CompareResult,
+} from "./compare/index.ts";

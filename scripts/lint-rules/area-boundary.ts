@@ -42,6 +42,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   institution: ["settings", "log", "metrics", "domain", "database"],
   support: ["settings", "log", "metrics", "domain", "database"],
   "source-lookup": [],
+  "public-verification": ["domain", "database"],
   http: [
     ...["settings", "log", "metrics", "contracts", "traffic", "session", "roles", "legal"],
     ...[
@@ -53,6 +54,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
       "institution",
       "support",
       "source-lookup",
+      "public-verification",
       "database",
     ],
     ...["external/srce-auth", "external/storage", "external/keys", "external/email"],
@@ -90,11 +92,10 @@ const SCHEME_RE = /^(?!node:)[a-z][a-z0-9+.-]*:/iu;
 const ABSOLUTE_RE = /^(?:[/\\]|[a-z]:[/\\])/iu;
 
 /**
- * The only import by path out of server/ (S-1E-a, DAN-808; decision on
- * Ductus#1836 c.6906402529): the neutral login failure page shows interface
+ * The login failure page (DAN-808) and receipt PDF (SRV-9C) use interface
  * text from locales/. The key is the exact repository path of the file, the
  * specifier is matched as written (no other spelling of the same path), and
- * the import must be a value import of exactly the named `messagesHr`.
+ * the import must be a value import of exactly the allowed export.
  */
 export const LOCALE_IMPORT_ALLOWED: Readonly<
   Record<string, { readonly specifier: string; readonly name: string }>
@@ -102,6 +103,10 @@ export const LOCALE_IMPORT_ALLOWED: Readonly<
   "server/http/auth-flow.ts": Object.freeze({
     specifier: "../../locales/index.ts",
     name: "messagesHr",
+  }),
+  "server/http/receipt-pdf.ts": Object.freeze({
+    specifier: "../../locales/index.ts",
+    name: "receiptPdfHr",
   }),
 });
 

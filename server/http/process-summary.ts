@@ -24,6 +24,7 @@ import {
   readProcessSummary,
 } from "../projection/process-summary-reader.ts";
 import { liveSessionTokenFromCookie } from "../session/index.ts";
+import { readProcessSummaryDetails } from "../teacher/process-summary/index.ts";
 
 import { reportServerError } from "./error-catalog.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
@@ -64,9 +65,16 @@ export function parseProcessSummaryBody(value: unknown): string | null {
 }
 
 export function createProcessSummaryRoute(options: ProcessSummaryRouteOptions): Route {
+  return processSummaryRoute(CONTRACT, options);
+}
+
+function processSummaryRoute(
+  contract: Route["contract"],
+  options: ProcessSummaryRouteOptions,
+): Route {
   const timeoutMs = options.timeoutMs ?? PROCESS_SUMMARY_TIMEOUT_MS;
   return {
-    contract: CONTRACT,
+    contract,
     async handle(request, response) {
       const token = liveSessionTokenFromCookie(request.headers.cookie);
       if (token === undefined) return refuse(response, 401, "unauthorized");
@@ -74,7 +82,7 @@ export function createProcessSummaryRoute(options: ProcessSummaryRouteOptions): 
       if (types?.length !== 1 || !MEDIA_TYPE.test(types[0] ?? "")) {
         return refuse(response, 415, "unsupported_media_type");
       }
-      const raw = await readBodyWithLimit(request, CONTRACT.request.maxBodyBytes ?? 0, timeoutMs);
+      const raw = await readBodyWithLimit(request, contract.request.maxBodyBytes ?? 0, timeoutMs);
       if (!raw.ok) return refuse(response, raw.status, raw.reason);
       const json = parseJson(raw.bytes);
       if (!json.ok) return sendProblem(response, 400, "invalid_json");
@@ -88,7 +96,7 @@ export function createProcessSummaryRoute(options: ProcessSummaryRouteOptions): 
       try {
         read = await options.read(token, documentId);
       } catch (error) {
-        reportServerError("route", error, requestIdOf(response), CONTRACT.id);
+        reportServerError("route", error, requestIdOf(response), contract.id);
         return sendProblem(response, 503, "unavailable");
       }
       switch (read.status) {
@@ -148,6 +156,35 @@ export function createProcessSummaryRouteFor(
                 thresholds,
               },
               documentId,
+            ),
+  });
+}
+
+export function createProcessSummaryDetailsRouteFor(
+  main: { readonly withActor: WithActor },
+  deps: { readonly payloads: InstitutionEvidencePayloadReader },
+  env: Readonly<Record<string, string | undefined>>,
+): Route {
+  const contract = ROUTES.find((route) => route.id === "projection.process-summary-details.post");
+  if (contract === undefined)
+    throw new Error("no contract projection.process-summary-details.post");
+  const thresholds = loadProcessSummaryThresholds(env);
+  return processSummaryRoute(contract, {
+    read:
+      thresholds === null
+        ? null
+        : (token, documentId) =>
+            readProcessSummaryDetails(
+              (payloads) =>
+                readProcessSummary(
+                  {
+                    source: sessionProcessSummarySource(main.withActor, token),
+                    payloads,
+                    thresholds,
+                  },
+                  documentId,
+                ),
+              deps.payloads,
             ),
   });
 }

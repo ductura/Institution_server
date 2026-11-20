@@ -14,6 +14,9 @@ import {
   platformRoutes,
   profileRoutes,
   projectionRoutes,
+  publicVerificationPost,
+  publicVerificationRoutes,
+  receiptPdfRoutes,
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   settingsRoutes,
@@ -23,6 +26,7 @@ import {
   supportRoutes,
   teacherRoutes,
   TOO_MANY_REQUESTS,
+  versionsRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -41,7 +45,7 @@ export {
   TOO_MANY_REQUESTS,
 };
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
-export { sourceLookupPost };
+export { publicVerificationPost, sourceLookupPost };
 export {
   CLIENT_APP_VERSION_PATTERN,
   CLIENT_CONTEXT_VALUES,
@@ -84,7 +88,10 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherRoutes,
   ...settingsRoutes,
   ...downloadsRoutes,
+  ...receiptPdfRoutes,
   sourceLookupPost,
+  ...publicVerificationRoutes,
+  ...versionsRoutes,
 ];
 
 /**
