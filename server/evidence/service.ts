@@ -18,7 +18,7 @@ import {
   isReceiptClientTransactionId,
   MAX_DOCUMENT_SNAPSHOT_BYTES,
   verifyCanonicalEvidencePayloadV2,
-  verifyDocumentSnapshot,
+  verifyVersionedDocumentSnapshot,
 } from "../domain/index.ts";
 import type { EvidencePayloadLocator, EvidencePayloadStore } from "../external/storage/index.ts";
 
@@ -103,8 +103,9 @@ async function prepareAndCommit(
   }
   if (verified.byteLength > context.maxPayloadBytes) return { status: "too_large" };
 
-  // t. 3.4: the snapshot is the document the segment ends in.
-  const snapshot = await verifyDocumentSnapshot(document);
+  // t. 3.4: the snapshot is the document the segment ends in, of schema 1 or
+  // 2 (SRV-33); the database keeps it at the version of revision 0.
+  const snapshot = await verifyVersionedDocumentSnapshot(document);
   if (!snapshot.ok) return { status: snapshot.reason };
   if (snapshot.sha256 !== s.finalDocumentHash) return { status: "document_mismatch" };
 
