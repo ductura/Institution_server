@@ -26,6 +26,7 @@ import {
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
+  createWorkMessagesRoutesFor,
   createWorkVersionsRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
@@ -150,6 +151,18 @@ const SESSION_ROUTES = {
   "work.consultation-additions.post": {
     path: `/api/v1/works/${randomUUID()}/consultation-records/${randomUUID()}/additions`,
     body: () => ({ text: "Dopuna." }),
+    live: 404,
+  },
+  // SRV-1106: a work it may not read is 404 for the conversation and for a message.
+  "work.messages.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/messages`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.messages.post": {
+    path: `/api/v1/works/${randomUUID()}/messages`,
+    body: () => ({ text: "Izmišljena poruka." }),
     live: 404,
   },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
@@ -599,6 +612,7 @@ const FACTORIES = [
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
+  "createWorkMessagesRoutesFor",
   "createConsultationRecordRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
@@ -642,6 +656,7 @@ const MOUNTED = [
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
+  ...createWorkMessagesRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
