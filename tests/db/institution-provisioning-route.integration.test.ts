@@ -223,6 +223,7 @@ describe("provisioning of an institution instance on PostgreSQL", () => {
         roles: ["student"],
         displayName: "Ana Primjer",
         journalScope: expect.stringMatching(/^[0-9a-f]{64}$/),
+        sessionTag: expect.stringMatching(/^[0-9a-f]{64}$/),
       },
     ]);
 
@@ -243,11 +244,20 @@ describe("provisioning of an institution instance on PostgreSQL", () => {
       expect(session.ok).toBe(true);
       const me = await send("GET", "/api/v1/me", { cookie: `__Host-ductus_session=${token}` });
       expect(me.status).toBe(200);
-      return json(me).journalScope;
+      return { scope: json(me).journalScope, tag: json(me).sessionTag };
     };
     const scope = json(answer).journalScope;
-    expect(await meIn(`sub-${suffix}`, `ana@${BODY.aaiHomeOrg}`, "Ana")).toBe(scope);
-    expect(await meIn(`sub-${suffix}-b`, `iva@${BODY.aaiHomeOrg}`, "Iva")).not.toBe(scope);
+    const tag = json(answer).sessionTag;
+    // SRV-ST: the same session keeps its tag; a new login of the same person
+    // and another person each get another one.
+    const again = await send("GET", "/api/v1/me", { cookie: `__Host-ductus_session=${SESSION}` });
+    expect(json(again).sessionTag).toBe(tag);
+    const relogin = await meIn(`sub-${suffix}`, `ana@${BODY.aaiHomeOrg}`, "Ana");
+    expect(relogin.scope).toBe(scope);
+    expect(relogin.tag).not.toBe(tag);
+    const other = await meIn(`sub-${suffix}-b`, `iva@${BODY.aaiHomeOrg}`, "Iva");
+    expect(other.scope).not.toBe(scope);
+    expect(new Set([tag, relogin.tag, other.tag]).size).toBe(3);
     const anonymous = await send("GET", "/api/v1/me", {
       cookie: `__Host-ductus_session=${randomBytes(32).toString("base64url")}`,
     });
