@@ -20,7 +20,7 @@ requireLoopbackDatabaseUrl(
   ADMIN_URL,
   "The race test runs only against a loopback database (DATABASE_URL).",
 );
-const MIGRATIONS = fileURLToPath(new URL("../../db/migrations/", import.meta.url));
+const MIGRATIONS = fileURLToPath(new URL("../../../db/main/migrations/", import.meta.url));
 
 function upSection(file: string) {
   const text = readFileSync(`${MIGRATIONS}${file}`, "utf8");

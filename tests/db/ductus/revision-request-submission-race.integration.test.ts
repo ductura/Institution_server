@@ -119,7 +119,7 @@ const create =
         "Dodaj izvor za ovu tvrdnju.",
         1,
       ])
-    ).rows[0];
+    ).rows[0]!;
 type Moved = { outcome: string; row_seq: string; version: number; state: string };
 const respond = (id: string, seq: string) => async (tx: ActorTransaction) =>
   (
@@ -127,27 +127,27 @@ const respond = (id: string, seq: string) => async (tx: ActorTransaction) =>
       "SELECT outcome, row_seq, version, state FROM collaboration.respond_revision_request($1, $2, 'done', 'Dodao sam izvor.', 1)",
       [id, seq],
     )
-  ).rows[0];
+  ).rows[0]!;
 const withdraw = (id: string, seq: string) => async (tx: ActorTransaction) =>
   (
     await tx.query<Moved>(
       "SELECT outcome, row_seq, version, state FROM collaboration.withdraw_revision_request($1, $2)",
       [id, seq],
     )
-  ).rows[0];
+  ).rows[0]!;
 const submit = (document: string) => async (tx: ActorTransaction) => {
   const requested = (
     await tx.query<{ outcome: string; submission_request_id: string }>(
       "SELECT outcome, submission_request_id FROM app.request_submission($1, 1)",
       [document],
     )
-  ).rows[0];
+  ).rows[0]!;
   const recorded = (
     await tx.query<{ outcome: string }>("SELECT outcome FROM app.record_submission($1, $2)", [
       requested.submission_request_id,
       HASH,
     ])
-  ).rows[0];
+  ).rows[0]!;
   return [requested.outcome, recorded.outcome];
 };
 
@@ -204,7 +204,7 @@ async function stored(document: string) {
       WHERE r.document_id = $1`,
     [document],
   );
-  const row = result.rows[0];
+  const row = result.rows[0]!;
   return {
     requests: Number(row.requests),
     versions: Number(row.versions),
@@ -220,7 +220,7 @@ const submitted = async (document: string) =>
     WHERE r.document_id = $1) AS yes`,
       [document],
     )
-  ).rows[0].yes;
+  ).rows[0]!.yes;
 
 beforeAll(async () => {
   const client = await admin.connect();
@@ -462,7 +462,7 @@ async function answers(id: string) {
        FROM collaboration.revision_request r WHERE r.id = $1`,
     [id],
   );
-  const row = result.rows[0];
+  const row = result.rows[0]!;
   return {
     state: row.state,
     rowSeq: row.row_seq,
@@ -542,7 +542,7 @@ const accept =
           anchor && JSON.stringify(anchor),
         ],
       )
-    ).rows[0];
+    ).rows[0]!;
 // What each version binds for the rereview: the accepted anchor and its hash, both or neither.
 const bound = async (id: string) =>
   (
@@ -558,7 +558,7 @@ const rereview = (id: string, seq: string) => async (tx: ActorTransaction) =>
       "SELECT outcome, row_seq, version, state FROM collaboration.rereview_revision_request($1, $2)",
       [id, seq],
     )
-  ).rows[0];
+  ).rows[0]!;
 // The call of the first version of this step, which carried the caller's revision and hash.
 const rereviewWithHash =
   (id: string, seq: string, hash: string | null) => async (tx: ActorTransaction) =>
@@ -567,7 +567,7 @@ const rereviewWithHash =
         "SELECT outcome, row_seq, version, state FROM collaboration.rereview_revision_request($1, $2, 2, $3)",
         [id, seq, hash],
       )
-    ).rows[0];
+    ).rows[0]!;
 const versions = async (id: string) =>
   (
     await admin.query<{
@@ -889,7 +889,7 @@ async function reach(revision: number) {
   try {
     await client.query("BEGIN");
     await client.query("SET CONSTRAINTS ALL DEFERRED");
-    const body = Q_TEXTS[revision - 1];
+    const body = Q_TEXTS[revision - 1]!;
     if (revision === 1) {
       // One project per student and assignment: the second document of Boris's project.
       await client.query(

@@ -37,7 +37,7 @@ async function database(text: string): Promise<boolean | "refused"> {
       "SELECT collaboration.is_revision_text($1) AS ok",
       [text],
     );
-    return result.rows[0].ok;
+    return result.rows[0]!.ok;
   } catch (error) {
     if ((error as { code?: string }).code === "22021") return "refused";
     throw error;
@@ -151,7 +151,7 @@ describe("isRevisionText agrees with collaboration.is_revision_text", () => {
         [batch],
       );
       batch.forEach((text, i) => {
-        if (rows[i].ok !== isRevisionText(text))
+        if (rows[i]!.ok !== isRevisionText(text))
           differ.push([...text].map((c) => c.codePointAt(0)?.toString(16)).join(" "));
       });
     }
@@ -172,7 +172,7 @@ describe("isRevisionText agrees with collaboration.is_revision_text", () => {
 describe("isRangeHash agrees with the accepted_range_hash CHECK", () => {
   const regex = async (value: string) =>
     (await admin.query<{ ok: boolean }>("SELECT $1::text ~ '^[0-9a-f]{64}$' AS ok", [value]))
-      .rows[0].ok;
+      .rows[0]!.ok;
 
   it("agrees on hex-like samples", async () => {
     const hex = fc.constantFrom(..."0123456789abcdefABCDEFg \n");

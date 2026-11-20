@@ -57,34 +57,34 @@ const mark = (marked: boolean) => async (tx: ActorTransaction) =>
       "SELECT institution.set_work_accommodation($1, $2) AS marked",
       [assignmentId, marked],
     )
-  ).rows[0].marked;
+  ).rows[0]!.marked;
 const removeStudent = (student: Name) => async (tx: ActorTransaction) =>
   (
     await tx.query<{ removed: boolean }>("SELECT institution.remove_student($1, $2) AS removed", [
       courseId,
       people[student].id,
     ])
-  ).rows[0].removed;
+  ).rows[0]!.removed;
 const readMark = (student: Name) => async (tx: ActorTransaction) =>
   (
     await tx.query<{ marked: boolean | null }>(
       "SELECT institution.work_accommodation($1, $2) AS marked",
       [assignmentId, people[student].id],
     )
-  ).rows[0].marked;
+  ).rows[0]!.marked;
 const submit = (document: string) => async (tx: ActorTransaction) => {
   const requested = (
     await tx.query<{ outcome: string; submission_request_id: string }>(
       "SELECT outcome, submission_request_id FROM app.request_submission($1, 1)",
       [document],
     )
-  ).rows[0];
+  ).rows[0]!;
   const recorded = (
     await tx.query<{ outcome: string }>("SELECT outcome FROM app.record_submission($1, $2)", [
       requested.submission_request_id,
       HASH,
     ])
-  ).rows[0];
+  ).rows[0]!;
   return [requested.outcome, recorded.outcome];
 };
 
@@ -149,7 +149,7 @@ const submitted = async (document: string) =>
     WHERE r.document_id = $1) AS yes`,
       [document],
     )
-  ).rows[0].yes;
+  ).rows[0]!.yes;
 
 beforeAll(async () => {
   const client = await admin.connect();

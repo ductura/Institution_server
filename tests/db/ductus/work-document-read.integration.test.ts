@@ -110,7 +110,7 @@ async function insertFixture(client: pg.PoolClient) {
     [course, home],
     [otherCourse, home],
     [foreignCourse, other],
-  ]) {
+  ] as const) {
     await client.query(
       `INSERT INTO institution.course (id, institution_id, name, academic_year, ai_policy, created_by)
        VALUES ($1, $2, $3, '2026/2027', 'partially_allowed', $4)`,

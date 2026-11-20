@@ -506,6 +506,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
+        id === "teacher.courses.get" ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;

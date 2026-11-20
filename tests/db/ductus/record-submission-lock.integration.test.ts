@@ -123,14 +123,14 @@ const commit = (w: Work, n: number) => async (tx: ActorTransaction) =>
       "SELECT outcome FROM app.commit_evidence_segment($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)",
       segment(w, n),
     )
-  ).rows[0];
+  ).rows[0]!;
 const record = (w: Work) => async (tx: ActorTransaction) =>
   (
     await tx.query<Outcome>("SELECT outcome FROM app.record_submission($1, $2)", [
       w.requestId,
       sha256Hex(`snapshot-${w.name}-1`),
     ])
-  ).rows[0];
+  ).rows[0]!;
 
 type Moved = {
   outcome?: string;
@@ -140,7 +140,7 @@ type Moved = {
   state: string;
 };
 const call = (sql: string, args: unknown[]) => async (tx: ActorTransaction) =>
-  (await tx.query<Moved>(sql, args)).rows[0];
+  (await tx.query<Moved>(sql, args)).rows[0]!;
 const create = (w: Work) =>
   call(
     "SELECT request_id, row_seq, version, state FROM collaboration.create_revision_request($1, $2::jsonb, 'Dodaj izvor za ovu tvrdnju.', 1)",
@@ -246,7 +246,7 @@ async function collaborationRows(w: Work) {
          WHERE r.document_id = $1)) AS rows`,
     [w.documentId],
   );
-  return result.rows[0].rows;
+  return result.rows[0]!.rows;
 }
 const recordedAt = async (w: Work) =>
   (
@@ -264,7 +264,7 @@ const revision = async (w: Work) =>
         "SELECT current_revision FROM evidence.document WHERE id = $1",
         [w.documentId],
       )
-    ).rows[0].current_revision,
+    ).rows[0]!.current_revision,
   );
 
 async function insertFixture() {
@@ -425,7 +425,7 @@ beforeAll(async () => {
             "SELECT outcome, submission_request_id FROM app.request_submission($1, 1)",
             [w.documentId],
           )
-        ).rows[0],
+        ).rows[0]!,
     );
     expect(requested.outcome).toBe("requested");
     w.requestId = requested.submission_request_id;
@@ -533,7 +533,7 @@ describe("submission and segment commit of one document, in both orders, without
         "SELECT max(accepted_at) AS accepted_at FROM evidence.segment WHERE evidence_package_id = $1",
         [w.packageId],
       )
-    ).rows[0].accepted_at;
+    ).rows[0]!.accepted_at;
     expect((await recordedAt(w))!.getTime()).toBeGreaterThanOrEqual(accepted.getTime());
     expect(await withActor(w.token, commit(w, 3))).toEqual({ outcome: "not_accepting" });
   });

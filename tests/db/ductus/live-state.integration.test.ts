@@ -233,7 +233,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   const url = new URL(SAFE_ADMIN_URL);
   url.username = login;
@@ -255,7 +255,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
