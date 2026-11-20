@@ -22,22 +22,18 @@ it("appends a note and rereads it only as its author", async () => {
   try {
     await db.exec(readFileSync(INSTITUTION_FIXTURE, "utf8"));
     const withActor: WithActor = async (token, run) => {
-      // Isolate each call while keeping all fixture data in the rollback-only test transaction.
-      await db.exec("SAVEPOINT note_call");
+      // The fixture wraps each query in a savepoint inside its rollback-only transaction.
+      await db.query("SELECT set_config('app.session_token', $1, true)", [token]);
+      await db.exec("SET LOCAL ROLE ductus_app");
       try {
-        await db.query("SELECT set_config('app.session_token', $1, true)", [token]);
-        await db.exec("SET LOCAL ROLE ductus_app");
-        const result = await run({
+        return await run({
           async query<Row>(text: string, values?: readonly unknown[]) {
             const { rows } = await db.query<Row>(text, [...(values ?? [])]);
             return { rows, rowCount: rows.length };
           },
         });
-        await db.exec("RESET ROLE; RELEASE SAVEPOINT note_call");
-        return result;
-      } catch (error) {
-        await db.exec("ROLLBACK TO SAVEPOINT note_call; RELEASE SAVEPOINT note_call");
-        throw error;
+      } finally {
+        await db.exec("RESET ROLE");
       }
     };
     const notes = createStudentNotes(withActor);
