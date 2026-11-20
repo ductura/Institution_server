@@ -1,5 +1,5 @@
-// The port of a work's source list (SRV-7B; migrations 20261120170000 and
-// 20261120180000). The student of the work saves and removes the own sources;
+// The port of a work's source list (SRV-7B; migrations 20261120180000 and
+// 20261120190000). The student of the work saves and removes the own sources;
 // a teacher of the work saves and removes recommended and required ones; both
 // read the list. Every write goes through an RPC, never the table, and the
 // student and institution come only from the session.

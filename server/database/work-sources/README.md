@@ -1,6 +1,6 @@
 # Izvori rada
 
-Port popisa izvora rada studenta (SRV-7B; migracije `20261120170000_work_source.sql` i `20261120180000_work_source_teacher.sql`). Popis je bilježnica izvora (D-59) s istim zapisom izvora kao `sources[]` u dokumentu (D-226, Ductus `docs/contracts/document-schema-v2.md` §2), a uz zapis nosi ono što ugovor v3 stavlja u tablicu: DOI, ISBN, „b. g.” i oznaku preporučen ili obvezan (`docs/contracts/document-schema-v3.md`, „Izbor ugovora”).
+Port popisa izvora rada studenta (SRV-7B; migracije `20261120180000_work_source.sql` i `20261120190000_work_source_teacher.sql`). Popis je bilježnica izvora (D-59) s istim zapisom izvora kao `sources[]` u dokumentu (D-226, Ductus `docs/contracts/document-schema-v2.md` §2), a uz zapis nosi ono što ugovor v3 stavlja u tablicu: DOI, ISBN, „b. g.” i oznaku preporučen ili obvezan (`docs/contracts/document-schema-v3.md`, „Izbor ugovora”).
 
 ## Što radi
 
