@@ -26,10 +26,13 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNotesRoutesFor,
+  createTextCheckConfigRoute,
   createWorkSourceRoutesFor,
   createWorkVersionsRouteFor,
   createSourceLookupRouteFor,
+  createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createInstitutionGroupRoutesFor,
@@ -37,6 +40,7 @@ import {
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createLiveRoutesFor,
+  createCollaborationCommentsRouteFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
@@ -141,7 +145,10 @@ async function main(): Promise<void> {
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
+      createTextCheckConfigRoute(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
+      // The public check of a receipt (SRV-9B, C-6): no session read or issued (D-09).
+      createPublicVerificationRouteFor(databases.main),
       // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
       createDownloadsManifestRoute(),
       // Settings by level (S-1J-g, DAN-826; SRV-7E).
@@ -163,6 +170,7 @@ async function main(): Promise<void> {
       // The live view (B-LIVE): the owner publishes the last state of a work
       // with PUT, every reader gets the same bytes and ETag with GET.
       ...createLiveRoutesFor(databases.main),
+      createCollaborationCommentsRouteFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
       createAcknowledgmentRouteFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
@@ -192,6 +200,7 @@ async function main(): Promise<void> {
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
+      ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
       ...createInternalInstitutionRoutes({ env: process.env }),

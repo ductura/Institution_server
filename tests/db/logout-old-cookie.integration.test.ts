@@ -15,6 +15,7 @@ import {
   createAssignmentCurrentVersionRouteFor,
   createAuthRoutes,
   createClientContextRoute,
+  createCollaborationCommentsRouteFor,
   createDatabases,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
@@ -41,9 +42,12 @@ import {
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   createSourceLookupRouteFor,
+  createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createWorkSourceRoutesFor,
+  createTextCheckConfigRoute,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
   type Running,
@@ -123,6 +127,11 @@ const SESSION_ROUTES = {
     body: () => ({ documentId: randomUUID(), from: 0 }),
     live: 404,
   },
+  "collaboration.comments.post": {
+    path: "/api/v1/comments/list",
+    body: () => ({ documentId: randomUUID() }),
+    live: 403,
+  },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
   "submission.submit.post": {
     path: "/api/v1/submission",
@@ -171,6 +180,13 @@ const SESSION_ROUTES = {
     body: () => ({ assignmentId: ASSIGNMENT, text: "Izmišljena napomena o radu." }),
     live: 404,
   },
+  // SRV-1101: the same for the text check configuration.
+  "student.text-check-config.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/text-check-config`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-7C: a live session that is no student of the work gets 404 on each source route.
   "student.work-sources.get": {
     method: "GET",
@@ -194,6 +210,13 @@ const SESSION_ROUTES = {
   "student.submission.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-30: a live session that reads no work of that student gets 404 (ZD403).
+  "teacher.submission-receipt.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission`,
     body: () => undefined,
     live: 404,
   },
@@ -333,6 +356,17 @@ const SESSION_ROUTES = {
     path: "/api/v1/teacher/assignment-submissions",
     body: () => ({ assignmentIds: [ASSIGNMENT] }),
     live: 200,
+  },
+  "teacher.mentorship-requests.get": {
+    method: "GET",
+    path: "/api/v1/teacher/mentorship-requests",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.mentorship-request-decision.post": {
+    path: "/api/v1/teacher/mentorship-requests/decision",
+    body: () => ({ requestId: ASSIGNMENT, decision: "approve" }),
+    live: 403,
   },
   // Ductus#2028 (w1119o): the live view of a work the account does not own
   // or teach is the same 404 as a missing one. GET carries the protocol, PUT
@@ -491,7 +525,9 @@ const FACTORIES = [
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
   "createWorkSourceRoutesFor",
+  "createTextCheckConfigRoute",
   "createSourceLookupRouteFor",
+  "createPublicVerificationRouteFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
   "createSettingsReadRoutes",
@@ -503,6 +539,7 @@ const FACTORIES = [
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
+  "createCollaborationCommentsRouteFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -515,6 +552,7 @@ const FACTORIES = [
   "createStudentSubmissionRoutesFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
   "routesOf",
@@ -527,7 +565,9 @@ const MOUNTED = [
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
   ...createWorkSourceRoutesFor(databases.main),
+  createTextCheckConfigRoute(databases.main),
   createSourceLookupRouteFor(databases.main, ENV),
+  createPublicVerificationRouteFor(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createSettingsReadRoutes(databases.main),
@@ -539,6 +579,7 @@ const MOUNTED = [
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
+  createCollaborationCommentsRouteFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
@@ -551,6 +592,7 @@ const MOUNTED = [
   ...createStudentSubmissionRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
   ...routesOf(AREA_NAMES),
@@ -771,6 +813,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("live.") ||
+        id.startsWith("collaboration.") ||
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
         id.startsWith("work.") ||

@@ -166,6 +166,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7037456743",
   },
+  // SRV-1101 (Val 11, C-12): the text checks and Lekta profile of the institution; Ductus has no such route.
+  "app/api/student/assignments/[assignmentId]/text-check-config/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7043116568",
+  },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
   "app/api/institution/admin/courses/route.ts": {
@@ -215,6 +220,27 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
+  // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
+  "app/api/teacher/courses/[courseId]/students/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/assignments/[assignmentId]/overview/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/mentorship-requests/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/mentorship-requests/decision/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
 };
 
 /**
@@ -228,7 +254,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.enrollments.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
-  "collaboration.comments.post",
   "collaboration.revision-requests.post",
   "teacher.fast-path.post",
   "student.access-log.get",
@@ -236,9 +261,10 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.enrollments.post",
   "student.notice.get",
   "institution.enrollment-code-state.get",
-  "public.verification.post",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
+  "teacher.course-students.get",
+  "teacher.assignment-overview.get",
 ];
 
 /**

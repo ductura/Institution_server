@@ -82,6 +82,19 @@ function mentorshipWork(state: State, m: Mentorship) {
     : { ...base, documentId: m.documentId, workState: "in_progress" as const };
 }
 
+// SRV-27: roster, overview, receipt and mentorship requests, from the same state.
+function names(state: State, studentId: string) {
+  const student = state.accounts.find((a) => a.id === studentId);
+  return student === undefined
+    ? { givenName: null, familyName: null }
+    : { givenName: student.givenName, familyName: student.familyName };
+}
+
+function groupName(state: State, courseId: string, studentId: string): string | null {
+  const course = state.courses.find((c) => c.id === courseId);
+  return course?.groups.find((g) => g.studentIds.includes(studentId))?.name ?? null;
+}
+
 export const TEACHER_HANDLERS: Handlers = {
   "teacher.receipt-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
@@ -206,5 +219,98 @@ export const TEACHER_HANDLERS: Handlers = {
     return m === undefined
       ? { error: "not_found" }
       : { status: 200, body: { work: mentorshipWork(state, m) } };
+  },
+  "teacher.course-students.get": ({ state, account, params }) => {
+    const course = state.courses.find((c) => c.id === params.courseId.toLowerCase());
+    if (course === undefined || account === null || !teachesCourse(course, account))
+      return { status: 200, body: { students: [] } };
+    const assignments = state.assignments.filter((a) => a.courseId === course.id);
+    const students = visibleStudents(course, account)
+      .sort()
+      .map((studentId) => ({
+        studentId,
+        ...names(state, studentId),
+        groupName: groupName(state, course.id, studentId),
+        assignments: assignments.map((a) => {
+          const work = state.works.find(
+            (w) => w.assignmentId === a.id && w.studentId === studentId,
+          );
+          if (work === undefined)
+            return { assignmentId: a.id, documentId: null, workState: "not_started" as const };
+          return {
+            assignmentId: a.id,
+            documentId: work.documentId,
+            workState:
+              work.submittedAt === null ? ("in_progress" as const) : ("submitted" as const),
+          };
+        }),
+      }));
+    return { status: 200, body: { students } };
+  },
+  "teacher.assignment-overview.get": ({ state, account, params }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    const students = submissions(state, account, assignment).map((s) => {
+      const base = {
+        studentId: s.studentId,
+        ...names(state, s.studentId),
+        groupName: groupName(state, assignment?.courseId ?? "", s.studentId),
+      };
+      if (!s.submitted)
+        return {
+          ...base,
+          submitted: false,
+          requestedMinute: null,
+          afterDeadline: null,
+          evidenceRecord: null,
+        } as const;
+      const work = state.works.find(
+        (w) => w.assignmentId === assignment?.id && w.studentId === s.studentId,
+      );
+      return {
+        ...base,
+        submitted: true,
+        requestedMinute: s.requestedMinute,
+        afterDeadline: s.afterDeadline,
+        evidenceRecord: work?.submissionReceipt?.payload.evidenceRecord ?? null,
+      } as const;
+    });
+    return { status: 200, body: { students } };
+  },
+  // P-5 (c.7010418731): no work content, so this read writes no access log.
+  "teacher.submission-receipt.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = taught(state, account, params.assignmentId);
+    const studentId = params.studentId.toLowerCase();
+    if (assignment === null || !studentsOf(state, account, assignment).includes(studentId))
+      return { error: "not_found" };
+    const work = state.works.find(
+      (item) => item.assignmentId === assignment.id && item.studentId === studentId,
+    );
+    if (work === undefined || work.submittedAt === null)
+      return { status: 200, body: { state: "none" } };
+    if (work.submissionReceipt === null)
+      return {
+        status: 200,
+        body: {
+          state: "ceka",
+          revision: work.revision,
+          requestedAt: `${work.submittedAt.slice(0, -1)}000Z`,
+        },
+      };
+    return { status: 200, body: { state: "potvrdeno", receipt: work.submissionReceipt } };
+  },
+  "teacher.mentorship-requests.get": ({ account }) => {
+    if (account === null || !account.roles.includes("teacher")) return { error: "forbidden" };
+    return { status: 200, body: { requests: [] } };
+  },
+  // No request is stored: the fake commits any well-formed decision (approve gets an invented id).
+  "teacher.mentorship-request-decision.post": ({ account, body }) => {
+    if (account === null || !account.roles.includes("teacher")) return { error: "forbidden" };
+    return body.decision === "approve"
+      ? {
+          status: 200,
+          body: { decision: "approve", mentorshipId: "3e000000-0000-4000-8000-0000000000ff" },
+        }
+      : { status: 200, body: { decision: "decline" } };
   },
 };

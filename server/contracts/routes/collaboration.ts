@@ -7,8 +7,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 // Literal port of Ductus 078c780 app/api/comments/[action]/route.ts and
 // src/server/collaboration/comments.ts (B-10). Reads are POST too, so a work
 // id never lands in a URL. Identity, role, institution and author are never
-// in the body: the RPCs take them from the session. No handler yet
-// (CONTRACT_ONLY).
+// in the body: the RPCs take them from the session.
 
 const literals = <T extends string>(values: readonly T[]) =>
   Type.Union(values.map((value) => Type.Literal(value)));
@@ -53,6 +52,7 @@ const COMMENT_BODIES = [
   closed({ threadId: Id }),
   closed({ commentId: Id }),
   closed({ documentId: WorkId }),
+  closed({ anchor: Type.Null(), body: CommentBody, documentId: WorkId }),
 ] as const;
 
 const Window = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });

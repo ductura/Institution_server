@@ -4,7 +4,9 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 
 import { SignedSubmissionReceipt } from "./evidence.ts";
 import { MUTATION_GUARD } from "./shared.ts";
-import { CODE_POINT, END, Name } from "./teacher.ts";
+import { CODE_POINT, END, Name, StudentSubmissionState } from "./teacher.ts";
+
+export { StudentSubmissionState };
 
 // Literal port of Ductus 078c780 src/components/student/my-assignments-read.ts
 // (#711, "Moji zadaci"): Ductus reads it in a server component, so the route
@@ -283,19 +285,12 @@ export const studentNoticeGet = defineRoute({
 
 // SRV-19 adds routes because a new member of an existing closed body would
 // require a major release of @ductura/contracts.
-const { revision, requestedAt } = SignedSubmissionReceipt.properties.payload.properties;
 const assignmentParams = closed({ assignmentId: Type.String({ minLength: 1 }) });
 const assignmentReadErrors = [
   error(401, "unauthorized"),
   error(404, "not_found"),
   error(503, "unavailable"),
 ] as const;
-
-export const StudentSubmissionState = Type.Union([
-  closed({ state: Type.Literal("none") }),
-  closed({ state: Type.Literal("ceka"), revision, requestedAt }),
-  closed({ state: Type.Literal("potvrdeno"), receipt: SignedSubmissionReceipt }),
-]);
 
 export const studentSubmissionGet = defineRoute({
   id: "student.submission.get",

@@ -428,6 +428,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `${STUDENT_ASSIGNMENT}/submission-notes`, as: "student" },
   },
   "student.submission-notes.post": { request: NOTE },
+  "student.text-check-config.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/text-check-config`, as: "student" },
+  },
   "student.work-sources.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/sources`, as: "student" },
   },
@@ -481,6 +484,30 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions/${IDS.student}/pdf`,
       as: "nastavnik",
+    },
+  },
+  "teacher.course-students.get": {
+    request: { path: `/api/v1/teacher/courses/${IDS.course}/students`, as: "nastavnik" },
+  },
+  "teacher.assignment-overview.get": {
+    before: SUBMIT_STEPS,
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/overview`, as: "nastavnik" },
+  },
+  "teacher.submission-receipt.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/submission`,
+      as: "nastavnik",
+    },
+  },
+  "teacher.mentorship-requests.get": {
+    request: { path: "/api/v1/teacher/mentorship-requests", as: "nastavnik" },
+  },
+  "teacher.mentorship-request-decision.post": {
+    request: {
+      path: "/api/v1/teacher/mentorship-requests/decision",
+      as: "nastavnik",
+      body: { requestId: IDS.mentorship, decision: "approve" },
     },
   },
 };
