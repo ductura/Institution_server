@@ -310,8 +310,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
-  "teacher.course-students.get",
-  "teacher.assignment-overview.get",
 ];
 
 /**

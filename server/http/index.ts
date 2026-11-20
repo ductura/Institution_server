@@ -230,6 +230,7 @@ export {
   parseAssignmentIdsBody,
   type TeacherReadOptions,
 } from "./teacher-reads.ts";
+export { createTeacherRosterRoutesFor } from "./teacher-roster.ts";
 export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-requests.ts";
 export {
   createStudentAssignmentsRoute,

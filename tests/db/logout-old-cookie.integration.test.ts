@@ -48,6 +48,7 @@ import {
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
@@ -434,6 +435,18 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  "teacher.course-students.get": {
+    method: "GET",
+    path: `/api/v1/teacher/courses/${ASSIGNMENT}/students`,
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.assignment-overview.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/overview`,
+    body: () => undefined,
+    live: 200,
+  },
   // SRV-1108: a live session that teaches no such assignment gets 404.
   "teacher.deadline-extensions.get": {
     method: "GET",
@@ -664,6 +677,7 @@ const FACTORIES = [
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createMerlinRosterRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
@@ -711,6 +725,7 @@ const MOUNTED = [
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
