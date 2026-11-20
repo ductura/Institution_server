@@ -50,10 +50,12 @@ function accepted(...steps: unknown[]) {
 }
 
 describe("format selection (§5.4, class 28)", () => {
-  it("reads both formats and nothing else", () => {
+  it("reads the three formats and nothing else", () => {
     expect(parseEditSteps(EDIT_STEP_FORMAT_V1, [insert([text("a")])]).ok).toBe(true);
     expect(v2(insert([text("a")])).ok).toBe(true);
-    expect(parseEditSteps("ductus-edit-steps-v3", [insert([text("a")])])).toEqual({
+    // SRV-7A (contract document-schema-v3 §5) adds v3; v4 is still unknown.
+    expect(parseEditSteps("ductus-edit-steps-v3", [insert([text("a")])]).ok).toBe(true);
+    expect(parseEditSteps("ductus-edit-steps-v4", [insert([text("a")])])).toEqual({
       ok: false,
       code: "unsupported_format",
       path: "$",
