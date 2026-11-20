@@ -493,20 +493,24 @@ export type DocumentNodeV4 =
   | BoxNode
   | FormulaNode
   | PageBreakNode
-  | TableNode;
+  | TableNode
+  | ImageNode;
 
 export type CanonicalDocumentV4 = {
   schemaVersion: typeof DOCUMENT_SCHEMA_VERSION_V4;
   nodes: DocumentNodeV4[];
   sources: DocumentSource[];
+  cover?: DocumentCover;
 };
 
-// Document v4, the table (contract v4 §5.1).
+// Document v4, the table, the image and the cover (contract v4 §5 and §7).
 
 /** Most cells of one table, longest cell and longest figure title or source. */
 export const MAX_TABLE_CELLS = 3000;
 export const MAX_TABLE_CELL_CODE_POINTS = 1000;
 export const MAX_FIGURE_TEXT_CODE_POINTS = 500;
+/** Longest value of each cover field, in code points (§7). */
+export const COVER_FIELD_MAX = { study: 200, place: 100, date: 50 } as const;
 
 export type TableCellFill = { color: string; column: number; row: number };
 export type TableMerge = { column: number; columnSpan: number; row: number; rowSpan: number };
@@ -524,3 +528,21 @@ export type TableNode = {
   title?: string;
   source?: string;
 };
+
+export type ImageCrop = { bottom: number; left: number; right: number; top: number };
+export const IMAGE_ALIGNS = ["left", "center", "right"] as const;
+
+export type ImageNode = {
+  type: "image";
+  id: NodeId;
+  attachmentId?: string;
+  attachmentSha256?: string;
+  crop?: ImageCrop;
+  widthPercent: number;
+  align: (typeof IMAGE_ALIGNS)[number];
+  landscape: boolean;
+  title?: string;
+  source?: string;
+};
+
+export type DocumentCover = { study?: string; place?: string; date?: string };

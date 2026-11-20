@@ -1,0 +1,1598 @@
+{
+  "vectorSchema": "ductus-golden-vectors-v1",
+  "about": [
+    "Golden vectors for document v4 (docs/contracts/document-schema-v4.md, SRV-10A). All data is invented.",
+    "Derived outside the repository code: Python json.dumps with sorted keys, compact separators and ensure_ascii=False (JCS for this data: integer numbers, ASCII keys) and hashlib.sha256 over the UTF-8 bytes. Never regenerate them from the code under test.",
+    "Each rejected document lists every expected error as [path, code]."
+  ],
+  "documentsV4": [
+    {
+      "name": "v4-every-block-atom-and-mark",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmi\u0161ljena",
+                "given": "Ana"
+              }
+            ],
+            "year": 2019,
+            "title": "Izvor 1",
+            "place": "Zagreb",
+            "publisher": "Izmi\u0161ljena naklada"
+          }
+        ],
+        "cover": {
+          "study": "Izmi\u0161ljeni diplomski studij",
+          "place": "Zagreb",
+          "date": "studeni 2026."
+        },
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "level": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Kompostiranje u gradu",
+                "marks": ["bold"]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prema podacima ",
+                "marks": []
+              },
+              {
+                "type": "citation",
+                "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "locator": "str. 12",
+                "via": "Izmi\u0161ljeni, 1973"
+              },
+              {
+                "type": "text",
+                "text": " udio je x",
+                "marks": ["italic"]
+              },
+              {
+                "type": "text",
+                "text": "2",
+                "marks": ["italic", "sup"]
+              },
+              {
+                "type": "inlineFormula",
+                "tex": "x^{2}"
+              },
+              {
+                "type": "text",
+                "text": " in situ",
+                "marks": [
+                  {
+                    "lang": "la",
+                    "type": "lang"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " vidi",
+                "marks": [
+                  {
+                    "color": "#f2d24b",
+                    "type": "highlight"
+                  },
+                  {
+                    "href": "https://primjer.invalid/kompost",
+                    "type": "link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " zalijepljeno",
+                "marks": [
+                  {
+                    "pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                    "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "type": "paste"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uvezeno",
+                "marks": ["imported"]
+              },
+              {
+                "type": "footnote",
+                "text": "Izmi\u0161ljena bilje\u0161ka."
+              },
+              {
+                "type": "crossReference",
+                "targetId": "33333333-3333-4333-8333-333333333333"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Druga ina\u010dica.",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "rows": [
+              ["Grad", "Ku\u0107anstva", "Udio"],
+              ["Izmi\u0161ljeni Grad", "12 %", ""],
+              ["Drugi Grad", "340", "9 %"]
+            ],
+            "header": true,
+            "stripes": true,
+            "landscape": false,
+            "headerFill": "#dce6f2",
+            "cellFills": [
+              {
+                "color": "#fff2cc",
+                "column": 1,
+                "row": 2
+              }
+            ],
+            "merges": [
+              {
+                "column": 1,
+                "columnSpan": 2,
+                "row": 1,
+                "rowSpan": 1
+              }
+            ],
+            "title": "Ku\u0107no kompostiranje po gradovima",
+            "source": "izrada autora"
+          },
+          {
+            "type": "image",
+            "id": "44444444-4444-4444-8444-444444444444",
+            "attachmentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "attachmentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "crop": {
+              "bottom": 0,
+              "left": 10,
+              "right": 5,
+              "top": 0
+            },
+            "widthPercent": 60,
+            "align": "center",
+            "landscape": false,
+            "title": "Komposti\u0161te u dvori\u0161tu",
+            "source": "izrada autora"
+          },
+          {
+            "type": "formula",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "tex": "\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i"
+          },
+          {
+            "type": "codeBlock",
+            "id": "66666666-6666-4666-8666-666666666666",
+            "language": "python",
+            "caption": "Funkcija za izra\u010dun prosjeka",
+            "children": [
+              {
+                "type": "text",
+                "text": "def prosjek(xs):\n    return sum(xs) / len(xs)",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "id": "77777777-7777-4777-8777-777777777777",
+            "kind": "theorem",
+            "children": [
+              {
+                "type": "paragraph",
+                "id": "88888888-8888-4888-8888-888888888888",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Svaki kona\u010dan skup je ograni\u010den.",
+                    "marks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "pageBreak",
+            "id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "utf8Hex": "7b22636f766572223a7b2264617465223a2273747564656e6920323032362e222c22706c616365223a225a6167726562222c227374756479223a22497a6d69c5a16c6a656e69206469706c6f6d736b692073747564696a227d2c226e6f646573223a5b7b226368696c6472656e223a5b7b226d61726b73223a5b22626f6c64225d2c2274657874223a224b6f6d706f73746972616e6a652075206772616475222c2274797065223a2274657874227d5d2c226964223a2262626262626262622d626262622d346262622d386262622d626262626262626262626262222c226c6576656c223a312c2274797065223a2268656164696e67227d2c7b226368696c6472656e223a5b7b226d61726b73223a5b5d2c2274657874223a225072656d6120706f646163696d6120222c2274797065223a2274657874227d2c7b226c6f6361746f72223a227374722e203132222c22736f757263654964223a2261616161616161612d616161612d346161612d386161612d616161616161616161616161222c2274797065223a226369746174696f6e222c22766961223a22497a6d69c5a16c6a656e692c2031393733227d2c7b226d61726b73223a5b226974616c6963225d2c2274657874223a22207564696f206a652078222c2274797065223a2274657874227d2c7b226d61726b73223a5b226974616c6963222c22737570225d2c2274657874223a2232222c2274797065223a2274657874227d2c7b22746578223a22785e7b327d222c2274797065223a22696e6c696e65466f726d756c61227d2c7b226d61726b73223a5b7b226c616e67223a226c61222c2274797065223a226c616e67227d5d2c2274657874223a2220696e2073697475222c2274797065223a2274657874227d2c7b226d61726b73223a5b7b22636f6c6f72223a2223663264323462222c2274797065223a22686967686c69676874227d2c7b2268726566223a2268747470733a2f2f7072696d6a65722e696e76616c69642f6b6f6d706f7374222c2274797065223a226c696e6b227d5d2c2274657874223a222076696469222c2274797065223a2274657874227d2c7b226d61726b73223a5b7b2270617374654964223a2265656565656565652d656565652d346565652d386565652d656565656565656565656565222c22736f757263654964223a2261616161616161612d616161612d346161612d386161612d616161616161616161616161222c2274797065223a227061737465227d5d2c2274657874223a22207a616c696a65706c6a656e6f222c2274797065223a2274657874227d2c7b226d61726b73223a5b22696d706f72746564225d2c2274657874223a22207576657a656e6f222c2274797065223a2274657874227d2c7b2274657874223a22497a6d69c5a16c6a656e612062696c6a65c5a16b612e222c2274797065223a22666f6f746e6f7465227d2c7b227461726765744964223a2233333333333333332d333333332d343333332d383333332d333333333333333333333333222c2274797065223a2263726f73735265666572656e6365227d5d2c226964223a2231313131313131312d313131312d343131312d383131312d313131313131313131313131222c2274797065223a22706172616772617068222c2276617269616e7447726f7570223a2264646464646464642d646464642d346464642d386464642d646464646464646464646464227d2c7b226368696c6472656e223a5b7b226d61726b73223a5b5d2c2274657874223a22447275676120696e61c48d6963612e222c2274797065223a2274657874227d5d2c226964223a2232323232323232322d323232322d343232322d383232322d323232323232323232323232222c2274797065223a22706172616772617068222c2276617269616e7447726f7570223a2264646464646464642d646464642d346464642d386464642d646464646464646464646464227d2c7b2263656c6c46696c6c73223a5b7b22636f6c6f72223a2223666666326363222c22636f6c756d6e223a312c22726f77223a327d5d2c22686561646572223a747275652c2268656164657246696c6c223a2223646365366632222c226964223a2233333333333333332d333333332d343333332d383333332d333333333333333333333333222c226c616e647363617065223a66616c73652c226d6572676573223a5b7b22636f6c756d6e223a312c22636f6c756d6e5370616e223a322c22726f77223a312c22726f775370616e223a317d5d2c22726f7773223a5b5b2247726164222c224b75c487616e73747661222c225564696f225d2c5b22497a6d69c5a16c6a656e692047726164222c2231322025222c22225d2c5b2244727567692047726164222c22333430222c22392025225d5d2c22736f75726365223a22697a72616461206175746f7261222c2273747269706573223a747275652c227469746c65223a224b75c4876e6f206b6f6d706f73746972616e6a6520706f20677261646f76696d61222c2274797065223a227461626c65227d2c7b22616c69676e223a2263656e746572222c226174746163686d656e744964223a2266666666666666662d666666662d346666662d386666662d666666666666666666666666222c226174746163686d656e74536861323536223a2230303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c2263726f70223a7b22626f74746f6d223a302c226c656674223a31302c227269676874223a352c22746f70223a307d2c226964223a2234343434343434342d343434342d343434342d383434342d343434343434343434343434222c226c616e647363617065223a66616c73652c22736f75726365223a22697a72616461206175746f7261222c227469746c65223a224b6f6d706f737469c5a1746520752064766f7269c5a17475222c2274797065223a22696d616765222c22776964746850657263656e74223a36307d2c7b226964223a2235353535353535352d353535352d343535352d383535352d353535353535353535353535222c22746578223a225c5c6261727b787d203d205c5c667261637b317d7b6e7d5c5c73756d5f7b693d317d5e7b6e7d20785f69222c2274797065223a22666f726d756c61227d2c7b2263617074696f6e223a2246756e6b63696a61207a6120697a7261c48d756e2070726f736a656b61222c226368696c6472656e223a5b7b226d61726b73223a5b5d2c2274657874223a226465662070726f736a656b287873293a5c6e2020202072657475726e2073756d28787329202f206c656e28787329222c2274797065223a2274657874227d5d2c226964223a2236363636363636362d363636362d343636362d383636362d363636363636363636363636222c226c616e6775616765223a22707974686f6e222c2274797065223a22636f6465426c6f636b227d2c7b226368696c6472656e223a5b7b226368696c6472656e223a5b7b226d61726b73223a5b5d2c2274657874223a225376616b69206b6f6e61c48d616e20736b7570206a65206f6772616e69c48d656e2e222c2274797065223a2274657874227d5d2c226964223a2238383838383838382d383838382d343838382d383838382d383838383838383838383838222c2274797065223a22706172616772617068227d5d2c226964223a2237373737373737372d373737372d343737372d383737372d373737373737373737373737222c226b696e64223a227468656f72656d222c2274797065223a22626f78227d2c7b226964223a2239393939393939392d393939392d343939392d383939392d393939393939393939393939222c2274797065223a2270616765427265616b227d5d2c22736368656d6156657273696f6e223a342c22736f7572636573223a5b7b22617574686f7273223a5b7b2266616d696c79223a22497a6d69c5a16c6a656e61222c22676976656e223a22416e61222c226b696e64223a22706572736f6e227d5d2c226964223a2261616161616161612d616161612d346161612d386161612d616161616161616161616161222c22706c616365223a225a6167726562222c227075626c6973686572223a22497a6d69c5a16c6a656e61206e616b6c616461222c227469746c65223a22497a766f722031222c2274797065223a22626f6f6b222c2279656172223a323031397d5d7d",
+      "sha256": "f262fc6d941ced36caa9b135fdf3174884952be2aa9ec7c9c21822783124b114"
+    },
+    {
+      "name": "v4-image-without-attachment-and-empty-code",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [],
+        "nodes": [
+          {
+            "type": "image",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "widthPercent": 100,
+            "align": "left",
+            "landscape": true
+          },
+          {
+            "type": "codeBlock",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "children": []
+          }
+        ]
+      },
+      "utf8Hex": "7b226e6f646573223a5b7b22616c69676e223a226c656674222c226964223a2231313131313131312d313131312d343131312d383131312d313131313131313131313131222c226c616e647363617065223a747275652c2274797065223a22696d616765222c22776964746850657263656e74223a3130307d2c7b226368696c6472656e223a5b5d2c226964223a2232323232323232322d323232322d343232322d383232322d323232323232323232323232222c2274797065223a22636f6465426c6f636b227d5d2c22736368656d6156657273696f6e223a342c22736f7572636573223a5b5d7d",
+      "sha256": "6d82eb16a23781dd22774cda3220b48ce6ad8ee661e7689c753e8d7cac979603"
+    }
+  ],
+  "rejectedDocumentsV4": [
+    {
+      "name": "v4-sup-and-sub",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmi\u0161ljena",
+                "given": "Ana"
+              }
+            ],
+            "year": 2019,
+            "title": "Izvor 1",
+            "place": "Zagreb",
+            "publisher": "Izmi\u0161ljena naklada"
+          }
+        ],
+        "cover": {
+          "study": "Izmi\u0161ljeni diplomski studij",
+          "place": "Zagreb",
+          "date": "studeni 2026."
+        },
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "level": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Kompostiranje u gradu",
+                "marks": ["bold"]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prema podacima ",
+                "marks": []
+              },
+              {
+                "type": "citation",
+                "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "locator": "str. 12",
+                "via": "Izmi\u0161ljeni, 1973"
+              },
+              {
+                "type": "text",
+                "text": " udio je x",
+                "marks": ["italic"]
+              },
+              {
+                "type": "text",
+                "text": "2",
+                "marks": ["italic", "sup", "sub"]
+              },
+              {
+                "type": "inlineFormula",
+                "tex": "x^{2}"
+              },
+              {
+                "type": "text",
+                "text": " in situ",
+                "marks": [
+                  {
+                    "lang": "la",
+                    "type": "lang"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " vidi",
+                "marks": [
+                  {
+                    "color": "#f2d24b",
+                    "type": "highlight"
+                  },
+                  {
+                    "href": "https://primjer.invalid/kompost",
+                    "type": "link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " zalijepljeno",
+                "marks": [
+                  {
+                    "pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                    "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "type": "paste"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uvezeno",
+                "marks": ["imported"]
+              },
+              {
+                "type": "footnote",
+                "text": "Izmi\u0161ljena bilje\u0161ka."
+              },
+              {
+                "type": "crossReference",
+                "targetId": "33333333-3333-4333-8333-333333333333"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Druga ina\u010dica.",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "rows": [
+              ["Grad", "Ku\u0107anstva", "Udio"],
+              ["Izmi\u0161ljeni Grad", "12 %", ""],
+              ["Drugi Grad", "340", "9 %"]
+            ],
+            "header": true,
+            "stripes": true,
+            "landscape": false,
+            "headerFill": "#dce6f2",
+            "cellFills": [
+              {
+                "color": "#fff2cc",
+                "column": 1,
+                "row": 2
+              }
+            ],
+            "merges": [
+              {
+                "column": 1,
+                "columnSpan": 2,
+                "row": 1,
+                "rowSpan": 1
+              }
+            ],
+            "title": "Ku\u0107no kompostiranje po gradovima",
+            "source": "izrada autora"
+          },
+          {
+            "type": "image",
+            "id": "44444444-4444-4444-8444-444444444444",
+            "attachmentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "attachmentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "crop": {
+              "bottom": 0,
+              "left": 10,
+              "right": 5,
+              "top": 0
+            },
+            "widthPercent": 60,
+            "align": "center",
+            "landscape": false,
+            "title": "Komposti\u0161te u dvori\u0161tu",
+            "source": "izrada autora"
+          },
+          {
+            "type": "formula",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "tex": "\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i"
+          },
+          {
+            "type": "codeBlock",
+            "id": "66666666-6666-4666-8666-666666666666",
+            "language": "python",
+            "caption": "Funkcija za izra\u010dun prosjeka",
+            "children": [
+              {
+                "type": "text",
+                "text": "def prosjek(xs):\n    return sum(xs) / len(xs)",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "id": "77777777-7777-4777-8777-777777777777",
+            "kind": "theorem",
+            "children": [
+              {
+                "type": "paragraph",
+                "id": "88888888-8888-4888-8888-888888888888",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Svaki kona\u010dan skup je ograni\u010den.",
+                    "marks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "pageBreak",
+            "id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "errors": [["$.nodes[1].children[3].marks", "MARKS_EXCLUSIVE"]]
+    },
+    {
+      "name": "v4-image-data-url",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmi\u0161ljena",
+                "given": "Ana"
+              }
+            ],
+            "year": 2019,
+            "title": "Izvor 1",
+            "place": "Zagreb",
+            "publisher": "Izmi\u0161ljena naklada"
+          }
+        ],
+        "cover": {
+          "study": "Izmi\u0161ljeni diplomski studij",
+          "place": "Zagreb",
+          "date": "studeni 2026."
+        },
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "level": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Kompostiranje u gradu",
+                "marks": ["bold"]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prema podacima ",
+                "marks": []
+              },
+              {
+                "type": "citation",
+                "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "locator": "str. 12",
+                "via": "Izmi\u0161ljeni, 1973"
+              },
+              {
+                "type": "text",
+                "text": " udio je x",
+                "marks": ["italic"]
+              },
+              {
+                "type": "text",
+                "text": "2",
+                "marks": ["italic", "sup"]
+              },
+              {
+                "type": "inlineFormula",
+                "tex": "x^{2}"
+              },
+              {
+                "type": "text",
+                "text": " in situ",
+                "marks": [
+                  {
+                    "lang": "la",
+                    "type": "lang"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " vidi",
+                "marks": [
+                  {
+                    "color": "#f2d24b",
+                    "type": "highlight"
+                  },
+                  {
+                    "href": "https://primjer.invalid/kompost",
+                    "type": "link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " zalijepljeno",
+                "marks": [
+                  {
+                    "pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                    "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "type": "paste"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uvezeno",
+                "marks": ["imported"]
+              },
+              {
+                "type": "footnote",
+                "text": "Izmi\u0161ljena bilje\u0161ka."
+              },
+              {
+                "type": "crossReference",
+                "targetId": "33333333-3333-4333-8333-333333333333"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Druga ina\u010dica.",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "rows": [
+              ["Grad", "Ku\u0107anstva", "Udio"],
+              ["Izmi\u0161ljeni Grad", "12 %", ""],
+              ["Drugi Grad", "340", "9 %"]
+            ],
+            "header": true,
+            "stripes": true,
+            "landscape": false,
+            "headerFill": "#dce6f2",
+            "cellFills": [
+              {
+                "color": "#fff2cc",
+                "column": 1,
+                "row": 2
+              }
+            ],
+            "merges": [
+              {
+                "column": 1,
+                "columnSpan": 2,
+                "row": 1,
+                "rowSpan": 1
+              }
+            ],
+            "title": "Ku\u0107no kompostiranje po gradovima",
+            "source": "izrada autora"
+          },
+          {
+            "type": "image",
+            "id": "44444444-4444-4444-8444-444444444444",
+            "attachmentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "attachmentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "crop": {
+              "bottom": 0,
+              "left": 10,
+              "right": 5,
+              "top": 0
+            },
+            "widthPercent": 60,
+            "align": "center",
+            "landscape": false,
+            "title": "Komposti\u0161te u dvori\u0161tu",
+            "source": "izrada autora",
+            "img": "data:image/png;base64,AAAA"
+          },
+          {
+            "type": "formula",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "tex": "\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i"
+          },
+          {
+            "type": "codeBlock",
+            "id": "66666666-6666-4666-8666-666666666666",
+            "language": "python",
+            "caption": "Funkcija za izra\u010dun prosjeka",
+            "children": [
+              {
+                "type": "text",
+                "text": "def prosjek(xs):\n    return sum(xs) / len(xs)",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "id": "77777777-7777-4777-8777-777777777777",
+            "kind": "theorem",
+            "children": [
+              {
+                "type": "paragraph",
+                "id": "88888888-8888-4888-8888-888888888888",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Svaki kona\u010dan skup je ograni\u010den.",
+                    "marks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "pageBreak",
+            "id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "errors": [["$.nodes[4].img", "UNKNOWN_FIELD"]]
+    },
+    {
+      "name": "v4-cover-student-name",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmi\u0161ljena",
+                "given": "Ana"
+              }
+            ],
+            "year": 2019,
+            "title": "Izvor 1",
+            "place": "Zagreb",
+            "publisher": "Izmi\u0161ljena naklada"
+          }
+        ],
+        "cover": {
+          "study": "Izmi\u0161ljeni diplomski studij",
+          "place": "Zagreb",
+          "date": "studeni 2026.",
+          "student": "Student A"
+        },
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "level": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Kompostiranje u gradu",
+                "marks": ["bold"]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prema podacima ",
+                "marks": []
+              },
+              {
+                "type": "citation",
+                "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "locator": "str. 12",
+                "via": "Izmi\u0161ljeni, 1973"
+              },
+              {
+                "type": "text",
+                "text": " udio je x",
+                "marks": ["italic"]
+              },
+              {
+                "type": "text",
+                "text": "2",
+                "marks": ["italic", "sup"]
+              },
+              {
+                "type": "inlineFormula",
+                "tex": "x^{2}"
+              },
+              {
+                "type": "text",
+                "text": " in situ",
+                "marks": [
+                  {
+                    "lang": "la",
+                    "type": "lang"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " vidi",
+                "marks": [
+                  {
+                    "color": "#f2d24b",
+                    "type": "highlight"
+                  },
+                  {
+                    "href": "https://primjer.invalid/kompost",
+                    "type": "link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " zalijepljeno",
+                "marks": [
+                  {
+                    "pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                    "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "type": "paste"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uvezeno",
+                "marks": ["imported"]
+              },
+              {
+                "type": "footnote",
+                "text": "Izmi\u0161ljena bilje\u0161ka."
+              },
+              {
+                "type": "crossReference",
+                "targetId": "33333333-3333-4333-8333-333333333333"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Druga ina\u010dica.",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "rows": [
+              ["Grad", "Ku\u0107anstva", "Udio"],
+              ["Izmi\u0161ljeni Grad", "12 %", ""],
+              ["Drugi Grad", "340", "9 %"]
+            ],
+            "header": true,
+            "stripes": true,
+            "landscape": false,
+            "headerFill": "#dce6f2",
+            "cellFills": [
+              {
+                "color": "#fff2cc",
+                "column": 1,
+                "row": 2
+              }
+            ],
+            "merges": [
+              {
+                "column": 1,
+                "columnSpan": 2,
+                "row": 1,
+                "rowSpan": 1
+              }
+            ],
+            "title": "Ku\u0107no kompostiranje po gradovima",
+            "source": "izrada autora"
+          },
+          {
+            "type": "image",
+            "id": "44444444-4444-4444-8444-444444444444",
+            "attachmentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "attachmentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "crop": {
+              "bottom": 0,
+              "left": 10,
+              "right": 5,
+              "top": 0
+            },
+            "widthPercent": 60,
+            "align": "center",
+            "landscape": false,
+            "title": "Komposti\u0161te u dvori\u0161tu",
+            "source": "izrada autora"
+          },
+          {
+            "type": "formula",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "tex": "\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i"
+          },
+          {
+            "type": "codeBlock",
+            "id": "66666666-6666-4666-8666-666666666666",
+            "language": "python",
+            "caption": "Funkcija za izra\u010dun prosjeka",
+            "children": [
+              {
+                "type": "text",
+                "text": "def prosjek(xs):\n    return sum(xs) / len(xs)",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "id": "77777777-7777-4777-8777-777777777777",
+            "kind": "theorem",
+            "children": [
+              {
+                "type": "paragraph",
+                "id": "88888888-8888-4888-8888-888888888888",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Svaki kona\u010dan skup je ograni\u010den.",
+                    "marks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "pageBreak",
+            "id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "errors": [["$.cover.student", "UNKNOWN_FIELD"]]
+    },
+    {
+      "name": "v4-text-under-merge",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmi\u0161ljena",
+                "given": "Ana"
+              }
+            ],
+            "year": 2019,
+            "title": "Izvor 1",
+            "place": "Zagreb",
+            "publisher": "Izmi\u0161ljena naklada"
+          }
+        ],
+        "cover": {
+          "study": "Izmi\u0161ljeni diplomski studij",
+          "place": "Zagreb",
+          "date": "studeni 2026."
+        },
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "level": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Kompostiranje u gradu",
+                "marks": ["bold"]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prema podacima ",
+                "marks": []
+              },
+              {
+                "type": "citation",
+                "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "locator": "str. 12",
+                "via": "Izmi\u0161ljeni, 1973"
+              },
+              {
+                "type": "text",
+                "text": " udio je x",
+                "marks": ["italic"]
+              },
+              {
+                "type": "text",
+                "text": "2",
+                "marks": ["italic", "sup"]
+              },
+              {
+                "type": "inlineFormula",
+                "tex": "x^{2}"
+              },
+              {
+                "type": "text",
+                "text": " in situ",
+                "marks": [
+                  {
+                    "lang": "la",
+                    "type": "lang"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " vidi",
+                "marks": [
+                  {
+                    "color": "#f2d24b",
+                    "type": "highlight"
+                  },
+                  {
+                    "href": "https://primjer.invalid/kompost",
+                    "type": "link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " zalijepljeno",
+                "marks": [
+                  {
+                    "pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                    "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "type": "paste"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uvezeno",
+                "marks": ["imported"]
+              },
+              {
+                "type": "footnote",
+                "text": "Izmi\u0161ljena bilje\u0161ka."
+              },
+              {
+                "type": "crossReference",
+                "targetId": "33333333-3333-4333-8333-333333333333"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Druga ina\u010dica.",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "rows": [
+              ["Grad", "Ku\u0107anstva", "Udio"],
+              ["Izmi\u0161ljeni Grad", "12 %", "x"],
+              ["Drugi Grad", "340", "9 %"]
+            ],
+            "header": true,
+            "stripes": true,
+            "landscape": false,
+            "headerFill": "#dce6f2",
+            "cellFills": [
+              {
+                "color": "#fff2cc",
+                "column": 1,
+                "row": 2
+              }
+            ],
+            "merges": [
+              {
+                "column": 1,
+                "columnSpan": 2,
+                "row": 1,
+                "rowSpan": 1
+              }
+            ],
+            "title": "Ku\u0107no kompostiranje po gradovima",
+            "source": "izrada autora"
+          },
+          {
+            "type": "image",
+            "id": "44444444-4444-4444-8444-444444444444",
+            "attachmentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "attachmentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "crop": {
+              "bottom": 0,
+              "left": 10,
+              "right": 5,
+              "top": 0
+            },
+            "widthPercent": 60,
+            "align": "center",
+            "landscape": false,
+            "title": "Komposti\u0161te u dvori\u0161tu",
+            "source": "izrada autora"
+          },
+          {
+            "type": "formula",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "tex": "\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i"
+          },
+          {
+            "type": "codeBlock",
+            "id": "66666666-6666-4666-8666-666666666666",
+            "language": "python",
+            "caption": "Funkcija za izra\u010dun prosjeka",
+            "children": [
+              {
+                "type": "text",
+                "text": "def prosjek(xs):\n    return sum(xs) / len(xs)",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "id": "77777777-7777-4777-8777-777777777777",
+            "kind": "theorem",
+            "children": [
+              {
+                "type": "paragraph",
+                "id": "88888888-8888-4888-8888-888888888888",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Svaki kona\u010dan skup je ograni\u010den.",
+                    "marks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "pageBreak",
+            "id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "errors": [["$.nodes[3].merges[0]", "TABLE_MERGE_INVALID"]]
+    },
+    {
+      "name": "v4-aitext-mark",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmi\u0161ljena",
+                "given": "Ana"
+              }
+            ],
+            "year": 2019,
+            "title": "Izvor 1",
+            "place": "Zagreb",
+            "publisher": "Izmi\u0161ljena naklada"
+          }
+        ],
+        "cover": {
+          "study": "Izmi\u0161ljeni diplomski studij",
+          "place": "Zagreb",
+          "date": "studeni 2026."
+        },
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "level": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Kompostiranje u gradu",
+                "marks": ["bold"]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prema podacima ",
+                "marks": ["aitext"]
+              },
+              {
+                "type": "citation",
+                "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "locator": "str. 12",
+                "via": "Izmi\u0161ljeni, 1973"
+              },
+              {
+                "type": "text",
+                "text": " udio je x",
+                "marks": ["italic"]
+              },
+              {
+                "type": "text",
+                "text": "2",
+                "marks": ["italic", "sup"]
+              },
+              {
+                "type": "inlineFormula",
+                "tex": "x^{2}"
+              },
+              {
+                "type": "text",
+                "text": " in situ",
+                "marks": [
+                  {
+                    "lang": "la",
+                    "type": "lang"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " vidi",
+                "marks": [
+                  {
+                    "color": "#f2d24b",
+                    "type": "highlight"
+                  },
+                  {
+                    "href": "https://primjer.invalid/kompost",
+                    "type": "link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " zalijepljeno",
+                "marks": [
+                  {
+                    "pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                    "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "type": "paste"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uvezeno",
+                "marks": ["imported"]
+              },
+              {
+                "type": "footnote",
+                "text": "Izmi\u0161ljena bilje\u0161ka."
+              },
+              {
+                "type": "crossReference",
+                "targetId": "33333333-3333-4333-8333-333333333333"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Druga ina\u010dica.",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "rows": [
+              ["Grad", "Ku\u0107anstva", "Udio"],
+              ["Izmi\u0161ljeni Grad", "12 %", ""],
+              ["Drugi Grad", "340", "9 %"]
+            ],
+            "header": true,
+            "stripes": true,
+            "landscape": false,
+            "headerFill": "#dce6f2",
+            "cellFills": [
+              {
+                "color": "#fff2cc",
+                "column": 1,
+                "row": 2
+              }
+            ],
+            "merges": [
+              {
+                "column": 1,
+                "columnSpan": 2,
+                "row": 1,
+                "rowSpan": 1
+              }
+            ],
+            "title": "Ku\u0107no kompostiranje po gradovima",
+            "source": "izrada autora"
+          },
+          {
+            "type": "image",
+            "id": "44444444-4444-4444-8444-444444444444",
+            "attachmentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "attachmentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "crop": {
+              "bottom": 0,
+              "left": 10,
+              "right": 5,
+              "top": 0
+            },
+            "widthPercent": 60,
+            "align": "center",
+            "landscape": false,
+            "title": "Komposti\u0161te u dvori\u0161tu",
+            "source": "izrada autora"
+          },
+          {
+            "type": "formula",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "tex": "\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i"
+          },
+          {
+            "type": "codeBlock",
+            "id": "66666666-6666-4666-8666-666666666666",
+            "language": "python",
+            "caption": "Funkcija za izra\u010dun prosjeka",
+            "children": [
+              {
+                "type": "text",
+                "text": "def prosjek(xs):\n    return sum(xs) / len(xs)",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "id": "77777777-7777-4777-8777-777777777777",
+            "kind": "theorem",
+            "children": [
+              {
+                "type": "paragraph",
+                "id": "88888888-8888-4888-8888-888888888888",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Svaki kona\u010dan skup je ograni\u010den.",
+                    "marks": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "pageBreak",
+            "id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "errors": [["$.nodes[1].children[0].marks[0]", "MARK_INVALID"]]
+    },
+    {
+      "name": "v4-heading-in-box",
+      "value": {
+        "schemaVersion": 4,
+        "sources": [
+          {
+            "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmi\u0161ljena",
+                "given": "Ana"
+              }
+            ],
+            "year": 2019,
+            "title": "Izvor 1",
+            "place": "Zagreb",
+            "publisher": "Izmi\u0161ljena naklada"
+          }
+        ],
+        "cover": {
+          "study": "Izmi\u0161ljeni diplomski studij",
+          "place": "Zagreb",
+          "date": "studeni 2026."
+        },
+        "nodes": [
+          {
+            "type": "heading",
+            "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "level": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Kompostiranje u gradu",
+                "marks": ["bold"]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "11111111-1111-4111-8111-111111111111",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prema podacima ",
+                "marks": []
+              },
+              {
+                "type": "citation",
+                "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "locator": "str. 12",
+                "via": "Izmi\u0161ljeni, 1973"
+              },
+              {
+                "type": "text",
+                "text": " udio je x",
+                "marks": ["italic"]
+              },
+              {
+                "type": "text",
+                "text": "2",
+                "marks": ["italic", "sup"]
+              },
+              {
+                "type": "inlineFormula",
+                "tex": "x^{2}"
+              },
+              {
+                "type": "text",
+                "text": " in situ",
+                "marks": [
+                  {
+                    "lang": "la",
+                    "type": "lang"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " vidi",
+                "marks": [
+                  {
+                    "color": "#f2d24b",
+                    "type": "highlight"
+                  },
+                  {
+                    "href": "https://primjer.invalid/kompost",
+                    "type": "link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " zalijepljeno",
+                "marks": [
+                  {
+                    "pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                    "sourceId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "type": "paste"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uvezeno",
+                "marks": ["imported"]
+              },
+              {
+                "type": "footnote",
+                "text": "Izmi\u0161ljena bilje\u0161ka."
+              },
+              {
+                "type": "crossReference",
+                "targetId": "33333333-3333-4333-8333-333333333333"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "id": "22222222-2222-4222-8222-222222222222",
+            "variantGroup": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "children": [
+              {
+                "type": "text",
+                "text": "Druga ina\u010dica.",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "table",
+            "id": "33333333-3333-4333-8333-333333333333",
+            "rows": [
+              ["Grad", "Ku\u0107anstva", "Udio"],
+              ["Izmi\u0161ljeni Grad", "12 %", ""],
+              ["Drugi Grad", "340", "9 %"]
+            ],
+            "header": true,
+            "stripes": true,
+            "landscape": false,
+            "headerFill": "#dce6f2",
+            "cellFills": [
+              {
+                "color": "#fff2cc",
+                "column": 1,
+                "row": 2
+              }
+            ],
+            "merges": [
+              {
+                "column": 1,
+                "columnSpan": 2,
+                "row": 1,
+                "rowSpan": 1
+              }
+            ],
+            "title": "Ku\u0107no kompostiranje po gradovima",
+            "source": "izrada autora"
+          },
+          {
+            "type": "image",
+            "id": "44444444-4444-4444-8444-444444444444",
+            "attachmentId": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "attachmentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "crop": {
+              "bottom": 0,
+              "left": 10,
+              "right": 5,
+              "top": 0
+            },
+            "widthPercent": 60,
+            "align": "center",
+            "landscape": false,
+            "title": "Komposti\u0161te u dvori\u0161tu",
+            "source": "izrada autora"
+          },
+          {
+            "type": "formula",
+            "id": "55555555-5555-4555-8555-555555555555",
+            "tex": "\\bar{x} = \\frac{1}{n}\\sum_{i=1}^{n} x_i"
+          },
+          {
+            "type": "codeBlock",
+            "id": "66666666-6666-4666-8666-666666666666",
+            "language": "python",
+            "caption": "Funkcija za izra\u010dun prosjeka",
+            "children": [
+              {
+                "type": "text",
+                "text": "def prosjek(xs):\n    return sum(xs) / len(xs)",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "id": "77777777-7777-4777-8777-777777777777",
+            "kind": "theorem",
+            "children": [
+              {
+                "type": "paragraph",
+                "id": "88888888-8888-4888-8888-888888888888",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Svaki kona\u010dan skup je ograni\u010den.",
+                    "marks": []
+                  }
+                ]
+              },
+              {
+                "type": "heading",
+                "id": "0aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "level": 2,
+                "children": []
+              }
+            ]
+          },
+          {
+            "type": "pageBreak",
+            "id": "99999999-9999-4999-8999-999999999999"
+          }
+        ]
+      },
+      "errors": [["$.nodes[7].children[1]", "BOX_CHILDREN_INVALID"]]
+    }
+  ]
+}
