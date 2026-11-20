@@ -17,9 +17,8 @@ import {
 import { verifySignedEvidenceReceiptV2 } from "../../../server/domain/forensics/evidence-receipt-verifier.ts";
 import { loadGoldenVectors } from "../../../server/domain/forensics/golden-vectors/load.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import { receiptKeys } from "../../../server/database/open-work.ts";
+import { readEvidenceDomainKeys } from "../../../server/database/open-work.ts";
 
-import { localScriptArgs } from "./local-psql.ts";
 import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // B-8 step 4a / DAN-83 (docs/BACKEND.md 4.13 t. 7; ADR 2026-10-11 7 (b)): a
@@ -35,20 +34,19 @@ requireLoopbackDatabaseUrl(
   "The signing key test runs only against a loopback database (DATABASE_URL).",
 );
 const run = promisify(execFile);
-const ROOT = new URL("../../../", import.meta.url);
-const SCRIPT = new URL("db/main/local/evidence-signing-key.mjs", ROOT);
-const SIGNER = new URL("server/external/keys/persistent-development-ed25519-signer.ts", ROOT);
+const ROOT = new URL("../../", import.meta.url);
+const SCRIPT = new URL("db/local/evidence-signing-key.mjs", ROOT);
+const SIGNER = new URL("src/adapters/crypto/persistent-development-ed25519-signer.ts", ROOT);
 const suffix = randomBytes(5).toString("hex");
 const login = `it_signing_${suffix}`;
 const password = randomBytes(24).toString("hex");
-const person = (name: string) => ({
+const people = ["own", "other"].map((name) => ({
   name,
   institutionId: randomUUID(),
   userId: randomUUID(),
   token: randomBytes(32).toString("base64url"),
   slug: `it-${name}-${suffix}`,
-});
-const people = [person("own"), person("other")] as const;
+}));
 const [own, other] = people;
 
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
@@ -57,7 +55,9 @@ let withActor: WithActor;
 let dir: string;
 let seedFile: string;
 
-// The provisioner connects over the native test cluster socket.
+// The script reaches the database the way every db/local script does: psql in
+// the compose postgres container, or in DUCTUS_PSQL_CONTAINER when the test
+// database is a private local one.
 function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   return {
     ...process.env,
@@ -70,7 +70,7 @@ function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
 async function registerKey(extra: Record<string, string> = {}) {
   const { stdout } = await run(
     process.execPath,
-    localScriptArgs(SCRIPT.href, SAFE_ADMIN_URL, ["--institution", own.slug]),
+    [fileURLToPath(SCRIPT), "--institution", own.slug],
     {
       env: env(extra),
     },
@@ -85,13 +85,9 @@ const SIGN_CHILD = `
   const out = {};
   try {
     const signer = new P(process.env, process.argv[1]);
-    const signed = await signer.sign(Buffer.from(process.argv[2], "hex"));
-    if (!signed.ok) throw signed.error;
-    out.signature = signed.value;
-    const key = await signer.publicVerificationKey();
-    if (!key.ok) throw key.error;
-    out.key = key.value;
-  } catch (error) { out.fault = error.code ?? error.messageKey ?? "other"; }
+    out.signature = await signer.sign(Buffer.from(process.argv[2], "hex"));
+    out.key = await signer.publicVerificationKey();
+  } catch (error) { out.fault = error.code ?? "other"; }
   console.log(JSON.stringify(out));`;
 
 async function signInNewProcess(message: Uint8Array, extra: Record<string, string> = {}) {
@@ -117,7 +113,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0]!.ddl);
+  await admin.query(ddl.rows[0].ddl);
   const client = await admin.connect();
   try {
     await client.query("BEGIN");
@@ -177,7 +173,7 @@ afterAll(async () => {
     "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
     [login],
   );
-  await admin.query(drop.rows[0]!.ddl);
+  await admin.query(drop.rows[0].ddl);
   await admin.end();
   if (dir) await rm(dir, { recursive: true, force: true });
 });
@@ -210,7 +206,7 @@ describe("persistent development signing key", () => {
     // key moves and no domain is left behind.
     const moved = await run(
       process.execPath,
-      localScriptArgs(SCRIPT.href, SAFE_ADMIN_URL, ["--institution", other.slug]),
+      [fileURLToPath(SCRIPT), "--institution", other.slug],
       { env: env() },
     ).then(
       () => null,
@@ -227,7 +223,7 @@ describe("persistent development signing key", () => {
 
   it("signs a receipt in one process that verifies after a restart with the key from the registry", async () => {
     const { evidenceDomainId, keyId } = await registerKey();
-    const payload = { ...loadGoldenVectors().receiptV2.accepted[0]!.payload, evidenceDomainId };
+    const payload = { ...loadGoldenVectors().receiptV2.accepted[0].payload, evidenceDomainId };
     const digest = await digestEvidenceReceiptPayloadV2(payload);
     const before = await signInNewProcess(digest.signingInput);
     const after = await signInNewProcess(digest.signingInput);
@@ -246,17 +242,23 @@ describe("persistent development signing key", () => {
       evidenceDomainId,
     };
     const keysFor = (token: string | null) =>
-      withActor(token, (tx) => receiptKeys(tx, evidenceDomainId));
+      withActor(token, (tx) => readEvidenceDomainKeys(tx, evidenceDomainId));
     const ownKeys = await keysFor(own.token);
-    expect(ownKeys).toMatchObject([{ keyId, keyBase64Url: before.key.keyBase64Url }]);
-    expect(await verifySignedEvidenceReceiptV2(signed, expectation, ownKeys ?? [])).toEqual({
-      ok: true,
-      payload,
+    expect(ownKeys).toMatchObject({
+      status: "ok",
+      keys: [{ keyId, keyBase64Url: before.key.keyBase64Url }],
     });
+    expect(
+      await verifySignedEvidenceReceiptV2(
+        signed,
+        expectation,
+        ownKeys.status === "ok" ? ownKeys.keys : [],
+      ),
+    ).toEqual({ ok: true, payload });
 
     // Another institution's session, and no session, read no key of this domain.
     for (const token of [other.token, null]) {
-      expect(await keysFor(token)).toEqual([]);
+      expect(await keysFor(token)).toEqual({ status: "ok", keys: [] });
     }
     expect(await verifySignedEvidenceReceiptV2(signed, expectation, [])).toEqual({
       ok: false,
@@ -275,7 +277,7 @@ describe("persistent development signing key", () => {
       for (const path of [join(link, fresh, "seed"), behindDotDot]) {
         const refused = await run(
           process.execPath,
-          localScriptArgs(SCRIPT.href, SAFE_ADMIN_URL, ["--institution", own.slug]),
+          [fileURLToPath(SCRIPT), "--institution", own.slug],
           {
             env: env({ DUCTUS_DEV_SIGNING_KEY_FILE: path }),
           },
@@ -300,7 +302,7 @@ describe("persistent development signing key", () => {
     expect(
       await signInNewProcess(message, { DUCTUS_DEV_SIGNING_KEY_FILE: join(dir, "missing") }),
     ).toEqual({
-      fault: "SIGNING_KEY_MISSING",
+      fault: "signing_key_missing",
     });
     expect(await signInNewProcess(message, { NODE_ENV: "production" })).toEqual({
       fault: "signing_key_production",
