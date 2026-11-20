@@ -157,12 +157,22 @@ const SRV_19 = [
 // contract first, the route mounted by the entry point in part 4.
 const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
+// The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
+// handlers in SRV-29, SRV-30 and SRV-31.
+const SRV_27 = [
+  "teacher.course-students.get",
+  "teacher.assignment-overview.get",
+  "teacher.submission-receipt.get",
+  "teacher.mentorship-requests.get",
+  "teacher.mentorship-request-decision.post",
+] as const;
 
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
   ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03, ...UGOVORI_API, ...SRV_19, ...SRV_9B],
   ...SRV_9C,
+  ...SRV_27,
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
