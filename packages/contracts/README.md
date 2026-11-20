@@ -27,18 +27,18 @@ Tarball je isti onaj koji je `publish.yml` provjerio i objavio; njegov sha256 je
 
 ## Lokalna provjera kandidata za izdanje
 
-Na commitu odabranom za izdanje pokreni `pnpm install --frozen-lockfile`. Verziju kandidata proslijedi kao `RELEASE_VERSION`. Sljedeći primjer u PowerShellu gradi tarball ugovora 3.1.0:
+Na commitu odabranom za izdanje pokreni `pnpm install --frozen-lockfile`. Verziju kandidata proslijedi kao `RELEASE_VERSION`. Sljedeći primjer u PowerShellu gradi tarball ugovora 3.2.0:
 
 ```powershell
-$env:RELEASE_VERSION = '3.1.0'
+$env:RELEASE_VERSION = '3.2.0'
 pnpm release:tarball contracts
 $env:RELEASE_VERSION = $null
 ```
 
-Naredba provjerava sadržaj tarballa i ispisuje njegov SHA-256. Iz novog direktorija s vlastitim `package.json` instaliraj `dist/release/tarball/ductura-contracts-3.1.0.tgz` preko njegove apsolutne putanje i učitaj javne izvoze:
+Naredba provjerava sadržaj tarballa i ispisuje njegov SHA-256. Iz novog direktorija s vlastitim `package.json` instaliraj `dist/release/tarball/ductura-contracts-3.2.0.tgz` preko njegove apsolutne putanje i učitaj javne izvoze:
 
 ```powershell
-$tarball = 'C:\putanja\do\ductura-contracts-3.1.0.tgz'
+$tarball = 'C:\putanja\do\ductura-contracts-3.2.0.tgz'
 npm install --ignore-scripts $tarball
 @'
 import { createClient } from "@ductura/contracts";
@@ -46,5 +46,7 @@ import api from "@ductura/contracts/openapi/v1.json" with { type: "json" };
 console.log(typeof createClient, api.info.version);
 '@ | node --input-type=module
 ```
+
+Kandidat 3.2.0 (SRV-32, 20. 11. 2026.) dodaje nastavničke rute iz SRV-27 (`teacher.course-students.get`, `teacher.assignment-overview.get`, `teacher.submission-receipt.get`, `teacher.mentorship-requests.get`, `teacher.mentorship-request-decision.post`; OpenAPI 1.33.0). Lokalno sagrađen tarball na `ead7e12` ima SHA-256 `9bfff7a0c58b699b1e47131167fd971e5508bb022d825d0f06db5267d64c92e5` i instalira se u čistom direktoriju. Objava u Releases ide na kraju migracije, prije `main`.
 
 Za scenarije predaje koristi `@ductura/test-fakes/fake-server` pripremljen iz istog commita (`pnpm release:tarball test-fakes`). Prije drugog pakiranja kopiraj prvi tarball jer naredba isprazni izlazni direktorij. Među vektorima je `student.submission-notes.post` / `unknown-field`, koji očekuje 422 za napomenu s dodatnim poljem `declaration`. Potvrda izjave u ovom valu živi u pregledniku.
