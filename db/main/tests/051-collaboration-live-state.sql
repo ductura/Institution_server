@@ -100,6 +100,7 @@ SELECT bag_eq(
   $$ VALUES ('collaboration.create_comment(text,text,jsonb)'), ('collaboration.reply_comment(uuid,text)'),
             ('collaboration.resolve_thread(uuid)'), ('collaboration.reopen_thread(uuid)'),
             ('collaboration.list_comments(text)'), ('collaboration.delete_comment(uuid)'),
+            ('collaboration.create_general_comment(text,text)'),
             ('collaboration.publish_live_state(text,uuid,text)'),
             ('collaboration.read_live_state(text,text)'),
             ('collaboration.create_revision_request(text,jsonb,text,bigint)'),
