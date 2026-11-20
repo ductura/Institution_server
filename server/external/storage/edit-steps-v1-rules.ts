@@ -53,8 +53,11 @@ import { canonicalToTiptap, tiptapToCanonical, createEditorExtensions } from "./
 
 /** Why a step was refused. Internal: the replay reports only `step_failed`. */
 export class EditStepReplayRefusal extends Error {
-  constructor(readonly code: string) {
+  readonly code: string;
+
+  constructor(code: string) {
     super(`edit step refused: ${code}`);
+    this.code = code;
     this.name = "EditStepReplayRefusal";
   }
 }

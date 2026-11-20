@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import type { EvidenceSegmentDescriptorV2 } from "../../../server/domain/evidence/object-key.ts";
+import type { EvidenceSegmentDescriptorV2 } from "../../../server/application/ports/evidence-ingest.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 import {
   commitEvidenceSegment,
@@ -36,7 +36,7 @@ import { ackedRevision, isRetryable, outcomeToEvents, type QueuedRow } from "@/d
 import type { EvidenceSegmentTransaction, PendingTransaction } from "@/domain/sync/journal-types";
 import { createEvidenceTransport, evidenceVerifierFor } from "@/lib/sync/evidence-transport";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-8 step 4c / DAN-83 (docs/BACKEND.md 4.13 t. 3.2, 3.6, 4 and 7): the commit
 // transaction against the real database, with the persistent development key

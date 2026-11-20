@@ -18,6 +18,9 @@ import {
   createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
+  createSubmissionRouteFor,
+  createProcessSummaryRouteFor,
+  createStudentAssignmentWorkRouteFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -86,6 +89,24 @@ const SESSION_ROUTES = {
     path: "/api/v1/evidence/replay",
     body: () => ({ documentId: randomUUID(), from: 0 }),
     live: 404,
+  },
+  // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
+  "submission.submit.post": {
+    path: "/api/v1/submission",
+    body: () => ({ documentId: randomUUID(), revision: 1 }),
+    live: 404,
+  },
+  // SRV-23: a live session naming a work it may not read gets 404 and logs nothing.
+  "projection.process-summary.post": {
+    path: "/api/v1/process-summary",
+    body: () => ({ documentId: randomUUID() }),
+    live: 404,
+  },
+  "student.assignment-work.get": {
+    method: "GET",
+    path: "/api/v1/student/assignment-work",
+    body: () => undefined,
+    live: 200,
   },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
   // writes nothing, so the accounts of this file keep no settings row.
@@ -245,6 +266,13 @@ const SESSION_ROUTES = {
     body: () => ({ teacherId: randomUUID() }),
     live: 403,
   },
+  // Not of the course team nor an administrator: 403 from course_groups.
+  "institution.course-groups.get": {
+    method: "GET",
+    path: `/api/v1/institution/courses/${COURSE}/groups`,
+    body: () => undefined,
+    live: 403,
+  },
   // SRV-12: the administrator's course; not an administrator, so 403.
   "institution.admin-courses.post": {
     path: "/api/v1/institution/admin/courses",
@@ -266,6 +294,7 @@ const FACTORIES = [
   "createHealthRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
+  "createStudentAssignmentWorkRouteFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
@@ -277,6 +306,8 @@ const FACTORIES = [
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
+  "createSubmissionRouteFor",
+  "createProcessSummaryRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createInternalInstitutionRoutes",
@@ -288,6 +319,7 @@ const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
+  createStudentAssignmentWorkRouteFor(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
@@ -299,6 +331,8 @@ const MOUNTED = [
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+  createSubmissionRouteFor(databases.main, evidenceDeps),
+  createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
@@ -506,6 +540,9 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
+        id.startsWith("teacher.") ||
+        id.startsWith("projection.") ||
+        id === "student.assignment-work.get" ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;

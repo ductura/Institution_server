@@ -394,6 +394,21 @@ export const courseGroupTeachersPost = defineRoute({
   errors: [...MUTATION_ERRORS],
 });
 
+// UGOVORI-API (Daniel 19. 11. 2026. 22:58, c.7023243284; N-02/N-03 zs-2 and
+// zs-3, c.7020129951): the creation of an assignment names the course's groups
+// it is for, its rule on outside tools and the AI mode "samo sažimanje". Each is
+// optional, so a body without them keeps its meaning. The handler stays in its
+// own SRV task: until it lands the mounted route answers a body with any of
+// them 422 (its closed key list, server/institution/assignment-input.ts).
+const ASSIGNMENT_SETUP = {
+  /** zs-2: the course's seminar groups it is for, distinct; absent or empty is the whole course. */
+  groupIds: Type.Optional(Type.Array(Uuid, { maxItems: 20 })),
+  /** zs-3 "vanjski alati": the student may use tools outside Ductura (A-14); absent is false. */
+  externalToolsAllowed: Type.Optional(Type.Boolean()),
+  /** zs-3 "samo sažimanje": the AI assistant only summarises; absent is false. */
+  aiSummaryOnly: Type.Optional(Type.Boolean()),
+};
+
 export const courseAssignmentsPost = defineRoute({
   id: "institution.course-assignments.post",
   method: "POST",
@@ -401,15 +416,83 @@ export const courseAssignmentsPost = defineRoute({
   inventory: "app/api/institution/courses/[courseId]/assignments/route.ts",
   access: "course_teacher",
   summary:
-    "A teacher of the course creates and publishes an assignment (version 1) with its rules on AI tools (aiPolicy and aiPurposes, A-14): {requestKey} and the whole content, at most 90 000 bytes, sent as application/json (charset utf-8 only). requestKey is a UUID the client makes once per form, in the body so the generated client sends it. The same key with the same content answers the same id; with other content it is 409 conflict. A malformed course id or key, a tightening the course forbids, an AI purpose under a prohibited policy, wordMin above wordMax or an impossible date is 422. Publishing sends nothing to anyone (C-17): students see it in student.assignments.get.",
+    "A teacher of the course creates and publishes an assignment (version 1) with its rules on AI tools (aiPolicy and aiPurposes, A-14): {requestKey} and the whole content, at most 90 000 bytes, sent as application/json (charset utf-8 only). requestKey is a UUID the client makes once per form, in the body so the generated client sends it. The same key with the same content answers the same id; with other content it is 409 conflict. A malformed course id or key, a tightening the course forbids, an AI purpose under a prohibited policy, wordMin above wordMax or an impossible date is 422. Publishing sends nothing to anyone (C-17): students see it in student.assignments.get. Optional: groupIds, the course's seminar groups it is for (absent or empty: the whole course); externalToolsAllowed (outside tools, absent false); aiSummaryOnly (the AI assistant only summarises, absent false). A group of another course or one named twice, and aiSummaryOnly under a prohibited policy or with any aiPurposes, are 422.",
   request: {
     params: closed({ courseId: Uuid }),
     contentType: "application/json",
     maxBodyBytes: 90_000,
-    body: closed({ requestKey: Uuid, ...ASSIGNMENT_CONTENT }),
+    body: closed({ requestKey: Uuid, ...ASSIGNMENT_CONTENT, ...ASSIGNMENT_SETUP }),
   },
   responses: [{ status: 201, description: "created", body: closed({ id: LowerUuid }) }],
   errors: [...MUTATION_ERRORS, error(409, "conflict")],
+});
+
+// UGOVORI-API (Ductus#2028 c.7020597404, SRV-AV): the teacher's form for the
+// next version (N-02/N-03, WEB-19) starts from the current one and sends its
+// number as expectedVersion. No handler yet (CONTRACT_ONLY).
+/** An instant as Date.toISOString writes it (what the server stores, in UTC). */
+const IsoInstant = Type.String({
+  pattern: `^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z${END}`,
+});
+/** The reads of this area: the session, the id, the relation (C-23), the database. */
+const READ_ERRORS = [
+  error(401, "unauthorized"),
+  error(403, "forbidden"),
+  error(422, "invalid_input"),
+  error(404, "not_found"),
+  error(503, "unavailable"),
+] as const;
+
+export const assignmentGet = defineRoute({
+  id: "institution.assignment.get",
+  method: "GET",
+  path: "/api/v1/institution/assignments/{assignmentId}",
+  inventory: "app/api/institution/assignments/[assignmentId]/route.ts",
+  access: "course_teacher",
+  summary:
+    "The current version of an assignment, for a teacher of its course: its number and whole content as institution.assignment-versions.post takes it, instants as Date.toISOString writes them. groupIds, externalToolsAllowed and aiSummaryOnly are those of the creation, absent until the server stores them. Sec-Fetch-Site, when sent, other than same-origin is 403; a malformed id is 422; another course's assignment, an unknown one and any caller who is not a teacher of its course are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
+  request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "the current version",
+      body: closed({
+        assignmentId: LowerUuid,
+        courseId: LowerUuid,
+        versionNo: Type.Integer({ minimum: 1, maximum: MAX_VERSION }),
+        ...ASSIGNMENT_CONTENT,
+        opensAt: IsoInstant,
+        dueAt: IsoInstant,
+        groupIds: Type.Optional(Type.Array(LowerUuid, { maxItems: 20 })),
+        externalToolsAllowed: Type.Optional(Type.Boolean()),
+        aiSummaryOnly: Type.Optional(Type.Boolean()),
+      }),
+    },
+  ],
+  errors: [...READ_ERRORS],
+});
+
+// UGOVORI-API (Ductus#2028 c.7019844365, wweb18): whether the course has a
+// code after the page is reloaded. The code is shown once, when issued (A-8),
+// and only its hash is stored, so this read never carries it. A route of its
+// own: a GET on the enrolment-code file would change an inventory file.
+export const enrollmentCodeStateGet = defineRoute({
+  id: "institution.enrollment-code-state.get",
+  method: "GET",
+  path: "/api/v1/institution/courses/{courseId}/enrollment-code/state",
+  inventory: "app/api/institution/courses/[courseId]/enrollment-code/state/route.ts",
+  access: "course_teacher",
+  summary:
+    "Whether the course has an enrolment code, for a teacher of the course: current is the code last issued and not revoked, with its validUntil (Date.toISOString), or null when none was issued or it was revoked. A current code past validUntil is still current: the client shows it as expired. The code itself is never sent (A-8). Sec-Fetch-Site, when sent, other than same-origin is 403; a malformed id is 422; another institution's course, an unknown one and any caller who is not a teacher of the course are the same 404 (C-23).",
+  request: { params: closed({ courseId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "the state of the code",
+      body: closed({ current: Type.Union([closed({ validUntil: IsoInstant }), Type.Null()]) }),
+    },
+  ],
+  errors: [...READ_ERRORS],
 });
 
 export const institutionRoutes = [
@@ -426,4 +509,6 @@ export const institutionRoutes = [
   courseGroupsPost,
   courseGroupTeachersPost,
   courseAssignmentsPost,
+  assignmentGet,
+  enrollmentCodeStateGet,
 ] as const;

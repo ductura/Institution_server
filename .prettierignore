@@ -14,4 +14,10 @@ db/main/tests/
 # Golden vectors (S-0.19), byte for byte as in Ductus src/domain/forensics/golden-vectors
 # at d52a92c3: tests hash and parse the raw bytes, so a reformat changes the vectors.
 server/domain/forensics/golden-vectors/*.json
+# Written by tests/fixtures/docx-corpus/generate.ts and kept byte for byte as in
+# Ductus tests/fixtures/docx-corpus; tests/unit/docx-corpus.test.ts compares it
+# with a fresh run of the generator.
 tests/fixtures/docx-corpus/MANIFEST.json
+# Copied byte for byte from Ductus main docs/privacy (Ductus#2028 c.7019455316 (c));
+# tests/db/ductus/data-flow-inventory-catalog.integration.test.ts reads it.
+docs/privacy/08-inventar-tokova-podataka.md

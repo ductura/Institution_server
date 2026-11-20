@@ -1,13 +1,19 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
-import { NextRequest } from "next/server";
 import pg from "pg";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { POST } from "../../app/api/institution/enrollments/route";
-import { createEnrollmentPostHandler } from "@/server/institution/enrollment-route";
-import { withActor } from "../../../server/database/index.ts";
-import type { WithActor } from "../../../server/database/with-actor.ts";
+import { withActor, type WithActor } from "../../../server/database/index.ts";
+import {
+  createDatabases,
+  createLayers,
+  createStudentWriteRoutesFor,
+  startServer,
+  type Running,
+} from "../../../server/http/index.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
+
+import { expectHttpProblem } from "./http-problem.ts";
 
 // Synthetic people and courses only; the app route uses the provisioned
 // ductus_app_local login while fixture setup/cleanup uses the local admin.
@@ -31,20 +37,31 @@ let course = "";
 let expiredCourse = "";
 let code = "";
 let expiredCode = "";
-let oldRedirectUri: string | undefined;
+let server: Running;
 
-function request(
-  body: BodyInit = JSON.stringify({ code }),
+function enrollmentServer(actor: WithActor, expectedOrigin: string | null = origin) {
+  return startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin }),
+    databases: createDatabases(),
+    routes: createStudentWriteRoutesFor({ withActor: actor }),
+  });
+}
+
+function post(
+  port: number,
+  body: RequestInit["body"] = JSON.stringify({ code }),
   session = people.member.token,
   headers: Record<string, string> = {},
 ) {
-  return new NextRequest(`${origin}/api/institution/enrollments`, {
+  return fetch(`http://127.0.0.1:${port}/api/v1/student/enrollments`, {
     method: "POST",
     headers: {
       origin,
       "sec-fetch-site": "same-origin",
       "content-type": "application/json",
-      cookie: `__Host-ductus_session=${session}`,
+      cookie: `${SESSION_COOKIE_NAME}=${session}`,
       ...headers,
     },
     body,
@@ -52,13 +69,13 @@ function request(
 }
 
 async function reply(
-  body: BodyInit = JSON.stringify({ code }),
+  body: RequestInit["body"] = JSON.stringify({ code }),
   session = people.member.token,
   headers: Record<string, string> = {},
 ) {
-  const response = await POST(request(body, session, headers));
+  const response = await post(server.port, body, session, headers);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  return { status: response.status, json: await response.json() };
+  return response;
 }
 
 async function count(table: "course_member" | "enrollment_attempt", personId: string) {
@@ -69,8 +86,6 @@ async function count(table: "course_member" | "enrollment_attempt", personId: st
 }
 
 beforeAll(async () => {
-  oldRedirectUri = process.env.OIDC_REDIRECT_URI;
-  process.env.OIDC_REDIRECT_URI = `${origin}/auth/callback`;
   const suffix = randomBytes(5).toString("hex");
   await admin.query("INSERT INTO identity.institution (id, slug) VALUES ($1, $2), ($3, $4)", [
     institution,
@@ -137,11 +152,11 @@ beforeAll(async () => {
   await withActor(people.teacher.token, (tx) =>
     tx.query("SELECT institution.remove_student($1, $2)", [course, people.removed.id]),
   );
+  server = await enrollmentServer(withActor);
 });
 
 afterAll(async () => {
-  if (oldRedirectUri === undefined) delete process.env.OIDC_REDIRECT_URI;
-  else process.env.OIDC_REDIRECT_URI = oldRedirectUri;
+  await server?.close();
   const institutions = [institution, otherInstitution];
   await admin.query("DELETE FROM institution.enrollment_attempt WHERE user_id = ANY($1)", [
     peopleIds,
@@ -179,7 +194,7 @@ afterAll(async () => {
   await admin.end();
 });
 
-describe("POST /api/institution/enrollments over real withActor and database", () => {
+describe("POST /api/v1/student/enrollments over real withActor and database", () => {
   it("rejects absent or invalid sessions, origins, and malformed bodies before a write", async () => {
     expect((await reply(undefined, "bad")).status).toBe(401);
     expect((await reply(undefined, token())).status).toBe(401);
@@ -199,9 +214,8 @@ describe("POST /api/institution/enrollments over real withActor and database", (
       { "sec-fetch-site": "cross-site", host: "localhost:3000" },
     ];
     for (const headers of deniedHeaders) {
-      const held = request(JSON.stringify({ code }), people.member.token, headers);
-      expect((await POST(held)).status).toBe(403);
-      expect(held.bodyUsed).toBe(false);
+      // An invalid JSON body would be 400 if reached before the origin check.
+      expect((await reply("{", people.member.token, headers)).status).toBe(403);
     }
     expect((await reply("{", people.member.token)).status).toBe(400);
     expect((await reply(JSON.stringify({ code, userId: people.teacher.id }))).status).toBe(422);
@@ -215,51 +229,58 @@ describe("POST /api/institution/enrollments over real withActor and database", (
     expect(await count("enrollment_attempt", people.member.id)).toBe(0);
     expect(await count("course_member", people.member.id)).toBe(0);
 
-    const unavailable = createEnrollmentPostHandler({ getRedirectUri: () => undefined });
-    expect((await unavailable(request())).status).toBe(503);
-    const unknown = createEnrollmentPostHandler({
-      getRedirectUri: () => `${origin}/auth/callback`,
-      withActor: (async () => ({
-        rows: [{ outcome: "new_outcome", enrolled_course_id: null }],
-        rowCount: 1,
-      })) as WithActor,
+    const query = vi.fn().mockResolvedValue({
+      rows: [{ outcome: "new_outcome", enrolled_course_id: null }],
+      rowCount: 1,
     });
-    expect((await unknown(request())).status).toBe(503);
-    for (const [code, status] of [
-      ["ZD401", 401],
-      ["ZD403", 403],
-    ] as const) {
-      const denied = createEnrollmentPostHandler({
-        getRedirectUri: () => `${origin}/auth/callback`,
-        withActor: (async () => {
-          throw { code };
-        }) as WithActor,
-      });
-      expect((await denied(request())).status).toBe(status);
+    const withUnknownOutcome: WithActor = (_token, run) => run({ query });
+    const unconfigured = await enrollmentServer(withUnknownOutcome, null);
+    try {
+      expect((await post(unconfigured.port)).status).toBe(403);
+      expect(query).not.toHaveBeenCalled();
+    } finally {
+      await unconfigured.close();
+    }
+    const unknown = await enrollmentServer(withUnknownOutcome);
+    try {
+      await expectHttpProblem(await post(unknown.port), 503, "unavailable");
+      for (const [code, status, problem] of [
+        ["ZD401", 401, "unauthorized"],
+        ["ZD403", 403, "forbidden"],
+      ] as const) {
+        query.mockRejectedValueOnce({ code });
+        await expectHttpProblem(await post(unknown.port), status, problem);
+      }
+    } finally {
+      await unknown.close();
     }
   });
 
   it("normalizes a real code and leaves one membership after repeated HTTP calls", async () => {
     const normalized = code.toLowerCase().replaceAll("-", " - ");
-    expect(await reply(JSON.stringify({ code: normalized }))).toEqual({
-      status: 200,
-      json: { courseId: course },
-    });
-    expect(await reply()).toEqual({ status: 200, json: { courseId: course } });
+    const enrolled = await reply(JSON.stringify({ code: normalized }));
+    expect(enrolled.status).toBe(200);
+    expect(await enrolled.json()).toEqual({ courseId: course, outcome: "enrolled_no_assignment" });
+    const repeated = await reply();
+    expect(repeated.status).toBe(200);
+    expect(await repeated.json()).toEqual({ courseId: course, outcome: "already_enrolled" });
     expect(await count("course_member", people.member.id)).toBe(1);
     expect(await count("enrollment_attempt", people.member.id)).toBe(0);
   });
 
-  it("commits indistinguishable refusals and enforces the parallel rate limit across a fresh session", async () => {
-    const refused = { status: 422, json: { error: "refused" } };
-    expect(await reply(JSON.stringify({ code: "wrong-code" }), people.guesser.token)).toEqual(
-      refused,
+  it("counts invalid and expired codes and enforces the parallel rate limit across a fresh session", async () => {
+    await expectHttpProblem(
+      await reply(JSON.stringify({ code: "wrong-code" }), people.guesser.token),
+      422,
+      "invalid_code",
     );
-    expect(await reply(JSON.stringify({ code: expiredCode }), people.guesser.token)).toEqual(
-      refused,
+    await expectHttpProblem(
+      await reply(JSON.stringify({ code: expiredCode }), people.guesser.token),
+      422,
+      "expired_code",
     );
-    expect(await reply(undefined, people.outsider.token)).toEqual(refused);
-    expect(await reply(undefined, people.removed.token)).toEqual(refused);
+    await expectHttpProblem(await reply(undefined, people.outsider.token), 422, "invalid_code");
+    await expectHttpProblem(await reply(undefined, people.removed.token), 422, "invalid_code");
     expect(await count("enrollment_attempt", people.guesser.id)).toBe(2);
     expect(await count("enrollment_attempt", people.outsider.id)).toBe(1);
     expect(await count("enrollment_attempt", people.removed.id)).toBe(1);
@@ -279,10 +300,7 @@ describe("POST /api/institution/enrollments over real withActor and database", (
        VALUES ($1, $2, $3, now() + interval '1 hour')`,
       [createHash("sha256").update(newSession).digest(), people.guesser.id, institution],
     );
-    expect(await reply(undefined, newSession)).toEqual({
-      status: 429,
-      json: { error: "too_many_attempts" },
-    });
+    await expectHttpProblem(await reply(undefined, newSession), 429, "too_many_attempts");
     expect(await count("enrollment_attempt", people.guesser.id)).toBe(5);
     expect(await count("course_member", people.guesser.id)).toBe(0);
   });

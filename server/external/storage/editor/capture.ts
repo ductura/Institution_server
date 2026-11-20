@@ -96,8 +96,11 @@ export type SegmentContext = {
 export type CaptureFailure = "gap" | "unsupported_step" | "block_identity" | "too_large";
 
 export class CaptureError extends Error {
-  constructor(readonly code: CaptureFailure) {
+  readonly code: CaptureFailure;
+
+  constructor(code: CaptureFailure) {
     super(`evidence capture: ${code}`);
+    this.code = code;
     this.name = "CaptureError";
   }
 }
@@ -243,7 +246,11 @@ export class EvidenceRecorder {
   private last: CapturedChange | null = null;
   private failure: CaptureFailure | null = null;
 
-  constructor(private readonly quietMs = EVENT_QUIET_MS) {}
+  private readonly quietMs: number;
+
+  constructor(quietMs = EVENT_QUIET_MS) {
+    this.quietMs = quietMs;
+  }
 
   /**
    * False once a gap was seen or an event could not be built: nothing after
@@ -365,11 +372,13 @@ export class EvidenceRecorder {
 
 /** The failure of the event at `index` of a segment being built. */
 class EventFailure extends Error {
-  constructor(
-    readonly index: number,
-    readonly code: CaptureFailure,
-  ) {
+  readonly index: number;
+  readonly code: CaptureFailure;
+
+  constructor(index: number, code: CaptureFailure) {
     super(`evidence capture: event ${index}: ${code}`);
+    this.index = index;
+    this.code = code;
   }
 }
 

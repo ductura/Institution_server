@@ -1,5 +1,7 @@
 import { defineConfig } from "vitest/config";
 
+import { PENDING_TESTS } from "./server/pending-tests.ts";
+
 // Five projects: unit, property and integration told apart by file suffix,
 // database by its folder (tests/db), integration-pg by *.pg.integration.test.ts. Tests live only in server/,
 // packages/, test-support/, scripts/, infra/, db/, locales/ (and lint rule tests in tests/) with a .test.ts suffix; other
@@ -19,52 +21,6 @@ const DATABASE = "tests/db/**/*.integration.test.ts";
 // `pnpm test:integration:pg`, run in CI by `pnpm test:database`.
 const PG = `${DIRS}/**/*.pg.integration.test.ts`;
 
-// Not ported yet (ZEL-S7, Ductus#2028 c.7027096433): tests of Ductus-only code
-// (Next.js app/api/**, next/server) or of modules that wait for SRV-10/SRV-12.
-// The same list is the `exclude` of tsconfig.json, with the reasons.
-const NOT_PORTED = [
-  "tests/unit/db-boundary-forms.test.ts",
-  "tests/unit/pg-import-boundary.hardening.test.ts",
-  "tests/unit/pg-import-boundary.test.ts",
-  "tests/unit/server-route-inventory.test.ts",
-  "tests/unit/rpc-http-inventory.test.ts",
-  "tests/unit/problem-report-routes.test.ts",
-  "tests/unit/shutdown-process.test.ts",
-  "tests/unit/session-guc-scope.test.ts",
-  "tests/unit/auth/session-activity-routes.test.ts",
-  "tests/unit/auth/open-session-boundary.test.ts",
-  "server/institution/acknowledgment-route.test.ts",
-  "server/institution/assignment-version-route.test.ts",
-  "server/institution/create-assignment.test.ts",
-  "server/institution/create-course.test.ts",
-  "server/institution/enrollment-code-revocation-route.test.ts",
-  "server/institution/enrollment-code-route.test.ts",
-  "server/institution/mutation-route.test.ts",
-  "server/institution/student-removal-route.test.ts",
-  "server/institution/student-return-route.test.ts",
-  "server/institution/teacher-role-confirmation-route.test.ts",
-  "server/institution/teacher-role-revocation-route.test.ts",
-  "server/institution/work-language-route.test.ts",
-  "server/collaboration/revision-requests.test.ts",
-  "server/profile/interface-locale-route.test.ts",
-  "server/config/env.test.ts",
-  "server/http/public-status.test.ts",
-  "server/privacy/my-access-log-pages.test.ts",
-  "server/teacher/fast-path.test.ts",
-  "tests/unit/auth/build-mode.test.ts",
-  "tests/unit/auth/fake-oidc-claims.test.ts",
-  "tests/unit/infra/fake-oidc-accounts.test.ts",
-  "tests/unit/auth/flow-logout-all.test.ts",
-  "tests/unit/auth/flow-logout.test.ts",
-  "tests/unit/auth/routes.test.ts",
-  "tests/unit/health-route.test.ts",
-  "tests/unit/instrumentation.test.ts",
-  "tests/unit/interface-locale-routes.test.ts",
-  "tests/unit/ready-route-alarms.test.ts",
-  "tests/unit/ready-route.test.ts",
-  "tests/unit/ready.test.ts",
-];
-
 export default defineConfig({
   test: {
     projects: [
@@ -72,7 +28,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: [`${DIRS}/**/*.test.ts`],
-          exclude: [PROPERTY, INTEGRATION, ...NOT_PORTED],
+          exclude: [PROPERTY, INTEGRATION, ...PENDING_TESTS],
           environment: "node",
         },
       },

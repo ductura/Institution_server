@@ -110,13 +110,23 @@ SELECT is(pg_temp.run('vesna', $$ institution.assign_group_student({gb}, {tomo})
 SELECT is(pg_temp.run('petra', $$ institution.assign_group_student({gk3}, {tomo}) $$), 'ok',
   'T052: Petra puts Tomo into her group of K3');
 
--- T054: only a teacher of the course manages its team. A group that does
--- not exist reads as a group of another course.
+-- T054: a teacher of the course manages its team. By the owner decision
+-- "A opcija" (SRV-15, Ductus#2028 c.7016215710) a collaborator of the course
+-- team (Marko, who teaches group A) also adds a group, and nothing else; an
+-- administrator of the course's institution manages the groups (T059). A
+-- group that does not exist reads as a group of another course.
 SELECT is(pg_temp.ask(v.actor, format('SELECT institution.create_seminar_group({k1}, %L)::text', 'Grupa C')),
           v.expected, 'T054: create_seminar_group on K1 as ' || v.actor)
-FROM (VALUES ('ana', 'ZD403: forbidden'), ('boris', 'ZD403: forbidden'), ('marko', 'ZD403: forbidden'),
-             ('iva', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'), ('nina', 'ZD403: forbidden'),
+FROM (VALUES ('ana', 'ZD403: forbidden'), ('boris', 'ZD403: forbidden'), ('dora', 'ZD403: forbidden'),
+             ('petra', 'ZD403: forbidden'), ('lea', 'ZD403: forbidden'), ('nina', 'ZD403: forbidden'),
              ('anon', 'ZD401: not authenticated'), ('expired', 'ZD401: not authenticated')) AS v (actor, expected);
+INSERT INTO ref VALUES ('gc', pg_temp.ask('marko', $$ SELECT institution.create_seminar_group({k1}, 'Grupa C') $$));
+SELECT is(
+  (SELECT p.name FROM institution.seminar_group g JOIN person p ON p.id = g.created_by
+    WHERE g.id::text = (SELECT val FROM ref WHERE name = 'gc') AND g.course_id = pg_temp.id('k1')),
+  'marko', 'T054: Marko, a collaborator of the course team, adds group C of K1');
+SELECT is(pg_temp.ask('marko', $$ SELECT institution.create_seminar_group({k3}, 'Grupa C')::text $$), 'ZD403: forbidden',
+  'T054: a collaborator adds no group to a course of another institution');
 SELECT is(pg_temp.run(v.actor, v.call), v.expected, 'T054: ' || v.note)
 FROM (VALUES
   ('ana', $$ institution.set_course_holder({k1}, {vesna}) $$, 'ZD403: forbidden', 'a student cannot name the holder'),
@@ -161,7 +171,7 @@ SELECT is(pg_temp.ask_as('ductus_worker', 'vesna', $$ SELECT 'ok' FROM instituti
 -- T056: the teacher of the course reads its team; anyone else the own rows.
 SELECT is(pg_temp.team(v.actor), v.expected, 'T056: ' || v.actor || ' ' || v.note)
 FROM (VALUES
-  (1, 'vesna', 'holders=1 groups=2 teachers=2 members=2', 'reads the holder, both groups and every place in K1, nothing of K3'),
+  (1, 'vesna', 'holders=1 groups=3 teachers=2 members=2', 'reads the holder, the three groups and every place in K1, nothing of K3'),
   (2, 'marko', 'holders=0 groups=0 teachers=1 members=0', 'reads only the own place as group teacher, not the group'),
   (3, 'ana', 'holders=0 groups=0 teachers=0 members=1', 'reads only the own place'),
   (4, 'dora', 'holders=0 groups=0 teachers=0 members=1', 'removed from K1, still reads the own place'),
@@ -173,7 +183,51 @@ FROM (VALUES
 ) AS v (n, actor, expected, note)
 ORDER BY v.n;
 SELECT is(pg_temp.ask('vesna', $$ SELECT string_agg(name, ', ' ORDER BY name) FROM institution.seminar_group $$),
-  'Grupa A, Grupa B', 'T056: Vesna reads the names of the groups of K1');
+  'Grupa A, Grupa B, Grupa C', 'T056: Vesna reads the names of the groups of K1');
+
+-- T060: institution.course_groups reads the groups of a course for its team
+-- (teacher and collaborator) and an administrator of its institution: each
+-- group with its open teachers and the number of its open students who are
+-- still in the course (Dora was removed from K1). No student is named.
+-- Everyone else is ZD403, as for a course that does not exist.
+INSERT INTO identity.person_name (user_id, institution_id, given_name, family_name)
+VALUES (pg_temp.id('marko'), pg_temp.id('fak_a'), 'Marko', 'Izmišljeni');
+CREATE FUNCTION pg_temp.groups(p_actor text, p_course text) RETURNS text
+LANGUAGE sql AS $$
+  SELECT pg_temp.ask(p_actor, format($q$
+    SELECT coalesce(string_agg(g.name || ':' || g.students || ':' || coalesce((
+             SELECT string_agg(p.name, ',' ORDER BY p.name)
+               FROM jsonb_array_elements(g.teachers) t JOIN person p ON p.id = (t->>'id')::uuid), '-'),
+           ' ' ORDER BY g.name), 'none')
+      FROM institution.course_groups({%s}) g $q$, p_course))
+$$;
+SELECT is(pg_temp.groups(v.actor, v.course), v.expected, 'T060: ' || v.actor || ' ' || v.note)
+FROM (VALUES
+  (1, 'vesna', 'k1', 'Grupa A:1:marko Grupa B:0:vesna Grupa C:0:-', 'the teacher reads the groups of K1'),
+  (2, 'marko', 'k1', 'Grupa A:1:marko Grupa B:0:vesna Grupa C:0:-', 'a collaborator reads them as well'),
+  (3, 'iva', 'k1', 'Grupa A:1:marko Grupa B:0:vesna Grupa C:0:-', 'the administrator of fak-a reads them as well'),
+  (4, 'petra', 'k3', 'Grupa A:1:-', 'reads her own group of K3'),
+  (5, 'marko', 'k2', 'none', 'reads no group of his course without groups'),
+  (6, 'ana', 'k1', 'ZD403: forbidden', 'a student of K1 is refused'),
+  (7, 'dora', 'k1', 'ZD403: forbidden', 'a student removed from K1 is refused'),
+  (8, 'boris', 'k1', 'ZD403: forbidden', 'a student outside K1 is refused'),
+  (9, 'nina', 'k1', 'ZD403: forbidden', 'an unconfirmed teacher is refused'),
+  (10, 'petra', 'k1', 'ZD403: forbidden', 'a teacher of another institution is refused'),
+  (11, 'lea', 'k1', 'ZD403: forbidden', 'an administrator of another institution is refused'),
+  (12, 'iva', 'k3', 'ZD403: forbidden', 'an administrator reads no course of another institution'),
+  (13, 'vesna', 'nobody', 'ZD403: forbidden', 'a course that does not exist reads as forbidden'),
+  (14, 'anon', 'k1', 'ZD401: not authenticated', 'no session is refused')
+) AS v (n, actor, course, expected, note)
+ORDER BY v.n;
+SELECT is(pg_temp.ask('vesna', $$
+  SELECT string_agg(coalesce(t->>'given_name', 'null') || '/' || coalesce(t->>'family_name', 'null'), ' '
+                    ORDER BY t->>'given_name')
+    FROM institution.course_groups({k1}) g, jsonb_array_elements(g.teachers) t $$),
+  'Marko/Izmišljeni null/null', 'T060: a teacher carries the given and family name, null while there is none');
+SELECT is(pg_temp.ask('vesna', $$
+  SELECT string_agg(DISTINCT k, ',' ORDER BY k)
+    FROM institution.course_groups({k1}) g, jsonb_array_elements(g.teachers) t, jsonb_object_keys(t) k $$),
+  'family_name,given_name,id', 'T060: a teacher carries only the id and the two names');
 
 -- T057: ending a place keeps the row; the student may then go elsewhere.
 SELECT is(pg_temp.run('vesna', $$ institution.end_group_assignment({ga}, {ana}) $$), 'ok', 'T057: Vesna ends Ana''s place in A');
@@ -185,6 +239,9 @@ SELECT is(
    FROM institution.seminar_group_member m WHERE m.user_id = pg_temp.id('ana')),
   'A(ended) B', 'T057: both places of Ana stay, the first one ended');
 SELECT is(pg_temp.run('vesna', $$ institution.end_group_assignment({ga}, {marko}) $$), 'ok', 'T057: Vesna ends Marko''s place');
+SELECT is(pg_temp.ask('marko', $$ SELECT institution.create_seminar_group({k1}, 'Grupa E')::text $$), 'ZD403: forbidden',
+  'T057: with his place ended Marko is no collaborator, and adds no group');
+SELECT is(pg_temp.groups('marko', 'k1'), 'ZD403: forbidden', 'T057: nor reads the groups');
 SELECT is(pg_temp.ask('marko', $$ SELECT count(*) || '/' || count(*) FILTER (WHERE valid_to IS NULL)
                                   FROM institution.seminar_group_teacher $$),
   '1/0', 'T057: Marko still reads his ended place, and none open');
@@ -232,6 +289,53 @@ SELECT is(pg_temp.run('vesna', $$ institution.end_group_assignment({ga}, {marko}
 SELECT is((SELECT count(*)::integer FROM institution.seminar_group_teacher
             WHERE group_id = pg_temp.id('ga') AND user_id = pg_temp.id('marko') AND valid_to IS NULL), 0,
   'T058: and none of Marko''s places stays open');
+
+-- T059: by the owner decision "A opcija" (SRV-15, Ductus#2028 c.7016215710)
+-- an administrator of the course's institution adds a group, a teacher to it
+-- and ends a place. Placing a student stays with the teacher of the course.
+-- An administrator of another institution, and Iva on a course of another
+-- institution, are refused as anyone else.
+INSERT INTO ref VALUES ('gd', pg_temp.ask('iva', $$ SELECT institution.create_seminar_group({k1}, 'Grupa D') $$));
+SELECT is(
+  (SELECT p.name FROM institution.seminar_group g JOIN person p ON p.id = g.created_by
+    WHERE g.id::text = (SELECT val FROM ref WHERE name = 'gd') AND g.course_id = pg_temp.id('k1')),
+  'iva', 'T059: Iva adds group D of K1');
+SELECT is(pg_temp.ask('iva', $$ SELECT institution.assign_group_teacher({gd}, {marko})::text $$), 'true',
+  'T059: Iva makes Marko a teacher of group D, a new place');
+SELECT is(pg_temp.ask('iva', $$ SELECT institution.assign_group_teacher({gd}, {marko})::text $$), 'false',
+  'T059: the same again opens no place');
+SELECT is(
+  (SELECT string_agg(p.name, ' ') FROM institution.seminar_group_teacher t JOIN person p ON p.id = t.assigned_by
+    WHERE t.group_id = pg_temp.id('gd')),
+  'iva', 'T059: one place, which names Iva as who opened it');
+SELECT is(pg_temp.ask('iva', $$ SELECT institution.assign_group_teacher({gd}, {nina})::text $$), 'ZD422: invalid input',
+  'T059: an unconfirmed teacher is refused to her too');
+SELECT is(pg_temp.run('iva', $$ institution.assign_group_student({gd}, {ana}) $$), 'ZD403: forbidden',
+  'T059: she does not place a student');
+SELECT is(pg_temp.run(v.actor, v.call), v.expected, 'T059: ' || v.note)
+FROM (VALUES
+  ('lea', $$ institution.create_seminar_group({k1}, 'Grupa F') $$, 'ZD403: forbidden', 'Lea adds no group to a course of fak-a'),
+  ('lea', $$ institution.assign_group_teacher({gd}, {marko}) $$, 'ZD403: forbidden', 'Lea adds no teacher to a group of fak-a'),
+  ('lea', $$ institution.end_group_assignment({gd}, {marko}) $$, 'ZD403: forbidden', 'Lea ends no place in a group of fak-a'),
+  ('iva', $$ institution.create_seminar_group({k3}, 'Grupa F') $$, 'ZD403: forbidden', 'Iva adds no group to a course of fak-b'),
+  ('iva', $$ institution.assign_group_teacher({gk3}, {petra}) $$, 'ZD403: forbidden', 'Iva adds no teacher to a group of fak-b'),
+  ('iva', $$ institution.end_group_assignment({gk3}, {tomo}) $$, 'ZD403: forbidden', 'Iva ends no place in a group of fak-b'),
+  ('iva', $$ institution.end_group_assignment({nobody}, {marko}) $$, 'ZD403: forbidden', 'a group that does not exist reads as forbidden')
+) AS v (actor, call, expected, note);
+SELECT is(pg_temp.groups('vesna', 'k1'), 'Grupa A:0:- Grupa B:1:vesna Grupa C:0:- Grupa D:0:marko',
+  'T059: Vesna reads group D and its teacher');
+SELECT is(pg_temp.run('iva', $$ institution.end_group_assignment({gd}, {marko}) $$), 'ok', 'T059: Iva ends Marko''s place in D');
+SELECT is((SELECT count(*)::integer FROM institution.seminar_group_teacher
+            WHERE group_id = pg_temp.id('gd') AND valid_to IS NULL), 0, 'T059: and none stays open');
+
+-- T060 (end): a place outlives a revoked teacher role, but the read lists
+-- only teachers who still hold it.
+SELECT is(pg_temp.ask('iva', $$ SELECT institution.assign_group_teacher({gd}, {marko})::text $$), 'true',
+  'T060: Iva makes Marko a teacher of group D again');
+SELECT is(pg_temp.ask('iva', $$ SELECT 'ok' FROM institution.revoke_teacher_role({marko}) $$), 'ok',
+  'T060: Iva revokes Marko''s teacher role');
+SELECT is(pg_temp.groups('vesna', 'k1'), 'Grupa A:0:- Grupa B:1:vesna Grupa C:0:- Grupa D:0:-',
+  'T060: Marko is no longer listed in group D');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -206,14 +206,14 @@ describe("a connection that the server ends or cuts short", () => {
     logged.mockRestore();
   });
 
-  /** Nothing unhandled, and the log holds the error code and nothing else. */
-  function expectQuietFailure(code: string) {
+  /** The registry pool identifies itself by its application name. */
+  function expectQuietFailure(code: string, label?: string) {
+    const prefix = label === undefined ? [] : [label];
     expect(unhandled).toEqual([]);
-    expect(logged.mock.calls).toContainEqual(["database connection failed", code]);
+    expect(logged.mock.calls).toContainEqual(["database connection failed", ...prefix, code]);
     for (const call of logged.mock.calls) {
-      expect(call).toHaveLength(2);
-      expect(call[0]).toBe("database connection failed");
-      expect(call[1]).toMatch(/^([0-9A-Z]{5}|Error)$/);
+      expect(call).toEqual(["database connection failed", ...prefix, expect.any(String)]);
+      expect(call.at(-1)).toMatch(/^([0-9A-Z]{5}|Error)$/);
     }
   }
 
@@ -288,7 +288,7 @@ describe("a connection that the server ends or cuts short", () => {
         return "done";
       }),
     ).rejects.toThrow(NOT_QUERYABLE);
-    expectQuietFailure("57P01");
+    expectQuietFailure("57P01", "ductura-main");
     await expectHealthy(withActor, [idlePid]);
 
     // The same while a statement runs: the statement carries the error.

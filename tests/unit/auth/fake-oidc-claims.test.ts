@@ -7,7 +7,7 @@ import {
   DEMO_HOME_ORG,
   DEMO_HOME_ORG_B,
   demoAccountClaims,
-} from "../../../infra/fake-oidc/accounts.mjs";
+} from "@ductura/test-fakes/oidc";
 
 // DAN-483: what the fake provider (local and CI only, D-09) releases goes
 // through the same claim parsing as an AAI@EduHr login. Every account here

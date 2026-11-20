@@ -3,21 +3,20 @@ import { randomBytes } from "node:crypto";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import type { JobBody, JobDefinition } from "../../../server/domain/jobs/job-body.ts";
-import type { AttemptFence } from "../../../server/database/queue/attempt-fence-core.ts";
 import {
   openJobQueue,
+  type AttemptFence,
   type JobHandler,
   type JobQueue,
   type JobQueueSettings,
 } from "../../../server/database/queue/job-queue.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 import { holdWorkerPresence } from "./worker-presence.ts";
 
 // DAN-517, attack plan #1826: the worker's side of the queue against the real
@@ -162,10 +161,10 @@ function startup(connectionString: string, setting: string): string {
   return target.toString();
 }
 
-// A real worker process: plain node, the adapter as it is in src/, the real
+// A real worker process: plain node, the database queue adapter and the real
 // fence. Its settings travel in the environment and are never printed.
 const work = mkdtempSync(path.join(tmpdir(), "ductus-jobq-"));
-const SRC = `${pathToFileURL(path.resolve(__dirname, "../../src")).href}/`;
+const QUEUE = new URL("../../../server/database/queue/", import.meta.url);
 type Ending = { code: number | null; signal: NodeJS.Signals | null };
 type WorkerProcess = {
   readonly started: Promise<void>;
@@ -183,13 +182,18 @@ function spawnWorker(
   const file = path.join(work, `${def.name}.mjs`);
   writeFileSync(
     file,
-    `import { registerHooks } from "node:module";
-const SRC = ${JSON.stringify(SRC)};
-registerHooks({ resolve: (specifier, context, next) => next(specifier.startsWith("@/") ? SRC + specifier.slice(2) + ".ts" : specifier, context) });
-const { openJobQueue } = await import(SRC + "server/db/job-queue.ts");
+    `import { Worker } from "node:worker_threads";
+import { openJobQueue } from ${JSON.stringify(new URL("job-queue.ts", QUEUE).href)};
+import { createDeadlines } from ${JSON.stringify(new URL("attempt-fence-core.ts", QUEUE).href)};
+const cell = new BigInt64Array(new SharedArrayBuffer(8));
+const watch = new Worker(new URL(${JSON.stringify(new URL("attempt-fence-watch.ts", QUEUE).href)}), { workerData: cell.buffer });
+const { arm } = createDeadlines(cell, process.hrtime.bigint, () => {
+  for (;;) Atomics.wait(cell, 0, Atomics.load(cell, 0));
+});
+const fence = () => ({ arm, close: async () => { await watch.terminate(); } });
 const { name, ...settings } = JSON.parse(process.env.DUCTUS_JOBQ_CASE);
 const later = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const queue = await openJobQueue(settings);
+const queue = await openJobQueue({ ...settings, fence });
 const outcome = await queue.runOnce(name, async () => { console.log("started"); ${handlerBody} });
 console.log("returned " + outcome.status);
 await queue.stop();
@@ -248,7 +252,7 @@ beforeAll(async () => {
       "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ' || $3::text, $1::text, $2::text) AS ddl",
       [role(login), password, LOGINS[login].join(", ")],
     );
-    await admin.query(ddl.rows[0].ddl);
+    await admin.query(ddl.rows[0]!.ddl);
   }
   relations = (await admin.query<{ name: string }>(RELATIONS_SQL)).rows.map((row) => row.name);
 }, 180_000);
@@ -408,7 +412,7 @@ describe("job queue: one job, one attempt at a time", () => {
         signal.addEventListener("abort", () => reject(new Error("aborted"))),
       );
     expect(await queue.runOnce(def.name, stopped)).toEqual({ status: "failed", code: "timeout" });
-    expect((await jobs(def.name))[0].output).toEqual({ code: "timeout" });
+    expect((await jobs(def.name))[0]!.output).toEqual({ code: "timeout" });
   });
 
   // The thread is held right after the job was asked for: the take lasts at least that long.
@@ -475,6 +479,7 @@ describe("job queue: one job, one attempt at a time", () => {
     for (const k of subjects) expect(await a.enqueue(def.name, body(k))).toBe("queued");
     const runs = new Map<string, number>();
     const handler: JobHandler = async (job) => {
+      if (job.packageId === undefined) throw new Error("Expected a job for a package");
       runs.set(job.packageId, (runs.get(job.packageId) ?? 0) + 1);
       await new Promise((resolve) => setTimeout(resolve, 5));
       return { ok: true };
@@ -533,7 +538,7 @@ describe("job queue: one job, one attempt at a time", () => {
       .poll(
         async () => {
           await b.sweep(def.name);
-          return (await jobs(def.name))[0].state;
+          return (await jobs(def.name))[0]!.state;
         },
         { timeout: 20_000, interval: 250 },
       )
@@ -576,7 +581,7 @@ describe("job queue: one job, one attempt at a time", () => {
       .poll(
         async () => {
           await queue.sweep(def.name);
-          return (await jobs(def.name))[0].state;
+          return (await jobs(def.name))[0]!.state;
         },
         { timeout: 20_000, interval: 250 },
       )
@@ -623,7 +628,7 @@ describe("job queue: one job, one attempt at a time", () => {
           .poll(
             async () => {
               await queue.sweep(def.name).catch((error: unknown) => cutOff.push(error));
-              return (await jobs(def.name))[0].state;
+              return (await jobs(def.name))[0]!.state;
             },
             { timeout: 20_000, interval: 250 },
           )
@@ -845,7 +850,7 @@ describe("job queue: one job, one attempt at a time", () => {
               await new Promise((resolve) => setImmediate(resolve));
               alive.push(child.ending() === undefined);
               await b.sweep(def.name);
-              return (await jobs(def.name))[0].state;
+              return (await jobs(def.name))[0]!.state;
             },
             { timeout: 20_000, interval: 100 },
           )

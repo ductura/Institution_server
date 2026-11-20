@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 
+import { createReceiptSigner, type ReceiptSigner, type SignedReceipt } from "./receipt-signer.ts";
+
 // The in-memory state of the dev fake server and its invented starting data.
 // People, courses, codes and the assignment are the values of SRV-01
 // (db/main/local/seed.sql and db/main/local/lazni-oidc-racuni.json on
@@ -73,6 +75,10 @@ export type AssignmentContent = {
   importAllowed: boolean;
   wordMin: number | null;
   wordMax: number | null;
+  /** UGOVORI-API, set only at creation: the course's groups it is for (lowercase). */
+  groupIds?: string[];
+  externalToolsAllowed?: boolean;
+  aiSummaryOnly?: boolean;
 };
 
 export type Assignment = {
@@ -104,8 +110,8 @@ export type Work = {
   /** Segment texts in chain order (decoded from the commits). */
   segments: string[];
   lastSequenceTo: number;
-  /** Client transaction id -> the revision it made. */
-  transactions: Map<string, number>;
+  /** Client transaction id -> the original acknowledgement and snapshot hash. */
+  transactions: Map<string, { receipt: SignedReceipt; documentHash: string }>;
   /** The live state (live.document.put) and its token, or null. */
   live: { readonly json: string; readonly token: string } | null;
 };
@@ -181,6 +187,7 @@ export type SettingValue = {
 };
 
 export type State = {
+  readonly receiptSigner: ReceiptSigner;
   accounts: Account[];
   /** Session token -> account id. */
   sessions: Map<string, string>;
@@ -260,8 +267,9 @@ function account(
 }
 
 /** A fresh state with the starting data; each call is independent. */
-export function createState(): State {
+export function createState(receiptSigner = createReceiptSigner()): State {
   return {
+    receiptSigner,
     accounts: [
       account("student", IDS.student, "Lucija", "Đaković", ["student"]),
       account("student-2", IDS.student2, "Marko", "Ljubić", ["student"]),

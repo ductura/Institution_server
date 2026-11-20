@@ -14,7 +14,7 @@ import { INTERFACE_LOCALES } from "@/lib/i18n/locale";
 // setting lost or a language the screen cannot show.
 const ROOT = join(import.meta.dirname, "..", "..");
 const MIGRATION = readFileSync(
-  join(ROOT, "db/migrations/20261112184500_interface_locale.sql"),
+  join(ROOT, "db/main/migrations/20261112184500_interface_locale.sql"),
   "utf8",
 );
 const UP = MIGRATION.slice(0, MIGRATION.indexOf("-- migrate:down"));

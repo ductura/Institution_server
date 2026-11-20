@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -35,8 +35,11 @@ describe("integration tests that create or drop a database", () => {
       expect(source).toMatch(/const ADMIN_URL = localAdminUrl\(process\.env\.DATABASE_URL\);/);
       return;
     }
-    expect(source).toMatch(
-      /import \{[^}]*\brequireLoopbackDatabaseUrl\b[^}]*\} from "\.\/loopback-database-url\.ts";/,
+    const guardImport = source.match(
+      /import \{[^}]*\brequireLoopbackDatabaseUrl\b[^}]*\} from "(\.{1,2}\/[^"]+)";/,
+    )?.[1];
+    expect(guardImport && resolve(DIR, dirname(name), guardImport)).toBe(
+      join(DIR, "loopback-database-url.ts"),
     );
     // The guard runs at load time, before any pool or client exists.
     expect(source).toMatch(GUARD);
