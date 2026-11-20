@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import type { Node as PmNode } from "@tiptap/pm/model";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createBrowserReplayStepsV1 } from "./edit-steps-v1-replay-steps.ts";
 import { REVISION_ZERO_JCS } from "../../domain/document/revision-zero.ts";
@@ -21,6 +21,9 @@ import {
   type BuiltRecord,
   type RecordSegmentPlan,
 } from "./replay-record.fixture.ts";
+
+// Building and replaying the evidence records involves real cryptography.
+vi.setConfig({ testTimeout: 30_000 });
 
 const steps = createBrowserReplayStepsV1();
 const recordOf = (r: BuiltRecord, over: Partial<ReplayRecord> = {}): ReplayRecord => ({

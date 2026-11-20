@@ -48,14 +48,12 @@ Pristup proizlazi iz odnosa u stanju (nastavnik kolegija, student u kolegiju), n
 - `?__lazni_kasnjenje=<ms>` ili `x-lazni-kasnjenje: <ms>`: odgovor kasni toliko milisekundi (najviše 30 000).
 - Neispravan ulaz (tip sadržaja, JSON, parametri, upit, tijelo prema `VALIDATORS`) vraća grešku rute iz kataloga, kao pravi server. Ruta koja može vratiti 401 bez sesije vraća 401.
 
-## Dokazi i predaja: ništa nije potpisano
+## Potvrde dokaza u lokalnom razvoju
 
-Lažni server ne potpisuje ništa i ne čita ni ne kopira pravi ključ.
-
-- Svaka potvrda (`evidence.commit.post`, `submission.submit.post`) nosi `keyId` **`lazni-kljuc-nepotpisano`** (`FAKE_KEY_ID`) i potpis od 64 nulta bajta (`FAKE_SIGNATURE`), koji ne prolazi ni pod jednim ključem.
-- `evidence.open.post` u `receiptKeys` daje javni ključ istog imena čija je privatna polovica bačena pri pokretanju. Pravi klijent zato nijednu potvrdu lažnog servera ne može prihvatiti kao potpisanu; test to provjerava stvarnom provjerom potpisa.
-- Uz `ductus-protocol: 2` commit vraća 202 `pending_signature` i nikad potpisanu potvrdu.
-- Odsječci se čuvaju kako su poslani, bez provjere lanca; `stale_base`, `stale_revision` i `already_requested` vraćaju stvarno stanje rada.
+- Pri pokretanju server generira Ed25519 ključ za izmišljene podatke. Privatni ključ ostaje u memoriji do kraja procesa, a `evidence.open.post` objavljuje javni ključ u `receiptKeys`.
+- `evidence.commit.post` potpisuje potvrdu prihvaćenog odsječka. Protokol 1 vraća potvrdu odmah. Protokol 2 prvo vraća 202 `pending_signature`, a ponovljeni zahtjev vraća potpisanu potvrdu iste revizije.
+- U editoru otvori izmišljeni rad i upiši tekst. Nakon provjere potvrde stanje prelazi u „Spremljeno na poslužitelju”.
+- Potvrda predaje (`submission.submit.post`) i dalje sadrži ogledni nulti potpis.
 
 ## Uživo, komentari i zahtjevi za doradu
 
