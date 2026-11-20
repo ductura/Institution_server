@@ -67,6 +67,10 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  "app/api/process-summary/details/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",
+  },
   "app/api/student/assignments/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@078c780:src/components/student/my-assignments-read.ts",

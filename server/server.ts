@@ -42,6 +42,7 @@ import {
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
+  createProcessSummaryDetailsRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   evidenceIngestDependencies,
@@ -176,6 +177,7 @@ async function main(): Promise<void> {
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
+      createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, process.env),
       // SRV-22: the student's own submission state and word range of one
       // assignment, the receipt byte for byte as the submission bound it.
       ...createStudentSubmissionRoutesFor(databases.main),
