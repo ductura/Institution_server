@@ -254,6 +254,13 @@ export {
   type WorkSources,
 } from "./work-sources/index.ts";
 export {
+  createSourceProofs,
+  isSourceProofJpeg,
+  SOURCE_PROOF_MAX_BYTES,
+  type SourceProof,
+  type SourceProofs,
+} from "./source-proofs/index.ts";
+export {
   createWorkAttachments,
   isWorkAttachmentMediaType,
   WORK_ATTACHMENT_MAX_BYTES,

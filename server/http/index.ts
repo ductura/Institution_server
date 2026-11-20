@@ -3,6 +3,7 @@
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
+export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export {

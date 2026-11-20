@@ -14,6 +14,7 @@ import {
   type FakeVector,
   type FakeRequest,
 } from "./generated/fake-server/index.ts";
+import { ROUTES } from "./index.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const FAKE_DIR = fileURLToPath(new URL("./generated/fake-server/", import.meta.url));
@@ -25,6 +26,31 @@ const SAME_ORIGIN = {
   "content-type": "application/json",
 };
 
+/**
+ * A multipart body (SRV-1102) with the boundary of the vector's content type:
+ * a field the contract marks with contentMediaType is a file part, its bytes
+ * written in Base64 in the vector.
+ */
+function multipartOf(v: FakeVector, body: Record<string, string>): Uint8Array {
+  const boundary = /boundary=([^;]+)/u.exec(v.request.headers?.["content-type"] ?? "")?.[1];
+  const schema = ROUTES.find((r) => r.id === v.route)?.request.body as
+    { properties?: Record<string, { contentMediaType?: string }> } | undefined;
+  const parts = Object.entries(body).map(([name, value]) => {
+    const type = schema?.properties?.[name]?.contentMediaType;
+    const head =
+      type === undefined
+        ? `Content-Disposition: form-data; name="${name}"`
+        : `Content-Disposition: form-data; name="${name}"; filename="isjecak.jpg"\r\nContent-Type: ${type}`;
+    const bytes = type === undefined ? Buffer.from(value) : Buffer.from(value, "base64");
+    return Buffer.concat([
+      Buffer.from(`--${boundary}\r\n${head}\r\n\r\n`),
+      bytes,
+      Buffer.from("\r\n"),
+    ]);
+  });
+  return Buffer.concat([...parts, Buffer.from(`--${boundary}--\r\n`)]);
+}
+
 /** The request a vector describes, as a client would send it. */
 function requestOf(v: FakeVector, pick = true): FakeRequest {
   const route = ROUTE_TABLE[v.route as keyof typeof ROUTE_TABLE];
@@ -34,6 +60,10 @@ function requestOf(v: FakeVector, pick = true): FakeRequest {
   );
   const query = new URLSearchParams(v.request.query ?? {}).toString();
   const { body, rawBody } = v.request;
+  const multipart =
+    rawBody === undefined && body !== undefined && route.body === "multipart/form-data"
+      ? multipartOf(v, body as Record<string, string>)
+      : undefined;
   const text =
     rawBody ??
     (body === undefined
@@ -49,7 +79,7 @@ function requestOf(v: FakeVector, pick = true): FakeRequest {
     method: route.method,
     url: query ? `${path}?${query}` : path,
     headers,
-    body: new TextEncoder().encode(text),
+    body: multipart ?? new TextEncoder().encode(text),
   };
 }
 
@@ -64,8 +94,12 @@ function expected(v: FakeVector) {
 }
 
 function parsed(answer: ReturnType<typeof answerFake>) {
-  const json = answer.headers["content-type"] === "application/json";
-  return { ...answer, body: json ? (JSON.parse(answer.body) as unknown) : answer.body };
+  const type = answer.headers["content-type"];
+  const { body } = answer;
+  // A JPEG answer is compared in Base64, as the vector writes it.
+  if (type === "image/jpeg") return { ...answer, body: Buffer.from(body).toString("base64") };
+  const text = typeof body === "string" ? body : new TextDecoder().decode(body);
+  return { ...answer, body: type === "application/json" ? (JSON.parse(text) as unknown) : text };
 }
 
 const named = (route: string, name: string): FakeVector => {

@@ -407,6 +407,27 @@ export type Operations = {
     success: { status: 200; body: { "filename": "potvrda-predaje.pdf"; "pdfBase64": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.source-proof-image.get": {
+    params: { "assignmentId": string; "sourceId": string; "proofId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.source-proofs.get": {
+    params: { "assignmentId": string; "sourceId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "proofs": ({ "id": string; "page": string; "note": string | null; "imagePath": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.source-proofs.post": {
+    params: { "assignmentId": string; "sourceId": string };
+    query: undefined;
+    body: { "image": Blob; "page": string; "note"?: string };
+    success: { status: 201; body: { "id": string; "page": string; "note": string | null; "imagePath": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_input";
+  };
   "student.submission-notes.get": {
     params: { "assignmentId": string };
     query: undefined;
