@@ -9,9 +9,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { DeadlineExtensions } from "../../database/index.ts";
-import { createDatabases } from "../databases.ts";
-import { createLayers } from "../pipeline.ts";
-import { type Running, startServer } from "../start.ts";
+import { createDatabases, createLayers, type Running, startServer } from "../index.ts";
 
 import { createDeadlineExtensionRoutes } from "./index.ts";
 

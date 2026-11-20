@@ -4,7 +4,7 @@
 // below is invented.
 import { describe, expect, it } from "vitest";
 
-import type { ActorTransaction, WithActor } from "../with-actor.ts";
+import type { ActorTransaction, WithActor } from "../index.ts";
 
 import { createDeadlineExtensions } from "./deadline-extensions.ts";
 
