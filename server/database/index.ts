@@ -235,7 +235,12 @@ export { readReceiptKeys } from "./receipt-keys.ts";
 export { createPendingReceiptStore } from "./pending-receipt-store.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
-export { readSettingsValues, settingsCatalogue } from "./settings/index.ts";
+export {
+  readSettingsValues,
+  readTextCheckConfig,
+  settingsCatalogue,
+  type TextCheckConfig,
+} from "./settings/index.ts";
 export {
   createWorkSources,
   isWorkSourceDoi,

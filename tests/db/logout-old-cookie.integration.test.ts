@@ -171,6 +171,13 @@ const SESSION_ROUTES = {
     body: () => ({ assignmentId: ASSIGNMENT, text: "Izmišljena napomena o radu." }),
     live: 404,
   },
+  // SRV-1101: the same for the text check configuration.
+  "student.text-check-config.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/text-check-config`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-7C: a live session that is no student of the work gets 404 on each source route.
   "student.work-sources.get": {
     method: "GET",

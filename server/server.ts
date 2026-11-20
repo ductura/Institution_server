@@ -26,6 +26,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNotesRoutesFor,
+  createTextCheckConfigRoute,
   createWorkSourceRoutesFor,
   createWorkVersionsRouteFor,
   createSourceLookupRouteFor,
@@ -141,6 +142,7 @@ async function main(): Promise<void> {
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
+      createTextCheckConfigRoute(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
       // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
       createDownloadsManifestRoute(),

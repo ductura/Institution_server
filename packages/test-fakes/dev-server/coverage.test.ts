@@ -428,6 +428,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `${STUDENT_ASSIGNMENT}/submission-notes`, as: "student" },
   },
   "student.submission-notes.post": { request: NOTE },
+  "student.text-check-config.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/text-check-config`, as: "student" },
+  },
   "student.work-sources.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/sources`, as: "student" },
   },

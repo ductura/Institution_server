@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import { Value } from "@sinclair/typebox/value";
 
 import { WorkSourceRecord } from "../../../server/contracts/index.ts";
+import { enabledCheckIdsFor } from "../../../server/domain/index.ts";
 import type { Operations } from "../../contracts/index.ts";
 import { successBody } from "./contract.ts";
 
@@ -130,6 +131,17 @@ export const STUDENT_HANDLERS: Handlers = {
     const note = { id: randomUUID(), text: body.text, createdAt: now.toISOString() };
     state.submissionNotes.push({ ...note, assignmentId: assignment.id, studentId: account.id });
     return { status: 201, body: note };
+  },
+  // SRV-1101: the dev fake knows no institution profile, so it answers as an
+  // institution that has set none (the real route reads the institution's setting).
+  "student.text-check-config.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    if (ownAssignment(state, account, params.assignmentId) === undefined)
+      return { error: "not_found" };
+    return {
+      status: 200,
+      body: { enabledCheckIds: enabledCheckIdsFor(null), lektaProfileId: null },
+    };
   },
   "student.work-sources.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };

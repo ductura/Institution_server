@@ -2,6 +2,8 @@ import { SETTINGS_CATALOGUE } from "../../domain/index.ts";
 
 import type { WithActor } from "../index.ts";
 
+export { readTextCheckConfig, type TextCheckConfig } from "./text-check-config.ts";
+
 export const settingsCatalogue = { keys: SETTINGS_CATALOGUE };
 
 type SettingRow = {
