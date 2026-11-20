@@ -86,7 +86,7 @@ U v1 do v3 `marks` je niz nizova `"bold"` i `"italic"`. U v4 element niza je ili
 | indeks       | `"sub"`                                                                | nema                                                                                            | more2 `sub`              |
 | marker       | `{"color": "#f2d24b", "type": "highlight"}`                            | `color`: `#` i šest malih heksadekadskih znamenki                                               | rich `hl`, atribut `c`   |
 | strani jezik | `{"lang": "en", "type": "lang"}`                                       | `lang`: 2 ili 3 mala slova a–z (primarni jezik po BCP 47); `und` je „drugi jezik”               | acad `lang`, atribut `l` |
-| poveznica    | `{"href": "https://primjer.invalid/", "type": "link"}`                 | `href`: `https://`, `http://` ili `mailto:` i barem jedan znak U+0021 do U+007E, ukupno do 2048 | acad `link`              |
+| poveznica    | `{"href": "https://primjer.hr/", "type": "link"}`                      | `href`: `https://`, `http://` ili `mailto:` i barem jedan znak U+0021 do U+007E, ukupno do 2048 | acad `link`              |
 | zalijepljeno | `{"pasteId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", "type": "paste"}` | `pasteId` obavezan, `sourceId` neobavezan; oba kanonski UUID v4 malim slovima, nil odbijen      | features `paste`         |
 | uvezeno      | `"imported"`                                                           | nema                                                                                            | features `imported`      |
 
@@ -376,7 +376,7 @@ Izbor ugovora za brojanje riječi: akademski opseg rada broji tijelo teksta, bez
 Redoslijed PR-ova (svaki ostavlja granu zelenom i ne mijenja nijedan postojeći test v1 do v3):
 
 1. **Ugovor** (ovaj dokument).
-2. **Shema i validator, dio 1** (zaseban ulaz `validateDocumentV4`; `validateVersionedDocument` i dalje odbija `schemaVersion: 4`, a v4 ulazi u `DOCUMENT_BLOCK_TYPES_BY_VERSION` i `VersionedDocument` tek u PR-u 4, zajedno s potrošačima, da nijedan put ne primi v4 dokument koji potrošač ne zna): `schema.ts` (tipovi i konstante v4), validator oznaka v4, `variantGroup`, `inlineFormula`, `formula`, `codeBlock`, `box`, `pageBreak`; `revision-zero.ts` (v4 konstante); novi kodovi dodani na kraj popisa.
+2. **Shema i validator, dio 1:** `schema.ts` (tipovi i konstante v4), validator oznaka v4, `variantGroup`, `inlineFormula`, `formula`, `codeBlock`, `box`, `pageBreak`; `revision-zero.ts` (v4 konstante); novi kodovi dodani na kraj popisa.
 3. **Shema i validator, dio 2:** `table`, `image`, `cover`; zlatni vektori v4 (`golden-vectors-v4.json`) s kanonskim JCS-om i SHA-256.
 4. **Potrošači** iz tablice gore, s testom svakog na dokumentu v4 sa svim blokovima, atomima i oznakama.
 5. **Format koraka** `ductus-edit-steps-v4` u `edit-step.ts`.
@@ -411,7 +411,7 @@ Klase 1 do 45 iz ugovora v2 i v3 vrijede i za v4, uz zamjenu verzije. Novo:
 | 64    | format v4 nad v3 radom i obrnuto                                                                                                                                                      | odbijeno, ništa upisano                                                                          |
 | 65    | potrošači iz odjeljka 11 na v4 dokumentu sa svim blokovima, atomima i oznakama                                                                                                        | ishod iz tablice, bez iznimke                                                                    |
 
-Uz to fast-check svojstva (a) do (g) iz ugovora v2 vrijede za validator i parser v4, uz generator koji umeće i briše blokove, atome i oznake v4. Generatori i vektori koriste samo sintetičke podatke: izmišljene gradove i tekstove, „Izvor 1”, adrese `https://primjer.invalid/…`, hash od nula i UUID-e oblika `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa`. Nema stvarnih radova, osoba, slika ni podataka.
+Uz to fast-check svojstva (a) do (g) iz ugovora v2 vrijede za validator i parser v4, uz generator koji umeće i briše blokove, atome i oznake v4. Generatori i vektori koriste samo sintetičke podatke: izmišljene gradove i tekstove, „Izvor 1”, adrese `https://primjer.hr/…`, hash od nula i UUID-e oblika `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa`. Nema stvarnih radova, osoba, slika ni podataka.
 
 ## Za klijenta (UI-10A, WEB-10*)
 

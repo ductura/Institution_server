@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1794);
+SELECT plan(1806);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -484,6 +484,37 @@ SELECT is(
 FROM (VALUES (1, 'ana', 'ZD403'), (2, 'marko', 'ZD403'), (3, 'vesna', 'true'), (4, 'vesna', 'false'))
   AS c (n, actor, outcome)
 ORDER BY c.n;
+
+-- 1f. SRV-9A: the versions of a work only through app.read_work_versions; its
+-- reader of the evidence rows is never the web role's. This fixture has no
+-- work, so every signed-in actor gets the one answer for a missing document;
+-- the owner, the teacher, the cut, the pages and the access log are in
+-- 152-work-versions.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_work_versions(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.work_version_rows(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-9A: only ductus_app and the owner execute the read; only the identity role and the owner the helper'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_versions('doc-nema') $$), 1, 9),
+  c.outcome, format('SRV-9A: %s reads the versions of a missing work: %s', c.actor, c.outcome)
+)
+FROM (VALUES
+  ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),
+  ('iva', 'not_found'), ('boris', 'not_found'), ('nina', 'not_found'), ('tomo', 'not_found'),
+  ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
+) AS c (actor, outcome);
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
