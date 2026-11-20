@@ -763,6 +763,48 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "student.work-sources.delete:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.work-sources.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.work-sources.put:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.work-sources.put:body": (() => {
+  const local0 = /^10\.[0-9]{4,9}\/[!-~]{1,300}(?![\s\S])/;
+  const local1 = /^(?:[0-9]{9}[0-9X]|97[89][0-9]{10})(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['record'] === 'object' && value['record'] !== null && !Array.isArray(value['record'])) &&
+      (value['doi'] !== undefined ? ((((typeof value['doi'] === 'string') && value['doi'].length <= 300 && local0.test(value['doi'])) || ((value['doi'] === null)))) : true) &&
+      (value['isbn'] !== undefined ? ((((typeof value['isbn'] === 'string') && local1.test(value['isbn'])) || ((value['isbn'] === null)))) : true) &&
+      (value['undated'] !== undefined ? ((typeof value['undated'] === 'boolean')) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['record', 'doi', 'isbn', 'undated'].includes(key))
+    )
+  }
+  })(),
   "submission.submit.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
