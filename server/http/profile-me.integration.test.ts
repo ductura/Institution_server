@@ -2,13 +2,14 @@
 // with the real pipeline, over a fake reader: every vector of the contract,
 // cookie included, and no read without a well-formed session cookie. All
 // values are invented.
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { MyAccount, MyAccountResult } from "../database/index.ts";
-import { principalScope } from "../session/index.ts";
+import { accountSessionTag, principalScope, sessionTag } from "../session/index.ts";
 
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
@@ -36,7 +37,9 @@ const PERSON: Record<string, string> = {
 };
 const signedIn = (v: Vector, userId: string, institutionId = INSTITUTION): MyAccountResult => {
   const account = Object.fromEntries(
-    Object.entries(v.response.body).filter(([key]) => key !== "journalScope"),
+    Object.entries(v.response.body).filter(
+      ([key]) => key !== "journalScope" && key !== "sessionTag",
+    ),
   );
   return { ok: true, value: account as MyAccount, userId, institutionId };
 };
@@ -95,6 +98,7 @@ describe("GET /api/v1/me", () => {
     const got = await get(v.request.headers);
     expect(got).toEqual({ status: 200, body: v.response.body });
     expect(v.response.body.journalScope).toBe(principalScope(PERSON[name]!, INSTITUTION));
+    expect(v.response.body.sessionTag).toBe(accountSessionTag(tokenOf(v)));
     expect(reads).toEqual([tokenOf(v)]);
   });
 
@@ -135,6 +139,62 @@ describe("GET /api/v1/me", () => {
       server = undefined;
     }
     expect(new Set(scopes).size).toBe(3);
+  });
+
+  it("sessionTag is 64 lowercase hex and names no session value", async () => {
+    const v = vector("student");
+    await start(async () => signedIn(v, PERSON.student!));
+    const got = await get(v.request.headers);
+    const body = got.body as Record<string, unknown>;
+    expect(body.sessionTag).toMatch(/^[0-9a-f]{64}$/);
+    expect(body.sessionTag).not.toBe(body.journalScope);
+    const text = JSON.stringify(body);
+    for (const secret of [tokenOf(v), PERSON.student!, INSTITUTION]) {
+      expect(text).not.toContain(secret);
+    }
+    // Neither the database's token digest nor the ended mark's tag.
+    const digest = createHash("sha256").update(tokenOf(v), "utf8").digest("hex");
+    expect(body.sessionTag).not.toBe(digest);
+    expect(body.sessionTag).not.toBe(sessionTag(tokenOf(v)));
+  });
+
+  it("the same session has the same sessionTag on every read", async () => {
+    const v = vector("student");
+    await start(async () => signedIn(v, PERSON.student!));
+    const first = await get(v.request.headers);
+    const second = await get(v.request.headers);
+    expect((second.body as Record<string, unknown>).sessionTag).toBe(
+      (first.body as Record<string, unknown>).sessionTag,
+    );
+  });
+
+  it("a new login of the same person has another sessionTag", async () => {
+    const v = vector("student");
+    await start(async () => signedIn(v, PERSON.student!));
+    const first = (await get(v.request.headers)).body as Record<string, unknown>;
+    const again = (await get({ cookie: `__Host-ductus_session=${"e".repeat(43)}` })).body as Record<
+      string,
+      unknown
+    >;
+    expect(again.journalScope).toBe(first.journalScope);
+    expect(again.sessionTag).not.toBe(first.sessionTag);
+  });
+
+  it("two people signed in at once have different sessionTags", async () => {
+    const student = vector("student");
+    const teacher = vector("teacher-without-name");
+    await start(async () => signedIn(student, PERSON.student!));
+    const a = (await get(student.request.headers)).body as Record<string, unknown>;
+    answer = async () => signedIn(teacher, PERSON["teacher-without-name"]!);
+    const b = (await get(teacher.request.headers)).body as Record<string, unknown>;
+    expect(a.sessionTag).not.toBe(b.sessionTag);
+  });
+
+  it("401 sends no sessionTag", async () => {
+    await start(async () => ({ ok: false, reason: "unauthenticated" }));
+    const got = await get(vector("student").request.headers);
+    expect(got.status).toBe(401);
+    expect(got.body).not.toHaveProperty("sessionTag");
   });
 
   it("401 without a cookie, before any read", async () => {

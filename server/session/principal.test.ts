@@ -1,10 +1,12 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
 
 import type { ActorReader } from "../database/index.ts";
 
 import {
+  ACCOUNT_SESSION_TAG_LABEL,
+  accountSessionTag,
   PRINCIPAL_SCOPE_LABEL,
   principalScope,
   SESSION_TAG_LABEL,
@@ -200,6 +202,30 @@ describe("sessionTag", () => {
 
   it.each([undefined, "", "A".repeat(42), `${"A".repeat(42)}=`])("is null for %s", (token) => {
     expect(sessionTag(token)).toBeNull();
+  });
+});
+
+describe("accountSessionTag", () => {
+  it("is the HMAC-SHA-256 hex of the token under the versioned label", () => {
+    expect(ACCOUNT_SESSION_TAG_LABEL).toBe("ductura-session-tag-v1");
+    const tag = accountSessionTag(TOKEN);
+    expect(tag).toBe(
+      createHmac("sha256", ACCOUNT_SESSION_TAG_LABEL).update(TOKEN, "utf8").digest("hex"),
+    );
+    expect(tag).toMatch(/^[0-9a-f]{64}$/);
+    expect(accountSessionTag(TOKEN)).toBe(tag);
+  });
+
+  it("differs per token, from the ended mark tag and from the database digest", () => {
+    const tag = accountSessionTag(TOKEN);
+    expect(accountSessionTag("B".repeat(43))).not.toBe(tag);
+    expect(tag).not.toBe(sessionTag(TOKEN));
+    expect(tag).not.toBe(createHash("sha256").update(TOKEN, "utf8").digest("hex"));
+    expect(tag).not.toContain(TOKEN);
+  });
+
+  it.each(["", "A".repeat(42), `${"A".repeat(42)}=`])("refuses the malformed token %j", (t) => {
+    expect(() => accountSessionTag(t)).toThrow("malformed token");
   });
 });
 
