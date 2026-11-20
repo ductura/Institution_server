@@ -92,7 +92,7 @@ describe("shared rules through the versioned validator (#1711 classes 1 to 13)",
     expectAccepted(doc([book()]));
   });
 
-  it.each([4, 0, -1, 2.5, "2", true, null, [], {}, Number.MAX_SAFE_INTEGER + 1])(
+  it.each([5, 0, -1, 2.5, "2", true, null, [], {}, Number.MAX_SAFE_INTEGER + 1])(
     "refuses schemaVersion %j",
     (version) => {
       expect(errs(plain(version))).toEqual([["$.schemaVersion", "SCHEMA_VERSION_INVALID"]]);

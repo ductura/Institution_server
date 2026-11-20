@@ -1,4 +1,4 @@
-// The port of the proofs of a source (SRV-1102; migration 20261121100000):
+// The port of the proofs of a source (SRV-1102; migration 20261121130000):
 // the excerpts a student attaches to a source of the own work, a JPEG of a
 // page with an optional note. Every read and write goes through an RPC, never
 // the table, and the student and institution come only from the session.

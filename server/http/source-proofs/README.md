@@ -1,6 +1,6 @@
 # server/http/source-proofs
 
-Prilozi izvora preko HTTP-a (SRV-1102, Ductus#2051, val 11, editor E§3.4 „proofs”, B-8). Ugovor je `server/contracts/routes/source-proofs.ts`, port `server/database/source-proofs`, tablica i RPC-ovi su migracija `20261121100000_source_proof.sql` (`institution.source_proof`, `add_source_proof`, `source_proofs`, `read_source_proof_image`).
+Prilozi izvora preko HTTP-a (SRV-1102, Ductus#2051, val 11, editor E§3.4 „proofs”, B-8). Ugovor je `server/contracts/routes/source-proofs.ts`, port `server/database/source-proofs`, tablica i RPC-ovi su migracija `20261121130000_source_proof.sql` (`institution.source_proof`, `add_source_proof`, `source_proofs`, `read_source_proof_image`).
 
 ## Što radi
 

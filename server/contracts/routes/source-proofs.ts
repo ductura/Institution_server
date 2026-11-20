@@ -9,7 +9,7 @@ import { CODE_POINT, END } from "./teacher.ts";
 // source, the excerpts a student attaches to a source of the own work (a
 // photo, a pasted image or a crop from a PDF that never leaves the browser).
 // The table and the RPCs are institution.source_proof (migration
-// 20261121100000). Only an excerpt is kept: the image must be a JPEG, so a
+// 20261121130000). Only an excerpt is kept: the image must be a JPEG, so a
 // whole PDF is refused. A proof is "attached by the student"; Ductura does not
 // claim the source says what the student writes. Not evidence: outside the
 // document and its hash.

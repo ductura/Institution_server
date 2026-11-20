@@ -21,7 +21,7 @@ import { boundaryOf, parseMultipart } from "./multipart.ts";
 // The proofs of a source over HTTP (SRV-1102, Ductus#2051, editor E§3.4
 // "proofs", B-8): list, attach and read the JPEG of the excerpts a student
 // attaches to a source of the own work. The table and RPCs are
-// institution.source_proof (migration 20261121100000); the port is
+// institution.source_proof (migration 20261121130000); the port is
 // server/database/source-proofs. Another student's work answers 404 (C-23).
 const LIST = ROUTES.find((route) => route.id === "student.source-proofs.get")!;
 const ADD = ROUTES.find((route) => route.id === "student.source-proofs.post")!;

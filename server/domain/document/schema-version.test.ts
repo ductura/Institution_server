@@ -41,13 +41,13 @@ const codes = (doc: unknown) => {
 };
 
 describe("document schema versions", () => {
-  it("A5: the version list holds 1, 2 and 3, with the same block types; validateDocument stays v1 only", () => {
+  it("A5: the version list holds 1 to 4, v2 and v3 with the v1 block types; validateDocument stays v1 only", () => {
     // DAN-619 (contract document-schema-v2 §1, #1711 V1): v2 is accepted, with
     // the block types of v1, and the Map stays the only list of versions.
     // SRV-7A (contract document-schema-v3 §1) adds v3 the same way.
     expect(DOCUMENT_SCHEMA_VERSION).toBe(1);
     expect(DOCUMENT_SCHEMA_VERSION_V2).toBe(2);
-    expect([...DOCUMENT_BLOCK_TYPES_BY_VERSION.keys()]).toEqual([1, 2, 3]);
+    expect([...DOCUMENT_BLOCK_TYPES_BY_VERSION.keys()]).toEqual([1, 2, 3, 4]);
     for (const version of [2, 3]) {
       expect([...DOCUMENT_BLOCK_TYPES_BY_VERSION.get(version)!]).toEqual([
         ...DOCUMENT_BLOCK_TYPES_BY_VERSION.get(1)!,
@@ -56,8 +56,19 @@ describe("document schema versions", () => {
     expect(isAcceptedDocumentSchemaVersion(1)).toBe(true);
     expect(isAcceptedDocumentSchemaVersion(2)).toBe(true);
     expect(isAcceptedDocumentSchemaVersion(3)).toBe(true);
+    // SRV-10A (contract document-schema-v4 §1) adds v4 with its own blocks.
+    expect([...DOCUMENT_BLOCK_TYPES_BY_VERSION.get(4)!]).toEqual([
+      ...DOCUMENT_BLOCK_TYPES_BY_VERSION.get(1)!,
+      "codeBlock",
+      "box",
+      "table",
+      "image",
+      "formula",
+      "pageBreak",
+    ]);
+    expect(isAcceptedDocumentSchemaVersion(4)).toBe(true);
     for (const value of [
-      4,
+      5,
       0,
       "3",
       -1,

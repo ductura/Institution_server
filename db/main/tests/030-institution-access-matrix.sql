@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2020);
+SELECT plan(2100);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -17,8 +17,9 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof'],
-  'the institution schema holds exactly the twenty-seven tables of this matrix'
+        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
+        'deadline_extension'],
+  'the institution schema holds exactly the twenty-eight tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -125,9 +126,10 @@ SELECT bag_eq(
     'notice_read: notice_read_read SELECT to ductus_app',
     'work_source: work_source_owner ALL to ductus_identity',
     'work_attachment: work_attachment_owner ALL to ductus_identity',
-    'source_proof: source_proof_owner ALL to ductus_identity'
+    'source_proof: source_proof_owner ALL to ductus_identity',
+    'deadline_extension: deadline_extension_owner ALL to ductus_identity'
   ],
-  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source, work_attachment or source_proof'
+  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source, work_attachment, source_proof or deadline_extension'
 );
 -- A version is immutable by its triggers, one of a mentorship's assignment
 -- stays within the faculty's rule, an administrator comes and goes only
@@ -152,7 +154,8 @@ SELECT bag_eq(
         'notice_acknowledgment: notice_acknowledgment_binding_immutable 19 O',
         'work_grant: work_grant_binding_fill 23 O',
         'notice_read: notice_read_immutable 27 O', 'notice_read: notice_read_no_truncate 34 O',
-        'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O'],
+        'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O',
+        'deadline_extension: deadline_extension_immutable 27 O', 'deadline_extension: deadline_extension_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -281,7 +284,11 @@ SELECT bag_eq(
     'source_proof_text_valid(p_text text, p_max integer, p_lines boolean)',
     'add_source_proof(p_assignment_id uuid, p_source_id uuid, p_page text, p_note text, p_image bytea) definer app',
     'source_proofs(p_assignment_id uuid, p_source_id uuid, p_student_id uuid) definer app',
-    'read_source_proof_image(p_assignment_id uuid, p_source_id uuid, p_proof_id uuid, p_student_id uuid) definer app'
+    'read_source_proof_image(p_assignment_id uuid, p_source_id uuid, p_proof_id uuid, p_student_id uuid) definer app',
+    'refuse_deadline_extension_change()',
+    'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
+    'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
+    'deadline_extensions(p_assignment_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -638,6 +645,25 @@ FROM (VALUES
   ('dora', '{ana}', 'ZD403'), ('dora', 'NULL', 'ZD403'), ('marko', '{ana}', 'ZD403'), ('iva', '{ana}', 'ZD403'),
   ('petra', '{ana}', 'ZD403'), ('lea', '{ana}', 'ZD403'), ('anon', '{ana}', 'ZD401')
 ) AS c (actor, student, result);
+-- 1i. SRV-1108: deadline extensions (institution.deadline_extension) only
+-- through their RPCs; the web role has no privilege or policy on the table.
+-- One cell per actor on Z1 of K1; the rest (scope, effective deadline,
+-- reasons, privacy of the reason, append-only) is in 166-deadline-extension-access.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, format(
+    'SELECT ''ok'' FROM institution.extend_assignment_deadline({z1}, {ana}, now() + interval %L, ''justified'')',
+    c.days || ' days')), 1, 5), c.outcome,
+  format('SRV-1108: %s extends the deadline of Ana on Z1: %s', c.actor, c.outcome))
+FROM (VALUES
+  ('vesna', 400, 'ok'), ('marko', 401, 'ZD403'), ('iva', 401, 'ZD403'), ('ana', 401, 'ZD403'),
+  ('dora', 401, 'ZD403'), ('boris', 401, 'ZD403'), ('nina', 401, 'ZD403'), ('tomo', 401, 'ZD403'),
+  ('lea', 401, 'ZD403'), ('petra', 401, 'ZD403'), ('anon', 401, 'ZD401')
+) AS c (actor, days, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM institution.deadline_extensions({z1})'), 1, 5), c.result,
+  format('SRV-1108: %s lists the extensions of Z1: %s', c.actor, c.result))
+FROM (VALUES ('vesna', '1'), ('marko', 'ZD403'), ('ana', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401'))
+  AS c (actor, result);
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
@@ -677,12 +703,12 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source', 'work_attachment', 'source_proof']) WITH ORDINALITY AS t (tbl, n)
+                        'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

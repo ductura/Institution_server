@@ -1,6 +1,6 @@
 # Prilozi izvora
 
-Port priloženih isječaka uz izvor rada (SRV-1102, Ductus#2051, val 11, editor E§3.4 „proofs”, B-8; migracija `20261121100000_source_proof.sql`). Prilog je isječak koji student priloži uz izvor svog rada: JPEG stranice (fotografija, zalijepljena slika ili izrez iz PDF-a koji ne napušta preglednik), stranica izvora i neobavezna bilješka. Prilog je „priložio student”: Ductura ne tvrdi da izvor kaže ono što student piše i ništa ne uspoređuje. Prilog nije evidencija, izvan je dokumenta i njegova hasha.
+Port priloženih isječaka uz izvor rada (SRV-1102, Ductus#2051, val 11, editor E§3.4 „proofs”, B-8; migracija `20261121130000_source_proof.sql`). Prilog je isječak koji student priloži uz izvor svog rada: JPEG stranice (fotografija, zalijepljena slika ili izrez iz PDF-a koji ne napušta preglednik), stranica izvora i neobavezna bilješka. Prilog je „priložio student”: Ductura ne tvrdi da izvor kaže ono što student piše i ništa ne uspoređuje. Prilog nije evidencija, izvan je dokumenta i njegova hasha.
 
 ## Što radi
 
