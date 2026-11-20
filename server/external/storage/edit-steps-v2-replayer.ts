@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { EDIT_STEP_FORMAT_V2 } from "../../domain/document/edit-step.ts";
+import { EDIT_STEP_FORMAT_V2, EDIT_STEP_FORMAT_V3 } from "../../domain/document/edit-step.ts";
 import type { DocumentSource } from "../../domain/document/schema.ts";
 import type { EvidenceStepReplayerV2 } from "../../domain/forensics/evidence-replay-v2.ts";
 import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
@@ -8,10 +8,11 @@ import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.t
 
 import { refuse } from "./edit-steps-v1-rules.ts";
 import {
-  editStepsV2Canonical,
-  loadEditStepsV2Document,
-  runEditStepsV2,
+  editStepsCanonical,
+  loadEditStepsDocument,
+  runEditSteps,
   type EditStepsV2Document,
+  type EditStepsVersion,
 } from "./edit-steps-v2-rules.ts";
 
 /**
@@ -36,11 +37,20 @@ export function sourceRecordSha256(source: DocumentSource): string {
 
 /** Replayer of `ductus-edit-steps-v2` for `replayEvidenceSegmentsV2`. */
 export function createEditStepsV2Replayer(): EvidenceStepReplayerV2<EditStepsV2Document> {
+  return createReplayer(2);
+}
+
+/** Replayer of `ductus-edit-steps-v3` (SRV-7A, contract v3 §5), the same driver. */
+export function createEditStepsV3Replayer(): EvidenceStepReplayerV2<EditStepsV2Document> {
+  return createReplayer(3);
+}
+
+function createReplayer(version: EditStepsVersion): EvidenceStepReplayerV2<EditStepsV2Document> {
   return {
-    transactionFormat: EDIT_STEP_FORMAT_V2,
-    load: loadEditStepsV2Document,
+    transactionFormat: version === 2 ? EDIT_STEP_FORMAT_V2 : EDIT_STEP_FORMAT_V3,
+    load: (canonical) => loadEditStepsDocument(version, canonical),
     apply(state: EditStepsV2Document, event: EvidenceEventV3): EditStepsV2Document {
-      const run = runEditStepsV2(state, event);
+      const run = runEditSteps(version, state, event);
       for (let next = run.next(); ; next = run.next()) {
         if (next.done) {
           return next.value;
@@ -50,6 +60,6 @@ export function createEditStepsV2Replayer(): EvidenceStepReplayerV2<EditStepsV2D
         }
       }
     },
-    toCanonical: editStepsV2Canonical,
+    toCanonical: (state) => editStepsCanonical(version, state),
   };
 }

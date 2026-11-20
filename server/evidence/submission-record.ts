@@ -1,5 +1,8 @@
 import { createEditStepsV1Replayer } from "../external/storage/edit-steps-v1-replayer.ts";
-import { createEditStepsV2Replayer } from "../external/storage/edit-steps-v2-replayer.ts";
+import {
+  createEditStepsV2Replayer,
+  createEditStepsV3Replayer,
+} from "../external/storage/edit-steps-v2-replayer.ts";
 import type { EvidenceReconstructionOutcome } from "./evidence-reconstruction.ts";
 import { reconstructSubmission, type SubmissionRecord } from "./submission-reconstruction.ts";
 import { isEvidencePackageId, isSha256Hex } from "../application/ports/evidence-ingest.ts";
@@ -158,7 +161,11 @@ export async function reconstructSubmissionRecord(
   const outcome = await reconstructSubmission(
     {
       payloads: bindPayloadReader(dependencies.payloads, read.record.institutionId),
-      replayers: { v1: createEditStepsV1Replayer(), v2: createEditStepsV2Replayer() },
+      replayers: {
+        v1: createEditStepsV1Replayer(),
+        v2: createEditStepsV2Replayer(),
+        v3: createEditStepsV3Replayer(),
+      },
       keys: read.keys,
     },
     read.record,

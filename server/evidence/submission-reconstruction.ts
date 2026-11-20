@@ -1,6 +1,14 @@
 import type { EvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
-import { DOCUMENT_SCHEMA_VERSION, DOCUMENT_SCHEMA_VERSION_V2 } from "../domain/document/schema.ts";
-import { REVISION_ZERO_JCS, REVISION_ZERO_V2_JCS } from "../domain/document/revision-zero.ts";
+import {
+  DOCUMENT_SCHEMA_VERSION,
+  DOCUMENT_SCHEMA_VERSION_V2,
+  DOCUMENT_SCHEMA_VERSION_V3,
+} from "../domain/document/schema.ts";
+import {
+  REVISION_ZERO_JCS,
+  REVISION_ZERO_V2_JCS,
+  REVISION_ZERO_V3_JCS,
+} from "../domain/document/revision-zero.ts";
 import {
   digestEvidenceReceiptPayloadV2,
   isEvidenceReceiptPayloadV2,
@@ -139,14 +147,18 @@ export function submissionReceiptCheck(
  * The payloads are read from the storage domain of the record's institution.
  *
  * The replayer and revision 0 are those of `documentSchemaVersion` (contract
- * §9.2). Any other value, of any type, is `unavailable` with a closed code
+ * §9.2; v3 from document-schema-v3 §8). Any other value, of any type, is `unavailable` with a closed code
  * before a payload is read: the check could not be made, never a verdict. A
  * segment of the other format is refused by the replay as a mismatch.
  */
-export function reconstructSubmission<TV1, TV2>(
+export function reconstructSubmission<TV1, TV2, TV3>(
   dependencies: {
     payloads: EvidencePayloadReader;
-    replayers: { v1: EvidenceStepReplayerV2<TV1>; v2: EvidenceStepReplayerV2<TV2> };
+    replayers: {
+      v1: EvidenceStepReplayerV2<TV1>;
+      v2: EvidenceStepReplayerV2<TV2>;
+      v3: EvidenceStepReplayerV2<TV3>;
+    };
     keys: readonly EvidenceDomainKey[];
   },
   record: SubmissionRecord,
@@ -157,6 +169,11 @@ export function reconstructSubmission<TV1, TV2>(
   }
   if (documentSchemaVersion === DOCUMENT_SCHEMA_VERSION_V2) {
     return reconstructWith(dependencies.replayers.v2, REVISION_ZERO_V2_JCS, dependencies, record);
+  }
+  if (documentSchemaVersion === DOCUMENT_SCHEMA_VERSION_V3) {
+    // Contract document-schema-v3 §8: no work is v3 before its database step,
+    // so this path is reached only once that step opens v3 works.
+    return reconstructWith(dependencies.replayers.v3, REVISION_ZERO_V3_JCS, dependencies, record);
   }
   return Promise.resolve({
     status: "unavailable",
