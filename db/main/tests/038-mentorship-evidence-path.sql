@@ -190,7 +190,7 @@ SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_before), 'the refused o
 -- 1: Ana writes, requests and submits; the receipt is prepared.
 SELECT is(pg_temp.call('ana', pg_temp.val('pkg_m1'), 'm-request-1',
     pg_temp.descriptor(p_package => pg_temp.val('pkg_m1'), p_document => pg_temp.val('doc_m1'), p_segment => 'segment-m-1'),
-    0, evidence.revision_zero_document(), repeat('d', 64), repeat('b', 64)),
+    0, evidence.revision_zero_document_v2(), repeat('d', 64), repeat('b', 64)),
   'reserved', 'the student''s first segment is accepted');
 SELECT is(pg_temp.ask('ana', format('SELECT outcome FROM app.request_submission(%L, 1)', pg_temp.val('doc_m1'))),
   'requested', 'the student requests the submission of revision 1');

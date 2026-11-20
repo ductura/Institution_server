@@ -8,7 +8,8 @@ SELECT no_plan();
 
 INSERT INTO evidence.domain (id, institution_id, region) VALUES
   ('00000000-0000-4000-8000-0000000000d1', pg_temp.id('fak_a'), 'eu-central-1');
-INSERT INTO ref VALUES ('rev0_hash', 'a102ced8a59b446a86c135c8d87d3ddf9f889e4ac93bcbc1857cd7c2c73ad14b');
+-- SRV-33B: a new work starts at the v2 revision 0.
+INSERT INTO ref VALUES ('rev0_hash', '8f8aa5047daa07e8d68f4952aa70ab3c671eccdf6191bfaf6dcba591735f2618');
 CREATE FUNCTION pg_temp.val(p_name text) RETURNS text
 LANGUAGE sql STABLE AS $$ SELECT val FROM ref WHERE name = p_name $$;
 -- One call as one line; a NULL column prints as nothing.

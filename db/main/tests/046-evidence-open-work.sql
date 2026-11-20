@@ -13,7 +13,11 @@ INSERT INTO evidence.domain (id, institution_id, region) VALUES
 
 INSERT INTO ref VALUES
   ('rev0', '{"nodes":[{"children":[],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":1}'),
-  ('rev0_hash', 'a102ced8a59b446a86c135c8d87d3ddf9f889e4ac93bcbc1857cd7c2c73ad14b');
+  ('rev0_hash', 'a102ced8a59b446a86c135c8d87d3ddf9f889e4ac93bcbc1857cd7c2c73ad14b'),
+  -- SRV-33B: a new work starts at the v2 revision 0 (golden vector of
+  -- server/domain/document/revision-zero.ts, written out).
+  ('rev0_v2', '{"nodes":[{"children":[],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":2,"sources":[]}'),
+  ('rev0_v2_hash', '8f8aa5047daa07e8d68f4952aa70ab3c671eccdf6191bfaf6dcba591735f2618');
 CREATE FUNCTION pg_temp.val(p_name text) RETURNS text
 LANGUAGE sql STABLE AS $$ SELECT val FROM ref WHERE name = p_name $$;
 -- One call as one line, so two answers compare in full.
@@ -162,9 +166,9 @@ SELECT is(pg_temp.evidence_print(), (SELECT v FROM print_before), 'and writes no
 -- The student owner: the first call creates the work, the second returns it.
 INSERT INTO ref SELECT 'ana_open', pg_temp.open('ana', pg_temp.id('z1'));
 SELECT matches(pg_temp.val('ana_open'),
-  '^opened\|[0-9a-f-]{36}\|standard-v1\|0\|' || pg_temp.val('rev0_hash') || '\|\|0\|',
-  'the owner opens the work at revision 0 with no segment yet');
-SELECT is(split_part(pg_temp.val('ana_open'), '|', 8), pg_temp.val('rev0'), 'the answer carries the revision 0 snapshot');
+  '^opened\|[0-9a-f-]{36}\|standard-v1\|0\|' || pg_temp.val('rev0_v2_hash') || '\|\|0\|',
+  'the owner opens the work at the v2 revision 0 with no segment yet');
+SELECT is(split_part(pg_temp.val('ana_open'), '|', 8), pg_temp.val('rev0_v2'), 'the answer carries the v2 revision 0 snapshot');
 SELECT is(pg_temp.open('ana', pg_temp.id('z1')), pg_temp.val('ana_open'), 'a second call returns the same work');
 SELECT is(pg_temp.open('ana', pg_temp.id('z1'), false), pg_temp.val('ana_open'), 'an existing work opens the same without start');
 SELECT is(pg_temp.open('ana', pg_temp.id('z1'), true), pg_temp.val('ana_open'), 'and the same with an explicit start');
@@ -177,8 +181,8 @@ SELECT row_eq(
               JOIN evidence.document_revision r ON r.document_id = d.id AND r.institution_id = d.institution_id
               JOIN evidence.document_checkpoint c ON c.document_id = d.id AND c.revision = 0
              WHERE d.id = %L $$, pg_temp.doc('ana', 'z1')),
-  ROW(pg_temp.id('fak_a'), pg_temp.id('ana'), 0::bigint, pg_temp.val('rev0_hash'), 0::bigint, NULL::bigint,
-      pg_temp.val('rev0_hash'), pg_temp.val('rev0'), pg_temp.val('rev0_hash')),
+  ROW(pg_temp.id('fak_a'), pg_temp.id('ana'), 0::bigint, pg_temp.val('rev0_v2_hash'), 0::bigint, NULL::bigint,
+      pg_temp.val('rev0_v2_hash'), pg_temp.val('rev0_v2'), pg_temp.val('rev0_v2_hash')),
   'document, revision 0 and its checkpoint carry the institution and person of the session and the known bytes');
 SELECT row_eq(
   format($$ SELECT k.institution_id, k.evidence_domain_id, k.principal_id, k.evidence_profile_id, k.max_payload_bytes,
@@ -262,7 +266,7 @@ REVOKE SELECT, INSERT, UPDATE, DELETE ON evidence.document_checkpoint FROM ductu
 -- The database checks the bytes against the revision, not the writer.
 SELECT matches(pg_temp.ask_as('ductus_evidence', 'anon', format(
   $q$ INSERT INTO evidence.document_checkpoint (document_id, institution_id, revision, body) VALUES (%L, %L, 1, %L) $q$,
-  pg_temp.doc('ana', 'z1'), pg_temp.id('fak_a'), pg_temp.val('rev0'))), '^23503:', 'a checkpoint of a revision that does not exist is refused');
+  pg_temp.doc('ana', 'z1'), pg_temp.id('fak_a'), pg_temp.val('rev0_v2'))), '^23503:', 'a checkpoint of a revision that does not exist is refused');
 SELECT matches(pg_temp.ask_as('ductus_evidence', 'anon', format(
   $q$ INSERT INTO evidence.document_checkpoint (document_id, institution_id, revision, body) VALUES (%L, %L, 0, %L) $q$,
   pg_temp.doc('tomo', 'z3'), pg_temp.id('fak_a'), pg_temp.val('rev0'))), '^23503:', 'a checkpoint under another institution is refused');
