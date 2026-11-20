@@ -31,6 +31,7 @@ import {
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
+  createLiveRoutesFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
@@ -145,6 +146,9 @@ async function main(): Promise<void> {
       ...createInstitutionGroupRoutesFor(databases.main),
       // The administrator creates a course with its holder (SRV-12 over SRV-07, Ductus#2028).
       createAdminCourseRouteFor(databases.main),
+      // The live view (B-LIVE): the owner publishes the last state of a work
+      // with PUT, every reader gets the same bytes and ETag with GET.
+      ...createLiveRoutesFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
       ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;

@@ -24,6 +24,7 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createLiveRoutesFor,
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
@@ -159,6 +160,7 @@ const FROZEN: readonly string[] = [
 // out, is not a mount.
 const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
 const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
+const NO_READER = {} as ActorReader;
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
   {
@@ -221,6 +223,15 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createTeacherReadRoutesFor(databases.main)",
     ids: [...TEACHER_READ_ROUTES],
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // Ductus#2028 (w1119o): the live view over the main database.
+    call: "createLiveRoutesFor(databases.main)",
+    ids: ["live.document.get", "live.document.put"],
+    routes: () =>
+      createLiveRoutesFor({ ...NO_ACTOR, actorReader: NO_READER }).map(
+        (route) => route.contract.id,
+      ),
   },
   {
     // SRV-18: a student's submission over the process's signer and storage.
@@ -354,6 +365,8 @@ describe("CONTRACT_ONLY", () => {
         ...["institution.admin-courses.post", "institution.course-groups.get"],
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
         ...["student.submission.get", "student.assignment-requirements.get"],
+        "live.document.get",
+        "live.document.put",
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -387,6 +400,8 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      "live.document.get",
+      "live.document.put",
       "submission.submit.post",
       "projection.process-summary.post",
       "student.submission.get",
