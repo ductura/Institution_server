@@ -160,6 +160,14 @@ const ENV_NAMES = [
   "AUTH_DATABASE_URL",
   "DUCTURA_PROVISIONING_TOKEN",
   "FAKE_OIDC_ACCOUNTS_FILE",
+  // `pnpm stog:gore` (INT-01, scripts/lokalno/stog-config.ts): its settings and
+  // what the Next.js front reads.
+  "STOG_FRONT_DIR",
+  "STOG_FRONT_PORT",
+  "STOG_BAZA",
+  "INSTITUTION_SERVER_URL",
+  "NEXT_PUBLIC_API_BASE",
+  "NEXT_TELEMETRY_DISABLED",
 ];
 // Result columns of PostgreSQL rows that the migration tests in tests/db read
 // and compare as they come from pg: column names of db/main/migrations (ported

@@ -108,6 +108,8 @@ describe("route inventory", () => {
       "student.text-check-config.get: app/api/student/assignments/[assignmentId]/text-check-config/route.ts is not in the inventory",
       "teacher.deadline-extensions.get: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
       "teacher.deadline-extension.post: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
+      "teacher.merlin-roster.get: app/api/teacher/assignments/[assignmentId]/merlin/roster/route.ts is not in the inventory",
+      "teacher.merlin-roster-csv.get: app/api/teacher/assignments/[assignmentId]/merlin/csv/route.ts is not in the inventory",
       "projection.process-summary-details.post: app/api/process-summary/details/route.ts is not in the inventory",
       "student.enrollments.post: app/api/student/enrollments/route.ts is not in the inventory",
       "institution.admin-courses.post: app/api/institution/admin/courses/route.ts is not in the inventory",
@@ -137,6 +139,8 @@ describe("route inventory", () => {
       "work.consultation-records.get: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
       "work.consultation-records.post: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
       "work.consultation-additions.post: app/api/works/[documentId]/consultation-records/[recordId]/additions/route.ts is not in the inventory",
+      "work.milestones.get: app/api/works/[documentId]/milestones/route.ts is not in the inventory",
+      "work.milestones.patch: app/api/works/[documentId]/milestones/[milestoneId]/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(
