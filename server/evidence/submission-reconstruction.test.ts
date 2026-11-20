@@ -6,12 +6,16 @@ import {
   createEditStepsV1Replayer,
   removedRangeSha256,
 } from "../external/storage/edit-steps-v1-replayer.ts";
-import { createEditStepsV2Replayer } from "../external/storage/edit-steps-v2-replayer.ts";
+import {
+  createEditStepsV2Replayer,
+  createEditStepsV3Replayer,
+} from "../external/storage/edit-steps-v2-replayer.ts";
 import type { EvidencePayloadReader } from "../application/ports/evidence-reconstruction.ts";
 import {
   REVISION_ZERO_JCS,
   REVISION_ZERO_NODE_ID,
   REVISION_ZERO_V2_JCS,
+  REVISION_ZERO_V3_JCS,
 } from "../domain/document/revision-zero.ts";
 import {
   digestEvidenceReceiptPayloadV2,
@@ -56,6 +60,7 @@ function key(overrides: Partial<EvidenceDomainKey> = {}, keyPair = pair): Eviden
 }
 
 const replayerV2 = createEditStepsV2Replayer();
+const replayerV3 = createEditStepsV3Replayer();
 
 /** The replayer, revision 0 and step format of one document schema version (contract §9.2). */
 type Engine = { replayer: EvidenceStepReplayerV2<unknown>; zero: string; format: string };
@@ -223,7 +228,7 @@ async function stored(
 /** The reconstruction under an explicit schema version, `undefined` included. */
 const runAt = (built: Built, version: unknown, keys: EvidenceDomainKey[] = [key()]) =>
   reconstructSubmission(
-    { payloads: built.payloads, replayers: { v1: replayer, v2: replayerV2 }, keys },
+    { payloads: built.payloads, replayers: { v1: replayer, v2: replayerV2, v3: replayerV3 }, keys },
     built.record,
     version,
   );
@@ -468,7 +473,11 @@ describe("reconstruction by document schema version (DAN-619, contract §9.2)", 
         return inner.load(document);
       },
     });
-    const replayers = { v1: spy("v1", replayer), v2: spy("v2", replayerV2) };
+    const replayers = {
+      v1: spy("v1", replayer),
+      v2: spy("v2", replayerV2),
+      v3: spy("v3", replayerV3),
+    };
     await reconstructSubmission(
       { payloads: built.payloads, replayers, keys: [key()] },
       built.record,
@@ -490,6 +499,19 @@ describe("reconstruction by document schema version (DAN-619, contract §9.2)", 
     expect(
       loaded.every(
         ([name, document]) => name === "v1" && canonicalizeJcs(document) === REVISION_ZERO_JCS,
+      ),
+    ).toBe(true);
+    // SRV-7A (contract document-schema-v3 §8): version 3 takes the v3 pair.
+    loaded.length = 0;
+    await reconstructSubmission(
+      { payloads: built.payloads, replayers, keys: [key()] },
+      built.record,
+      3,
+    );
+    expect(loaded.length).toBeGreaterThan(0);
+    expect(
+      loaded.every(
+        ([name, document]) => name === "v3" && canonicalizeJcs(document) === REVISION_ZERO_V3_JCS,
       ),
     ).toBe(true);
   });
@@ -537,8 +559,9 @@ describe("reconstruction by document schema version (DAN-619, contract §9.2)", 
 
   it.each<[string, unknown]>([
     ["0", 0],
-    ["3", 3],
+    ["4", 4],
     ['"1"', "1"],
+    ['"3"', "3"],
     ['"2"', "2"],
     ["null", null],
     ["undefined", undefined],
