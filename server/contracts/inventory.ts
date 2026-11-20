@@ -215,6 +215,14 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
+  "app/api/student/assignments/[assignmentId]/attachments/route.ts": {
+    methods: ["POST"],
+    source: "ductura/Institution_server#471",
+  },
+  "app/api/works/attachments/[attachmentId]/route.ts": {
+    methods: ["GET"],
+    source: "ductura/Institution_server#471",
+  },
 };
 
 /**

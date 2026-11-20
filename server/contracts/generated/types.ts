@@ -519,6 +519,20 @@ export type Operations = {
     success: { status: 200; body: { "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "work.attachments.get": {
+    params: { "attachmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "attachmentId": string; "attachmentSha256": string; "mediaType": "image/png" | "image/jpeg"; "byteSize": number; "pixelWidth": number | null; "pixelHeight": number | null; "imageBase64": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.attachments.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "imageBase64": string };
+    success: { status: 200; body: { "attachmentId": string; "attachmentSha256": string; "mediaType": "image/png" | "image/jpeg"; "byteSize": number; "pixelWidth": number | null; "pixelHeight": number | null; "created": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
+  };
   "work.versions.get": {
     params: { "documentId": string };
     query: { "beforeRevision"?: string };
