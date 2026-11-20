@@ -102,6 +102,24 @@ const NOTE: Step = {
   body: { assignmentId: IDS.assignment, text: "Izmišljena napomena." },
 };
 
+const WORK_SOURCE = {
+  id: "00000000-0000-4000-8000-00000000c0a1",
+  type: "book",
+  authors: [{ kind: "person", family: "Izmišljeni", given: "Autor" }],
+  year: 2019,
+  title: "Izmišljena knjiga o kućnom kompostiranju",
+  place: "Izmišljeni grad",
+  publisher: "Izmišljena naklada",
+};
+
+const SAVE_SOURCE: Step = {
+  path: `${STUDENT_ASSIGNMENT}/sources/${WORK_SOURCE.id}`,
+  as: "student",
+  method: "PUT",
+  headers: ORIGIN,
+  body: { record: WORK_SOURCE },
+};
+
 const SCENARIOS: Record<RouteId, Scenario> = {
   "auth.backchannel-logout.post": {
     request: {
@@ -382,6 +400,19 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: `${STUDENT_ASSIGNMENT}/submission-notes`, as: "student" },
   },
   "student.submission-notes.post": { request: NOTE },
+  "student.work-sources.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/sources`, as: "student" },
+  },
+  "student.work-sources.put": { request: SAVE_SOURCE },
+  "student.work-sources.delete": {
+    before: [SAVE_SOURCE],
+    request: {
+      path: `${STUDENT_ASSIGNMENT}/sources/${WORK_SOURCE.id}`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
   "submission.submit.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: {
@@ -450,6 +481,14 @@ function routeOf(step: Step): RouteId {
 const ROUTES = Object.keys(ROUTE_TABLE) as RouteId[];
 
 describe("dev fake server covers the whole contract", () => {
+  it("refuses a work source whose record lacks its fields, and stores nothing", async () => {
+    const state = createState();
+    const step = { ...SAVE_SOURCE, body: { record: { id: WORK_SOURCE.id } } };
+    expect((await run(state, step)).status).toBe(422);
+    const read = SCENARIOS["student.work-sources.get"].request;
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ sources: [] });
+  });
+
   it("has a handler and a scenario for every route of ROUTE_TABLE, and nothing else", () => {
     expect(Object.keys(DEV_HANDLERS).sort()).toEqual([...ROUTES].sort());
     expect(ROUTES.filter((route) => typeof DEV_HANDLERS[route] !== "function")).toEqual([]);

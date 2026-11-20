@@ -145,6 +145,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: STUDENT_SUBMISSION_SOURCE,
   },
+  // SRV-7C (Ductus#2028, wave 7): the work's source list; Ductus has no such routes.
+  "app/api/student/assignments/[assignmentId]/sources/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7037456743",
+  },
+  "app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts": {
+    methods: ["PUT", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7037456743",
+  },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
   "app/api/institution/admin/courses/route.ts": {
