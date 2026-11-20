@@ -104,6 +104,7 @@ export {
   type SubmitWork,
 } from "./submission.ts";
 export {
+  createProcessSummaryDetailsRouteFor,
   createProcessSummaryRoute,
   createProcessSummaryRouteFor,
   parseProcessSummaryBody,
@@ -227,6 +228,7 @@ export {
   createStudentAccessLogRoute,
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
+export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
 export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,

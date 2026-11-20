@@ -5,7 +5,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import type { Operations } from "../../contracts/index.ts";
-import type { Handlers } from "./server.ts";
+import type { Context, Handlers } from "./server.ts";
 import {
   readerOf,
   recordOpening,
@@ -36,6 +36,19 @@ function logRead(
   surface: AccessEntry["surface"],
 ) {
   recordOpening(state, { documentId, readerId, role: "teacher", surface }, now);
+}
+
+function readProcessSummary({
+  state,
+  account,
+  body,
+  now,
+}: Pick<Context<"projection.process-summary.post">, "state" | "account" | "body" | "now">) {
+  const work = state.works.find((item) => item.documentId === body.documentId);
+  const reader = readerOf(state, work, account);
+  if (work === undefined || reader === null || account === null) return null;
+  if (reader === "teacher") logRead(state, work.documentId, account.id, now, "process_summary");
+  return processSummary(work);
 }
 
 function revisionRow(r: RevisionRequest, me: string): RevisionRow {
@@ -162,12 +175,19 @@ export const COLLABORATION_HANDLERS: Handlers = {
     work.live = { json, token: randomUUID() };
     return { status: 200, body: { outcome: "accepted", token: work.live.token } };
   },
-  "projection.process-summary.post": ({ state, account, body, now }) => {
-    const work = state.works.find((w) => w.documentId === body.documentId);
-    const reader = readerOf(state, work, account);
-    if (work === undefined || reader === null || account === null) return { error: "not_found" };
-    if (reader === "teacher") logRead(state, work.documentId, account.id, now, "process_summary");
-    return { status: 200, body: processSummary(work) };
+  "projection.process-summary.post": (request) => {
+    const summary = readProcessSummary(request);
+    return summary === null ? { error: "not_found" } : { status: 200, body: summary };
+  },
+  "projection.process-summary-details.post": (request) => {
+    const summary = readProcessSummary(request);
+    if (summary === null) return { error: "not_found" };
+    const activeEditingMinutes = summary.sessions.items.reduce(
+      (total, { from, to }) =>
+        total + Math.max(0, Math.floor((Date.parse(to) - Date.parse(from)) / 60_000)),
+      0,
+    );
+    return { status: 200, body: { summary, activeEditingMinutes, keyEvents: [] } };
   },
   "collaboration.comments.post": ({ state, account, params, body, now }) => {
     if (account === null) return { error: "unauthorized" };
