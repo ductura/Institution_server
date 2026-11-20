@@ -76,7 +76,7 @@ export const meGet = defineRoute({
   path: "/api/v1/me",
   inventory: "app/api/me/route.ts",
   access: "signed_in",
-  summary: "The caller's institution, roles in force, display name and local journal scope.",
+  summary: "The caller's institution, roles in force and display name.",
   request: {},
   responses: [
     {
