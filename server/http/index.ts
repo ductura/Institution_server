@@ -2,6 +2,7 @@
 // point (server/server.ts) and test-server import it (docs/server-map.md §2).
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
+export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export {
   CLIENT_CONTEXT_MAX_BYTES,
   createClientContextRoute,

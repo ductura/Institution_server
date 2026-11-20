@@ -14833,7 +14833,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.28.0",
+        "apiVersion": "1.29.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -14849,7 +14849,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.28.0",
+        "apiVersion": "1.29.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -16870,6 +16870,422 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "doi-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "source": {
+          "type": "article",
+          "title": "Izmišljeni rad",
+          "authors": [],
+          "year": 2025
+        }
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "isbn-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "isbn",
+        "identifier": "9780000000422"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "source": null
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "origin-missing",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "origin-mismatch",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "cross-site",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "body-too-large",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "4097"
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "50"
+      },
+      "rawBody": "{\"kind\":"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "content-length-invalid",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "x"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "50"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "50"
+      },
+      "rawBody": "{\"kind\":"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{kind:"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "unauthorized",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      }
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "isbn",
+        "identifier": "9780000000420"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "too-many-requests",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 429,
+      "contentType": "application/json",
+      "body": {
+        "error": "too_many_requests"
+      },
+      "headers": {
+        "retry-after": "1"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable"
+      }
+    }
+  },
+  {
+    "route": "sources.lookup.post",
+    "name": "timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "kind": "doi",
+        "identifier": "10.99999/izmisljeni"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "timeout"
       }
     }
   },

@@ -5,10 +5,15 @@ export const SOURCE_IDENTIFIER_MAX_LENGTH = 512;
 function doiFrom(input: string): string | null {
   const original = input.replace(/^doi:\s*/iu, "");
   const resolver = /^https?:\/\/(?:dx\.)?doi\.org\//iu.exec(original);
-  const value = (
-    resolver ? (original.slice(resolver[0].length).split(/[?#]/u, 1)[0] ?? "") : original
-  ).toLowerCase();
-  if (resolver && value.includes("%")) return null;
+  let value = original;
+  if (resolver) {
+    try {
+      value = decodeURIComponent(original.slice(resolver[0].length).split(/[?#]/u, 1)[0] ?? "");
+    } catch {
+      return null;
+    }
+  }
+  value = value.toLowerCase();
   return value.length <= SOURCE_IDENTIFIER_MAX_LENGTH &&
     /^10\.\d{4,9}\/.+/u.test(value) &&
     !/[\p{White_Space}\p{Cc}\p{Cf}\p{Cs}]/u.test(value)
@@ -18,7 +23,7 @@ function doiFrom(input: string): string | null {
 
 function isbnFrom(input: string): string | null {
   const value = input
-    .replace(/^isbn:\s*/iu, "")
+    .replace(/^isbn(?:-1[03])?(?::\s*|\s+)/iu, "")
     .replace(/[-\p{White_Space}]/gu, "")
     .toUpperCase();
   const ten = /^[0-9]{9}[0-9X]$/u.test(value);
