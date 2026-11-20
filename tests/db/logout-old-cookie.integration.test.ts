@@ -13,6 +13,7 @@ import {
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
   createAssignmentCurrentVersionRouteFor,
+  createAttachmentRoutesFor,
   createAuthRoutes,
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
@@ -205,6 +206,19 @@ const SESSION_ROUTES = {
   },
   // SRV-1101: the same for the text check configuration.
   // SRV-1102: the proofs of a source; a live session that is no student of the work gets 404.
+  // SRV-10C: the attachments of a work; a live session that is no party to the work gets 404.
+  "work.attachments.post": {
+    method: "POST",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/attachments`,
+    body: () => ({ imageBase64: "iVBORw0KGgo=" }),
+    live: 404,
+  },
+  "work.attachments.get": {
+    method: "GET",
+    path: `/api/v1/work-attachments/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   "work.milestones.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/milestones`,
@@ -636,6 +650,7 @@ const FACTORIES = [
   "createCollaborationCommentsRouteFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
+  "createAttachmentRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -682,6 +697,7 @@ const MOUNTED = [
   createCollaborationCommentsRouteFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
+  ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
