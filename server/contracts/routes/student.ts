@@ -227,9 +227,62 @@ export const studentNoticeReadPost = defineRoute({
   ],
 });
 
+// UGOVORI-API (Ductus#2028 c.7019543739, approved as SRV-NG in c.7019668458):
+// the notice of the current version of an assignment, as E-6 shows it before
+// the work opens. Every member of the notice fingerprint (DAN-306,
+// server/domain/notice/fingerprint.ts NOTICE_FINGERPRINT_FIELDS) is here, so
+// the browser computes the fingerprint it acknowledges from exactly what it
+// showed; the fingerprint itself is never sent. No handler yet (CONTRACT_ONLY).
+const AiPurpose = oneOf([
+  ...["formatting", "proofreading", "literature_search", "transcription", "translation"],
+]);
+const WordBound = Type.Union([Type.Integer({ minimum: 1, maximum: 1_000_000 }), Type.Null()]);
+
+export const studentNoticeGet = defineRoute({
+  id: "student.notice.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/notice",
+  inventory: "app/api/student/assignments/[assignmentId]/notice/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The notice of the current version of an assignment of the caller's open student membership (E-6): the content of that version as the notice shows it, the notice template version, and when the caller first read it (PO-7, student.notice-read.post) and acknowledged it (institution.acknowledgment.post), each null until then. The fields are exactly those of the notice fingerprint (DAN-306), instants as Date.toISOString writes them; the browser computes the fingerprint from them and sends it with versionNo to institution.acknowledgment.post. aiPurposes is empty when aiPolicy is prohibited. The identity comes from the session only. Sec-Fetch-Site, when sent, other than same-origin is 403. Another's assignment, an unknown one and a malformed id are the same 404 (C-23). A row the read cannot vouch for makes the whole answer 503.",
+  request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "the notice",
+      body: closed({
+        assignmentId: LowerUuid,
+        versionNo: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+        /** NOTICE_TEMPLATE_VERSION of the static text the notice shows around these fields. */
+        templateVersion: Type.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+        title: Type.String({ minLength: 1 }),
+        instructions: Type.String(),
+        workType: WorkType,
+        opensAt: Instant,
+        dueAt: Instant,
+        aiPolicy: oneOf(["prohibited", "partially_allowed", "encouraged"]),
+        aiPurposes: Type.Array(AiPurpose, { maxItems: 5 }),
+        evidenceProfile: oneOf(["basic", "extended"]),
+        wordMin: WordBound,
+        wordMax: WordBound,
+        readAt: Type.Union([Instant, Type.Null()]),
+        acknowledgedAt: Type.Union([Instant, Type.Null()]),
+      }),
+    },
+  ],
+  errors: [
+    error(401, "unauthorized"),
+    error(403, "forbidden"),
+    error(404, "not_found"),
+    error(503, "unavailable"),
+  ],
+});
+
 export const studentRoutes = [
   studentAssignmentsGet,
   studentAccessLogGet,
   studentAssignmentWorkGet,
   studentNoticeReadPost,
+  studentNoticeGet,
 ] as const;

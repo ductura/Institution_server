@@ -340,6 +340,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { code: "UPIS2026DEMO" },
     },
   },
+  "student.notice.get": {
+    request: { path: `${A.replace("/institution/", "/student/")}/notice`, as: "student" },
+  },
   "student.notice-read.post": {
     request: {
       path: `${A.replace("/institution/", "/student/")}/notice-read`,

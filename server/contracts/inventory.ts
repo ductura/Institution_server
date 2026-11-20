@@ -141,6 +141,12 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
   },
+  // UGOVORI-API (Ductus#2028 c.7019543739, SRV-NG c.7019668458): Ductus reads
+  // the notice in its page (readNotice), not in a route.
+  "app/api/student/assignments/[assignmentId]/notice/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7019668458",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -182,6 +188,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.notice-read.post",
   "student.enrollments.post",
   "institution.course-groups.get",
+  "student.notice.get",
 ];
 
 /**
