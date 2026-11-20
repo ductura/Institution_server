@@ -39,7 +39,6 @@ export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export {
   SourceProof,
-  WorkMilestone,
   WorkMilestoneDueInput,
   WorkMilestoneId,
   WorkSourceRecord,

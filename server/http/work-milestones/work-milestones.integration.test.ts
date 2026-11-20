@@ -50,22 +50,23 @@ async function serve(answer: object[] | Error) {
 }
 
 it("lists milestones with no request body and preserves an unset deadline", async () => {
-  const { url, query } = await serve([{ ...MILESTONE, due_at: null }]);
+  const { url, query } = await serve([{ ...MILESTONE, dueAt: null }]);
   const response = await fetch(url, { headers: { cookie: COOKIE } });
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ milestones: [{ ...MILESTONE, dueAt: null }] });
-  expect(query).toHaveBeenCalledExactlyOnceWith("SELECT * FROM app.read_work_milestones($1)", [
-    "doc:a",
-  ]);
+  expect(query).toHaveBeenCalledExactlyOnceWith(
+    'SELECT id, title, description, due_at AS "dueAt", state FROM app.read_work_milestones($1)',
+    ["doc:a"],
+  );
 });
 
 it("patches only the requested deadline and returns the milestone", async () => {
-  const { patch, query } = await serve([{ ...MILESTONE, due_at: new Date(DUE) }]);
+  const { patch, query } = await serve([{ ...MILESTONE, dueAt: new Date(DUE) }]);
   const response = await patch({ dueAt: DUE });
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ ...MILESTONE, dueAt: DUE });
   expect(query).toHaveBeenCalledExactlyOnceWith(
-    "SELECT * FROM app.set_work_milestone_due($1, $2, $3)",
+    'SELECT id, title, description, due_at AS "dueAt", state FROM app.set_work_milestone_due($1, $2, $3)',
     ["doc:a", ID, DUE],
   );
 });
