@@ -21,6 +21,7 @@ import {
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createStudentAssignmentWorkRouteFor,
+  createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
@@ -79,6 +80,7 @@ let server: Running;
 const EVIDENCE_401 = { status: "unauthenticated" };
 /** A course that does not exist: a non-teacher is refused as for any course (C-23). */
 const COURSE = randomUUID();
+const NOTES_ASSIGNMENT = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -108,6 +110,17 @@ const SESSION_ROUTES = {
     path: "/api/v1/student/assignment-work",
     body: () => undefined,
     live: 200,
+  },
+  "student.submission-notes.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${NOTES_ASSIGNMENT}/submission-notes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.submission-notes.post": {
+    path: "/api/v1/student/submission-notes",
+    body: () => ({ assignmentId: NOTES_ASSIGNMENT, text: "Izmišljena napomena o radu." }),
+    live: 404,
   },
   // SRV-22: a live session naming an assignment it is no student of gets 404.
   "student.submission.get": {
@@ -309,6 +322,7 @@ const FACTORIES = [
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
+  "createStudentNotesRoutesFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
@@ -335,6 +349,7 @@ const MOUNTED = [
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
+  ...createStudentNotesRoutesFor(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
