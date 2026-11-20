@@ -14,6 +14,8 @@ import {
   platformRoutes,
   profileRoutes,
   projectionRoutes,
+  publicVerificationPost,
+  publicVerificationRoutes,
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   settingsRoutes,
@@ -41,7 +43,7 @@ export {
   TOO_MANY_REQUESTS,
 };
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
-export { sourceLookupPost };
+export { publicVerificationPost, sourceLookupPost };
 export {
   CLIENT_APP_VERSION_PATTERN,
   CLIENT_CONTEXT_VALUES,
@@ -85,6 +87,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...settingsRoutes,
   ...downloadsRoutes,
   sourceLookupPost,
+  ...publicVerificationRoutes,
 ];
 
 /**

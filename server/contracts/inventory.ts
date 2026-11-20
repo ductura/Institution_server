@@ -193,6 +193,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7036755565",
   },
+  // SRV-9B (✓ C-6): Ductus has no public check of a receipt.
+  "app/api/public/verification/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041664094",
+  },
 };
 
 /**
@@ -214,6 +219,7 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.enrollments.post",
   "student.notice.get",
   "institution.enrollment-code-state.get",
+  "public.verification.post",
 ];
 
 /**
