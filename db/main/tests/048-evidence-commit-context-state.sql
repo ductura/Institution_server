@@ -53,8 +53,8 @@ $$;
 SELECT is(pg_get_function_arguments('app.evidence_commit_context(text,text)'::regprocedure),
   'p_document_id text, p_client_transaction_id text', 'the context still takes no person or institution');
 SELECT is(pg_get_function_result('app.evidence_commit_context(text,text)'::regprocedure),
-  'TABLE(outcome text, evidence_package_id text, institution_id uuid, evidence_domain_id uuid, evidence_profile_id text, max_payload_bytes integer, transaction_known boolean, current_revision bigint, document_hash text, head_segment_hash text, last_sequence_to bigint)',
-  'the context returns the chain state and no person');
+  'TABLE(outcome text, evidence_package_id text, institution_id uuid, evidence_domain_id uuid, evidence_profile_id text, max_payload_bytes integer, transaction_known boolean, current_revision bigint, document_hash text, head_segment_hash text, last_sequence_to bigint, document_schema_version integer)',
+  'the context returns the chain state and no person (the work''s version since SRV-33B, 151)');
 SELECT ok((SELECT p.prosecdef AND p.proowner = 'ductus_evidence'::regrole AND 'search_path=""' = ANY (p.proconfig)
              FROM pg_proc p WHERE p.oid = 'app.evidence_commit_context(text,text)'::regprocedure),
   'a SECURITY DEFINER function of the evidence role with an empty search_path');

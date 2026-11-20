@@ -13,6 +13,7 @@ describe("server/downloads public interface", () => {
       "DOWNLOADS_ROUTES",
       "DOWNLOADS_SCHEMAS",
       "createDownloadsService",
+      "renderReceiptPdf",
     ]);
     expect(area.DOWNLOADS_ROUTES).toEqual([]);
     expect(area.DOWNLOADS_SCHEMAS).toEqual({});

@@ -255,7 +255,7 @@ describe("page break (§4.4, class 55) and v3 atoms in v4", () => {
   });
 
   it("refuses a block type v4 does not have", () => {
-    for (const type of ["orderedItem", "prikaz", "tbox", "pagebreak"]) {
+    for (const type of ["orderedItem", "prikaz", "tbox", "pagebreak", "image"]) {
       expect(errorsOf(doc({ type, id: P }))).toEqual([["$.nodes[0].type", "NODE_TYPE_INVALID"]]);
     }
   });
