@@ -11,8 +11,13 @@ sedam sekundi, uključujući čitanje odgovora.
 
 ## Tko ga zove
 
-Predviđen je za poslužiteljsku rutu Brzog izvora, uz sintetičko okruženje i
-kontakt operatera u User-Agentu (D-201, D-252).
+Ruta Brzog izvora `POST /api/v1/sources/lookup` prima `kind` i `identifier`.
+Vraća `source`, s vrijednošću `null` kad u katalogu nema zapisa. Istek
+kataloga daje 503 s kodom `timeout`, a ograničenje učestalosti 429 i `Retry-After`.
+
+Za lokalni stog `pnpm lokalno` postavi `SOURCE_LOOKUP_CONTACT` na službenu
+adresu operatera za zaglavlje User-Agent. Pristup zahtijeva razvojni poslužitelj
+s lažnim OIDC-om i aktivnu studentsku sesiju u `demo-fakultet` (D-201, D-232, D-252).
 
 ## Koje podatke dira
 
