@@ -12,7 +12,7 @@ const ROUTE_URL = `${ORIGIN}/api/institution/courses/${COURSE}/example`;
 const BOM = [0xef, 0xbb, 0xbf];
 const bytes = (text: string, prefix: number[] = []) =>
   new Uint8Array([...prefix, ...new TextEncoder().encode(text)]);
-const request = (body: BodyInit, headers: Record<string, string> = {}) =>
+const request = (body: NonNullable<RequestInit["body"]>, headers: Record<string, string> = {}) =>
   new Request(ROUTE_URL, {
     method: "POST",
     headers: { origin: ORIGIN, "content-type": "application/json", ...headers },

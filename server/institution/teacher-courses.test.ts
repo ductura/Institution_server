@@ -267,7 +267,7 @@ describe("readTeacherCourses (the read behind /nastavnik, Z3 A)", () => {
       ],
     });
     const page = await readTeacherCourses(TOKEN, db.withActor);
-    const route = await (await read(db)).json();
+    const route = (await (await read(db)).json()) as { courses: unknown };
     expect(page).toEqual({ kind: "ok", courses: route.courses });
   });
 

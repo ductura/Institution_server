@@ -10,7 +10,7 @@ const INTEGRATION = fileURLToPath(new URL("../db/", import.meta.url));
 /** Names X in `new URL(X).hostname` that hold a database URL rather than an S3 or HTTP endpoint. */
 function hostnameOnlyDatabaseGuards(source: string): string[] {
   return [...source.matchAll(/new URL\(\s*([\w.]+)\s*\)\.hostname/g)]
-    .map((match) => match[1])
+    .map((match) => match[1]!)
     .filter((name) => /DATABASE|ADMIN|APP_URL|DB/i.test(name));
 }
 

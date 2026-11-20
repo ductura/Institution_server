@@ -19,7 +19,10 @@ const ACTOR_SQL =
   "SELECT a.user_id, institution.actor_has_role('admin') AS admin FROM app.current_actor() a";
 const CONFIRM_SQL = "SELECT institution.confirm_teacher_role($1)";
 const ROUTE_URL = `${ORIGIN}/api/institution/teachers/${CANDIDATE}/role-confirmation`;
-const request = (body: BodyInit = "{}", headers: Record<string, string> = {}) =>
+const request = (
+  body: NonNullable<RequestInit["body"]> = "{}",
+  headers: Record<string, string> = {},
+) =>
   new Request(ROUTE_URL, {
     method: "POST",
     headers: { origin: ORIGIN, "content-type": "application/json", ...headers },
