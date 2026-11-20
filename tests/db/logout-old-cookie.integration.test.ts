@@ -37,6 +37,7 @@ import {
   createProblemReportRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
+  createSourceLookupRouteFor,
   createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
   evidenceIngestDependencies,
@@ -365,6 +366,11 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  "sources.lookup.post": {
+    path: "/api/v1/sources/lookup",
+    body: () => ({ kind: "doi", identifier: "10.99999/izmisljeni" }),
+    live: 503,
+  },
   "institution.assignment.get": {
     method: "GET",
     path: `/api/v1/institution/assignments/${ASSIGNMENT}`,
@@ -432,6 +438,7 @@ const FACTORIES = [
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
+  "createSourceLookupRouteFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
   "createSettingsReadRoutes",
@@ -463,6 +470,7 @@ const MOUNTED = [
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
+  createSourceLookupRouteFor(databases.main, ENV),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createSettingsReadRoutes(databases.main),
@@ -699,6 +707,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("settings.") ||
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
+        id === "sources.lookup.post" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("live.") ||
