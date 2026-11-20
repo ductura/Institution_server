@@ -221,6 +221,10 @@ export type State = {
   submissionNotes: SubmissionNote[];
   workSources: WorkSource[];
   sourceProofs: SourceProof[];
+  consultationSlots: {
+    documentId: string;
+    slot: Operations["work.consultation-slots.post"]["success"]["body"];
+  }[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -405,6 +409,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     submissionNotes: [],
     workSources: [],
     sourceProofs: [],
+    consultationSlots: [],
     enrollmentGuesses: new Map(),
     mentorships: [
       {

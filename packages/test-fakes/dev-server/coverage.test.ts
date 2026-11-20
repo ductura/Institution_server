@@ -95,6 +95,13 @@ const VERSION = {
 const A = `/api/v1/institution/assignments/${IDS.assignment}`;
 const C = `/api/v1/institution/courses/${IDS.course}`;
 const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
+const CONSULTATION_SLOTS = `/api/v1/works/${IDS.document}/consultation-slots`;
+const REQUEST_SLOT: Step = {
+  path: CONSULTATION_SLOTS,
+  as: "student",
+  headers: ORIGIN,
+  body: { startsAt: new Date(Date.now() + 86_400_000).toISOString() },
+};
 const NOTE: Step = {
   path: "/api/v1/student/submission-notes",
   as: "student",
@@ -149,6 +156,21 @@ const SUBMIT: Step = {
 const SUBMIT_STEPS = [commit("izmisljena-transakcija-1", 0), SUBMIT];
 
 const SCENARIOS: Record<RouteId, Scenario> = {
+  "work.consultation-slots.get": {
+    before: [REQUEST_SLOT],
+    request: { path: CONSULTATION_SLOTS, as: "nastavnik" },
+  },
+  "work.consultation-slots.post": { request: REQUEST_SLOT },
+  "work.consultation-slots.patch": {
+    before: [REQUEST_SLOT],
+    request: {
+      path: `${CONSULTATION_SLOTS}/c0200000-0000-4000-8000-000000000001`,
+      as: "nastavnik",
+      method: "PATCH",
+      headers: ORIGIN,
+      body: { action: "confirm" },
+    },
+  },
   "auth.backchannel-logout.post": {
     request: {
       path: "/api/v1/auth/backchannel-logout",
