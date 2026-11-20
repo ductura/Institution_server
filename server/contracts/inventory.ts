@@ -67,6 +67,10 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  "app/api/process-summary/details/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",
+  },
   "app/api/student/assignments/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@078c780:src/components/student/my-assignments-read.ts",
@@ -112,6 +116,14 @@ export const SERVER_SOURCES: Readonly<
   "app/api/downloads/manifest/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:docs/DECISIONS.md#D-306",
+  },
+  "app/api/student/assignments/[assignmentId]/submission/pdf/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",
+  },
+  "app/api/teacher/assignments/[assignmentId]/submissions/[studentId]/pdf/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",
   },
   // Ductus#2028 c.6993786629 §3.3: Ductus reads the account in its pages; the
   // front of the institution asks for it after the AAI@EduHr login.
@@ -198,6 +210,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041664094",
   },
+  // SRV-9A (Ductus#2028 c.7041078855, wave 9): the versions of a work; Ductus has no such route.
+  "app/api/works/[documentId]/versions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
+  },
 };
 
 /**
@@ -220,6 +237,8 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.notice.get",
   "institution.enrollment-code-state.get",
   "public.verification.post",
+  "student.receipt-pdf.get",
+  "teacher.receipt-pdf.get",
 ];
 
 /**

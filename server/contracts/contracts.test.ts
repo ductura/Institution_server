@@ -102,6 +102,7 @@ describe("route inventory", () => {
       "student.work-sources.get: app/api/student/assignments/[assignmentId]/sources/route.ts is not in the inventory",
       "student.work-sources.put: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
       "student.work-sources.delete: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
+      "projection.process-summary-details.post: app/api/process-summary/details/route.ts is not in the inventory",
       "student.enrollments.post: app/api/student/enrollments/route.ts is not in the inventory",
       "institution.admin-courses.post: app/api/institution/admin/courses/route.ts is not in the inventory",
       "institution.course-groups.get: app/api/institution/courses/[courseId]/groups/route.ts is not in the inventory",
@@ -115,8 +116,11 @@ describe("route inventory", () => {
       "settings.values.get: app/api/settings/values/route.ts is not in the inventory",
       "settings.values.put: app/api/settings/values/route.ts is not in the inventory",
       "downloads.manifest.get: app/api/downloads/manifest/route.ts is not in the inventory",
+      "student.receipt-pdf.get: app/api/student/assignments/[assignmentId]/submission/pdf/route.ts is not in the inventory",
+      "teacher.receipt-pdf.get: app/api/teacher/assignments/[assignmentId]/submissions/[studentId]/pdf/route.ts is not in the inventory",
       "sources.lookup.post: app/api/sources/lookup/route.ts is not in the inventory",
       "public.verification.post: app/api/public/verification/route.ts is not in the inventory",
+      "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

@@ -3,6 +3,7 @@
 // empty list, as the contract says; the role alone opens no work (C-23).
 
 import type { Operations } from "../../contracts/index.ts";
+import { successBody } from "./contract.ts";
 import type { Handlers } from "./server.ts";
 import {
   fakeJournalScope,
@@ -82,6 +83,24 @@ function mentorshipWork(state: State, m: Mentorship) {
 }
 
 export const TEACHER_HANDLERS: Handlers = {
+  "teacher.receipt-pdf.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = taught(state, account, params.assignmentId);
+    const studentId = params.studentId.toLowerCase();
+    if (assignment === null || !studentsOf(state, account, assignment).includes(studentId)) {
+      return { error: "not_found" };
+    }
+    const work = state.works.find(
+      (item) => item.assignmentId === assignment.id && item.studentId === studentId,
+    );
+    if (work?.submissionReceipt == null) return { error: "not_found" };
+    return {
+      status: 200,
+      body: successBody(
+        "teacher.receipt-pdf.get",
+      ) as Operations["teacher.receipt-pdf.get"]["success"]["body"],
+    };
+  },
   "teacher.access.get": ({ account }) => {
     if (account === null) return { error: "unauthorized" };
     const scope = fakeJournalScope(account.id);
