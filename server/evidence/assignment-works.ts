@@ -14,10 +14,10 @@ const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SQLSTATE = /^[0-9A-Z]{5}$/;
 
-export interface AssignmentWork {
+export type AssignmentWork = {
   studentId: string;
   documentId: string;
-}
+};
 
 export type AssignmentWorksRead =
   { kind: "ok"; works: AssignmentWork[] } | { kind: "unauthorized" | "unavailable" };

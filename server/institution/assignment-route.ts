@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 
 import { expectedOrigin } from "../external/srce-auth/config.ts";
-import { SESSION_COOKIE_NAME } from "../session/session-token.ts";
+// As the mounted node:http writes (server/http/student-writes.ts): a session this
+// browser has ended reads as no cookie (DAN-99).
+import { liveSessionTokenFromCookie } from "../session/index.ts";
 import { withActor } from "../database/index.ts";
 import type { WithActor } from "../database/with-actor.ts";
 import { createAssignmentResponse } from "./create-assignment.ts";
@@ -30,7 +32,7 @@ export function createAssignmentPostHandler(
       });
     }
     const { courseId } = await context.params;
-    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value ?? null;
+    const token = liveSessionTokenFromCookie(request.headers.get("cookie") ?? undefined) ?? null;
     return createAssignmentResponse(request, token, actor, origin, courseId);
   };
 }

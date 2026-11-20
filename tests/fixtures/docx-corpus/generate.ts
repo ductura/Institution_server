@@ -14,20 +14,20 @@ export const MANIFEST_FILE = "MANIFEST.json";
 export const INVENTED_NAMES = ["Sintetički Autor", "Izmišljena Mentorica"] as const;
 
 /** Expected traces, declared by hand per fixture and never computed from the XML. */
-export interface Traces {
+export type Traces = {
   ins: number;
   del: number;
   comments: number;
   rsidAttributes: number;
   coreProperties: string[];
-}
-interface Spec {
+};
+type Spec = {
   file: string;
   parts: [name: string, xml: string][];
   text: string[];
   traces: Traces;
   sameTextAs?: string;
-}
+};
 
 const [AUTHOR, MENTOR] = INVENTED_NAMES;
 const DATE = "2026-01-01T12:00:00Z";

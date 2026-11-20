@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type {
   EvidenceChainReadResult,
   EvidenceChainReader,
@@ -59,7 +61,7 @@ export class InMemoryEvidenceAcceptanceRepository
     } = {},
   ) {
     this.clock = options.clock ?? (() => new Date().toISOString());
-    this.idFactory = options.idFactory ?? (() => globalThis.crypto.randomUUID());
+    this.idFactory = options.idFactory ?? (() => randomUUID());
   }
 
   async lookup(input: EvidenceAcceptanceIdentity): Promise<LookupEvidenceAcceptanceResult> {

@@ -7,6 +7,7 @@ import {
   checkFolders,
   listAreaFolders,
   readAreas,
+  readCopiedFolders,
   readCallers,
   readImports,
   readTable,
@@ -144,6 +145,28 @@ describe("checkFolders", () => {
   });
 });
 
+describe("copied folders", () => {
+  it("reads the copied-folder table and lets only those folders stay unmapped", () => {
+    const md = [
+      "### Kopirane mape izvan karte",
+      "",
+      "| Mapa | Sadržaj |",
+      "|---|---|",
+      "| `server/copied` | x |",
+      "| `server/http` | y |",
+      "| `server/gone` | z |",
+    ].join("\n");
+    const copied = readCopiedFolders(md);
+    expect(copied).toEqual(["copied", "http", "gone"]);
+    const areas = [{ key: "http", dir: "server/http", status: "postoji" }] as const;
+    expect(checkFolders([...areas], ["copied", "http", "stray"], copied)).toEqual([
+      "server/http is an area: take it off the copied folders",
+      "server/gone is listed as copied but is missing",
+      "server/stray is not in docs/server-map.md",
+    ]);
+  });
+});
+
 describe("docs/server-map.md", () => {
   const { areas, problems } = readAreas(MAP);
   const keys = areas.map((a) => a.key);
@@ -160,7 +183,7 @@ describe("docs/server-map.md", () => {
   // folders marked postoji, and that no folder exists unmapped or still planned.
   it("matches the folders under server/", () => {
     expect(areas.filter((a) => a.status === "postoji").length).toBeGreaterThan(0);
-    expect(checkFolders(areas, listAreaFolders(ROOT))).toEqual([]);
+    expect(checkFolders(areas, listAreaFolders(ROOT), readCopiedFolders(MAP))).toEqual([]);
   });
 
   it("has an import row for every area, naming only known areas", () => {
