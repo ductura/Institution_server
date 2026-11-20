@@ -47,11 +47,21 @@ export function documentWordCountV4(doc: CanonicalDocumentV4): number {
   return total;
 }
 
-/** Marks deduplicated by type, in the canonical order of §3. */
+/**
+ * A copy of a mark whose attribute keys are in sorted order, as the
+ * validator writes them, so equal marks always give equal `marksV4Key`.
+ */
+function sortedMark(mark: MarkV4): MarkV4 {
+  if (typeof mark === "string") return mark;
+  const entries = Object.entries(mark).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return Object.fromEntries(entries) as MarkV4;
+}
+
+/** Marks deduplicated by type, in the canonical order of §3, keys sorted. */
 function canonicalMarksV4(marks: readonly MarkV4[]): MarkV4[] {
   const byType = new Map<string, MarkV4>();
   for (const mark of marks) {
-    if (!byType.has(markV4Type(mark))) byType.set(markV4Type(mark), structuredClone(mark));
+    if (!byType.has(markV4Type(mark))) byType.set(markV4Type(mark), sortedMark(mark));
   }
   return MARK_V4_ORDER.flatMap((type) => (byType.has(type) ? [byType.get(type)!] : []));
 }
