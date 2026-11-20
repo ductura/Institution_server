@@ -34,6 +34,7 @@ export {
   type StudentSubmissionAnswer,
   type StudentSubmissionState,
 } from "./student-submission-route.ts";
+export { readTeacherSubmission } from "./teacher-submission-route.ts";
 export {
   readStudentRequirements,
   type StudentRequirementsAnswer,

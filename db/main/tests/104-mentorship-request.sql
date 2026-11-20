@@ -374,5 +374,42 @@ REVOKE SELECT, INSERT, UPDATE, DELETE ON audit.mentorship_event FROM ductus_app;
 REVOKE USAGE ON SCHEMA audit FROM ductus_app;
 SELECT is(pg_temp.events(), 15::bigint, 'the trail is unchanged');
 
+-- SRV-31: the request's name is relationship-scoped. Approval and work
+-- creation are one transaction, including when the work rule is missing.
+INSERT INTO identity.person_name (user_id, institution_id, given_name, family_name)
+VALUES (pg_temp.id('dora'), pg_temp.id('fak_a'), 'Dora', 'Izmišljena')
+ON CONFLICT (user_id) DO UPDATE SET given_name = EXCLUDED.given_name, family_name = EXCLUDED.family_name;
+INSERT INTO ref VALUES
+  ('rd_work', pg_temp.ask('dora', $$ SELECT institution.request_mentorship({vesna}, 'doctoral_thesis') $$));
+SELECT matches((SELECT val FROM ref WHERE name = 'rd_work'), '^[0-9a-f-]{36}$', 'the work request is open');
+SELECT is(pg_temp.ask('vesna', $$ SELECT given_name || ' ' || family_name
+  FROM app.teacher_mentorship_requests() WHERE request_id = {rd_work} $$),
+  'Dora Izmišljena', 'the requested teacher reads the name pair');
+SELECT is(pg_temp.ask('marko', $$ SELECT count(*) FROM app.teacher_mentorship_requests()
+  WHERE request_id = {rd_work} $$), '0', 'another teacher sees neither the request nor the name');
+SELECT is(pg_temp.ask('vesna', $$ SELECT app.approve_mentorship_request_with_work({rd_work}) $$),
+  'ZD503: not set up', 'approval requires a configured rule');
+SELECT is(pg_temp.events(), 16::bigint, 'approval without a work rule leaves only the request event');
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM app.teacher_mentorship_requests()
+  WHERE request_id = {rd_work} $$), '1', 'approval without a work rule leaves the request open');
+INSERT INTO institution.faculty_work_rule (
+  institution_id, work_type, ai_policy, ai_purposes, evidence_profile, import_allowed
+) VALUES (pg_temp.id('fak_a'), 'doctoral_thesis', 'partially_allowed', '{proofreading}', 'basic', true);
+INSERT INTO ref VALUES
+  ('md_work', pg_temp.ask('vesna', $$ SELECT app.approve_mentorship_request_with_work({rd_work}) $$));
+SELECT matches((SELECT val FROM ref WHERE name = 'md_work'), '^[0-9a-f-]{36}$', 'approval returns the mentorship');
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM app.teacher_mentorship_requests()
+  WHERE request_id = {rd_work} $$), '0', 'the approved request leaves the list');
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM institution.mentorship m
+  JOIN institution.assignment a ON a.mentorship_id = m.id AND a.institution_id = m.institution_id
+  JOIN institution.assignment_version v ON v.assignment_id = a.id AND v.version_no = a.current_version
+  WHERE m.id = {md_work} AND institution.actor_mentorship_role(m.id) = 'teacher'
+    AND v.version_no = 1 AND v.work_type = 'doctoral_thesis' AND v.ai_policy = 'partially_allowed'
+    AND v.ai_purposes = ARRAY['proofreading'] AND v.evidence_profile = 'basic' AND v.import_allowed $$),
+  '1', 'the mentor reads the assignment and first version with the configured work rule');
+SELECT is(pg_temp.ask('vesna', $$ SELECT app.approve_mentorship_request_with_work({rd_work}) $$),
+  'ZD409: conflict', 'the approved request cannot create another work');
+SELECT is(pg_temp.events(), 17::bigint, 'exactly one approval event is written');
+
 SELECT * FROM finish();
 ROLLBACK;

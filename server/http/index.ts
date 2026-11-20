@@ -3,7 +3,13 @@
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
+export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
+export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
+export {
+  createDeadlineExtensionRoutes,
+  createDeadlineExtensionRoutesFor,
+} from "./deadline-extensions/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
@@ -218,6 +224,7 @@ export {
   type TeacherReadOptions,
 } from "./teacher-reads.ts";
 export { createTeacherRosterRoutesFor } from "./teacher-roster.ts";
+export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-requests.ts";
 export {
   createStudentAssignmentsRoute,
   createStudentAssignmentsRouteFor,

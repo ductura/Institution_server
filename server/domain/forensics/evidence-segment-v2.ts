@@ -80,15 +80,51 @@ export type EvidenceEventV2 = {
 };
 
 /**
- * The step formats a segment may name (SRV-7F): `ductus-edit-steps-v1`, and
- * `ductus-edit-steps-v3` of a work of document v3 (docs/contracts/
- * document-schema-v3.md §5 t. 7, §7). Which of them a work takes is the
- * server's acceptance's to decide against the version of the work's revision
- * 0, never this check's. `ductus-edit-steps-v2` is not taken here yet.
+ * The step format of a work of document v4 (docs/contracts/document-schema-v4.md
+ * §9, SRV-10E). Its steps are read by the document's own `parseEditSteps`,
+ * never by a second reader here: until that parser takes the format (SRV-10A,
+ * §11 t. 5), every event under it is refused, so the check stays closed.
  */
-export const EVIDENCE_TRANSACTION_FORMATS = [EDIT_STEP_FORMAT_V1, EDIT_STEP_FORMAT_V3] as const;
+export const EVIDENCE_TRANSACTION_FORMAT_V4 = "ductus-edit-steps-v4" as const;
+
+/**
+ * The step formats a segment may name (SRV-7F, SRV-10E): `ductus-edit-steps-v1`,
+ * `ductus-edit-steps-v3` of a work of document v3 (docs/contracts/
+ * document-schema-v3.md §5 t. 7, §7) and `ductus-edit-steps-v4` of a work of
+ * document v4. Which of them a work takes is the server's acceptance's to
+ * decide against the version of the work's revision 0, with
+ * `evidenceTransactionFormatOfWork`, never this check's.
+ * `ductus-edit-steps-v2` is not taken here yet.
+ */
+export const EVIDENCE_TRANSACTION_FORMATS = [
+  EDIT_STEP_FORMAT_V1,
+  EDIT_STEP_FORMAT_V3,
+  EVIDENCE_TRANSACTION_FORMAT_V4,
+] as const;
 
 export type EvidenceTransactionFormat = (typeof EVIDENCE_TRANSACTION_FORMATS)[number];
+
+/** The one step format a work of each document version takes (v4 §9 t. 9). */
+const FORMAT_OF_WORK: ReadonlyMap<unknown, EvidenceTransactionFormat> = new Map<
+  unknown,
+  EvidenceTransactionFormat
+>([
+  [1, EDIT_STEP_FORMAT_V1],
+  [2, EDIT_STEP_FORMAT_V1],
+  [3, EDIT_STEP_FORMAT_V3],
+  [4, EVIDENCE_TRANSACTION_FORMAT_V4],
+]);
+
+/**
+ * The step format a work takes, by the document version of its revision 0:
+ * `ductus-edit-steps-v1` for v1 and v2, `-v3` for v3 and `-v4` for v4. Any
+ * other version takes none (`null`), so a segment of it is refused.
+ */
+export function evidenceTransactionFormatOfWork(
+  schemaVersion: unknown,
+): EvidenceTransactionFormat | null {
+  return FORMAT_OF_WORK.get(schemaVersion) ?? null;
+}
 
 export type EvidenceCaptureContextV2 = {
   editorModel: (typeof EVIDENCE_EDITOR_MODELS_V2)[number];

@@ -40,12 +40,10 @@ describe("revision 0 of document v4 (§10, class 60)", () => {
     expect(sha256).not.toBe(REVISION_ZERO_V3_SHA256);
   });
 
-  it("is not yet accepted by validateVersionedDocument (§11)", () => {
-    const outcome = validateVersionedDocument(revisionZeroDocumentV4());
-    expect(outcome.ok).toBe(false);
-    expect(outcome.ok ? [] : outcome.errors).toContainEqual({
-      path: "$.schemaVersion",
-      code: "SCHEMA_VERSION_INVALID",
+  it("is accepted by validateVersionedDocument as found (§10)", () => {
+    expect(validateVersionedDocument(revisionZeroDocumentV4())).toEqual({
+      ok: true,
+      doc: revisionZeroDocumentV4(),
     });
   });
 });

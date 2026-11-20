@@ -276,7 +276,8 @@ export const TEACHER_HANDLERS: Handlers = {
     });
     return { status: 200, body: { students } };
   },
-  "teacher.submission-receipt.get": ({ state, account, params, now }) => {
+  // P-5 (c.7010418731): no work content, so this read writes no access log.
+  "teacher.submission-receipt.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = taught(state, account, params.assignmentId);
     const studentId = params.studentId.toLowerCase();
@@ -287,16 +288,6 @@ export const TEACHER_HANDLERS: Handlers = {
     );
     if (work === undefined || work.submittedAt === null)
       return { status: 200, body: { state: "none" } };
-    recordOpening(
-      state,
-      {
-        documentId: work.documentId,
-        readerId: account.id,
-        role: "teacher",
-        surface: "submitted_text",
-      },
-      now,
-    );
     if (work.submissionReceipt === null)
       return {
         status: 200,
@@ -321,5 +312,34 @@ export const TEACHER_HANDLERS: Handlers = {
           body: { decision: "approve", mentorshipId: "3e000000-0000-4000-8000-0000000000ff" },
         }
       : { status: 200, body: { decision: "decline" } };
+  },
+  // SRV-1108: the fake keeps no extensions; it answers a record from the request.
+  "teacher.deadline-extensions.get": ({ state, account, params }) =>
+    taught(state, account, params.assignmentId) === null
+      ? { error: "not_found" }
+      : { status: 200, body: { extensions: [] } },
+  "teacher.deadline-extension.post": ({ state, account, params, body, now }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null || account === null) return { error: "not_found" };
+    const studentId = body.scope === "one" ? body.studentId.toLowerCase() : null;
+    if (studentId !== null && !studentsOf(state, account, assignment).includes(studentId))
+      return { error: "not_found" };
+    if (body.dueAt <= assignment.content.dueAt) return { error: "invalid_input" };
+    return {
+      status: 201,
+      body: {
+        extension: {
+          id: "de000000-0000-4000-8000-000000000001",
+          scope: body.scope,
+          studentId,
+          previousDueAt: new Date(assignment.content.dueAt).toISOString(),
+          dueAt: body.dueAt,
+          reasonId: body.reasonId,
+          createdBy: account.id,
+          createdAt: now.toISOString(),
+        },
+        existingSubmissionsUnchanged: false,
+      },
+    };
   },
 };

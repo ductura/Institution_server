@@ -27,7 +27,10 @@ import {
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
   createTeacherRosterRoutesFor,
+  createDeadlineExtensionRoutesFor,
+  createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
+  createCollaborationCommentsRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -160,14 +163,14 @@ const SRV_19 = [
 // contract first, the route mounted by the entry point in part 4.
 const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
+const SRV_31 = ["teacher.mentorship-requests.get", "teacher.mentorship-request-decision.post"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
   "teacher.course-students.get",
   "teacher.assignment-overview.get",
   "teacher.submission-receipt.get",
-  "teacher.mentorship-requests.get",
-  "teacher.mentorship-request-decision.post",
+  ...SRV_31,
 ] as const;
 
 /** Every route a task has put on the list; nothing else may be there. */
@@ -272,6 +275,18 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-1108: the deadline extensions of an assignment over the main database.
+    call: "...createDeadlineExtensionRoutesFor(databases.main)",
+    ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
+    routes: () => createDeadlineExtensionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createTeacherMentorshipRequestRoutesFor(databases.main)",
+    ids: SRV_31,
+    routes: () =>
+      createTeacherMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // Ductus#2028 (w1119o): the live view over the main database.
     call: "createLiveRoutesFor(databases.main)",
     ids: ["live.document.get", "live.document.put"],
@@ -279,6 +294,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       createLiveRoutesFor({ ...NO_ACTOR, actorReader: NO_READER }).map(
         (route) => route.contract.id,
       ),
+  },
+  {
+    call: "createCollaborationCommentsRouteFor(databases.main)",
+    ids: ["collaboration.comments.post"],
+    routes: () => [createCollaborationCommentsRouteFor(NO_ACTOR).contract.id],
   },
   {
     call: "createAcknowledgmentRouteFor(databases.main)",
@@ -307,7 +327,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   {
     // SRV-22: the student's submission state and word range over the main database.
     call: "...createStudentSubmissionRoutesFor(databases.main)",
-    ids: ["student.submission.get", "student.assignment-requirements.get"],
+    ids: [
+      "student.submission.get",
+      "student.assignment-requirements.get",
+      "teacher.submission-receipt.get",
+    ],
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -416,6 +440,7 @@ describe("CONTRACT_ONLY", () => {
         ...["support.problem-report.post", "projection.process-summary.post"],
         ...TEACHER_READ_ROUTES,
         ...TEACHER_ROSTER_ROUTES,
+        ...SRV_31,
         ...INSTITUTION_COURSE_ROUTES,
         "institution.course-assignments.post",
         "institution.assignment-versions.post",
@@ -425,10 +450,12 @@ describe("CONTRACT_ONLY", () => {
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
         "institution.assignment.get",
         ...["student.submission.get", "student.assignment-requirements.get"],
+        "teacher.submission-receipt.get",
         "student.submission-notes.get",
         "student.submission-notes.post",
         "live.document.get",
         "live.document.put",
+        "collaboration.comments.post",
         "institution.acknowledgment.post",
         "public.verification.post",
       ]
@@ -469,13 +496,18 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
       ...TEACHER_ROSTER_ROUTES,
+      "teacher.deadline-extensions.get",
+      "teacher.deadline-extension.post",
+      ...SRV_31,
       "live.document.get",
       "live.document.put",
+      "collaboration.comments.post",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",
       "student.submission.get",
       "student.assignment-requirements.get",
+      "teacher.submission-receipt.get",
       "public.verification.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",

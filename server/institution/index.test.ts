@@ -9,7 +9,7 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports the institution service, body parsers, and student and teacher reads", () => {
+  it("exports only the notice template version, the body parsers, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10), the student's courses (SRV-09), the assignment content (SRV-14) and the submission state and requirements reads (SRV-22) and the teacher's read of one student's state (SRV-30)", () => {
     expect(Object.keys(area).sort()).toEqual([
       "MAX_ENROLLMENT_CODE_LENGTH",
       "NOTICE_TEMPLATE_VERSION",
@@ -35,6 +35,7 @@ describe("server/institution public interface", () => {
       "readStudentRequirements",
       "readStudentSubmission",
       "readTeacherRoster",
+      "readTeacherSubmission",
       "studentCoursesOf",
     ]);
   });

@@ -108,10 +108,12 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   const local8 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   const local9 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   const local10 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local11 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local12 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
       const nestedAnchor = (typeof value === 'object' && value !== null ? value['anchor'] : undefined) as Record<string, unknown>;
     return (
-      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['anchor'] === 'object' && value['anchor'] !== null && !Array.isArray(value['anchor'])) && (typeof nestedAnchor['nodeId'] === 'string') && local0.test(nestedAnchor['nodeId']) && (typeof nestedAnchor['quote'] === 'string') && local1.test(nestedAnchor['quote']) && (typeof nestedAnchor['prefix'] === 'string') && local2.test(nestedAnchor['prefix']) && (typeof nestedAnchor['suffix'] === 'string') && local3.test(nestedAnchor['suffix']) && (typeof nestedAnchor['startHint'] === 'number' && Number.isInteger(nestedAnchor['startHint'])) && nestedAnchor['startHint'] <= 1000000 && nestedAnchor['startHint'] >= 0 && (typeof nestedAnchor['endHint'] === 'number' && Number.isInteger(nestedAnchor['endHint'])) && nestedAnchor['endHint'] <= 1000000 && nestedAnchor['endHint'] >= 0 && Object.getOwnPropertyNames(value['anchor']).length === 6 && (typeof value['body'] === 'string') && local4.test(value['body']) && (typeof value['documentId'] === 'string') && local5.test(value['documentId']) && Object.getOwnPropertyNames(value).length === 3) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['body'] === 'string') && local6.test(value['body']) && (typeof value['threadId'] === 'string') && local7.test(value['threadId']) && Object.getOwnPropertyNames(value).length === 2) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['threadId'] === 'string') && local8.test(value['threadId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['commentId'] === 'string') && local9.test(value['commentId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['documentId'] === 'string') && local10.test(value['documentId']) && Object.getOwnPropertyNames(value).length === 1))
+      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['anchor'] === 'object' && value['anchor'] !== null && !Array.isArray(value['anchor'])) && (typeof nestedAnchor['nodeId'] === 'string') && local0.test(nestedAnchor['nodeId']) && (typeof nestedAnchor['quote'] === 'string') && local1.test(nestedAnchor['quote']) && (typeof nestedAnchor['prefix'] === 'string') && local2.test(nestedAnchor['prefix']) && (typeof nestedAnchor['suffix'] === 'string') && local3.test(nestedAnchor['suffix']) && (typeof nestedAnchor['startHint'] === 'number' && Number.isInteger(nestedAnchor['startHint'])) && nestedAnchor['startHint'] <= 1000000 && nestedAnchor['startHint'] >= 0 && (typeof nestedAnchor['endHint'] === 'number' && Number.isInteger(nestedAnchor['endHint'])) && nestedAnchor['endHint'] <= 1000000 && nestedAnchor['endHint'] >= 0 && Object.getOwnPropertyNames(value['anchor']).length === 6 && (typeof value['body'] === 'string') && local4.test(value['body']) && (typeof value['documentId'] === 'string') && local5.test(value['documentId']) && Object.getOwnPropertyNames(value).length === 3) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['body'] === 'string') && local6.test(value['body']) && (typeof value['threadId'] === 'string') && local7.test(value['threadId']) && Object.getOwnPropertyNames(value).length === 2) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['threadId'] === 'string') && local8.test(value['threadId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['commentId'] === 'string') && local9.test(value['commentId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (typeof value['documentId'] === 'string') && local10.test(value['documentId']) && Object.getOwnPropertyNames(value).length === 1) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (value['anchor'] === null) && (typeof value['body'] === 'string') && local11.test(value['body']) && (typeof value['documentId'] === 'string') && local12.test(value['documentId']) && Object.getOwnPropertyNames(value).length === 3))
     )
   }
   })(),
@@ -775,6 +777,53 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.source-proof-image.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      (typeof value['proofId'] === 'string') &&
+      value['proofId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }),
+  "student.source-proofs.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.source-proofs.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.source-proofs.post:body": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,30}(?<!\s)(?![\s\S])/;
+  const local1 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|\n|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,2000}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['image'] === 'string') &&
+      value['image'].length >= 1 &&
+      (typeof value['page'] === 'string') &&
+      local0.test(value['page']) &&
+      (value['note'] !== undefined ? ((typeof value['note'] === 'string') && local1.test(value['note'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['image', 'page', 'note'].includes(key))
+    )
+  }
+  })(),
   "student.submission-notes.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -914,6 +963,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['courseId'] === 'string') &&
       value['courseId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.deadline-extension.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.deadline-extension.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const local2 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (value['scope'] === 'one') && (typeof value['studentId'] === 'string') && local0.test(value['studentId']) && (typeof value['dueAt'] === 'string') && local1.test(value['dueAt']) && (((value['reasonId'] === 'justified')) || ((value['reasonId'] === 'technical')) || ((value['reasonId'] === 'agreement'))) && Object.getOwnPropertyNames(value).length === 4) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (value['scope'] === 'all') && (typeof value['dueAt'] === 'string') && local2.test(value['dueAt']) && (((value['reasonId'] === 'justified')) || ((value['reasonId'] === 'technical')) || ((value['reasonId'] === 'agreement')) || ((value['reasonId'] === 'all'))) && Object.getOwnPropertyNames(value).length === 3))
+    )
+  }
+  })(),
+  "teacher.deadline-extensions.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

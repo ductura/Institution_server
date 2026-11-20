@@ -166,6 +166,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7037456743",
   },
+  // SRV-1102 (Ductus#2051, Val 11, E§3.4 proofs, B-8): excerpts attached to a source; Ductus has no such routes.
+  "app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047672399",
+  },
+  "app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047672399",
+  },
   // SRV-1101 (Val 11, C-12): the text checks and Lekta profile of the institution; Ductus has no such route.
   "app/api/student/assignments/[assignmentId]/text-check-config/route.ts": {
     methods: ["GET"],
@@ -241,6 +250,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  // SRV-1108 (Val 11, N-13, C-15): deadline extensions; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
 };
 
 /**
@@ -254,7 +268,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.enrollments.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
-  "collaboration.comments.post",
   "collaboration.revision-requests.post",
   "teacher.fast-path.post",
   "student.access-log.get",
@@ -264,9 +277,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
-  "teacher.submission-receipt.get",
-  "teacher.mentorship-requests.get",
-  "teacher.mentorship-request-decision.post",
 ];
 
 /**
