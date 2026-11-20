@@ -134,6 +134,15 @@ export type Consultation = {
   additions: { id: string; text: string; createdAt: string }[];
 };
 
+/** An image attached to a student's work (SRV-10C). */
+export type Attachment = {
+  readonly id: string;
+  readonly documentId: string;
+  readonly sha256: string;
+  readonly mediaType: "image/png" | "image/jpeg";
+  readonly bytes: Buffer;
+};
+
 /** An excerpt attached to a source of a student's work (SRV-1102). */
 export type SourceProof = {
   readonly id: string;
@@ -231,6 +240,7 @@ export type State = {
   submissionNotes: SubmissionNote[];
   workSources: WorkSource[];
   sourceProofs: SourceProof[];
+  attachments: Attachment[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -417,6 +427,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     submissionNotes: [],
     workSources: [],
     sourceProofs: [],
+    attachments: [],
     enrollmentGuesses: new Map(),
     mentorships: [
       {

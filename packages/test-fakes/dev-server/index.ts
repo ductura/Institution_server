@@ -5,6 +5,7 @@ import "../guard/index.ts";
 
 import type { Operations } from "../../contracts/index.ts";
 import { ACCOUNT_HANDLERS } from "./account-routes.ts";
+import { ATTACHMENT_HANDLERS } from "./attachment-routes.ts";
 import { COLLABORATION_HANDLERS } from "./collaboration-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
@@ -51,6 +52,7 @@ export {
  * coverage.test.ts fails for a route of ROUTE_TABLE without one.
  */
 export const DEV_HANDLERS: Handlers = {
+  ...ATTACHMENT_HANDLERS,
   ...ACCOUNT_HANDLERS,
   ...INSTITUTION_HANDLERS,
   ...COURSE_SETUP_HANDLERS,

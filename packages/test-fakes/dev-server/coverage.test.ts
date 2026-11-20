@@ -151,6 +151,16 @@ const ADD_PROOF: Step = {
   raw: PROOF_FORM,
 };
 
+const PNG_BASE64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]).toString(
+  "base64",
+);
+const ADD_ATTACHMENT: Step = {
+  path: `${STUDENT_ASSIGNMENT}/attachments`,
+  as: "student",
+  headers: ORIGIN,
+  body: { imageBase64: PNG_BASE64 },
+};
+
 const SUBMIT: Step = {
   path: "/api/v1/submission",
   as: "student",
@@ -461,6 +471,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.submission-notes.post": { request: NOTE },
   "student.text-check-config.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/text-check-config`, as: "student" },
+  },
+  "work.attachments.post": { request: ADD_ATTACHMENT },
+  "work.attachments.get": {
+    before: [ADD_ATTACHMENT],
+    request: {
+      path: "/api/v1/works/attachments/00000000-0000-4000-8000-a00000000001",
+      as: "student",
+    },
   },
   "student.source-proofs.get": {
     before: [SAVE_SOURCE, ADD_PROOF],
