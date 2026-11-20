@@ -14910,7 +14910,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.37.0",
+        "apiVersion": "1.38.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -14926,7 +14926,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.37.0",
+        "apiVersion": "1.38.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -27572,6 +27572,337 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster-csv.get",
+    "name": "csv",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-disposition": "attachment; filename=\"merlin-popis.csv\"",
+        "cache-control": "no-store"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster-csv.get",
+    "name": "no-session",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000000d300"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster-csv.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000000d301"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster-csv.get",
+    "name": "other-course",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000d302"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster-csv.get",
+    "name": "malformed-id",
+    "request": {
+      "params": {
+        "assignmentId": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000d303"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster-csv.get",
+    "name": "reads-disagree",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000000d304"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster.get",
+    "name": "roster",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "rows": [
+          {
+            "familyName": "Anić",
+            "givenName": "Demo",
+            "submitted": true,
+            "submittedMinute": "2026-12-20T21:14:00.000Z",
+            "afterDeadline": false,
+            "pdfName": "anic-demo-000000e1.pdf",
+            "pdfSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "docxName": "anic-demo-000000e1.docx",
+            "docxSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "familyName": "Šimić",
+            "givenName": "Izmišljena",
+            "submitted": false,
+            "submittedMinute": null,
+            "afterDeadline": null,
+            "pdfName": null,
+            "pdfSha256": null,
+            "docxName": null,
+            "docxSha256": null
+          },
+          {
+            "familyName": null,
+            "givenName": null,
+            "submitted": true,
+            "submittedMinute": "2026-12-28T08:02:00.000Z",
+            "afterDeadline": true,
+            "pdfName": "student-000000e3.pdf",
+            "pdfSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "docxName": "student-000000e3.docx",
+            "docxSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          }
+        ],
+        "extensionReasons": [
+          {
+            "studentId": "00000000-0000-4000-8000-0000000000e3",
+            "dueAt": "2026-12-27T23:00:00.000Z",
+            "reasonId": "justified"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "rows": [],
+        "extensionReasons": []
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster.get",
+    "name": "no-session",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000000d200"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-00000000d201"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster.get",
+    "name": "other-course",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000d202"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster.get",
+    "name": "malformed-id",
+    "request": {
+      "params": {
+        "assignmentId": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000d203"
+      }
+    }
+  },
+  {
+    "route": "teacher.merlin-roster.get",
+    "name": "reads-disagree",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000000d204"
       }
     }
   },

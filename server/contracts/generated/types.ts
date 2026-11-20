@@ -575,6 +575,20 @@ export type Operations = {
     success: { status: 200; body: { "works": ({ "mentorshipId": string; "assignmentId": string; "documentId": null; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "not_started" } | { "mentorshipId": string; "assignmentId": string; "documentId": string; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "in_progress" | "submitted" })[] }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "teacher.merlin-roster-csv.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "teacher.merlin-roster.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "rows": ({ "familyName": string; "givenName": string; "submitted": false; "submittedMinute": null; "afterDeadline": null; "pdfName": null; "pdfSha256": null; "docxName": null; "docxSha256": null } | { "familyName": string; "givenName": string; "submitted": true; "submittedMinute": string; "afterDeadline": boolean; "pdfName": string; "pdfSha256": string; "docxName": string; "docxSha256": string } | { "familyName": null; "givenName": null; "submitted": false; "submittedMinute": null; "afterDeadline": null; "pdfName": null; "pdfSha256": null; "docxName": null; "docxSha256": null } | { "familyName": null; "givenName": null; "submitted": true; "submittedMinute": string; "afterDeadline": boolean; "pdfName": string; "pdfSha256": string; "docxName": string; "docxSha256": string })[]; "extensionReasons": ({ "studentId": string | null; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.receipt-pdf.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;

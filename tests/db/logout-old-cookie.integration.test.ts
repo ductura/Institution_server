@@ -46,6 +46,7 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createMerlinRosterRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
@@ -410,6 +411,19 @@ const SESSION_ROUTES = {
     body: () => ({ scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" }),
     live: 404,
   },
+  // SRV-1109: a live session that teaches no such assignment gets 404.
+  "teacher.merlin-roster.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/merlin/roster`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.merlin-roster-csv.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/merlin/csv`,
+    body: () => undefined,
+    live: 404,
+  },
   "teacher.assignment-submissions.post": {
     path: "/api/v1/teacher/assignment-submissions",
     body: () => ({ assignmentIds: [ASSIGNMENT] }),
@@ -613,6 +627,7 @@ const FACTORIES = [
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createDeadlineExtensionRoutesFor",
+  "createMerlinRosterRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
@@ -656,6 +671,7 @@ const MOUNTED = [
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
+  ...createMerlinRosterRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),

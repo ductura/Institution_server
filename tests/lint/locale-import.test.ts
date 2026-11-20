@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { LOCALE_IMPORT_ALLOWED } from "../../scripts/lint-rules/index.ts";
 
-// The login failure page (DAN-808) and receipt PDF (SRV-9C) each have a
+// The login failure page (DAN-808), receipt PDF (SRV-9C) and Merlin roster (SRV-1109) each have a
 // named import of their catalogue. Any other file, name, form or spelling
 // still fails both local/area-boundary and local/no-dynamic-load. Fixtures are
 // linted under virtual paths with the repository's own config.
@@ -18,6 +18,7 @@ const eslint = new ESLint({
 
 const FLOW = "server/http/auth-flow.ts";
 const RECEIPT = "server/http/receipt-pdf.ts";
+const MERLIN = "server/http/merlin-roster/index.ts";
 const RULES = ["local/area-boundary", "local/no-dynamic-load"];
 
 async function ruleIds(file: string, code: string): Promise<string[]> {
@@ -35,6 +36,7 @@ describe("the locales imports of the login page and receipt PDF", () => {
     expect(LOCALE_IMPORT_ALLOWED).toEqual({
       [FLOW]: { specifier: "../../locales/index.ts", name: "messagesHr" },
       [RECEIPT]: { specifier: "../../locales/index.ts", name: "receiptPdfHr" },
+      [MERLIN]: { specifier: "../../../locales/index.ts", name: "merlinHr" },
     });
     expect(Object.isFrozen(LOCALE_IMPORT_ALLOWED)).toBe(true);
   });
@@ -42,6 +44,11 @@ describe("the locales imports of the login page and receipt PDF", () => {
   it("allows the Croatian PDF labels in the receipt adapter", async () => {
     const code = 'import { receiptPdfHr as m } from "../../locales/index.ts";' + use;
     expect(await ruleIds(RECEIPT, code)).toEqual([]);
+  });
+
+  it("allows the Croatian roster labels in the Merlin roster adapter", async () => {
+    const code = 'import { merlinHr as m } from "../../../locales/index.ts";' + use;
+    expect(await ruleIds(MERLIN, code)).toEqual([]);
   });
 
   it.each([
@@ -60,6 +67,8 @@ describe("the locales imports of the login page and receipt PDF", () => {
     [FLOW, 'import { messagesEn as m } from "../../locales/index.ts";' + use],
     [FLOW, 'import { receiptPdfHr as m } from "../../locales/index.ts";' + use],
     [RECEIPT, 'import { messagesHr as m } from "../../locales/index.ts";' + use],
+    [MERLIN, 'import { messagesHr as m } from "../../../locales/index.ts";' + use],
+    [MERLIN, 'import { merlinHr as m } from "../../locales/index.ts";' + use],
     [FLOW, 'import { messagesHr, textOf as m } from "../../locales/index.ts";' + use],
     [FLOW, 'import * as m from "../../locales/index.ts";' + use],
     [FLOW, 'import m from "../../locales/index.ts";' + use],

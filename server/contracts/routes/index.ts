@@ -32,3 +32,4 @@ export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export { merlinRosterRoutes } from "./merlin-roster.ts";
