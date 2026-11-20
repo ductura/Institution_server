@@ -73,3 +73,47 @@ describe("parseAssignmentVersionBody", () => {
     ]);
   });
 });
+
+const CONTENT = {
+  title: "Izmišljeni zadatak",
+  instructions: "Izmišljene upute.",
+  workType: "essay",
+  opensAt: "2026-12-01T08:00:00Z",
+  dueAt: "2026-12-15T22:00:00+01:00",
+  aiPolicy: "partially_allowed",
+  aiPurposes: ["proofreading"],
+  evidenceProfile: "basic",
+  importAllowed: false,
+  wordMin: null,
+  wordMax: 3000,
+};
+
+const withoutWordMin: Record<string, unknown> = { ...CONTENT };
+delete withoutWordMin.wordMin;
+
+it.each<[string, unknown]>([
+  ["no expectedVersion", CONTENT],
+  ["expectedVersion 0", { expectedVersion: 0, ...CONTENT }],
+  ["expectedVersion past int4", { expectedVersion: 2_147_483_648, ...CONTENT }],
+  ["expectedVersion as text", { expectedVersion: "2", ...CONTENT }],
+  ["a word bound left out", { expectedVersion: 2, ...withoutWordMin }],
+  ["wordMin above wordMax", { expectedVersion: 2, ...CONTENT, wordMin: 3001 }],
+  ["a purpose under prohibited", { expectedVersion: 2, ...CONTENT, aiPolicy: "prohibited" }],
+  [
+    "a repeated purpose",
+    { expectedVersion: 2, ...CONTENT, aiPurposes: ["proofreading", "proofreading"] },
+  ],
+  ["February 30", { expectedVersion: 2, ...CONTENT, dueAt: "2026-02-30T12:00:00Z" }],
+  ["year 0999 in UTC", { expectedVersion: 2, ...CONTENT, opensAt: "1000-01-01T00:30:00+01:00" }],
+  ["a NUL in the title", { expectedVersion: 2, ...CONTENT, title: "a\u0000b" }],
+  ["201 code points of title", { expectedVersion: 2, ...CONTENT, title: "😀".repeat(201) }],
+  ["an extra key", { expectedVersion: 2, ...CONTENT, courseId: "x" }],
+  ["an array", [CONTENT]],
+])("version body refuses %s", (_, value) => {
+  expect(parseAssignmentVersionBody(value)).toBeNull();
+});
+
+it("accepts a 200-code-point title and both word bounds null in a version", () => {
+  const body = { expectedVersion: 1, ...CONTENT, title: "\u{1F600}".repeat(200), wordMax: null };
+  expect(parseAssignmentVersionBody(body)).not.toBeNull();
+});
