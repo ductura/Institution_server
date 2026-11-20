@@ -37,6 +37,7 @@ import {
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createStudentNoticeRouteFor,
   createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
@@ -344,6 +345,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-NG: the notice of the current version over the main database.
+    call: "createStudentNoticeRouteFor(databases.main)",
+    ids: ["student.notice.get"],
+    routes: () => [createStudentNoticeRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-9B: the public check of a receipt over the main database.
     call: "createPublicVerificationRouteFor(databases.main)",
     ids: ["public.verification.post"],
@@ -459,6 +466,7 @@ describe("CONTRACT_ONLY", () => {
         "institution.assignment.get",
         ...["student.submission.get", "student.assignment-requirements.get"],
         "teacher.submission-receipt.get",
+        "student.notice.get",
         "student.submission-notes.get",
         "student.submission-notes.post",
         "live.document.get",
@@ -520,6 +528,7 @@ describe("routes the entry point mounts itself", () => {
       "student.submission.get",
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
+      "student.notice.get",
       "public.verification.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",

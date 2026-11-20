@@ -247,6 +247,7 @@ export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,
 } from "./student-submission.ts";
+export { createStudentNoticeRoute, createStudentNoticeRouteFor } from "./student-notice.ts";
 export {
   bearerMatches,
   checkProvisionBody,

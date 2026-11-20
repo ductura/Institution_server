@@ -30,6 +30,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
+  createStudentNoticeRouteFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -264,6 +265,13 @@ const SESSION_ROUTES = {
   "teacher.submission-receipt.get": {
     method: "GET",
     path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-NG: a live session naming an assignment it is no student of gets 404.
+  "student.notice.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/notice`,
     body: () => undefined,
     live: 404,
   },
@@ -624,6 +632,7 @@ const FACTORIES = [
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
   "createStudentSubmissionRoutesFor",
+  "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createDeadlineExtensionRoutesFor",
@@ -668,6 +677,7 @@ const MOUNTED = [
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
   ...createStudentSubmissionRoutesFor(databases.main),
+  createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),

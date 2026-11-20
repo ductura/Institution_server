@@ -25,6 +25,7 @@ import {
   createMeRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createStudentNoticeRouteFor,
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createSourceProofRoutesFor,
@@ -202,6 +203,8 @@ async function main(): Promise<void> {
       // SRV-22: the student's own submission state and word range of one
       // assignment, the receipt byte for byte as the submission bound it.
       ...createStudentSubmissionRoutesFor(databases.main),
+      // SRV-NG: the notice of the current version for a student of the course (E-6).
+      createStudentNoticeRouteFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).

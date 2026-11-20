@@ -1,0 +1,125 @@
+// SRV-NG: the notice of the current version for a student of the course, over
+// a fake withActor. Who asks comes only from the session; a row the port
+// cannot vouch for is row_malformed. Every token, id and text is invented.
+import { describe, expect, it } from "vitest";
+
+import {
+  createStudentNoticeReader,
+  noticeOf,
+  STUDENT_NOTICE_DATABASE_ERROR,
+  STUDENT_NOTICE_NOT_FOUND,
+  STUDENT_NOTICE_ROW_MALFORMED,
+  STUDENT_NOTICE_UNAUTHENTICATED,
+} from "./student-notice.ts";
+import type { ActorTransaction, WithActor } from "./with-actor.ts";
+
+const TOKEN = "izmisljeni-token-studenta-00000000000000001";
+const A = "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60";
+const USER = "5a000000-0000-4000-8000-000000000001";
+// The columns as the driver names them; built from entries, as they are no camelCase names.
+const BASE: readonly (readonly [string, unknown])[] = [
+  ["assignment_id", A],
+  ["version_no", 2],
+  ["title", "Seminarski rad: kućno kompostiranje"],
+  ["instructions", "Izmišljena uputa."],
+  ["work_type", "seminar_paper"],
+  ["opens_at", new Date("2026-11-02T08:00:00.000Z")],
+  ["due_at", new Date("2026-12-15T22:59:00.000Z")],
+  ["ai_policy", "prohibited"],
+  ["ai_purposes", []],
+  ["evidence_profile", "extended"],
+  ["word_min", null],
+  ["word_max", 3000],
+  ["read_at", null],
+  ["acknowledged_at", new Date("2026-11-03T09:20:00.000Z")],
+];
+const row = (...over: (readonly [string, unknown])[]): object =>
+  Object.fromEntries([...BASE, ...over]);
+const actorRow = (id: unknown): object => Object.fromEntries([["user_id", id]]);
+
+function reader(actor: unknown[], notice: unknown) {
+  const seen: { text: string; values: readonly unknown[] | undefined }[] = [];
+  const withActor = (async (_token, fn) => {
+    const tx: ActorTransaction = {
+      async query(text, values) {
+        seen.push({ text, values });
+        if (notice instanceof Error) throw notice;
+        return {
+          rows: (text.includes("current_user_id() AS user_id") ? actor : notice) as never[],
+          rowCount: 0,
+        };
+      },
+    };
+    return fn(tx);
+  }) as WithActor;
+  return { port: createStudentNoticeReader(withActor), seen };
+}
+const fail = (error: unknown) => ({ ok: false, error });
+
+describe("student notice", () => {
+  it("reads the notice with instants as toISOString and null bounds kept", async () => {
+    const { port, seen } = reader([actorRow(USER)], [row()]);
+    expect(await port.read(TOKEN, A)).toEqual({
+      ok: true,
+      value: {
+        assignmentId: A,
+        versionNo: 2,
+        title: "Seminarski rad: kućno kompostiranje",
+        instructions: "Izmišljena uputa.",
+        workType: "seminar_paper",
+        opensAt: "2026-11-02T08:00:00.000Z",
+        dueAt: "2026-12-15T22:59:00.000Z",
+        aiPolicy: "prohibited",
+        aiPurposes: [],
+        evidenceProfile: "extended",
+        wordMin: null,
+        wordMax: 3000,
+        readAt: null,
+        acknowledgedAt: "2026-11-03T09:20:00.000Z",
+      },
+    });
+    expect(seen[1]!.values).toEqual([A]);
+    expect(seen[1]!.text).toContain("m.role = 'student' AND m.member_to IS NULL");
+  });
+
+  it("a session that no longer stands is unauthenticated; no row is not_found", async () => {
+    expect(await reader([actorRow(null)], [row()]).port.read(TOKEN, A)).toEqual(
+      fail(STUDENT_NOTICE_UNAUTHENTICATED),
+    );
+    expect(await reader([actorRow(USER)], []).port.read(TOKEN, A)).toEqual(
+      fail(STUDENT_NOTICE_NOT_FOUND),
+    );
+  });
+
+  it("a malformed token or id never reaches the database", async () => {
+    const a = reader([actorRow(USER)], [row()]);
+    expect(await a.port.read("kratko", A)).toEqual(fail(STUDENT_NOTICE_UNAUTHENTICATED));
+    expect(await a.port.read(TOKEN, "nije-uuid")).toEqual(fail(STUDENT_NOTICE_NOT_FOUND));
+    expect(a.seen).toEqual([]);
+  });
+
+  it("maps database errors", async () => {
+    expect(
+      await reader([], Object.assign(new Error("x"), { code: "ZD401" })).port.read(TOKEN, A),
+    ).toEqual(fail(STUDENT_NOTICE_UNAUTHENTICATED));
+    expect(
+      await reader([], Object.assign(new Error("x"), { code: "57014" })).port.read(TOKEN, A),
+    ).toEqual(fail(STUDENT_NOTICE_DATABASE_ERROR));
+  });
+
+  it("a row it cannot vouch for is row_malformed", async () => {
+    const bads: readonly (readonly [string, unknown])[] = [
+      ["version_no", 0],
+      ["opens_at", "2026-11-02"],
+      ["word_min", 0],
+      ["ai_purposes", [1]],
+      ["title", ""],
+    ];
+    for (const bad of bads) {
+      expect(await reader([actorRow(USER)], [row(bad)]).port.read(TOKEN, A)).toEqual(
+        fail(STUDENT_NOTICE_ROW_MALFORMED),
+      );
+    }
+    expect(noticeOf([row(), row()])).toBeNull();
+  });
+});
