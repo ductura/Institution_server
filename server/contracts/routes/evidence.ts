@@ -157,6 +157,15 @@ export const open = defineRoute({
         documentId: Type.String({ minLength: 1 }),
         evidenceProfileId: Text(120),
         ...WorkState,
+        // SRV-7F (docs/contracts/document-schema-v3.md §7): the version of the work, which is
+        // the schemaVersion of its revision 0, and the server's SHA-256 of that revision, at
+        // every revision. The server always sends both; they are optional only so that a
+        // client of an earlier minor stays valid, and a client that lacks them treats the
+        // work as unconfirmed (no v3).
+        schemaVersion: Type.Optional(
+          Type.Union([Type.Literal(1), Type.Literal(2), Type.Literal(3)]),
+        ),
+        revisionZeroHash: Type.Optional(Sha256),
         /** Exact JCS bytes of the snapshot of currentRevision. */
         document: Base64,
         // The receipt keys of the work's evidence domain; the route sends [] when the domain
