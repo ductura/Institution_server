@@ -355,6 +355,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { documentId: IDS.document },
     },
   },
+  "projection.process-summary-details.post": {
+    request: {
+      path: "/api/v1/process-summary/details",
+      as: "nastavnik",
+      body: { documentId: IDS.document },
+    },
+  },
   "settings.catalogue.get": { request: { path: "/api/v1/settings/catalogue", as: "student" } },
   "settings.values.get": {
     request: {
@@ -433,6 +440,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
+  "work.versions.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
+  },
   "teacher.assignment-submissions.post": {
     request: {
       path: "/api/v1/teacher/assignment-submissions",

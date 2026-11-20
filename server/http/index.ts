@@ -104,6 +104,7 @@ export {
   type SubmitWork,
 } from "./submission.ts";
 export {
+  createProcessSummaryDetailsRouteFor,
   createProcessSummaryRoute,
   createProcessSummaryRouteFor,
   parseProcessSummaryBody,
