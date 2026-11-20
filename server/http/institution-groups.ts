@@ -2,7 +2,11 @@
 // POST /api/v1/institution/groups/{groupId}/teachers (SRV-15, Ductus#2028
 // c.7008147932; contracts institution.course-groups.post and
 // institution.course-group-teachers.post), behind the same JSON reader as the
-// course routes. Who may is the RPC's; the caller comes only from the session.
+// course routes, and GET /api/v1/institution/courses/{courseId}/groups
+// (institution.course-groups.get), the edge of profile-me.ts: Sec-Fetch-Site,
+// when sent, exactly one same-origin (403), then a live session cookie (401),
+// then a course id that is a UUID (422). Who may is the RPC's (owner decision
+// "A opcija", c.7016215710); the caller comes only from the session.
 import { ROUTES } from "../contracts/index.ts";
 import {
   createInstitutionGroups,
@@ -10,7 +14,7 @@ import {
   type GroupTeacherOutcome,
   type InstitutionGroups,
 } from "../database/index.ts";
-import { recordActivity } from "../session/index.ts";
+import { liveSessionTokenFromCookie, recordActivity } from "../session/index.ts";
 
 import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
@@ -62,6 +66,33 @@ export function parseGroupTeacherBody(value: unknown): string | null {
 
 type Outcome = GroupCreateOutcome | GroupTeacherOutcome;
 
+/** GET institution.course-groups.get over the port; nothing is written, no activity is recorded. */
+function courseGroupsRoute(groups: InstitutionGroups): Route {
+  const contract = ROUTES.find((found) => found.id === "institution.course-groups.get")!;
+  return {
+    contract,
+    async handle(request, response, params) {
+      const site = request.headersDistinct["sec-fetch-site"];
+      if (site !== undefined && (site.length !== 1 || site[0] !== "same-origin")) {
+        return sendProblem(response, 403, "forbidden");
+      }
+      const token = liveSessionTokenFromCookie(request.headers.cookie);
+      if (token === undefined) return sendProblem(response, 401, "unauthorized");
+      const courseId = decodeOnce(params?.courseId);
+      if (!UUID.test(courseId)) return sendProblem(response, 422, "invalid_input");
+      try {
+        const outcome = await groups.readCourseGroups(token, courseId.toLowerCase());
+        if (outcome.status === "read") return sendJson(response, 200, { groups: outcome.groups });
+        const [status, code] = REFUSALS.get(outcome.status) ?? [503, "unavailable"];
+        return sendProblem(response, status, code);
+      } catch (error) {
+        reportServerError("route", error, requestIdOf(response), contract.id);
+        return sendProblem(response, 503, "unavailable");
+      }
+    },
+  };
+}
+
 export function createInstitutionGroupRoutes(options: InstitutionGroupRouteOptions): Route[] {
   const timeoutMs = options.timeoutMs ?? INSTITUTION_BODY_TIMEOUT_MS;
 
@@ -99,6 +130,7 @@ export function createInstitutionGroupRoutes(options: InstitutionGroupRouteOptio
   };
 
   return [
+    courseGroupsRoute(options.groups),
     route("institution.course-groups.post", "courseId", async (token, value, courseId) => {
       const name = parseGroupBody(value);
       return name === null ? null : options.groups.createGroup(token, courseId, name);
@@ -112,7 +144,7 @@ export function createInstitutionGroupRoutes(options: InstitutionGroupRouteOptio
   ];
 }
 
-/** Both routes over main's application withActor; server/server.ts mounts them. */
+/** The three routes over main's application withActor; server/server.ts mounts them. */
 export function createInstitutionGroupRoutesFor(
   main: Pick<Databases["main"], "withActor">,
 ): Route[] {

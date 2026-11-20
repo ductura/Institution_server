@@ -121,6 +121,9 @@ export { createInstitutionGroups } from "./institution-groups.ts";
 export { createAdminCourses } from "./admin-courses.ts";
 export type { AdminCourseInput, AdminCourseOutcome, AdminCourses } from "./admin-courses.ts";
 export type {
+  CourseGroup,
+  CourseGroupsOutcome,
+  CourseGroupTeacher,
   GroupCreateOutcome,
   GroupTeacherOutcome,
   InstitutionGroups,

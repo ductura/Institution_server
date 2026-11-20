@@ -122,10 +122,10 @@ const reconstruct = (payloads: EvidencePayloadReader) =>
       chain: chainReader,
       payloads,
       signer: {
-        async verify(message, signature) {
-          const verifier = goldenKeyVerifier(chain.verificationKey);
-          return { ok: true, value: await verifier.verify(message, signature) };
-        },
+        verify: async (message, signature) => ({
+          ok: true,
+          value: await goldenKeyVerifier(chain.verificationKey).verify(message, signature),
+        }),
       },
       replayer: {
         transactionFormat: "ductus-edit-steps-v1",
@@ -205,7 +205,7 @@ describe("evidence payload read against the local object store (B-8i, B2)", () =
         payloads: router(),
         thresholds: { sessionBreakAboveMinutes: 30, pasteListedAboveCharacters: 200 },
       },
-      chain.segments[0].segment.documentId,
+      chain.segments[0]!.segment.documentId,
     );
     expect(summary.status).toBe("ok");
   });
@@ -215,7 +215,7 @@ describe("evidence payload read against the local object store (B-8i, B2)", () =
     await expect(
       reader.readImmutable({
         evidencePackageId: chain.evidencePackageId,
-        segmentHash: chain.segments[0].segmentHash,
+        segmentHash: chain.segments[0]!.segmentHash,
       }),
     ).resolves.toEqual({ status: "not_found" });
     await expect(reconstruct(reader)).resolves.toEqual({

@@ -16,6 +16,7 @@ import {
   type State,
 } from "./state.ts";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const isAdmin = (account: Account | null): boolean =>
   account?.roles.includes("institution_admin") ?? false;
 const isTeacher = (state: State, id: string): boolean =>
@@ -115,6 +116,23 @@ export const COURSE_SETUP_HANDLERS: Handlers = {
     group.teacherIds.push(teacherId);
     return { status: 200, body: { assigned: true } };
   },
+  // UGOVORI-API (SRV-AV): the current version, for a teacher of the course.
+  "institution.assignment.get": ({ state, account, params }) => {
+    if (!UUID.test(params.assignmentId)) return { error: "invalid_input" };
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId.toLowerCase());
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (assignment === undefined || account === null || !course || !teachesCourse(course, account))
+      return { error: "not_found" };
+    return {
+      status: 200,
+      body: {
+        assignmentId: assignment.id,
+        courseId: assignment.courseId,
+        versionNo: assignment.version,
+        ...assignment.content,
+      },
+    };
+  },
   "institution.course-assignments.post": ({ state, account, params, body }) => {
     const course = state.courses.find((c) => c.id === params.courseId);
     if (course === undefined || account === null || !teachesCourse(course, account))
@@ -122,9 +140,16 @@ export const COURSE_SETUP_HANDLERS: Handlers = {
     const opensAt = parseInstant(body.opensAt);
     const dueAt = parseInstant(body.dueAt);
     if (opensAt === null || dueAt === null) return { error: "invalid_input" };
-    const { requestKey, ...fields } = body;
+    const { requestKey, groupIds, ...fields } = body;
     const content: AssignmentContent = { ...fields, opensAt, dueAt };
+    // UGOVORI-API: the groups are the course's, each once; summary only needs AI help and no purpose.
+    const groups = (groupIds ?? []).map((id) => id.toLowerCase());
+    if (groupIds !== undefined) content.groupIds = groups;
     if (
+      new Set(groups).size !== groups.length ||
+      groups.some((id) => !course.groups.some((g) => g.id === id)) ||
+      (content.aiSummaryOnly === true &&
+        (content.aiPolicy === "prohibited" || content.aiPurposes.length > 0)) ||
       (content.wordMin !== null && content.wordMax !== null && content.wordMin > content.wordMax) ||
       (content.aiPolicy === "prohibited" && content.aiPurposes.length > 0) ||
       // An assignment keeps or narrows its course's rule on AI help.

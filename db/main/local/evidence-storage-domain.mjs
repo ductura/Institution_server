@@ -3,7 +3,7 @@
 // compose.yaml. It makes the bucket, writes the bucket's identity label once
 // and prints the operator configuration the web process reads:
 //
-//   node db/local/evidence-storage-domain.mjs    (after pnpm db:seed)
+//   node db/main/local/evidence-storage-domain.mjs    (after pnpm db:seed)
 //   -> EVIDENCE_STORAGE_DOMAINS={...}            (into .env.local)
 //
 // Credentials come from EVIDENCE_S3_LOCAL_KEY_ID and EVIDENCE_S3_LOCAL_SECRET

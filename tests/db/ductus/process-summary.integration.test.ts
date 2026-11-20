@@ -15,8 +15,9 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
 } from "../../../server/domain/forensics/evidence-segment-v2.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import { createEvidencePayloadReader } from "./evidence-ports.ts";
-import { handleProcessSummaryRequest } from "../../../server/projection/process-summary.ts";
+import { evidenceIngestDependencies } from "../../../server/http/evidence-deps.ts";
+import { readProcessSummary } from "../../../server/projection/process-summary-reader.ts";
+import { processSummarySource } from "./process-summary-source.ts";
 
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
@@ -32,7 +33,6 @@ requireLoopbackDatabaseUrl(
   SAFE_ADMIN_URL,
   "The process summary test runs only against a loopback database (DATABASE_URL).",
 );
-const ORIGIN = "http://localhost:3000";
 const suffix = randomBytes(5).toString("hex");
 const login = `it_summary_${suffix}`;
 const password = randomBytes(24).toString("hex");
@@ -71,33 +71,36 @@ const bucket = `ductus-summary-${suffix}`;
 
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
 // The same factory the route uses, over one domain for this run's institution.
-const store = createEvidencePayloadReader({
-  EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
-    requestTimeoutMs: 5_000,
-    domains: [
-      {
-        label: `local-summary-${suffix}`,
-        institutionId,
-        endpoint: S3_ENDPOINT,
-        region,
-        bucket,
-        accessKeyIdVar: "EVIDENCE_S3_LOCAL_KEY_ID",
-        secretAccessKeyVar: "EVIDENCE_S3_LOCAL_SECRET",
-        capability: {
-          provider: "rustfs-local",
+const store = evidenceIngestDependencies(
+  {
+    EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
+      requestTimeoutMs: 5_000,
+      domains: [
+        {
+          label: `local-summary-${suffix}`,
+          institutionId,
           endpoint: S3_ENDPOINT,
-          conditionalWrite: "verified",
-          checksumEcho: "verified",
-          verifiedOn: "2026-10-11",
-          contractTest: "local-stack/s3-evidence-payload-store.integration",
+          region,
+          bucket,
+          accessKeyIdVar: "EVIDENCE_S3_LOCAL_KEY_ID",
+          secretAccessKeyVar: "EVIDENCE_S3_LOCAL_SECRET",
+          capability: {
+            provider: "rustfs-local",
+            endpoint: S3_ENDPOINT,
+            conditionalWrite: "verified",
+            checksumEcho: "verified",
+            verifiedOn: "2026-10-11",
+            contractTest: "local-stack/s3-evidence-payload-store.integration",
+          },
         },
-      },
-    ],
-  }),
-  EVIDENCE_S3_LOCAL_KEY_ID: s3Credentials.accessKeyId,
-  EVIDENCE_S3_LOCAL_SECRET: s3Credentials.secretAccessKey,
-  NODE_ENV: "test",
-});
+      ],
+    }),
+    EVIDENCE_S3_LOCAL_KEY_ID: s3Credentials.accessKeyId,
+    EVIDENCE_S3_LOCAL_SECRET: s3Credentials.secretAccessKey,
+    NODE_ENV: "test",
+  },
+  process.cwd(),
+).payloads;
 // Ingest writes through the same router; a refused configuration fails here.
 function writer(): InstitutionRoutedPayloadStore {
   if (!(store instanceof InstitutionRoutedPayloadStore))
@@ -304,7 +307,7 @@ async function insertFixture() {
       expect(stored.status).toBe("stored");
     }
     // The head reserve writes: a receipt for the last segment, named by the package.
-    const last = record[record.length - 1];
+    const last = record[record.length - 1]!;
     await client.query(
       `INSERT INTO evidence.receipt (id, evidence_package_id, institution_id, evidence_domain_id, segment_id,
          principal_id, client_request_id, payload_sha256, descriptor, receipt_payload, status)
@@ -386,22 +389,14 @@ function ask(name: keyof typeof tokens) {
 }
 
 function askWith(sessionToken: string) {
-  const request = new Request(`${ORIGIN}/api/process-summary`, {
-    method: "POST",
-    headers: {
-      origin: ORIGIN,
-      "sec-fetch-site": "same-origin",
-      "content-type": "application/json",
+  return readProcessSummary(
+    {
+      source: processSummarySource(withActor, sessionToken),
+      payloads: store,
+      thresholds: { sessionBreakAboveMinutes: 30, pasteListedAboveCharacters: 200 },
     },
-    body: JSON.stringify({ documentId }),
-  });
-  return handleProcessSummaryRequest(request, {
-    withActor,
-    payloads: store,
-    thresholds: { sessionBreakAboveMinutes: 30, pasteListedAboveCharacters: 200 },
-    expectedOrigin: ORIGIN,
-    sessionToken,
-  });
+    documentId,
+  );
 }
 
 beforeAll(async () => {
@@ -409,7 +404,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await createBucket();
   await insertFixture();
   const url = new URL(SAFE_ADMIN_URL);
@@ -432,30 +427,28 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
   if (cleanupError) throw cleanupError;
 });
 
-describe("process summary over the API and the read RPC (B-13, D-80 point 6)", () => {
+describe("process summary over storage and the read RPC (B-13, D-80 point 6)", () => {
   it("summarises the stored record for Ana and Vesna alike, never 503, and gives Dora the answer for a missing document", async () => {
     const ana = await ask("ana");
     const vesna = await ask("vesna");
-    expect(ana.status).toBe(200);
-    expect(vesna.status).toBe(200);
-    const [anaBytes, vesnaBytes] = await Promise.all([ana.arrayBuffer(), vesna.arrayBuffer()]);
-    expect(Buffer.from(vesnaBytes).equals(Buffer.from(anaBytes))).toBe(true);
-    expect(JSON.parse(Buffer.from(anaBytes).toString("utf8"))).toMatchObject({
+    expect(ana.status).toBe("ok");
+    expect(vesna).toEqual(ana);
+    if (ana.status !== "ok") throw new Error("Expected the process summary");
+    expect(JSON.parse(ana.body)).toMatchObject({
       sessions: { count: 2, breakAboveMinutes: 30 },
       pastes: { listedAboveCharacters: 200, smallerCount: 1 },
       recordState: "complete",
     });
 
     const dora = await ask("dora");
-    expect(dora.status).toBe(404);
-    expect(await dora.json()).toStrictEqual({ error: "not_found" });
+    expect(dora).toEqual({ status: "not_found" });
 
     // PRODUCT 5 rule 17 (DAN-228 step 2): Vesna's opening is logged, Ana's own
     // read and Dora's refused one are not.
@@ -466,11 +459,9 @@ describe("process summary over the API and the read RPC (B-13, D-80 point 6)", (
   it("tells Ana's expired or closed session and an unknown token to sign in again with 401, not 404", async () => {
     for (const sessionToken of Object.values(notOpen)) {
       const response = await askWith(sessionToken);
-      expect(response.status).toBe(401);
-      expect(response.headers.get("cache-control")).toBe("no-store");
-      expect(await response.json()).toStrictEqual({ error: "unauthorized" });
+      expect(response).toEqual({ status: "unauthenticated" });
     }
     // Her open session still reads the summary.
-    expect((await ask("ana")).status).toBe(200);
+    expect((await ask("ana")).status).toBe("ok");
   });
 });

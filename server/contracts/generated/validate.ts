@@ -285,6 +285,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.assignment.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "institution.course-assignments.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -302,6 +310,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   const local2 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){0,20000}(?![\s\S])/;
   const local3 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
   const local4 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
+  const local5 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -324,7 +333,10 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['importAllowed'] === 'boolean') &&
       (((typeof value['wordMin'] === 'number' && Number.isInteger(value['wordMin'])) && value['wordMin'] <= 1000000 && value['wordMin'] >= 1) || ((value['wordMin'] === null))) &&
       (((typeof value['wordMax'] === 'number' && Number.isInteger(value['wordMax'])) && value['wordMax'] <= 1000000 && value['wordMax'] >= 1) || ((value['wordMax'] === null))) &&
-      Object.getOwnPropertyNames(value).length === 12
+      (value['groupIds'] !== undefined ? (Array.isArray(value['groupIds']) && value['groupIds'].length <= 20 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local5.test(value)))) { return false }; return true; })(value['groupIds'])) : true) &&
+      (value['externalToolsAllowed'] !== undefined ? ((typeof value['externalToolsAllowed'] === 'boolean')) : true) &&
+      (value['aiSummaryOnly'] !== undefined ? ((typeof value['aiSummaryOnly'] === 'boolean')) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly'].includes(key))
     )
   }
   })(),
@@ -417,6 +429,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.enrollment-code-state.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      value['courseId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
     )
   }),
   "institution.enrollment-code.post:params": (() => {
@@ -694,6 +714,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['versionNo'] === 'number' && Number.isInteger(value['versionNo'])) &&
       value['versionNo'] <= 2147483647 &&
       value['versionNo'] >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.notice.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
