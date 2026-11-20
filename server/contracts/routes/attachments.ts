@@ -6,11 +6,10 @@ import { MUTATION_GUARD } from "./shared.ts";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_BASE64_LENGTH = 4 * Math.ceil(MAX_IMAGE_BYTES / 3);
-const ImageBase64 = Type.String({
+const BASE64_OPTIONS = {
   minLength: 4,
-  maxLength: MAX_BASE64_LENGTH,
   pattern: "^[A-Za-z0-9+/]+={0,2}(?![\\s\\S])",
-});
+};
 const AttachmentFields = {
   attachmentId: Type.String({ pattern: REQUEST_ID_PATTERN }),
   attachmentSha256: Type.String({ pattern: "^[0-9a-f]{64}$" }),
@@ -33,7 +32,7 @@ export const workAttachmentPost = defineRoute({
     params: closed({
       assignmentId: Type.String({ pattern: "^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$" }),
     }),
-    body: closed({ imageBase64: ImageBase64 }),
+    body: closed({ imageBase64: Type.String(BASE64_OPTIONS) }),
     contentType: "application/json",
     maxBodyBytes: MAX_BASE64_LENGTH + 64,
   },
@@ -68,7 +67,10 @@ export const workAttachmentGet = defineRoute({
       status: 200,
       description: "Verified image bytes and attachment reference",
       headers: ["cache-control"],
-      body: closed({ ...AttachmentFields, imageBase64: ImageBase64 }),
+      body: closed({
+        ...AttachmentFields,
+        imageBase64: Type.String({ ...BASE64_OPTIONS, maxLength: MAX_BASE64_LENGTH }),
+      }),
     },
   ],
   errors: ERRORS,

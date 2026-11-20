@@ -1006,7 +1006,6 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['imageBase64'] === 'string') &&
-      value['imageBase64'].length <= 6990508 &&
       value['imageBase64'].length >= 4 &&
       local0.test(value['imageBase64']) &&
       Object.getOwnPropertyNames(value).length === 1

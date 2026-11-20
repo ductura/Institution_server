@@ -118,11 +118,11 @@ async function fixture() {
 }
 
 it.each([
-  [PNG, "image/png"],
-  [JPEG, "image/jpeg"],
+  ["image/png", PNG],
+  ["image/jpeg", JPEG],
 ])(
   "stores a verified %s once and reads it for the owner and reader",
-  async (imageBase64, mediaType) => {
+  async (mediaType, imageBase64) => {
     const { upload, download, put } = await fixture();
     const answer = await upload(imageBase64);
     const bytes = Buffer.from(imageBase64, "base64");
@@ -163,6 +163,7 @@ it("refuses non-images, an oversize decoded image and altered stored bytes", asy
   expect((await upload(Buffer.from("Izmišljeni tekst").toString("base64"))).status).toBe(422);
   expect((await upload(PNG.slice(0, -16))).status).toBe(422);
   expect((await upload(Buffer.alloc(5 * 1024 * 1024 + 1).toString("base64"))).status).toBe(413);
+  expect((await upload(Buffer.alloc(5 * 1024 * 1024 + 2).toString("base64"))).status).toBe(413);
   expect(put).not.toHaveBeenCalled();
   put.mockRejectedValueOnce(new Error("disk unavailable"));
   expect((await upload(PNG)).status).toBe(503);
