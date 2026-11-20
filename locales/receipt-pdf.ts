@@ -1,0 +1,15 @@
+export const receiptPdfHr = {
+  title: "Potvrda o predaji",
+  submissionId: "Broj potvrde",
+  assignmentId: "Oznaka zadatka",
+  assignmentVersion: "Verzija zadatka",
+  revision: "Verzija predanog rada",
+  requestedAt: "Vrijeme predaje",
+  signedAt: "Vrijeme potpisa",
+  dueAt: "Rok predaje",
+  onTime: "Predano u roku",
+  afterDeadline: "Predano nakon roka",
+  artifactSha256: "Otisak predanog rada (SHA-256)",
+  verification: "Javna provjera potvrde",
+  scan: "Skenirajte QR kod za provjeru.",
+} as const;

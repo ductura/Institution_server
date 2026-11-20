@@ -6,6 +6,8 @@ import { randomUUID } from "node:crypto";
 import { Value } from "@sinclair/typebox/value";
 
 import { WorkSourceRecord } from "../../../server/contracts/index.ts";
+import type { Operations } from "../../contracts/index.ts";
+import { successBody } from "./contract.ts";
 
 import type { Handlers } from "./server.ts";
 import type { Account, Assignment, State, WorkSource } from "./state.ts";
@@ -83,6 +85,20 @@ export const STUDENT_HANDLERS: Handlers = {
         },
       };
     return { status: 200, body: { state: "potvrdeno", receipt: work.submissionReceipt } };
+  },
+  "student.receipt-pdf.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    const work = state.works.find(
+      (item) => item.assignmentId === assignment?.id && item.studentId === account.id,
+    );
+    if (work?.submissionReceipt == null) return { error: "not_found" };
+    return {
+      status: 200,
+      body: successBody(
+        "student.receipt-pdf.get",
+      ) as Operations["student.receipt-pdf.get"]["success"]["body"],
+    };
   },
   "student.assignment-requirements.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
