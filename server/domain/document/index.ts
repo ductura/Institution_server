@@ -10,4 +10,5 @@ export * from "./transaction.ts";
 export * from "./validate-sources.ts";
 export * from "./validate.ts";
 export * from "./validate-marks-v4.ts";
+export * from "./validate-v4.ts";
 export * from "./word-count.ts";
