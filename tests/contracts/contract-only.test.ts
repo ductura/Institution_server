@@ -26,6 +26,7 @@ import {
   createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
+  createStudentSubmissionRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createWebAuthnRoutesFor,
@@ -119,7 +120,7 @@ export const UGOVORI_API: readonly string[] = [
   "institution.enrollment-code-state.get",
 ];
 
-// SRV-19 defines the wire shapes ahead of the handlers in SRV-22 and SRV-24.
+// SRV-19 defines the wire shapes ahead of the handlers in SRV-22 (mounted) and SRV-24.
 const SRV_19 = [
   "student.submission.get",
   "student.assignment-requirements.get",
@@ -222,6 +223,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     ],
   },
   {
+    // SRV-22: the student's submission state and word range over the main database.
+    call: "...createStudentSubmissionRoutesFor(databases.main)",
+    ids: ["student.submission.get", "student.assignment-requirements.get"],
+    routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
     call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
     ids: [
@@ -313,7 +320,8 @@ describe("CONTRACT_ONLY", () => {
       // problem report (851-2d2a), the course routes (852-5a), the download
       // manifest (DAN-932), the teacher's reads (SRV-13) and the assignment
       // routes (SRV-14), group routes (SRV-15), student work state (SRV-AWG)
-      // and submission (SRV-18), and process summary (SRV-23) are missing too, in task order.
+      // and submission (SRV-18), process summary (SRV-23) and submission state and
+      // requirements (SRV-22) are missing too, in task order.
       [
         ...["support.problem-report.post", "projection.process-summary.post"],
         ...["teacher.courses.get", "institution.courses.post"],
@@ -323,6 +331,7 @@ describe("CONTRACT_ONLY", () => {
         ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_989, ...DAN_931],
         ...["institution.admin-courses.post", "institution.course-groups.get"],
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
+        ...["student.submission.get", "student.assignment-requirements.get"],
       ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
   });
@@ -357,6 +366,8 @@ describe("routes the entry point mounts itself", () => {
       "teacher.access.get",
       "submission.submit.post",
       "projection.process-summary.post",
+      "student.submission.get",
+      "student.assignment-requirements.get",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

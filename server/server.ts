@@ -24,6 +24,7 @@ import {
   createInternalInstitutionRoutes,
   createMeRouteFor,
   createStudentAssignmentWorkRouteFor,
+  createStudentSubmissionRoutesFor,
   createTeacherReadRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -158,6 +159,9 @@ async function main(): Promise<void> {
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
+      // SRV-22: the student's own submission state and word range of one
+      // assignment, the receipt byte for byte as the submission bound it.
+      ...createStudentSubmissionRoutesFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
