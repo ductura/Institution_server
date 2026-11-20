@@ -30,10 +30,12 @@ import {
   createTextCheckConfigRoute,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
+  createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
@@ -193,6 +195,7 @@ async function main(): Promise<void> {
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // SRV-9A: the versions of a work, the same page for its owner and its teacher.
       createWorkVersionsRouteFor(databases.main),
+      ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
       createSubmissionRouteFor(databases.main, evidenceDeps),
@@ -212,6 +215,7 @@ async function main(): Promise<void> {
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
+      ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.

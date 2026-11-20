@@ -201,6 +201,10 @@ SELECT is(pg_temp.groups('vesna', 'k1'), 'ana:Grupa 1 dora:Grupa 2 boris:-',
 SELECT is(pg_temp.course('marko', 'k1'), 'ana:Iskra/Prva',
   'the collaborator, teacher of G1: the students of the own group with the name pair, not the whole course');
 SELECT is(pg_temp.groups('marko', 'k1'), 'ana:Grupa 1', 'the collaborator: with the group');
+SELECT is(pg_temp.ask('marko', $$ SELECT assignment_id::text FROM app.teacher_course_assignment_ids({k1}) $$),
+  pg_temp.id('z1')::text, 'the collaborator can discover the assignment id for the roster');
+SELECT is(pg_temp.ask('marko', $$ SELECT count(*) FROM institution.assignment WHERE course_id = {k1} $$),
+  '0', 'the collaborator still cannot read assignment rows directly');
 SELECT is(pg_temp.submitters('marko', 'z1'), 'ana', 'assignment_submissions lets the collaborator through for the same students');
 SELECT is(pg_temp.groups(a.who, 'k1'), 'none', a.why)
   FROM (VALUES ('ana', 'a student of the course, in a group, gets nothing'),
@@ -217,6 +221,10 @@ UPDATE institution.course_member SET member_to = now()
  WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('vesna') AND member_to IS NULL;
 SELECT is(pg_temp.course('vesna', 'k1'), 'none', 'a teacher who left the course gets no course list');
 SELECT is(pg_temp.names('vesna', 'z1'), 'none', 'a teacher who left the course gets no assignment list');
+UPDATE institution.seminar_group_teacher SET valid_to = now()
+ WHERE group_id = pg_temp.id('g1') AND user_id = pg_temp.id('marko') AND valid_to IS NULL;
+SELECT is(pg_temp.ask('marko', $$ SELECT count(*) FROM app.teacher_course_assignment_ids({k1}) $$),
+  '0', 'an ended group teacher relation no longer gives assignment ids');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -26,6 +26,7 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
@@ -33,6 +34,7 @@ import {
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
@@ -79,6 +81,8 @@ const TEACHER_READ_ROUTES = [
   "teacher.submissions.get",
   "teacher.assignment-submissions.post",
 ] as const;
+
+const TEACHER_ROSTER_ROUTES = ["teacher.course-students.get", "teacher.assignment-overview.get"];
 
 export const DAN_803: readonly string[] = [
   "student.assignments.get",
@@ -272,6 +276,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createTeacherRosterRoutesFor(databases.main)",
+    ids: TEACHER_ROSTER_ROUTES,
+    routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // SRV-1108: the deadline extensions of an assignment over the main database.
     call: "...createDeadlineExtensionRoutesFor(databases.main)",
     ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
@@ -321,6 +330,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "work.consultation-additions.post",
     ],
     routes: () => createConsultationRecordRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createAttachmentRoutesFor(databases.main, process.env, process.cwd())",
+    ids: ["work.attachments.post", "work.attachments.get"],
+    routes: () =>
+      createAttachmentRoutesFor(NO_ACTOR as never, {}, ".").map((route) => route.contract.id),
   },
   {
     call: "...createWorkMilestonesRoutesFor(databases.main)",
@@ -472,6 +487,7 @@ describe("CONTRACT_ONLY", () => {
       [
         ...["support.problem-report.post", "projection.process-summary.post"],
         ...TEACHER_READ_ROUTES,
+        ...TEACHER_ROSTER_ROUTES,
         ...SRV_31,
         ...INSTITUTION_COURSE_ROUTES,
         "institution.course-assignments.post",
@@ -528,6 +544,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      ...TEACHER_ROSTER_ROUTES,
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       "teacher.merlin-roster.get",
@@ -542,6 +559,8 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-records.get",
       "work.consultation-records.post",
       "work.consultation-additions.post",
+      "work.attachments.post",
+      "work.attachments.get",
       "work.milestones.get",
       "work.milestones.patch",
       "institution.acknowledgment.post",

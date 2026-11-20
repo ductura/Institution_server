@@ -9,6 +9,7 @@ export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
 } from "./consultation-records/index.ts";
+export { createAttachmentRoutesFor } from "./attachments/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export {
@@ -233,6 +234,7 @@ export {
   parseAssignmentIdsBody,
   type TeacherReadOptions,
 } from "./teacher-reads.ts";
+export { createTeacherRosterRoutesFor } from "./teacher-roster.ts";
 export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-requests.ts";
 export {
   createStudentAssignmentsRoute,
