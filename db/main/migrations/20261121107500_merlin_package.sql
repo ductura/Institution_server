@@ -62,6 +62,7 @@ CREATE TABLE institution.merlin_package (
   ready_at timestamptz,
   expires_at timestamptz,
   UNIQUE (requested_by, assignment_id, request_key),
+  UNIQUE (id, institution_id),
   CHECK ((state = 'ready') = (content IS NOT NULL)),
   CHECK ((content IS NULL) = (sha256 IS NULL) AND (content IS NULL) = (byte_size IS NULL)
          AND (content IS NULL) = (ready_at IS NULL) AND (content IS NULL) = (expires_at IS NULL)),
@@ -75,12 +76,13 @@ CREATE INDEX merlin_package_assignment_idx ON institution.merlin_package (assign
 CREATE TABLE institution.merlin_package_download (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   institution_id uuid NOT NULL,
-  package_id uuid NOT NULL REFERENCES institution.merlin_package (id),
+  package_id uuid NOT NULL,
   assignment_id uuid NOT NULL,
   downloaded_by uuid NOT NULL,
   -- The fingerprint of the bytes handed out.
   sha256 text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
   downloaded_at timestamptz NOT NULL DEFAULT statement_timestamp(),
+  FOREIGN KEY (package_id, institution_id) REFERENCES institution.merlin_package (id, institution_id),
   FOREIGN KEY (assignment_id, institution_id) REFERENCES institution.assignment (id, institution_id),
   FOREIGN KEY (downloaded_by, institution_id) REFERENCES identity.user_account (id, institution_id)
 );
