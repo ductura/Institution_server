@@ -86,7 +86,8 @@ describe("fake server over HTTP", () => {
     // sources.lookup.post (SRV-7D) five, plus the work-source mutations (SRV-7C);
     // the detailed process summary (SRV-9D) adds five more.
     // public.verification.post (SRV-9B) four.
-    expect(VECTORS.length - overHttp.length).toBe(190);
+    // teacher.mentorship-request-decision.post (SRV-27) five.
+    expect(VECTORS.length - overHttp.length).toBe(195);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

@@ -1,0 +1,160 @@
+{
+  "route": "teacher.assignment-overview.get",
+  "vectors": [
+    {
+      "name": "assignment-overview",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": [
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e1",
+              "givenName": "Demo",
+              "familyName": "Kompost",
+              "groupName": "Grupa A",
+              "submitted": true,
+              "requestedMinute": "2026-12-20T21:14:00.000Z",
+              "afterDeadline": false,
+              "evidenceRecord": "continuous"
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e2",
+              "givenName": null,
+              "familyName": null,
+              "groupName": "Grupa B",
+              "submitted": true,
+              "requestedMinute": "2026-12-20T21:14:00.000Z",
+              "afterDeadline": true,
+              "evidenceRecord": "with_gaps"
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e3",
+              "givenName": "Demo",
+              "familyName": "Vrt",
+              "groupName": "Grupa B",
+              "submitted": true,
+              "requestedMinute": "2026-12-20T21:14:00.000Z",
+              "afterDeadline": false,
+              "evidenceRecord": null
+            },
+            {
+              "studentId": "00000000-0000-4000-8000-0000000000e4",
+              "givenName": null,
+              "familyName": null,
+              "groupName": null,
+              "submitted": false,
+              "requestedMinute": null,
+              "afterDeadline": null,
+              "evidenceRecord": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty-overview",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "students": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+          "sec-fetch-site": "cross-site"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000003"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        },
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000004"
+        }
+      }
+    }
+  ]
+}

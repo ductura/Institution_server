@@ -470,12 +470,26 @@ export type Operations = {
     success: { status: 200; body: { "access": "allowed" | "denied"; "scope": string }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "teacher.assignment-overview.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "students": ({ "studentId": string; "givenName": string; "familyName": string; "groupName": string | null; "submitted": false; "requestedMinute": null; "afterDeadline": null; "evidenceRecord": null } | { "studentId": string; "givenName": string; "familyName": string; "groupName": string | null; "submitted": true; "requestedMinute": string; "afterDeadline": boolean; "evidenceRecord": "continuous" | "with_gaps" | null } | { "studentId": string; "givenName": null; "familyName": null; "groupName": string | null; "submitted": false; "requestedMinute": null; "afterDeadline": null; "evidenceRecord": null } | { "studentId": string; "givenName": null; "familyName": null; "groupName": string | null; "submitted": true; "requestedMinute": string; "afterDeadline": boolean; "evidenceRecord": "continuous" | "with_gaps" | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "teacher.assignment-submissions.post": {
     params: undefined;
     query: undefined;
     body: { "assignmentIds": (string)[] };
     success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "teacher.course-students.get": {
+    params: { "courseId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "students": ({ "studentId": string; "givenName": string; "familyName": string; "groupName": string | null; "assignments": ({ "assignmentId": string; "documentId": string | null; "workState": "not_started" | "in_progress" | "submitted" })[] } | { "studentId": string; "givenName": null; "familyName": null; "groupName": string | null; "assignments": ({ "assignmentId": string; "documentId": string | null; "workState": "not_started" | "in_progress" | "submitted" })[] })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "teacher.courses.get": {
     params: undefined;
@@ -490,6 +504,20 @@ export type Operations = {
     body: { "assignmentId": string };
     success: { status: 200; body: { "kind": "ok"; "students": ({ "id": string; "givenName": string; "surname": string; "documentId": null; "work": "notice_pending"; "lastChangeAt": null; "record": null } | { "id": string; "givenName": string; "surname": string; "documentId": string; "work": "writing" | "submitted"; "lastChangeAt": string | null; "record": { "pastesWithoutSource": number; "blocks": ({ "kind": "heading" | "paragraph" | "bulletItem" | "quote"; "text": string })[]; "summary": { "summaryFormat": "ductus-process-summary-v1"; "sessions": { "evidenceKind": "observed"; "breakAboveMinutes": number; "count": number; "items": ({ "from": string; "to": string })[] }; "pastes": { "evidenceKind": "observed"; "listedAboveCharacters": number; "listed": ({ "at": { "from": string; "to": string }; "characters": number; "origin": "not_observed" })[]; "smallerCount": number }; "gaps": { "evidenceKind": "observed"; "items": ({ "previousEndedAt": string; "nextStartedAt": string })[] }; "recordState": "complete" | "has_gaps" } } } | { "id": string; "givenName": null; "surname": null; "documentId": null; "work": "notice_pending"; "lastChangeAt": null; "record": null } | { "id": string; "givenName": null; "surname": null; "documentId": string; "work": "writing" | "submitted"; "lastChangeAt": string | null; "record": { "pastesWithoutSource": number; "blocks": ({ "kind": "heading" | "paragraph" | "bulletItem" | "quote"; "text": string })[]; "summary": { "summaryFormat": "ductus-process-summary-v1"; "sessions": { "evidenceKind": "observed"; "breakAboveMinutes": number; "count": number; "items": ({ "from": string; "to": string })[] }; "pastes": { "evidenceKind": "observed"; "listedAboveCharacters": number; "listed": ({ "at": { "from": string; "to": string }; "characters": number; "origin": "not_observed" })[]; "smallerCount": number }; "gaps": { "evidenceKind": "observed"; "items": ({ "previousEndedAt": string; "nextStartedAt": string })[] }; "recordState": "complete" | "has_gaps" } } })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "teacher.mentorship-request-decision.post": {
+    params: undefined;
+    query: undefined;
+    body: { "requestId": string; "decision": "approve" } | { "requestId": string; "decision": "decline"; "reason"?: string };
+    success: { status: 200; body: { "decision": "approve"; "mentorshipId": string } | { "decision": "decline" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "forbidden" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "conflict";
+  };
+  "teacher.mentorship-requests.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "requests": ({ "requestId": string; "student": { "givenName": string; "familyName": string } | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "requestedAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "teacher.mentorship.get": {
     params: { "mentorshipId": string };
@@ -511,6 +539,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "filename": "potvrda-predaje.pdf"; "pdfBase64": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "teacher.submission-receipt.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "none" } | { "state": "ceka"; "revision": number; "requestedAt": string } | { "state": "potvrdeno"; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable" | "not_found";
   };
   "teacher.submissions.get": {
     params: { "assignmentId": string };

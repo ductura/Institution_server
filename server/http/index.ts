@@ -5,6 +5,7 @@ export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
 export { createAttachmentRoutesFor } from "./attachments/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
+export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
   CLIENT_CONTEXT_MAX_BYTES,
   createClientContextRoute,
