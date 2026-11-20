@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1766);
+SELECT plan(1781);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -268,7 +268,9 @@ SELECT bag_eq(
     'work_source_access(p_assignment_id uuid, p_student_id uuid)',
     'save_work_source(p_assignment_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean) definer app',
     'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',
-    'work_sources(p_assignment_id uuid, p_student_id uuid) definer app'
+    'work_sources(p_assignment_id uuid, p_student_id uuid) definer app',
+    'save_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_record jsonb, p_requirement text, p_doi text, p_isbn text, p_undated boolean) definer app',
+    'delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -460,6 +462,26 @@ SELECT is(
   c.outcome, format('SRV-7B: %s removes the source on Z1: %s', c.actor, c.outcome)
 )
 FROM (VALUES (1, 'vesna', 'ZD403'), (2, 'marko', 'ZD403'), (3, 'dora', 'true'), (4, 'dora', 'false'))
+  AS c (n, actor, outcome)
+ORDER BY c.n;
+SELECT is(
+  substr(pg_temp.ask(c.actor, format(
+    'SELECT ''ok'' FROM institution.save_teacher_work_source(%s, %s, %L::jsonb, ''required'')',
+    c.assignment, c.student, replace(pg_temp.source_json(), 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                                     'cccccccc-cccc-4ccc-8ccc-cccccccccccc'))), 1, 5),
+  c.outcome, format('SRV-7B: %s adds a required source to the work of %s on %s: %s', c.actor, c.student, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '{ana}', 'ok'), ('marko', '{z1}', '{ana}', 'ZD403'), ('ana', '{z1}', '{ana}', 'ZD403'),
+  ('dora', '{z1}', '{ana}', 'ZD403'), ('iva', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'), ('petra', '{z3}', '{tomo}', 'ok'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403'), ('anon', '{z1}', '{ana}', 'ZD401')
+) AS c (actor, assignment, student, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.delete_teacher_work_source({z1}, {ana}, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc')::text $$), 1, 5),
+  c.outcome, format('SRV-7B: %s removes the required source of Ana on Z1: %s', c.actor, c.outcome)
+)
+FROM (VALUES (1, 'ana', 'ZD403'), (2, 'marko', 'ZD403'), (3, 'vesna', 'true'), (4, 'vesna', 'false'))
   AS c (n, actor, outcome)
 ORDER BY c.n;
 
