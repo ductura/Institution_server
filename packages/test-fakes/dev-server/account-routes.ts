@@ -3,7 +3,7 @@
 // there, the callback ends at "/" and no provider is ever called (D-09).
 import { API_VERSION, MIN_CLIENT_VERSION } from "../../../server/contracts/index.ts";
 import { clearedSessionCookie, type Handlers } from "./server.ts";
-import { INSTITUTION } from "./state.ts";
+import { fakeJournalScope, INSTITUTION } from "./state.ts";
 
 /** Invented WebAuthn values (32 bytes as base64url): the fake never checks a ceremony. */
 const CHALLENGE = Buffer.alloc(32, 7).toString("base64url");
@@ -93,6 +93,7 @@ export const ACCOUNT_HANDLERS: Handlers = {
             institution: { ...INSTITUTION },
             roles: [...account.roles],
             displayName: `${account.givenName} ${account.familyName}`,
+            journalScope: fakeJournalScope(account.id),
           },
         },
   "profile.interface-locale.get": ({ account }) =>

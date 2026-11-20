@@ -62,6 +62,8 @@ export const INVENTORY: Readonly<Record<string, readonly Method[]>> = {
  */
 const WEBAUTHN_SOURCE = "danielrisavi77-create/Ductus@b36c82b:docs/DECISIONS.md#D-297";
 
+const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecomment-7009405737";
+
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
@@ -127,6 +129,22 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
   },
+  "app/api/student/assignments/[assignmentId]/submission/route.ts": {
+    methods: ["GET"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
+  "app/api/student/assignments/[assignmentId]/requirements/route.ts": {
+    methods: ["GET"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
+  "app/api/student/assignments/[assignmentId]/submission-notes/route.ts": {
+    methods: ["GET"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
+  "app/api/student/submission-notes/route.ts": {
+    methods: ["POST"],
+    source: STUDENT_SUBMISSION_SOURCE,
+  },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
   "app/api/institution/admin/courses/route.ts": {
@@ -140,6 +158,23 @@ export const SERVER_SOURCES: Readonly<
   "app/api/institution/groups/[groupId]/teachers/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7008147932",
+  },
+  // UGOVORI-API (Ductus#2028 c.7019543739, SRV-NG c.7019668458): Ductus reads
+  // the notice in its page (readNotice), not in a route.
+  "app/api/student/assignments/[assignmentId]/notice/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7019668458",
+  },
+  // UGOVORI-API (Ductus#2028 c.7020597404, SRV-AV): Ductus reads the current
+  // version in its teacher page, not in a route.
+  "app/api/institution/assignments/[assignmentId]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7020597404",
+  },
+  // UGOVORI-API (Ductus#2028 c.7019844365): Ductus has no read of the code's state.
+  "app/api/institution/courses/[courseId]/enrollment-code/state/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7019844365",
   },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
@@ -155,33 +190,25 @@ export const SERVER_SOURCES: Readonly<
  */
 export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
-  "submission.submit.post",
   "institution.enrollments.post",
   "institution.acknowledgment.post",
-  "institution.work-language.post",
-  "institution.student-work-language.post",
-  "institution.work-work-language.post",
-  "institution.student-removal.post",
-  "institution.student-return.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
-  "projection.process-summary.post",
   "collaboration.comments.post",
   "collaboration.revision-requests.post",
   "live.document.get",
   "live.document.put",
-  "teacher.submissions.get",
-  "teacher.mentorships.get",
-  "teacher.mentorship.get",
   "teacher.fast-path.post",
-  "teacher.assignment-submissions.post",
   "settings.catalogue.get",
   "settings.values.get",
   "student.access-log.get",
-  "student.assignment-work.get",
   "student.notice-read.post",
   "student.enrollments.post",
-  "institution.course-groups.get",
+  "student.notice.get",
+  "student.submission-notes.get",
+  "student.submission-notes.post",
+  "institution.assignment.get",
+  "institution.enrollment-code-state.get",
 ];
 
 /**

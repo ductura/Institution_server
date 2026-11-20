@@ -22,8 +22,9 @@ import {
 } from "../../../server/domain/forensics/evidence-segment-v2.ts";
 import { canonicalizeJcs } from "../../../server/domain/forensics/jcs.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import { createEvidencePayloadReader } from "./evidence-ports.ts";
-import { handleProcessSummaryRequest } from "../../../server/projection/process-summary.ts";
+import { evidenceIngestDependencies } from "../../../server/http/evidence-deps.ts";
+import { readProcessSummary } from "../../../server/projection/process-summary-reader.ts";
+import { processSummarySource } from "./process-summary-source.ts";
 import { handleFastPathRequest, type FastPathRead } from "../../../server/teacher/fast-path.ts";
 
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
@@ -84,33 +85,36 @@ const bucket = `ductus-fast-path-${suffix}`;
 
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
 // The same factory the routes use, over one domain for this run's institution.
-const store = createEvidencePayloadReader({
-  EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
-    requestTimeoutMs: 5_000,
-    domains: [
-      {
-        label: `local-fast-path-${suffix}`,
-        institutionId,
-        endpoint: S3_ENDPOINT,
-        region,
-        bucket,
-        accessKeyIdVar: "EVIDENCE_S3_LOCAL_KEY_ID",
-        secretAccessKeyVar: "EVIDENCE_S3_LOCAL_SECRET",
-        capability: {
-          provider: "rustfs-local",
+const store = evidenceIngestDependencies(
+  {
+    EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
+      requestTimeoutMs: 5_000,
+      domains: [
+        {
+          label: `local-fast-path-${suffix}`,
+          institutionId,
           endpoint: S3_ENDPOINT,
-          conditionalWrite: "verified",
-          checksumEcho: "verified",
-          verifiedOn: "2026-10-11",
-          contractTest: "local-stack/s3-evidence-payload-store.integration",
+          region,
+          bucket,
+          accessKeyIdVar: "EVIDENCE_S3_LOCAL_KEY_ID",
+          secretAccessKeyVar: "EVIDENCE_S3_LOCAL_SECRET",
+          capability: {
+            provider: "rustfs-local",
+            endpoint: S3_ENDPOINT,
+            conditionalWrite: "verified",
+            checksumEcho: "verified",
+            verifiedOn: "2026-10-11",
+            contractTest: "local-stack/s3-evidence-payload-store.integration",
+          },
         },
-      },
-    ],
-  }),
-  EVIDENCE_S3_LOCAL_KEY_ID: s3Credentials.accessKeyId,
-  EVIDENCE_S3_LOCAL_SECRET: s3Credentials.secretAccessKey,
-  NODE_ENV: "test",
-});
+      ],
+    }),
+    EVIDENCE_S3_LOCAL_KEY_ID: s3Credentials.accessKeyId,
+    EVIDENCE_S3_LOCAL_SECRET: s3Credentials.secretAccessKey,
+    NODE_ENV: "test",
+  },
+  process.cwd(),
+).payloads;
 function writer(): InstitutionRoutedPayloadStore {
   if (!(store instanceof InstitutionRoutedPayloadStore))
     throw new Error("storage configuration was refused");
@@ -329,7 +333,7 @@ async function insertFixture() {
       expect(stored.status).toBe("stored");
     }
     // The head reserve writes: a receipt for the last segment naming revision 1.
-    const last = record[record.length - 1];
+    const last = record[record.length - 1]!;
     await client.query(
       `INSERT INTO evidence.receipt (id, evidence_package_id, institution_id, evidence_domain_id, segment_id,
          principal_id, client_request_id, payload_sha256, descriptor, receipt_payload, status)
@@ -439,13 +443,14 @@ function fastPath(sessionToken: string) {
 }
 
 function processSummary(sessionToken: string) {
-  return handleProcessSummaryRequest(post("/api/process-summary", { documentId }), {
-    withActor,
-    payloads: store,
-    thresholds: THRESHOLDS,
-    expectedOrigin: ORIGIN,
-    sessionToken,
-  });
+  return readProcessSummary(
+    {
+      source: processSummarySource(withActor, sessionToken),
+      payloads: store,
+      thresholds: THRESHOLDS,
+    },
+    documentId,
+  );
 }
 
 beforeAll(async () => {
@@ -453,7 +458,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await createBucket();
   await insertFixture();
   const url = new URL(SAFE_ADMIN_URL);
@@ -476,7 +481,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -507,8 +512,8 @@ describe("teacher fast path over the API and app.fast_path_works (B-11c, #757)",
 
     // The same bytes as the process-summary route gives Ana and Vesna (PRODUCT 5 rule 5).
     const summary = await processSummary(tokens.ana);
-    expect(summary.status).toBe(200);
-    expect(canonicalizeJcs(ana!.record!.summary)).toBe(await summary.text());
+    if (summary.status !== "ok") throw new Error("Expected the process summary");
+    expect(canonicalizeJcs(ana!.record!.summary)).toBe(summary.body);
     expect(ana!.record!.summary).toMatchObject({
       sessions: { count: 2, breakAboveMinutes: 30 },
       pastes: { listedAboveCharacters: 200, smallerCount: 1 },

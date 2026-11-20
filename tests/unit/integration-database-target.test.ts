@@ -1,20 +1,23 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
 // DAN-352: an integration test that creates or drops a database checks first
-// that DATABASE_URL names this machine (F-167, tests/integration/loopback-database-url.ts).
+// that DATABASE_URL names this machine (F-167, tests/db/loopback-database-url.ts).
 // pg reads ?host= and ?port= past the hostname that URL parsing shows, so a
 // hostname check alone is not enough; the shared guard refuses any query.
 // notification-store-migration keeps its own exact allowlist of local URLs.
-const DIR = fileURLToPath(new URL("../integration/", import.meta.url));
+const DIR = fileURLToPath(new URL("../db/", import.meta.url));
 const OWN_ALLOWLIST = new Set(["notification-store-migration.integration.test.ts"]);
 const CREATES_OR_DROPS = /\b(CREATE|DROP)\s+DATABASE\b/i;
-const GUARD = /^requireLoopbackDatabaseUrl\(ADMIN_URL,/m;
+// The call (not the import): `requireLoopbackDatabaseUrl(` with the URL on the same or the next line.
+const GUARD = /requireLoopbackDatabaseUrl\(\s*\S/;
 
-const files = readdirSync(DIR).filter((name) => name.endsWith(".integration.test.ts"));
+const files = readdirSync(DIR, { recursive: true, encoding: "utf8" }).filter((name) =>
+  name.endsWith(".integration.test.ts"),
+);
 const creating = files.filter((name) =>
   CREATES_OR_DROPS.test(readFileSync(join(DIR, name), "utf8")),
 );
@@ -32,13 +35,17 @@ describe("integration tests that create or drop a database", () => {
       expect(source).toMatch(/const ADMIN_URL = localAdminUrl\(process\.env\.DATABASE_URL\);/);
       return;
     }
-    expect(source).toMatch(
-      /import \{ requireLoopbackDatabaseUrl \} from "\.\/loopback-database-url";/,
+    const guardImport = source.match(
+      /import \{[^}]*\brequireLoopbackDatabaseUrl\b[^}]*\} from "(\.{1,2}\/[^"]+)";/,
+    )?.[1];
+    expect(guardImport && resolve(DIR, dirname(name), guardImport)).toBe(
+      join(DIR, "loopback-database-url.ts"),
     );
     // The guard runs at load time, before any pool or client exists.
     expect(source).toMatch(GUARD);
     const guard = source.search(GUARD);
-    const firstConnection = source.search(/new pg\.(Pool|Client)\(/);
-    expect(firstConnection).toBeGreaterThan(guard);
+    const firstConnection = source.search(/new (pg\.)?(Pool|Client)\(/);
+    expect(guard).toBeGreaterThan(-1);
+    if (firstConnection >= 0) expect(firstConnection).toBeGreaterThan(guard);
   });
 });

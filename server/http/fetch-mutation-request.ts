@@ -1,3 +1,6 @@
+// Ductus type-checks against the DOM lib; here the type comes from Node.
+import type { ReadableStreamReadResult } from "node:stream/web";
+
 /**
  * Guards for a state-changing JSON route (first user: evidence ingest, B-8j2).
  *
@@ -131,7 +134,7 @@ export async function readBodyWithLimit(
         });
   try {
     for (;;) {
-      let chunk: ReadableStreamReadResult<Uint8Array>;
+      let chunk: Awaited<ReturnType<typeof reader.read>>;
       try {
         const next = reader.read();
         const result = timeout === undefined ? await next : await Promise.race([next, timeout]);

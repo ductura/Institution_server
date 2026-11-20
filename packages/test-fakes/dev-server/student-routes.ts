@@ -1,6 +1,8 @@
 // Student routes of the dev fake server: own courses and assignments, the
 // state of own works and who opened them (PRODUCT §5 rule 17). Only the
 // caller's own memberships and works are ever read.
+import { randomUUID } from "node:crypto";
+
 import type { Handlers } from "./server.ts";
 import type { Account, Assignment, State } from "./state.ts";
 
@@ -10,6 +12,12 @@ export function studentAssignments(state: State, account: Account): Assignment[]
     state.courses.filter((c) => c.studentIds.includes(account.id)).map((c) => c.id),
   );
   return state.assignments.filter((a) => courses.has(a.courseId));
+}
+
+function ownAssignment(state: State, account: Account, id: string): Assignment | undefined {
+  return studentAssignments(state, account).find(
+    (assignment) => assignment.id === id.toLowerCase(),
+  );
 }
 
 export const STUDENT_HANDLERS: Handlers = {
@@ -51,6 +59,57 @@ export const STUDENT_HANDLERS: Handlers = {
       })
       .sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
     return { status: 200, body: { assignments } };
+  },
+  "student.submission.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const work = state.works.find(
+      (item) => item.assignmentId === assignment.id && item.studentId === account.id,
+    );
+    if (work === undefined || work.submittedAt === null)
+      return { status: 200, body: { state: "none" } };
+    if (work.submissionReceipt === null)
+      return {
+        status: 200,
+        body: {
+          state: "ceka",
+          revision: work.revision,
+          requestedAt: `${work.submittedAt.slice(0, -1)}000Z`,
+        },
+      };
+    return { status: 200, body: { state: "potvrdeno", receipt: work.submissionReceipt } };
+  },
+  "student.assignment-requirements.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const { wordMin, wordMax } = assignment.content;
+    const wordRange =
+      wordMin !== null
+        ? { min: wordMin, max: wordMax }
+        : wordMax !== null
+          ? { min: null, max: wordMax }
+          : null;
+    return { status: 200, body: { wordRange } };
+  },
+  "student.submission-notes.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const notes = state.submissionNotes
+      .filter((note) => note.assignmentId === assignment.id && note.studentId === account.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+      .map(({ id, text, createdAt }) => ({ id, text, createdAt }));
+    return { status: 200, body: { notes } };
+  },
+  "student.submission-notes.post": ({ state, account, body, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, body.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const note = { id: randomUUID(), text: body.text, createdAt: now.toISOString() };
+    state.submissionNotes.push({ ...note, assignmentId: assignment.id, studentId: account.id });
+    return { status: 201, body: note };
   },
   "student.access-log.get": ({ state, account, params, query }) => {
     const work = state.works.find((w) => w.documentId === params.documentId);

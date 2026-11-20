@@ -1,50 +1,22 @@
-import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import pg from "pg";
-import { expect, it } from "vitest";
 
-import { hasCiMainSocket, mainSeedPsql } from "./main-seed-psql.ts";
+import { runLocalSql } from "./local-psql.ts";
+import { expect, it } from "vitest";
 
 // K-3b2 / DAN-88 (#635): db/local/demo-k3.sql, the file `pnpm local:up` loads,
 // run twice through the same psql path inside one transaction that is rolled
 // back, so CI checks it without leaving a confirmed teacher for the E2E tests.
 const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
+const authLogin = readFileSync(
+  new URL("../../../db/main/local/auth-login.sql", import.meta.url),
+  "utf8",
+);
+const seed = readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url), "utf8");
 const k3 = readFileSync(new URL("../../../db/main/local/demo-k3.sql", import.meta.url), "utf8");
-
-function requireLocalStack() {
-  const url = new URL(ADMIN_URL);
-  if (
-    url.protocol !== "postgres:" ||
-    url.hostname !== "127.0.0.1" ||
-    url.port !== "54329" ||
-    url.pathname !== "/ductus" ||
-    url.username !== "ductus" ||
-    url.search ||
-    url.hash
-  ) {
-    throw new Error("DATABASE_URL must target the local main database");
-  }
-  if (hasCiMainSocket()) return;
-  if (
-    process.env.DOCKER_HOST ||
-    process.env.DOCKER_CONTEXT ||
-    process.env.COMPOSE_FILE ||
-    (process.env.COMPOSE_PROJECT_NAME && process.env.COMPOSE_PROJECT_NAME !== "ductus")
-  ) {
-    throw new Error("The K-3 data test requires the local ductus Compose project");
-  }
-  const endpoint = execFileSync(
-    "docker",
-    ["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"],
-    { encoding: "utf8" },
-  ).trim();
-  if (!endpoint.startsWith("unix://") && !endpoint.startsWith("npipe://")) {
-    throw new Error("The K-3 data test requires a local Docker socket");
-  }
-}
 
 // Everything K-3 writes, for the three demo accounts, as the compose superuser sees it.
 const SNAPSHOT = `
@@ -104,22 +76,26 @@ type Snapshot = {
 };
 
 it("loads the K-3 course, assignment and enrolment through the RPCs, and a rerun adds nothing (#635)", () => {
-  requireLocalStack();
-  if (hasCiMainSocket()) {
-    // The database CI job does not run db:migrate's auth provisioning or db:seed.
-    const authLogin = readFileSync(
-      new URL("../../../db/main/local/auth-login.sql", import.meta.url),
-    );
-    mainSeedPsql(authLogin, ["-v", `auth_password=${randomBytes(24).toString("hex")}`]);
-    mainSeedPsql(readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url)));
-  }
-  const input = ["BEGIN;", SNAPSHOT, k3, SNAPSHOT, k3, SNAPSHOT, "ROLLBACK;", ""].join("\n");
-  const output = mainSeedPsql(input, ["-t", "-A"]);
+  const input = [
+    "BEGIN;",
+    `\\set auth_password ${randomBytes(24).toString("hex")}`,
+    authLogin,
+    seed,
+    SNAPSHOT,
+    k3,
+    SNAPSHOT,
+    k3,
+    SNAPSHOT,
+    "ROLLBACK;",
+    "",
+  ].join("\n");
+  const output = runLocalSql(ADMIN_URL, input);
   const [before, first, second] = output
     .split(/\r?\n/)
     .filter((line) => line.startsWith("{"))
     .map((line) => JSON.parse(line) as Snapshot);
 
+  if (!before || !first || !second) throw new Error("Expected three K-3 snapshots");
   expect(first).toMatchObject({
     accounts: 3,
     teacherRoles: 1,
@@ -154,7 +130,6 @@ it("loads the K-3 course, assignment and enrolment through the RPCs, and a rerun
 });
 
 it("refuses to run anywhere but over the compose socket as the superuser (#635)", async () => {
-  requireLocalStack();
   const admin = new pg.Client({ connectionString: ADMIN_URL });
   await admin.connect();
   try {

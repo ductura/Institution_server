@@ -9,7 +9,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { CONTRACT_ONLY, ROUTES } from "../../server/contracts/index.ts";
-import type { SettingsWriter, WebAuthnCredentials } from "../../server/database/index.ts";
+import type {
+  ActorReader,
+  SettingsWriter,
+  WebAuthnCredentials,
+} from "../../server/database/index.ts";
 import {
   AREA_NAMES,
   createInstitutionCourseRoutesFor,
@@ -21,8 +25,14 @@ import {
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
+  createStudentAssignmentWorkRouteFor,
+  createStudentSubmissionRoutesFor,
+  createSubmissionRouteFor,
+  createProcessSummaryRouteFor,
   createWebAuthnRoutesFor,
+  REFUSING_SIGNER,
   routesOf,
+  STORAGE_NOT_CONFIGURED,
 } from "../../server/http/index.ts";
 
 // The operations of DAN-803 (c.6905207008, tables of PR1 to PR6), frozen: the
@@ -30,11 +40,30 @@ import {
 // contract and no handler must be there. After the task the list only shrinks.
 // (`submission.submit.post`: the table's `submission.post` has no name part,
 // which checkRoute refuses.)
-/** The course routes of DAN-852, mounted by the entry point since 852-5a, in DAN_803 order. */
+/**
+ * The course routes of DAN-852, mounted by the entry point since 852-5a, and
+ * the student, version and work language routes on the same front
+ * (Ductus#2028, w1119o).
+ */
 const INSTITUTION_COURSE_ROUTES = [
   "institution.courses.post",
   "institution.enrollment-code.post",
   "institution.enrollment-code-revocation.post",
+  "institution.student-removal.post",
+  "institution.student-return.post",
+  "institution.work-language.post",
+  "institution.student-work-language.post",
+  "institution.work-work-language.post",
+] as const;
+
+/** The teacher's reads (Ductus#2028, w1119o), in the order of their factory. */
+const TEACHER_READ_ROUTES = [
+  "teacher.courses.get",
+  "teacher.access.get",
+  "teacher.mentorships.get",
+  "teacher.mentorship.get",
+  "teacher.submissions.get",
+  "teacher.assignment-submissions.post",
 ] as const;
 
 export const DAN_803: readonly string[] = [
@@ -102,10 +131,26 @@ export const SRV_03: readonly string[] = [
   "institution.course-group-teachers.post",
 ];
 
+// The operations of UGOVORI-API (every /api/v1 contract ahead of its handler,
+// Ductus#2028 c.7023902063; scope c.7022752457), frozen the same way.
+export const UGOVORI_API: readonly string[] = [
+  "student.notice.get",
+  "institution.assignment.get",
+  "institution.enrollment-code-state.get",
+];
+
+// SRV-19 defines the wire shapes ahead of the handlers in SRV-22 (mounted) and SRV-24.
+const SRV_19 = [
+  "student.submission.get",
+  "student.assignment-requirements.get",
+  "student.submission-notes.get",
+  "student.submission-notes.post",
+];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03],
+  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03, ...UGOVORI_API, ...SRV_19],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
@@ -116,6 +161,11 @@ const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no
 const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
+  {
+    call: "createStudentAssignmentWorkRouteFor(databases.main)",
+    ids: ["student.assignment-work.get"],
+    routes: () => [createStudentAssignmentWorkRouteFor(NO_ACTOR).contract.id],
+  },
   {
     call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
     ids: ["settings.values.put"],
@@ -159,14 +209,43 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   {
     // SRV-15: a course's seminar groups and their teachers.
     call: "createInstitutionGroupRoutesFor(databases.main)",
-    ids: ["institution.course-groups.post", "institution.course-group-teachers.post"],
+    ids: [
+      "institution.course-groups.get",
+      "institution.course-groups.post",
+      "institution.course-group-teachers.post",
+    ],
     routes: () => createInstitutionGroupRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // SRV-13: the teacher's courses and access over the main database.
     call: "createTeacherReadRoutesFor(databases.main)",
-    ids: ["teacher.courses.get", "teacher.access.get"],
+    ids: [...TEACHER_READ_ROUTES],
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-18: a student's submission over the process's signer and storage.
+    call: "createSubmissionRouteFor(databases.main, evidenceDeps)",
+    ids: ["submission.submit.post"],
+    routes: () => [
+      createSubmissionRouteFor(
+        { ...NO_ACTOR, actorReader: {} as ActorReader },
+        { signer: REFUSING_SIGNER, payloads: STORAGE_NOT_CONFIGURED },
+      ).contract.id,
+    ],
+  },
+  {
+    // SRV-23: the process summary over the process's storage and the thresholds of the environment.
+    call: "createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env)",
+    ids: ["projection.process-summary.post"],
+    routes: () => [
+      createProcessSummaryRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }, {}).contract.id,
+    ],
+  },
+  {
+    // SRV-22: the student's submission state and word range over the main database.
+    call: "...createStudentSubmissionRoutesFor(databases.main)",
+    ids: ["student.submission.get", "student.assignment-requirements.get"],
+    routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
@@ -255,19 +334,29 @@ describe("CONTRACT_ONLY", () => {
       contractOnlyProblems(["student.assignments.get", "teacher.courses.get"], routeIds, []),
     ).toEqual([]);
     const withoutSettings = CONTRACT_ONLY.filter((id) => !DAN_806.includes(id));
-    expect(contractOnlyProblems(withoutSettings, ids, [])).toEqual(
+    // Compared as sets: the problems follow the order of FROZEN, in which the
+    // work language routes come before the course routes.
+    expect(contractOnlyProblems(withoutSettings, ids, []).sort()).toEqual(
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
       // problem report (851-2d2a), the course routes (852-5a), the download
       // manifest (DAN-932), the teacher's reads (SRV-13) and the assignment
-      // routes (SRV-14) and the group routes (SRV-15) are missing too, in task order.
+      // routes (SRV-14), group routes (SRV-15), student work state (SRV-AWG)
+      // and submission (SRV-18), process summary (SRV-23) and submission state and
+      // requirements (SRV-22) are missing too.
       [
-        ...["support.problem-report.post", "teacher.courses.get", "institution.courses.post"],
-        ...["institution.course-assignments.post", "institution.enrollment-code.post"],
-        ...["institution.enrollment-code-revocation.post", "institution.assignment-versions.post"],
-        ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_931],
-        ...["institution.admin-courses.post", "institution.course-groups.post"],
-        "institution.course-group-teachers.post",
-      ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
+        ...["support.problem-report.post", "projection.process-summary.post"],
+        ...TEACHER_READ_ROUTES,
+        ...INSTITUTION_COURSE_ROUTES,
+        "institution.course-assignments.post",
+        "institution.assignment-versions.post",
+        "submission.submit.post",
+        ...[...DAN_806, ...DAN_840, ...DAN_989, ...DAN_931],
+        ...["institution.admin-courses.post", "institution.course-groups.get"],
+        ...["institution.course-groups.post", "institution.course-group-teachers.post"],
+        ...["student.submission.get", "student.assignment-requirements.get"],
+      ]
+        .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
+        .sort(),
     );
   });
 
@@ -284,6 +373,7 @@ describe("CONTRACT_ONLY", () => {
 describe("routes the entry point mounts itself", () => {
   it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
+      "student.assignment-work.get",
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
@@ -293,10 +383,14 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.admin-courses.post",
+      "institution.course-groups.get",
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
-      "teacher.courses.get",
-      "teacher.access.get",
+      ...TEACHER_READ_ROUTES,
+      "submission.submit.post",
+      "projection.process-summary.post",
+      "student.submission.get",
+      "student.assignment-requirements.get",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
@@ -308,7 +402,7 @@ describe("routes the entry point mounts itself", () => {
     expect(CONTRACT_ONLY).not.toContain("support.problem-report.post");
     expect(mounted()).toContain("downloads.manifest.get");
     expect(CONTRACT_ONLY).not.toContain("downloads.manifest.get");
-    for (const id of INSTITUTION_COURSE_ROUTES) {
+    for (const id of [...INSTITUTION_COURSE_ROUTES, ...TEACHER_READ_ROUTES]) {
       expect(mounted()).toContain(id);
       expect(CONTRACT_ONLY).not.toContain(id);
     }

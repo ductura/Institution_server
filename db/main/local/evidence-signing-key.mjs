@@ -4,7 +4,7 @@
 // institution's evidence domain. Never a migration, never production.
 //
 //   DUCTUS_DEV_SIGNING_KEY_FILE=/absolute/path/outside/the/repo \
-//     node db/local/evidence-signing-key.mjs        (after pnpm db:seed)
+//     node db/main/local/evidence-signing-key.mjs        (after pnpm db:seed)
 //
 // The seed (32 random bytes) is written only when the file does not exist,
 // with mode 0600, and never overwritten. The key label and version come from
@@ -12,7 +12,7 @@
 // with. psql runs as the compose superuser inside the postgres container, as
 // for the other db/local scripts; DUCTUS_PSQL_CONTAINER names another local
 // container instead (a private test database), and an importing caller may
-// pass a native psql target on the local socket (psql-target.mjs). Prints
+// pass a native psql target on the local socket (psql-target.ts). Prints
 // only public values.
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -96,26 +96,25 @@ export async function main(env = process.env, argv = process.argv.slice(2), psql
   // The signer judges the path (set, absolute, outside the repository) before
   // anything is written, so a bad path makes no file.
   const signer = new PersistentDevelopmentEd25519SigningKeyProvider(env, ROOT);
-  const fault = await signer.publicVerificationKey().then(
-    () => null,
-    (error) => error,
-  );
-  if (fault !== null && fault.code !== "signing_key_missing") throw fault;
-  if (fault !== null) {
-    // The one path the signer judged, ".." folded, so mkdir makes nothing it did not judge.
+  const readKey = async () => {
+    const result = await signer.publicVerificationKey();
+    if (result.ok) return result.value;
+    if (result.error.code === "SIGNING_KEY_MISSING") return null;
+    throw new Error(result.error.code.toLowerCase());
+  };
+
+  if ((await readKey()) === null) {
+    // The signer has already checked the path. Recheck after making its parent.
     const path = developmentSeedPath(env[DEV_SIGNING_KEY_FILE]);
     await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-    // Judged again where the directory now exists, before a byte is written.
-    const again = await signer.publicVerificationKey().then(
-      () => null,
-      (error) => error,
-    );
-    if (again !== null && again.code !== "signing_key_missing") throw again;
-    await writeFile(path, randomBytes(32), { flag: "wx", mode: 0o600 }).catch((error) => {
-      if (error?.code !== "EEXIST") throw new Error("the seed file could not be written");
-    });
+    if ((await readKey()) === null) {
+      await writeFile(path, randomBytes(32), { flag: "wx", mode: 0o600 }).catch((error) => {
+        if (error?.code !== "EEXIST") throw new Error("the seed file could not be written");
+      });
+    }
   }
-  const key = await signer.publicVerificationKey();
+  const key = await readKey();
+  if (key === null) throw new Error("signing_key_missing");
   const evidenceDomainId = await runPsql(registrationInvocation(env, slug, key, psql));
   return { evidenceDomainId, keyId: key.keyId, keyVersion: key.keyVersion };
 }

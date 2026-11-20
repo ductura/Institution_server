@@ -39,7 +39,7 @@ async function client(login: string) {
   const c = new pg.Client({ connectionString: loginUrl(login) });
   clients.push(c);
   await c.connect();
-  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]
+  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]!
     .pid;
   return { c, pid };
 }
@@ -122,7 +122,7 @@ beforeAll(async () => {
       "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE %I', $1::text, $2::text, $3::text) AS ddl",
       [login, password, group],
     );
-    await admin.query(ddl.rows[0].ddl);
+    await admin.query(ddl.rows[0]!.ddl);
   }
   for (const at of [0, 1]) {
     await admin.query(

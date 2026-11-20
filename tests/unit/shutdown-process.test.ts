@@ -58,7 +58,9 @@ async function run(url: string, graceMs: number) {
     const req = request({ host: "127.0.0.1", port, path: url }, (res) => {
       let body = "";
       res.on("data", (chunk: Buffer) => (body += chunk.toString()));
-      res.on("end", () => resolve({ status: res.statusCode, body }));
+      res.on("end", () =>
+        resolve({ ...(res.statusCode === undefined ? {} : { status: res.statusCode }), body }),
+      );
       res.on("error", () => resolve("aborted"));
     });
     req.on("error", () => resolve("aborted"));

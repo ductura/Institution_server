@@ -16,7 +16,10 @@ const TOKEN = "A".repeat(43);
 const CODE = "0123-4567-89AB-CDEF";
 const INPUT = { validUntil: "2026-11-02T10:00:00.123456+01:00" };
 const URL = `${ORIGIN}/api/institution/courses/${COURSE}/enrollment-code`;
-const request = (body: BodyInit = JSON.stringify(INPUT), headers: Record<string, string> = {}) =>
+const request = (
+  body: NonNullable<RequestInit["body"]> = JSON.stringify(INPUT),
+  headers: Record<string, string> = {},
+) =>
   new Request(URL, {
     method: "POST",
     headers: { origin: ORIGIN, "content-type": "application/json", ...headers },

@@ -33,7 +33,7 @@ function definitionOf(text: string, name: string): string {
   });
   expect(starts).toHaveLength(1);
   const end = text.indexOf("\n$$;", starts[0]);
-  expect(end).toBeGreaterThan(starts[0]);
+  expect(end).toBeGreaterThan(starts[0]!);
   return text.slice(starts[0], end + "\n$$;".length);
 }
 

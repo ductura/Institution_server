@@ -37,12 +37,14 @@ SELECT is(
           || CASE WHEN has_function_privilege('ductus_app', p.oid, 'EXECUTE') THEN ' app' ELSE '' END, ' | ' ORDER BY p.proname)
    FROM pg_proc p
    WHERE p.pronamespace = 'institution'::regnamespace
-     AND p.proname IN ('request_mentorship', 'withdraw_mentorship_request', 'approve_mentorship_request', 'lock_teacher_role')),
+     AND p.proname IN ('request_mentorship', 'withdraw_mentorship_request', 'approve_mentorship_request',
+                       'decline_mentorship_request', 'lock_teacher_role')),
   'approve_mentorship_request(p_request_id uuid) uuid definer app'
+  ' | decline_mentorship_request(p_request_id uuid, p_reason text) boolean definer app'
   ' | lock_teacher_role(p_user_id uuid) uuid'
   ' | request_mentorship(p_teacher_id uuid, p_work_type text) uuid definer app'
   ' | withdraw_mentorship_request(p_request_id uuid) boolean definer app',
-  'the three functions take no actor; the lock helper is not callable by ductus_app'
+  'the four functions take no actor; the lock helper is not callable by ductus_app'
 );
 SELECT row_eq(
   $$ SELECT relowner::regrole::text, relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid = 'audit.mentorship_event'::regclass $$,
@@ -51,8 +53,26 @@ SELECT bag_eq(
   $$ SELECT polname::text, polroles::regrole[]::text FROM pg_policy WHERE polrelid = 'audit.mentorship_event'::regclass $$,
   $$ VALUES ('mentorship_event_owner', '{ductus_identity}') $$, 'the only policy on mentorship_event is the owner''s');
 SELECT columns_are('audit', 'mentorship_event', ARRAY[
-  'id', 'institution_id', 'request_id', 'student_id', 'teacher_id', 'kind', 'actor_id', 'mentorship_id', 'occurred_at'
+  'id', 'institution_id', 'request_id', 'student_id', 'teacher_id', 'kind', 'actor_id', 'mentorship_id', 'occurred_at',
+  'reason'
 ], 'mentorship_event has exactly the listed columns');
+SELECT is(
+  (SELECT string_agg(pg_get_constraintdef(c.oid), ' | ' ORDER BY c.conname) FROM pg_constraint c
+    WHERE c.conrelid = 'audit.mentorship_event'::regclass AND c.conname IN ('mentorship_event_kind_check', 'mentorship_event_reason_check')),
+  'CHECK ((kind = ANY (ARRAY[''requested''::text, ''withdrawn''::text, ''approved''::text, ''declined''::text])))'
+  ' | CHECK (((reason IS NULL) OR ((kind = ''declined''::text) AND ((char_length(reason) >= 1) AND (char_length(reason) <= 600)) AND (reason ~ ''[^[:space:]]''::text))))',
+  'SRV-28: a declined event is a kind; only it carries a reason, of 1 to 600 characters, not blank');
+SELECT is(
+  (SELECT pg_get_constraintdef(c.oid) FROM pg_constraint c
+    WHERE c.conrelid = 'institution.mentorship_request'::regclass AND c.conname = 'mentorship_request_one_end_check'),
+  'CHECK ((num_nonnulls(withdrawn_at, approved_at, declined_at) <= 1))',
+  'SRV-28: a request ends at most once: withdrawn, approved or declined');
+SELECT is(
+  (SELECT string_agg(pg_get_expr(i.indpred, i.indrelid), ' | ' ORDER BY c.relname) FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+    WHERE i.indrelid = 'institution.mentorship_request'::regclass AND i.indpred IS NOT NULL),
+  '((withdrawn_at IS NULL) AND (approved_at IS NULL) AND (declined_at IS NULL))'
+  ' | ((withdrawn_at IS NULL) AND (approved_at IS NULL) AND (declined_at IS NULL))',
+  'SRV-28: a declined request is not open in either partial index');
 SELECT col_is_unique('audit', 'mentorship_event', ARRAY['request_id', 'kind'], 'one event per request and kind');
 SELECT fk_ok('audit', 'mentorship_event', ARRAY['request_id', 'institution_id', 'student_id', 'teacher_id'],
              'institution', 'mentorship_request', ARRAY['id', 'institution_id', 'student_id', 'teacher_id'],
@@ -242,6 +262,90 @@ SELECT is(pg_temp.ask('boris', $$ SELECT string_agg(p.name, ' ' ORDER BY p.name)
           'nina vesna', 'Boris reads the new mentorship');
 SELECT is(pg_temp.sees('vesna'), '-', 'an approved request is no longer open for the teacher');
 
+-- 7b. SRV-28: decline_mentorship_request. Three new open requests: Dora asks
+-- Vesna again for her master's thesis (rd2, the withdrawn rd does not block
+-- it), Ana asks Vesna for a doctoral thesis (ra), Boris asks Marko for a
+-- specialist thesis (rbm). The reason is invented text.
+INSERT INTO ref VALUES
+  ('rd2', pg_temp.ask('dora', $$ SELECT institution.request_mentorship({vesna}, 'master_thesis') $$)),
+  ('ra', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'doctoral_thesis') $$)),
+  ('rbm', pg_temp.ask('boris', $$ SELECT institution.request_mentorship({marko}, 'specialist_thesis') $$));
+SELECT is_empty($$ SELECT name || ': ' || val FROM ref WHERE name IN ('rd2', 'ra', 'rbm') AND val !~ '^[0-9a-f-]{36}$' $$,
+  'the three requests to decline are made through the function');
+CREATE TEMP TABLE decline_case (n int PRIMARY KEY, actor text, request text, reason text, expected text, events int, note text);
+INSERT INTO decline_case VALUES
+  (1, 'anon', 'rd2', NULL, 'ZD401: not authenticated', 0, 'no session'),
+  (2, 'marko', 'rd2', NULL, 'ZD403: forbidden', 0, 'another teacher of the institution'),
+  (3, 'nina', 'rd2', NULL, 'ZD403: forbidden', 0, 'teacher without a confirmed role'),
+  (4, 'petra', 'rd2', NULL, 'ZD403: forbidden', 0, 'teacher of another institution'),
+  (5, 'iva', 'rd2', NULL, 'ZD403: forbidden', 0, 'administrator'),
+  (6, 'dora', 'rd2', NULL, 'ZD403: forbidden', 0, 'the student who asked'),
+  (7, 'boris', 'rd2', NULL, 'ZD403: forbidden', 0, 'another student'),
+  (8, 'vesna', 'nobody', NULL, 'ZD403: forbidden', 0, 'no such request'),
+  (9, 'vesna', 'rs', NULL, 'ZD403: forbidden', 0, 'someone else''s request in the institution'),
+  (10, 'vesna', 'rt', NULL, 'ZD403: forbidden', 0, 'someone else''s request in another institution'),
+  (11, 'ema', 're', NULL, 'ZD403: forbidden', 0, 'the teacher asked, with the role revoked'),
+  (12, 'vesna', 'rd2', repeat('a', 601), 'ZD422: invalid input', 0, 'a reason of 601 characters'),
+  (13, 'vesna', 'rd2', '', 'ZD422: invalid input', 0, 'an empty reason'),
+  (14, 'vesna', 'rd2', E' \t\n', 'ZD422: invalid input', 0, 'a blank reason'),
+  (15, 'vesna', 'rb', NULL, 'ZD409: conflict', 0, 'an approved request'),
+  (16, 'vesna', 'rd', NULL, 'ZD409: conflict', 0, 'a withdrawn request'),
+  (17, 'vesna', 'rd2', 'Kvota mentorstava za ovu godinu je popunjena.', 'true', 1, 'the teacher asked, with a reason'),
+  (18, 'vesna', 'rd2', 'Drugi razlog.', 'false', 0, 'declined again: nothing is written'),
+  (19, 'vesna', 'ra', repeat('b', 600), 'true', 1, 'a reason of 600 characters'),
+  (20, 'marko', 'rbm', NULL, 'true', 1, 'the teacher asked, without a reason');
+CREATE TEMP TABLE decline_result (n int PRIMARY KEY, result text, mentorships bigint, events bigint);
+DO $$
+DECLARE
+  c record;
+  v_m bigint;
+  v_e bigint;
+BEGIN
+  FOR c IN SELECT * FROM decline_case ORDER BY n LOOP
+    v_m := pg_temp.mentorships();
+    v_e := pg_temp.events();
+    INSERT INTO decline_result VALUES (c.n,
+      pg_temp.ask(c.actor, format('SELECT institution.decline_mentorship_request(%L::uuid, %L)::text',
+                                  pg_temp.id(c.request), c.reason)),
+      pg_temp.mentorships() - v_m, pg_temp.events() - v_e);
+  END LOOP;
+END
+$$;
+SELECT is(r.result, c.expected, format('decline %s: %s', c.n, c.note))
+FROM decline_case c JOIN decline_result r USING (n) ORDER BY n;
+SELECT is(r.events, c.events::bigint, format('decline %s: events written', c.n))
+FROM decline_case c JOIN decline_result r USING (n) ORDER BY n;
+SELECT is((SELECT sum(mentorships) FROM decline_result), 0::numeric, 'declining creates no mentorship');
+
+-- What the declines wrote, and what a declined request still allows.
+SELECT bag_eq(
+  $$ SELECT z.name AS request, a.name AS actor, e.reason
+     FROM audit.mentorship_event e JOIN ref z ON z.val = e.request_id::text JOIN person a ON a.id = e.actor_id
+     WHERE e.kind = 'declined' $$,
+  $$ VALUES ('rd2', 'vesna', 'Kvota mentorstava za ovu godinu je popunjena.'), ('ra', 'vesna', repeat('b', 600)),
+            ('rbm', 'marko', NULL) $$,
+  'one declined event per request, with the teacher as actor and the first reason only');
+SELECT is(
+  (SELECT string_agg(z.name, ' ' ORDER BY z.name) FROM institution.mentorship_request r JOIN ref z ON z.val = r.id::text
+    WHERE r.declined_at IS NOT NULL AND r.withdrawn_at IS NULL AND r.approved_at IS NULL AND r.mentorship_id IS NULL),
+  'ra rbm rd2', 'the three requests are declined and nothing else');
+SELECT is(pg_temp.ask('vesna', format('SELECT institution.approve_mentorship_request(%L::uuid)', pg_temp.id('rd2'))),
+  'ZD409: conflict', 'a declined request cannot be approved');
+SELECT is(pg_temp.ask('dora', format('SELECT institution.withdraw_mentorship_request(%L::uuid)::text', pg_temp.id('rd2'))),
+  'ZD409: conflict', 'a declined request cannot be withdrawn');
+SELECT is(pg_temp.sees('vesna'), '-', 'a declined request is no longer open for the teacher');
+SELECT is(pg_temp.sees('dora'), 'rd rd2 rs', 'the student still reads the own declined request');
+SELECT is(pg_temp.ask('dora', $$ SELECT count(*)::text FROM institution.mentorship_request WHERE declined_at IS NOT NULL $$),
+  '1', 'and sees that it was declined, but not the reason, which is only in the trail');
+INSERT INTO ref VALUES ('rd3', pg_temp.ask('dora', $$ SELECT institution.request_mentorship({vesna}, 'master_thesis') $$));
+SELECT matches((SELECT val FROM ref WHERE name = 'rd3'), '^[0-9a-f-]{36}$', 'a declined request does not block a new one');
+SELECT is(pg_temp.sees('vesna'), 'rd3', 'the new request is open for the teacher');
+SELECT throws_ok(
+  format($$ INSERT INTO audit.mentorship_event (institution_id, request_id, student_id, teacher_id, kind, actor_id, reason, occurred_at)
+            VALUES (%L, %L, %L, %L, 'withdrawn', %L, 'Razlog.', now()) $$,
+         pg_temp.id('fak_a'), pg_temp.id('rd3'), pg_temp.id('dora'), pg_temp.id('vesna'), pg_temp.id('dora')),
+  '23514', NULL, 'only a declined event carries a reason');
+
 -- 8. The trail cannot be changed.
 SELECT throws_ok($$ UPDATE audit.mentorship_event SET kind = 'withdrawn' $$, NULL, NULL, 'an event is not updated');
 SELECT throws_ok($$ DELETE FROM audit.mentorship_event $$, NULL, NULL, 'an event is not deleted');
@@ -268,7 +372,7 @@ SELECT is(pg_temp.ask(v.actor, $$ DELETE FROM audit.mentorship_event RETURNING '
 FROM (VALUES ('boris'), ('vesna'), ('iva')) AS v (actor);
 REVOKE SELECT, INSERT, UPDATE, DELETE ON audit.mentorship_event FROM ductus_app;
 REVOKE USAGE ON SCHEMA audit FROM ductus_app;
-SELECT is(pg_temp.events(), 8::bigint, 'the trail is unchanged');
+SELECT is(pg_temp.events(), 15::bigint, 'the trail is unchanged');
 
 SELECT * FROM finish();
 ROLLBACK;

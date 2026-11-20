@@ -21,9 +21,9 @@ export type PendingReceiptObjectRead =
   | { status: "unavailable"; reason: string };
 
 /** The worker's read of the locator (D-71, D-102); the web process has none. */
-export interface PendingReceiptObjectSource {
+export type PendingReceiptObjectSource = {
   receiptObject(evidenceDomainId: string, receiptId: string): Promise<PendingReceiptObjectRead>;
-}
+};
 
 /**
  * What one HEAD proves. `present` only when the store answers for exactly
@@ -38,11 +38,11 @@ export type EvidencePayloadPresenceResult =
   | { status: "mismatch" }
   | { status: "unavailable"; reason: string };
 
-export interface EvidencePayloadPresence {
+export type EvidencePayloadPresence = {
   headImmutable(input: {
     institutionId: string;
     evidencePackageId: string;
     segmentHash: string;
     payloadBytes: number;
   }): Promise<EvidencePayloadPresenceResult>;
-}
+};

@@ -39,8 +39,6 @@ export {
   type State,
 } from "./state.ts";
 
-export { FAKE_KEY_ID, FAKE_SIGNATURE } from "./evidence-routes.ts";
-
 /**
  * The answer of every route of the contract, by operation id.
  * coverage.test.ts fails for a route of ROUTE_TABLE without one.

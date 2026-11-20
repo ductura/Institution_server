@@ -1,0 +1,191 @@
+{
+  "route": "institution.assignment.get",
+  "vectors": [
+    {
+      "name": "current",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904",
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601",
+          "versionNo": 2,
+          "title": "Seminarski rad: kućno kompostiranje",
+          "instructions": "Izmišljene upute za izmišljeni zadatak.",
+          "workType": "seminar_paper",
+          "opensAt": "2026-10-01T06:00:00.000Z",
+          "dueAt": "2027-01-31T22:59:00.000Z",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": ["proofreading", "literature_search"],
+          "evidenceProfile": "basic",
+          "importAllowed": false,
+          "wordMin": 1500,
+          "wordMax": 2500
+        }
+      }
+    },
+    {
+      "name": "current-with-setup",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904",
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601",
+          "versionNo": 1,
+          "title": "Seminarski rad: kućno kompostiranje",
+          "instructions": "Izmišljene upute za izmišljeni zadatak.",
+          "workType": "seminar_paper",
+          "opensAt": "2026-10-01T06:00:00.000Z",
+          "dueAt": "2027-01-31T22:59:00.000Z",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": [],
+          "evidenceProfile": "basic",
+          "importAllowed": false,
+          "wordMin": 1500,
+          "wordMax": 2500,
+          "groupIds": ["5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d01"],
+          "externalToolsAllowed": false,
+          "aiSummaryOnly": true
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002111"
+        }
+      }
+    },
+    {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
+          "sec-fetch-site": "cross-site"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000002112"
+        }
+      }
+    },
+    {
+      "name": "malformed-id",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "assignmentId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000002113"
+        }
+      }
+    },
+    {
+      "name": "not-found-or-not-a-teacher-of-the-course",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000002114"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002115"
+        }
+      }
+    }
+  ]
+}

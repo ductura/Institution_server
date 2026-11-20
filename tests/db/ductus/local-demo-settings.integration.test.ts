@@ -1,13 +1,12 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import pg from "pg";
+
+import { runLocalSql } from "./local-psql.ts";
 import { expect, it } from "vitest";
 
-import { createWithActor } from "../../../server/database/index.ts";
-
-import { hasCiMainSocket, mainSeedPsql } from "./main-seed-psql.ts";
+import { createWithActor } from "../../../server/database/with-actor.ts";
 
 const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
@@ -16,52 +15,10 @@ const APP_URL =
   "postgres://ductus_app_local:ductus-app-local-only@127.0.0.1:54329/ductus";
 const DEMO_SLUG = "demo-fakultet";
 const OTHER_SLUG = "demo-bez-prijave";
-const seed = readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url));
-
-function requireLocalStack() {
-  for (const [name, value, user] of [
-    ["DATABASE_URL", ADMIN_URL, "ductus"],
-    ["APP_DATABASE_URL", APP_URL, "ductus_app_local"],
-  ]) {
-    const url = new URL(value);
-    if (
-      url.protocol !== "postgres:" ||
-      url.hostname !== "127.0.0.1" ||
-      url.port !== "54329" ||
-      url.pathname !== "/ductus" ||
-      url.username !== user ||
-      url.search ||
-      url.hash
-    ) {
-      throw new Error(`${name} must target the local main database`);
-    }
-  }
-  if (hasCiMainSocket()) return;
-  if (
-    process.env.DOCKER_HOST ||
-    process.env.DOCKER_CONTEXT ||
-    process.env.COMPOSE_FILE ||
-    (process.env.COMPOSE_PROJECT_NAME && process.env.COMPOSE_PROJECT_NAME !== "ductus")
-  ) {
-    throw new Error("The demo seed test requires the local ductus Compose project");
-  }
-  const context = execFileSync("docker", ["context", "show"], { encoding: "utf8" }).trim();
-  if (context !== "default" && context !== "desktop-linux") {
-    throw new Error("The demo seed test requires a local Docker context");
-  }
-  const endpoint = execFileSync(
-    "docker",
-    ["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"],
-    { encoding: "utf8" },
-  ).trim();
-  if (!endpoint.startsWith("unix://") && !endpoint.startsWith("npipe://")) {
-    throw new Error("The demo seed test requires a local Docker socket");
-  }
-}
+const seed = readFileSync(new URL("../../../db/main/local/seed.sql", import.meta.url), "utf8");
 
 function runSeed() {
-  // Run the actual db:seed file over the server's local socket.
-  mainSeedPsql(seed);
+  runLocalSql(ADMIN_URL, seed);
 }
 
 type Settings = {
@@ -73,8 +30,7 @@ type Settings = {
 };
 
 it("seeds only the local demo settings and preserves configuration and enrollment state on rerun", async () => {
-  requireLocalStack();
-  if (hasCiMainSocket()) runSeed();
+  runSeed();
   const admin = new pg.Pool({ connectionString: ADMIN_URL });
   const app = new pg.Pool({ connectionString: APP_URL });
   const withActor = createWithActor(app);
@@ -86,8 +42,8 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
   let courseId = "";
   let original: Settings | undefined;
   try {
-    // Remove only this synthetic row to model a freshly migrated stack, then
-    // restore its original value in finally.
+    // The seed has prepared both demo institutions. Remove only this synthetic row to model a
+    // freshly migrated stack, then restore its original value in finally.
     const institutions = await admin.query<{ id: string; slug: string }>(
       "SELECT id, slug FROM identity.institution WHERE slug = ANY($1)",
       [[DEMO_SLUG, OTHER_SLUG]],
@@ -119,9 +75,9 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
       [demoId],
     );
     expect(seeded.rows).toHaveLength(1);
-    expect(seeded.rows[0].display_name).toBe("Demo fakultet (test)");
-    expect(seeded.rows[0].enrollment_attempt_limit).toBe(5);
-    expect(seeded.rows[0].enrollment_attempt_window).toBe("00:15:00");
+    expect(seeded.rows[0]!.display_name).toBe("Demo fakultet (test)");
+    expect(seeded.rows[0]!.enrollment_attempt_limit).toBe(5);
+    expect(seeded.rows[0]!.enrollment_attempt_window).toBe("00:15:00");
     expect(
       (
         await admin.query(
@@ -169,7 +125,7 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
           await tx.query<{ id: string }>(
             "SELECT institution.create_course('Sinteticki kolegij', '2026/2027', 'prohibited') AS id",
           )
-        ).rows[0].id,
+        ).rows[0]!.id,
     );
     const code = await withActor(
       tokens[1],
@@ -179,7 +135,7 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
             "SELECT institution.create_enrollment_code($1, now() + interval '1 day') AS code",
             [courseId],
           )
-        ).rows[0].code,
+        ).rows[0]!.code,
     );
     const wrong = await withActor(
       tokens[3],
@@ -188,7 +144,7 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
           await tx.query<{ outcome: string }>(
             "SELECT outcome FROM institution.enroll_with_code('WRONGCODE')",
           )
-        ).rows[0].outcome,
+        ).rows[0]!.outcome,
     );
     expect(wrong).toBe("invalid_code");
     const attempt = (
@@ -196,7 +152,7 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
         "SELECT id FROM institution.enrollment_attempt WHERE user_id = $1",
         [users[3]],
       )
-    ).rows[0].id;
+    ).rows[0]!.id;
 
     await admin.query(
       `UPDATE institution.institution_settings SET display_name = 'Prilagodeni demo (test)',
@@ -209,9 +165,9 @@ it("seeds only the local demo settings and preserves configuration and enrollmen
       [demoId],
     );
     expect(preserved.rows).toHaveLength(1);
-    expect(preserved.rows[0].display_name).toBe("Prilagodeni demo (test)");
-    expect(preserved.rows[0].enrollment_attempt_limit).toBe(7);
-    expect(preserved.rows[0].enrollment_attempt_window).toBe("00:20:00");
+    expect(preserved.rows[0]!.display_name).toBe("Prilagodeni demo (test)");
+    expect(preserved.rows[0]!.enrollment_attempt_limit).toBe(7);
+    expect(preserved.rows[0]!.enrollment_attempt_window).toBe("00:20:00");
     expect(
       (
         await admin.query("SELECT id FROM institution.enrollment_attempt WHERE user_id = $1", [

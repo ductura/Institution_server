@@ -10,7 +10,7 @@ import {
   type AccountKey,
   type State,
 } from "./index.ts";
-import { contractProblems, send, signIn, type Sent } from "./testing.ts";
+import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
 // fits the contract. A route added to ROUTE_TABLE without a handler or without
@@ -21,7 +21,7 @@ type Scenario = { readonly before?: readonly Step[]; readonly request: Step };
 
 const ORIGIN = { origin: "http://127.0.0.1:4010", "sec-fetch-site": "same-origin" };
 const EVIDENCE = { ...ORIGIN, "ductus-protocol": "1" };
-const SEGMENT = Buffer.from('{"izmisljeni":"odsjecak"}').toString("base64");
+const SEGMENT = evidenceSegment(createState());
 const commit = (txid: string, baseRevision: number): Step => ({
   path: "/api/v1/evidence/commit",
   as: "student",
@@ -94,6 +94,13 @@ const VERSION = {
 };
 const A = `/api/v1/institution/assignments/${IDS.assignment}`;
 const C = `/api/v1/institution/courses/${IDS.course}`;
+const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
+const NOTE: Step = {
+  path: "/api/v1/student/submission-notes",
+  as: "student",
+  headers: ORIGIN,
+  body: { assignmentId: IDS.assignment, text: "Izmišljena napomena." },
+};
 
 const SCENARIOS: Record<RouteId, Scenario> = {
   "auth.backchannel-logout.post": {
@@ -178,6 +185,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
       headers: EVIDENCE,
       body: { documentId: IDS.document, from: 0 },
+    },
+  },
+  "institution.assignment.get": { request: { path: A, as: "nastavnik" } },
+  "institution.enrollment-code-state.get": {
+    request: {
+      path: `${C}/enrollment-code/state`,
+      as: "nastavnik",
     },
   },
   "institution.acknowledgment.post": {
@@ -329,6 +343,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.access-log.get": {
     request: { path: `/api/v1/student/works/${IDS.document}/access-log`, as: "student" },
   },
+  "student.assignment-requirements.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/requirements`, as: "student" },
+  },
   "student.assignment-work.get": {
     request: { path: "/api/v1/student/assignment-work", as: "student" },
   },
@@ -340,6 +357,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { code: "UPIS2026DEMO" },
     },
   },
+  "student.notice.get": {
+    request: { path: `${A.replace("/institution/", "/student/")}/notice`, as: "student" },
+  },
   "student.notice-read.post": {
     request: {
       path: `${A.replace("/institution/", "/student/")}/notice-read`,
@@ -347,6 +367,14 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { versionNo: 1 },
     },
   },
+  "student.submission.get": {
+    request: { path: `${STUDENT_ASSIGNMENT}/submission`, as: "student" },
+  },
+  "student.submission-notes.get": {
+    before: [NOTE],
+    request: { path: `${STUDENT_ASSIGNMENT}/submission-notes`, as: "student" },
+  },
+  "student.submission-notes.post": { request: NOTE },
   "submission.submit.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: {
@@ -440,5 +468,50 @@ describe("dev fake server covers the whole contract", () => {
       });
       expect(contractProblems(route, answer, code), code).toEqual([]);
     }
+  });
+});
+
+describe("student submission on the dev fake server", () => {
+  it("reads the exact receipt returned by submission", async () => {
+    const state = createState();
+    const read = SCENARIOS["student.submission.get"].request;
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ state: "none" });
+    const submit = SCENARIOS["submission.submit.post"];
+    for (const step of submit.before ?? []) expect((await run(state, step)).status).toBe(200);
+    const submitted = await run(state, submit.request);
+    expect(submitted.status).toBe(200);
+    const confirmed = await run(state, read);
+    expect(confirmed.status).toBe(200);
+    expect(JSON.parse(confirmed.body)).toEqual({
+      state: "potvrdeno",
+      receipt: JSON.parse(submitted.body).receipt,
+    });
+    expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  });
+
+  it("shows a recorded submission awaiting a receipt", async () => {
+    const state = createState();
+    const work = state.works[0]!;
+    work.submittedAt = "2026-11-20T10:00:00.125Z";
+    work.revision = 1;
+    const answer = await run(state, SCENARIOS["student.submission.get"].request);
+    expect(contractProblems("student.submission.get", answer)).toEqual([]);
+    expect(JSON.parse(answer.body)).toEqual({
+      state: "ceka",
+      revision: 1,
+      requestedAt: "2026-11-20T10:00:00.125000Z",
+    });
+  });
+
+  it("keeps notes append-only and private to the student", async () => {
+    const state = createState();
+    const read = SCENARIOS["student.submission-notes.get"].request;
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ notes: [] });
+    const other = await run(state, { ...NOTE, as: "student-2" });
+    expect(other.status).toBe(404);
+    const added = await run(state, NOTE);
+    expect(added.status).toBe(201);
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ notes: [JSON.parse(added.body)] });
+    expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
   });
 });

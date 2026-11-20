@@ -18,6 +18,10 @@ import {
   createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
+  createSubmissionRouteFor,
+  createProcessSummaryRouteFor,
+  createStudentAssignmentWorkRouteFor,
+  createStudentSubmissionRoutesFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -75,6 +79,9 @@ let server: Running;
 const EVIDENCE_401 = { status: "unauthenticated" };
 /** A course that does not exist: a non-teacher is refused as for any course (C-23). */
 const COURSE = randomUUID();
+/** A student and an assignment that do not exist either (C-23). */
+const STUDENT = randomUUID();
+const ASSIGNMENT = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -85,6 +92,37 @@ const SESSION_ROUTES = {
   "evidence.replay.post": {
     path: "/api/v1/evidence/replay",
     body: () => ({ documentId: randomUUID(), from: 0 }),
+    live: 404,
+  },
+  // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
+  "submission.submit.post": {
+    path: "/api/v1/submission",
+    body: () => ({ documentId: randomUUID(), revision: 1 }),
+    live: 404,
+  },
+  // SRV-23: a live session naming a work it may not read gets 404 and logs nothing.
+  "projection.process-summary.post": {
+    path: "/api/v1/process-summary",
+    body: () => ({ documentId: randomUUID() }),
+    live: 404,
+  },
+  "student.assignment-work.get": {
+    method: "GET",
+    path: "/api/v1/student/assignment-work",
+    body: () => undefined,
+    live: 200,
+  },
+  // SRV-22: a live session naming an assignment it is no student of gets 404.
+  "student.submission.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.assignment-requirements.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/requirements`,
+    body: () => undefined,
     live: 404,
   },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
@@ -153,6 +191,58 @@ const SESSION_ROUTES = {
     path: `/api/v1/institution/courses/${COURSE}/enrollment-code/revocation`,
     body: () => ({}),
     live: 403,
+  },
+  // Ductus#2028 (w1119o): the student and version routes on the same front.
+  // The account teaches no course or assignment: each RPC refuses with 403.
+  "institution.student-removal.post": {
+    path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/removal`,
+    body: () => ({}),
+    live: 403,
+  },
+  "institution.student-return.post": {
+    path: `/api/v1/institution/courses/${COURSE}/students/${STUDENT}/return-permission`,
+    body: () => ({}),
+    live: 403,
+  },
+  // The work language routes: the account teaches no assignment, so 403.
+  "institution.work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/work-language`,
+    body: () => ({ expectedVersion: 1, language: "en" }),
+    live: 403,
+  },
+  "institution.student-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/students/${STUDENT}/work-language`,
+    body: () => ({ language: "en" }),
+    live: 403,
+  },
+  "institution.work-work-language.post": {
+    path: `/api/v1/institution/assignments/${ASSIGNMENT}/works/izmisljeni-rad/work-language`,
+    body: () => ({ language: null }),
+    live: 403,
+  },
+  // The account mentors no work and has no visible submissions.
+  "teacher.mentorships.get": {
+    method: "GET",
+    path: "/api/v1/teacher/mentorships",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.mentorship.get": {
+    method: "GET",
+    path: `/api/v1/teacher/mentorships/${ASSIGNMENT}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submissions.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions`,
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.assignment-submissions.post": {
+    path: "/api/v1/teacher/assignment-submissions",
+    body: () => ({ assignmentIds: [ASSIGNMENT] }),
+    live: 200,
   },
   // DAN-840-3f1: WebAuthn. A live challenge is 200; a registration without a
   // challenge is 400 (the ceremony refuses it); an assertion of a key the
@@ -245,6 +335,13 @@ const SESSION_ROUTES = {
     body: () => ({ teacherId: randomUUID() }),
     live: 403,
   },
+  // Not of the course team nor an administrator: 403 from course_groups.
+  "institution.course-groups.get": {
+    method: "GET",
+    path: `/api/v1/institution/courses/${COURSE}/groups`,
+    body: () => undefined,
+    live: 403,
+  },
   // SRV-12: the administrator's course; not an administrator, so 403.
   "institution.admin-courses.post": {
     path: "/api/v1/institution/admin/courses",
@@ -266,6 +363,7 @@ const FACTORIES = [
   "createHealthRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
+  "createStudentAssignmentWorkRouteFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
@@ -277,6 +375,9 @@ const FACTORIES = [
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
+  "createSubmissionRouteFor",
+  "createProcessSummaryRouteFor",
+  "createStudentSubmissionRoutesFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createInternalInstitutionRoutes",
@@ -288,6 +389,7 @@ const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
+  createStudentAssignmentWorkRouteFor(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
@@ -299,6 +401,9 @@ const MOUNTED = [
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+  createSubmissionRouteFor(databases.main, evidenceDeps),
+  createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
+  ...createStudentSubmissionRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
@@ -507,6 +612,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
+        id.startsWith("projection.") ||
+        id.startsWith("student.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;

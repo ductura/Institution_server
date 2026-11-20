@@ -15,12 +15,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SQLSTATE = /^[0-9A-Z]{5}$/;
 const NAME_MAX = 255;
 
-export interface NamedStudent {
+export type NamedStudent = {
   studentId: string;
   /** Both null when the account has no name pair (#757 D1); never a stand-in. */
   givenName: string | null;
   familyName: string | null;
-}
+};
 
 export type NamedStudentsRead =
   { kind: "ok"; students: NamedStudent[] } | { kind: "unauthorized" | "unavailable" };

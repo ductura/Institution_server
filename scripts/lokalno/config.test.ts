@@ -122,12 +122,14 @@ describe("the simulator's accounts file (SRV-01)", () => {
     expect(accountsFileFor("/r", "/r/.local", () => false)).toBeUndefined();
   });
 
-  it("the committed file names demo-admin and demo-bez-uloge of demo-fakultet, as seed.sql does", () => {
+  it("the committed file names the local roles and both submission students", () => {
     const text = readFileSync(join(ROOT, SEED_ACCOUNTS_FILE), "utf8");
     const accounts = parseSimulatedAccountsFile(JSON.parse(text));
     expect(accounts.map((a) => [a.user, a.domain, a.role])).toEqual([
       ["demo-admin", "demo.ductus.test", "nastavnik"],
       ["demo-bez-uloge", "demo.ductus.test", "nastavnik"],
+      ["demo-student-3", "demo.ductus.test", "student"],
+      ["demo-student-4", "demo.ductus.test", "student"],
     ]);
     const seed = readFileSync(join(ROOT, "db/main/local/seed.sql"), "utf8");
     // The administrator's subject is the simulator's account id; the account

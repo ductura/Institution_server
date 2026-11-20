@@ -1,9 +1,10 @@
 // The state of the student's own work per assignment (DAN-989-2a; contract
 // Ductus#1836 c.6957393091), for the route student.assignment-work.get of
 // DAN-989-1. One withActor transaction, one STABLE statement over
-// app.student_workspace() (DAN-309, pgTAP 091), nothing written. Who asks comes
-// only from the session token; the function lists only the caller's open
-// student courses and only their own work and submission. A document stands for
+// app.student_workspace() (DAN-309) and app.my_submission_state() (SRV-20),
+// nothing written. The session determines the caller. The workspace lists the
+// caller's assignments and work, and SRV-20 supplies the submission state in
+// the same snapshot. A document stands for
 // the work: open_work writes the project and its document together. A
 // submission goes through a submission_request bound to that document, at
 // revision 1 or later, so a submission without a document is no row the
@@ -14,7 +15,6 @@
 
 import type { AppError, Result } from "../domain/index.ts";
 
-import { count } from "./open-work.ts";
 import type { WithActor } from "./with-actor.ts";
 
 const error = (code: string, messageKey: string): AppError => ({ code, messageKey });
@@ -24,7 +24,7 @@ export const MY_ASSIGNMENT_WORK_UNAUTHENTICATED = error(
   "MY_ASSIGNMENT_WORK_UNAUTHENTICATED",
   "myAssignmentWork.unauthenticated",
 );
-/** A row that is not what app.student_workspace() returns. */
+/** A row inconsistent with the workspace or SRV-20 submission state. */
 export const MY_ASSIGNMENT_WORK_ROW_MALFORMED = error(
   "MY_ASSIGNMENT_WORK_ROW_MALFORMED",
   "myAssignmentWork.row_malformed",
@@ -50,7 +50,11 @@ export type MyAssignmentWorkReader = {
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const SQL = "SELECT assignment_id, document_id, submitted_revision FROM app.student_workspace()";
+// Keep the workspace row if the submission function returns no row, so the
+// parser refuses an incomplete result instead of silently hiding an assignment.
+const SQL = `SELECT w.assignment_id, w.document_id, s.state
+  FROM app.student_workspace() w
+  LEFT JOIN LATERAL app.my_submission_state(w.assignment_id) s ON true`;
 
 const fail = (e: AppError): { ok: false; error: AppError } => ({ ok: false, error: e });
 
@@ -73,17 +77,22 @@ function isDocumentId(value: unknown): value is string {
   );
 }
 
-/** One row as [assignmentId, state, revision], or null when it is not what the function returns. */
-function workOf(row: unknown): [string, WorkState, number | null] | null {
+type SubmissionState = "none" | "ceka" | "potvrdeno";
+
+/** One validated row, including the submission state for duplicate checks. */
+function workOf(row: unknown): [string, WorkState, SubmissionState] | null {
   if (typeof row !== "object" || row === null) return null;
   const id = own(row, "assignment_id");
   const document = own(row, "document_id");
-  const revision = own(row, "submitted_revision");
+  const submission = own(row, "state");
   if (typeof id !== "string" || !UUID.test(id)) return null;
   if (document !== null && !isDocumentId(document)) return null;
-  if (revision === null) return [id, document === null ? "not_started" : "in_progress", null];
-  const n = count(revision);
-  return n !== null && n >= 1 && document !== null ? [id, "submitted", n] : null;
+  if (submission === "none") {
+    return [id, document === null ? "not_started" : "in_progress", submission];
+  }
+  return document !== null && (submission === "ceka" || submission === "potvrdeno")
+    ? [id, "submitted", submission]
+    : null;
 }
 
 function codeOf(thrown: unknown): string | undefined {
@@ -98,14 +107,14 @@ function codeOf(thrown: unknown): string | undefined {
 /** The state per assignment; repeated rows (several documents) must agree, else null. */
 function statesOf(rows: unknown): AssignmentWork[] | null {
   if (!Array.isArray(rows)) return null;
-  const states = new Map<string, { state: WorkState; revision: number | null }>();
+  const states = new Map<string, { state: WorkState; submission: SubmissionState }>();
   for (const row of rows) {
     const work = workOf(row);
     if (work === null) return null;
-    const [id, state, revision] = work;
+    const [id, state, submission] = work;
     const seen = states.get(id);
-    if (seen !== undefined && (seen.state !== state || seen.revision !== revision)) return null;
-    states.set(id, { state, revision });
+    if (seen !== undefined && (seen.state !== state || seen.submission !== submission)) return null;
+    states.set(id, { state, submission });
   }
   return [...states]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))

@@ -134,8 +134,8 @@ const subjects: [string, () => Subject][] = [
     () => {
       const s3 = fakeS3();
       // One bucket per institution in production; here one store per bucket.
-      const a = s3Store(s3, bucketOf[FAK_A], "fak-a-eu-1");
-      const b = s3Store(s3, bucketOf[FAK_B], "fak-b-eu-1");
+      const a = s3Store(s3, bucketOf[FAK_A]!, "fak-a-eu-1");
+      const b = s3Store(s3, bucketOf[FAK_B]!, "fak-b-eu-1");
       // A malformed institution id goes to the store of A, which refuses it.
       const storeOf = (institutionId: string) => (institutionId === FAK_B ? b : a);
       return {
@@ -164,12 +164,12 @@ const subjects: [string, () => Subject][] = [
           {
             label: "fak-a-eu-1",
             institutionId: FAK_A,
-            store: s3Store(s3, bucketOf[FAK_A], "fak-a-eu-1"),
+            store: s3Store(s3, bucketOf[FAK_A]!, "fak-a-eu-1"),
           },
           {
             label: "fak-b-eu-1",
             institutionId: FAK_B,
-            store: s3Store(s3, bucketOf[FAK_B], "fak-b-eu-1"),
+            store: s3Store(s3, bucketOf[FAK_B]!, "fak-b-eu-1"),
           },
         ],
         () => {},

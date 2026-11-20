@@ -27,6 +27,22 @@ export {
   type StudentAccessLogAnswer,
   type StudentAccessLogEntry,
 } from "./student-access-log-route.ts";
+export {
+  readStudentSubmission,
+  type StudentSubmissionAnswer,
+  type StudentSubmissionState,
+} from "./student-submission-route.ts";
+export {
+  readStudentRequirements,
+  type StudentRequirementsAnswer,
+  type StudentWordRange,
+} from "./student-requirements-route.ts";
+export {
+  type AssignmentWorkLanguageBody,
+  parseAssignmentWorkLanguageBody,
+  parseWorkLanguageExceptionBody,
+  type WorkLanguageExceptionBody,
+} from "./work-language-bodies.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
 export {
   type AssignmentInput,

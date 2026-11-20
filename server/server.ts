@@ -23,6 +23,8 @@ import {
   createInstitutionCourseRoutesFor,
   createInternalInstitutionRoutes,
   createMeRouteFor,
+  createStudentAssignmentWorkRouteFor,
+  createStudentSubmissionRoutesFor,
   createTeacherReadRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -32,6 +34,8 @@ import {
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
+  createSubmissionRouteFor,
+  createProcessSummaryRouteFor,
   createSettingsValuesPutRoute,
   evidenceIngestDependencies,
   createLayers,
@@ -124,6 +128,7 @@ async function main(): Promise<void> {
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
       createEvidenceOpenRoute(databases.main),
+      createStudentAssignmentWorkRouteFor(databases.main),
       // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
       createDownloadsManifestRoute(),
       // Settings by level (S-1J-g, DAN-826): the write over settings.set_value.
@@ -148,6 +153,15 @@ async function main(): Promise<void> {
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
       // DAN-818: one replay page, read from the same storage as commit writes.
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+      // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
+      // storage as commit; the time is the database's, never the client's.
+      createSubmissionRouteFor(databases.main, evidenceDeps),
+      // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
+      // its owner and the teacher; the teacher's read writes the access log.
+      createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
+      // SRV-22: the student's own submission state and word range of one
+      // assignment, the receipt byte for byte as the submission bound it.
+      ...createStudentSubmissionRoutesFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).

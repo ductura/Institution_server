@@ -1,5 +1,6 @@
-// SRV-15: POST …/courses/{courseId}/groups and …/groups/{groupId}/teachers on
-// a real server with the real pipeline, over a fake InstitutionGroups port. Every vector that does not frame the body itself (those are the
+// SRV-15: POST …/courses/{courseId}/groups and …/groups/{groupId}/teachers, and
+// GET …/courses/{courseId}/groups, on a real server with the real pipeline,
+// over a fake InstitutionGroups port. Every vector that does not frame the body itself (those are the
 // shared reader's, institution-courses.integration.test.ts) is sent, with the
 // port's outcome for its refusal; a refusal before the port leaves it
 // uncalled. All values are invented.
@@ -8,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type {
+  CourseGroupsOutcome,
   GroupCreateOutcome,
   GroupTeacherOutcome,
   InstitutionGroups,
@@ -38,6 +40,7 @@ const vectorsOf = (id: string): Vector[] =>
   ).vectors;
 const CREATE = vectorsOf("institution.course-groups.post");
 const ASSIGN = vectorsOf("institution.course-group-teachers.post");
+const READ = vectorsOf("institution.course-groups.get");
 /** The body framing vectors: the shared JSON reader's, tested with the course routes. */
 const framed = (v: Vector) =>
   v.request.rawBody !== undefined || v.request.headers["content-length"] !== undefined;
@@ -54,6 +57,7 @@ const calls: unknown[][] = [];
 const activity: string[] = [];
 let createAnswer: () => GroupCreateOutcome;
 let assignAnswer: () => GroupTeacherOutcome;
+let readAnswer: () => CourseGroupsOutcome;
 
 async function start(origin: string) {
   const groups = {
@@ -64,6 +68,10 @@ async function start(origin: string) {
     assignGroupTeacher: async (...args: unknown[]) => {
       calls.push(["assign", ...args]);
       return assignAnswer();
+    },
+    readCourseGroups: async (...args: unknown[]) => {
+      calls.push(["read", ...args]);
+      return readAnswer();
     },
   } as InstitutionGroups;
   server = await startServer({
@@ -179,5 +187,62 @@ describe("the arguments of the port", () => {
     const other = { ...v, request: { ...v.request, body: { studentId: teacher } } };
     expect((await send(`/api/v1/institution/groups/${group}/teachers`, other)).status).toBe(422);
     expect(calls).toEqual([]);
+  });
+});
+
+describe("institution.course-groups.get", () => {
+  const read = (path: string, headers: Record<string, string>) =>
+    fetch(`http://127.0.0.1:${server!.port}${path}`, { headers }).then(async (answer) => ({
+      status: answer.status,
+      body: (await answer.json()) as unknown,
+    }));
+  const pathOf = (v: Vector) =>
+    `/api/v1/institution/courses/${encodeURIComponent(v.request.params.courseId!)}/groups`;
+
+  it.each(READ.map((v) => [v.name, v] as const))("answers the %s vector", async (_name, v) => {
+    readAnswer =
+      v.kind === "success"
+        ? () => ({ status: "read", groups: v.response.body.groups as never })
+        : () =>
+            ({
+              status: PORT_REFUSAL.get(v.code!) ?? "unexpected",
+              reason: "database_error",
+            }) as CourseGroupsOutcome;
+    await start(READ[0]!.request.headers.origin ?? "https://ductura.example.invalid");
+    const got = await read(pathOf(v), v.request.headers);
+    expect([got.status, withoutRequestId(got.body)]).toEqual([
+      v.response.status,
+      withoutRequestId(v.response.body),
+    ]);
+    const asked = v.kind === "success" || ["forbidden", "unavailable"].includes(v.code!);
+    expect(calls).toEqual(asked ? [["read", tokenOf(v), v.request.params.courseId]] : []);
+    // A read records no session activity.
+    expect(activity).toEqual([]);
+  });
+
+  it("the course id goes to the port in lower case; a cross-site read is 403 before it", async () => {
+    const v = READ.find((x) => x.name === "groups")!;
+    readAnswer = () => ({ status: "read", groups: [] });
+    await start("https://ductura.example.invalid");
+    const course = v.request.params.courseId!;
+    const upper = { ...v, request: { ...v.request, params: { courseId: course.toUpperCase() } } };
+    expect((await read(pathOf(upper), v.request.headers)).status).toBe(200);
+    expect(calls).toEqual([["read", tokenOf(v), course]]);
+    calls.length = 0;
+    const site = { ...v.request.headers, "sec-fetch-site": "cross-site" };
+    expect(await read(pathOf(v), site)).toMatchObject({ status: 403, body: { code: "forbidden" } });
+    expect(calls).toEqual([]);
+  });
+
+  it("a throw of the port is 503", async () => {
+    readAnswer = () => {
+      throw new Error("izmišljeni kvar");
+    };
+    await start("https://ductura.example.invalid");
+    const v = READ.find((x) => x.name === "groups")!;
+    expect(await read(pathOf(v), v.request.headers)).toMatchObject({
+      status: 503,
+      body: { code: "unavailable" },
+    });
   });
 });
