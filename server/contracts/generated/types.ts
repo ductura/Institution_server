@@ -330,6 +330,13 @@ export type Operations = {
     success: { status: 200; body: { "key": string; "value": boolean | number | string | null; "bound": { "locked": true } | { "min"?: number; "max"?: number } | null; "changed": boolean }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "not_found" | "bound_crossed" | "invalid_input" | "unavailable";
   };
+  "sources.lookup.post": {
+    params: undefined;
+    query: undefined;
+    body: { "kind": "doi" | "isbn"; "identifier": string };
+    success: { status: 200; body: { "source": { "type": "book" | "chapter" | "article" | null; "title": string; "authors": ({ "name": string; "family"?: string; "given"?: string })[]; "year"?: number; "journal"?: string; "bookTitle"?: string; "publisher"?: string; "place"?: string; "volume"?: string; "issue"?: string; "pages"?: string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "forbidden" | "unsupported_media_type" | "invalid_input" | "unavailable" | "timeout";
+  };
   "student.access-log.get": {
     params: { "documentId": string };
     query: { "beforeAt"?: string; "beforeId"?: string; [key: string]: unknown };
