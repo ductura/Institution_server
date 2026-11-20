@@ -156,6 +156,29 @@ export const INSTITUTION_HANDLERS: Handlers = {
     assignment.read.set(key, readAt);
     return { status: 200, body: { readAt } };
   },
+  // UGOVORI-API (SRV-NG): the notice of the current version, as E-6 shows it.
+  "student.notice.get": ({ state, account, params }) => {
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId);
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (assignment === undefined || account === null || !course?.studentIds.includes(account.id))
+      return { error: "not_found" };
+    const c = assignment.content;
+    const acknowledged = assignment.acknowledged.get(account.id);
+    return {
+      status: 200,
+      body: {
+        assignmentId: assignment.id,
+        versionNo: assignment.version,
+        templateVersion: 1,
+        ...{ title: c.title, instructions: c.instructions, workType: c.workType },
+        ...{ opensAt: c.opensAt, dueAt: c.dueAt, aiPolicy: c.aiPolicy },
+        aiPurposes: c.aiPolicy === "prohibited" ? [] : c.aiPurposes,
+        ...{ evidenceProfile: c.evidenceProfile, wordMin: c.wordMin, wordMax: c.wordMax },
+        readAt: assignment.read.get(`${account.id}:${assignment.version}`) ?? null,
+        acknowledgedAt: acknowledged?.version === assignment.version ? acknowledged.at : null,
+      },
+    };
+  },
   "institution.acknowledgment.post": ({ state, account, params, body, now }) => {
     const assignment = state.assignments.find((a) => a.id === params.assignmentId);
     const course = state.courses.find((c) => c.id === assignment?.courseId);

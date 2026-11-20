@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
+import type { EvidenceChainReader } from "../../../server/application/ports/evidence-reconstruction.ts";
 import { loadEvidenceStorageConfig } from "../../../server/external/storage/evidence-storage-config.ts";
 import {
   InstitutionRoutedPayloadStore,
@@ -12,7 +13,6 @@ import { sha256Hex, signS3Request } from "../../../server/external/storage/s3-si
 import { reconstructAndCompareEvidence } from "../../../server/evidence/evidence-reconstruction.ts";
 import {
   bindPayloadReader,
-  type EvidenceChainReader,
   type EvidencePayloadReader,
 } from "../../../server/external/storage/port.ts";
 import { readProcessSummary } from "../../../server/projection/process-summary-reader.ts";
@@ -100,7 +100,7 @@ function router(
   return InstitutionRoutedPayloadStore.fromConfig(config, { warn, allowPlainHttpOnLoopback: true });
 }
 
-const chainReader: EvidenceChainReader = {
+const chainReader: EvidenceChainReader<unknown> = {
   readChain: async () => ({
     status: "found",
     head: chain.head,
@@ -121,7 +121,12 @@ const reconstruct = (payloads: EvidencePayloadReader) =>
     {
       chain: chainReader,
       payloads,
-      signer: goldenKeyVerifier(chain.verificationKey),
+      signer: {
+        verify: async (message, signature) => ({
+          ok: true,
+          value: await goldenKeyVerifier(chain.verificationKey).verify(message, signature),
+        }),
+      },
       replayer: {
         transactionFormat: "ductus-edit-steps-v1",
         load: () => {
@@ -200,7 +205,7 @@ describe("evidence payload read against the local object store (B-8i, B2)", () =
         payloads: router(),
         thresholds: { sessionBreakAboveMinutes: 30, pasteListedAboveCharacters: 200 },
       },
-      chain.segments[0].segment.documentId,
+      chain.segments[0]!.segment.documentId,
     );
     expect(summary.status).toBe("ok");
   });
@@ -210,7 +215,7 @@ describe("evidence payload read against the local object store (B-8i, B2)", () =
     await expect(
       reader.readImmutable({
         evidencePackageId: chain.evidencePackageId,
-        segmentHash: chain.segments[0].segmentHash,
+        segmentHash: chain.segments[0]!.segmentHash,
       }),
     ).resolves.toEqual({ status: "not_found" });
     await expect(reconstruct(reader)).resolves.toEqual({

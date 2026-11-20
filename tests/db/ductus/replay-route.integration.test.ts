@@ -19,9 +19,13 @@ import {
   EVIDENCE_SEGMENT_SCHEMA_V2,
 } from "../../../server/domain/forensics/evidence-segment-v2.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import { createEvidencePayloadReader } from "../../../server/http/evidence-deps.ts";
-import { handleReplayRequest } from "../../../server/database/replay-source.ts";
+import {
+  createEvidenceReplayRoute,
+  evidenceIngestDependencies,
+} from "../../../server/http/index.ts";
+import { createActorReader } from "../../../server/database/index.ts";
 
+import { postTestRoute, startTestRoute } from "./http-route.ts";
 import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
 // DAN-344 PR A (contract on #923): the owner and the teacher get the same
@@ -73,33 +77,36 @@ const bucket = `ductus-replay-${suffix}`;
 
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
 // The same factory the route uses, over one domain for this run's institution.
-const store = createEvidencePayloadReader({
-  EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
-    requestTimeoutMs: 5_000,
-    domains: [
-      {
-        label: `local-replay-${suffix}`,
-        institutionId,
-        endpoint: S3_ENDPOINT,
-        region,
-        bucket,
-        accessKeyIdVar: "EVIDENCE_S3_LOCAL_KEY_ID",
-        secretAccessKeyVar: "EVIDENCE_S3_LOCAL_SECRET",
-        capability: {
-          provider: "rustfs-local",
+const store = evidenceIngestDependencies(
+  {
+    EVIDENCE_STORAGE_DOMAINS: JSON.stringify({
+      requestTimeoutMs: 5_000,
+      domains: [
+        {
+          label: `local-replay-${suffix}`,
+          institutionId,
           endpoint: S3_ENDPOINT,
-          conditionalWrite: "verified",
-          checksumEcho: "verified",
-          verifiedOn: "2026-10-11",
-          contractTest: "local-stack/s3-evidence-payload-store.integration",
+          region,
+          bucket,
+          accessKeyIdVar: "EVIDENCE_S3_LOCAL_KEY_ID",
+          secretAccessKeyVar: "EVIDENCE_S3_LOCAL_SECRET",
+          capability: {
+            provider: "rustfs-local",
+            endpoint: S3_ENDPOINT,
+            conditionalWrite: "verified",
+            checksumEcho: "verified",
+            verifiedOn: "2026-10-11",
+            contractTest: "local-stack/s3-evidence-payload-store.integration",
+          },
         },
-      },
-    ],
-  }),
-  EVIDENCE_S3_LOCAL_KEY_ID: s3Credentials.accessKeyId,
-  EVIDENCE_S3_LOCAL_SECRET: s3Credentials.secretAccessKey,
-  NODE_ENV: "test",
-});
+      ],
+    }),
+    EVIDENCE_S3_LOCAL_KEY_ID: s3Credentials.accessKeyId,
+    EVIDENCE_S3_LOCAL_SECRET: s3Credentials.secretAccessKey,
+    NODE_ENV: "test",
+  },
+  process.cwd(),
+).payloads;
 // Ingest writes through the same router; a refused configuration fails here.
 function writer(): InstitutionRoutedPayloadStore {
   if (!(store instanceof InstitutionRoutedPayloadStore))
@@ -142,6 +149,7 @@ async function createBucket() {
 }
 let appPool: pg.Pool;
 let withActor: WithActor;
+let server: Awaited<ReturnType<typeof startTestRoute>>;
 let fixtureReady = false;
 
 // The text a checkpoint holds for the document the third segment starts from.
@@ -164,7 +172,7 @@ async function segments() {
   const out: { id: string; payload: string; hash: string }[] = [];
   for (const [i, minute] of ["10:00", "10:20", "11:30"].entries()) {
     const at = `2026-10-20T${minute}:00.000Z`;
-    const hash = (n: number) => documents[i === 2 ? n + 1 : n];
+    const hash = (n: number) => documents[i === 2 ? n + 1 : n]!;
     const payload = canonicalEvidenceSegmentV2({
       evidenceSchema: EVIDENCE_SEGMENT_SCHEMA_V2,
       canonicalization: EVIDENCE_CANONICALIZATION_V2,
@@ -333,10 +341,18 @@ async function insertFixture() {
       `INSERT INTO evidence.receipt (id, evidence_package_id, institution_id, evidence_domain_id, segment_id,
          principal_id, client_request_id, payload_sha256, descriptor, receipt_payload, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'request-ana-2', $7, '{}', '{"revision":1}', 'pending_signature')`,
-      [randomUUID(), packageId, institutionId, domainId, record[1].id, people.ana, record[1].hash],
+      [
+        randomUUID(),
+        packageId,
+        institutionId,
+        domainId,
+        record[1]!.id,
+        people.ana,
+        record[1]!.hash,
+      ],
     );
     // The head reserve writes: a receipt for the last segment, named by the package.
-    const last = record[record.length - 1];
+    const last = record[record.length - 1]!;
     await client.query(
       `INSERT INTO evidence.receipt (id, evidence_package_id, institution_id, evidence_domain_id, segment_id,
          principal_id, client_request_id, payload_sha256, descriptor, receipt_payload, status)
@@ -425,28 +441,14 @@ function ask(name: keyof typeof tokens, body: unknown = { documentId, from: 0 })
 }
 
 function askWith(sessionToken: string, body: unknown = { documentId, from: 0 }) {
-  const request = new Request(`${ORIGIN}/api/evidence/replay`, {
-    method: "POST",
-    headers: {
-      origin: ORIGIN,
-      "sec-fetch-site": "same-origin",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  return handleReplayRequest(request, {
-    withActor,
-    payloads: store,
-    expectedOrigin: ORIGIN,
-    sessionToken,
-  });
+  return postTestRoute(server, ORIGIN, "/api/v1/evidence/replay", sessionToken, body);
 }
 beforeAll(async () => {
   const ddl = await admin.query<{ ddl: string }>(
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await createBucket();
   await insertFixture();
   const url = new URL(SAFE_ADMIN_URL);
@@ -454,9 +456,18 @@ beforeAll(async () => {
   url.password = password;
   appPool = new pg.Pool({ connectionString: url.href, max: 2 });
   withActor = createWithActor(appPool);
+  server = await startTestRoute(
+    createEvidenceReplayRoute({
+      actorReader: createActorReader(withActor),
+      withActor,
+      payloads: store,
+    }),
+    ORIGIN,
+  );
 });
 
 afterAll(async () => {
+  await server?.close();
   await appPool?.end();
   let cleanupError: unknown;
   try {
@@ -469,7 +480,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -488,7 +499,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     expect(JSON.parse(Buffer.from(anaBytes).toString("utf8"))).toStrictEqual({
       replayFormat: "ductus-evidence-replay-v1",
       segmentCount: 3,
-      head: { segmentHash: record[2].hash, segmentCount: 3 },
+      head: { segmentHash: record[2]!.hash, segmentCount: 3 },
       from: 0,
       next: null,
       startDocument: REVISION_ZERO_JCS,
@@ -498,21 +509,21 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
 
     const dora = await ask("dora");
     expect(dora.status).toBe(404);
-    expect(await dora.json()).toStrictEqual({ error: "not_found" });
+    expect(await dora.json()).toStrictEqual({ status: "not_found" });
 
     // PRODUCT 5 rule 17: Vesna's opening is one row; Ana's own read and Dora's refused one write none.
     expect(await openings()).toStrictEqual(["vesna teacher replay of ana"]);
   });
 
   it("starts a later page at its index, without the start document, and answers an index past the end like a refusal", async () => {
-    const head = { segmentHash: record[2].hash, segmentCount: 3 };
+    const head = { segmentHash: record[2]!.hash, segmentCount: 3 };
     const page = await ask("vesna", { documentId, from: 2, head });
     expect(page.status).toBe(200);
     expect(await page.json()).toMatchObject({
       from: 2,
       next: null,
       startDocument: null,
-      segments: [record[2].payload],
+      segments: [record[2]!.payload],
       resumeDocuments: { [resumeHash]: RESUME_TEXT },
     });
     expect((await ask("vesna", { documentId, from: 3, head })).status).toBe(404);
@@ -528,35 +539,35 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     const earlier = await ask("ana", {
       documentId,
       from: 1,
-      head: { segmentHash: record[1].hash, segmentCount: 2 },
+      head: { segmentHash: record[1]!.hash, segmentCount: 2 },
     });
     expect(earlier.status).toBe(200);
     expect(await earlier.json()).toMatchObject({
       segmentCount: 2,
-      head: { segmentHash: record[1].hash, segmentCount: 2 },
+      head: { segmentHash: record[1]!.hash, segmentCount: 2 },
       from: 1,
       next: null,
-      segments: [record[1].payload],
+      segments: [record[1]!.payload],
     });
 
     // A head the record does not hold: 409, so the browser starts again from the first page.
     const changed = await ask("vesna", {
       documentId,
       from: 1,
-      head: { segmentHash: record[1].hash, segmentCount: 3 },
+      head: { segmentHash: record[1]!.hash, segmentCount: 3 },
     });
     expect(changed.status).toBe(409);
     expect(changed.headers.get("cache-control")).toBe("no-store");
-    expect(await changed.json()).toStrictEqual({ error: "record_changed" });
+    expect(await changed.json()).toStrictEqual({ status: "record_changed" });
 
     // Dora may not see the work: 404 whatever head she sends, never 409.
     for (const head of [
-      { segmentHash: record[2].hash, segmentCount: 3 },
+      { segmentHash: record[2]!.hash, segmentCount: 3 },
       { segmentHash: "f".repeat(64), segmentCount: 9 },
     ]) {
       const dora = await ask("dora", { documentId, from: 1, head });
       expect(dora.status).toBe(404);
-      expect(await dora.json()).toStrictEqual({ error: "not_found" });
+      expect(await dora.json()).toStrictEqual({ status: "not_found" });
     }
   });
 
@@ -564,7 +575,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     for (const sessionToken of Object.values(notOpen)) {
       const response = await askWith(sessionToken);
       expect(response.status).toBe(401);
-      expect(await response.json()).toStrictEqual({ error: "unauthorized" });
+      expect(await response.json()).toStrictEqual({ status: "unauthenticated" });
     }
     expect((await ask("ana")).status).toBe(200);
   });
@@ -576,7 +587,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     const { head } = (await first.json()) as {
       head: { segmentHash: string; segmentCount: number };
     };
-    expect(head).toStrictEqual({ segmentHash: record[2].hash, segmentCount: 3 });
+    expect(head).toStrictEqual({ segmentHash: record[2]!.hash, segmentCount: 3 });
 
     // Ana's click named revision 1 (before segment 3 was accepted); she records it now, between the pages.
     const requestId = randomUUID();
@@ -594,7 +605,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
             requestId,
             resumeHash,
           ])
-        ).rows[0],
+        ).rows[0]!,
     );
     expect(recorded.outcome).toBe("recorded");
 
@@ -603,7 +614,7 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
       const second = await ask("vesna", { documentId, from, head });
       expect(second.status).toBe(409);
       expect(second.headers.get("cache-control")).toBe("no-store");
-      expect(await second.json()).toStrictEqual({ error: "record_changed" });
+      expect(await second.json()).toStrictEqual({ status: "record_changed" });
     }
 
     // Starting again gives the cut record, and its pages read on from its own head.
@@ -616,16 +627,20 @@ describe("replay over the API and the read RPCs (DAN-344 R3, PRODUCT 5 rule 5)",
     };
     expect(restart).toMatchObject({
       segmentCount: 2,
-      head: { segmentHash: record[1].hash, segmentCount: 2 },
-      segments: [record[0].payload, record[1].payload],
+      head: { segmentHash: record[1]!.hash, segmentCount: 2 },
+      segments: [record[0]!.payload, record[1]!.payload],
     });
     const next = await ask("vesna", { documentId, from: 1, head: restart.head });
     expect(next.status).toBe(200);
-    expect(await next.json()).toMatchObject({ from: 1, next: null, segments: [record[1].payload] });
+    expect(await next.json()).toMatchObject({
+      from: 1,
+      next: null,
+      segments: [record[1]!.payload],
+    });
 
     // Dora still may not see the work: 404 with the old head, never 409.
     const dora = await ask("dora", { documentId, from: 1, head });
     expect(dora.status).toBe(404);
-    expect(await dora.json()).toStrictEqual({ error: "not_found" });
+    expect(await dora.json()).toStrictEqual({ status: "not_found" });
   });
 });

@@ -1,11 +1,52 @@
 // Helpers of the dev fake server tests: one request without a network, a
 // session from the role switch and the contract check of a success answer.
 // Test code only; not exported from index.ts.
+import { createHash } from "node:crypto";
+
 import { FormatRegistry } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
 import { checkVectors, ROUTES, SHARED_ERRORS } from "../../../server/contracts/index.ts";
-import { answerDev, DEV_HANDLERS, type AccountKey, type State } from "./index.ts";
+import { canonicalizeJcs } from "../../../server/domain/index.ts";
+import { loadGoldenVectors } from "../../../server/domain/forensics/golden-vectors/index.ts";
+import {
+  answerDev,
+  DEV_HANDLERS,
+  EMPTY_DOCUMENT,
+  IDS,
+  type AccountKey,
+  type State,
+} from "./index.ts";
+
+const GOLDEN_SEGMENT = loadGoldenVectors().chain.segments[0]?.segment;
+
+export function evidenceSegment(state: State, eventCount = 1): string {
+  const work = state.works[0];
+  if (work === undefined || GOLDEN_SEGMENT === undefined)
+    throw new Error("missing evidence fixture");
+  const head = work.segments.at(-1);
+  const hash = createHash("sha256").update(Buffer.from(EMPTY_DOCUMENT, "base64")).digest("hex");
+  const sequenceFrom = work.lastSequenceTo + 1;
+  const segment = canonicalizeJcs({
+    ...GOLDEN_SEGMENT,
+    documentId: IDS.document,
+    evidenceProfileId: "lazni-profil",
+    initialDocumentHash: hash,
+    finalDocumentHash: hash,
+    predecessorSegmentHash:
+      head === undefined ? null : createHash("sha256").update(head).digest("hex"),
+    segmentId: `izmisljeni-odsječak-${sequenceFrom}`,
+    sequenceFrom,
+    sequenceTo: sequenceFrom + eventCount - 1,
+    events: GOLDEN_SEGMENT.events.slice(0, eventCount).map((event, index) => ({
+      ...event,
+      sequence: sequenceFrom + index,
+      beforeDocumentHash: hash,
+      afterDocumentHash: hash,
+    })),
+  });
+  return Buffer.from(segment).toString("base64");
+}
 
 // The one string format of the contracts, as server/contracts/vectors.test.ts registers it.
 if (!FormatRegistry.Has("date-time"))
