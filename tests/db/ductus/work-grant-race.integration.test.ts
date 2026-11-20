@@ -169,7 +169,7 @@ function grantCan(token: string, action: string) {
       action,
       documentId,
     ]);
-    return row.rows[0].can;
+    return row.rows[0]!.can;
   });
 }
 
@@ -180,7 +180,7 @@ function grant() {
                                             now() + interval '1 day') AS id`,
       [assignmentId, people.ana, people.hana],
     );
-    return row.rows[0].id;
+    return row.rows[0]!.id;
   });
 }
 
@@ -190,7 +190,7 @@ function revoke(grantId: string) {
       "SELECT institution.revoke_work_access($1) AS revoked",
       [grantId],
     );
-    return row.rows[0].revoked;
+    return row.rows[0]!.revoked;
   });
 }
 
@@ -199,7 +199,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   const url = new URL(SAFE_ADMIN_URL);
   url.username = login;
@@ -223,7 +223,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -262,7 +262,7 @@ describe("work grants under withActor (DAN-379)", () => {
             "SELECT institution.grant_can('read_text', $1) AS can",
             [documentId],
           )
-        ).rows[0].can;
+        ).rows[0]!.can;
       const before = await ask();
       const revoked = await revoke(grantId);
       const after = await ask();
@@ -288,7 +288,7 @@ describe("work grants under withActor (DAN-379)", () => {
       "SELECT count(*)::int AS revoked FROM institution.work_grant WHERE id = $1 AND revoked_at IS NOT NULL",
       [grantId],
     );
-    expect(row.rows[0].revoked).toBe(1);
+    expect(row.rows[0]!.revoked).toBe(1);
     expect(await grantCan(tokens.hana, "read_text")).toBe(false);
   });
 });
@@ -330,7 +330,7 @@ describe("work grants bound to their rows (DAN-379, P02)", () => {
                                                 now() + interval '1 day') AS id`,
           [assignmentId, people.ana, people.hana],
         )
-      ).rows[0].id;
+      ).rows[0]!.id;
       await revokeRole(people.hana);
       await confirmRoleAgain(people.hana);
       await client.query("COMMIT");
@@ -363,7 +363,7 @@ describe("work grants bound to their rows (DAN-379, P02)", () => {
             "SELECT institution.grant_can('read_text', $1) AS can",
             [documentId],
           )
-        ).rows[0].can;
+        ).rows[0]!.can;
       const before = await ask();
       await revokeRole(people.hana);
       await confirmRoleAgain(people.hana);

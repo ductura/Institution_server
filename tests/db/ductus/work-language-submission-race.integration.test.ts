@@ -62,47 +62,47 @@ const setWork = (student: Name, language: string | null) => async (tx: ActorTran
       "SELECT institution.set_work_language($1, $2, $3) AS language",
       [assignmentId, people[student].id, language],
     )
-  ).rows[0].language;
+  ).rows[0]!.language;
 const setAssignment = (expectedVersion: number, language: string) => async (tx: ActorTransaction) =>
   (
     await tx.query<{ version: number }>(
       "SELECT institution.set_assignment_work_language($1, $2, $3) AS version",
       [assignmentId, expectedVersion, language],
     )
-  ).rows[0].version;
+  ).rows[0]!.version;
 const revoke = (teacher: Name) => async (tx: ActorTransaction) =>
   (
     await tx.query<{ revoked: boolean }>("SELECT institution.revoke_teacher_role($1) AS revoked", [
       people[teacher].id,
     ])
-  ).rows[0].revoked;
+  ).rows[0]!.revoked;
 const removeStudent = (student: Name) => async (tx: ActorTransaction) =>
   (
     await tx.query<{ removed: boolean }>("SELECT institution.remove_student($1, $2) AS removed", [
       courseId,
       people[student].id,
     ])
-  ).rows[0].removed;
+  ).rows[0]!.removed;
 const readWork = (student: Name) => async (tx: ActorTransaction) =>
   (
     await tx.query<{ language: string | null }>(
       "SELECT institution.work_language($1, $2) AS language",
       [assignmentId, people[student].id],
     )
-  ).rows[0].language;
+  ).rows[0]!.language;
 const submit = (document: string) => async (tx: ActorTransaction) => {
   const requested = (
     await tx.query<{ outcome: string; submission_request_id: string }>(
       "SELECT outcome, submission_request_id FROM app.request_submission($1, 1)",
       [document],
     )
-  ).rows[0];
+  ).rows[0]!;
   const recorded = (
     await tx.query<{ outcome: string }>("SELECT outcome FROM app.record_submission($1, $2)", [
       requested.submission_request_id,
       HASH,
     ])
-  ).rows[0];
+  ).rows[0]!;
   return [requested.outcome, recorded.outcome];
 };
 
@@ -162,7 +162,7 @@ async function stored() {
       WHERE a.id = $1`,
       [assignmentId],
     )
-  ).rows[0];
+  ).rows[0]!;
   const overrides = (
     await admin.query<{ student_id: string; work_language: string }>(
       "SELECT student_id, work_language FROM institution.work_language_override WHERE assignment_id = $1 ORDER BY student_id",
@@ -184,7 +184,7 @@ const submitted = async (document: string) =>
     WHERE r.document_id = $1) AS yes`,
       [document],
     )
-  ).rows[0].yes;
+  ).rows[0]!.yes;
 
 beforeAll(async () => {
   const client = await admin.connect();

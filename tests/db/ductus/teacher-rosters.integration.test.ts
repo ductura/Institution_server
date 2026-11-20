@@ -54,7 +54,7 @@ beforeAll(async () => {
         "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
         [LOGIN, password],
       )
-    ).rows[0].ddl,
+    ).rows[0]!.ddl,
   );
   await admin.query("INSERT INTO identity.institution (id, slug) VALUES ($1, $2)", [
     faculty,
