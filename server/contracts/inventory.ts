@@ -215,6 +215,27 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
+  // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
+  "app/api/teacher/courses/[courseId]/students/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/assignments/[assignmentId]/overview/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/mentorship-requests/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
+  "app/api/teacher/mentorship-requests/decision/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
 };
 
 /**
@@ -239,6 +260,11 @@ export const CONTRACT_ONLY: readonly string[] = [
   "public.verification.post",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
+  "teacher.course-students.get",
+  "teacher.assignment-overview.get",
+  "teacher.submission-receipt.get",
+  "teacher.mentorship-requests.get",
+  "teacher.mentorship-request-decision.post",
 ];
 
 /**

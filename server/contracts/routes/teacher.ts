@@ -2,7 +2,9 @@ import { Type, type TSchema } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { SignedSubmissionReceipt } from "./evidence.ts";
 import { Minute as SummaryMinute, ProcessSummaryV1 } from "./process-summary-shape.ts";
+import { MUTATION_GUARD } from "./shared.ts";
 
 // Literal port of Ductus 078c780: src/server/institution/teacher-courses.ts
 // (DAN-230), src/server/evidence/assignment-submissions.ts (DAN-332 R1) and
@@ -135,6 +137,13 @@ const StudentName = Type.Union([
   Type.Null(),
 ]);
 
+const MentorshipWorkType = literals([
+  "bachelor_thesis",
+  "master_thesis",
+  "specialist_thesis",
+  "doctoral_thesis",
+]);
+
 /**
  * MentoredWork: the student is null when the account has no name pair, never
  * a stand-in. The work state follows the work: not started without one, in
@@ -147,12 +156,7 @@ const mentoredWork = (documentId: TSchema, workState: TSchema) =>
     documentId,
     student: StudentName,
     title: Type.String({ minLength: 1 }),
-    workType: literals([
-      "bachelor_thesis",
-      "master_thesis",
-      "specialist_thesis",
-      "doctoral_thesis",
-    ]),
+    workType: MentorshipWorkType,
     workState,
   });
 const MentoredWork = Type.Union([
@@ -334,6 +338,199 @@ export const teacherAccessGet = defineRoute({
   errors: [...READ_ERRORS, error(503, "unavailable")],
 });
 
+// SRV-27 (Ductus#2028 c.7009405737) adds separate routes to keep existing closed bodies stable.
+const LIST_ERRORS = [...READ_ERRORS, error(503, "unavailable")] as const;
+const STUDENT_NAME_FIELDS = [
+  { givenName: Name, familyName: Name },
+  { givenName: Type.Null(), familyName: Type.Null() },
+] as const;
+const GroupName = Type.Union([Type.String({ minLength: 1 }), Type.Null()]);
+const ListedAssignmentWork = closed({
+  assignmentId: Uuid,
+  documentId: Type.Union([WorkId, Type.Null()]),
+  workState: literals(["not_started", "in_progress", "submitted"]),
+});
+const CourseStudent = Type.Union(
+  STUDENT_NAME_FIELDS.map((names) =>
+    closed({
+      studentId: Uuid,
+      ...names,
+      groupName: GroupName,
+      assignments: Type.Array(ListedAssignmentWork),
+    }),
+  ),
+);
+
+export const teacherCourseStudentsGet = defineRoute({
+  id: "teacher.course-students.get",
+  method: "GET",
+  path: "/api/v1/teacher/courses/{courseId}/students",
+  inventory: "app/api/teacher/courses/[courseId]/students/route.ts",
+  access: "course_teacher",
+  summary:
+    "The course roster and the state of each student's work per assignment. Course teachers see the course; group teachers see their own groups. A missing name pair or group is null. A document id links to the work when one exists. An inaccessible, unknown or malformed course id returns the same empty list as a course with no students.",
+  request: { params: closed({ courseId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "students, possibly none",
+      body: closed({ students: Type.Array(CourseStudent) }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: LIST_ERRORS,
+});
+
+const EvidenceRecord = SignedSubmissionReceipt.properties.payload.properties.evidenceRecord;
+const OVERVIEW_STATES = [
+  {
+    submitted: Type.Literal(false),
+    requestedMinute: Type.Null(),
+    afterDeadline: Type.Null(),
+    evidenceRecord: Type.Null(),
+  },
+  {
+    submitted: Type.Literal(true),
+    requestedMinute: Submitted.properties.requestedMinute,
+    afterDeadline: Submitted.properties.afterDeadline,
+    evidenceRecord: Type.Union([EvidenceRecord, Type.Null()]),
+  },
+] as const;
+const AssignmentOverviewStudent = Type.Union(
+  STUDENT_NAME_FIELDS.flatMap((names) =>
+    OVERVIEW_STATES.map((state) =>
+      closed({ studentId: Uuid, ...names, groupName: GroupName, ...state }),
+    ),
+  ),
+);
+
+export const teacherAssignmentOverviewGet = defineRoute({
+  id: "teacher.assignment-overview.get",
+  method: "GET",
+  path: "/api/v1/teacher/assignments/{assignmentId}/overview",
+  inventory: "app/api/teacher/assignments/[assignmentId]/overview/route.ts",
+  access: "course_teacher",
+  summary:
+    "Submission overview for each student visible to the caller, with a UTC minute and the record state from the signed receipt. A recorded submission awaiting its receipt has a null evidenceRecord. This read opens no work and returns no work text, hash or submission id. An inaccessible, unknown or malformed assignment id returns the same empty list as an assignment with no students.",
+  request: { params: closed({ assignmentId: Type.String({ minLength: 1 }) }) },
+  responses: [
+    {
+      status: 200,
+      description: "students, possibly none",
+      body: closed({ students: Type.Array(AssignmentOverviewStudent) }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: LIST_ERRORS,
+});
+
+const { revision, requestedAt } = SignedSubmissionReceipt.properties.payload.properties;
+export const StudentSubmissionState = Type.Union([
+  closed({ state: Type.Literal("none") }),
+  closed({ state: Type.Literal("ceka"), revision, requestedAt }),
+  closed({ state: Type.Literal("potvrdeno"), receipt: SignedSubmissionReceipt }),
+]);
+
+export const teacherSubmissionReceiptGet = defineRoute({
+  id: "teacher.submission-receipt.get",
+  method: "GET",
+  path: "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/submission",
+  inventory: "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/route.ts",
+  access: "course_teacher",
+  summary:
+    "The same submission state and signed receipt as student.submission.get, for a student the caller may read. This read is logged. Inaccessible, unknown and malformed ids return the same 404.",
+  request: {
+    params: closed({
+      assignmentId: Type.String({ minLength: 1 }),
+      studentId: Type.String({ minLength: 1 }),
+    }),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "submission state",
+      body: StudentSubmissionState,
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [...LIST_ERRORS, error(404, "not_found")],
+});
+
+export const teacherMentorshipRequestsGet = defineRoute({
+  id: "teacher.mentorship-requests.get",
+  method: "GET",
+  path: "/api/v1/teacher/mentorship-requests",
+  inventory: "app/api/teacher/mentorship-requests/route.ts",
+  access: "teacher",
+  summary:
+    "The open mentorship requests made to the confirmed, unrevoked teacher in the caller's institution. A student without a name pair has a null name. The decision reason stays in the audit record.",
+  request: {},
+  responses: [
+    {
+      status: 200,
+      description: "open requests, possibly none",
+      body: closed({
+        requests: Type.Array(
+          closed({
+            requestId: Uuid,
+            student: StudentName,
+            workType: MentorshipWorkType,
+            requestedAt: Instant,
+          }),
+        ),
+      }),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: LIST_ERRORS,
+});
+
+const DecisionReason = Type.String({
+  pattern: `^(?=[\\s\\S]*\\S)(?:${CODE_POINT}|[^\\u0000\\uD800-\\uDFFF]){1,600}${END}`,
+});
+
+export const teacherMentorshipRequestDecisionPost = defineRoute({
+  id: "teacher.mentorship-request-decision.post",
+  method: "POST",
+  path: "/api/v1/teacher/mentorship-requests/decision",
+  inventory: "app/api/teacher/mentorship-requests/decision/route.ts",
+  access: "teacher",
+  summary:
+    "The confirmed teacher to whom an open request was made approves or declines it. An optional decline reason has 1 to 600 Unicode code points and contains a non-whitespace character. It is kept in the audit record. Success follows the database commit; a closed request returns 409.",
+  request: {
+    contentType: "application/json",
+    // Large enough for 600 supplementary code points sent as escaped pairs.
+    maxBodyBytes: 8192,
+    body: Type.Union([
+      closed({ requestId: AnyCaseUuid, decision: Type.Literal("approve") }),
+      closed({
+        requestId: AnyCaseUuid,
+        decision: Type.Literal("decline"),
+        reason: Type.Optional(DecisionReason),
+      }),
+    ]),
+  },
+  responses: [
+    {
+      status: 200,
+      description: "committed decision",
+      body: Type.Union([
+        closed({ decision: Type.Literal("approve"), mentorshipId: Uuid }),
+        closed({ decision: Type.Literal("decline") }),
+      ]),
+      headers: ["cache-control"],
+    },
+  ],
+  errors: [
+    ...MUTATION_GUARD,
+    ...LIST_ERRORS,
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+    error(409, "conflict"),
+  ],
+});
+
 export const teacherRoutes = [
   teacherCoursesGet,
   teacherSubmissionsGet,
@@ -342,4 +539,9 @@ export const teacherRoutes = [
   teacherFastPathPost,
   teacherAssignmentSubmissionsPost,
   teacherAccessGet,
+  teacherCourseStudentsGet,
+  teacherAssignmentOverviewGet,
+  teacherSubmissionReceiptGet,
+  teacherMentorshipRequestsGet,
+  teacherMentorshipRequestDecisionPost,
 ] as const;
