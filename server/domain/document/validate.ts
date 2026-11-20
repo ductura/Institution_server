@@ -16,27 +16,34 @@ import {
   DOCUMENT_BLOCK_TYPES_BY_VERSION,
   DOCUMENT_SCHEMA_VERSION,
   DOCUMENT_SCHEMA_VERSION_V2,
+  DOCUMENT_SCHEMA_VERSION_V3,
   MAX_CITATION_LOCATOR_CODE_POINTS,
+  MAX_CITATION_VIA_CODE_POINTS,
+  MAX_FOOTNOTE_TEXT_CODE_POINTS,
   isAcceptedDocumentSchemaVersion,
+  isCrossReferenceTarget,
   isHeadingLevel,
   isMark,
   isPlainBlockType,
   isNodeId,
+  isRequestId,
   isSourceId,
   marksAreCanonical,
   type CanonicalDocument,
-  type CitationNode,
+  type CitationNodeV3,
+  type CrossReferenceNode,
   type DocumentNode,
-  type DocumentNodeV2,
+  type DocumentNodeV3,
+  type FootnoteNode,
   type DocumentSchemaVersion,
   type InlineNode,
-  type InlineNodeV2,
+  type InlineNodeV3,
   type HeadingLevel,
   type Mark,
   type NodeId,
   type VersionedDocument,
 } from "./schema.ts";
-import { isAllowedText } from "./forbidden.ts";
+import { isAllowedText, isAllowedTrimmedText } from "./forbidden.ts";
 import { checkUnknownFields, validateSources } from "./validate-sources.ts";
 import { isPlainObject } from "../json/index.ts";
 
@@ -81,6 +88,13 @@ export const VALIDATION_ERROR_CODES = [
   "CITATION_SOURCE_ID_INVALID",
   "CITATION_LOCATOR_INVALID",
   "CITATION_NOT_ALLOWED",
+  // Document v3 (docs/contracts/document-schema-v3.md), appended likewise.
+  "CITATION_VIA_INVALID",
+  "CITATION_REQUEST_INVALID",
+  "FOOTNOTE_TEXT_INVALID",
+  "FOOTNOTE_NOT_ALLOWED",
+  "CROSS_REFERENCE_TARGET_INVALID",
+  "CROSS_REFERENCE_NOT_ALLOWED",
 ] as const;
 
 export type ValidationErrorCode = (typeof VALIDATION_ERROR_CODES)[number];
@@ -98,12 +112,37 @@ export type VersionedValidationOutcome =
 const DOCUMENT_FIELDS: ReadonlyMap<DocumentSchemaVersion, ReadonlySet<string>> = new Map([
   [DOCUMENT_SCHEMA_VERSION, new Set(["schemaVersion", "nodes"])],
   [DOCUMENT_SCHEMA_VERSION_V2, new Set(["schemaVersion", "nodes", "sources"])],
+  [DOCUMENT_SCHEMA_VERSION_V3, new Set(["schemaVersion", "nodes", "sources"])],
 ]);
 /** Paragraph and every other plain block type (`PLAIN_BLOCK_TYPES`). */
 const PARAGRAPH_FIELDS = new Set(["type", "id", "children"]);
 const HEADING_FIELDS = new Set(["type", "id", "level", "children"]);
 const INLINE_FIELDS = new Set(["type", "text", "marks"]);
 const CITATION_FIELDS = new Set(["type", "sourceId", "locator"]);
+const CITATION_FIELDS_V3 = new Set(["type", "sourceId", "locator", "via", "rq"]);
+const FOOTNOTE_FIELDS = new Set(["type", "text"]);
+const CROSS_REFERENCE_FIELDS = new Set(["type", "targetId"]);
+
+/**
+ * The inline atoms each version knows besides text (contract v2 §3.1, v3
+ * §3.1), with the code for one in a heading. A type not listed for the
+ * version is read as text, so it is INLINE_TYPE_INVALID.
+ */
+const ATOMS_BY_VERSION: ReadonlyMap<
+  DocumentSchemaVersion,
+  ReadonlyMap<string, ValidationErrorCode>
+> = new Map([
+  [DOCUMENT_SCHEMA_VERSION, new Map()],
+  [DOCUMENT_SCHEMA_VERSION_V2, new Map([["citation", "CITATION_NOT_ALLOWED"]])],
+  [
+    DOCUMENT_SCHEMA_VERSION_V3,
+    new Map<string, ValidationErrorCode>([
+      ["citation", "CITATION_NOT_ALLOWED"],
+      ["footnote", "FOOTNOTE_NOT_ALLOWED"],
+      ["crossReference", "CROSS_REFERENCE_NOT_ALLOWED"],
+    ]),
+  ],
+]);
 
 /**
  * Validates `doc` as a v1 document, the only version the callers of this
@@ -152,7 +191,7 @@ function validate(
   const blockTypes = DOCUMENT_BLOCK_TYPES_BY_VERSION.get(rules)!;
 
   const sources =
-    rules === DOCUMENT_SCHEMA_VERSION_V2
+    rules !== DOCUMENT_SCHEMA_VERSION
       ? validateSources(Object.hasOwn(doc, "sources") ? doc.sources : undefined, errors)
       : [];
 
@@ -166,7 +205,7 @@ function validate(
   }
 
   const seenIds = new Set<string>();
-  const nodes: DocumentNodeV2[] = [];
+  const nodes: DocumentNodeV3[] = [];
 
   // Array.from turns holes into `undefined`, so a sparse array fails validation
   // instead of being skipped by forEach.
@@ -181,9 +220,13 @@ function validate(
     return { ok: false, errors };
   }
 
+  // The atoms of each version are checked above, so the nodes are of `rules`.
+  if (rules === DOCUMENT_SCHEMA_VERSION) {
+    return { ok: true, doc: { schemaVersion: rules, nodes: nodes as DocumentNode[] } };
+  }
   return rules === DOCUMENT_SCHEMA_VERSION_V2
-    ? { ok: true, doc: { schemaVersion: DOCUMENT_SCHEMA_VERSION_V2, nodes, sources } }
-    : { ok: true, doc: { schemaVersion: DOCUMENT_SCHEMA_VERSION, nodes: nodes as DocumentNode[] } };
+    ? { ok: true, doc: { schemaVersion: rules, nodes: nodes as never, sources } }
+    : { ok: true, doc: { schemaVersion: rules, nodes, sources } };
 }
 
 function validateNode(
@@ -193,7 +236,7 @@ function validateNode(
   rules: DocumentSchemaVersion,
   seenIds: Set<string>,
   errors: ValidationError[],
-): DocumentNodeV2 | null {
+): DocumentNodeV3 | null {
   if (!isPlainObject(raw)) {
     errors.push({ path, code: "NODE_NOT_OBJECT" });
     return null;
@@ -240,23 +283,21 @@ function validateNode(
     return null;
   }
 
-  const children: InlineNodeV2[] = [];
-  // The last valid text run. A citation, valid or not, stands between the
-  // runs on either side of it, so they are not adjacent (contract §3.1).
+  const children: InlineNodeV3[] = [];
+  const atoms = ATOMS_BY_VERSION.get(rules)!;
+  // The last valid text run. An atom, valid or not, stands between the runs
+  // on either side of it, so they are not adjacent (contract v2 and v3 §3.1).
   let previous: InlineNode | null = null;
   Array.from(raw.children).forEach((rawChild, index) => {
     const childPath = `${path}.children[${index}]`;
-    if (
-      rules === DOCUMENT_SCHEMA_VERSION_V2 &&
-      isPlainObject(rawChild) &&
-      rawChild.type === "citation"
-    ) {
+    const atomType = isPlainObject(rawChild) ? rawChild.type : undefined;
+    if (typeof atomType === "string" && atoms.has(atomType)) {
       previous = null;
       if (type === "heading") {
-        errors.push({ path: childPath, code: "CITATION_NOT_ALLOWED" });
+        errors.push({ path: childPath, code: atoms.get(atomType)! });
       }
-      const citation = validateCitation(rawChild, childPath, errors);
-      if (citation) children.push(citation);
+      const atom = validateAtom(rawChild as Record<string, unknown>, childPath, rules, errors);
+      if (atom) children.push(atom);
       return;
     }
     const child = validateInline(rawChild, childPath, errors);
@@ -278,17 +319,32 @@ function validateNode(
     : { type, id, children };
 }
 
+/** An atom of a type `ATOMS_BY_VERSION` lists for `rules`. */
+function validateAtom(
+  raw: Record<string, unknown>,
+  path: string,
+  rules: DocumentSchemaVersion,
+  errors: ValidationError[],
+): InlineNodeV3 | null {
+  if (raw.type === "footnote") return validateFootnote(raw, path, errors);
+  if (raw.type === "crossReference") return validateCrossReference(raw, path, errors);
+  return validateCitation(raw, path, rules, errors);
+}
+
 /**
- * A citation atom (contract §3.1). The copy holds `locator` only when the
- * input has it as an own key: absent means "no locator", and `""` is refused
- * so one meaning has one form.
+ * A citation atom (contract v2 §3.1, v3 §3.2). The copy holds an optional
+ * field only when the input has it as an own key: absent means "none", and
+ * `""` is refused so one meaning has one form. `via` and `rq` are fields of
+ * v3 only; in v2 they are UNKNOWN_FIELD.
  */
 function validateCitation(
   raw: Record<string, unknown>,
   path: string,
+  rules: DocumentSchemaVersion,
   errors: ValidationError[],
-): CitationNode | null {
-  checkUnknownFields(raw, CITATION_FIELDS, path, errors);
+): CitationNodeV3 | null {
+  const v3 = rules === DOCUMENT_SCHEMA_VERSION_V3;
+  checkUnknownFields(raw, v3 ? CITATION_FIELDS_V3 : CITATION_FIELDS, path, errors);
 
   let ok = true;
   const sourceId = raw.sourceId;
@@ -303,12 +359,58 @@ function validateCitation(
     ok = false;
   }
 
+  const hasVia = v3 && Object.hasOwn(raw, "via");
+  if (hasVia && !isAllowedTrimmedText(raw.via, MAX_CITATION_VIA_CODE_POINTS)) {
+    errors.push({ path: `${path}.via`, code: "CITATION_VIA_INVALID" });
+    ok = false;
+  }
+  const hasRq = v3 && Object.hasOwn(raw, "rq");
+  if (hasRq && !isRequestId(raw.rq)) {
+    errors.push({ path: `${path}.rq`, code: "CITATION_REQUEST_INVALID" });
+    ok = false;
+  }
+
   if (!ok || !isSourceId(sourceId)) {
     return null;
   }
-  return hasLocator
-    ? { type: "citation", sourceId, locator: locator as string }
-    : { type: "citation", sourceId };
+  return {
+    type: "citation",
+    sourceId,
+    ...(hasLocator ? { locator: locator as string } : {}),
+    ...(hasVia ? { via: raw.via as string } : {}),
+    ...(hasRq && isRequestId(raw.rq) ? { rq: raw.rq } : {}),
+  };
+}
+
+/** A footnote atom (contract v3 §3.3): tidy plain text of 1 to 2000 code points. */
+function validateFootnote(
+  raw: Record<string, unknown>,
+  path: string,
+  errors: ValidationError[],
+): FootnoteNode | null {
+  checkUnknownFields(raw, FOOTNOTE_FIELDS, path, errors);
+  if (!isAllowedTrimmedText(raw.text, MAX_FOOTNOTE_TEXT_CODE_POINTS)) {
+    errors.push({ path: `${path}.text`, code: "FOOTNOTE_TEXT_INVALID" });
+    return null;
+  }
+  return { type: "footnote", text: raw.text };
+}
+
+/**
+ * A cross reference atom (contract v3 §3.4). Whether a block with the target
+ * id exists, and is a heading, is not checked: either way it is valid.
+ */
+function validateCrossReference(
+  raw: Record<string, unknown>,
+  path: string,
+  errors: ValidationError[],
+): CrossReferenceNode | null {
+  checkUnknownFields(raw, CROSS_REFERENCE_FIELDS, path, errors);
+  if (!isCrossReferenceTarget(raw.targetId)) {
+    errors.push({ path: `${path}.targetId`, code: "CROSS_REFERENCE_TARGET_INVALID" });
+    return null;
+  }
+  return { type: "crossReference", targetId: raw.targetId };
 }
 
 function sameMarks(a: readonly Mark[], b: readonly Mark[]): boolean {

@@ -43,6 +43,7 @@ const REQUIRED_AREAS = [
   "institution",
   // PLAN.md §3 area, made by DAN-851-2b (S-M-2, problem report).
   "support",
+  "source-lookup",
   "contracts",
   "domain",
   "test-server",

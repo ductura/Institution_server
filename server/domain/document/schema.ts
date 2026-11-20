@@ -25,6 +25,13 @@ export const DOCUMENT_SCHEMA_VERSION = 1;
  */
 export const DOCUMENT_SCHEMA_VERSION_V2 = 2;
 
+/**
+ * Document v3: footnote, cross reference and the citation attributes `via`
+ * and `rq` (docs/contracts/document-schema-v3.md). Like v2 it is accepted by
+ * `validateVersionedDocument` only, and no work changes version.
+ */
+export const DOCUMENT_SCHEMA_VERSION_V3 = 3;
+
 declare const nodeIdBrand: unique symbol;
 
 /**
@@ -166,10 +173,13 @@ export function isPlainBlockType(value: unknown): value is PlainBlockType {
 export const DOCUMENT_BLOCK_TYPES_BY_VERSION: ReadonlyMap<number, ReadonlySet<string>> = new Map([
   [DOCUMENT_SCHEMA_VERSION, new Set<string>(["heading", ...PLAIN_BLOCK_TYPES])],
   [DOCUMENT_SCHEMA_VERSION_V2, new Set<string>(["heading", ...PLAIN_BLOCK_TYPES])],
+  [DOCUMENT_SCHEMA_VERSION_V3, new Set<string>(["heading", ...PLAIN_BLOCK_TYPES])],
 ]);
 
 export type DocumentSchemaVersion =
-  typeof DOCUMENT_SCHEMA_VERSION | typeof DOCUMENT_SCHEMA_VERSION_V2;
+  | typeof DOCUMENT_SCHEMA_VERSION
+  | typeof DOCUMENT_SCHEMA_VERSION_V2
+  | typeof DOCUMENT_SCHEMA_VERSION_V3;
 
 export function isAcceptedDocumentSchemaVersion(value: unknown): value is DocumentSchemaVersion {
   return typeof value === "number" && DOCUMENT_BLOCK_TYPES_BY_VERSION.has(value);
@@ -317,10 +327,71 @@ export type CanonicalDocumentV2 = {
 };
 
 /** A document of any accepted version. */
-export type VersionedDocument = CanonicalDocument | CanonicalDocumentV2;
+export type VersionedDocument = CanonicalDocument | CanonicalDocumentV2 | CanonicalDocumentV3;
 
 export function citationNode(sourceId: SourceId, locator?: string): CitationNode {
   return locator === undefined
     ? { type: "citation", sourceId }
     : { type: "citation", sourceId, locator };
+}
+
+// ---------------------------------------------------------------------------
+// Document v3 (docs/contracts/document-schema-v3.md §1 to §3)
+
+/** Longest `via` of a citation, in code points (contract v3 §3.2). */
+export const MAX_CITATION_VIA_CODE_POINTS = 200;
+/** Longest text of a footnote, in code points (contract v3 §3.3). */
+export const MAX_FOOTNOTE_TEXT_CODE_POINTS = 2000;
+
+declare const requestIdBrand: unique symbol;
+
+/** Id of a "Mentor traži potvrdu" request kept outside the document (§3.2). */
+export type RequestId = string & { readonly [requestIdBrand]: "RequestId" };
+
+/** `rq` has the form of `sourceId`: a lowercase UUID v4, nil refused. */
+export function isRequestId(value: unknown): value is RequestId {
+  return typeof value === "string" && SOURCE_ID_PATTERN.test(value);
+}
+
+/**
+ * `targetId` of a cross reference (§3.4): a block id in the form an edit step
+ * writes it (lowercase UUID v4), narrower than `isNodeId` on purpose.
+ */
+export function isCrossReferenceTarget(value: unknown): value is NodeId {
+  return typeof value === "string" && SOURCE_ID_PATTERN.test(value);
+}
+
+/** The v2 citation with the optional `via` (§3.2) and `rq`. */
+export type CitationNodeV3 = CitationNode & { via?: string; rq?: RequestId };
+
+/** Plain text, no marks, one position (§3.3). Its number is derived. */
+export type FootnoteNode = { type: "footnote"; text: string };
+
+/**
+ * Points at a block by id (§3.4). A target that is no block, or no heading,
+ * is valid and shown as a cross reference without a target.
+ */
+export type CrossReferenceNode = { type: "crossReference"; targetId: NodeId };
+
+export type InlineNodeV3 = InlineNode | CitationNodeV3 | FootnoteNode | CrossReferenceNode;
+
+export type ParagraphNodeV3 = { type: "paragraph"; id: NodeId; children: InlineNodeV3[] };
+export type BulletItemNodeV3 = { type: "bulletItem"; id: NodeId; children: InlineNodeV3[] };
+export type QuoteNodeV3 = { type: "quote"; id: NodeId; children: InlineNodeV3[] };
+
+/** A heading takes no atom (§3.1), so it is the v1 heading. */
+export type DocumentNodeV3 = ParagraphNodeV3 | HeadingNode | BulletItemNodeV3 | QuoteNodeV3;
+
+export type CanonicalDocumentV3 = {
+  schemaVersion: typeof DOCUMENT_SCHEMA_VERSION_V3;
+  nodes: DocumentNodeV3[];
+  sources: DocumentSource[];
+};
+
+export function footnoteNode(text: string): FootnoteNode {
+  return { type: "footnote", text };
+}
+
+export function crossReferenceNode(targetId: NodeId): CrossReferenceNode {
+  return { type: "crossReference", targetId };
 }

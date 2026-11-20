@@ -442,7 +442,7 @@ describe("institution thresholds", () => {
         ...LIMITS[key],
       });
     const atInstitution = SETTINGS_CATALOGUE.filter((d) => d.levels.includes("institution"));
-    expect(atInstitution.map((d) => d.key)).toEqual([...KEYS, "citation.style"]);
+    expect(atInstitution.map((d) => d.key)).toEqual([...KEYS, "citation.style", "lekta.profile"]);
   });
 
   it.each([

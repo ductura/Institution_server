@@ -1,10 +1,12 @@
 import {
   DOCUMENT_SCHEMA_VERSION,
   DOCUMENT_SCHEMA_VERSION_V2,
+  DOCUMENT_SCHEMA_VERSION_V3,
   newNodeId,
   paragraphNode,
   type CanonicalDocument,
   type CanonicalDocumentV2,
+  type CanonicalDocumentV3,
   type NodeId,
 } from "./schema.ts";
 
@@ -58,3 +60,27 @@ export const REVISION_ZERO_V2_JCS =
  */
 export const REVISION_ZERO_V2_SHA256 =
   "8f8aa5047daa07e8d68f4952aa70ab3c671eccdf6191bfaf6dcba591735f2618";
+
+/**
+ * Revision 0 of a work of document v3 (docs/contracts/document-schema-v3.md
+ * §6): the v2 revision 0 with `schemaVersion: 3`. No work is opened with it
+ * yet; the database step that does comes after SRV-7A (contract v3 §7).
+ */
+export function revisionZeroDocumentV3(): CanonicalDocumentV3 {
+  return {
+    schemaVersion: DOCUMENT_SCHEMA_VERSION_V3,
+    nodes: [paragraphNode(REVISION_ZERO_NODE_ID)],
+    sources: [],
+  };
+}
+
+/** Exact JCS text (RFC 8785) of the v3 revision 0. */
+export const REVISION_ZERO_V3_JCS =
+  '{"nodes":[{"children":[],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":3,"sources":[]}';
+
+/**
+ * SHA-256 of the UTF-8 bytes of `REVISION_ZERO_V3_JCS`, lowercase hex, as the
+ * contract writes it (computed with `sha256sum`), never recomputed here.
+ */
+export const REVISION_ZERO_V3_SHA256 =
+  "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
