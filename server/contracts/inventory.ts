@@ -166,6 +166,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT", "DELETE"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7037456743",
   },
+  // SRV-1102 (Ductus#2051, Val 11, E§3.4 proofs, B-8): excerpts attached to a source; Ductus has no such routes.
+  "app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047672399",
+  },
+  "app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047672399",
+  },
   // SRV-1101 (Val 11, C-12): the text checks and Lekta profile of the institution; Ductus has no such route.
   "app/api/student/assignments/[assignmentId]/text-check-config/route.ts": {
     methods: ["GET"],
@@ -219,6 +228,15 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/versions/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
+  },
+  // SRV-1105 (Ductus#2051, wave 11): the shared record of a consultation and its additions; Ductus has no such route.
+  "app/api/works/[documentId]/consultation-records/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",
+  },
+  "app/api/works/[documentId]/consultation-records/[recordId]/additions/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",
   },
   // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
   "app/api/teacher/courses/[courseId]/students/route.ts": {

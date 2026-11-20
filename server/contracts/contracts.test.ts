@@ -102,6 +102,9 @@ describe("route inventory", () => {
       "student.work-sources.get: app/api/student/assignments/[assignmentId]/sources/route.ts is not in the inventory",
       "student.work-sources.put: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
       "student.work-sources.delete: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
+      "student.source-proofs.get: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/route.ts is not in the inventory",
+      "student.source-proofs.post: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/route.ts is not in the inventory",
+      "student.source-proof-image.get: app/api/student/assignments/[assignmentId]/sources/[sourceId]/proofs/[proofId]/image/route.ts is not in the inventory",
       "student.text-check-config.get: app/api/student/assignments/[assignmentId]/text-check-config/route.ts is not in the inventory",
       "teacher.deadline-extensions.get: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
       "teacher.deadline-extension.post: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
@@ -131,6 +134,9 @@ describe("route inventory", () => {
       "sources.lookup.post: app/api/sources/lookup/route.ts is not in the inventory",
       "public.verification.post: app/api/public/verification/route.ts is not in the inventory",
       "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
+      "work.consultation-records.get: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
+      "work.consultation-records.post: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
+      "work.consultation-additions.post: app/api/works/[documentId]/consultation-records/[recordId]/additions/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

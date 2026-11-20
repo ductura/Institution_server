@@ -777,6 +777,53 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.source-proof-image.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      (typeof value['proofId'] === 'string') &&
+      value['proofId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }),
+  "student.source-proofs.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.source-proofs.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['sourceId'] === 'string') &&
+      value['sourceId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "student.source-proofs.post:body": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,30}(?<!\s)(?![\s\S])/;
+  const local1 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|\n|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,2000}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['image'] === 'string') &&
+      value['image'].length >= 1 &&
+      (typeof value['page'] === 'string') &&
+      local0.test(value['page']) &&
+      (value['note'] !== undefined ? ((typeof value['note'] === 'string') && local1.test(value['note'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['image', 'page', 'note'].includes(key))
+    )
+  }
+  })(),
   "student.submission-notes.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1022,6 +1069,73 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "work.consultation-additions.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      (typeof value['recordId'] === 'string') &&
+      local1.test(value['recordId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.consultation-additions.post:body": (() => {
+  const local0 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['text'] === 'string') &&
+      local0.test(value['text']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.consultation-records.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.consultation-records.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.consultation-records.post:body": (() => {
+  const local0 = /^\d{4}-\d{2}-\d{2}$/;
+  const local1 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){1,200}(?![\s\S])/;
+  const local2 = /^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]){0,2000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['heldOn'] === 'string') &&
+      local0.test(value['heldOn']) &&
+      (typeof value['revision'] === 'number' && Number.isInteger(value['revision'])) &&
+      value['revision'] <= 9007199254740991 &&
+      value['revision'] >= 1 &&
+      (typeof value['topic'] === 'string') &&
+      local1.test(value['topic']) &&
+      (typeof value['agreement'] === 'string') &&
+      local2.test(value['agreement']) &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }
+  })(),
   "work.versions.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {

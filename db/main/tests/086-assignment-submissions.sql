@@ -235,7 +235,7 @@ BEGIN
                                              CASE WHEN NOT w.submitted THEN 'no' WHEN w.after_deadline THEN 'late' ELSE 'on-time' END,
                                              coalesce(w.evidence_record, '-')), ' ' ORDER BY w.n), 'none')
           FROM app.assignment_overview(%s) WITH ORDINALITY AS w (student_id, given_name, family_name, group_name, submitted,
-                                                                requested_minute, after_deadline, evidence_record, n) $q$,
+                                                                requested_minute, after_deadline, evidence_record, due_at, n) $q$,
     coalesce(quote_literal(pg_temp.id(p_assignment)::text), 'NULL')));
   FOR r IN SELECT name, id FROM person LOOP
     v_result := replace(v_result, r.id::text, r.name);
@@ -255,8 +255,9 @@ SELECT bag_eq(
   $$ VALUES ('ductus_app') $$, 'of the other roles only the web role executes the overview');
 SELECT is(pg_get_function_result('app.assignment_overview(uuid)'::regprocedure),
   'TABLE(student_id uuid, given_name text, family_name text, group_name text, submitted boolean, '
-  'requested_minute timestamp with time zone, after_deadline boolean, evidence_record text)',
-  'the overview returns these eight columns: no text, hash or id of a submission');
+  'requested_minute timestamp with time zone, after_deadline boolean, evidence_record text, '
+  'due_at timestamp with time zone)',
+  'the overview returns these nine columns, the effective deadline last (SRV-1108C): no text, hash or id of a submission');
 SELECT is(pg_get_function_arguments('app.assignment_overview(uuid)'::regprocedure), 'p_assignment_id uuid',
   'the overview takes only the assignment');
 

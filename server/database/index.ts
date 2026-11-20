@@ -254,6 +254,13 @@ export {
   type WorkSources,
 } from "./work-sources/index.ts";
 export {
+  createSourceProofs,
+  isSourceProofJpeg,
+  SOURCE_PROOF_MAX_BYTES,
+  type SourceProof,
+  type SourceProofs,
+} from "./source-proofs/index.ts";
+export {
   createWorkAttachments,
   isWorkAttachmentMediaType,
   WORK_ATTACHMENT_MAX_BYTES,
@@ -282,6 +289,18 @@ export {
   type WorkVersionsPage,
   type WorkVersionsReader,
 } from "./work-versions/index.ts";
+export {
+  createConsultationRecords,
+  isCalendarDate,
+  recordsOf,
+  type AddAnswer,
+  type Addition,
+  type ConsultationRecord,
+  type ConsultationRecords,
+  type CreateAnswer,
+  type ListAnswer,
+  type RecordInput,
+} from "./consultation-records/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";
