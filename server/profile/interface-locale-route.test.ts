@@ -39,7 +39,11 @@ function get(headers: Record<string, string> = {}): Request {
 
 type Rows = Record<string, unknown>[];
 
-function port({ code, rows, token = TOKEN }: { code?: string; rows?: Rows; token?: string } = {}) {
+function port({
+  code,
+  rows,
+  token = TOKEN,
+}: { code?: string; rows?: Rows | undefined; token?: string } = {}) {
   type Query = (
     sql: string,
     params?: readonly unknown[],

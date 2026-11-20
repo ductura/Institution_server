@@ -9,7 +9,8 @@ import { isEvidenceIngestCommandV2, isEvidenceSegmentDescriptorV2 } from "./evid
  * A client that names one is refused, wherever in the command it puts it.
  */
 const { chain, receiptV2 } = loadGoldenVectors();
-const [vector] = chain.segments;
+const vector = chain.segments[0];
+if (vector === undefined) throw new Error("golden chain has no segments");
 const command = {
   clientRequestId: vector.clientRequestId,
   descriptor: vector.descriptor,

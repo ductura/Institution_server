@@ -130,7 +130,7 @@ function database(...answers: (Row[] | Error)[]) {
   const tokens: unknown[] = [];
   const withActor = vi.fn(async (token, fn) => {
     tokens.push(token);
-    const answer = answers[Math.min(queries.length, answers.length - 1)];
+    const answer = answers[Math.min(queries.length, answers.length - 1)]!;
     const tx: ActorTransaction = {
       async query(_text, values) {
         queries.push([...(values ?? [])]);
@@ -161,7 +161,7 @@ function post(body: unknown, headers: Record<string, string> = {}, method = "POS
       "content-type": "application/json",
       ...headers,
     },
-    body: method === "POST" ? (typeof body === "string" ? body : JSON.stringify(body)) : undefined,
+    ...(method === "POST" ? { body: typeof body === "string" ? body : JSON.stringify(body) } : {}),
   });
 }
 
