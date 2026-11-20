@@ -1,4 +1,5 @@
 export { authRoutes, readSignInFailure, SIGN_IN_FAILURE, type SignInFailureCode } from "./auth.ts";
+export { attachmentRoutes, workAttachmentGet, workAttachmentPost } from "./attachments.ts";
 export { downloadsRoutes } from "./downloads.ts";
 export { receiptPdfRoutes } from "./receipt-pdf.ts";
 export { CLIENT_APP_VERSION_PATTERN, CLIENT_CONTEXT_VALUES, clientRoutes } from "./client.ts";
