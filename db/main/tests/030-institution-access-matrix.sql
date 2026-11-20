@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1658);
+SELECT plan(1666);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -238,6 +238,7 @@ SELECT bag_eq(
     'request_mentorship(p_teacher_id uuid, p_work_type text) definer app',
     'withdraw_mentorship_request(p_request_id uuid) definer app',
     'approve_mentorship_request(p_request_id uuid) definer app',
+    'decline_mentorship_request(p_request_id uuid, p_reason text) definer app',
     'refuse_rule_version_change()',
     'check_rule_version_event() definer',
     'publish_faculty_rule_version(p_work_type text, p_expected_version integer, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean) definer app',
@@ -385,6 +386,28 @@ FROM (VALUES
   ('iva', '{z1}', '{ana}', 'ZD403: forbid'), ('petra', '{z3}', '{tomo}', 'Napomena tomo'),
   ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
 ) AS c (actor, assignment, student, result);
+
+-- 1d. SRV-28: the decline of a mentorship request, one cell per actor; the
+-- rest of its matrix (states, reason, the trail) is in
+-- 104-mentorship-request.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['institution.decline_mentorship_request(uuid,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-28: only ductus_app and the owner execute the decline'
+);
+INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
+SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.decline_mentorship_request({rq}, NULL)::text $$), 1, 5), c.outcome,
+  format('SRV-28: %s declines Ana''s request to Vesna: %s', c.actor, c.outcome)
+)
+FROM (VALUES (1, 'marko', 'ZD403'), (2, 'ana', 'ZD403'), (3, 'iva', 'ZD403'), (4, 'petra', 'ZD403'),
+             (5, 'tomo', 'ZD403'), (6, 'vesna', 'true')) AS c (n, actor, outcome)
+ORDER BY c.n;
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
