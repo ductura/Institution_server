@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2164);
+SELECT plan(2175);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -668,6 +668,18 @@ SELECT is(
   format('SRV-1108: %s lists the extensions of Z1: %s', c.actor, c.result))
 FROM (VALUES ('vesna', '1'), ('marko', 'ZD403'), ('ana', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401'))
   AS c (actor, result);
+
+-- 1i. SRV-1108C: the effective deadline through app.student_effective_due_at
+-- only for a student of the assignment, and only the caller's own (Ana's was
+-- extended in 1h); null for everyone else. The rest is in
+-- 167-submission-effective-due.sql.
+SELECT is(
+  coalesce(pg_temp.ask(c.actor, 'SELECT (app.student_effective_due_at({z1}) - now())::text'), 'null'), c.result,
+  format('SRV-1108C: %s reads the own effective deadline of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('ana', '400 days'), ('dora', '30 days'), ('vesna', 'null'), ('marko', 'null'), ('iva', 'null'),
+  ('boris', 'null'), ('nina', 'null'), ('tomo', 'null'), ('lea', 'null'), ('petra', 'null'), ('anon', 'null')
+) AS c (actor, result);
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.

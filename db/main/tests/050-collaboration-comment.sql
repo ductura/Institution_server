@@ -76,6 +76,9 @@ SELECT bag_eq(
             ('collaboration.resolve_thread(uuid)'), ('collaboration.reopen_thread(uuid)'),
             ('collaboration.list_comments(text)'), ('collaboration.delete_comment(uuid)'),
             ('collaboration.create_general_comment(text,text)'),
+            ('collaboration.list_consultation_records(text)'),
+            ('collaboration.create_consultation_record(text,date,bigint,text,text)'),
+            ('collaboration.add_consultation_addition(text,uuid,text)'),
             ('collaboration.publish_live_state(text,uuid,text)'),
             ('collaboration.read_live_state(text,text)'),
             ('collaboration.create_revision_request(text,jsonb,text,bigint)'),
@@ -91,7 +94,7 @@ SELECT bag_eq(
             ('collaboration.create_comment_template(text,text)'),
             ('collaboration.list_comment_templates()'),
             ('collaboration.delete_comment_template(uuid)') $$,
-  'the web role executes exactly the six comment RPCs (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158');
+  'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.oid IN ('collaboration.create_comment(text,text,jsonb)'::regprocedure,
