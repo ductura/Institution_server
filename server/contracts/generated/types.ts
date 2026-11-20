@@ -337,6 +337,13 @@ export type Operations = {
     success: { status: 200; body: { "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "student.assignment-requirements.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "wordRange": { "min": number; "max": number | null } | { "min": null; "max": number } | null }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.assignment-work.get": {
     params: undefined;
     query: undefined;
@@ -371,6 +378,27 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "assignmentId": string; "versionNo": number; "templateVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "wordMin": number | null; "wordMax": number | null; "readAt": string | null; "acknowledgedAt": string | null }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "student.submission-notes.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "notes": ({ "id": string; "text": string; "createdAt": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.submission-notes.post": {
+    params: undefined;
+    query: undefined;
+    body: { "assignmentId": string; "text": string };
+    success: { status: 201; body: { "id": string; "text": string; "createdAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "student.submission.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "none" } | { "state": "ceka"; "revision": number; "requestedAt": string } | { "state": "potvrdeno"; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "submission.submit.post": {
     params: undefined;

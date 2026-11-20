@@ -692,6 +692,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
+  "student.assignment-requirements.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.enrollments.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -718,6 +726,36 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }),
   "student.notice.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.submission-notes.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.submission-notes.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,600}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      (typeof value['text'] === 'string') &&
+      local1.test(value['text']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "student.submission.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['assignmentId'] === 'string') &&

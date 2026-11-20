@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import type { Operations } from "../../contracts/index.ts";
 import { createReceiptSigner, type ReceiptSigner, type SignedReceipt } from "./receipt-signer.ts";
 
 // The in-memory state of the dev fake server and its invented starting data.
@@ -105,6 +106,7 @@ export type Work = {
   lastChangeAt: string | null;
   /** When the submission was asked for, or null. */
   submittedAt: string | null;
+  submissionReceipt: Operations["submission.submit.post"]["success"]["body"]["receipt"] | null;
   /** The document of `revision`: standard base64 of its JSON bytes. */
   document: string;
   /** Segment texts in chain order (decoded from the commits). */
@@ -114,6 +116,11 @@ export type Work = {
   transactions: Map<string, { receipt: SignedReceipt; documentHash: string }>;
   /** The live state (live.document.put) and its token, or null. */
   live: { readonly json: string; readonly token: string } | null;
+};
+
+type SubmissionNote = Operations["student.submission-notes.post"]["success"]["body"] & {
+  readonly assignmentId: string;
+  readonly studentId: string;
 };
 
 /** An empty document of one paragraph, as base64 of its JSON bytes. */
@@ -194,6 +201,7 @@ export type State = {
   courses: Course[];
   assignments: Assignment[];
   works: Work[];
+  submissionNotes: SubmissionNote[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -347,6 +355,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
         revision: 0,
         lastChangeAt: "2026-11-09T19:55:00.000Z",
         submittedAt: null,
+        submissionReceipt: null,
         document: EMPTY_DOCUMENT,
         segments: [],
         lastSequenceTo: 0,
@@ -354,6 +363,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
         live: null,
       },
     ],
+    submissionNotes: [],
     enrollmentGuesses: new Map(),
     mentorships: [
       {

@@ -119,10 +119,18 @@ export const UGOVORI_API: readonly string[] = [
   "institution.enrollment-code-state.get",
 ];
 
+// SRV-19 defines the wire shapes ahead of the handlers in SRV-22 and SRV-24.
+const SRV_19 = [
+  "student.submission.get",
+  "student.assignment-requirements.get",
+  "student.submission-notes.get",
+  "student.submission-notes.post",
+];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03, ...UGOVORI_API],
+  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03, ...UGOVORI_API, ...SRV_19],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
