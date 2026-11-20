@@ -125,6 +125,10 @@ const ENV_NAMES = [
   "METRICS_INTERVAL_MS",
   // The test mode of the server (S-1H.7, DAN-938-1, server/settings).
   "DUCTURA_MODE",
+  // The KMS signer's configuration (DAN-963, server/settings/kms.ts).
+  "DUCTUS_KMS_PROVIDER",
+  "DUCTUS_KMS_KEY_ID",
+  "DUCTUS_KMS_REGION",
   // The VS-1 stack (DAN-759, scripts/stack): its ports and the home of a child.
   "VS1_POSTGRES_PORT",
   "VS1_SERVER_PORT",

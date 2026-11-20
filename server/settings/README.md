@@ -12,6 +12,8 @@ Postavke iz okoline i njihova provjera pri pokretanju. Odbija lažni OIDC i razv
 
 `test-mode.ts` (S-1H.7, DAN-938-1): `testModeProblems(env)` provjerava varijablu `DUCTURA_MODE`, prekidač testnog servera. Bez nje nema problema. Jedina poznata vrijednost je točno `test`, a dopuštena je samo uz `NODE_ENV` `development` ili `test`. U svakoj drugoj konfiguraciji, uključujući nepostavljen ili prazan `NODE_ENV`, problem je `DUCTURA_MODE test is refused in production`. Svaka druga vrijednost daje `DUCTURA_MODE is not a known mode`, bez obzira na `NODE_ENV`: prazna (i compose `${X:-}`), druga velika slova, razmak, CRLF, tab, NBSP, DEL, NUL, nevidljivi i slični znakovi. Tako tipfeler ne skriva provjeru i ne uključuje način rada. Čitaju se samo vlastita podatkovna svojstva (`DUCTURA_MODE` i `NODE_ENV`), a getter je problem i ne poziva se. `server/server.ts` dodaje problem u provjeru pri pokretanju, pa proces ne sluša i izlazi s 1. Što način rada uključuje (lažni OIDC, sintetički podaci) dolazi s DAN-938-3. Poznata granica: `ductura_mode` je na Linuxu druga varijabla i ne gleda se, pa se način rada time ne uključuje.
 
+`kms.ts` (DAN-963, D-71): konfiguracija KMS potpisnika iz tri varijable: `DUCTUS_KMS_PROVIDER` (točno `aws`), `DUCTUS_KMS_KEY_ID` (samo ARN ključa `arn:(aws|aws-cn|aws-us-gov):kms:<regija>:<12 znamenki>:key/<uuid malim slovima ili mrk-32 hex>`; alias i goli ID se odbijaju, jer potpisnik vjeruje samo toj verziji ključa) i `DUCTUS_KMS_REGION` (npr. `eu-central-1`, jednaka regiji iz ARN-a). Nijedna postavljena: KMS nije odabran i ponašanje je kao prije (razvojni potpisnik samo u `development` i `test`, inače nijedan, 503 signing). Bilo koja postavljena, i prazna: traže se sve tri, u svakom `NODE_ENV`. `kmsProblems(env)` vraća probleme samo imenom varijable (`… is not set`, `… is not a known provider`, `… is not a KMS key ARN`, `… is not an AWS region`, `DUCTUS_KMS_KEY_ID is not in DUCTUS_KMS_REGION`), a `kmsSettings(env)` zamrznute postavke ili `null`. Čita se kao `DUCTURA_MODE` (`ownValue` iz `test-mode.ts`). `server/server.ts` dodaje probleme u provjeru pri pokretanju; odabir KMS potpisnika iz `kmsSettings` dolazi u DAN-963-1b (do tada potpuna konfiguracija ne mijenja potpisnik). Poznate granice: potpuno odsutna konfiguracija u produkciji i dalje se pokreće bez potpisnika; particija i regija se međusobno ne provjeravaju; `ductus_kms_provider` i ostala imena malim slovima su na Linuxu druge varijable i ne gledaju se (kao `ductura_mode`), pa KMS ostaje neodabran.
+
 `non-production.ts` (DAN-938-1): `isNonProductionBuild(nodeEnv)` je jedina definicija produkcije: popis dopuštenih, samo `development` i `test`. Premještena je bez promjene iz `server/external/srce-auth/config.ts`, koji je i dalje izvozi pod istim imenom za provjeru lažnog pružatelja (D-09). Ulazna točka i `server/config` ne smiju uvoziti `external/srce-auth`.
 
 ## Tko ga zove
@@ -29,7 +31,8 @@ Varijable okoline i popis ustanova (`institutions-file.ts`, bez tajni: ključevi
 - `SettingsService`: tip servisa bez članova (`service.ts`);
 - `metricsIntervalProblems`, `metricsIntervalMs`, `DEFAULT_METRICS_INTERVAL_MS`, `METRICS_INTERVAL_MIN_MS` i `METRICS_INTERVAL_MAX_MS` (`metrics-interval.ts`);
 - `institutionsProblems`, `loadInstitutions`, `INSTITUTIONS_ERROR_CODES` i tipovi `InstitutionRecord`, `InstitutionsErrorCode`, `InstitutionsResult` (`institutions.ts`);
-- `testModeProblems` (`test-mode.ts`) i `isNonProductionBuild` (`non-production.ts`).
+- `testModeProblems` (`test-mode.ts`) i `isNonProductionBuild` (`non-production.ts`);
+- `kmsProblems`, `kmsSettings` i tip `KmsSettings` (`kms.ts`).
 
 ## Što ne smije uvoziti
 
