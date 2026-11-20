@@ -648,6 +648,48 @@ describe("commit", () => {
   });
 });
 
+describe("a revision of another document version (SRV-33B)", () => {
+  /** A transaction whose acceptance fails as the version trigger does: ZD422, no message read. */
+  function refusing(code: string) {
+    const ended: string[] = [];
+    const withActor: WithActor = async (_token, fn) => {
+      const tx: ActorTransaction = {
+        async query() {
+          throw Object.assign(new Error("revision of another document version"), { code });
+        },
+      };
+      try {
+        return await fn(tx);
+      } catch (error) {
+        ended.push("rollback");
+        throw error;
+      }
+    };
+    return { withActor, ended };
+  }
+
+  it("answers invalid (422), not unavailable, when the database refuses the schemaVersion", async () => {
+    const s = signer();
+    const db = refusing("ZD422");
+    expect(await createEvidenceCommitter(db.withActor, s.provider).commit("t", INPUT)).toEqual({
+      status: "invalid",
+    });
+    expect(db.ended).toEqual(["rollback"]);
+    expect(s.calls).toHaveLength(0);
+  });
+
+  it("keeps every other database code a closed repository fault", async () => {
+    for (const code of ["ZD409", "23514", "zd422", "ZD4220"]) {
+      expect(
+        await createEvidenceCommitter(refusing(code).withActor, signer().provider).commit(
+          "t",
+          INPUT,
+        ),
+      ).toEqual({ status: "unavailable", stage: "repository", code: "commit_failed" });
+    }
+  });
+});
+
 describe("statement parameters", () => {
   it("presents the token to withActor only, never as a parameter of a statement", async () => {
     const token = "izmisljeni-token-commita-00000000000000001";
