@@ -30,9 +30,11 @@ describe("server/institution public interface", () => {
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
       "readAssignmentCurrentVersion",
+      "readAssignmentOverview",
       "readStudentAccessLog",
       "readStudentRequirements",
       "readStudentSubmission",
+      "readTeacherRoster",
       "readTeacherSubmission",
       "studentCoursesOf",
     ]);

@@ -624,6 +624,20 @@ export type Operations = {
     success: { status: 200; body: { "id": "topic" | "structure" | "sources" | "method" | "language" | "formatting"; "label": string; "assessment": 0 | 1 | 2 | null; "note": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable";
   };
+  "work.attachments.get": {
+    params: { "attachmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "attachmentId": string; "attachmentSha256": string; "mediaType": "image/png" | "image/jpeg"; "byteSize": number; "pixelWidth": number | null; "pixelHeight": number | null; "imageBase64": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.attachments.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "imageBase64": string };
+    success: { status: 200; body: { "attachmentId": string; "attachmentSha256": string; "mediaType": "image/png" | "image/jpeg"; "byteSize": number; "pixelWidth": number | null; "pixelHeight": number | null; "created": boolean }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
+  };
   "work.consultation-additions.post": {
     params: { "documentId": string; "recordId": string };
     query: undefined;
