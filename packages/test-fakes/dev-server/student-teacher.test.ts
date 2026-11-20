@@ -55,6 +55,11 @@ describe("dev fake server: teacher routes", () => {
     const access = await send(state, "/api/v1/teacher/access", { headers });
     expect(contractProblems("teacher.access.get", access)).toEqual([]);
     expect(access.json).toMatchObject({ access: "allowed" });
+    // As the real server: one principalScope for /me and teacher access.
+    const me = await send(state, "/api/v1/me", { headers });
+    expect((access.json as { scope: string }).scope).toBe(
+      (me.json as { journalScope: string }).journalScope,
+    );
     const denied = await send(state, "/api/v1/teacher/access", {
       headers: await signIn(state, "bez-uloge"),
     });
