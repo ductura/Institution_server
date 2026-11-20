@@ -61,12 +61,17 @@ export const TEXT_EXEMPT: readonly string[] = [
   "server/log/invented.fixture.ts",
 ];
 /**
- * Files that may still hold interface text for a while. Empty and closed:
- * server/app.ts moved its text to locales/ in DAN-782 (orchestrator decision
- * Ductus#87 c.6896054840), and server/index.ts was removed in DAN-775. A new
- * entry needs an orchestrator decision and fails the lint test.
+ * Files that may still hold interface text for a while, closed: server/app.ts
+ * moved its text to locales/ in DAN-782 (orchestrator decision Ductus#87
+ * c.6896054840), and server/index.ts was removed in DAN-775. A new entry needs
+ * an orchestrator decision and a change of the lint test. Today two files of
+ * the Ductus backend copy, until a task moves them (Ductus#2028 c.7030643662):
+ * the Croatian alphabet of the collation and the editor's default placeholder.
  */
-export const TEXT_TRANSITIONAL: readonly string[] = [];
+export const TEXT_TRANSITIONAL: readonly string[] = [
+  "server/domain/text/compare-hr.ts",
+  "server/external/storage/editor/schema.ts",
+];
 
 /** Names that build or decode text from codes, bytes or an encoding. */
 export const BUILDER_NAMES: readonly string[] = [
@@ -162,6 +167,15 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/institution/create-assignment.ts": ["TextDecoder"],
   // The verified segment payloads of the process summary as text (Ductus copy, as evidence/replay.ts).
   "server/projection/process-summary-reader.ts": ["TextDecoder"],
+  // Croatian collation of the Ductus copy (Intl.Collator("hr")): it orders text and
+  // gives none, and the sentinel of revision input is a private-use code point,
+  // not text (orchestrator decision Ductus#2028 c.7030643662).
+  "server/domain/citation/format.ts": ["Intl"],
+  "server/institution/institution-courses.ts": ["Intl"],
+  "server/institution/student-workspace.ts": ["Intl"],
+  "server/institution/teacher-courses.ts": ["Intl"],
+  "server/institution/teacher-roles.ts": ["Intl"],
+  "server/domain/collaboration/revision-input.ts": ["fromCodePoint"],
   // The contract fake server reads request bodies and paths (test code, U8).
   "server/contracts/generated/fake-server/index.ts": ["TextDecoder", "decodeURIComponent"],
 };
@@ -396,6 +410,15 @@ export const noHardcodedText: Rule.RuleModule = {
       if (!allowed.includes(name)) return false;
       // The argument of `new TextDecoder(…)` is an encoding name.
       if (name === "TextDecoder") return true;
+      // Intl only as `Intl.Collator`: it orders text and gives none, and its
+      // argument is a locale tag (orchestrator decision Ductus#2028 c.7030643662).
+      if (name === "Intl") {
+        const read = outer(node);
+        const up = read.parent;
+        return (
+          up?.type === "MemberExpression" && up.object === read && memberName(up) === "Collator"
+        );
+      }
       // `decodeURIComponent!(…)`, `(decodeURIComponent as F)(…)`: the callee is
       // wrapped (review FAIL c.6900338168 on #65).
       let callee = outer(node);
@@ -458,6 +481,14 @@ export const noHardcodedText: Rule.RuleModule = {
       const prototypeLeak =
         member === "prototype" &&
         !(next?.type === "MemberExpression" && next.object === read && memberName(next) !== null);
+      // A listed String builder (not raw) on input, as any listed decoder.
+      if (
+        member !== null &&
+        member !== "raw" &&
+        STRING_BUILDERS.has(member) &&
+        allowedUse(parent, member)
+      )
+        return;
       if (member === null || STRING_BUILDERS.has(member) || prototypeLeak) {
         const shown = `${name}.${member ?? "[computed]"}`;
         context.report({ node: parent as Node, messageId: "builder", data: { name: shown } });
