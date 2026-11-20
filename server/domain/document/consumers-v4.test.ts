@@ -100,6 +100,23 @@ describe("normalize and equality (§11)", () => {
     ]);
   });
 
+  it("joins equal marks whatever the order of their attribute keys", () => {
+    const doc = copy();
+    doc.nodes[2] = {
+      type: "paragraph",
+      id: doc.nodes[2]!.id,
+      children: [
+        { type: "text", text: "a", marks: [{ type: "lang", lang: "en" } as never] },
+        { type: "text", text: "b", marks: [{ lang: "en", type: "lang" }] },
+      ],
+    };
+    const normalized = normalizeDocument(doc);
+    expect((normalized.nodes[2] as { children: unknown[] }).children).toEqual([
+      { type: "text", text: "ab", marks: [{ lang: "en", type: "lang" }] },
+    ]);
+    expect(validateVersionedDocument(normalized).ok).toBe(true);
+  });
+
   it("compares every field: ids, cover, cells, crop and mark attributes", () => {
     expect(documentsEqual(EVERY, copy())).toBe(true);
     expect(contentEqual(EVERY, copy())).toBe(true);
