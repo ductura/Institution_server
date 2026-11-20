@@ -25,12 +25,20 @@ const SourceId = Type.String({
 const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" });
 
 /**
+ * The FORBIDDEN code points of the document schema (v2 section 3.2,
+ * server/domain/document/forbidden.ts; contracts import nothing from the
+ * server, so the list is repeated here and kept equal by the test).
+ */
+const FORBIDDEN =
+  "\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff";
+
+/**
  * A text field of a source record (v2 section 2.3): 1 to `max` code points, no
- * control character, no white space at either end. A lone surrogate is refused.
+ * FORBIDDEN code point, no white space at either end. A lone surrogate is refused.
  */
 const Text = (max: number) =>
   Type.String({
-    pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,${max}}(?<!\\s)${END}`,
+    pattern: `^(?!\\s)(?:${CODE_POINT}|[^${FORBIDDEN}\\uD800-\\uDFFF]){1,${max}}(?<!\\s)${END}`,
   });
 
 const Person = closed({
@@ -46,7 +54,17 @@ const Organization = closed({
 const Authors = Type.Array(Type.Union([Person, Organization]), { minItems: 1, maxItems: 50 });
 const Year = Type.Integer({ minimum: 1000, maximum: 9999 });
 const Url = Type.String({ pattern: `^https?://[\\x21-\\x7e]{0,2040}${END}`, maxLength: 2048 });
-const AccessedDate = Type.String({ pattern: "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$" });
+// A real calendar date (the validator's isAccessedDate): 30 and 31 day months,
+// February to the 28th, and the 29th only in a leap year.
+const LEAP_CENTURIES = Array.from({ length: 90 }, (_, i) => i + 10)
+  .filter((century) => century % 4 === 0)
+  .join("|");
+const LEAP_YEAR = `(?:[1-9]\\d(?:0[48]|[2468][048]|[13579][26])|(?:${LEAP_CENTURIES})00)`;
+const AccessedDate = Type.String({
+  pattern:
+    "^(?:[1-9]\\d{3}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))" +
+    `|${LEAP_YEAR}-02-29)${END}`,
+});
 
 const common = { id: SourceId, authors: Authors, year: Year, title: Text(1000) };
 
@@ -79,7 +97,7 @@ export const WorkSourceRecord = Type.Union([
 ]);
 
 /** One spelling each: a DOI in lowercase, an ISBN as its digits (ISBN-10 may end in X). */
-const Doi = Type.String({ pattern: `^10\\.[0-9]{4,9}/[!-~]{1,300}${END}`, maxLength: 300 });
+const Doi = Type.String({ pattern: `^10\\.[0-9]{4,9}/[!-@\\[-~]{1,300}${END}`, maxLength: 300 });
 const Isbn = Type.String({ pattern: `^(?:[0-9]{9}[0-9X]|97[89][0-9]{10})${END}` });
 
 /** What the student sends for one source: the record and what the record has no room for. */

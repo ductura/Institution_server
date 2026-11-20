@@ -852,6 +852,54 @@
           "requestId": "00000000-0000-4000-8000-000000002013"
         }
       }
+    },
+    {
+      "name": "uppercase-doi",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+          "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "record": {
+            "id": "00000000-0000-4000-8000-00000000c0a1",
+            "type": "book",
+            "authors": [
+              {
+                "kind": "person",
+                "family": "Izmišljeni",
+                "given": "Autor"
+              }
+            ],
+            "year": 2019,
+            "title": "Izmišljena knjiga o kućnom kompostiranju",
+            "place": "Izmišljeni grad",
+            "publisher": "Izmišljena naklada"
+          },
+          "doi": "10.1234/Izmisljeno.2019",
+          "isbn": "9780000000002",
+          "undated": false
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000002100"
+        }
+      }
     }
   ]
 }

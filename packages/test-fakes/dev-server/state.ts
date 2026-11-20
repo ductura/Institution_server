@@ -118,6 +118,12 @@ export type Work = {
   live: { readonly json: string; readonly token: string } | null;
 };
 
+/** A source of a student's work (SRV-7C); a teacher's carries its requirement. */
+export type WorkSource = Operations["student.work-sources.put"]["success"]["body"] & {
+  readonly assignmentId: string;
+  readonly studentId: string;
+};
+
 type SubmissionNote = Operations["student.submission-notes.post"]["success"]["body"] & {
   readonly assignmentId: string;
   readonly studentId: string;
@@ -202,6 +208,7 @@ export type State = {
   assignments: Assignment[];
   works: Work[];
   submissionNotes: SubmissionNote[];
+  workSources: WorkSource[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -384,6 +391,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
       },
     ],
     submissionNotes: [],
+    workSources: [],
     enrollmentGuesses: new Map(),
     mentorships: [
       {
