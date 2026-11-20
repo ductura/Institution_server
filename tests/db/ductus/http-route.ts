@@ -5,7 +5,7 @@ import {
   type Route,
   type Running,
 } from "../../../server/http/index.ts";
-import { SESSION_COOKIE_NAME } from "../../../server/session/session-token.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
 
 export function startTestRoute(route: Route, origin: string): Promise<Running> {
   return startServer({
