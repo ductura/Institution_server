@@ -10,7 +10,7 @@ import {
   type AccountKey,
   type State,
 } from "./index.ts";
-import { contractProblems, send, signIn, type Sent } from "./testing.ts";
+import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
 // fits the contract. A route added to ROUTE_TABLE without a handler or without
@@ -21,7 +21,7 @@ type Scenario = { readonly before?: readonly Step[]; readonly request: Step };
 
 const ORIGIN = { origin: "http://127.0.0.1:4010", "sec-fetch-site": "same-origin" };
 const EVIDENCE = { ...ORIGIN, "ductus-protocol": "1" };
-const SEGMENT = Buffer.from('{"izmisljeni":"odsjecak"}').toString("base64");
+const SEGMENT = evidenceSegment(createState());
 const commit = (txid: string, baseRevision: number): Step => ({
   path: "/api/v1/evidence/commit",
   as: "student",
