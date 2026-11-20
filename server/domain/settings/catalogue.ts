@@ -131,6 +131,14 @@ export const SETTINGS_CATALOGUE: readonly SettingDefinition[] = Object.freeze([
   threshold("paste_event_chars", 200, 100_000),
   threshold("teacher_refresh_minutes", 5, 60),
   threshold("short_assignment_hours", 24, 168),
+  // C-12; the editor prototype uses these style IDs and defaults to FPZG.
+  define({
+    key: "citation.style",
+    levels: ["institution"],
+    kind: "enum",
+    default: "fpzg",
+    values: ["fpzg", "apa", "chicago", "ieee", "vancouver", "fusnote"],
+  }),
 ]);
 
 const BY_KEY: ReadonlyMap<string, SettingDefinition> = new Map(
