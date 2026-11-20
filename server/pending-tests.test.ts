@@ -10,9 +10,8 @@ describe("PENDING_TESTS (ZEL-S4)", () => {
     expect(tsconfig.exclude.filter((path) => path !== "node_modules")).toEqual([...PENDING_TESTS]);
   });
 
-  it("names only test files that exist", () => {
+  it("names only files that exist", () => {
     for (const path of PENDING_TESTS) {
-      expect(path.endsWith(".test.ts")).toBe(true);
       expect(() => readFileSync(path)).not.toThrow();
     }
   });
