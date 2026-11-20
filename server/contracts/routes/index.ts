@@ -29,3 +29,4 @@ export { enrollmentRoutes } from "./enrollment.ts";
 export { institutionRoutes } from "./institution.ts";
 export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
+export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";

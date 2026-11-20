@@ -27,6 +27,7 @@ import {
   createStudentSubmissionRoutesFor,
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
+  createTeacherWorkingCriteriaRoutesFor,
   createWorkSourceRoutesFor,
   createWorkVersionsRouteFor,
   createSourceLookupRouteFor,
@@ -146,6 +147,8 @@ async function main(): Promise<void> {
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
       createTextCheckConfigRoute(databases.main),
+      // The teacher's private working criteria of a work (SRV-1107, B-9).
+      ...createTeacherWorkingCriteriaRoutesFor(databases.main),
       createSourceLookupRouteFor(databases.main, process.env),
       // The public check of a receipt (SRV-9B, C-6): no session read or issued (D-09).
       createPublicVerificationRouteFor(databases.main),

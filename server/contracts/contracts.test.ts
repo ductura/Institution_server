@@ -103,6 +103,8 @@ describe("route inventory", () => {
       "student.work-sources.put: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
       "student.work-sources.delete: app/api/student/assignments/[assignmentId]/sources/[sourceId]/route.ts is not in the inventory",
       "student.text-check-config.get: app/api/student/assignments/[assignmentId]/text-check-config/route.ts is not in the inventory",
+      "teacher.working-criteria.get: app/api/teacher/works/[documentId]/working-criteria/route.ts is not in the inventory",
+      "teacher.working-criterion.put: app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts is not in the inventory",
       "projection.process-summary-details.post: app/api/process-summary/details/route.ts is not in the inventory",
       "student.enrollments.post: app/api/student/enrollments/route.ts is not in the inventory",
       "institution.admin-courses.post: app/api/institution/admin/courses/route.ts is not in the inventory",

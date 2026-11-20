@@ -171,6 +171,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7043116568",
   },
+  // SRV-1107 (Ductus#2051 c.7048423903, wave 11, B-9): the teacher's private working criteria; Ductus has no such route.
+  "app/api/teacher/works/[documentId]/working-criteria/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
+  },
+  "app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
+  },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
   "app/api/institution/admin/courses/route.ts": {
