@@ -3,7 +3,7 @@
 // there, the callback ends at "/" and no provider is ever called (D-09).
 import { API_VERSION, MIN_CLIENT_VERSION } from "../../../server/contracts/index.ts";
 import { clearedSessionCookie, type Handlers } from "./server.ts";
-import { INSTITUTION } from "./state.ts";
+import { fakeJournalScope, fakeSessionTag, INSTITUTION } from "./state.ts";
 
 /** Invented WebAuthn values (32 bytes as base64url): the fake never checks a ceremony. */
 const CHALLENGE = Buffer.alloc(32, 7).toString("base64url");
@@ -84,8 +84,8 @@ export const ACCOUNT_HANDLERS: Handlers = {
   "auth.webauthn-registration.post": () => ({ status: 204 }),
   "auth.webauthn-assertion.post": () => ({ status: 204 }),
 
-  "profile.me.get": ({ account }) =>
-    account === null
+  "profile.me.get": ({ account, token }) =>
+    account === null || token === null
       ? { error: "unauthorized" }
       : {
           status: 200,
@@ -93,6 +93,8 @@ export const ACCOUNT_HANDLERS: Handlers = {
             institution: { ...INSTITUTION },
             roles: [...account.roles],
             displayName: `${account.givenName} ${account.familyName}`,
+            journalScope: fakeJournalScope(account.id),
+            sessionTag: fakeSessionTag(token),
           },
         },
   "profile.interface-locale.get": ({ account }) =>

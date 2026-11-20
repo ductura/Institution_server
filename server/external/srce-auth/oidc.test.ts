@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadAuthConfig } from "./config.ts";
 import {
@@ -20,6 +20,9 @@ import {
   createTestIdp,
   ISSUER,
 } from "../../../test-support/test-idp/index.ts";
+
+// The in-process provider generates real RSA keys and signs ID tokens.
+vi.setConfig({ testTimeout: 30_000 });
 
 // Direct tests of oidc.ts (DAN-307): the relying party against the real
 // openid-client and the in-process provider, one misbehaviour at a time.

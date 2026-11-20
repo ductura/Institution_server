@@ -79,10 +79,10 @@ describe("checkpoint reader input classes", () => {
     const { db, result } = read({});
     await expect(result).resolves.toEqual({ status: "found", checkpoints: new Map() });
     expect(db.calls).toHaveLength(1);
-    expect(db.calls[0].text).toMatch(
+    expect(db.calls[0]!.text).toMatch(
       /app\.worker_package_checkpoints\(\$1::uuid, \$2, \$3::text\[\]\)/,
     );
-    expect(db.calls[0].values).toEqual([DOMAIN, PACKAGE, ASKED]);
+    expect(db.calls[0]!.values).toEqual([DOMAIN, PACKAGE, ASKED]);
   });
 
   it("I8 exactly 256 hashes, the limit, are accepted", async () => {

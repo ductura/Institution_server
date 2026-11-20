@@ -3,11 +3,11 @@ import { readEmptyMutation, respond, rpcErrorResponse } from "./mutation-route";
 
 export const MAX_TEACHER_ROLE_CONFIRMATION_BODY_BYTES = 64;
 
-export interface TeacherRoleConfirmationDeps {
+export type TeacherRoleConfirmationDeps = {
   withActor: WithActor;
   expectedOrigin: string;
-  sessionToken?: string;
-}
+  sessionToken?: string | undefined;
+};
 
 /** The SQLSTATE of a database error, or undefined. */
 function codeOf(error: unknown): unknown {

@@ -13,8 +13,8 @@ import {
 } from "../domain/forensics/evidence-segment-v2.ts";
 import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
-import { STORAGE_NOT_CONFIGURED } from "@/server/evidence/payload-reader";
-import { handleProcessSummaryRequest } from "@/server/projection/process-summary";
+import { STORAGE_NOT_CONFIGURED } from "../evidence/payload-reader.ts";
+import { handleProcessSummaryRequest } from "../projection/process-summary.ts";
 
 import { handleFastPathRequest, readFastPath, type FastPathRouteDeps } from "./fast-path.ts";
 
@@ -130,7 +130,7 @@ function database(...answers: (Row[] | Error)[]) {
   const tokens: unknown[] = [];
   const withActor = vi.fn(async (token, fn) => {
     tokens.push(token);
-    const answer = answers[Math.min(queries.length, answers.length - 1)];
+    const answer = answers[Math.min(queries.length, answers.length - 1)]!;
     const tx: ActorTransaction = {
       async query(_text, values) {
         queries.push([...(values ?? [])]);
@@ -161,7 +161,7 @@ function post(body: unknown, headers: Record<string, string> = {}, method = "POS
       "content-type": "application/json",
       ...headers,
     },
-    body: method === "POST" ? (typeof body === "string" ? body : JSON.stringify(body)) : undefined,
+    ...(method === "POST" ? { body: typeof body === "string" ? body : JSON.stringify(body) } : {}),
   });
 }
 

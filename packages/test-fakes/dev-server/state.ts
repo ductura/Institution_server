@@ -1,4 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+
+import type { Operations } from "../../contracts/index.ts";
+import { createReceiptSigner, type ReceiptSigner, type SignedReceipt } from "./receipt-signer.ts";
 
 // The in-memory state of the dev fake server and its invented starting data.
 // People, courses, codes and the assignment are the values of SRV-01
@@ -73,6 +76,10 @@ export type AssignmentContent = {
   importAllowed: boolean;
   wordMin: number | null;
   wordMax: number | null;
+  /** UGOVORI-API, set only at creation: the course's groups it is for (lowercase). */
+  groupIds?: string[];
+  externalToolsAllowed?: boolean;
+  aiSummaryOnly?: boolean;
 };
 
 export type Assignment = {
@@ -83,6 +90,8 @@ export type Assignment = {
   language: Language;
   /** Version of the notice each student acknowledged, by student id. */
   acknowledged: Map<string, { version: number; at: string }>;
+  /** When each student first read each version's notice (PO-7), by `${studentId}:${version}`. */
+  read: Map<string, string>;
   /** The work language exception of one student's work, by student id (both language routes). */
   studentLanguage: Map<string, Language>;
 };
@@ -97,15 +106,21 @@ export type Work = {
   lastChangeAt: string | null;
   /** When the submission was asked for, or null. */
   submittedAt: string | null;
+  submissionReceipt: Operations["submission.submit.post"]["success"]["body"]["receipt"] | null;
   /** The document of `revision`: standard base64 of its JSON bytes. */
   document: string;
   /** Segment texts in chain order (decoded from the commits). */
   segments: string[];
   lastSequenceTo: number;
-  /** Client transaction id -> the revision it made. */
-  transactions: Map<string, number>;
+  /** Client transaction id -> the original acknowledgement and snapshot hash. */
+  transactions: Map<string, { receipt: SignedReceipt; documentHash: string }>;
   /** The live state (live.document.put) and its token, or null. */
   live: { readonly json: string; readonly token: string } | null;
+};
+
+type SubmissionNote = Operations["student.submission-notes.post"]["success"]["body"] & {
+  readonly assignmentId: string;
+  readonly studentId: string;
 };
 
 /** An empty document of one paragraph, as base64 of its JSON bytes. */
@@ -179,12 +194,14 @@ export type SettingValue = {
 };
 
 export type State = {
+  readonly receiptSigner: ReceiptSigner;
   accounts: Account[];
   /** Session token -> account id. */
   sessions: Map<string, string>;
   courses: Course[];
   assignments: Assignment[];
   works: Work[];
+  submissionNotes: SubmissionNote[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -247,6 +264,26 @@ export const CODES = {
 
 export const INSTITUTION = { slug: "demo-fakultet", displayName: "Demo fakultet (test)" } as const;
 
+/**
+ * The invented journal scope of a fake account, one derivation for every
+ * route that names it (profile.me.get journalScope, teacher.access.get scope),
+ * as the real server uses principalScope for both. Never a real identifier.
+ */
+export function fakeJournalScope(accountId: string): string {
+  return createHash("sha256")
+    .update(`ductura-fake-journal-scope-v1\n${accountId}`, "utf8")
+    .digest("hex");
+}
+
+/**
+ * The invented session tag of a fake session (profile.me.get sessionTag): a
+ * new one for every role switch, the same within a session, as the real
+ * server's accountSessionTag. Never a real identifier.
+ */
+export function fakeSessionTag(token: string): string {
+  return createHash("sha256").update(`ductura-fake-session-tag-v1\n${token}`, "utf8").digest("hex");
+}
+
 function account(
   key: AccountKey,
   id: string,
@@ -258,8 +295,9 @@ function account(
 }
 
 /** A fresh state with the starting data; each call is independent. */
-export function createState(): State {
+export function createState(receiptSigner = createReceiptSigner()): State {
   return {
+    receiptSigner,
     accounts: [
       account("student", IDS.student, "Lucija", "Đaković", ["student"]),
       account("student-2", IDS.student2, "Marko", "Ljubić", ["student"]),
@@ -324,6 +362,7 @@ export function createState(): State {
         },
         language: "hr",
         acknowledged: new Map([[IDS.student, { version: 1, at: "2026-10-02T08:15:00.000Z" }]]),
+        read: new Map([[`${IDS.student}:1`, "2026-10-02T08:14:00.000Z"]]),
         studentLanguage: new Map(),
       },
     ],
@@ -336,6 +375,7 @@ export function createState(): State {
         revision: 0,
         lastChangeAt: "2026-11-09T19:55:00.000Z",
         submittedAt: null,
+        submissionReceipt: null,
         document: EMPTY_DOCUMENT,
         segments: [],
         lastSequenceTo: 0,
@@ -343,6 +383,7 @@ export function createState(): State {
         live: null,
       },
     ],
+    submissionNotes: [],
     enrollmentGuesses: new Map(),
     mentorships: [
       {

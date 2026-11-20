@@ -13,7 +13,7 @@ import { isMark, isPlainBlockType } from "../../domain/document/schema.ts";
 import { EvidenceContentNotSupportedV2 } from "../../domain/forensics/evidence-replay-v2.ts";
 import type { EvidenceEventV3 } from "../../domain/forensics/evidence-segment-v2.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../../domain/forensics/jcs.ts";
-import { canonicalToTiptap, tiptapToCanonical, createEditorExtensions } from "@/editor";
+import { canonicalToTiptap, tiptapToCanonical, createEditorExtensions } from "./editor/index.ts";
 
 /**
  * Rules of the `ductus-edit-steps-v1` replayer (B-12, first step), shared by
@@ -53,8 +53,11 @@ import { canonicalToTiptap, tiptapToCanonical, createEditorExtensions } from "@/
 
 /** Why a step was refused. Internal: the replay reports only `step_failed`. */
 export class EditStepReplayRefusal extends Error {
-  constructor(readonly code: string) {
+  readonly code: string;
+
+  constructor(code: string) {
     super(`edit step refused: ${code}`);
+    this.code = code;
     this.name = "EditStepReplayRefusal";
   }
 }
@@ -159,15 +162,15 @@ function* checkReplace(
     }
   }
   const slice = step.slice;
-  if (!slice || slice.content[0].type === "text") {
+  if (!slice || slice.content[0]!.type === "text") {
     return;
   }
   const blocks = slice.content as EditStepBlock[];
-  if ("openStart" in slice && ($from.depth !== 1 || !sameBlock(blocks[0], $from.parent))) {
+  if ("openStart" in slice && ($from.depth !== 1 || !sameBlock(blocks[0]!, $from.parent))) {
     refuse("open_start_block");
   }
   if ("openEnd" in slice) {
-    const last = blocks[blocks.length - 1];
+    const last = blocks[blocks.length - 1]!;
     const sameParent = $from.depth === 1 && $to.depth === 1 && $from.before() === $to.before();
     const ok = sameParent
       ? last.attrs.nodeId === null

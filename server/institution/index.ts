@@ -1,4 +1,5 @@
 // Public interface of server/institution; other areas import only this file.
+export { readAssignmentCurrentVersion } from "./assignment-current-version/index.ts";
 export {
   type AiPolicy,
   type CourseBody,
@@ -28,10 +29,15 @@ export {
   type StudentAccessLogEntry,
 } from "./student-access-log-route.ts";
 export {
-  type AssignmentContent,
-  type AssignmentVersionBody,
-  parseAssignmentVersionBody,
-} from "./assignment-content.ts";
+  readStudentSubmission,
+  type StudentSubmissionAnswer,
+  type StudentSubmissionState,
+} from "./student-submission-route.ts";
+export {
+  readStudentRequirements,
+  type StudentRequirementsAnswer,
+  type StudentWordRange,
+} from "./student-requirements-route.ts";
 export {
   type AssignmentWorkLanguageBody,
   parseAssignmentWorkLanguageBody,
@@ -44,3 +50,9 @@ export {
   parseAcknowledgmentBody,
 } from "./acknowledgment-body.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
+export {
+  type AssignmentInput,
+  isAssignmentVersion,
+  parseAssignmentInput,
+  parseAssignmentVersionBody,
+} from "./assignment-input.ts";

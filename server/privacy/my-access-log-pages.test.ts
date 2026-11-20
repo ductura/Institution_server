@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
 
-import { ACCESS_LOG_PAGE } from "./my-access-log";
+import { ACCESS_LOG_PAGE } from "../database/my-access-log.ts";
 import { type AccessLogQuery, olderHref, readMyAccessLogPage } from "./my-access-log-pages.ts";
 
 // DAN-294 (S-42; narrowed round after review FAIL c.6819070024, contract on
@@ -66,7 +66,8 @@ function rpc(log: Row[]) {
             .map(at)
             .sort((a, b) => b - a)
             .slice(0, limit);
-          const edge = top.length === 0 ? Number.POSITIVE_INFINITY : top[top.length - 1];
+          const edge =
+            top.length === 0 ? Number.POSITIVE_INFINITY : (top[top.length - 1] as number);
           const rows = mine
             .filter((r) => at(r) >= edge)
             .sort(

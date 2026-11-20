@@ -30,7 +30,6 @@ function fake(answer: unknown = { status: "unavailable", reason: "database_error
   const members = {
     removeStudent: record("removeStudent"),
     allowStudentReturn: record("allowStudentReturn"),
-    publishAssignmentVersion: record("publishAssignmentVersion"),
   } as unknown as InstitutionMembers;
   const languages = {
     setAssignmentWorkLanguage: record("setAssignmentWorkLanguage"),
@@ -112,24 +111,7 @@ describe("the service passes the port's outcome on unchanged", () => {
 
 const STUDENT = "9d8c7b6a-5f4e-4c3b-9a2d-1e0f9a8b7c01";
 const ASSIGNMENT = "3c2b1a09-8f7e-4d6c-9b5a-4f3e2d1c0b01";
-const CONTENT = {
-  title: "Izmišljeni zadatak",
-  instructions: "Izmišljene upute.",
-  workType: "essay",
-  opensAt: "2026-12-01T08:00:00Z",
-  dueAt: "2026-12-15T22:00:00+01:00",
-  aiPolicy: "partially_allowed",
-  aiPurposes: ["proofreading"],
-  evidenceProfile: "basic",
-  importAllowed: false,
-  wordMin: null,
-  wordMax: 3000,
-};
-
-const withoutWordMin: Record<string, unknown> = { ...CONTENT };
-delete withoutWordMin.wordMin;
-
-describe("the student and version operations", () => {
+describe("the student operations", () => {
   it("removal and return pass the path ids to the port and its outcome back unchanged", async () => {
     const outcome = { status: "removed", removed: true };
     const { service, calls } = fake(outcome);
@@ -139,50 +121,6 @@ describe("the student and version operations", () => {
       { method: "removeStudent", args: [TOKEN, COURSE, STUDENT] },
       { method: "allowStudentReturn", args: [TOKEN, COURSE, STUDENT] },
     ]);
-  });
-
-  it("a version reaches the port as expectedVersion and a new content object", async () => {
-    const outcome = { status: "published", versionNo: 3 };
-    const { service, calls } = fake(outcome);
-    const body = { expectedVersion: 2, ...CONTENT };
-    expect(await service.publishAssignmentVersion(TOKEN, ASSIGNMENT, body)).toBe(outcome);
-    expect(calls).toEqual([
-      { method: "publishAssignmentVersion", args: [TOKEN, ASSIGNMENT, 2, CONTENT] },
-    ]);
-  });
-
-  it.each<[string, unknown]>([
-    ["no expectedVersion", CONTENT],
-    ["expectedVersion 0", { expectedVersion: 0, ...CONTENT }],
-    ["expectedVersion past int4", { expectedVersion: 2_147_483_648, ...CONTENT }],
-    ["expectedVersion as text", { expectedVersion: "2", ...CONTENT }],
-    ["a word bound left out", { expectedVersion: 2, ...withoutWordMin }],
-    ["wordMin above wordMax", { expectedVersion: 2, ...CONTENT, wordMin: 3001 }],
-    ["a purpose under prohibited", { expectedVersion: 2, ...CONTENT, aiPolicy: "prohibited" }],
-    [
-      "a repeated purpose",
-      { expectedVersion: 2, ...CONTENT, aiPurposes: ["proofreading", "proofreading"] },
-    ],
-    ["February 30", { expectedVersion: 2, ...CONTENT, dueAt: "2026-02-30T12:00:00Z" }],
-    ["year 0999 in UTC", { expectedVersion: 2, ...CONTENT, opensAt: "1000-01-01T00:30:00+01:00" }],
-    ["a NUL in the title", { expectedVersion: 2, ...CONTENT, title: "a\u0000b" }],
-    ["201 code points of title", { expectedVersion: 2, ...CONTENT, title: "😀".repeat(201) }],
-    ["an extra key", { expectedVersion: 2, ...CONTENT, courseId: COURSE }],
-    ["an array", [CONTENT]],
-  ])("%s is invalid_input and calls nothing", async (_, value) => {
-    const { service, calls } = fake();
-    expect(await service.publishAssignmentVersion(TOKEN, ASSIGNMENT, value)).toEqual(INVALID);
-    expect(calls).toHaveLength(0);
-  });
-
-  it("200 code points of title and both word bounds null are accepted", async () => {
-    const { service, calls } = fake({ status: "published", versionNo: 2 });
-    const body = { expectedVersion: 1, ...CONTENT, title: "😀".repeat(200), wordMax: null };
-    expect(await service.publishAssignmentVersion(TOKEN, ASSIGNMENT, body)).toEqual({
-      status: "published",
-      versionNo: 2,
-    });
-    expect(calls).toHaveLength(1);
   });
 });
 

@@ -39,6 +39,10 @@ export {
   DUCTUS_PROTOCOL_VERSION,
   MAX_COMMIT_REQUEST_BYTES,
 } from "../domain/index.ts";
+// A student's submission (B-12 step 4b2, SRV-18): the request with the
+// database clock, the reconstruction of that revision and the signed receipt v2.
+export { type SubmissionDependencies, type SubmissionOutcome, submitWork } from "./submission.ts";
+
 // The snapshot check of the live view (B-LIVE, server/http/live.ts), as the
 // domain states it: the exact JCS bytes of a valid document, at most 2 MiB.
 export {

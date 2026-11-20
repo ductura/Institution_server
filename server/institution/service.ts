@@ -8,7 +8,6 @@
 // itself are checked by the route (852-4). The port never throws, so
 // neither does this service.
 import type {
-  AssignmentVersionOutcome,
   CourseCreateOutcome,
   EnrollmentCodeIssueOutcome,
   EnrollmentCodeRevokeOutcome,
@@ -21,7 +20,6 @@ import type {
   AssignmentWorkLanguageOutcome,
 } from "../database/index.ts";
 
-import { parseAssignmentVersionBody } from "./assignment-content.ts";
 import { parseCourseBody, parseEnrollmentCodeBody } from "./schemas.ts";
 import {
   parseAssignmentWorkLanguageBody,
@@ -45,11 +43,6 @@ export type InstitutionService = {
     courseId: string,
     studentId: string,
   ): Promise<StudentReturnOutcome>;
-  publishAssignmentVersion(
-    token: string,
-    assignmentId: string,
-    value: unknown,
-  ): Promise<AssignmentVersionOutcome | InvalidInput>;
   setAssignmentWorkLanguage(
     token: string,
     assignmentId: string,
@@ -93,16 +86,6 @@ export function createInstitutionService(deps: {
       deps.members.removeStudent(token, courseId, studentId),
     allowStudentReturn: (token, courseId, studentId) =>
       deps.members.allowStudentReturn(token, courseId, studentId),
-    async publishAssignmentVersion(token, assignmentId, value) {
-      const body = parseAssignmentVersionBody(value);
-      if (body === null) return INVALID;
-      return deps.members.publishAssignmentVersion(
-        token,
-        assignmentId,
-        body.expectedVersion,
-        body.content,
-      );
-    },
     async setAssignmentWorkLanguage(token, assignmentId, value) {
       const body = parseAssignmentWorkLanguageBody(value);
       if (body === null) return INVALID;

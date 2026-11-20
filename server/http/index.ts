@@ -84,6 +84,13 @@ export {
   createAcknowledgmentRouteFor,
 } from "./acknowledgment.ts";
 export {
+  createLiveRoutes,
+  createLiveRoutesFor,
+  LIVE_BODY_TIMEOUT_MS,
+  LIVE_STATE_HEADER,
+  type LiveRouteOptions,
+} from "./live.ts";
+export {
   createSubmissionRoute,
   createSubmissionRouteFor,
   SUBMISSION_MAX_BYTES,
@@ -94,19 +101,13 @@ export {
   type SubmitWork,
 } from "./submission.ts";
 export {
-  createLiveRoutes,
-  createLiveRoutesFor,
-  LIVE_BODY_TIMEOUT_MS,
-  LIVE_STATE_HEADER,
-  type LiveRouteOptions,
-} from "./live.ts";
-export {
-  createTeacherReadRoutes,
-  createTeacherReadRoutesFor,
-  MAX_ASSIGNMENT_IDS,
-  parseAssignmentIdsBody,
-  type TeacherReadOptions,
-} from "./teacher-reads.ts";
+  createProcessSummaryRoute,
+  createProcessSummaryRouteFor,
+  parseProcessSummaryBody,
+  PROCESS_SUMMARY_TIMEOUT_MS,
+  type ProcessSummaryRouteOptions,
+  type ReadProcessSummary,
+} from "./process-summary.ts";
 export {
   declaredLengthRefusal,
   readBodyWithLimit,
@@ -172,6 +173,26 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
+export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
+export {
+  createInstitutionGroupRoutes,
+  createInstitutionGroupRoutesFor,
+} from "./institution-groups.ts";
+export {
+  createInstitutionAssignmentRoutes,
+  createInstitutionAssignmentRoutesFor,
+} from "./institution-assignments.ts";
+export { createAssignmentCurrentVersionRouteFor } from "./assignment-current-version.ts";
+export {
+  createTeacherAccessRoute,
+  createTeacherCoursesRoute,
+  createTeacherReadRoutes,
+  createTeacherReadRoutesFor,
+  MAX_ASSIGNMENT_IDS,
+  parseAssignmentIdsBody,
+  type TeacherReadOptions,
+} from "./teacher-reads.ts";
 export {
   createStudentAssignmentsRoute,
   createStudentAssignmentsRouteFor,
@@ -185,6 +206,10 @@ export {
   createStudentAccessLogRoute,
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
+export {
+  createStudentSubmissionRoutes,
+  createStudentSubmissionRoutesFor,
+} from "./student-submission.ts";
 export {
   bearerMatches,
   checkProvisionBody,

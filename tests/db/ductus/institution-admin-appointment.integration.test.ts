@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-525 (#1091 c.6644919534 and c.6645346165): the two parts of the
 // administrator contract a single pgTAP transaction cannot show. Both
@@ -136,7 +136,7 @@ describe("DAN-525 administrator appointment over separate connections", () => {
       expect(await code(first.query(revoke, [faculty, people.iva]))).toBe("ok");
       await second.query("BEGIN");
       await second.query("SET CONSTRAINTS ALL IMMEDIATE");
-      const pid = (await second.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]
+      const pid = (await second.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]!
         .pid;
       const waiting = code(second.query(revoke, [faculty, people.ana]));
       // The second check waits on the institution's advisory lock until the first commits.

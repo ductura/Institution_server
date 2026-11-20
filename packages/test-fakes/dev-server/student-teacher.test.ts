@@ -55,6 +55,11 @@ describe("dev fake server: teacher routes", () => {
     const access = await send(state, "/api/v1/teacher/access", { headers });
     expect(contractProblems("teacher.access.get", access)).toEqual([]);
     expect(access.json).toMatchObject({ access: "allowed" });
+    // As the real server: one principalScope for /me and teacher access.
+    const me = await send(state, "/api/v1/me", { headers });
+    expect((access.json as { scope: string }).scope).toBe(
+      (me.json as { journalScope: string }).journalScope,
+    );
     const denied = await send(state, "/api/v1/teacher/access", {
       headers: await signIn(state, "bez-uloge"),
     });
@@ -235,5 +240,22 @@ describe("dev fake server: review findings on #363", () => {
       expect((await put({ ...base, ...range }, admin)).status, JSON.stringify(range)).toBe(422);
     const ok = await put({ ...base, value: 30, min: 10, max: 60 }, admin);
     expect(contractProblems("settings.values.put", ok)).toEqual([]);
+  });
+});
+
+describe("dev fake server: session tag", () => {
+  it("keeps the tag within a session and changes it on every new login", async () => {
+    const state = createState();
+    const first = await signIn(state, "student");
+    const tagOf = async (headers: Record<string, string>) => {
+      const me = await send(state, "/api/v1/me", { headers });
+      expect(contractProblems("profile.me.get", me)).toEqual([]);
+      return (me.json as { sessionTag: string }).sessionTag;
+    };
+    const tag = await tagOf(first);
+    expect(tag).toMatch(/^[0-9a-f]{64}$/);
+    expect(await tagOf(first)).toBe(tag);
+    expect(await tagOf(await signIn(state, "student"))).not.toBe(tag);
+    expect(await tagOf(await signIn(state, "nastavnik"))).not.toBe(tag);
   });
 });

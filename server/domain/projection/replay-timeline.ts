@@ -27,7 +27,7 @@ import { canonicalizeJcs, type JcsJsonValue } from "../forensics/jcs.ts";
  */
 
 /** Applies the steps of one event one by one; supplied by an adapter. */
-export interface ReplayStepReplayer<TDocument> {
+export type ReplayStepReplayer<TDocument> = {
   readonly transactionFormat: string;
   /** Reads a canonical document; throws if it is not a valid one. */
   load(canonical: JcsJsonValue): TDocument;
@@ -52,7 +52,7 @@ export interface ReplayStepReplayer<TDocument> {
   toView(document: TDocument): JcsJsonValue;
   /** Plain text of the top-level block with that id, or `null` when there is none. */
   blockText(document: TDocument, blockId: string): string | null;
-}
+};
 
 export type ReplayChangeKind = "insert" | "delete" | "replace" | "format" | "structure";
 
@@ -182,7 +182,7 @@ export async function buildReplayTimeline<TDocument>(
   try {
     let current: TDocument | null = null;
     if (segments.length > 0) {
-      const first = segments[0];
+      const first = segments[0]!;
       if (input.startDocument === null) return { ok: false, reason: "document_mismatch" };
       const start = await loadExact(input.startDocument, first.initialDocumentHash);
       if (start === null) return { ok: false, reason: "document_mismatch" };
@@ -200,7 +200,7 @@ export async function buildReplayTimeline<TDocument>(
         return { ok: false, reason: "unsupported_format" };
       }
       if (segmentIndex > 0) {
-        const previous = segments[segmentIndex - 1];
+        const previous = segments[segmentIndex - 1]!;
         const nextIndex = changes.length + 1;
         const broken =
           segment.sequenceFrom !== previous.sequenceTo + 1 ||
@@ -268,7 +268,7 @@ export async function buildReplayTimeline<TDocument>(
     if (!Number.isSafeInteger(index) || index < 0 || index >= documents.length) {
       throw new RangeError("replay: no change with that index");
     }
-    return documents[index];
+    return documents[index]!;
   };
   return {
     ok: true,
@@ -280,7 +280,7 @@ export async function buildReplayTimeline<TDocument>(
       changes
         .filter((change) => change.blockIds.includes(blockId))
         .map((change) => {
-          const prior = replayer.blockText(before[change.index - 1], blockId);
+          const prior = replayer.blockText(before[change.index - 1]!, blockId);
           const after = replayer.blockText(at(change.index), blockId);
           return {
             index: change.index,

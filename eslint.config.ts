@@ -3,17 +3,24 @@ import { defineConfig } from "eslint/config";
 import prettierOff from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 import {
+  COPIED_LINT_TRANSITIONAL,
   databaseBoundaryPlugin,
   localPlugin,
   PG_SPECIFIER,
   TEXT_EXEMPT,
   TEXT_TRANSITIONAL,
 } from "./scripts/lint-rules/index.ts";
+import { PENDING_TESTS } from "./scripts/pending-tests/index.ts";
 
-// Lint covers the whole repository. Only tool output is ignored; there is no
-// per-folder exception list. Inline directives are off: an `eslint-disable`
-// comment cannot switch a rule off, and `pnpm lint` fails on the warning it
-// leaves (--max-warnings 0), so nothing is silenced quietly.
+// Lint covers the whole repository. Ignored are tool output and the copied
+// Ductus files of PENDING_TESTS, which wait for their task outside tsc and
+// vitest as well (scripts/pending-tests: nothing else may import them); there
+// is no per-folder exception list. Copied files that still break a structural
+// rule are listed by file and rule in COPIED_LINT_TRANSITIONAL, a list that
+// only shrinks (tests/lint/copied-transitional.test.ts). Inline
+// directives are off: an `eslint-disable` comment cannot switch a rule off,
+// and `pnpm lint` fails on the warning it leaves (--max-warnings 0), so
+// nothing is silenced quietly.
 // Property names an external protocol fixes on the wire. A closed list of exact
 // names, each with its standard; it is not a folder exception and covers only
 // properties, never variables, functions or types.
@@ -236,21 +243,14 @@ const DATABASE_NAMES = [
   // Result columns of the worker's pending backlog (pending-receipt-queue.ts, DAN-820) and its tests.
   "oldest_created_at",
   "pending_count",
-  // Result columns of the teacher reads (teacher-courses.ts, mentored-works.ts,
-  // assignment-submissions.ts; Ductus#2028, w1119o) and their tests.
-  "academic_year",
+  // Additional result columns of mentorship and submission reads (Ductus#2028).
   "after_deadline",
   "assignment_id",
-  "course_id",
-  "course_name",
-  "due_at",
-  "enrolled_students",
   "mentorship_id",
-  "opens_at",
   "requested_minute",
   // Result column of the live view publish (live-state.ts) and its tests.
   "write_token",
-  // Result columns of the notice acknowledgment (notice-acknowledgment.ts) and its tests.
+  // Result columns of the notice acknowledgment port and its tests.
   "acknowledged_at",
   "notice_fingerprint",
   // Result column of the replay source (replay-source.ts, DAN-818) and its tests.
@@ -441,8 +441,18 @@ function namingConvention(properties: string[], destructured: string[]): Linter.
   ];
 }
 
+/** The files of a file → rules table, grouped by rule. */
+function rulesByFile(table: Readonly<Record<string, readonly string[]>>): Record<string, string[]> {
+  const byRule: Record<string, string[]> = {};
+  for (const [file, rules] of Object.entries(table)) {
+    for (const rule of rules) (byRule[rule] ??= []).push(file);
+  }
+  return byRule;
+}
+
 export default defineConfig(
   { ignores: ["**/node_modules/", "**/dist/", "**/coverage/"] },
+  { ignores: [...PENDING_TESTS] },
   {
     linterOptions: { noInlineConfig: true },
     plugins: { "@typescript-eslint": tseslint.plugin, local: localPlugin },
@@ -578,6 +588,14 @@ export default defineConfig(
     ignores: [...TEXT_EXEMPT, ...TEXT_TRANSITIONAL],
     rules: { "local/no-hardcoded-text": "error" },
   },
+  // The copied Ductus backend (migracija/kopija-ductus-backend): each listed
+  // file is exempt only from the rules named for it, after every block above
+  // that sets those rules. Placing the copied areas and their snake_case rows
+  // in Ductura's structure takes the files off the list.
+  ...Object.entries(rulesByFile(COPIED_LINT_TRANSITIONAL)).map(([rule, files]) => ({
+    files,
+    rules: { [rule]: "off" as const },
+  })),
   // Last on purpose: switches off every rule that could fight Prettier, also in
   // blocks above. tests/format/format.test.ts checks the resolved config.
   prettierOff,

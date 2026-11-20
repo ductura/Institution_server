@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 import type { ActorReader } from "../database/index.ts";
 
@@ -49,6 +49,27 @@ export const SESSION_TAG_LABEL = "ductus-session-tag-v1";
 export function sessionTag(token: string | undefined): string | null {
   if (token === undefined || !TOKEN_FORMAT.test(token)) return null;
   return createHash("sha256").update(`${SESSION_TAG_LABEL}\n${token}`, "utf8").digest("hex");
+}
+
+/**
+ * Domain label of the session tag that profile.me.get sends (SRV-ST, Ductus#2028
+ * c.7023897577). Other than SESSION_TAG_LABEL, so the value never names an
+ * ended mark cookie.
+ */
+export const ACCOUNT_SESSION_TAG_LABEL = "ductura-session-tag-v1";
+
+/**
+ * The opaque tag of one login, for GET /api/v1/me: HMAC-SHA-256 hex
+ * (lowercase) keyed by the domain label over the session token. The token is
+ * fixed for the life of a session row (identity.session.token_hash is unique
+ * and never rotates), so the same session has the same tag and every new login
+ * has another, for the same person too. The token is 256 random bits, so the
+ * tag reveals neither it nor the database's token digest; the internal session
+ * id, the person and the institution are not inputs at all.
+ */
+export function accountSessionTag(token: string): string {
+  if (!TOKEN_FORMAT.test(token)) throw new Error("accountSessionTag: malformed token");
+  return createHmac("sha256", ACCOUNT_SESSION_TAG_LABEL).update(token, "utf8").digest("hex");
 }
 
 /** One port call; null on an error the caller turns into `unverified`. */

@@ -61,8 +61,21 @@ const AccountRole = Type.Union([
   Type.Literal("institution_admin"),
 ]);
 
+// The opaque name of the person's local journal (Ductus principal.scope):
+// SHA-256 hex, lowercase, made by the server from internal ids only
+// (Ductus#2028 c.7020997158, SRV-JS).
+const JournalScope = Type.String({ pattern: "^[0-9a-f]{64}$" });
+
+// The opaque tag of one login (Ductus#2028 c.7023897577, SRV-ST): HMAC-SHA-256
+// hex, lowercase. Never the session id, the cookie, an e-mail or an AAI value.
+const SessionTag = Type.String({ pattern: "^[0-9a-f]{64}$" });
+
 // Contract Ductus#2028 c.6993786629 §3.3: the front of the institution reads
 // the signed-in account after the AAI@EduHr login; 401 sends it to the login.
+// journalScope names the person's local journal; the same for the same person
+// and institution in every session, different for any other. sessionTag is
+// the same within one session and different after every new login, for the
+// same person too.
 export const meGet = defineRoute({
   id: "profile.me.get",
   method: "GET",
@@ -82,6 +95,8 @@ export const meGet = defineRoute({
         }),
         roles: Type.Array(AccountRole, { minItems: 1 }),
         displayName: Type.Union([Type.String(), Type.Null()]),
+        journalScope: JournalScope,
+        sessionTag: SessionTag,
       }),
     },
   ],

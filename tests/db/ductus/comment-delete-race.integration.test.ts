@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type ActorTransaction } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-215 (M6.1-P03, contract on #1836, attack plan #1886, items N8 and N9):
 // pgTAP runs in one transaction and cannot race two calls. Here two real
@@ -57,14 +57,14 @@ const open = (body: string) => async (tx: ActorTransaction) =>
       body,
       JSON.stringify(ANCHOR),
     ])
-  ).rows[0].id;
+  ).rows[0]!.id;
 const reply = (thread: string, body: string) => async (tx: ActorTransaction) =>
   (
     await tx.query<{ id: string }>("SELECT collaboration.reply_comment($1::uuid, $2) AS id", [
       thread,
       body,
     ])
-  ).rows[0].id;
+  ).rows[0]!.id;
 const remove = (comment: string) => async (tx: ActorTransaction) => {
   await tx.query("SELECT collaboration.delete_comment($1::uuid)", [comment]);
   return "deleted";
@@ -124,7 +124,7 @@ async function stored(thread: string) {
       "SELECT state FROM collaboration.comment_thread WHERE id = $1",
       [thread],
     )
-  ).rows[0].state;
+  ).rows[0]!.state;
   const comments = (
     await admin.query<Stored>(
       `SELECT position, author_role, body, deleted_at IS NOT NULL AS deleted
@@ -140,7 +140,7 @@ const firstComment = async (thread: string) =>
       "SELECT id FROM collaboration.comment WHERE thread_id = $1 AND position = 1",
       [thread],
     )
-  ).rows[0].id;
+  ).rows[0]!.id;
 
 beforeAll(async () => {
   const client = await admin.connect();

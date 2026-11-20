@@ -11,17 +11,19 @@
 // revision, record_submission with the reconstructed hash and the signed
 // receipt v2) is the `submit` port; this edge never decides it.
 //
-// Not mounted yet: the port is Ductus submitWork in the copied
-// server/evidence/submission.ts, which does not load until its imports and
-// the Result API of the domain are carried over (Ductus#2028, w1119n).
-// submission.submit.post stays in CONTRACT_ONLY until then.
+// Mounted by server/server.ts (SRV-18, Ductus#2028): the port is Ductus
+// submitWork in server/evidence/submission.ts, over main's withActor and the
+// process's one signer and storage (evidence-deps.ts), the same the commit
+// route writes with. The time of a submission is the database's clock.
 import { ROUTES } from "../contracts/index.ts";
 import type { ActorReader } from "../database/index.ts";
-import { DUCTUS_PROTOCOL_VERSION } from "../evidence/index.ts";
+import { DUCTUS_PROTOCOL_VERSION, submitWork } from "../evidence/index.ts";
+import type { SigningKeyProvider } from "../external/keys/index.ts";
 import { recordActivity } from "../session/index.ts";
 
 import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
+import type { EvidenceIngestDependencies } from "./evidence-deps.ts";
 import {
   type EvidenceAnswer,
   parseClosedObject,
@@ -158,13 +160,18 @@ export function createSubmissionRoute(options: SubmissionRouteOptions): Route {
 }
 
 /**
- * The route over main's application withActor and actor reader, with the
- * submission port given; server/server.ts mounts it once that port loads.
+ * The route over main's application withActor and actor reader, with Ductus
+ * submitWork over this process's signer and payload storage (evidence-deps.ts).
  */
 export function createSubmissionRouteFor(
   main: Pick<Databases["main"], "withActor" | "actorReader">,
-  submit: SubmitWork,
+  deps: Pick<EvidenceIngestDependencies, "payloads"> & { readonly signer: SigningKeyProvider },
 ): Route {
+  const submit: SubmitWork = (token, input) =>
+    submitWork({ withActor: main.withActor, payloads: deps.payloads, signer: deps.signer }, token, {
+      documentId: input.documentId,
+      revision: input.revision,
+    });
   return createSubmissionRoute({
     submit,
     actors: main.actorReader,

@@ -95,6 +95,14 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
     globalThis: ["fetch"],
   },
   "server/domain/document/snapshot.ts": { globalThis: ["crypto"] },
+  // The notice fingerprint of the Ductus copy (SHA-256 of WebCrypto, as snapshot.ts).
+  "server/domain/notice/fingerprint.ts": { globalThis: ["crypto"] },
+  // The spike flag of conditional validity, read as in Ductus until revision
+  // requests take it from server/config (copied with the Ductus backend).
+  "server/domain/collaboration/conditional-validity.ts": { process: ["env"] },
+  // The default environment of two readers of the Ductus copy; callers in tests pass their own.
+  "server/evidence/payload-reader.ts": { process: ["env"] },
+  "server/projection/process-summary.ts": { process: ["env"] },
   "server/domain/forensics/crypto.ts": { globalThis: ["crypto"] },
   "server/domain/forensics/evidence-chain-v2.ts": { globalThis: ["crypto"] },
   "server/domain/forensics/evidence-checkpoint-v2.ts": { globalThis: ["crypto"] },

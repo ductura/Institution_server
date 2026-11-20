@@ -2,7 +2,7 @@
 import { fc, test } from "@fast-check/vitest";
 import { Fragment, type Node as PmNode } from "@tiptap/pm/model";
 import { canJoin, Transform } from "@tiptap/pm/transform";
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 
 import type { DocumentSource } from "../../domain/document/schema.ts";
 import {
@@ -23,6 +23,9 @@ import {
   editStepsV2Schema,
   type EditStepsV2Document,
 } from "./edit-steps-v2-rules.ts";
+
+// Every generated edit runs both drivers, including real Web Crypto digests.
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * docs/contracts/document-schema-v2.md §10, properties (f) and (g) (DAN-619
@@ -75,7 +78,7 @@ const start: JcsJsonValue = {
       children: [text("Treći "), { type: "citation", sourceId: S[1] }],
     },
   ],
-  sources: [book(S[0], 2020), book(S[1], 2020)],
+  sources: [book(S[0]!, 2020), book(S[1]!, 2020)],
 } as unknown as JcsJsonValue;
 
 const server = createEditStepsV2Replayer();
@@ -160,18 +163,18 @@ function change(tr: Transform, o: Op): boolean {
   let editorLike = inText(x, from, to);
   if (o.kind === "insert" && o.text) tr.insert(x, schema.text(o.text));
   if (o.kind === "cite")
-    tr.insert(x, schema.nodes.citation.create({ sourceId: S[o.source], locator: o.text || null }));
+    tr.insert(x, schema.nodes.citation!.create({ sourceId: S[o.source], locator: o.text || null }));
   if (o.kind === "delete") tr.delete(from, to);
   if (o.kind === "join") {
     editorLike = canJoin(tr.doc, x);
     tr.join(x);
   }
-  if (o.kind === "bold") tr.addMark(from, to, schema.marks.bold.create());
+  if (o.kind === "bold") tr.addMark(from, to, schema.marks.bold!.create());
   if (o.kind === "split")
-    tr.split(x, 1, [{ type: schema.nodes.paragraph, attrs: { nodeId: null } }]);
+    tr.split(x, 1, [{ type: schema.nodes.paragraph!, attrs: { nodeId: null } }]);
   if (o.kind === "heading") {
     const block = tr.doc.resolve(x).node(1);
-    tr.setBlockType(x, x, schema.nodes.heading, { level: 2, nodeId: block.attrs.nodeId });
+    tr.setBlockType(x, x, schema.nodes.heading!, { level: 2, nodeId: block.attrs.nodeId });
   }
   return editorLike;
 }
@@ -188,7 +191,7 @@ function sourceStep(sources: readonly DocumentSource[], o: Op) {
       forged: o.forge < 2,
     };
   }
-  const record = book(S[o.source], o.year);
+  const record = book(S[o.source]!, o.year);
   if (!old)
     return {
       step: { stepType: "sourceSet", source: record },
@@ -242,19 +245,19 @@ async function segmentOf(ops: Op[]): Promise<Run> {
         const json = editStepJsonV2(step.toJSON()) as Record<string, unknown>;
         const [from, to] = [json.from as number, json.to as number];
         if (json.stepType === "replace" && to > from && !json.structure) {
-          if (!removesContent(tr.docs[i], from, to)) {
+          if (!removesContent(tr.docs[i]!, from, to)) {
             json.structure = true; // as src/editor/capture.ts writes a boundary-only removal
             return JSON.parse(JSON.stringify(json)) as unknown;
           }
-          const shifted = Math.min(to + 1, tr.docs[i].content.size);
+          const shifted = Math.min(to + 1, tr.docs[i]!.content.size);
           clean &&= o.forge >= 3;
           try {
             json.removedSha256 =
               o.forge < 2
                 ? OTHER_HASH
                 : o.forge < 3
-                  ? removedRangeSha256(tr.docs[i], from, shifted)
-                  : removedRangeSha256(tr.docs[i], from, to);
+                  ? removedRangeSha256(tr.docs[i]!, from, shifted)
+                  : removedRangeSha256(tr.docs[i]!, from, to);
           } catch {
             json.removedSha256 = OTHER_HASH; // half a surrogate pair has no JCS form
             clean = false;

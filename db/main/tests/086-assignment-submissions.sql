@@ -115,8 +115,8 @@ SELECT bag_eq(
   $$ SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth',
                                 'ductus_identity', 'ductus_test_stranger']) AS r
      WHERE has_function_privilege(r, 'app.assignment_submissions(uuid)', 'EXECUTE') $$,
-  $$ VALUES ('ductus_app') $$,
-  'only the web role executes the list');
+  $$ VALUES ('ductus_app'), ('ductus_identity') $$,
+  'only the web role executes the list, and the identity role for app.assignment_overview (SRV-28)');
 SELECT is(pg_get_function_result('app.assignment_submissions(uuid)'::regprocedure),
   'TABLE(student_id uuid, submitted boolean, revision bigint, requested_minute timestamp with time zone, after_deadline boolean)',
   'the list returns these five columns and nothing else');
@@ -178,10 +178,119 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM evidence.submission $$), 
 SELECT is(pg_temp.ask('dora', $$ SELECT count(*) FROM evidence.submission $$), '1',
   'a student reads only the own submission');
 
+-- SRV-28: app.assignment_overview, the rows of the list with the name pair,
+-- the seminar group and the evidence record of the bound receipt. Dora's
+-- receipt is bound (with gaps), Ana's is pending (no receipt yet), Boris has
+-- no submission. Vesna holds K1, opens G1 with Marko (a teacher of K2 only,
+-- so a collaborator of K1, C-7) as its teacher and Dora as its student, and
+-- G2 with Ana. Only Dora has a name pair. The key and signature are invented.
+INSERT INTO identity.person_name (user_id, institution_id, given_name, family_name)
+VALUES (pg_temp.id('dora'), pg_temp.id('fak_a'), 'Mila', 'Peta');
+SET LOCAL ROLE ductus_evidence;
+INSERT INTO evidence.signing_key
+  (key_id, key_version, evidence_domain_id, institution_id, purpose, algorithm, key_base64url, valid_from, valid_to)
+VALUES ('key-o', '1', '00000000-0000-4000-8000-0000000000d1', pg_temp.id('fak_a'), 'receipt', 'Ed25519',
+        'MCowBQYDK2VwAyEA' || translate(rtrim(encode(decode(repeat('77', 32), 'hex'), 'base64'), '='), '+/', '-_'),
+        date_trunc('minute', now()) - interval '1 day', NULL);
+WITH p AS (
+  SELECT s.id, s.institution_id, s.principal_id,
+         '{"evidenceRecord":"with_gaps","receiptSchema":"ductus-submission-receipt-v2"}'::text AS payload
+    FROM evidence.submission s WHERE s.principal_id = pg_temp.id('dora')
+), i AS (
+  INSERT INTO evidence.submission_receipt_issuance
+    (submission_id, institution_id, principal_id, key_id, key_version, signed_at, receipt_payload, payload_digest_sha256)
+  SELECT p.id, p.institution_id, p.principal_id, 'key-o', '1', now(), p.payload,
+         encode(sha256(convert_to(p.payload, 'UTF8')), 'hex') FROM p
+  RETURNING *
+)
+INSERT INTO evidence.submission_receipt (submission_id, institution_id, principal_id, issuance_id, key_id, key_version,
+                                         signed_at, receipt_payload, payload_digest_sha256, signature)
+SELECT i.submission_id, i.institution_id, i.principal_id, i.id, i.key_id, i.key_version, i.signed_at,
+       i.receipt_payload, i.payload_digest_sha256,
+       jsonb_build_object('algorithm', 'Ed25519', 'keyId', 'key-o', 'keyVersion', '1', 'signatureEncoding', 'raw',
+                          'signatureBase64Url', repeat('A', 86))
+  FROM i;
+RESET ROLE;
+INSERT INTO ref VALUES ('g1', pg_temp.ask('vesna', $$ SELECT institution.create_seminar_group({k1}, 'Grupa 1') $$)),
+                       ('g2', pg_temp.ask('vesna', $$ SELECT institution.create_seminar_group({k1}, 'Grupa 2') $$));
+SELECT is(
+  (SELECT string_agg(pg_temp.ask('vesna', c), ' ' ORDER BY n) FROM unnest(ARRAY[
+     $$ SELECT 'ok' FROM institution.set_course_holder({k1}, {vesna}) $$,
+     $$ SELECT 'ok' FROM institution.assign_group_teacher({g1}, {marko}) $$,
+     $$ SELECT 'ok' FROM institution.assign_group_student({g1}, {dora}) $$,
+     $$ SELECT 'ok' FROM institution.assign_group_student({g2}, {ana}) $$]) WITH ORDINALITY AS t (c, n)),
+  'ok ok ok ok', 'the groups of K1 are set through the RPCs');
+
+-- The rows as "name:given/family:group:state:record" in the function's order,
+-- or "none"; state as in pg_temp.subs, "-" for a null.
+CREATE FUNCTION pg_temp.overview(p_actor text, p_assignment text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result text;
+  r record;
+BEGIN
+  v_result := pg_temp.ask(p_actor, format(
+    $q$ SELECT coalesce(string_agg(concat_ws(':', w.student_id, coalesce(w.given_name, '-') || '/' || coalesce(w.family_name, '-'),
+                                             coalesce(w.group_name, '-'),
+                                             CASE WHEN NOT w.submitted THEN 'no' WHEN w.after_deadline THEN 'late' ELSE 'on-time' END,
+                                             coalesce(w.evidence_record, '-')), ' ' ORDER BY w.n), 'none')
+          FROM app.assignment_overview(%s) WITH ORDINALITY AS w (student_id, given_name, family_name, group_name, submitted,
+                                                                requested_minute, after_deadline, evidence_record, n) $q$,
+    coalesce(quote_literal(pg_temp.id(p_assignment)::text), 'NULL')));
+  FOR r IN SELECT name, id FROM person LOOP
+    v_result := replace(v_result, r.id::text, r.name);
+  END LOOP;
+  RETURN v_result;
+END
+$$;
+
+SELECT is(
+  (SELECT format('%s %s %s %s', pg_get_userbyid(proowner), prosecdef::text, provolatile, ('search_path=""' = ANY(proconfig))::text)
+     FROM pg_proc WHERE oid = 'app.assignment_overview(uuid)'::regprocedure),
+  'ductus_identity true s true', 'the overview is the identity role''s, SECURITY DEFINER, STABLE, empty search_path');
+SELECT bag_eq(
+  $$ SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth',
+                                'ductus_evidence', 'ductus_test_stranger', 'public']) AS r
+     WHERE has_function_privilege(r, 'app.assignment_overview(uuid)', 'EXECUTE') $$,
+  $$ VALUES ('ductus_app') $$, 'of the other roles only the web role executes the overview');
+SELECT is(pg_get_function_result('app.assignment_overview(uuid)'::regprocedure),
+  'TABLE(student_id uuid, given_name text, family_name text, group_name text, submitted boolean, '
+  'requested_minute timestamp with time zone, after_deadline boolean, evidence_record text)',
+  'the overview returns these eight columns: no text, hash or id of a submission');
+SELECT is(pg_get_function_arguments('app.assignment_overview(uuid)'::regprocedure), 'p_assignment_id uuid',
+  'the overview takes only the assignment');
+
+CREATE TEMP TABLE logged AS SELECT (SELECT count(*) FROM audit.access_log) AS n;
+SELECT is(pg_temp.overview('vesna', 'z1'), 'ana:-/-:Grupa 2:on-time:- dora:Mila/Peta:Grupa 1:late:with_gaps boris:-/-:-:no:-',
+  'the holder: every student once, the receipt''s record only when it is bound');
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM app.assignment_overview({z1}) o
+                                  FULL JOIN app.assignment_submissions({z1}) s USING (student_id)
+                                  WHERE (o.submitted, o.requested_minute, o.after_deadline)
+                                        IS DISTINCT FROM (s.submitted, s.requested_minute, s.after_deadline) $$),
+  '0', 'the same students, minute and deadline as assignment_submissions');
+SELECT is(pg_temp.overview('marko', 'z1'), 'dora:Mila/Peta:Grupa 1:late:with_gaps',
+  'the collaborator, teacher of G1: the students of the own group only');
+SELECT is(pg_temp.subs('marko', 'z1'), 'dora:r2/late', 'assignment_submissions lets the collaborator through for the same students');
+SELECT is(pg_temp.overview('petra', 'z3'), 'tomo:-/-:-:on-time:-', 'another institution''s teacher: the own course, no group');
+SELECT is(pg_temp.overview(a.who, a.z), 'none', a.why)
+  FROM (VALUES ('petra', 'z1', 'a teacher of another institution gets nothing'),
+               ('vesna', 'z3', 'another institution''s assignment is the same nothing'),
+               ('dora', 'z1', 'a student of the course gets nothing'),
+               ('tomo', 'z3', 'a student asking for the own assignment gets nothing'),
+               ('iva', 'z1', 'the administrator gets nothing'),
+               ('nina', 'z1', 'a former student with an unconfirmed teacher role gets nothing'),
+               ('vesna', 'nobody', 'an assignment that does not exist is the same nothing'),
+               ('vesna', 'no-such-name', 'no assignment is the same nothing')) AS a (who, z, why);
+SELECT matches(pg_temp.overview(t, 'z1'), '^ZD401:', 'no valid session is ZD401: ' || t)
+  FROM unnest(ARRAY['anon', 'expired', 'closed', 'unknown']) AS t;
+SELECT is((SELECT count(*) FROM audit.access_log), (SELECT n FROM logged),
+  'the overview opens no work: no access log row');
+
 -- Vesna's own membership ends: she lists nothing.
 UPDATE institution.course_member SET member_to = now()
  WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('vesna') AND member_to IS NULL;
 SELECT is(pg_temp.subs('vesna', 'z1'), 'none', 'a teacher whose membership ended');
+SELECT is(pg_temp.overview('vesna', 'z1'), 'none', 'nor any overview');
 
 -- Reading wrote nothing.
 SELECT is((SELECT count(*)::integer FROM audit.access_log), 0, 'listing the submissions opens no work');
