@@ -177,6 +177,7 @@ export {
   createInstitutionAssignmentRoutes,
   createInstitutionAssignmentRoutesFor,
 } from "./institution-assignments.ts";
+export { createAssignmentCurrentVersionRouteFor } from "./assignment-current-version.ts";
 export {
   createTeacherAccessRoute,
   createTeacherCoursesRoute,

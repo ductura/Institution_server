@@ -26,6 +26,7 @@ describe("server/institution public interface", () => {
       "parseNoticeReadBody",
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
+      "readAssignmentCurrentVersion",
       "readStudentAccessLog",
       "readStudentRequirements",
       "readStudentSubmission",
