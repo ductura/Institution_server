@@ -107,7 +107,7 @@ describe("verifyVersionedDocumentSnapshot", () => {
 
   it.each([
     ["v2 without sources", { schemaVersion: 2, nodes: v1("a").nodes }],
-    ["schemaVersion 4", { ...v2("a"), schemaVersion: 4 }],
+    ["schemaVersion 5", { ...v2("a"), schemaVersion: 5 }],
     ['schemaVersion "2"', { ...v2("a"), schemaVersion: "2" }],
   ])("refuses %s as invalid", async (_, doc) => {
     expect(await verifyVersionedDocumentSnapshot(encode(doc))).toEqual({

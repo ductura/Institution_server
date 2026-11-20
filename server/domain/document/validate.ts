@@ -17,6 +17,7 @@ import {
   DOCUMENT_SCHEMA_VERSION,
   DOCUMENT_SCHEMA_VERSION_V2,
   DOCUMENT_SCHEMA_VERSION_V3,
+  DOCUMENT_SCHEMA_VERSION_V4,
   MAX_CITATION_LOCATOR_CODE_POINTS,
   MAX_CITATION_VIA_CODE_POINTS,
   MAX_FOOTNOTE_TEXT_CODE_POINTS,
@@ -46,6 +47,7 @@ import {
 import { isAllowedText, isAllowedTrimmedText } from "./forbidden.ts";
 import { checkUnknownFields, validateSources } from "./validate-sources.ts";
 import { isPlainObject } from "../json/index.ts";
+import { validateDocumentV4 } from "./validate-v4.ts";
 
 /** Stable error codes. Never renamed without a schema version bump. */
 export const VALIDATION_ERROR_CODES = [
@@ -180,9 +182,14 @@ export function validateDocument(doc: unknown): ValidationOutcome {
 /**
  * Validates `doc` as a document of any accepted version
  * (`DOCUMENT_BLOCK_TYPES_BY_VERSION`): v1 by the rules of v1, v2 with its
- * sources and citations. The version is returned as found, never changed.
+ * sources and citations, v3 with its atoms and v4 by `validateDocumentV4`.
+ * The version is returned as found, never changed.
  */
 export function validateVersionedDocument(doc: unknown): VersionedValidationOutcome {
+  // v4 has its own reader (contract v4 §11); every other version is read here.
+  if (isPlainObject(doc) && doc.schemaVersion === DOCUMENT_SCHEMA_VERSION_V4) {
+    return validateDocumentV4(doc);
+  }
   return validate(doc, () => true);
 }
 

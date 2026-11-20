@@ -103,7 +103,7 @@ describe("classes 32 to 39 of contract v3 §10", () => {
     expect(
       errorsOf({ schemaVersion: 3, nodes: [{ type: "paragraph", id: P, children: [] }] }),
     ).toEqual([["$.sources", "SOURCES_NOT_ARRAY"]]);
-    for (const version of ["3", 3.5, 4]) {
+    for (const version of ["3", 3.5, 5]) {
       expect(errorsOf({ ...para(), schemaVersion: version })).toContainEqual([
         "$.schemaVersion",
         "SCHEMA_VERSION_INVALID",

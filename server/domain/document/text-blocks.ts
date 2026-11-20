@@ -1,10 +1,12 @@
 import { deriveBibliography, formatCitation, type CitationStyle } from "../citation/index.ts";
 
+import { textBlockNodesV4 } from "./consumers-v4.ts";
 import type {
   CanonicalDocument,
   CanonicalDocumentV2,
   CanonicalDocumentV3,
-  InlineNodeV3,
+  CanonicalDocumentV4,
+  InlineNodeV4,
 } from "./schema.ts";
 
 /**
@@ -40,6 +42,9 @@ export type CitationRenderingV3 = CitationRendering & { viaJoiner: string };
  * orphan mark, with the locator as stored. In v3 the same holds, with `via`
  * in front; a footnote and a cross reference add no characters to the body
  * text (contract v3 §8): their number and text are the interface's to show.
+ * In v4 the paragraphs of a box come in place and a code block is a block
+ * with its text; an inline formula adds no characters, and a table, image,
+ * formula or page break is no text block (contract v4 §11).
  */
 export function textBlocksOf(document: CanonicalDocument): TextBlock[];
 export function textBlocksOf(
@@ -51,13 +56,24 @@ export function textBlocksOf(
   rendering: CitationRenderingV3,
 ): TextBlock[];
 export function textBlocksOf(
-  document: CanonicalDocument | CanonicalDocumentV2 | CanonicalDocumentV3,
+  document: CanonicalDocumentV4,
+  rendering: CitationRenderingV3,
+): TextBlock[];
+export function textBlocksOf(
+  document: CanonicalDocument | CanonicalDocumentV2 | CanonicalDocumentV3 | CanonicalDocumentV4,
   rendering?: CitationRendering | CitationRenderingV3,
 ): TextBlock[] {
-  let text: (child: InlineNodeV3) => string = (child) => (child.type === "text" ? child.text : "");
+  let text: (child: InlineNodeV4) => string = (child) => (child.type === "text" ? child.text : "");
   if (document.schemaVersion !== 1 && rendering !== undefined) {
     const { style, orphanMark } = rendering;
-    const bibliography = deriveBibliography(document, style);
+    // Citations stand only in text blocks, so in v4 the bibliography is read
+    // over those, with the paragraphs of a box in place (contract v4 §11).
+    const bibliography = deriveBibliography(
+      document.schemaVersion === 4
+        ? ({ ...document, schemaVersion: 3, nodes: textBlockNodesV4(document) } as never)
+        : document,
+      style,
+    );
     const joiner = "viaJoiner" in rendering ? rendering.viaJoiner : "";
     text = (child) => {
       if (child.type === "text") return child.text;
@@ -70,10 +86,9 @@ export function textBlocksOf(
         : `${child.via}${joiner}${shown}`;
     };
   }
-  return (document.nodes as readonly { type: string; children: readonly InlineNodeV3[] }[]).map(
-    (node) => ({
-      kind: node.type === "heading" ? "heading" : "paragraph",
-      text: node.children.map(text).join(""),
-    }),
-  );
+  const nodes = document.schemaVersion === 4 ? textBlockNodesV4(document) : document.nodes;
+  return (nodes as readonly { type: string; children: readonly InlineNodeV4[] }[]).map((node) => ({
+    kind: node.type === "heading" ? "heading" : "paragraph",
+    text: node.children.map(text).join(""),
+  }));
 }
