@@ -10,8 +10,8 @@ import { MUTATION_GUARD } from "./shared.ts";
 // notice, DAN-306) and work-language-route.ts with mutation-route.ts (the
 // language of the works, DAN-386). Who may do what is the RPC's decision; the
 // caller comes only from the session. The work language routes are served
-// by server/http/institution-courses.ts; the others have no handler yet
-// (CONTRACT_ONLY).
+// by server/http/institution-courses.ts and the acknowledgment by
+// server/http/acknowledgment.ts; enrolment has no handler yet (CONTRACT_ONLY).
 
 /** A UUID in any case (mutation-route.ts, acknowledgment-route.ts UUID /i). */
 const Uuid = Type.String({

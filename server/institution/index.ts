@@ -44,6 +44,11 @@ export {
   parseWorkLanguageExceptionBody,
   type WorkLanguageExceptionBody,
 } from "./work-language-bodies.ts";
+export {
+  type AcknowledgmentBody,
+  NOTICE_TEMPLATE_VERSION,
+  parseAcknowledgmentBody,
+} from "./acknowledgment-body.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
 export {
   type AssignmentInput,

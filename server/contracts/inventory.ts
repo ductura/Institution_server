@@ -191,7 +191,6 @@ export const SERVER_SOURCES: Readonly<
 export const CONTRACT_ONLY: readonly string[] = [
   "student.assignments.get",
   "institution.enrollments.post",
-  "institution.acknowledgment.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
   "collaboration.comments.post",

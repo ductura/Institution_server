@@ -33,6 +33,7 @@ import {
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
   createLiveRoutesFor,
+  createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
@@ -151,6 +152,8 @@ async function main(): Promise<void> {
       // The live view (B-LIVE): the owner publishes the last state of a work
       // with PUT, every reader gets the same bytes and ETag with GET.
       ...createLiveRoutesFor(databases.main),
+      // The student acknowledges the assignment notice shown by the browser (DAN-306).
+      createAcknowledgmentRouteFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
       ...createWebAuthnRoutesFor(databases.main, APP_ORIGIN),
       // B-8: the development signer only under NODE_ENV development or test;

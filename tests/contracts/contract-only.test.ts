@@ -26,6 +26,7 @@ import {
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
   createLiveRoutesFor,
+  createAcknowledgmentRouteFor,
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
@@ -240,6 +241,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       ),
   },
   {
+    call: "createAcknowledgmentRouteFor(databases.main)",
+    ids: ["institution.acknowledgment.post"],
+    routes: () => [createAcknowledgmentRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-18: a student's submission over the process's signer and storage.
     call: "createSubmissionRouteFor(databases.main, evidenceDeps)",
     ids: ["submission.submit.post"],
@@ -374,6 +380,7 @@ describe("CONTRACT_ONLY", () => {
         ...["student.submission.get", "student.assignment-requirements.get"],
         "live.document.get",
         "live.document.put",
+        "institution.acknowledgment.post",
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -410,6 +417,7 @@ describe("routes the entry point mounts itself", () => {
       ...TEACHER_READ_ROUTES,
       "live.document.get",
       "live.document.put",
+      "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",
       "student.submission.get",
