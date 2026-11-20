@@ -3,29 +3,15 @@ import { createHash } from "node:crypto";
 import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
+import { receiptPdfHr } from "../../../locales/index.ts";
 import {
   digestSubmissionReceiptPayloadV2,
   type SignedSubmissionReceiptV2,
 } from "../../domain/index.ts";
 
-import { renderReceiptPdf, verificationUrl, type ReceiptPdfLabels } from "./receipt-pdf.ts";
+import { renderReceiptPdf, verificationUrl } from "./receipt-pdf.ts";
 
 const ORIGIN = "https://demo-fakultet.invalid";
-const LABELS: ReceiptPdfLabels = {
-  title: "Potvrda o predaji",
-  submissionId: "Broj potvrde",
-  assignmentId: "Oznaka zadatka",
-  assignmentVersion: "Verzija zadatka",
-  revision: "Verzija predanog rada",
-  requestedAt: "Vrijeme predaje",
-  signedAt: "Vrijeme potpisa",
-  dueAt: "Rok predaje",
-  onTime: "Predano u roku",
-  afterDeadline: "Predano nakon roka",
-  artifactSha256: "Otisak predanog rada (SHA-256)",
-  verification: "Javna provjera potvrde",
-  scan: "Skenirajte QR kod za provjeru.",
-};
 const PAYLOAD = {
   receiptSchema: "ductus-submission-receipt-v2",
   submissionId: "00000000-0000-4000-8000-000000000001",
@@ -90,14 +76,14 @@ describe("receipt PDF", () => {
 
   it("renders the same single-page PDF every time and changes it for a different work hash", async () => {
     const signed = await receipt();
-    const bytes = await renderReceiptPdf(signed, ORIGIN, LABELS);
+    const bytes = await renderReceiptPdf(signed, ORIGIN, receiptPdfHr);
     const document = await PDFDocument.load(bytes, { updateMetadata: false });
     expect(document.getPageCount()).toBe(1);
-    expect(document.getTitle()).toBe(LABELS.title);
-    expect(await renderReceiptPdf(signed, ORIGIN, LABELS)).toEqual(bytes);
-    expect(await renderReceiptPdf(await receipt("ef".repeat(32)), ORIGIN, LABELS)).not.toEqual(
-      bytes,
-    );
+    expect(document.getTitle()).toBe(receiptPdfHr.title);
+    expect(await renderReceiptPdf(signed, ORIGIN, receiptPdfHr)).toEqual(bytes);
+    expect(
+      await renderReceiptPdf(await receipt("ef".repeat(32)), ORIGIN, receiptPdfHr),
+    ).not.toEqual(bytes);
     expect(createHash("sha256").update(bytes).digest("hex")).toMatchInlineSnapshot(
       `"b9b5e09af5b48a570b10c0da74f6726e506b852f5567add2af2fdca4df5eece7"`,
     );
