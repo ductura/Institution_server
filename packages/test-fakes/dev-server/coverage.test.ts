@@ -433,6 +433,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
+  "work.versions.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
+  },
   "teacher.assignment-submissions.post": {
     request: {
       path: "/api/v1/teacher/assignment-submissions",

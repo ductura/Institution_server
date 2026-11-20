@@ -895,6 +895,27 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "work.versions.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.versions.get:query": (() => {
+  const local0 = /^[1-9][0-9]{0,15}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['beforeRevision'] !== undefined ? ((typeof value['beforeRevision'] === 'string') && local0.test(value['beforeRevision'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['beforeRevision'].includes(key))
+    )
+  }
+  })(),
 };
 
 export function validateInput(id: string, part: "params" | "query" | "body", value: unknown): boolean {

@@ -117,6 +117,7 @@ describe("route inventory", () => {
       "settings.values.put: app/api/settings/values/route.ts is not in the inventory",
       "downloads.manifest.get: app/api/downloads/manifest/route.ts is not in the inventory",
       "sources.lookup.post: app/api/sources/lookup/route.ts is not in the inventory",
+      "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(

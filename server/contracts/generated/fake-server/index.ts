@@ -78,6 +78,7 @@ export const ROUTE_TABLE = {
   "teacher.mentorship.get": { method: "GET", path: "/api/v1/teacher/mentorships/{mentorshipId}", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
   "teacher.mentorships.get": { method: "GET", path: "/api/v1/teacher/mentorships", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "teacher.submissions.get": { method: "GET", path: "/api/v1/teacher/assignments/{assignmentId}/submissions", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
+  "work.versions.get": { method: "GET", path: "/api/v1/works/{documentId}/versions", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
 } as const;
 
 /** Answer statuses at 400 or above, by route (generated client). */
