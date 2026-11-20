@@ -9,6 +9,7 @@ export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
 } from "./consultation-records/index.ts";
+export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export {
   createDeadlineExtensionRoutes,
@@ -251,6 +252,7 @@ export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,
 } from "./student-submission.ts";
+export { createStudentNoticeRoute, createStudentNoticeRouteFor } from "./student-notice.ts";
 export {
   bearerMatches,
   checkProvisionBody,

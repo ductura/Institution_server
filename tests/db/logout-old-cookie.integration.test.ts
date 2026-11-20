@@ -17,6 +17,7 @@ import {
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
@@ -30,6 +31,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
+  createStudentNoticeRouteFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -204,6 +206,18 @@ const SESSION_ROUTES = {
   },
   // SRV-1101: the same for the text check configuration.
   // SRV-1102: the proofs of a source; a live session that is no student of the work gets 404.
+  "work.milestones.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/milestones`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.milestones.patch": {
+    method: "PATCH",
+    path: `/api/v1/works/${randomUUID()}/milestones/${randomUUID()}`,
+    body: () => ({ dueAt: "2026-12-02T12:00:00.000Z" }),
+    live: 404,
+  },
   "student.source-proofs.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}/proofs`,
@@ -265,6 +279,13 @@ const SESSION_ROUTES = {
   "teacher.submission-receipt.get": {
     method: "GET",
     path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-NG: a live session naming an assignment it is no student of gets 404.
+  "student.notice.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/notice`,
     body: () => undefined,
     live: 404,
   },
@@ -633,6 +654,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createConsultationRecordRoutesFor",
+  "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -643,6 +665,7 @@ const FACTORIES = [
   "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
   "createStudentSubmissionRoutesFor",
+  "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createDeadlineExtensionRoutesFor",
@@ -678,6 +701,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
+  ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
@@ -688,6 +712,7 @@ const MOUNTED = [
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
   ...createStudentSubmissionRoutesFor(databases.main),
+  createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),

@@ -230,6 +230,14 @@ export const SERVER_SOURCES: Readonly<
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
   // SRV-1105 (Ductus#2051, wave 11): the shared record of a consultation and its additions; Ductus has no such route.
+  "app/api/works/[documentId]/milestones/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
+  },
+  "app/api/works/[documentId]/milestones/[milestoneId]/route.ts": {
+    methods: ["PATCH"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
+  },
   "app/api/works/[documentId]/consultation-records/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",
@@ -304,7 +312,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.access-log.get",
   "student.notice-read.post",
   "student.enrollments.post",
-  "student.notice.get",
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",

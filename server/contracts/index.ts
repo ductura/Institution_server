@@ -32,6 +32,7 @@ import {
   teacherRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
+  workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
@@ -39,6 +40,7 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
+export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
 export { SourceProof, WorkSourceRecord } from "./routes/index.ts";
 
 export {
@@ -104,6 +106,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...publicVerificationRoutes,
   ...versionsRoutes,
   ...consultationRecordsRoutes,
+  ...workMilestonesRoutes,
 ];
 
 /**
