@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
+import { DUCTUS_LEGACY_DATABASE } from "../vitest.config.ts";
 import { PENDING_TESTS } from "./pending-tests.ts";
 
 describe("PENDING_TESTS (ZEL-S4)", () => {
@@ -21,7 +22,11 @@ describe("PENDING_TESTS (ZEL-S4)", () => {
     expect(tsconfig.exclude).toEqual([
       ...new Set(["node_modules", ...PENDING_TESTS, ...copiedTests.include]),
     ]);
-    expect(copiedTests.exclude).toEqual(["node_modules", ...PENDING_TESTS]);
+    expect(copiedTests.exclude).toEqual([
+      "node_modules",
+      ...PENDING_TESTS,
+      ...DUCTUS_LEGACY_DATABASE,
+    ]);
   });
 
   it("names only files that exist", () => {

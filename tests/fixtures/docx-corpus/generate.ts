@@ -234,7 +234,7 @@ const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
 });
 function crc32(bytes: Uint8Array): number {
   let c = 0xffffffff;
-  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  for (const b of bytes) c = (CRC_TABLE[(c ^ b) & 0xff] ?? 0) ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
 }
 

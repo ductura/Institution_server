@@ -290,11 +290,14 @@ ALTER TABLE evidence.document_checkpoint DISABLE TRIGGER evidence_checkpoint_no_
 ALTER TABLE audit.access_log DISABLE TRIGGER access_log_no_truncate;
 -- The notice read mark (SRV-06) references the assignment and is append-only.
 ALTER TABLE institution.notice_read DISABLE TRIGGER notice_read_no_truncate;
+-- A student's note (SRV-21) references the assignment and is append-only.
+ALTER TABLE evidence.submission_note DISABLE TRIGGER submission_note_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
   'with the TRUNCATE trigger disabled the same statement empties the versions'
 );
+ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE audit.access_log ENABLE TRIGGER access_log_no_truncate;
 ALTER TABLE evidence.submission_receipt ENABLE TRIGGER submission_receipt_no_truncate;
 ALTER TABLE evidence.submission_receipt_issuance ENABLE TRIGGER submission_receipt_issuance_no_truncate;

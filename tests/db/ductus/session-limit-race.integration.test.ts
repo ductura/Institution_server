@@ -34,7 +34,7 @@ async function client(login: string) {
   const c = new pg.Client({ connectionString: url.href });
   clients.push(c);
   await c.connect();
-  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]
+  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]!
     .pid;
   return { c, pid };
 }
@@ -131,7 +131,7 @@ beforeAll(async () => {
       "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE %I', $1::text, $2::text, $3::text) AS ddl",
       [login, password, role],
     );
-    await admin.query(ddl.rows[0].ddl);
+    await admin.query(ddl.rows[0]!.ddl);
   }
   await admin.query(
     "INSERT INTO identity.institution (id, slug, aai_home_org) VALUES ($1, $2, $3)",
@@ -177,7 +177,7 @@ describe("five sessions per account on two connections", () => {
     expect(waited).toBe(true);
     expect(await other).toBe("ok");
     expect(await counts("ana")).toEqual({ live: 5, superseded: 1 });
-    expect(await sessionState(old[0].tokenHash)).toBe("superseded");
+    expect(await sessionState(old[0]!.tokenHash)).toBe("superseded");
     expect([await sessionState(a.tokenHash), await sessionState(b.tokenHash)]).toEqual([
       "open",
       "open",
@@ -229,7 +229,7 @@ describe("five sessions per account on two connections", () => {
     );
     const waited = await settlesOrWaits(touch, app.pid);
     await login.c.query("COMMIT");
-    const touched = (await touch).rows[0].touched;
+    const touched = (await touch).rows[0]!.touched;
     await app.c.query("COMMIT");
 
     expect(waited).toBe(true);
@@ -256,7 +256,7 @@ describe("five sessions per account on two connections", () => {
     await app.c.query("SELECT pg_catalog.set_config('app.session_token', $1, true)", [fifth.token]);
     const touched = (
       await app.c.query<{ touched: boolean }>("SELECT identity.touch_current_session() AS touched")
-    ).rows[0].touched;
+    ).rows[0]!.touched;
     const other = outcome(login.c.query(OPEN, openArgs(sixth.tokenHash, "lea")));
     const waited = await settlesOrWaits(other, login.pid);
     await app.c.query("COMMIT");
@@ -265,7 +265,7 @@ describe("five sessions per account on two connections", () => {
     expect(waited).toBe(true);
     expect(await other).toBe("ok");
     expect(await sessionState(fifth.tokenHash)).toBe("open");
-    expect(await sessionState(old[0].tokenHash)).toBe("superseded");
+    expect(await sessionState(old[0]!.tokenHash)).toBe("superseded");
     expect(await sessionState(sixth.tokenHash)).toBe("open");
     expect(await counts("lea")).toEqual({ live: 5, superseded: 1 });
   });

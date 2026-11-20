@@ -155,7 +155,7 @@ beforeAll(async () => {
       await tx.query<{ id: string }>(
         "SELECT institution.create_course('Izmisljeni kolegij primopredaja', '2026/2027', 'prohibited') AS id",
       )
-    ).rows[0].id;
+    ).rows[0]!.id;
     await tx.query("SELECT institution.set_course_holder($1, $2)", [id, people.holder.id]);
     return id;
   });
@@ -228,7 +228,7 @@ describe("course handover racing a teacher role revocation, two real connections
     } finally {
       revoke.release();
     }
-    expect((await revoke.done)[0].revoked).toBe(true);
+    expect((await revoke.done)[0]!.revoked).toBe(true);
     expect(await outcome).toBe("ZD422 invalid input");
     const after = await state();
     expect(after.holders).toEqual(before.holders);
@@ -253,7 +253,7 @@ describe("course handover racing a teacher role revocation, two real connections
       ]),
     );
     const outcome = revoke.then(
-      (result) => result.rows[0].revoked,
+      (result) => result.rows[0]!.revoked,
       (error: { code?: string; message?: string }) => `${error.code} ${error.message}`,
     );
     try {
@@ -261,7 +261,7 @@ describe("course handover racing a teacher role revocation, two real connections
     } finally {
       handover.release();
     }
-    expect((await handover.done)[0].id).toMatch(/^[0-9a-f-]{36}$/);
+    expect((await handover.done)[0]!.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(await outcome).toBe(true);
     const after = await state();
     expect(after.holders.filter((row) => row.open)).toEqual([

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { isLoopbackDatabaseUrl, requireLoopbackDatabaseUrl } from "../db/loopback-database-url.ts";
 
-const INTEGRATION = fileURLToPath(new URL("../db/", import.meta.url));
+const INTEGRATION = fileURLToPath(new URL("../db", import.meta.url));
 
 /** Names X in `new URL(X).hostname` that hold a database URL rather than an S3 or HTTP endpoint. */
 function hostnameOnlyDatabaseGuards(source: string): string[] {
@@ -101,10 +101,10 @@ describe("requireLoopbackDatabaseUrl", () => {
 // so a database URL in an integration test goes through the helper above.
 describe("database URL guards in the integration tests", () => {
   it("never check a database URL by its hostname alone", () => {
-    const offenders = readdirSync(INTEGRATION)
-      .filter((file) => file.endsWith(".ts") && file !== "loopback-database-url.ts")
+    const offenders = readdirSync(INTEGRATION, { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".ts") && !file.endsWith("loopback-database-url.ts"))
       .flatMap((file) =>
-        hostnameOnlyDatabaseGuards(readFileSync(`${INTEGRATION}${file}`, "utf8")).map(
+        hostnameOnlyDatabaseGuards(readFileSync(`${INTEGRATION}/${file}`, "utf8")).map(
           (name) => `${file}: ${name}`,
         ),
       );
