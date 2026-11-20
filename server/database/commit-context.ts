@@ -13,6 +13,11 @@ import {
   isSha256Hex,
 } from "../domain/index.ts";
 
+import {
+  type DocumentSchemaVersion,
+  readWorkVersion,
+  type WorkVersion,
+} from "./evidence-work-version.ts";
 import { count } from "./open-work.ts";
 import type { WithActor } from "./with-actor.ts";
 
@@ -30,6 +35,11 @@ export type EvidenceCommitContext = {
   evidenceProfileId: string;
   maxPayloadBytes: number;
   transactionKnown: boolean;
+  /**
+   * SRV-7F: the version of the work, from the server's record of its revision
+   * 0 (contract v3 §7); every snapshot and step format is judged against it.
+   */
+  documentSchemaVersion: DocumentSchemaVersion;
   /** The chain as the context read it, unlocked: the acceptance checks it again (F-099). */
   state: EvidenceCommitState;
 };
@@ -62,10 +72,14 @@ async function readContext(
   clientTransactionId: string,
 ): Promise<EvidenceCommitContextResult> {
   let rows: Row[];
+  // Read in the same transaction, and only for a document the context names.
+  let version: WorkVersion | null = null;
   try {
-    ({ rows } = await withActor(token, (tx) =>
-      tx.query<Row>(CONTEXT_SQL, [documentId, clientTransactionId]),
-    ));
+    ({ rows, version } = await withActor(token, async (tx) => {
+      const read = await tx.query<Row>(CONTEXT_SQL, [documentId, clientTransactionId]);
+      const named = read.rows.length === 1 && read.rows[0]?.outcome === "ok";
+      return { rows: read.rows, version: named ? await readWorkVersion(tx, documentId) : null };
+    }));
   } catch {
     return { status: "unavailable", stage: "context", code: "context_failed" };
   }
@@ -95,7 +109,8 @@ async function readContext(
     currentRevision === null ||
     lastSequenceTo === null ||
     !isSha256Hex(documentHash) ||
-    !(head === null || isSha256Hex(head))
+    !(head === null || isSha256Hex(head)) ||
+    version === null
   ) {
     return malformed;
   }
@@ -108,6 +123,7 @@ async function readContext(
       evidenceProfileId: row.evidence_profile_id,
       maxPayloadBytes: Number(row.max_payload_bytes),
       transactionKnown: row.transaction_known,
+      documentSchemaVersion: version.schemaVersion,
       state: { currentRevision, documentHash, headSegmentHash: head, lastSequenceTo },
     },
   };

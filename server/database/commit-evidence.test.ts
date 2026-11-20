@@ -33,6 +33,7 @@ const CONTEXT: EvidenceCommitContext = {
   evidenceProfileId: "standard-v1",
   maxPayloadBytes: 262144,
   transactionKnown: false,
+  documentSchemaVersion: 1,
   state: {
     currentRevision: 4,
     documentHash: "e".repeat(64),

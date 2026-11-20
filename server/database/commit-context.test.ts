@@ -11,6 +11,9 @@ const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
 const INSTITUTION = "00000000-0000-4000-8000-0000000000a1";
 const HASH = "b".repeat(64);
 const TOKEN = "izmisljeni-token-konteksta-0000000000000001";
+// SRV-7F: the revision 0 hashes as contracts v1 and v3 write them.
+const V1_ZERO = "a102ced8a59b446a86c135c8d87d3ddf9f889e4ac93bcbc1857cd7c2c73ad14b";
+const V3_ZERO = "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
 const CONTEXT: EvidenceCommitContext = {
   evidencePackageId: "pkg-1",
   institutionId: INSTITUTION,
@@ -18,6 +21,7 @@ const CONTEXT: EvidenceCommitContext = {
   evidenceProfileId: "standard-v1",
   maxPayloadBytes: 262144,
   transactionKnown: false,
+  documentSchemaVersion: 1,
   state: {
     currentRevision: 4,
     documentHash: "e".repeat(64),
@@ -27,13 +31,14 @@ const CONTEXT: EvidenceCommitContext = {
 };
 
 /** A withActor that answers the context statement and records what it was given. */
-function database(rows: unknown[]) {
+function database(rows: unknown[], revisionZero: unknown[] = [{ content_hash: V1_ZERO }]) {
   const seen: { token: unknown; text: string; values: readonly unknown[] | undefined }[] = [];
   const withActor = (async (token, fn) => {
     const tx: ActorTransaction = {
       async query(text, values) {
         seen.push({ token, text, values });
-        return { rows: rows as never[], rowCount: rows.length };
+        const answer = text.includes("evidence.document_revision") ? revisionZero : rows;
+        return { rows: answer as never[], rowCount: answer.length };
       },
     };
     return fn(tx);
@@ -74,6 +79,31 @@ describe("readContext", () => {
         ...CONTEXT,
         state: { ...CONTEXT.state, currentRevision: 5, headSegmentHash: HASH },
       },
+    });
+  });
+
+  it("SRV-7F: names the version of the work from its revision 0, in the same transaction", async () => {
+    const db = database([row], [{ content_hash: V3_ZERO }]);
+    expect(await readerOf(db).readContext(TOKEN, "doc-1", "tx-1")).toEqual({
+      status: "ok",
+      context: { ...CONTEXT, documentSchemaVersion: 3 },
+    });
+    expect(db.seen).toHaveLength(2);
+    expect(db.seen[1]?.text).toMatch(/evidence\.document_revision[\s\S]*revision = 0/);
+    expect(db.seen[1]?.values).toEqual(["doc-1"]);
+    expect(db.seen[1]?.token).toBe(TOKEN);
+  });
+
+  it.each([
+    ["no revision 0", []],
+    ["a revision 0 that is no known one", [{ content_hash: "c".repeat(64) }]],
+    ["two revisions 0", [{ content_hash: V1_ZERO }, { content_hash: V1_ZERO }]],
+  ])("SRV-7F: is unavailable for %s, never a guessed version", async (_, revisionZero) => {
+    const db = database([row], revisionZero);
+    expect(await readerOf(db).readContext("t", "doc-1", "tx-1")).toEqual({
+      status: "unavailable",
+      stage: "context",
+      code: "context_malformed",
     });
   });
 

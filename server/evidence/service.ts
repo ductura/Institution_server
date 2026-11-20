@@ -12,6 +12,7 @@ import type {
   EvidenceCommitter,
 } from "../database/index.ts";
 import {
+  EDIT_STEP_FORMAT_V3,
   type EvidenceSegmentDescriptorV2,
   exceedsEvidenceSegmentLimit,
   isEvidenceSegmentDescriptorV2,
@@ -102,11 +103,20 @@ async function prepareAndCommit(
     return { status: "invalid" };
   }
   if (verified.byteLength > context.maxPayloadBytes) return { status: "too_large" };
+  // SRV-7F (contract v3 §5 t. 7, §7): the step format is the work's, judged
+  // against its revision 0: ductus-edit-steps-v3 only on a v3 work, and a v3
+  // work takes no other; v1 and v2 works keep ductus-edit-steps-v1.
+  const v3Steps = s.captureContext.transactionFormat === EDIT_STEP_FORMAT_V3;
+  if (v3Steps !== (context.documentSchemaVersion === 3)) return { status: "invalid" };
 
-  // t. 3.4: the snapshot is the document the segment ends in, of schema 1 or
-  // 2 (SRV-33); the database keeps it at the version of revision 0.
+  // t. 3.4: the snapshot is the document the segment ends in, of schema 1, 2
+  // or 3, and of the work's own version (SRV-7F): refused here, before
+  // storage, as the database would refuse it at the end (document v2 §7 t. 4).
   const snapshot = await verifyVersionedDocumentSnapshot(document);
   if (!snapshot.ok) return { status: snapshot.reason };
+  if (snapshot.document.schemaVersion !== context.documentSchemaVersion) {
+    return { status: "invalid" };
+  }
   if (snapshot.sha256 !== s.finalDocumentHash) return { status: "document_mismatch" };
 
   const descriptor: EvidenceSegmentDescriptorV2 = {
