@@ -10,21 +10,25 @@
  *   - adjacent text nodes with identical marks merged,
  *   - empty text nodes dropped,
  *   - the "at least one block node" invariant preserved.
- * A v2 citation is an atom: kept as it is, never merged across, and the
- * sources are carried over unchanged (contract §9.1).
+ * An atom (a v2 citation; in v3 also a footnote and a cross reference) is
+ * kept as it is, never merged across, and the sources are carried over
+ * unchanged (contract v2 §9.1, v3 §8).
  */
 
 import {
   DOCUMENT_SCHEMA_VERSION,
   DOCUMENT_SCHEMA_VERSION_V2,
+  DOCUMENT_SCHEMA_VERSION_V3,
   canonicalMarks,
   citationNode,
   newNodeId,
   paragraphNode,
   type CanonicalDocument,
   type CanonicalDocumentV2,
-  type DocumentNodeV2,
-  type InlineNodeV2,
+  type CanonicalDocumentV3,
+  type CitationNodeV3,
+  type DocumentNodeV3,
+  type InlineNodeV3,
   type Mark,
   type VersionedDocument,
 } from "./schema.ts";
@@ -33,12 +37,21 @@ function sameMarks(a: readonly Mark[], b: readonly Mark[]): boolean {
   return a.length === b.length && a.every((mark, i) => mark === b[i]);
 }
 
-function normalizeChildren(children: readonly InlineNodeV2[]): InlineNodeV2[] {
-  const result: InlineNodeV2[] = [];
+/** A copy of an atom with exactly its own fields (contract v2 §3.1, v3 §3). */
+function copyAtom(child: Exclude<InlineNodeV3, { type: "text" }>): InlineNodeV3 {
+  if (child.type !== "citation") return { ...child };
+  const citation: CitationNodeV3 = citationNode(child.sourceId, child.locator);
+  if (child.via !== undefined) citation.via = child.via;
+  if (child.rq !== undefined) citation.rq = child.rq;
+  return citation;
+}
+
+function normalizeChildren(children: readonly InlineNodeV3[]): InlineNodeV3[] {
+  const result: InlineNodeV3[] = [];
 
   for (const child of children) {
-    if (child.type === "citation") {
-      result.push(citationNode(child.sourceId, child.locator));
+    if (child.type !== "text") {
+      result.push(copyAtom(child));
       continue;
     }
     if (child.text.length === 0) {
@@ -60,15 +73,15 @@ function normalizeChildren(children: readonly InlineNodeV2[]): InlineNodeV2[] {
   return result;
 }
 
-function normalizeNode(node: DocumentNodeV2): DocumentNodeV2 {
+function normalizeNode(node: DocumentNodeV3): DocumentNodeV3 {
   const children = normalizeChildren(node.children);
-  // A heading never holds a citation (contract §3.1), so its children stay text.
+  // A heading never holds an atom (contract v2 and v3 §3.1), so its children stay text.
   return node.type === "heading"
     ? { type: "heading", id: node.id, level: node.level, children: children as HeadingChildren }
     : { type: node.type, id: node.id, children };
 }
 
-type HeadingChildren = Extract<DocumentNodeV2, { type: "heading" }>["children"];
+type HeadingChildren = Extract<DocumentNodeV3, { type: "heading" }>["children"];
 
 /**
  * Returns a new document; `doc` is never mutated.
@@ -83,18 +96,26 @@ export function normalizeDocument(
   doc: CanonicalDocumentV2,
   uuidFn?: () => string,
 ): CanonicalDocumentV2;
+export function normalizeDocument(
+  doc: CanonicalDocumentV3,
+  uuidFn?: () => string,
+): CanonicalDocumentV3;
 export function normalizeDocument(doc: VersionedDocument, uuidFn?: () => string): VersionedDocument;
 export function normalizeDocument(
   doc: VersionedDocument,
   uuidFn?: () => string,
 ): VersionedDocument {
-  const normalized = (doc.nodes as readonly DocumentNodeV2[]).map(normalizeNode);
+  const normalized = (doc.nodes as readonly DocumentNodeV3[]).map(normalizeNode);
   const nodes = normalized.length === 0 ? [paragraphNode(newNodeId(uuidFn))] : normalized;
 
+  if (doc.schemaVersion === DOCUMENT_SCHEMA_VERSION_V3) {
+    return { schemaVersion: doc.schemaVersion, nodes, sources: structuredClone(doc.sources) };
+  }
   if (doc.schemaVersion === DOCUMENT_SCHEMA_VERSION_V2) {
+    // Without a v3 atom in its input, a v2 node normalizes to a v2 node.
     return {
       schemaVersion: DOCUMENT_SCHEMA_VERSION_V2,
-      nodes,
+      nodes: nodes as CanonicalDocumentV2["nodes"],
       sources: structuredClone(doc.sources),
     };
   }
