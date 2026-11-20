@@ -18,7 +18,12 @@ INSERT INTO ref VALUES
   ('v1', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":1}'),
   ('v2', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":2,"sources":[]}'),
   ('v2_text', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":"2","sources":[]}'),
-  ('no_version', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}]}');
+  ('no_version', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}]}'),
+  -- Valid JSON that the domain accepts but jsonb cannot hold as is: U+0000
+  -- and a lone surrogate, each escaped in a text (Codex finding on #420).
+  ('v2_nul', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni\u0000odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":2,"sources":[]}'),
+  ('v2_surrogate', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni\ud800odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":2,"sources":[]}'),
+  ('v1_nul', '{"nodes":[{"children":[{"marks":[],"text":"Izmisljeni\u0000odlomak.","type":"text"}],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":1}');
 CREATE FUNCTION pg_temp.val(p_name text) RETURNS text
 LANGUAGE sql STABLE AS $$ SELECT val FROM ref WHERE name = p_name $$;
 CREATE FUNCTION pg_temp.sha(p_body text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
@@ -63,7 +68,12 @@ SELECT is(
 SELECT is(evidence.document_object(pg_temp.val('v2')) -> 'schemaVersion', '2'::jsonb, 'a document is read as an object');
 SELECT is(evidence.document_object(pg_temp.val('v2_text')) -> 'schemaVersion', '"2"'::jsonb, 'a text version stays a text');
 SELECT is(evidence.document_object(t), NULL, format('%s is no object', t))
-  FROM unnest(ARRAY['x', '[1]', '"izmisljeno"', '2', '{"nodes":', '{"a":"\u0000"}', '']) AS t;
+  FROM unnest(ARRAY['x', '[1]', '"izmisljeno"', '2', '{"nodes":', '[1, "\u0000"]', '']) AS t;
+SELECT is(evidence.document_object(pg_temp.val(n)) -> 'schemaVersion', v::jsonb,
+          format('%s is read with its version, though jsonb cannot hold its text', n))
+  FROM (VALUES ('v2_nul', '2'), ('v2_surrogate', '2'), ('v1_nul', '1')) AS t (n, v);
+SELECT is(evidence.document_object('{"a\\u0000":"\\\u0000","schemaVersion":2}') -> 'schemaVersion', '2'::jsonb,
+          'an escaped backslash before u0000 stays text');
 
 -- Ana's work starts at the v1 revision 0, Tomo's at the v2 one, each with
 -- its checkpoint, as app.open_student_work writes them.
@@ -135,6 +145,11 @@ SELECT matches(pg_temp.commit('tomo', 'pkg-t', 'doc-t', pg_temp.val('rev0_v2_has
   '^ZD422:', 'a schemaVersion of "2" as text is not version 2');
 SELECT matches(pg_temp.commit('tomo', 'pkg-t', 'doc-t', pg_temp.val('rev0_v2_hash'), pg_temp.val('no_version')),
   '^ZD422:', 'a document without schemaVersion is refused');
+SELECT matches(pg_temp.commit('ana', 'pkg-a', 'doc-a', pg_temp.val('rev0_hash'), pg_temp.val(n)),
+  '^ZD422:', format('a v2 revision of a v1 work is refused though jsonb cannot hold its text (%s)', n))
+  FROM unnest(ARRAY['v2_nul', 'v2_surrogate']) AS n;
+SELECT matches(pg_temp.commit('tomo', 'pkg-t', 'doc-t', pg_temp.val('rev0_v2_hash'), pg_temp.val('v1_nul')),
+  '^ZD422:', 'and so is a v1 revision of a v2 work');
 SELECT is(pg_temp.written(), (SELECT print FROM before_refusals), 'no refusal wrote anything');
 
 -- 5. A revision of the work's own version is accepted, for v1 as before and for v2.

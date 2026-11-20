@@ -36,6 +36,13 @@ REVOKE ALL ON FUNCTION evidence.revision_zero_document_v2() FROM PUBLIC;
 -- A stored text as a JSON object, or null for a text that is not one: such a
 -- text is never a document the server accepted (server/domain/document/
 -- snapshot.ts), and the checkpoint's own checks judge it.
+--
+-- jsonb cannot hold U+0000 or a lone surrogate, which valid JSON may carry as
+-- an escape (and a text of a document may hold), so such a document would be
+-- read as no object and pass unjudged. Each such escape is read as \u0001
+-- first. A backslash in JSON stands only inside a string, so the rewrite
+-- changes the content of strings and never the structure or a number: the
+-- schemaVersion read is the stored one.
 CREATE FUNCTION evidence.document_object(p_body text) RETURNS jsonb
 LANGUAGE plpgsql IMMUTABLE SET search_path = ''
 AS $$
@@ -43,7 +50,8 @@ DECLARE
   v_document jsonb;
 BEGIN
   BEGIN
-    v_document := p_body::jsonb;
+    v_document := pg_catalog.regexp_replace(
+      p_body, '\\u(0000|[dD][89abcdefABCDEF][0-9a-fA-F]{2})', '\\u0001', 'g')::jsonb;
   EXCEPTION WHEN data_exception OR program_limit_exceeded THEN
     RETURN NULL;
   END;
