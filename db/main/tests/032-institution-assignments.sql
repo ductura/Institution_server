@@ -294,6 +294,8 @@ ALTER TABLE institution.notice_read DISABLE TRIGGER notice_read_no_truncate;
 ALTER TABLE evidence.submission_note DISABLE TRIGGER submission_note_no_truncate;
 -- A work's attachment (SRV-10B) references the assignment and is append-only.
 ALTER TABLE institution.work_attachment DISABLE TRIGGER work_attachment_no_truncate;
+-- A work's milestone (SRV-1103) references the assignment and only moves its due date.
+ALTER TABLE institution.work_milestone DISABLE TRIGGER work_milestone_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
@@ -301,6 +303,7 @@ SELECT is(
 );
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
+ALTER TABLE institution.work_milestone ENABLE TRIGGER work_milestone_no_truncate;
 ALTER TABLE audit.access_log ENABLE TRIGGER access_log_no_truncate;
 ALTER TABLE evidence.submission_receipt ENABLE TRIGGER submission_receipt_no_truncate;
 ALTER TABLE evidence.submission_receipt_issuance ENABLE TRIGGER submission_receipt_issuance_no_truncate;
