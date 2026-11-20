@@ -14,14 +14,9 @@
 // throws and the route answers 503, never a roster whose file is not the
 // submitted one.
 import type { ExportLabels } from "../../export/index.ts";
+import type { SubmittedWorkSource } from "../../../database/index.ts";
 import { compareHr, verifyVersionedDocumentSnapshot } from "../../../domain/index.ts";
-import {
-  fileBaseName,
-  renderWorkFiles,
-  sha256Hex,
-  type SubmittedWorkSource,
-  type WorkFiles,
-} from "../files/index.ts";
+import { fileBaseName, renderWorkFiles, sha256Hex, type WorkFiles } from "../files/index.ts";
 
 export type MerlinRosterRow = {
   readonly familyName: string | null;
@@ -90,6 +85,20 @@ export async function buildMerlinRoster(
   }
   const rows: MerlinRosterRow[] = [];
   const files: MerlinFile[] = [];
+  // A short name two students would share takes the whole id for both, so a
+  // name in the roster always names one file (and the result does not depend
+  // on which of the two comes first).
+  const shortNames = new Map<string, number>();
+  for (const s of students) {
+    const name = fileBaseName(s.familyName, s.givenName, s.studentId);
+    shortNames.set(name, (shortNames.get(name) ?? 0) + 1);
+  }
+  const baseOf = (s: SubmittedWorkSource) => {
+    const short = fileBaseName(s.familyName, s.givenName, s.studentId);
+    return (shortNames.get(short) ?? 0) > 1
+      ? fileBaseName(s.familyName, s.givenName, s.studentId, true)
+      : short;
+  };
   for (const student of [...students].sort(byName)) {
     const submission = byStudent.get(student.studentId);
     if (submission === undefined) throw new Error("roster reads disagree");
@@ -108,7 +117,7 @@ export async function buildMerlinRoster(
       continue;
     }
     const rendered = await filesOf(student, submission.revision, labels);
-    const base = fileBaseName(student.familyName, student.givenName, student.studentId);
+    const base = baseOf(student);
     const pdf = { name: `${base}.pdf`, bytes: rendered.pdf };
     const docx = { name: `${base}.docx`, bytes: rendered.docx };
     files.push(pdf, docx);

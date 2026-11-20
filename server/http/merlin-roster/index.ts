@@ -15,11 +15,11 @@ import { ROUTES } from "../../contracts/index.ts";
 import {
   createAssignmentSubmissionsReader,
   createDeadlineExtensions,
+  createSubmittedWorksReader,
   type WithActor,
 } from "../../database/index.ts";
 import {
   createMerlinRosterReader,
-  createSubmittedWorksReader,
   merlinRosterCsv,
   type MerlinLabels,
   type MerlinRosterRead,

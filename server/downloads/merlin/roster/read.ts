@@ -9,8 +9,8 @@
 import type {
   AssignmentSubmissionsReader,
   DeadlineExtensionList,
+  SubmittedWorksReader,
 } from "../../../database/index.ts";
-import type { SubmittedWorksReader } from "../files/index.ts";
 
 import type { MerlinLabels } from "./csv.ts";
 import { buildMerlinRoster, type MerlinRoster } from "./roster.ts";

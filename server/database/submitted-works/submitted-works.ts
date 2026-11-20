@@ -1,4 +1,4 @@
-// Where the documents of the Merlin package are read from (SRV-1109): one
+// The port the documents of the Merlin package are read from (SRV-1109): one
 // app.fast_path_works call under withActor (migration 20261027200000), the
 // read the teacher's fast path uses. The database decides who gets rows (the
 // teacher of the assignment, C-23; anyone else the same empty set), names the
@@ -7,7 +7,8 @@
 // writes the teacher's opening of every returned text to the access log in
 // the same transaction. Nothing else is written. A row this reader cannot
 // vouch for throws, so the caller answers 503 and never a partial roster.
-import type { WithActor } from "../../../database/index.ts";
+// Rows become camelCase only here (docs/CODE_STYLE.md §9).
+import type { WithActor } from "../index.ts";
 
 export type SubmittedWorkSource = {
   readonly studentId: string;

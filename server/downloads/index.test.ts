@@ -14,7 +14,6 @@ describe("server/downloads public interface", () => {
       "DOWNLOADS_SCHEMAS",
       "createDownloadsService",
       "createMerlinRosterReader",
-      "createSubmittedWorksReader",
       "merlinRosterCsv",
       "renderReceiptPdf",
     ]);

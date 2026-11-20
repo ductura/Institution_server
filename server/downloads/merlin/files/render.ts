@@ -76,10 +76,28 @@ function printable(font: PDFFont, text: string): string {
   return out;
 }
 
-function wrap(font: PDFFont, text: string, size: number, width: number): string[] {
+/** A word wider than the line is split by code points, so nothing is drawn past the margin. */
+function pieces(font: PDFFont, word: string, size: number, width: number): string[] {
+  if (font.widthOfTextAtSize(word, size) <= width) return [word];
+  const out: string[] = [];
+  let piece = "";
+  for (const ch of word) {
+    if (piece !== "" && font.widthOfTextAtSize(piece + ch, size) > width) {
+      out.push(piece);
+      piece = ch;
+    } else {
+      piece += ch;
+    }
+  }
+  out.push(piece);
+  return out;
+}
+
+/** The lines of one paragraph, none wider than `width` (a single glyph excepted). */
+export function wrap(font: PDFFont, text: string, size: number, width: number): string[] {
   const lines: string[] = [];
   let line = "";
-  for (const word of text.split(" ")) {
+  for (const word of text.split(" ").flatMap((w) => pieces(font, w, size, width))) {
     const next = line === "" ? word : `${line} ${word}`;
     if (line !== "" && font.widthOfTextAtSize(next, size) > width) {
       lines.push(line);
