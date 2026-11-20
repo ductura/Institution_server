@@ -407,6 +407,27 @@ export type Operations = {
     success: { status: 200; body: { "state": "none" } | { "state": "ceka"; "revision": number; "requestedAt": string } | { "state": "potvrdeno"; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "student.work-sources.delete": {
+    params: { "assignmentId": string; "sourceId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.work-sources.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "sources": ({ "id": string; "record": { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "book"; "place": string; "publisher": string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "article"; "journal": string; "volume"?: string; "issue"?: string; "pages"?: string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "chapter"; "editors": ({ "kind": "person"; "family": string; "given": string })[]; "bookTitle": string; "place": string; "publisher": string; "pages"?: string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "web"; "url": string; "accessed": string }; "doi": string | null; "isbn": string | null; "undated": boolean; "requirement": "recommended" | "required" | null; "createdAt": string; "updatedAt": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "student.work-sources.put": {
+    params: { "assignmentId": string; "sourceId": string };
+    query: undefined;
+    body: { "record": { [key: string]: unknown }; "doi"?: string | null; "isbn"?: string | null; "undated"?: boolean };
+    success: { status: 200; body: { "id": string; "record": { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "book"; "place": string; "publisher": string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "article"; "journal": string; "volume"?: string; "issue"?: string; "pages"?: string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "chapter"; "editors": ({ "kind": "person"; "family": string; "given": string })[]; "bookTitle": string; "place": string; "publisher": string; "pages"?: string } | { "id": string; "authors": ({ "kind": "person"; "family": string; "given": string } | { "kind": "organization"; "name": string; "acronym"?: string })[]; "year": number; "title": string; "type": "web"; "url": string; "accessed": string }; "doi": string | null; "isbn": string | null; "undated": boolean; "requirement": "recommended" | "required" | null; "createdAt": string; "updatedAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "submission.submit.post": {
     params: undefined;
     query: undefined;

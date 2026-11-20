@@ -40,6 +40,7 @@ import {
   createSourceLookupRouteFor,
   createTeacherReadRoutesFor,
   createWebAuthnRoutesFor,
+  createWorkSourceRoutesFor,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
   type Running,
@@ -97,6 +98,16 @@ const COURSE = randomUUID();
 /** A student and an assignment that do not exist either (C-23). */
 const STUDENT = randomUUID();
 const ASSIGNMENT = randomUUID();
+const WORK_SOURCE = {
+  id: "00000000-0000-4000-8000-00000000c0a1",
+  type: "book",
+  authors: [{ kind: "person", family: "Izmišljeni", given: "Autor" }],
+  year: 2019,
+  title: "Izmišljena knjiga o kućnom kompostiranju",
+  place: "Izmišljeni grad",
+  publisher: "Izmišljena naklada",
+};
+
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -136,6 +147,25 @@ const SESSION_ROUTES = {
   "student.submission-notes.post": {
     path: "/api/v1/student/submission-notes",
     body: () => ({ assignmentId: ASSIGNMENT, text: "Izmišljena napomena o radu." }),
+    live: 404,
+  },
+  // SRV-7C: a live session that is no student of the work gets 404 on each source route.
+  "student.work-sources.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/sources`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.work-sources.put": {
+    method: "PUT",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}`,
+    body: () => ({ record: WORK_SOURCE }),
+    live: 404,
+  },
+  "student.work-sources.delete": {
+    method: "DELETE",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}`,
+    body: () => undefined,
     live: 404,
   },
   // SRV-22: a live session naming an assignment it is no student of gets 404.
@@ -438,6 +468,7 @@ const FACTORIES = [
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
+  "createWorkSourceRoutesFor",
   "createSourceLookupRouteFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
@@ -470,6 +501,7 @@ const MOUNTED = [
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
+  ...createWorkSourceRoutesFor(databases.main),
   createSourceLookupRouteFor(databases.main, ENV),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),

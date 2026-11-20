@@ -3,8 +3,12 @@
 // caller's own memberships and works are ever read.
 import { randomUUID } from "node:crypto";
 
+import { Value } from "@sinclair/typebox/value";
+
+import { WorkSourceRecord } from "../../../server/contracts/index.ts";
+
 import type { Handlers } from "./server.ts";
-import type { Account, Assignment, State } from "./state.ts";
+import type { Account, Assignment, State, WorkSource } from "./state.ts";
 
 /** Assignments of the courses the account is a student in. */
 export function studentAssignments(state: State, account: Account): Assignment[] {
@@ -110,6 +114,57 @@ export const STUDENT_HANDLERS: Handlers = {
     const note = { id: randomUUID(), text: body.text, createdAt: now.toISOString() };
     state.submissionNotes.push({ ...note, assignmentId: assignment.id, studentId: account.id });
     return { status: 201, body: note };
+  },
+  "student.work-sources.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const sources = state.workSources
+      .filter((s) => s.assignmentId === assignment.id && s.studentId === account.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+      .map(({ assignmentId: _a, studentId: _s, ...source }) => source);
+    return { status: 200, body: { sources } };
+  },
+  "student.work-sources.put": ({ state, account, params, body, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    // The wire checks one level only; the deep shape is checked here, as the real server does.
+    if (!Value.Check(WorkSourceRecord, body.record) || body.record.id !== params.sourceId)
+      return { error: "invalid_input" };
+    const mine = state.workSources.filter(
+      (s) => s.assignmentId === assignment.id && s.studentId === account.id,
+    );
+    const old = mine.find((s) => s.id === params.sourceId);
+    if (old?.requirement != null) return { error: "not_found" };
+    if (old === undefined && mine.length >= 500) return { error: "invalid_input" };
+    const at = now.toISOString();
+    const source = {
+      id: params.sourceId,
+      // The wire checks the record's deep shape; this fake stores what it was sent.
+      record: body.record as WorkSource["record"],
+      doi: body.doi ?? null,
+      isbn: body.isbn ?? null,
+      undated: body.undated ?? false,
+      requirement: null,
+      createdAt: old?.createdAt ?? at,
+      updatedAt: at,
+    };
+    state.workSources = state.workSources.filter((s) => s !== old);
+    state.workSources.push({ ...source, assignmentId: assignment.id, studentId: account.id });
+    return { status: 200 as const, body: source };
+  },
+  "student.work-sources.delete": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = ownAssignment(state, account, params.assignmentId);
+    if (assignment === undefined) return { error: "not_found" };
+    const old = state.workSources.find(
+      (s) =>
+        s.assignmentId === assignment.id && s.studentId === account.id && s.id === params.sourceId,
+    );
+    if (old === undefined || old.requirement !== null) return { error: "not_found" };
+    state.workSources = state.workSources.filter((s) => s !== old);
+    return { status: 204 };
   },
   "student.access-log.get": ({ state, account, params, query }) => {
     const work = state.works.find((w) => w.documentId === params.documentId);

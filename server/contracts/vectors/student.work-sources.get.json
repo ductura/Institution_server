@@ -1,0 +1,167 @@
+{
+  "route": "student.work-sources.get",
+  "vectors": [
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "name": "with-sources",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "sources": [
+            {
+              "id": "00000000-0000-4000-8000-00000000c0a1",
+              "record": {
+                "id": "00000000-0000-4000-8000-00000000c0a1",
+                "type": "book",
+                "authors": [
+                  {
+                    "kind": "person",
+                    "family": "Izmišljeni",
+                    "given": "Autor"
+                  }
+                ],
+                "year": 2019,
+                "title": "Izmišljena knjiga o kućnom kompostiranju",
+                "place": "Izmišljeni grad",
+                "publisher": "Izmišljena naklada"
+              },
+              "doi": "10.1234/izmisljeno.2019",
+              "isbn": "9780000000002",
+              "undated": false,
+              "requirement": null,
+              "createdAt": "2026-11-20T10:00:00.000Z",
+              "updatedAt": "2026-11-20T10:00:00.000Z"
+            },
+            {
+              "id": "00000000-0000-4000-8000-00000000c0a2",
+              "record": {
+                "id": "00000000-0000-4000-8000-00000000c0a2",
+                "type": "web",
+                "authors": [
+                  {
+                    "kind": "organization",
+                    "name": "Izmišljena udruga",
+                    "acronym": "IU"
+                  }
+                ],
+                "year": 2024,
+                "title": "Izmišljena mrežna stranica",
+                "url": "https://izvor.example.invalid/kompost",
+                "accessed": "2026-11-02"
+              },
+              "doi": null,
+              "isbn": null,
+              "undated": false,
+              "requirement": "required",
+              "createdAt": "2026-11-20T11:00:00.000Z",
+              "updatedAt": "2026-11-20T11:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002000"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "assignmentId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000002001"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002002"
+        }
+      }
+    }
+  ]
+}
