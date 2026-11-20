@@ -21,9 +21,10 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
-  createProcessSummaryDetailsRouteFor,
   createProcessSummaryRouteFor,
+  createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
+  createWorkVersionsRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
@@ -134,10 +135,23 @@ const SESSION_ROUTES = {
     body: () => ({ documentId: randomUUID() }),
     live: 404,
   },
-  // SRV-9D: the details read answers the same 404 for a work the caller may not read.
+  // SRV-9D: the details of a work it may not read are 404 too.
   "projection.process-summary-details.post": {
     path: "/api/v1/process-summary/details",
     body: () => ({ documentId: randomUUID() }),
+    live: 404,
+  },
+  // SRV-8E: an assignment the caller does not teach is the same empty list.
+  "teacher.fast-path.post": {
+    path: "/api/v1/teacher/fast-path",
+    body: () => ({ assignmentId: randomUUID() }),
+    live: 200,
+  },
+  // SRV-9A: the versions of a work it may not read are 404, as a missing work.
+  "work.versions.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/versions`,
+    body: () => undefined,
     live: 404,
   },
   "student.assignment-work.get": {
@@ -313,12 +327,6 @@ const SESSION_ROUTES = {
     method: "GET",
     path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions`,
     body: () => undefined,
-    live: 200,
-  },
-  // SRV-8E: an assignment the caller does not teach is the same empty list, 200.
-  "teacher.fast-path.post": {
-    path: "/api/v1/teacher/fast-path",
-    body: () => ({ assignmentId: ASSIGNMENT }),
     live: 200,
   },
   "teacher.assignment-submissions.post": {
@@ -499,6 +507,7 @@ const FACTORIES = [
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
+  "createWorkVersionsRouteFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
   "createProcessSummaryDetailsRouteFor",
@@ -534,6 +543,7 @@ const MOUNTED = [
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+  createWorkVersionsRouteFor(databases.main),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
@@ -763,6 +773,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("live.") ||
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
+        id.startsWith("work.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
