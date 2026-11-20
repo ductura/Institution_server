@@ -24,10 +24,8 @@ import {
   type ReconcileDeps,
   type ReconcileSummary,
 } from "./reconcile-pending-receipts.ts";
-import {
-  createSignPendingReceipt,
-  type SignPendingReceiptOutcome,
-} from "./sign-pending-receipt.ts";
+import type { SignPendingReceiptOutcome } from "./settle-attach.ts";
+import { createSignPendingReceipt } from "./sign-pending-receipt.ts";
 
 // Every value here is invented for the test.
 const NOW = Date.parse("2026-11-09T12:00:00.000Z");
@@ -754,12 +752,16 @@ describe("reconciler and worker sign the same receipt at once", () => {
   function keySigner(keyId: string) {
     const pair = generateKeyPairSync("ed25519");
     const provider = {
-      sign: vi.fn(async (input: Uint8Array): Promise<SignatureEnvelope> => ({
-        algorithm: "Ed25519",
-        keyId,
-        keyVersion: "1",
-        signatureEncoding: "raw",
-        signatureBase64Url: nodeSign(null, input, pair.privateKey).toString("base64url"),
+      // Ductura's SigningKeyProvider answers a Result.
+      sign: vi.fn(async (input: Uint8Array): Promise<{ ok: true; value: SignatureEnvelope }> => ({
+        ok: true,
+        value: {
+          algorithm: "Ed25519",
+          keyId,
+          keyVersion: "1",
+          signatureEncoding: "raw",
+          signatureBase64Url: nodeSign(null, input, pair.privateKey).toString("base64url"),
+        },
       })),
       verify: async () => false,
       publicVerificationKey: async () => {

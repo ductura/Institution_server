@@ -15,7 +15,10 @@ const COURSE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const STUDENT = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const TOKEN = "A".repeat(43);
 const ROUTE_URL = `${ORIGIN}/api/institution/courses/${COURSE}/students/${STUDENT}/removal`;
-const request = (body: BodyInit = "{}", headers: Record<string, string> = {}) =>
+const request = (
+  body: NonNullable<RequestInit["body"]> = "{}",
+  headers: Record<string, string> = {},
+) =>
   new Request(ROUTE_URL, {
     method: "POST",
     headers: { origin: ORIGIN, "content-type": "application/json", ...headers },

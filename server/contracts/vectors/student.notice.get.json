@@ -1,0 +1,165 @@
+{
+  "route": "student.notice.get",
+  "vectors": [
+    {
+      "name": "unread",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60",
+          "versionNo": 2,
+          "templateVersion": 1,
+          "title": "Seminarski rad: kućno kompostiranje",
+          "instructions": "Izmišljena uputa: opiši jedan izmišljeni pokus kompostiranja u stanu.",
+          "workType": "seminar_paper",
+          "opensAt": "2026-11-02T08:00:00.000Z",
+          "dueAt": "2026-12-15T22:59:00.000Z",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": ["proofreading", "literature_search"],
+          "evidenceProfile": "basic",
+          "wordMin": 1500,
+          "wordMax": 3000,
+          "readAt": null,
+          "acknowledgedAt": null
+        }
+      }
+    },
+    {
+      "name": "read-and-acknowledged",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60",
+          "versionNo": 2,
+          "templateVersion": 1,
+          "title": "Seminarski rad: kućno kompostiranje",
+          "instructions": "Izmišljena uputa: opiši jedan izmišljeni pokus kompostiranja u stanu.",
+          "workType": "seminar_paper",
+          "opensAt": "2026-11-02T08:00:00.000Z",
+          "dueAt": "2026-12-15T22:59:00.000Z",
+          "aiPolicy": "prohibited",
+          "aiPurposes": [],
+          "evidenceProfile": "extended",
+          "wordMin": null,
+          "wordMax": null,
+          "readAt": "2026-11-03T09:14:00.000Z",
+          "acknowledgedAt": "2026-11-03T09:20:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002001"
+        }
+      }
+    },
+    {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001",
+          "sec-fetch-site": "cross-site"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000002004"
+        }
+      }
+    },
+    {
+      "name": "not-found-or-not-enrolled",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000002002"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "assignmentId": "3c9f0a1e-7b2d-4e5f-8a6b-1c2d3e4f5a60"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002003"
+        }
+      }
+    }
+  ]
+}

@@ -218,6 +218,30 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.admin-courses.post:body": (() => {
+  const local0 = /^(?!\s)[\s\S]*(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9]{4}\/[0-9]{4}(?![\s\S])/;
+  const local2 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local3 = /^(?!\s)[\s\S]*(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['name'] === 'string') &&
+      value['name'].length <= 160 &&
+      value['name'].length >= 1 &&
+      local0.test(value['name']) &&
+      (typeof value['academicYear'] === 'string') &&
+      local1.test(value['academicYear']) &&
+      (((value['aiPolicy'] === 'prohibited')) || ((value['aiPolicy'] === 'partially_allowed')) || ((value['aiPolicy'] === 'encouraged'))) &&
+      (typeof value['holderId'] === 'string') &&
+      local2.test(value['holderId']) &&
+      Array.isArray(value['groups']) &&
+      value['groups'].length <= 20 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && value.length <= 80 && value.length >= 1 && local3.test(value)))) { return false }; return true; })(value['groups']) &&
+      Object.getOwnPropertyNames(value).length === 5
+    )
+  }
+  })(),
   "institution.assignment-versions.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -261,6 +285,118 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "institution.assignment.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.course-assignments.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.course-assignments.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){1,200}(?![\s\S])/;
+  const local2 = /^(?:(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[^\uD800-\uDBFF\u0000])){0,20000}(?![\s\S])/;
+  const local3 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
+  const local4 = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))(?![\s\S])/;
+  const local5 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['requestKey'] === 'string') &&
+      local0.test(value['requestKey']) &&
+      (typeof value['title'] === 'string') &&
+      local1.test(value['title']) &&
+      (typeof value['instructions'] === 'string') &&
+      local2.test(value['instructions']) &&
+      (((value['workType'] === 'short_paper')) || ((value['workType'] === 'essay')) || ((value['workType'] === 'seminar_paper')) || ((value['workType'] === 'bachelor_thesis')) || ((value['workType'] === 'master_thesis')) || ((value['workType'] === 'specialist_thesis')) || ((value['workType'] === 'doctoral_thesis'))) &&
+      (typeof value['opensAt'] === 'string') &&
+      local3.test(value['opensAt']) &&
+      (typeof value['dueAt'] === 'string') &&
+      local4.test(value['dueAt']) &&
+      (((value['aiPolicy'] === 'prohibited')) || ((value['aiPolicy'] === 'partially_allowed')) || ((value['aiPolicy'] === 'encouraged'))) &&
+      Array.isArray(value['aiPurposes']) &&
+      value['aiPurposes'].length <= 5 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((((value === 'formatting')) || ((value === 'proofreading')) || ((value === 'literature_search')) || ((value === 'transcription')) || ((value === 'translation')))))) { return false }; return true; })(value['aiPurposes']) &&
+      (((value['evidenceProfile'] === 'basic')) || ((value['evidenceProfile'] === 'extended'))) &&
+      (typeof value['importAllowed'] === 'boolean') &&
+      (((typeof value['wordMin'] === 'number' && Number.isInteger(value['wordMin'])) && value['wordMin'] <= 1000000 && value['wordMin'] >= 1) || ((value['wordMin'] === null))) &&
+      (((typeof value['wordMax'] === 'number' && Number.isInteger(value['wordMax'])) && value['wordMax'] <= 1000000 && value['wordMax'] >= 1) || ((value['wordMax'] === null))) &&
+      (value['groupIds'] !== undefined ? (Array.isArray(value['groupIds']) && value['groupIds'].length <= 20 && ((array: unknown[]) => { for(const value of array) if(!(((typeof value === 'string') && local5.test(value)))) { return false }; return true; })(value['groupIds'])) : true) &&
+      (value['externalToolsAllowed'] !== undefined ? ((typeof value['externalToolsAllowed'] === 'boolean')) : true) &&
+      (value['aiSummaryOnly'] !== undefined ? ((typeof value['aiSummaryOnly'] === 'boolean')) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'title', 'instructions', 'workType', 'opensAt', 'dueAt', 'aiPolicy', 'aiPurposes', 'evidenceProfile', 'importAllowed', 'wordMin', 'wordMax', 'groupIds', 'externalToolsAllowed', 'aiSummaryOnly'].includes(key))
+    )
+  }
+  })(),
+  "institution.course-group-teachers.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['groupId'] === 'string') &&
+      local0.test(value['groupId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.course-group-teachers.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['teacherId'] === 'string') &&
+      local0.test(value['teacherId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.course-groups.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.course-groups.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      local0.test(value['courseId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.course-groups.post:body": (() => {
+  const local0 = /^(?!\s)[\s\S]*(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['name'] === 'string') &&
+      value['name'].length <= 80 &&
+      value['name'].length >= 1 &&
+      local0.test(value['name']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "institution.courses.post:body": (() => {
   const local0 = /^(?!\s)[\s\S]*(?<!\s)(?![\s\S])/;
   const local1 = /^[0-9]{4}\/[0-9]{4}(?![\s\S])/;
@@ -293,6 +429,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
+  "institution.enrollment-code-state.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['courseId'] === 'string') &&
+      value['courseId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
     )
   }),
   "institution.enrollment-code.post:params": (() => {
@@ -548,6 +692,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
+  "student.assignment-requirements.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.enrollments.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -570,6 +722,44 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['versionNo'] === 'number' && Number.isInteger(value['versionNo'])) &&
       value['versionNo'] <= 2147483647 &&
       value['versionNo'] >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.notice.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.submission-notes.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.submission-notes.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*\S)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,600}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      (typeof value['text'] === 'string') &&
+      local1.test(value['text']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "student.submission.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 1
     )
   }),

@@ -1,11 +1,19 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { NextRequest } from "next/server";
 import pg from "pg";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { POST } from "../../app/api/institution/assignments/[assignmentId]/versions/route";
-import { createWithActor } from "../../../server/database/with-actor.ts";
+import { createWithActor } from "../../../server/database/index.ts";
+import {
+  createDatabases,
+  createInstitutionAssignmentRoutesFor,
+  createLayers,
+  startServer,
+  type Running,
+} from "../../../server/http/index.ts";
+import { SESSION_COOKIE_NAME } from "../../../server/session/index.ts";
+
+import { expectHttpProblem } from "./http-problem.ts";
 
 // Real PostgreSQL and ductus_app login, with entirely invented fixtures (DAN-292).
 const admin = new pg.Pool({
@@ -42,6 +50,7 @@ const CONTENT = {
   wordMax: 3000,
 };
 let assignment: string;
+let server: Running;
 
 const post = (
   session: string,
@@ -49,18 +58,15 @@ const post = (
   over: Record<string, unknown> = {},
   target = assignment,
 ) =>
-  POST(
-    new NextRequest(`${ORIGIN}/api/institution/assignments/${target}/versions`, {
-      method: "POST",
-      headers: {
-        origin: ORIGIN,
-        "content-type": "application/json",
-        cookie: `__Host-ductus_session=${session}`,
-      },
-      body: JSON.stringify({ expectedVersion, ...CONTENT, ...over }),
-    }),
-    { params: Promise.resolve({ assignmentId: target }) },
-  );
+  fetch(`http://127.0.0.1:${server.port}/api/v1/institution/assignments/${target}/versions`, {
+    method: "POST",
+    headers: {
+      origin: ORIGIN,
+      "content-type": "application/json",
+      cookie: `${SESSION_COOKIE_NAME}=${session}`,
+    },
+    body: JSON.stringify({ expectedVersion, ...CONTENT, ...over }),
+  });
 const versions = async () =>
   (
     await admin.query(
@@ -72,7 +78,6 @@ const versions = async () =>
   ).rows[0] as { current_version: number; rows: number; title: string };
 
 beforeAll(async () => {
-  vi.stubEnv("OIDC_REDIRECT_URI", `${ORIGIN}/api/auth/callback`);
   const suffix = randomBytes(6).toString("hex");
   for (const [index, faculty] of faculties.entries()) {
     await admin.query("INSERT INTO identity.institution (id, slug) VALUES ($1, $2)", [
@@ -145,10 +150,17 @@ beforeAll(async () => {
         )
       ).rows[0].id,
   );
+  server = await startServer({
+    host: "127.0.0.1",
+    port: 0,
+    layers: createLayers({ expectedOrigin: ORIGIN }),
+    databases: createDatabases(),
+    routes: createInstitutionAssignmentRoutesFor({ withActor }),
+  });
 });
 
 afterAll(async () => {
-  vi.unstubAllEnvs();
+  await server?.close();
   await app.end();
   // A version is immutable, for the operator too; only this clean-up steps around the trigger.
   const cleaner = await admin.connect();
@@ -202,8 +214,7 @@ describe("new assignment version: real POST, session and database (DAN-292)", ()
       [people.teacher.token, randomUUID()],
     ] as const) {
       const response = await post(session, 1, {}, target);
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: "forbidden" });
+      await expectHttpProblem(response, 403, "forbidden");
     }
     expect(await versions()).toEqual({ current_version: 1, rows: 1, title: CONTENT.title });
   });
@@ -217,16 +228,14 @@ describe("new assignment version: real POST, session and database (DAN-292)", ()
     expect(created.headers.get("cache-control")).toBe("no-store");
     expect(await created.json()).toEqual({ assignmentId: assignment, versionNo: 2 });
     const stale = await post(people.teacher.token, 1);
-    expect(stale.status).toBe(409);
-    expect(await stale.json()).toEqual({ error: "version_conflict" });
+    await expectHttpProblem(stale, 409, "version_conflict");
     for (const over of [
       { aiPolicy: "encouraged" },
       { wordMin: 100 },
       { evidenceProfile: "extended" },
     ]) {
       const response = await post(people.teacher.token, 2, { wordMin: null, ...over });
-      expect(response.status).toBe(422);
-      expect(await response.json()).toEqual({ error: "invalid_input" });
+      await expectHttpProblem(response, 422, "invalid_input");
     }
     expect(await versions()).toEqual({
       current_version: 2,

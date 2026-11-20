@@ -9,7 +9,7 @@ import {
   type WithActor,
 } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-289 A1 (contract #756 I3, plan of attack #755 A9 and A10): pgTAP runs in
 // one transaction and cannot race two calls. The submission closes the
@@ -106,9 +106,9 @@ const commitSql =
 const recordSql = "SELECT outcome FROM app.record_submission($1, $2)";
 
 const commit = (work: Work, n: number) => async (tx: ActorTransaction) =>
-  (await tx.query<Row>(commitSql, segment(work, n))).rows[0];
+  (await tx.query<Row>(commitSql, segment(work, n))).rows[0]!;
 const record = (work: Work) => async (tx: ActorTransaction) =>
-  (await tx.query<Row>(recordSql, [work.requestId, sha256Hex(`snapshot-${work.name}-1`)])).rows[0];
+  (await tx.query<Row>(recordSql, [work.requestId, sha256Hex(`snapshot-${work.name}-1`)])).rows[0]!;
 
 async function waitForBlocked(name: string, pattern: string, timeoutMs = 5_000) {
   const deadline = Date.now() + timeoutMs;
@@ -323,7 +323,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   appPool = new pg.Pool({ connectionString: urlFor(login, password, applicationName), max: 2 });
   withActor = createWithActor(appPool);
@@ -338,7 +338,7 @@ beforeAll(async () => {
             "SELECT outcome, submission_request_id FROM app.request_submission($1, 1)",
             [work.documentId],
           )
-        ).rows[0],
+        ).rows[0]!,
     );
     expect(request.outcome).toBe("requested");
     work.requestId = request.submission_request_id;
@@ -358,7 +358,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }

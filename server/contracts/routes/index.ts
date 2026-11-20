@@ -13,7 +13,7 @@ export {
   TOO_MANY_REQUESTS,
 } from "./platform.ts";
 export { profileRoutes } from "./profile.ts";
-export { studentRoutes } from "./student.ts";
+export { StudentSubmissionState, studentRoutes } from "./student.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";

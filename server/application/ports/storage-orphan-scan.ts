@@ -27,22 +27,22 @@ export type ScanPageRequest = {
   pageSize: number;
 };
 
-export interface StorageKeyLister {
+export type StorageKeyLister = {
   /**
    * One page of the object keys of one storage domain, in ascending order of
    * their UTF-8 bytes, each key once (the order of S3 ListObjectsV2). Read
    * only: listing never writes, deletes or moves an object.
    */
   listKeys(input: ScanPageRequest): Promise<ScanPage<StoredObjectEntry>>;
-}
+};
 
-export interface StorageReferenceReader {
+export type StorageReferenceReader = {
   /**
    * One page of the distinct storage references that start with
    * `<storageDomain>:`, in ascending order of their UTF-8 bytes (`COLLATE "C"`).
    */
   listReferences(input: ScanPageRequest): Promise<ScanPage<StorageReferenceEntry>>;
-}
+};
 
 /**
  * Counts only. No object key, reference, hash, package, institution or file
@@ -70,9 +70,9 @@ export type StorageOrphanScanSummary = {
   } | null;
 };
 
-export interface StorageOrphanAudit {
+export type StorageOrphanAudit = {
   /** One record per pass, whatever its status. */
   record(
     summary: StorageOrphanScanSummary,
   ): Promise<{ status: "recorded" } | { status: "unavailable" }>;
-}
+};

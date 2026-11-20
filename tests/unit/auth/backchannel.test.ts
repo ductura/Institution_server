@@ -6,6 +6,7 @@ import {
   type BackchannelDeps,
 } from "../../../server/session/backchannel.ts";
 import { loadAuthConfig } from "../../../server/external/srce-auth/config.ts";
+import { createLogoutVerifier } from "../../../server/external/srce-auth/logout-verifier.ts";
 import { createCachedKeySource } from "../../../server/external/srce-auth/logout-keys.ts";
 import { BACKCHANNEL_LOGOUT_EVENT } from "../../../server/external/srce-auth/logout-token.ts";
 import { createOidcClient } from "../../../server/external/srce-auth/oidc.ts";
@@ -68,9 +69,11 @@ beforeEach(() => {
   const oidc = createOidcClient(config, idp.fetch);
   port = vi.fn<BackchannelLogout>(async () => ({ ok: true, closed: 1 }));
   deps = {
-    config,
-    discoveredIssuer: () => oidc.discoveredIssuer(),
-    keys: createCachedKeySource({ load: () => oidc.jwks() }),
+    verifier: createLogoutVerifier({
+      config,
+      discoveredIssuer: () => oidc.discoveredIssuer(),
+      keys: createCachedKeySource({ load: () => oidc.jwks() }),
+    }),
     backchannelLogout: port,
   };
   errors = vi.spyOn(console, "error").mockImplementation(() => {});

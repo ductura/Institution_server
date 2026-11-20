@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-515 (M2.6-P03): a mentorship comes into being only when a confirmed
 // teacher approves the student's request. db/tests/104 covers every input
@@ -144,7 +144,7 @@ async function resetCase() {
 function call<T>(who: Person, sql: string, params: unknown[] = []) {
   return withActor(tokens[who], async (tx) => {
     const row = await tx.query<{ v: T }>(sql, params);
-    return row.rows[0].v;
+    return row.rows[0]!.v;
   });
 }
 
@@ -177,7 +177,7 @@ async function hold(who: Person, sql: string, params: unknown[]) {
   await client.query("SELECT pg_catalog.set_config('app.session_token', $1, true)", [tokens[who]]);
   const result = await client.query<{ v: unknown }>(sql, params);
   return {
-    value: result.rows[0].v,
+    value: result.rows[0]!.v,
     async commit() {
       try {
         await client.query("COMMIT");
@@ -205,7 +205,7 @@ async function untilLockWait() {
        WHERE usename = $1 AND wait_event_type = 'Lock'`,
       [login],
     );
-    if (row.rows[0].waiting > 0) return;
+    if (row.rows[0]!.waiting > 0) return;
     await new Promise((resolve) => setImmediate(resolve));
   }
   throw new Error("no statement waited on the lock");
@@ -226,7 +226,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   const url = new URL(SAFE_ADMIN_URL);
   url.username = login;
@@ -250,7 +250,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -297,7 +297,7 @@ describe("mentorship approval under concurrency (DAN-515)", () => {
       "SELECT approved_at IS NULL AND withdrawn_at IS NULL AS open FROM institution.mentorship_request WHERE id = $1",
       [requestId],
     );
-    expect(open.rows[0].open).toBe(true);
+    expect(open.rows[0]!.open).toBe(true);
   });
 
   it("holds a revocation until the approval that saw the role commits", async () => {
@@ -345,7 +345,7 @@ describe("mentorship approval under concurrency (DAN-515)", () => {
        WHERE institution_id = $1 AND student_id = $2 AND approved_at IS NULL AND withdrawn_at IS NULL`,
       [institutionId, people.ana],
     );
-    expect(open.rows[0].open).toBe(0);
+    expect(open.rows[0]!.open).toBe(0);
   });
 
   it("refuses a new request of the kind when another one is made and approved while it runs", async () => {
@@ -366,7 +366,7 @@ describe("mentorship approval under concurrency (DAN-515)", () => {
         [people.vesna],
       );
       await as("vesna");
-      await client.query("SELECT institution.approve_mentorship_request($1)", [made.rows[0].v]);
+      await client.query("SELECT institution.approve_mentorship_request($1)", [made.rows[0]!.v]);
       again = request("ana");
       await untilLockWait();
       await client.query("COMMIT");
@@ -383,7 +383,7 @@ describe("mentorship approval under concurrency (DAN-515)", () => {
        WHERE institution_id = $1 AND student_id = $2 AND approved_at IS NULL AND withdrawn_at IS NULL`,
       [institutionId, people.ana],
     );
-    expect(open.rows[0].open).toBe(0);
+    expect(open.rows[0]!.open).toBe(0);
   });
 
   it("leaves one open request when a student sends the same request twice at once", async () => {
@@ -395,6 +395,6 @@ describe("mentorship approval under concurrency (DAN-515)", () => {
        WHERE institution_id = $1 AND student_id = $2 AND approved_at IS NULL AND withdrawn_at IS NULL`,
       [institutionId, people.boris],
     );
-    expect(row.rows[0].open).toBe(1);
+    expect(row.rows[0]!.open).toBe(1);
   });
 });

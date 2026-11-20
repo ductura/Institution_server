@@ -14,12 +14,12 @@
 
 export type PurposeLevel = 1 | 2;
 
-export interface PurposeEntry {
+export type PurposeEntry = {
   readonly key: string;
   readonly level: PurposeLevel;
   /** True exactly for level 1 (D-64): a teacher switches level 2 on per task. */
   readonly enabledByDefault: boolean;
-}
+};
 
 export type PurposeCatalogVersion = 1 | 2;
 

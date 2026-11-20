@@ -27,7 +27,7 @@ async function client(url: string) {
   const c = new pg.Client({ connectionString: url });
   clients.push(c);
   await c.connect();
-  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]
+  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]!
     .pid;
   return { c, pid };
 }
@@ -85,7 +85,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_auth', $1::text, $2::text) AS ddl",
     [AUTH_LOGIN, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await admin.query(
     "INSERT INTO identity.institution (id, slug, aai_home_org) VALUES ($1, $2, $3)",
     [institution, `race-${suffix}`, homeOrg],
@@ -257,7 +257,7 @@ describe("institution change and a login in flight", () => {
       "SELECT identity.close_user_sessions($1) AS n",
       [randomUUID()],
     );
-    expect(closed.rows[0].n).toBe(0);
+    expect(closed.rows[0]!.n).toBe(0);
   });
 
   it("logins do not wait for one another", async () => {

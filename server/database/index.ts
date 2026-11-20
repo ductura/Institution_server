@@ -63,8 +63,6 @@ export type {
   InstitutionCourses,
 } from "./institution-courses.ts";
 export type {
-  AssignmentVersionContent,
-  AssignmentVersionOutcome,
   InstitutionMembers,
   StudentRemovalOutcome,
   StudentReturnOutcome,
@@ -80,11 +78,6 @@ export type {
   MentoredWorksOutcome,
   MentoredWorksReader,
 } from "./mentored-works.ts";
-export type {
-  TeacherCourse,
-  TeacherCoursesOutcome,
-  TeacherCoursesReader,
-} from "./teacher-courses.ts";
 export type {
   AssignmentWorkLanguageOutcome,
   WorkLanguageOutcome,
@@ -144,6 +137,37 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+export { createInstitutionAssignments } from "./institution-assignments.ts";
+export { createInstitutionGroups } from "./institution-groups.ts";
+export { createAdminCourses } from "./admin-courses.ts";
+export type { AdminCourseInput, AdminCourseOutcome, AdminCourses } from "./admin-courses.ts";
+export type {
+  CourseGroup,
+  CourseGroupsOutcome,
+  CourseGroupTeacher,
+  GroupCreateOutcome,
+  GroupTeacherOutcome,
+  InstitutionGroups,
+} from "./institution-groups.ts";
+export type {
+  AssignmentContent,
+  AssignmentCreateOutcome,
+  AssignmentPublishOutcome,
+  InstitutionAssignments,
+} from "./institution-assignments.ts";
+export {
+  createTeacherAccessReader,
+  createTeacherCoursesReader,
+  teacherCoursesOf,
+} from "./teacher-reads.ts";
+export type {
+  TeacherAccessReader,
+  TeacherAccessResult,
+  TeacherAssignment,
+  TeacherCourse,
+  TeacherCoursesReader,
+  TeacherCoursesResult,
+} from "./teacher-reads.ts";
 export { createCommitContextReader } from "./commit-context.ts";
 export { createEvidenceCommitter } from "./commit-evidence.ts";
 export {
@@ -175,6 +199,19 @@ export {
 } from "./my-assignment-work.ts";
 export type { AssignmentWork, MyAssignmentWorkReader, WorkState } from "./my-assignment-work.ts";
 export {
+  createMySubmissionStateReader,
+  MY_SUBMISSION_STATE_DATABASE_ERROR,
+  MY_SUBMISSION_STATE_ERRORS,
+  MY_SUBMISSION_STATE_NOT_FOUND,
+  MY_SUBMISSION_STATE_ROW_MALFORMED,
+  MY_SUBMISSION_STATE_UNAUTHENTICATED,
+} from "./my-submission-state.ts";
+export type {
+  MySubmissionStateReader,
+  StoredSubmissionState,
+  StoredWordRange,
+} from "./my-submission-state.ts";
+export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,
   INTERFACE_LOCALE_ERRORS,
@@ -198,7 +235,6 @@ export { createInstitutionMembers } from "./institution-members.ts";
 export { createWorkLanguages } from "./work-language.ts";
 export { createAssignmentSubmissionsReader } from "./assignment-submissions.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
-export { createTeacherCoursesReader } from "./teacher-courses.ts";
 export {
   createInstitutionEnrollment,
   ENROLLMENT_DATABASE_ERROR,
@@ -210,6 +246,12 @@ export {
   ENROLLMENT_TOO_MANY_ATTEMPTS,
   ENROLLMENT_UNAUTHENTICATED,
 } from "./institution-enrollment.ts";
+export { createStudentAssignmentsReader } from "./student-assignments.ts";
+export type {
+  StudentAssignmentRow,
+  StudentAssignmentsRead,
+  StudentAssignmentsReader,
+} from "./student-assignments.ts";
 export { createStudentNoticeRead } from "./student-notice-read.ts";
 export type { NoticeReadOutcome, StudentNoticeRead } from "./student-notice-read.ts";
 export { createWithActor, leadingKeyword } from "./with-actor.ts";

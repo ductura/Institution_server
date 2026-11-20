@@ -4,22 +4,31 @@
 // edge of Ductus teacher-courses.ts, mentored-works.ts and
 // assignment-submissions.ts at 078c780. All values are invented.
 import { readFileSync } from "node:fs";
+import { request as httpRequest } from "node:http";
 import { connect } from "node:net";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   AssignmentSubmission,
   AssignmentSubmissionsOutcome,
   MentoredWorkOutcome,
   MentoredWorksOutcome,
-  TeacherCoursesOutcome,
+  TeacherAccessResult,
+  TeacherCoursesResult,
 } from "../database/index.ts";
+
+import { principalScope } from "../session/index.ts";
 
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
-import { createTeacherReadRoutes, parseAssignmentIdsBody } from "./teacher-reads.ts";
+import {
+  createTeacherAccessRoute,
+  createTeacherCoursesRoute,
+  createTeacherReadRoutes,
+  parseAssignmentIdsBody,
+} from "./teacher-reads.ts";
 
 type Vector = {
   name: string;
@@ -41,7 +50,8 @@ const ORIGIN = "https://ductura.example.invalid";
 
 let server: Running | undefined;
 const calls: unknown[][] = [];
-let courses: TeacherCoursesOutcome = { status: "unavailable", reason: "x" };
+let courses: TeacherCoursesResult | undefined;
+let access: () => Promise<TeacherAccessResult>;
 let works: MentoredWorksOutcome = { status: "unavailable" };
 let work: MentoredWorkOutcome = { status: "unavailable" };
 let submissions: AssignmentSubmissionsOutcome = { status: "unavailable", reason: "x" };
@@ -52,31 +62,40 @@ async function start() {
     port: 0,
     layers: createLayers({ expectedOrigin: ORIGIN }),
     databases: createDatabases(),
-    routes: createTeacherReadRoutes({
-      courses: async (token) => {
+    routes: [
+      createTeacherCoursesRoute(async (token) => {
         calls.push(["courses", token]);
+        if (courses === undefined) throw new Error("test reader failure");
         return courses;
-      },
-      mentored: {
-        readMentoredWorks: async (token) => {
-          calls.push(["works", token]);
-          return works;
+      }),
+      createTeacherAccessRoute(async (token) => {
+        reads.push(token);
+        return access();
+      }),
+      ...createTeacherReadRoutes({
+        mentored: {
+          readMentoredWorks: async (token) => {
+            calls.push(["works", token]);
+            return works;
+          },
+          readMentoredWork: async (token, id) => {
+            calls.push(["work", token, id]);
+            return work;
+          },
         },
-        readMentoredWork: async (token, id) => {
-          calls.push(["work", token, id]);
-          return work;
+        submissions: async (token, ids) => {
+          calls.push(["submissions", token, ids]);
+          return submissions;
         },
-      },
-      submissions: async (token, ids) => {
-        calls.push(["submissions", token, ids]);
-        return submissions;
-      },
-      timeoutMs: 300,
-    }),
+        timeoutMs: 300,
+      }),
+    ],
   });
 }
 afterEach(async () => {
   calls.length = 0;
+  reads.length = 0;
+  vi.restoreAllMocks();
   await server?.close();
   server = undefined;
 });
@@ -142,10 +161,14 @@ const CASES: Case[] = [
     method: "GET",
     path: () => "/api/v1/teacher/courses",
     arrange: (v) => {
+      if (v.response.status === 503) {
+        courses = undefined;
+        return;
+      }
       courses =
         v.response.status === 200
-          ? { status: "ok", courses: v.response.body.courses as never }
-          : (failure(v.response.status) as TeacherCoursesOutcome);
+          ? { ok: true, courses: v.response.body.courses as never }
+          : { ok: false, reason: v.response.status === 404 ? "not_found" : "unauthenticated" };
     },
   },
   {
@@ -259,7 +282,7 @@ describe("what reaches the readers", () => {
   });
 
   it("two Sec-Fetch-Site values or a missing cookie never reach a reader", async () => {
-    courses = { status: "ok", courses: [] };
+    courses = { ok: true, courses: [] };
     await start();
     const twice: [string, string][] = [
       ["cookie", cookie],
@@ -281,7 +304,7 @@ describe("what reaches the readers", () => {
 
   it("a reader that throws is 503", async () => {
     await start();
-    courses = undefined as never;
+    courses = undefined;
     expect((await get("/api/v1/teacher/courses")).status).toBe(503);
   });
 });
@@ -308,5 +331,73 @@ describe("parseAssignmentIdsBody", () => {
     ["ids as text", { assignmentIds: id }],
   ])("refuses %s", (_name, value) => {
     expect(parseAssignmentIdsBody(value)).toBeNull();
+  });
+});
+
+const reads: string[] = [];
+const ACCESS = vectorsOf("teacher.access.get");
+const pick = (list: Vector[], name: string) => list.find((v) => v.name === name)!;
+
+const USER = "6e7f8091-a2b3-4c4d-9e5f-6a7b8c9d0e01";
+const INSTITUTION = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01";
+
+function getAccess(
+  path: string,
+  headers: Record<string, string> = {},
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      { host: "127.0.0.1", port: server!.port, method: "GET", path, headers },
+      (res) => {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => (text += chunk));
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: JSON.parse(text) }));
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
+const tokenOf = (v: Vector) => v.request.headers!.cookie!.slice("__Host-ductus_session=".length);
+const withoutRequestId = (body: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(body).filter(([k]) => k !== "requestId"));
+
+describe("GET /api/v1/teacher/access", () => {
+  const path = "/api/v1/teacher/access";
+
+  it.each(["allowed", "denied"] as const)("answers %s with the principal's scope", async (name) => {
+    const v = pick(ACCESS, name);
+    access = async () => ({ ok: true, access: name, userId: USER, institutionId: INSTITUTION });
+    await start();
+    expect(await getAccess(path, v.request.headers)).toEqual({
+      status: 200,
+      body: { access: name, scope: principalScope(USER, INSTITUTION) },
+    });
+    expect(reads).toEqual([tokenOf(v)]);
+  });
+
+  it("401 when no live session is behind the cookie, 403 cross-site before any read", async () => {
+    access = async () => ({ ok: false, reason: "unauthenticated" });
+    await start();
+    const cookie = pick(ACCESS, "allowed").request.headers!;
+    const got = await getAccess(path, cookie);
+    expect([got.status, withoutRequestId(got.body)]).toEqual([
+      401,
+      withoutRequestId(pick(ACCESS, "unauthorized").response.body),
+    ]);
+    reads.length = 0;
+    expect((await getAccess(path, pick(ACCESS, "forbidden").request.headers)).status).toBe(403);
+    expect(reads).toEqual([]);
+  });
+
+  it("503 when the read fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    access = async () => {
+      throw new Error("down");
+    };
+    await start();
+    const v = pick(ACCESS, "unavailable");
+    expect((await getAccess(path, v.request.headers)).status).toBe(503);
   });
 });

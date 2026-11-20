@@ -40,7 +40,10 @@ function request(body: string, headers: Record<string, string> = {}): Request {
   });
 }
 
-function routedRequest(body: BodyInit, headers: Record<string, string> = {}): NextRequest {
+function routedRequest(
+  body: NonNullable<RequestInit["body"]>,
+  headers: Record<string, string> = {},
+): NextRequest {
   const url = `https://attacker.example/api/institution/courses/${COURSE}/assignments`;
   const requestHeaders = new Headers({
     origin: ORIGIN,
@@ -68,7 +71,7 @@ function assignmentPost(withActor: WithActor) {
 
 function dependencies(responseId = ASSIGNMENT_ID, rejection?: { code: string; message: string }) {
   const calls: Array<[string | null | undefined]> = [];
-  const queries: Array<{ sql: string; values?: readonly unknown[] }> = [];
+  const queries: Array<{ sql: string; values?: readonly unknown[] | undefined }> = [];
   const withActor = Object.assign(
     async <T>(
       token: string | null | undefined,

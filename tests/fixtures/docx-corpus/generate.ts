@@ -14,20 +14,20 @@ export const MANIFEST_FILE = "MANIFEST.json";
 export const INVENTED_NAMES = ["Sintetički Autor", "Izmišljena Mentorica"] as const;
 
 /** Expected traces, declared by hand per fixture and never computed from the XML. */
-export interface Traces {
+export type Traces = {
   ins: number;
   del: number;
   comments: number;
   rsidAttributes: number;
   coreProperties: string[];
-}
-interface Spec {
+};
+type Spec = {
   file: string;
   parts: [name: string, xml: string][];
   text: string[];
   traces: Traces;
   sameTextAs?: string;
-}
+};
 
 const [AUTHOR, MENTOR] = INVENTED_NAMES;
 const DATE = "2026-01-01T12:00:00Z";
@@ -234,7 +234,7 @@ const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
 });
 function crc32(bytes: Uint8Array): number {
   let c = 0xffffffff;
-  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  for (const b of bytes) c = (CRC_TABLE[(c ^ b) & 0xff] ?? 0) ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
 }
 

@@ -15,7 +15,7 @@ import { MAX_EVIDENCE_SEGMENT_BYTES } from "../domain/forensics/evidence-chain-v
 import {
   createCheckPendingReceiptObject,
   type PendingReceiptObjectCheck,
-} from "./check-pending-receipt-object";
+} from "./check-pending-receipt-object.ts";
 
 // Every value here is invented for the test.
 const INSTITUTION = "00000000-0000-4000-8000-0000000000a1";

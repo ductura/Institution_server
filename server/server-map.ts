@@ -95,9 +95,29 @@ export function listAreaFolders(root: string): string[] {
   return [...top.filter((name) => name !== "external"), ...external].sort();
 }
 
-/** Disagreements between the map and the folders on disk. */
-export function checkFolders(areas: MapArea[], folders: string[]): string[] {
+/** The copied folders the map lists as not yet areas ("Kopirane mape bez područja"). */
+export const COPIED_HEADING = "### Kopirane mape izvan karte";
+
+/** The folders (without `server/`) of the copied-folder table, in its order. */
+export function readCopiedFolders(markdown: string): string[] {
+  return readTable(markdown, COPIED_HEADING).map((cells) =>
+    (cells[0] ?? "").replace(/^`server\/(.*)`$/u, "$1"),
+  );
+}
+
+/**
+ * Disagreements between the map and the folders on disk. A copied folder
+ * (`copied`) may exist outside the map, but only while it is no area and is
+ * still on disk.
+ */
+export function checkFolders(areas: MapArea[], folders: string[], copied: string[] = []): string[] {
   const problems: string[] = [];
+  for (const folder of copied) {
+    if (areas.some((a) => a.key === folder))
+      problems.push(`server/${folder} is an area: take it off the copied folders`);
+    if (!folders.includes(folder))
+      problems.push(`server/${folder} is listed as copied but is missing`);
+  }
   for (const area of areas) {
     const exists = folders.includes(area.key);
     if (area.status === "postoji" && !exists)
@@ -105,7 +125,7 @@ export function checkFolders(areas: MapArea[], folders: string[]): string[] {
     if (area.status === "planirano" && exists) problems.push(`${area.dir} exists: mark it postoji`);
   }
   for (const folder of folders) {
-    if (!areas.some((a) => a.key === folder))
+    if (!areas.some((a) => a.key === folder) && !copied.includes(folder))
       problems.push(`server/${folder} is not in docs/server-map.md`);
   }
   return problems;

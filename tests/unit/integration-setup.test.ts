@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
-import { DATABASE_URL_VARIABLES, foreignDatabaseUrls } from "../db/ductus/loopback-database-url.ts";
+import { DATABASE_URL_VARIABLES, foreignDatabaseUrls } from "../db/loopback-database-url.ts";
 import config from "../../vitest.config.ts";
 
 // F-019: the integration project refuses to start against a database that is
@@ -8,12 +10,19 @@ import config from "../../vitest.config.ts";
 const LOCAL = "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
 
 describe("integration setup", () => {
-  it("is a setup file of the integration project", () => {
+  it("is a setup file of the database project", () => {
     const projects = (config.test?.projects ?? []) as {
       test?: { name?: string; setupFiles?: string[] };
     }[];
-    const integration = projects.find((project) => project.test?.name === "integration");
-    expect(integration?.test?.setupFiles).toContain("tests/integration/setup.ts");
+    const integration = projects.find((project) => project.test?.name === "database");
+    expect(integration?.test?.setupFiles).toContain("tests/db/setup.ts");
+  });
+
+  it("is the setup file that refuses a foreign URL, through the helper tested here", () => {
+    const setup = readFileSync(new URL("../db/setup.ts", import.meta.url), "utf8");
+    expect(setup).toMatch(/import \{ foreignDatabaseUrls \} from "\.\/loopback-database-url\.ts";/);
+    expect(setup).toMatch(/foreignDatabaseUrls\(process\.env\)/);
+    expect(setup).toMatch(/throw new Error\(/);
   });
 
   it("accepts unset and local URLs", () => {

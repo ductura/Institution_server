@@ -78,12 +78,23 @@ export {
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
-  createTeacherReadRoutes,
-  createTeacherReadRoutesFor,
-  MAX_ASSIGNMENT_IDS,
-  parseAssignmentIdsBody,
-  type TeacherReadOptions,
-} from "./teacher-reads.ts";
+  createSubmissionRoute,
+  createSubmissionRouteFor,
+  SUBMISSION_MAX_BYTES,
+  SUBMISSION_TIMEOUT_MS,
+  submissionAnswer,
+  type SubmissionOutcome,
+  type SubmissionRouteOptions,
+  type SubmitWork,
+} from "./submission.ts";
+export {
+  createProcessSummaryRoute,
+  createProcessSummaryRouteFor,
+  parseProcessSummaryBody,
+  PROCESS_SUMMARY_TIMEOUT_MS,
+  type ProcessSummaryRouteOptions,
+  type ReadProcessSummary,
+} from "./process-summary.ts";
 export {
   declaredLengthRefusal,
   readBodyWithLimit,
@@ -148,6 +159,29 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
+export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
+export {
+  createInstitutionGroupRoutes,
+  createInstitutionGroupRoutesFor,
+} from "./institution-groups.ts";
+export {
+  createInstitutionAssignmentRoutes,
+  createInstitutionAssignmentRoutesFor,
+} from "./institution-assignments.ts";
+export {
+  createTeacherAccessRoute,
+  createTeacherCoursesRoute,
+  createTeacherReadRoutes,
+  createTeacherReadRoutesFor,
+  MAX_ASSIGNMENT_IDS,
+  parseAssignmentIdsBody,
+  type TeacherReadOptions,
+} from "./teacher-reads.ts";
+export {
+  createStudentAssignmentsRoute,
+  createStudentAssignmentsRouteFor,
+} from "./student-assignments.ts";
 export {
   createStudentWriteRoutes,
   createStudentWriteRoutesFor,
@@ -157,6 +191,10 @@ export {
   createStudentAccessLogRoute,
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
+export {
+  createStudentSubmissionRoutes,
+  createStudentSubmissionRoutesFor,
+} from "./student-submission.ts";
 export {
   bearerMatches,
   checkProvisionBody,

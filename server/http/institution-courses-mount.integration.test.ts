@@ -1,5 +1,5 @@
 // DAN-852-5a (contract Ductus#1836 c.6951540037): the routes the entry point
-// mounts, createInstitutionCourseRoutesFor(main), run every statement on
+// mounts for courses and assignments run every statement on
 // main's own withActor: an accepted answer the RPC of its route and then the
 // activity touch, a refusal before the port nothing, a refusal of the RPC that
 // RPC alone. A fake withActor records the statements; the database side is
@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ActorTransaction, WithActor } from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
+import { createInstitutionAssignmentRoutesFor } from "./institution-assignments.ts";
 import { createInstitutionCourseRoutesFor } from "./institution-courses.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
@@ -74,7 +75,10 @@ async function start() {
     port: 0,
     layers: createLayers({ expectedOrigin: ORIGIN }),
     databases: createDatabases(),
-    routes: createInstitutionCourseRoutesFor({ withActor }),
+    routes: [
+      ...createInstitutionCourseRoutesFor({ withActor }),
+      ...createInstitutionAssignmentRoutesFor({ withActor }),
+    ],
   });
 }
 afterEach(async () => {
@@ -175,7 +179,7 @@ const call = (rpc: Rpc, headers = HEADERS, body: string = route(rpc).body) =>
 const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
 const coded = (code: string) => Object.assign(new Error("izmišljeno"), { code });
 
-describe("createInstitutionCourseRoutesFor(main)", () => {
+describe("institution course and assignment mounts", () => {
   it("a refusal before the port runs no statement on any route", async () => {
     await start();
     for (const rpc of rpcs) {

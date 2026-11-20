@@ -45,7 +45,7 @@ async function setOnLogin(settings: Record<string, string | null>) {
             "SELECT format('ALTER ROLE %I SET %I = %L', $1::text, $2::text, $3::text) AS ddl",
             [LOGIN, name, value],
           );
-    await admin.query(ddl.rows[0].ddl);
+    await admin.query(ddl.rows[0]!.ddl);
   }
 }
 
@@ -55,7 +55,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [LOGIN, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
 });
 
 afterAll(async () => {

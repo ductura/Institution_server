@@ -236,7 +236,7 @@ const Microsecond = Type.String({
 });
 
 /** SignedSubmissionReceiptV2 (Ductus src/domain/forensics/submission-receipt-v2.ts). */
-const SignedSubmissionReceipt = closed({
+export const SignedSubmissionReceipt = closed({
   payload: closed({
     receiptSchema: Type.Literal("ductus-submission-receipt-v2"),
     submissionId: Uuid,

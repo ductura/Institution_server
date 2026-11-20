@@ -38,16 +38,16 @@ export type EvidenceChainReadResult<TReceipt = SignedEvidenceReceipt> =
     }
   | { status: "unavailable"; reason: string };
 
-export interface EvidenceChainReader<TReceipt = SignedEvidenceReceipt> {
+export type EvidenceChainReader<TReceipt = SignedEvidenceReceipt> = {
   readChain(evidencePackageId: string): Promise<EvidenceChainReadResult<TReceipt>>;
-}
+};
 
 export type EvidencePayloadReadResult =
   | { status: "found"; bytes: Uint8Array }
   | { status: "not_found" }
   | { status: "unavailable"; reason: string };
 
-export interface EvidencePayloadReader {
+export type EvidencePayloadReader = {
   /**
    * Returns the stored bytes exactly as they are, undecoded: the caller
    * verifies them, so an adapter must not parse, repair or re-serialize.
@@ -56,7 +56,7 @@ export interface EvidencePayloadReader {
     evidencePackageId: string;
     segmentHash: string;
   }): Promise<EvidencePayloadReadResult>;
-}
+};
 
 /**
  * The storage side of the read (BACKEND 4.1, B2): an object lives in the
@@ -74,13 +74,13 @@ export interface EvidencePayloadReader {
  *   incident with ids only). None of these says anything about the record.
  * - One request per call, no retry inside; the caller retries.
  */
-export interface InstitutionEvidencePayloadReader {
+export type InstitutionEvidencePayloadReader = {
   readImmutable(input: {
     institutionId: string;
     evidencePackageId: string;
     segmentHash: string;
   }): Promise<EvidencePayloadReadResult>;
-}
+};
 
 /**
  * Binds the institution the server resolved for the record (a row read under
@@ -114,10 +114,10 @@ export type EvidenceCheckpointReadResult =
  * stored by their SHA-256, read once per reconstruction for exactly the
  * hashes it asks for. Server-side only, like the readers above.
  */
-export interface EvidenceCheckpointReader {
+export type EvidenceCheckpointReader = {
   readCheckpoints(input: {
     evidencePackageId: string;
     /** Sorted, without repeats; never empty. */
     documentHashes: readonly string[];
   }): Promise<EvidenceCheckpointReadResult>;
-}
+};

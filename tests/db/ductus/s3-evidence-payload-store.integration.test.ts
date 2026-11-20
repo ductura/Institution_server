@@ -183,7 +183,7 @@ describe("S3EvidencePayloadStore against the local object store", () => {
     const response = await raw(keyOf(input), bytes, {
       tamper: () => {
         const changed = bytes.slice();
-        changed[3] ^= 1;
+        changed[3]! ^= 1;
         return changed;
       },
     });

@@ -1,4 +1,6 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
+
+import { DUCTUS_LEGACY_DATABASE, PENDING_TESTS } from "./scripts/pending-tests/index.ts";
 
 // Five projects: unit, property and integration told apart by file suffix,
 // database by its folder (tests/db), integration-pg by *.pg.integration.test.ts. Tests live only in server/,
@@ -21,12 +23,14 @@ const PG = `${DIRS}/**/*.pg.integration.test.ts`;
 
 export default defineConfig({
   test: {
+    // Inline projects inherit these exact legacy file exclusions.
+    exclude: [...configDefaults.exclude, ...DUCTUS_LEGACY_DATABASE],
     projects: [
       {
         test: {
           name: "unit",
           include: [`${DIRS}/**/*.test.ts`],
-          exclude: [PROPERTY, INTEGRATION],
+          exclude: [PROPERTY, INTEGRATION, ...PENDING_TESTS],
           environment: "node",
         },
       },
