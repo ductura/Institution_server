@@ -44,6 +44,7 @@ import {
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createDeadlineExtensionRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
@@ -379,6 +380,18 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-1108: a live session that teaches no such assignment gets 404.
+  "teacher.deadline-extensions.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/deadline-extensions`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.deadline-extension.post": {
+    path: `/api/v1/teacher/assignments/${randomUUID()}/deadline-extensions`,
+    body: () => ({ scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" }),
+    live: 404,
+  },
   "teacher.assignment-submissions.post": {
     path: "/api/v1/teacher/assignment-submissions",
     body: () => ({ assignmentIds: [ASSIGNMENT] }),
@@ -580,6 +593,7 @@ const FACTORIES = [
   "createStudentSubmissionRoutesFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createDeadlineExtensionRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
@@ -621,6 +635,7 @@ const MOUNTED = [
   ...createStudentSubmissionRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  ...createDeadlineExtensionRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),

@@ -966,6 +966,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "teacher.deadline-extension.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.deadline-extension.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const local2 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (((typeof value === 'object' && value !== null && !Array.isArray(value)) && (value['scope'] === 'one') && (typeof value['studentId'] === 'string') && local0.test(value['studentId']) && (typeof value['dueAt'] === 'string') && local1.test(value['dueAt']) && (((value['reasonId'] === 'justified')) || ((value['reasonId'] === 'technical')) || ((value['reasonId'] === 'agreement'))) && Object.getOwnPropertyNames(value).length === 4) || ((typeof value === 'object' && value !== null && !Array.isArray(value)) && (value['scope'] === 'all') && (typeof value['dueAt'] === 'string') && local2.test(value['dueAt']) && (((value['reasonId'] === 'justified')) || ((value['reasonId'] === 'technical')) || ((value['reasonId'] === 'agreement')) || ((value['reasonId'] === 'all'))) && Object.getOwnPropertyNames(value).length === 3))
+    )
+  }
+  })(),
+  "teacher.deadline-extensions.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "teacher.fast-path.post:body": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {

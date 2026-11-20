@@ -250,6 +250,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  // SRV-1108 (Val 11, N-13, C-15): deadline extensions; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
+  },
 };
 
 /**
