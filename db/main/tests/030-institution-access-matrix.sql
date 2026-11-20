@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1688);
+SELECT plan(1794);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -17,8 +17,8 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation', 'notice_read'],
-  'the institution schema holds exactly the twenty-four tables of this matrix'
+        'work_language_override', 'work_accommodation', 'notice_read', 'work_source'],
+  'the institution schema holds exactly the twenty-five tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -122,9 +122,10 @@ SELECT bag_eq(
     'work_accommodation: work_accommodation_owner ALL to ductus_identity',
     'work_accommodation: work_accommodation_read SELECT to ductus_app',
     'notice_read: notice_read_owner ALL to ductus_identity',
-    'notice_read: notice_read_read SELECT to ductus_app'
+    'notice_read: notice_read_read SELECT to ductus_app',
+    'work_source: work_source_owner ALL to ductus_identity'
   ],
-  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule or notification'
+  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification or work_source'
 );
 -- A version is immutable by its triggers, one of a mentorship's assignment
 -- stays within the faculty's rule, an administrator comes and goes only
@@ -262,7 +263,14 @@ SELECT bag_eq(
     'refuse_notice_read_change()',
     'mark_notice_read(p_assignment_id uuid) definer app',
     'student_assignments() definer app',
-    'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app'
+    'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app',
+    'work_source_record_valid(p_id uuid, p_record jsonb)',
+    'work_source_access(p_assignment_id uuid, p_student_id uuid)',
+    'save_work_source(p_assignment_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean) definer app',
+    'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',
+    'work_sources(p_assignment_id uuid, p_student_id uuid) definer app',
+    'save_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_record jsonb, p_requirement text, p_doi text, p_isbn text, p_undated boolean) definer app',
+    'delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -418,6 +426,65 @@ FROM (VALUES (1, 'marko', 'ZD403'), (2, 'ana', 'ZD403'), (3, 'iva', 'ZD403'), (4
              (5, 'tomo', 'ZD403'), (6, 'vesna', 'true')) AS c (n, actor, outcome)
 ORDER BY c.n;
 
+-- 1e. SRV-7B: the sources of a work (institution.work_source) only through
+-- its three RPCs; the web role has no privilege or policy on the table. One
+-- cell per actor on Z1 of K1 and Z3 of fak-b; the rest of the matrix (record
+-- shape, DOI and ISBN, the bound, a teacher's source, seminar group,
+-- collaborator, mentor) is in 149-work-source.sql.
+CREATE FUNCTION pg_temp.source_json() RETURNS text LANGUAGE sql AS $$
+  SELECT '{"id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "type": "book", "year": 2024, '
+         '"authors": [{"kind": "person", "family": "Izmišljenić", "given": "Mara"}], '
+         '"title": "Kućno kompostiranje", "place": "Zagreb", "publisher": "Izmišljena naklada"}'
+$$;
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT ''ok'' FROM institution.save_work_source(%s, %L::jsonb)',
+                                     c.assignment, pg_temp.source_json())), 1, 5),
+  c.outcome, format('SRV-7B: %s saves a source on %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'ok'), ('dora', '{z1}', 'ok'), ('vesna', '{z1}', 'ZD403'), ('marko', '{z1}', 'ZD403'),
+  ('iva', '{z1}', 'ZD403'), ('boris', '{z1}', 'ZD403'), ('nina', '{z1}', 'ZD403'), ('tomo', '{z1}', 'ZD403'),
+  ('lea', '{z1}', 'ZD403'), ('tomo', '{z3}', 'ok'), ('petra', '{z3}', 'ZD403'), ('anon', '{z1}', 'ZD401')
+) AS c (actor, assignment, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT count(*)::text FROM institution.work_sources(%s, %s)',
+                                     c.assignment, c.student)), 1, 5), c.result,
+  format('SRV-7B: %s reads the sources of %s on %s: %s', c.actor, c.student, c.assignment, c.result)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'NULL', '1'), ('ana', '{z1}', '{ana}', '1'), ('vesna', '{z1}', '{ana}', '1'),
+  ('dora', '{z1}', '{ana}', 'ZD403'), ('marko', '{z1}', '{ana}', 'ZD403'), ('iva', '{z1}', '{ana}', 'ZD403'),
+  ('boris', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'), ('petra', '{z3}', '{tomo}', '1'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403'), ('anon', '{z1}', '{ana}', 'ZD401')
+) AS c (actor, assignment, student, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.delete_work_source({z1}, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')::text $$), 1, 5),
+  c.outcome, format('SRV-7B: %s removes the source on Z1: %s', c.actor, c.outcome)
+)
+FROM (VALUES (1, 'vesna', 'ZD403'), (2, 'marko', 'ZD403'), (3, 'dora', 'true'), (4, 'dora', 'false'))
+  AS c (n, actor, outcome)
+ORDER BY c.n;
+SELECT is(
+  substr(pg_temp.ask(c.actor, format(
+    'SELECT ''ok'' FROM institution.save_teacher_work_source(%s, %s, %L::jsonb, ''required'')',
+    c.assignment, c.student, replace(pg_temp.source_json(), 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                                     'cccccccc-cccc-4ccc-8ccc-cccccccccccc'))), 1, 5),
+  c.outcome, format('SRV-7B: %s adds a required source to the work of %s on %s: %s', c.actor, c.student, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '{ana}', 'ok'), ('marko', '{z1}', '{ana}', 'ZD403'), ('ana', '{z1}', '{ana}', 'ZD403'),
+  ('dora', '{z1}', '{ana}', 'ZD403'), ('iva', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'), ('petra', '{z3}', '{tomo}', 'ok'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403'), ('anon', '{z1}', '{ana}', 'ZD401')
+) AS c (actor, assignment, student, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.delete_teacher_work_source({z1}, {ana}, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc')::text $$), 1, 5),
+  c.outcome, format('SRV-7B: %s removes the required source of Ana on Z1: %s', c.actor, c.outcome)
+)
+FROM (VALUES (1, 'ana', 'ZD403'), (2, 'marko', 'ZD403'), (3, 'vesna', 'true'), (4, 'vesna', 'false'))
+  AS c (n, actor, outcome)
+ORDER BY c.n;
+
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
 CREATE FUNCTION pg_temp.probe(p_role text, p_actor text, p_table text, p_op text) RETURNS text
@@ -456,12 +523,12 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read']) WITH ORDINALITY AS t (tbl, n)
+                        'notice_read', 'work_source']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
