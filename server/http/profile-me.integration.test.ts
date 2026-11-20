@@ -7,7 +7,8 @@ import { request as httpRequest } from "node:http";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { MyAccountResult } from "../database/index.ts";
+import type { MyAccount, MyAccountResult } from "../database/index.ts";
+import { principalScope } from "../session/index.ts";
 
 import { createDatabases } from "./databases.ts";
 import { createLayers } from "./pipeline.ts";
@@ -25,6 +26,20 @@ const VECTORS = (
   ) as { vectors: Vector[] }
 ).vectors;
 const vector = (name: string) => VECTORS.find((v) => v.name === name)!;
+
+// Invented internal ids behind the success vectors: their journalScope is
+// principalScope of these, so the vectors pin the derivation.
+const INSTITUTION = "00000000-0000-4000-8000-0000000000f1";
+const PERSON: Record<string, string> = {
+  student: "00000000-0000-4000-8000-0000000000a1",
+  "teacher-without-name": "00000000-0000-4000-8000-0000000000b2",
+};
+const signedIn = (v: Vector, userId: string, institutionId = INSTITUTION): MyAccountResult => {
+  const account = Object.fromEntries(
+    Object.entries(v.response.body).filter(([key]) => key !== "journalScope"),
+  );
+  return { ok: true, value: account as MyAccount, userId, institutionId };
+};
 
 let server: Running | undefined;
 const reads: string[] = [];
@@ -76,10 +91,50 @@ const withoutRequestId = (body: unknown) =>
 describe("GET /api/v1/me", () => {
   it.each(["student", "teacher-without-name"])("answers the %s vector", async (name) => {
     const v = vector(name);
-    await start(async () => ({ ok: true, value: v.response.body as never }));
+    await start(async () => signedIn(v, PERSON[name]!));
     const got = await get(v.request.headers);
     expect(got).toEqual({ status: 200, body: v.response.body });
+    expect(v.response.body.journalScope).toBe(principalScope(PERSON[name]!, INSTITUTION));
     expect(reads).toEqual([tokenOf(v)]);
+  });
+
+  it("journalScope is 64 lowercase hex and names no internal id", async () => {
+    const v = vector("student");
+    await start(async () => signedIn(v, PERSON.student!));
+    const got = await get(v.request.headers);
+    const body = got.body as Record<string, unknown>;
+    expect(body.journalScope).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(body)).not.toContain(PERSON.student);
+    expect(JSON.stringify(body)).not.toContain(INSTITUTION);
+  });
+
+  it("the same person has the same journalScope in another session", async () => {
+    const v = vector("student");
+    await start(async () => signedIn(v, PERSON.student!));
+    const first = await get(v.request.headers);
+    const second = await get({ cookie: `__Host-ductus_session=${"d".repeat(43)}` });
+    expect(second.status).toBe(200);
+    expect((second.body as Record<string, unknown>).journalScope).toBe(
+      (first.body as Record<string, unknown>).journalScope,
+    );
+    expect(reads).toEqual([tokenOf(v), "d".repeat(43)]);
+  });
+
+  it("two people, or one id in two institutions, have different journalScopes", async () => {
+    const v = vector("student");
+    const other = "00000000-0000-4000-8000-0000000000c3";
+    const scopes: unknown[] = [];
+    for (const [userId, institutionId] of [
+      [PERSON.student!, INSTITUTION],
+      [other, INSTITUTION],
+      [PERSON.student!, "00000000-0000-4000-8000-0000000000f2"],
+    ] as const) {
+      await start(async () => signedIn(v, userId, institutionId));
+      scopes.push(((await get(v.request.headers)).body as Record<string, unknown>).journalScope);
+      await server?.close();
+      server = undefined;
+    }
+    expect(new Set(scopes).size).toBe(3);
   });
 
   it("401 without a cookie, before any read", async () => {

@@ -4,9 +4,11 @@
 // token inside app.my_account(), never from a parameter. As the interface
 // language GET: one well-formed live session cookie, and Sec-Fetch-Site, when
 // sent, must be same-origin (the pipeline checks only state-changing methods).
+// journalScope is principalScope of the internal ids (SRV-JS, Ductus#2028
+// c.7020997158): the ids themselves never leave the server.
 import { ROUTES } from "../contracts/index.ts";
 import { createMyAccountReader, type MyAccountReader } from "../database/index.ts";
-import { liveSessionTokenFromCookie } from "../session/index.ts";
+import { liveSessionTokenFromCookie, principalScope } from "../session/index.ts";
 
 import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
@@ -33,7 +35,10 @@ export function createMeRoute(read: MyAccountReader): Route {
       try {
         const account = await read(token);
         if (!account.ok) return sendProblem(response, 401, "unauthorized");
-        sendJson(response, 200, account.value);
+        sendJson(response, 200, {
+          ...account.value,
+          journalScope: principalScope(account.userId, account.institutionId),
+        });
       } catch (error) {
         reportServerError("route", error, requestIdOf(response), CONTRACT.id);
         sendProblem(response, 503, "unavailable");
