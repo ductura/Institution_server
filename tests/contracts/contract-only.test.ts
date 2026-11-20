@@ -26,6 +26,7 @@ import {
   createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
+  createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createWebAuthnRoutesFor,
@@ -145,6 +146,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createStudentAssignmentWorkRouteFor(databases.main)",
     ids: ["student.assignment-work.get"],
     routes: () => [createStudentAssignmentWorkRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    call: "createStudentNotesRoutesFor(databases.main)",
+    ids: ["student.submission-notes.get", "student.submission-notes.post"],
+    routes: () => createStudentNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
@@ -323,6 +329,8 @@ describe("CONTRACT_ONLY", () => {
         ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_989, ...DAN_931],
         ...["institution.admin-courses.post", "institution.course-groups.get"],
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
+        "student.submission-notes.get",
+        "student.submission-notes.post",
       ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
   });
@@ -341,6 +349,8 @@ describe("routes the entry point mounts itself", () => {
   it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
       "student.assignment-work.get",
+      "student.submission-notes.get",
+      "student.submission-notes.post",
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
