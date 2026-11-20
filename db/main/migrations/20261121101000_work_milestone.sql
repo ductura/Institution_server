@@ -14,15 +14,18 @@ CREATE TABLE institution.work_milestone (
   description text NOT NULL DEFAULT '' CHECK (char_length(description) <= 2000),
   due_at timestamptz CHECK (due_at >= '0001-01-01T00:00:00Z' AND due_at < '10000-01-01T00:00:00Z'),
   state text NOT NULL DEFAULT 'open' CHECK (state IN ('open', 'submitted', 'approved', 'returned')),
+  UNIQUE (id, institution_id),
   UNIQUE (assignment_id, position),
   FOREIGN KEY (assignment_id, institution_id) REFERENCES institution.assignment (id, institution_id)
 );
 
 CREATE TABLE institution.work_milestone_deadline (
+  institution_id uuid NOT NULL,
   document_id text NOT NULL,
-  milestone_id uuid NOT NULL REFERENCES institution.work_milestone (id) ON DELETE CASCADE,
+  milestone_id uuid NOT NULL,
   due_at timestamptz NOT NULL CHECK (due_at >= '0001-01-01T00:00:00Z' AND due_at < '10000-01-01T00:00:00Z'),
-  PRIMARY KEY (milestone_id, document_id)
+  PRIMARY KEY (milestone_id, institution_id, document_id),
+  FOREIGN KEY (milestone_id, institution_id) REFERENCES institution.work_milestone (id, institution_id)
 );
 
 ALTER TABLE institution.work_milestone ENABLE ROW LEVEL SECURITY;
@@ -51,7 +54,8 @@ BEGIN
 
   RETURN QUERY SELECT m.id, m.title, m.description, coalesce(d.due_at, m.due_at), m.state
     FROM institution.work_milestone m
-    LEFT JOIN institution.work_milestone_deadline d ON d.milestone_id = m.id AND d.document_id = p_document_id
+    LEFT JOIN institution.work_milestone_deadline d
+      ON d.milestone_id = m.id AND d.institution_id = m.institution_id AND d.document_id = p_document_id
    WHERE m.institution_id = v_scope.institution_id AND m.assignment_id = v_scope.assignment_id
    ORDER BY m.position;
 END
@@ -92,9 +96,9 @@ BEGIN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
   END IF;
 
-  INSERT INTO institution.work_milestone_deadline (document_id, milestone_id, due_at)
-  VALUES (p_document_id, p_milestone_id, p_due_at)
-  ON CONFLICT (milestone_id, document_id) DO UPDATE SET due_at = EXCLUDED.due_at;
+  INSERT INTO institution.work_milestone_deadline (institution_id, document_id, milestone_id, due_at)
+  VALUES (v_scope.institution_id, p_document_id, p_milestone_id, p_due_at)
+  ON CONFLICT (milestone_id, institution_id, document_id) DO UPDATE SET due_at = EXCLUDED.due_at;
   RETURN QUERY SELECT v_milestone.id, v_milestone.title, v_milestone.description, p_due_at, v_milestone.state;
 END
 $$;

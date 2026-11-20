@@ -19,6 +19,11 @@ VALUES
   ('00000000-0000-4000-8000-000000000101', pg_temp.id('fak_a'), pg_temp.id('z1'), 1, 'Nacrt', 'Nacrt za pregled',
    '2026-12-01T12:00:00Z', 'returned');
 RESET ROLE;
+SELECT throws_ok(
+  format($q$ INSERT INTO institution.work_milestone_deadline (institution_id, document_id, milestone_id, due_at)
+    VALUES (%L, 'doc-b', '00000000-0000-4000-8000-000000000101', '2026-12-02T12:00:00Z') $q$, pg_temp.id('fak_b')),
+  '23503', NULL, 'a deadline cannot bind to a milestone of another institution'
+);
 SET CONSTRAINTS evidence.evidence_document_current_revision_fkey DEFERRED;
 SET LOCAL ROLE ductus_evidence;
 INSERT INTO evidence.project (id, institution_id, assignment_id, principal_id)
