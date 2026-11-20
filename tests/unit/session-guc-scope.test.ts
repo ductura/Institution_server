@@ -249,7 +249,7 @@ const SQL_EXCEPTIONS: Record<string, string> = {
   // SET clause of a function header (DAN-184), which PostgreSQL undoes when
   // the call returns, so it never stays on the pooled connection.
   "db/schema.sql: SET lock_timeout TO '2000ms'": FUNCTION_SET,
-  "db/migrations/20261114100000_ops_alarm.sql: SET lock_timeout = '2000ms'": FUNCTION_SET,
+  "db/main/migrations/20261114100000_ops_alarm.sql: SET lock_timeout = '2000ms'": FUNCTION_SET,
   "db/local/migrator.sql: SET ROLE ductus_migrator;":
     "local provisioning over its own psql session, ended with RESET ROLE; never the pool",
   "db/tests/010-roles-and-privileges.sql: SET on ductus_app for the local login is noticed'":
@@ -478,11 +478,15 @@ describe("session-scoped settings", () => {
   // db/, whatever its name; the node_modules and .test. skips are for TS/JS.
   const FORBIDDEN = "SELECT set_config('app.session_token', 'x', false);\n";
   it.each([
-    ["node_modules in the file name", "db/migrations/20261111000000_node_modules_guard.sql", true],
+    [
+      "node_modules in the file name",
+      "db/main/migrations/20261111000000_node_modules_guard.sql",
+      true,
+    ],
     [".test. in the file name", "db/tests/020-guard.test.sql", true],
     ["node_modules as a directory", "db/node_modules/guard.sql", true],
     [".test. in a directory name", "db/x.test.d/guard.sql", true],
-    ["an ordinary name", "db/migrations/20261111000001_guard.sql", true],
+    ["an ordinary name", "db/main/migrations/20261111000001_guard.sql", true],
     ["a file that is not SQL", "db/notes.txt", false],
   ])("the db scan reads %s", (_name, path, reported) => {
     const root = mkdtempSync(join(tmpdir(), "session-guc-"));

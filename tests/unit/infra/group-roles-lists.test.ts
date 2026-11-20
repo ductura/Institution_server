@@ -11,9 +11,9 @@ import { describe, expect, it } from "vitest";
 // in one place only.
 const ROOT = new URL("../../../", import.meta.url);
 const FILES = {
-  rolesMigration: "db/migrations/20261003210000_roles.sql",
-  bootstrap: "db/local/migrator.sql",
-  checkMigration: "db/migrations/20261101201000_roles_check.sql",
+  rolesMigration: "db/main/migrations/20261003210000_roles.sql",
+  bootstrap: "db/main/local/migrator.sql",
+  checkMigration: "db/main/migrations/20261101201000_roles_check.sql",
 } as const;
 
 /** The quoted names inside `group_roles CONSTANT text[] := ARRAY[...]`. */

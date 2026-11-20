@@ -8,7 +8,10 @@ import { MIGRATION, readRule, report } from "../../server/database/plain-label-c
 // migration; anything it does not recognise stops it instead of checking a
 // different rule. The database cases are in
 // tests/integration/plain-label-check.integration.test.ts.
-const TEXT = readFileSync(new URL(`../../db/migrations/${MIGRATION}`, import.meta.url), "utf8");
+const TEXT = readFileSync(
+  new URL(`../../db/main/migrations/${MIGRATION}`, import.meta.url),
+  "utf8",
+);
 const DOWN = TEXT.indexOf("-- migrate:down");
 const UP = TEXT.slice(0, DOWN);
 
