@@ -33,10 +33,24 @@ const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 export const LOCAL_DIR = join(ROOT, ".local");
 
 /** The flags: none or `--izravno`; anything else is an error. */
-export function parseFlags(argv: readonly string[]): { direct: boolean } {
-  const unknown = argv.filter((arg) => arg !== "--izravno");
-  if (unknown.length > 0) throw new Error("usage: pnpm lokalno [--izravno]");
-  return { direct: argv.includes("--izravno") };
+export function parseFlags(argv: readonly string[]): { direct: boolean; origin?: string } {
+  const isOrigin = (arg: string): boolean => arg.startsWith("--izvor=");
+  const unknown = argv.filter((arg) => arg !== "--izravno" && !isOrigin(arg));
+  const origins = argv.filter(isOrigin);
+  if (unknown.length > 0 || origins.length > 1)
+    throw new Error("usage: pnpm lokalno [--izravno] [--izvor=http://localhost:3000]");
+  const direct = argv.includes("--izravno");
+  if (origins[0] === undefined) return { direct };
+  // The browser's origin, set by `pnpm stog:gore` to the front (INT-01).
+  let url: URL;
+  try {
+    url = new URL(origins[0].slice("--izvor=".length));
+  } catch {
+    throw new Error("--izvor is not a URL");
+  }
+  if (url.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(url.hostname))
+    throw new Error("--izvor must be an http URL on localhost or 127.0.0.1");
+  return { direct, origin: url.origin };
 }
 
 /** DATABASE_URL from the environment, else the one line of .local/database-url. */
@@ -127,7 +141,7 @@ export async function startStack(
 
 async function main(): Promise<void> {
   assertLocal(process.env);
-  const { direct } = parseFlags(process.argv.slice(2));
+  const { direct, origin } = parseFlags(process.argv.slice(2));
   const target = adminTarget(databaseUrl(process.env, LOCAL_DIR));
   const secrets = ensureSecrets(LOCAL_DIR);
   const base = baseEnv(process.env);
@@ -138,7 +152,7 @@ async function main(): Promise<void> {
   if ((await runOnce([join(ROOT, "scripts", "build", "server.ts")], base)) !== 0)
     throw new Error("the build failed");
 
-  const options = stackOptions(direct, accountsFileFor(ROOT, LOCAL_DIR, existsSync));
+  const options = stackOptions(direct, accountsFileFor(ROOT, LOCAL_DIR, existsSync), origin);
   for (const [name, port] of [
     ["server", options.serverPort],
     ["oidc", options.oidcPort],
