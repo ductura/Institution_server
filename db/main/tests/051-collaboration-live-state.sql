@@ -101,6 +101,9 @@ SELECT bag_eq(
             ('collaboration.resolve_thread(uuid)'), ('collaboration.reopen_thread(uuid)'),
             ('collaboration.list_comments(text)'), ('collaboration.delete_comment(uuid)'),
             ('collaboration.create_general_comment(text,text)'),
+            ('collaboration.list_consultation_records(text)'),
+            ('collaboration.create_consultation_record(text,date,bigint,text,text)'),
+            ('collaboration.add_consultation_addition(text,uuid,text)'),
             ('collaboration.publish_live_state(text,uuid,text)'),
             ('collaboration.read_live_state(text,text)'),
             ('collaboration.create_revision_request(text,jsonb,text,bigint)'),
@@ -110,7 +113,7 @@ SELECT bag_eq(
             ('collaboration.reopen_revision_request(uuid,bigint,text,bigint)'),
             ('collaboration.withdraw_revision_request(uuid,bigint)'),
             ('collaboration.rereview_revision_request(uuid,bigint)') $$,
-  'the web role executes exactly the comment RPCs, the two live RPCs and the seven revision-request RPCs of 110, 112 and 119');
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs and the seven revision-request RPCs of 110, 112 and 119');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
