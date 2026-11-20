@@ -10,6 +10,7 @@ import { createWithActor } from "../../../server/database/with-actor.ts";
 
 import {
   ACCOUNTS,
+  findDemoAccount,
   DEMO_HOME_ORG,
   DEMO_HOME_ORG_B,
   demoAccountClaims,
@@ -45,12 +46,20 @@ function loginPool(login: string) {
 type Variant = { homeOrg?: string; realm?: string; subject?: string };
 
 /** The claims of a fake account under this run's subject, optionally altered. */
+function account(id: string) {
+  const value = findDemoAccount(id);
+  if (!value) throw new Error(`Unknown test account: ${id}`);
+  return value;
+}
+
 function claimsOf(id: string, variant: Variant = {}) {
-  const own = ACCOUNTS[id].homeOrg;
+  const claims = demoAccountClaims(id);
+  if (!claims) throw new Error(`Unknown test account: ${id}`);
+  const own = account(id).homeOrg;
   const sub = variant.subject ?? `${id}-it-${suffix}`;
   if (!subjects.includes(sub)) subjects.push(sub);
   return {
-    ...demoAccountClaims(id)!,
+    ...claims,
     sub,
     hrEduPersonUniqueID: [`${sub}@${variant.realm ?? own}`],
     hrEduPersonHomeOrg: [variant.homeOrg ?? own],
@@ -111,9 +120,21 @@ const sessionCount = async (tokenHash: Buffer) =>
       "SELECT count(*)::int AS n FROM identity.session WHERE token_hash = $1",
       [tokenHash],
     )
-  ).rows[0].n;
+  ).rows[0]!.n;
 
 beforeAll(async () => {
+  // Independent of the order of database suites; reuse the local fixtures if present.
+  await admin.query(
+    `INSERT INTO identity.institution (slug, aai_home_org) VALUES
+       ('demo-fakultet', $1), ('demo-fakultet-b', $2) ON CONFLICT (slug) DO NOTHING`,
+    [DEMO_HOME_ORG, DEMO_HOME_ORG_B],
+  );
+  await admin.query(
+    `INSERT INTO identity.institution_issuer (institution_id, oidc_issuer)
+      SELECT id, $1 FROM identity.institution WHERE slug IN ('demo-fakultet', 'demo-fakultet-b')
+      ON CONFLICT DO NOTHING`,
+    [ISSUER],
+  );
   const seeded = await admin.query<{ id: string; aai_home_org: string }>(
     `SELECT i.id, i.aai_home_org FROM identity.institution i
        JOIN identity.institution_issuer ii ON ii.institution_id = i.id AND ii.oidc_issuer = $1
@@ -135,7 +156,7 @@ beforeAll(async () => {
       "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE %I', $1::text, $2::text, $3::text) AS ddl",
       [name, password, group],
     );
-    await admin.query(ddl.rows[0].ddl);
+    await admin.query(ddl.rows[0]!.ddl);
   }
   auth = loginPool(AUTH_LOGIN);
 });
@@ -170,7 +191,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
       expect(result.ok, id).toBe(true);
       expect(await accountsOf(claims.sub)).toEqual([
         {
-          institution_id: institutionOf.get(ACCOUNTS[id].homeOrg),
+          institution_id: institutionOf.get(account(id).homeOrg),
           hr_edu_person_unique_id: claims.hrEduPersonUniqueID[0],
         },
       ]);
@@ -217,7 +238,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
     const withActor = createWithActor(loginPool(APP_LOGIN));
     for (const id of ["demo-student", "demo-b-student", "demo-teacher", "demo-b-teacher"]) {
       const claims = claimsOf(id, { subject: `${id}-right-${suffix}` });
-      const staff = ACCOUNTS[id].affiliation === "djelatnik";
+      const staff = account(id).affiliation === "djelatnik";
       expect(identityOf(claims).teacherEligible, id).toBe(staff);
       const { result, token } = await login(claims);
       expect(result.ok, id).toBe(true);
@@ -228,7 +249,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
         [ISSUER, claims.sub],
       );
       expect(rights.rows, id).toEqual(
-        staff ? [{ institution_id: institutionOf.get(ACCOUNTS[id].homeOrg) }] : [],
+        staff ? [{ institution_id: institutionOf.get(account(id).homeOrg) }] : [],
       );
       await expect(
         withActor(token, (tx) =>
@@ -257,7 +278,7 @@ describe("the fake provider's two institutions over open_session (DAN-483)", () 
       const before = await accountsOf(subject);
       expect(before).toEqual([
         {
-          institution_id: institutionOf.get(ACCOUNTS[id].homeOrg),
+          institution_id: institutionOf.get(account(id).homeOrg),
           hr_edu_person_unique_id: own.hrEduPersonUniqueID[0],
         },
       ]);

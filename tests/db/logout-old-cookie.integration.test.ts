@@ -20,6 +20,7 @@ import {
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
+  createStudentAssignmentWorkRouteFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -100,6 +101,12 @@ const SESSION_ROUTES = {
     path: "/api/v1/process-summary",
     body: () => ({ documentId: randomUUID() }),
     live: 404,
+  },
+  "student.assignment-work.get": {
+    method: "GET",
+    path: "/api/v1/student/assignment-work",
+    body: () => undefined,
+    live: 200,
   },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
   // writes nothing, so the accounts of this file keep no settings row.
@@ -259,6 +266,13 @@ const SESSION_ROUTES = {
     body: () => ({ teacherId: randomUUID() }),
     live: 403,
   },
+  // Not of the course team nor an administrator: 403 from course_groups.
+  "institution.course-groups.get": {
+    method: "GET",
+    path: `/api/v1/institution/courses/${COURSE}/groups`,
+    body: () => undefined,
+    live: 403,
+  },
   // SRV-12: the administrator's course; not an administrator, so 403.
   "institution.admin-courses.post": {
     path: "/api/v1/institution/admin/courses",
@@ -280,6 +294,7 @@ const FACTORIES = [
   "createHealthRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
+  "createStudentAssignmentWorkRouteFor",
   "createDownloadsManifestRoute",
   "createSettingsValuesPutRoute",
   "createInterfaceLocaleRoutesFor",
@@ -304,6 +319,7 @@ const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
+  createStudentAssignmentWorkRouteFor(databases.main),
   createDownloadsManifestRoute(),
   createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
   ...createInterfaceLocaleRoutesFor(databases.main),
@@ -526,6 +542,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("projection.") ||
+        id === "student.assignment-work.get" ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;

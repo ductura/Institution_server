@@ -25,6 +25,7 @@ import {
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
   createSettingsValuesPutRoute,
+  createStudentAssignmentWorkRouteFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
   createWebAuthnRoutesFor,
@@ -110,10 +111,18 @@ export const SRV_03: readonly string[] = [
   "institution.course-group-teachers.post",
 ];
 
+// The operations of UGOVORI-API (every /api/v1 contract ahead of its handler,
+// Ductus#2028 c.7023902063; scope c.7022752457), frozen the same way.
+export const UGOVORI_API: readonly string[] = [
+  "student.notice.get",
+  "institution.assignment.get",
+  "institution.enrollment-code-state.get",
+];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03],
+  ...[...DAN_989, ...DAN_931, ...SRV_02, ...SRV_03, ...UGOVORI_API],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be
@@ -124,6 +133,11 @@ const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no
 const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
+  {
+    call: "createStudentAssignmentWorkRouteFor(databases.main)",
+    ids: ["student.assignment-work.get"],
+    routes: () => [createStudentAssignmentWorkRouteFor(NO_ACTOR).contract.id],
+  },
   {
     call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
     ids: ["settings.values.put"],
@@ -167,7 +181,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   {
     // SRV-15: a course's seminar groups and their teachers.
     call: "createInstitutionGroupRoutesFor(databases.main)",
-    ids: ["institution.course-groups.post", "institution.course-group-teachers.post"],
+    ids: [
+      "institution.course-groups.get",
+      "institution.course-groups.post",
+      "institution.course-group-teachers.post",
+    ],
     routes: () => createInstitutionGroupRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -286,17 +304,17 @@ describe("CONTRACT_ONLY", () => {
       // With nothing mounted, the WebAuthn routes (mounted since 840-3f1), the
       // problem report (851-2d2a), the course routes (852-5a), the download
       // manifest (DAN-932), the teacher's reads (SRV-13) and the assignment
-      // routes (SRV-14), the group routes (SRV-15), the submission (SRV-18) and
-      // the process summary (SRV-23) are missing too, in task order.
+      // routes (SRV-14), group routes (SRV-15), student work state (SRV-AWG)
+      // and submission (SRV-18), and process summary (SRV-23) are missing too, in task order.
       [
         ...["support.problem-report.post", "projection.process-summary.post"],
         ...["teacher.courses.get", "institution.courses.post"],
         ...["institution.course-assignments.post", "institution.enrollment-code.post"],
         ...["institution.enrollment-code-revocation.post", "institution.assignment-versions.post"],
         "submission.submit.post",
-        ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_931],
-        ...["institution.admin-courses.post", "institution.course-groups.post"],
-        "institution.course-group-teachers.post",
+        ...[...DAN_806, ...DAN_840, "teacher.access.get", ...DAN_989, ...DAN_931],
+        ...["institution.admin-courses.post", "institution.course-groups.get"],
+        ...["institution.course-groups.post", "institution.course-group-teachers.post"],
       ].map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`),
     );
   });
@@ -314,6 +332,7 @@ describe("CONTRACT_ONLY", () => {
 describe("routes the entry point mounts itself", () => {
   it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
+      "student.assignment-work.get",
       "settings.values.put",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
@@ -323,6 +342,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.admin-courses.post",
+      "institution.course-groups.get",
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       "teacher.courses.get",

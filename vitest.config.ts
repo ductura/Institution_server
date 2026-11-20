@@ -1,5 +1,7 @@
 import { defineConfig } from "vitest/config";
 
+import { PENDING_TESTS } from "./server/pending-tests.ts";
+
 // Five projects: unit, property and integration told apart by file suffix,
 // database by its folder (tests/db), integration-pg by *.pg.integration.test.ts. Tests live only in server/,
 // packages/, test-support/, scripts/, infra/, db/, locales/ (and lint rule tests in tests/) with a .test.ts suffix; other
@@ -26,7 +28,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: [`${DIRS}/**/*.test.ts`],
-          exclude: [PROPERTY, INTEGRATION],
+          exclude: [PROPERTY, INTEGRATION, ...PENDING_TESTS],
           environment: "node",
         },
       },

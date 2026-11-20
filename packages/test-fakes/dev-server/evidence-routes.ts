@@ -1,11 +1,14 @@
-// Evidence and submission routes of the dev fake server: open a work, commit
-// segments, replay them, submit. The fake signs nothing. Every receipt names
-// the key FAKE_KEY_ID and carries an all-zero signature, and the receipt key
-// that open lists is a public key whose private half was thrown away at
-// start, so no receipt of the fake verifies and no real client can take one
-// as a signed receipt. No real key is ever read or copied.
-import { createHash, generateKeyPairSync, randomUUID } from "node:crypto";
+// Evidence and submission routes of the dev fake server.
+import { createHash, randomUUID } from "node:crypto";
 
+import {
+  canonicalizeJcs,
+  EVIDENCE_RECEIPT_SCHEMA_V2,
+  EVIDENCE_SEGMENT_SCHEMA_V4,
+  isEvidenceSegment,
+  isReceiptClientTransactionId,
+} from "../../../server/domain/index.ts";
+import { FAKE_DOMAIN, minute, type SignedReceipt } from "./receipt-signer.ts";
 import type { Handlers } from "./server.ts";
 import {
   EMPTY_DOCUMENT,
@@ -16,30 +19,35 @@ import {
   type Work,
 } from "./state.ts";
 
-/** The key id of every fake receipt: unsigned, never a real key. */
-export const FAKE_KEY_ID = "lazni-kljuc-nepotpisano";
-/** 64 zero bytes as base64url: a signature that verifies under no key. */
-export const FAKE_SIGNATURE = "A".repeat(86);
-const FAKE_DOMAIN = "00000000-0000-4000-8000-00000000fa4e";
 const PROFILE = "lazni-profil";
-
-/** A public Ed25519 key with no private half kept: nothing the fake answers is signed by it. */
-const FAKE_PUBLIC_KEY = generateKeyPairSync("ed25519")
-  .publicKey.export({ type: "spki", format: "der" })
-  .toString("base64url");
-
 const sha256 = (text: string | Buffer): string => createHash("sha256").update(text).digest("hex");
-const minute = (now: Date): string => `${now.toISOString().slice(0, 16)}:00.000Z`;
 /** An instant in the receipt form: UTC with exactly six fraction digits. */
 const microsecond = (iso: string): string => `${new Date(iso).toISOString().slice(0, 23)}000Z`;
 /** Segments per replay page (MAX_REPLAY_PAGE_SEGMENTS of the contract). */
 export const REPLAY_PAGE = 256;
-const signature = {
+const UNSIGNED_SUBMISSION = {
   algorithm: "Ed25519",
-  keyId: FAKE_KEY_ID,
+  keyId: "lazni-kljuc-nepotpisano",
   keyVersion: "0",
   signatureEncoding: "raw",
+  signatureBase64Url: "A".repeat(86),
 } as const;
+
+function parseSegment(bytes: Buffer) {
+  try {
+    const segment: unknown = JSON.parse(bytes.toString("utf8"));
+    return isEvidenceSegment(segment) &&
+      segment.evidenceSchema !== EVIDENCE_SEGMENT_SCHEMA_V4 &&
+      bytes.equals(Buffer.from(canonicalizeJcs(segment)))
+      ? segment
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+const receiptId = (documentId: string, revision: number): string =>
+  `lazna-potvrda-${documentId}-${revision}`;
 
 function ownWork(state: State, account: Account | null, documentId: string): Work | undefined {
   return state.works.find((w) => w.documentId === documentId && w.studentId === account?.id);
@@ -93,20 +101,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
         evidenceProfileId: PROFILE,
         ...workState(work),
         document: work.document,
-        receiptKeys: [
-          {
-            algorithm: "Ed25519",
-            keyId: FAKE_KEY_ID,
-            keyVersion: "0",
-            encoding: "spki-der",
-            keyBase64Url: FAKE_PUBLIC_KEY,
-            evidenceDomainId: FAKE_DOMAIN,
-            purpose: "receipt",
-            validFrom: "2026-01-01T00:00:00.000Z",
-            validTo: null,
-            revokedAt: null,
-          },
-        ],
+        receiptKeys: [state.receiptSigner.key],
         submitted: work.state === "submitted",
       },
     };
@@ -116,62 +111,85 @@ export const EVIDENCE_HANDLERS: Handlers = {
     if (work === undefined || account === null) return { error: "not_found" };
     if (work.state === "submitted") return { error: "not_accepting" };
     const done = work.transactions.get(body.clientTransactionId);
-    if (done !== undefined && done !== body.baseRevision + 1) return { error: "txid_reused" };
     if (done === undefined && body.baseRevision !== work.revision)
       return { error: "stale_base", body: { status: "stale_base", ...workState(work) } };
-    const segment = Buffer.from(body.segments[0] ?? "", "base64").toString("utf8");
-    const predecessor = work.segments.length === 0 ? null : sha256(work.segments.at(-1) ?? "");
-    if (done === undefined) {
-      work.segments.push(segment);
-      work.revision += 1;
-      work.document = body.document;
-      work.lastSequenceTo += 1;
-      work.lastChangeAt = now.toISOString();
-      work.transactions.set(body.clientTransactionId, work.revision);
+    const bytes = Buffer.from(body.segments[0] ?? "", "base64");
+    const segmentHash = sha256(bytes);
+    const documentHash = sha256(Buffer.from(body.document, "base64"));
+    if (done !== undefined) {
+      const { receipt, documentHash: savedDocumentHash } = done;
+      if (
+        receipt.payload.revision !== body.baseRevision + 1 ||
+        receipt.payload.segmentHash !== segmentHash ||
+        savedDocumentHash !== documentHash
+      )
+        return { error: "txid_reused" };
+      return {
+        status: 200,
+        body: {
+          status: "duplicate",
+          revision: receipt.payload.revision,
+          receipt: { status: "signed", signedReceipt: receipt },
+        },
+      };
     }
-    const status = done === undefined ? "committed" : "duplicate";
-    const revision = done ?? work.revision;
+    const segment = parseSegment(bytes);
+    if (
+      segment === null ||
+      segment.documentId !== work.documentId ||
+      segment.evidenceProfileId !== PROFILE ||
+      !isReceiptClientTransactionId(body.clientTransactionId)
+    )
+      return { error: "invalid" };
+    if (segment.finalDocumentHash !== documentHash) return { error: "document_mismatch" };
+    const current = workState(work);
+    if (segment.predecessorSegmentHash !== current.headSegmentHash)
+      return { error: "chain_conflict", body: { status: "chain_conflict", ...current } };
+    if (segment.sequenceFrom !== current.lastSequenceTo + 1)
+      return { error: "not_continuous", body: { status: "not_continuous", ...current } };
+    const revision = work.revision + 1;
+    const payload: SignedReceipt["payload"] = {
+      receiptSchema: EVIDENCE_RECEIPT_SCHEMA_V2,
+      receiptId: receiptId(work.documentId, revision),
+      evidencePackageId: `lazni-paket-${work.documentId}`,
+      documentId: work.documentId,
+      sessionId: segment.sessionId,
+      segmentId: segment.segmentId,
+      segmentHash,
+      predecessorSegmentHash: segment.predecessorSegmentHash,
+      previousReceiptId: revision > 1 ? receiptId(work.documentId, revision - 1) : null,
+      evidenceSchema: segment.evidenceSchema,
+      evidenceProfileId: segment.evidenceProfileId,
+      sequenceFrom: segment.sequenceFrom,
+      sequenceTo: segment.sequenceTo,
+      eventCount: segment.events.length,
+      payloadBytes: bytes.length,
+      acceptedAt: minute(now),
+      revision,
+      clientTransactionId: body.clientTransactionId,
+      evidenceDomainId: FAKE_DOMAIN,
+      principalId: account.id,
+    };
+    const signedReceipt = state.receiptSigner.signReceipt(payload);
+    work.segments.push(bytes.toString("utf8"));
+    work.revision = revision;
+    work.document = body.document;
+    work.lastSequenceTo = segment.sequenceTo;
+    work.lastChangeAt = now.toISOString();
+    work.transactions.set(body.clientTransactionId, { receipt: signedReceipt, documentHash });
+
     if (header("ductus-protocol") === "2")
       return {
         status: 202,
         headers: { "retry-after": "2" },
-        body: { status, revision, receipt: { status: "pending_signature" } },
+        body: { status: "committed", revision, receipt: { status: "pending_signature" } },
       };
-    const payload = {
-      receiptSchema: "ductus-evidence-receipt-v2",
-      receiptId: `lazna-potvrda-${work.documentId}-${revision}`,
-      evidencePackageId: `lazni-paket-${work.documentId}`,
-      documentId: work.documentId,
-      sessionId: "lazna-sesija",
-      segmentId: `lazni-odsjecak-${revision}`,
-      segmentHash: sha256(segment),
-      predecessorSegmentHash: done === undefined ? predecessor : null,
-      previousReceiptId: revision > 1 ? `lazna-potvrda-${work.documentId}-${revision - 1}` : null,
-      evidenceSchema: "ductus-evidence-segment-v2",
-      evidenceProfileId: PROFILE,
-      sequenceFrom: revision,
-      sequenceTo: revision,
-      eventCount: 1,
-      payloadBytes: Math.max(1, Buffer.byteLength(segment)),
-      acceptedAt: minute(now),
-      revision: Math.max(1, revision),
-      clientTransactionId: body.clientTransactionId,
-      evidenceDomainId: FAKE_DOMAIN,
-      principalId: account.id,
-    } as const;
     return {
       status: 200,
       body: {
-        status,
+        status: "committed",
         revision,
-        receipt: {
-          status: "signed",
-          signedReceipt: {
-            payload,
-            payloadDigestSha256: sha256(JSON.stringify(payload)),
-            signature: { ...signature, signatureBase64Url: FAKE_SIGNATURE },
-          },
-        },
+        receipt: { status: "signed", signedReceipt },
       },
     };
   },
@@ -259,7 +277,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
         receipt: {
           payload,
           payloadDigestSha256: sha256(JSON.stringify(payload)),
-          signature: { ...signature, signatureBase64Url: FAKE_SIGNATURE },
+          signature: UNSIGNED_SUBMISSION,
         },
       },
     };

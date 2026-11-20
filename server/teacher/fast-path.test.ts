@@ -13,8 +13,8 @@ import {
 } from "../domain/forensics/evidence-segment-v2.ts";
 import { canonicalizeJcs } from "../domain/forensics/jcs.ts";
 import type { ActorTransaction, WithActor } from "../database/with-actor.ts";
-import { STORAGE_NOT_CONFIGURED } from "@/server/evidence/payload-reader";
-import { handleProcessSummaryRequest } from "@/server/projection/process-summary";
+import { STORAGE_NOT_CONFIGURED } from "../evidence/payload-reader.ts";
+import { handleProcessSummaryRequest } from "../projection/process-summary.ts";
 
 import { handleFastPathRequest, readFastPath, type FastPathRouteDeps } from "./fast-path.ts";
 
