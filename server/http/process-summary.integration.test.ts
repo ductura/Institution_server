@@ -122,7 +122,7 @@ const UNREACHABLE = new Set(["content-length-mismatch", "body-stream-error"]);
 const REACHES_READER: Record<string, ProcessSummaryReadResult> = {
   summary: { status: "ok", body: jcs(SUMMARY.response.body) },
   "not-found": { status: "not_found" },
-  unavailable: { status: "unavailable", reason: "segment_hash_mismatch" },
+  unavailable: { status: "unavailable", reason: "head_mismatch" },
 };
 
 describe("projection.process-summary.post: every reachable vector", () => {
