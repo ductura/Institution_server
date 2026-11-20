@@ -79,39 +79,43 @@ it("applies the session, origin, content type and size guards before SQL", async
   expect(withActor).not.toHaveBeenCalled();
 });
 
-it("lists only the request projection and uses no-store", async () => {
-  const request = {
-    requestId: REQUEST_ID.toLowerCase(),
-    student: null,
-    workType: "bachelor_thesis",
-    requestedAt: "2026-11-20T10:00:00.000Z",
-  };
-  const query = vi.fn().mockResolvedValue({ rows: [{ requests: [request] }], rowCount: 1 });
-  const send = await start((_, run) => run({ query }));
-  const result = await send("", { headers: { cookie: COOKIE } });
-  expect(result.status).toBe(200);
-  expect(result.headers.get("cache-control")).toBe("no-store");
-  expect(await result.json()).toEqual({ requests: [request] });
-  query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-  expect((await send("", { headers: { cookie: COOKIE } })).status).toBe(401);
-});
+it.each([null, { givenName: "Dora", familyName: "Izmišljena" }])(
+  "lists the request projection with student %j and uses no-store",
+  async (student) => {
+    const request = {
+      requestId: REQUEST_ID.toLowerCase(),
+      student,
+      workType: "bachelor_thesis",
+      requestedAt: "2026-11-20T10:00:00.000Z",
+    };
+    const query = vi.fn().mockResolvedValue({ rows: [{ requests: [request] }], rowCount: 1 });
+    const send = await start((_, run) => run({ query }));
+    const result = await send("", { headers: { cookie: COOKIE } });
+    expect(result.status).toBe(200);
+    expect(result.headers.get("cache-control")).toBe("no-store");
+    expect(await result.json()).toEqual({ requests: [request] });
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    expect((await send("", { headers: { cookie: COOKIE } })).status).toBe(401);
+  },
+);
 
-it("approves an open request and answers 409 if an approval already won the lock", async () => {
+it("calls the atomic approval RPC and maps its repeat decision to 409", async () => {
   const query = vi
     .fn()
-    .mockResolvedValueOnce({ rowCount: 1, rows: [{}] })
-    .mockResolvedValueOnce({ rows: [{ open: true }] })
     .mockResolvedValueOnce({ rows: [{ result: MENTORSHIP_ID }] })
-    .mockResolvedValueOnce({ rowCount: 1, rows: [{}] })
-    .mockResolvedValueOnce({ rows: [{ open: false }] })
-    .mockResolvedValueOnce({ rows: [{ result: MENTORSHIP_ID }] });
+    .mockRejectedValueOnce(
+      Object.assign(new Error("simulated repeat decision"), { code: "ZD409" }),
+    );
   const send = await start((_, run) => run({ query }));
   const first = await send("/decision", post(APPROVE));
   expect(first.status).toBe(200);
   expect(await first.json()).toEqual({ decision: "approve", mentorshipId: MENTORSHIP_ID });
   expect((await send("/decision", post(APPROVE))).status).toBe(409);
-  expect(query.mock.calls.map(([, values]) => values)).toEqual(
-    Array.from({ length: 6 }, () => [REQUEST_ID.toLowerCase()]),
+  expect(query.mock.calls).toEqual(
+    Array.from({ length: 2 }, () => [
+      expect.stringContaining("app.approve_mentorship_request_with_work"),
+      [REQUEST_ID.toLowerCase()],
+    ]),
   );
 });
 

@@ -17,37 +17,23 @@ const LIST_BODY = LIST.responses[0]!.body!;
 const DECISION_BODY = DECIDE.request.body!;
 const DECISION_ANSWER = DECIDE.responses[0]!.body!;
 
-// The request RLS also lets a student read their outgoing requests. The
-// teacher predicate below only selects incoming ones. An empty result row
-// (as opposed to an empty list) means there is no session actor.
-// There is no name reader for this relationship in SRV-28. The app role
-// cannot read identity.person_name, so the response uses the contract's null.
+// The reader exposes names only for the current teacher's open requests.
+// An empty result row, as opposed to an empty list, means no session actor.
 const LIST_SQL = `
 SELECT COALESCE(
   jsonb_agg(jsonb_build_object(
-    'requestId', r.id,
-    'student', NULL::jsonb,
+    'requestId', r.request_id,
+    'student', CASE WHEN r.given_name IS NOT NULL AND r.family_name IS NOT NULL
+      THEN jsonb_build_object('givenName', r.given_name, 'familyName', r.family_name) END,
     'workType', r.work_type,
     'requestedAt', to_char(r.requested_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-  ) ORDER BY r.requested_at DESC, r.id) FILTER (WHERE r.id IS NOT NULL),
+  ) ORDER BY r.requested_at DESC, r.request_id) FILTER (WHERE r.request_id IS NOT NULL),
   '[]'::jsonb
 ) AS requests
 FROM app.current_actor() actor
-LEFT JOIN institution.mentorship_request r
-  ON r.teacher_id = actor.user_id AND r.institution_id = actor.institution_id
- AND r.withdrawn_at IS NULL AND r.approved_at IS NULL AND r.declined_at IS NULL
+LEFT JOIN app.teacher_mentorship_requests() r ON true
 WHERE actor.user_id IS NOT NULL AND actor.institution_id IS NOT NULL
 GROUP BY actor.user_id, actor.institution_id`;
-
-const OWN_REQUEST = `FROM institution.mentorship_request r
- WHERE r.id = $1::uuid AND r.teacher_id = app.current_user_id()
-   AND r.institution_id = app.current_institution_id()
-   AND r.withdrawn_at IS NULL AND r.approved_at IS NULL AND r.declined_at IS NULL`;
-const LOCK_APPROVAL_SQL = `
-SELECT pg_advisory_xact_lock(hashtextextended(
-  'institution.mentorship_request:' || r.institution_id || ':' || r.student_id || ':' || r.work_type, 0))
-${OWN_REQUEST}`;
-const OPEN_SQL = `SELECT EXISTS (SELECT 1 ${OWN_REQUEST}) AS open`;
 
 type Decision =
   | { requestId: string; decision: "approve" }
@@ -69,17 +55,9 @@ async function decide(tx: ActorTransaction, input: Decision) {
     return { decision: "decline" };
   }
 
-  // The RPC is idempotent for existing approvals. Reuse its transaction lock
-  // and read again after acquiring it, in a fresh READ COMMITTED snapshot.
-  // The RPC still authorizes the caller and checks the row under its own lock.
-  const locked = await tx.query(LOCK_APPROVAL_SQL, [id]);
-  const open = locked.rowCount === 1 && (await tx.query(OPEN_SQL, [id])).rows[0]?.open === true;
   const {
     rows: [row],
-  } = await tx.query("SELECT institution.approve_mentorship_request($1::uuid) AS result", [id]);
-  // Roll back if a request became visible after the lock lookup and the RPC
-  // created a mentorship we could not classify as a first approval.
-  if (!open) throw new DecisionConflict();
+  } = await tx.query("SELECT app.approve_mentorship_request_with_work($1::uuid) AS result", [id]);
   return { decision: "approve", mentorshipId: row?.result };
 }
 
@@ -88,6 +66,7 @@ const REFUSALS: ReadonlyMap<unknown, readonly [number, string]> = new Map([
   ["ZD403", [403, "forbidden"]],
   ["ZD409", [409, "conflict"]],
   ["ZD422", [422, "invalid_input"]],
+  ["ZD503", [503, "unavailable"]],
 ]);
 
 export function createTeacherMentorshipRequestRoutesFor(
