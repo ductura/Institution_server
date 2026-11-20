@@ -115,14 +115,16 @@ SELECT bag_eq(
             ('collaboration.delete_teacher_note(uuid)'),
             ('collaboration.create_comment_template(text,text)'),
             ('collaboration.list_comment_templates()'),
-            ('collaboration.delete_comment_template(uuid)') $$,
-  'the web role executes exactly the comment RPCs, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158');
+            ('collaboration.delete_comment_template(uuid)'),
+            ('collaboration.create_work_message(text,text)'),
+            ('collaboration.list_work_messages(text)') $$,
+  'the web role executes exactly the comment RPCs, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119, the six note and template RPCs of 158 and the two message RPCs of 164');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
   $$ VALUES ('collaboration.delete_live_state(text,uuid)'), ('collaboration.delete_revision_requests(text,uuid)'),
-            ('collaboration.delete_teacher_notes(text,uuid)') $$,
-  'the retention role executes only delete_live_state, the revision-request delete of 110 and the note delete of 158');
+            ('collaboration.delete_teacher_notes(text,uuid)'), ('collaboration.delete_work_messages(text,uuid)') $$,
+  'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158 and the message delete of 164');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_worker', 'ductus_auth', 'ductus_evidence']) AS r

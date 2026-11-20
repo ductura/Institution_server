@@ -90,8 +90,10 @@ SELECT bag_eq(
             ('collaboration.delete_teacher_note(uuid)'),
             ('collaboration.create_comment_template(text,text)'),
             ('collaboration.list_comment_templates()'),
-            ('collaboration.delete_comment_template(uuid)') $$,
-  'the web role executes exactly the six comment RPCs (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158');
+            ('collaboration.delete_comment_template(uuid)'),
+            ('collaboration.create_work_message(text,text)'),
+            ('collaboration.list_work_messages(text)') $$,
+  'the web role executes exactly the six comment RPCs (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119, the six note and template RPCs of 158 and the two message RPCs of 164');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.oid IN ('collaboration.create_comment(text,text,jsonb)'::regprocedure,
