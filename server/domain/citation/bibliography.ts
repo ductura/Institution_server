@@ -1,5 +1,6 @@
 import type {
   CanonicalDocumentV2,
+  CanonicalDocumentV3,
   CitationNode,
   DocumentSource,
   SourceId,
@@ -50,7 +51,7 @@ function withoutId(source: DocumentSource): Source {
  * the order of citations nor that of `sources` (§10 (e)).
  */
 export function deriveBibliography(
-  document: CanonicalDocumentV2,
+  document: CanonicalDocumentV2 | CanonicalDocumentV3,
   style: CitationStyle,
 ): Bibliography {
   const byId = new Map(document.sources.map((source) => [source.id, source]));

@@ -1,6 +1,11 @@
 import { deriveBibliography, formatCitation, type CitationStyle } from "../citation/index.ts";
 
-import type { CanonicalDocument, CanonicalDocumentV2, InlineNodeV2 } from "./schema.ts";
+import type {
+  CanonicalDocument,
+  CanonicalDocumentV2,
+  CanonicalDocumentV3,
+  InlineNodeV3,
+} from "./schema.ts";
 
 /**
  * One block of a document's text, in document order, without marks. The fast
@@ -17,6 +22,14 @@ export type TextBlock = { kind: "heading" | "paragraph" | "bulletItem" | "quote"
 export type CitationRendering = { style: CitationStyle; orphanMark: string };
 
 /**
+ * A v3 citation with `via` (contract v3 §3.2) is shown with the original
+ * first: `viaJoiner` (", cit. prema " in Croatian) stands between `via` and
+ * the in-text form, inside the style's opening bracket. The caller supplies
+ * it, like `orphanMark`.
+ */
+export type CitationRenderingV3 = CitationRendering & { viaJoiner: string };
+
+/**
  * The text of a document as blocks: a heading of any level is a heading, and
  * every other text block (a paragraph, a bullet list item from E1) is still a
  * paragraph until the server part of F-150 point 1. The fast path reader
@@ -24,7 +37,9 @@ export type CitationRendering = { style: CitationStyle; orphanMark: string };
  * of the editor must not reach it unmapped.
  *
  * A v2 citation is never dropped: it becomes its visible in-text form, or the
- * orphan mark, with the locator as stored.
+ * orphan mark, with the locator as stored. In v3 the same holds, with `via`
+ * in front; a footnote and a cross reference add no characters to the body
+ * text (contract v3 §8): their number and text are the interface's to show.
  */
 export function textBlocksOf(document: CanonicalDocument): TextBlock[];
 export function textBlocksOf(
@@ -32,19 +47,30 @@ export function textBlocksOf(
   rendering: CitationRendering,
 ): TextBlock[];
 export function textBlocksOf(
-  document: CanonicalDocument | CanonicalDocumentV2,
-  rendering?: CitationRendering,
+  document: CanonicalDocumentV3,
+  rendering: CitationRenderingV3,
+): TextBlock[];
+export function textBlocksOf(
+  document: CanonicalDocument | CanonicalDocumentV2 | CanonicalDocumentV3,
+  rendering?: CitationRendering | CitationRenderingV3,
 ): TextBlock[] {
-  let text: (child: InlineNodeV2) => string = (child) =>
-    child.type === "citation" ? "" : child.text;
-  if (document.schemaVersion === 2 && rendering !== undefined) {
-    const bibliography = deriveBibliography(document, rendering.style);
-    text = (child) =>
-      child.type === "citation"
-        ? (formatCitation(child, bibliography, rendering.style) ?? rendering.orphanMark)
-        : child.text;
+  let text: (child: InlineNodeV3) => string = (child) => (child.type === "text" ? child.text : "");
+  if (document.schemaVersion !== 1 && rendering !== undefined) {
+    const { style, orphanMark } = rendering;
+    const bibliography = deriveBibliography(document, style);
+    const joiner = "viaJoiner" in rendering ? rendering.viaJoiner : "";
+    text = (child) => {
+      if (child.type === "text") return child.text;
+      if (child.type !== "citation") return "";
+      const shown = formatCitation(child, bibliography, style) ?? orphanMark;
+      if (!("via" in child) || child.via === undefined) return shown;
+      const open = style.inText.open;
+      return shown.startsWith(open)
+        ? `${open}${child.via}${joiner}${shown.slice(open.length)}`
+        : `${child.via}${joiner}${shown}`;
+    };
   }
-  return (document.nodes as readonly { type: string; children: readonly InlineNodeV2[] }[]).map(
+  return (document.nodes as readonly { type: string; children: readonly InlineNodeV3[] }[]).map(
     (node) => ({
       kind: node.type === "heading" ? "heading" : "paragraph",
       text: node.children.map(text).join(""),
