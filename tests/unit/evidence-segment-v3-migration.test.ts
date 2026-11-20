@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 // DAN-343 (contract on #896): the v3 migration changes two lines of the live
 // descriptor validator and acceptance, and copies everything else. The copies
 // are checked here instead of by eye, on the way up and on the way down.
-const DIRECTORY = new URL("../../db/migrations/", import.meta.url);
+const DIRECTORY = new URL("../../db/main/migrations/", import.meta.url);
 const V3_NAME = "20261028000000_evidence_segment_v3.sql";
 
 function migration(name: string): string {
@@ -33,7 +33,7 @@ function definitionOf(text: string, name: string): string {
   });
   expect(starts).toHaveLength(1);
   const end = text.indexOf("\n$$;", starts[0]);
-  expect(end).toBeGreaterThan(starts[0]);
+  expect(end).toBeGreaterThan(starts[0]!);
   return text.slice(starts[0], end + "\n$$;".length);
 }
 

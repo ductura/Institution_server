@@ -11,7 +11,7 @@ import {
   type AlarmStore,
 } from "../../../server/alarms/readiness-alarms.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 import { holdWorkerPresence } from "./worker-presence.ts";
 
 // DAN-184 (contract on #1836, c.6821517800; round 3 c.6867544247): pgTAP runs
@@ -56,7 +56,7 @@ const resolve = async (client: pg.ClientBase | pg.Pool, reporter: string) =>
       KIND,
       reporter,
     ])
-  ).rows[0].closed;
+  ).rows[0]!.closed;
 
 /** Forgets every reporter's fault of these kinds and closes their open alarms, as committed. */
 async function clear(...kinds: string[]) {
@@ -82,7 +82,7 @@ function store(reporter: string): AlarmStore {
               "SELECT identity.resolve_ops_alarm($1, $2) AS closed",
               [kind, reporter],
             )
-          ).rows[0].closed,
+          ).rows[0]!.closed,
       ),
   };
 }
@@ -111,7 +111,7 @@ async function committed(since: Date, kind: string = KIND): Promise<Episode[]> {
   }
 }
 const now = async () =>
-  (await admin.query<{ now: Date }>("SELECT clock_timestamp() AS now")).rows[0].now;
+  (await admin.query<{ now: Date }>("SELECT clock_timestamp() AS now")).rows[0]!.now;
 
 /** Waits until an alarm call is in PostgreSQL and blocked by another transaction. */
 async function waitForBlocked(timeoutMs = 5_000) {

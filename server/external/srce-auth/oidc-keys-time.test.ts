@@ -17,6 +17,9 @@ import {
   type Misbehaviour,
 } from "../../../test-support/test-idp/index.ts";
 
+// Generating real RSA keys for rotation can outlast Vitest's default timeout.
+vi.setConfig({ testTimeout: 30_000 });
+
 // M1.5b (DAN-491): key rotation at the provider and the time claims of the
 // ID token, against the real openid-client and the in-process provider.
 // Only Date is faked, so the library's JWKS cache ages with the test clock

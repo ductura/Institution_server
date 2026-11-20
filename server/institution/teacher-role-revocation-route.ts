@@ -3,11 +3,11 @@ import { readEmptyMutation, respond, rpcErrorResponse } from "./mutation-route";
 
 export const MAX_TEACHER_ROLE_REVOCATION_BODY_BYTES = 64;
 
-export interface TeacherRoleRevocationDeps {
+export type TeacherRoleRevocationDeps = {
   withActor: WithActor;
   expectedOrigin: string;
-  sessionToken?: string;
-}
+  sessionToken?: string | undefined;
+};
 
 // An administrator of the institution ends one person's confirmed teacher
 // role. The body carries nothing; the person comes only from the path, the

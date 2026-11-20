@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type ActorTransaction } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-427 (contract on #1836, c.6820446364): pgTAP runs in one transaction and
 // cannot race two saves. Here two real connections save one person's
@@ -46,10 +46,10 @@ const save = (locale: string) => async (tx: ActorTransaction) =>
     await tx.query<{ locale: string }>("SELECT identity.set_interface_locale($1) AS locale", [
       locale,
     ])
-  ).rows[0].locale;
+  ).rows[0]!.locale;
 const read = async (tx: ActorTransaction) =>
   (await tx.query<{ locale: string | null }>("SELECT identity.interface_locale() AS locale"))
-    .rows[0].locale;
+    .rows[0]!.locale;
 
 /** Waits until a statement naming `fn` is in PostgreSQL and blocked by another transaction. */
 async function waitForBlocked(fn = "set_interface_locale", timeoutMs = 5_000) {
@@ -92,8 +92,8 @@ function hold<T>(token: string, step: (tx: ActorTransaction) => Promise<T>) {
 }
 
 const logout = async (tx: ActorTransaction) =>
-  (await tx.query<{ closed: boolean }>("SELECT identity.close_current_session() AS closed")).rows[0]
-    .closed;
+  (await tx.query<{ closed: boolean }>("SELECT identity.close_current_session() AS closed"))
+    .rows[0]!.closed;
 
 /** Opens one more live session of `name` and returns its token. */
 async function openSession(name: Name) {

@@ -1,42 +1,38 @@
-import { createPublicKey, verify } from "node:crypto";
+import { createHash, generateKeyPairSync, sign } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
 import {
-  createState,
-  EMPTY_DOCUMENT,
-  FAKE_KEY_ID,
-  FAKE_SIGNATURE,
-  IDS,
-  type State,
-} from "./index.ts";
-import { contractProblems, send, signIn } from "./testing.ts";
+  verifySignedEvidenceReceiptV2,
+  type EvidenceDomainKey,
+  type SignedEvidenceReceiptV2,
+} from "../../../server/domain/index.ts";
+import { createState, EMPTY_DOCUMENT, IDS, type State } from "./index.ts";
+import { contractProblems, evidenceSegment, send, signIn } from "./testing.ts";
 
 const EVIDENCE = { "ductus-protocol": "1" };
-const SEGMENT = Buffer.from('{"izmisljeni":"odsjecak"}').toString("base64");
 
 async function commit(
   state: State,
   headers: Record<string, string>,
   txid: string,
   baseRevision: number,
+  segment = evidenceSegment(state),
 ) {
   return send(state, "/api/v1/evidence/commit", {
     body: {
       documentId: IDS.document,
       clientTransactionId: txid,
       baseRevision,
-      segments: [SEGMENT],
+      segments: [segment],
       document: EMPTY_DOCUMENT,
     },
-    headers: { ...headers, ...EVIDENCE },
+    headers: { ...EVIDENCE, ...headers },
   });
 }
 
-type Signed = { payload: unknown; signature: { keyId: string; signatureBase64Url: string } };
-
-describe("dev fake server: evidence is never signed", () => {
-  it("marks every receipt with the fake key, and no receipt verifies under the key open lists", async () => {
+describe("dev fake server: evidence receipts", () => {
+  it("accepts a signed receipt under the published key and rejects a wrong signature", async () => {
     const state = createState();
     const headers = await signIn(state, "student");
     const opened = await send(state, "/api/v1/evidence/open", {
@@ -44,61 +40,111 @@ describe("dev fake server: evidence is never signed", () => {
       headers: { ...headers, ...EVIDENCE },
     });
     expect(contractProblems("evidence.open.post", opened)).toEqual([]);
-    const key = (opened.json as { receiptKeys: { keyId: string; keyBase64Url: string }[] })
-      .receiptKeys[0];
-    expect(key?.keyId).toBe(FAKE_KEY_ID);
-    const committed = await commit(state, headers, "izmisljena-1", 0);
+    const {
+      documentId,
+      receiptKeys: [key],
+    } = opened.json as { documentId: string; receiptKeys: EvidenceDomainKey[] };
+    if (key === undefined) throw new Error("missing receipt key");
+    const segment = evidenceSegment(state, 2);
+    const committed = await commit(state, headers, "izmisljena-1", 0, segment);
     expect(contractProblems("evidence.commit.post", committed)).toEqual([]);
-    const receipt = (committed.json as { receipt: { signedReceipt: Signed } }).receipt
-      .signedReceipt;
-    expect(receipt.signature).toMatchObject({
-      keyId: FAKE_KEY_ID,
-      signatureBase64Url: FAKE_SIGNATURE,
+    const { signedReceipt } = (
+      committed.json as { receipt: { signedReceipt: SignedEvidenceReceiptV2 } }
+    ).receipt;
+    const bytes = Buffer.from(segment, "base64");
+    expect(signedReceipt.payload).toMatchObject({
+      principalId: IDS.student,
+      segmentHash: createHash("sha256").update(bytes).digest("hex"),
+      sequenceFrom: 1,
+      sequenceTo: 2,
+      eventCount: 2,
+      payloadBytes: bytes.length,
     });
-    const publicKey = createPublicKey({
-      key: Buffer.from(key?.keyBase64Url ?? "", "base64url"),
-      format: "der",
-      type: "spki",
+    const expected = {
+      documentId,
+      evidenceDomainId: key.evidenceDomainId,
+      clientTransactionId: "izmisljena-1",
+      revision: 1,
+    };
+    await expect(verifySignedEvidenceReceiptV2(signedReceipt, expected, [key])).resolves.toEqual({
+      ok: true,
+      payload: signedReceipt.payload,
     });
-    const signature = Buffer.from(receipt.signature.signatureBase64Url, "base64url");
-    expect(verify(null, Buffer.from(JSON.stringify(receipt.payload)), publicKey, signature)).toBe(
-      false,
-    );
+    const { signature } = signedReceipt;
+    const { privateKey } = generateKeyPairSync("ed25519");
+    const substitute = sign(null, Buffer.from("izmišljeni pogrešan potpis"), privateKey);
+    const changed = {
+      ...signedReceipt,
+      signature: { ...signature, signatureBase64Url: substitute.toString("base64url") },
+    };
+    await expect(verifySignedEvidenceReceiptV2(changed, expected, [key])).resolves.toEqual({
+      ok: false,
+      reason: "signature_invalid",
+    });
+    expect(createState().receiptSigner.key.keyBase64Url).not.toBe(key.keyBase64Url);
 
     const submitted = await send(state, "/api/v1/submission", {
       body: { documentId: IDS.document, revision: 1 },
       headers: { ...headers, ...EVIDENCE },
     });
     expect(contractProblems("submission.submit.post", submitted)).toEqual([]);
-    const submission = (submitted.json as { receipt: Signed }).receipt;
-    expect(submission.signature).toMatchObject({
-      keyId: FAKE_KEY_ID,
-      signatureBase64Url: FAKE_SIGNATURE,
+    expect(submitted.json).toMatchObject({
+      receipt: {
+        signature: { keyId: "lazni-kljuc-nepotpisano", signatureBase64Url: "A".repeat(86) },
+      },
     });
   });
 
-  it("answers a stale base with the work's state, a repeated transaction as duplicate, protocol 2 as pending", async () => {
+  it("returns the same receipt on retry and completes protocol 2 after a pending response", async () => {
     const state = createState();
     const headers = await signIn(state, "student");
-    await commit(state, headers, "izmisljena-1", 0);
-    const duplicate = await commit(state, headers, "izmisljena-1", 0);
+    const segment = evidenceSegment(state, 2);
+    const first = await commit(state, headers, "izmisljena-1", 0, segment);
+    const duplicate = await commit(state, headers, "izmisljena-1", 0, segment);
     expect(duplicate.json).toMatchObject({ status: "duplicate", revision: 1 });
+    expect(duplicate.json).toEqual({ ...(first.json as object), status: "duplicate" });
+    expect((await commit(state, headers, "izmisljena-1", 0)).json).toMatchObject({
+      status: "txid_reused",
+    });
     const stale = await commit(state, headers, "izmisljena-2", 0);
     expect(contractProblems("evidence.commit.post", stale, "stale_base")).toEqual([]);
     expect(stale.json).toMatchObject({ status: "stale_base", currentRevision: 1 });
-    const pending = await send(state, "/api/v1/evidence/commit", {
-      body: {
-        documentId: IDS.document,
-        clientTransactionId: "izmisljena-3",
-        baseRevision: 1,
-        segments: [SEGMENT],
-        document: EMPTY_DOCUMENT,
-      },
-      headers: { ...headers, "ductus-protocol": "2" },
-    });
+    const v2 = { ...headers, "ductus-protocol": "2" };
+    const next = evidenceSegment(state);
+    const pending = await commit(state, v2, "izmisljena-3", 1, next);
     expect(contractProblems("evidence.commit.post", pending)).toEqual([]);
     expect(pending.status).toBe(202);
+    const signed = await commit(state, v2, "izmisljena-3", 1, next);
+    expect(signed.status).toBe(200);
+    expect(contractProblems("evidence.commit.post", signed)).toEqual([]);
+    expect(signed.json).toMatchObject({
+      status: "duplicate",
+      revision: 2,
+      receipt: { status: "signed", signedReceipt: { payload: { sequenceFrom: 3, sequenceTo: 3 } } },
+    });
+    expect((await commit(state, headers, "izmisljena-1", 0, segment)).json).toEqual(duplicate.json);
   });
+
+  it.each(["invalid JSON", "invalid segment shape", "noncanonical bytes"])(
+    "refuses %s without advancing the work",
+    async (kind) => {
+      const state = createState();
+      const headers = await signIn(state, "student");
+      const canonical = Buffer.from(evidenceSegment(state), "base64").toString("utf8");
+      const input =
+        kind === "invalid JSON" ? "{" : kind === "invalid segment shape" ? "{}" : ` ${canonical}`;
+      const refused = await commit(
+        state,
+        headers,
+        "izmisljena-1",
+        0,
+        Buffer.from(input).toString("base64"),
+      );
+      expect(refused.status).toBe(422);
+      expect(contractProblems("evidence.commit.post", refused, "invalid")).toEqual([]);
+      expect(state.works[0]?.revision).toBe(0);
+    },
+  );
 
   it("refuses another student's work and a stale submission", async () => {
     const state = createState();

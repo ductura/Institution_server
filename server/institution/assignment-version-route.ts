@@ -9,11 +9,11 @@ const PUBLISH = `SELECT institution.publish_assignment_version(
   $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer
 ) AS version_no`;
 
-export interface AssignmentVersionDeps {
+export type AssignmentVersionDeps = {
   withActor: WithActor;
   expectedOrigin: string;
-  sessionToken?: string;
-}
+  sessionToken?: string | undefined;
+};
 
 const isVersion = (value: unknown): value is number =>
   Number.isSafeInteger(value) && (value as number) >= 1 && (value as number) <= MAX_VERSION;

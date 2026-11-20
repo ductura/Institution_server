@@ -80,6 +80,18 @@ export const INSTITUTION_HANDLERS: Handlers = {
     });
     return { status: 200, body: { id } };
   },
+  // UGOVORI-API (wweb18): whether the course has a code; never the code itself (A-8).
+  "institution.enrollment-code-state.get": ({ state, account, params }) => {
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu.test(params.courseId))
+      return { error: "invalid_input" };
+    const course = taughtCourse(state, account, params.courseId.toLowerCase());
+    if (course === null) return { error: "not_found" };
+    const current = course.codes.find((code) => code.active);
+    return {
+      status: 200,
+      body: { current: current === undefined ? null : { validUntil: current.validUntil } },
+    };
+  },
   "institution.enrollment-code.post": ({ state, account, params, body }) => {
     const course = taughtCourse(state, account, params.courseId);
     if (course === null) return { error: "forbidden" };
@@ -116,6 +128,69 @@ export const INSTITUTION_HANDLERS: Handlers = {
     if (!course.studentIds.includes(account.id)) course.studentIds.push(account.id);
     return { status: 200, body: { courseId: course.id } };
   },
+  // SRV-02 (A-2): enrolment with every outcome told apart.
+  "student.enrollments.post": ({ state, account, body, now }) => {
+    if (account === null || !account.roles.includes("student")) return { error: "forbidden" };
+    const guesses = state.enrollmentGuesses.get(account.id) ?? 0;
+    if (guesses >= MAX_ENROLLMENT_GUESSES) return { error: "too_many_attempts" };
+    const code = normalizeCode(body.code);
+    const course = /^[0-9A-Z]{8,32}$/u.test(code)
+      ? state.courses.find((c) => c.codes.some((k) => normalizeCode(k.code) === code))
+      : undefined;
+    if (course === undefined || course.removed.includes(account.id)) {
+      state.enrollmentGuesses.set(account.id, guesses + 1);
+      return { error: "invalid_code" };
+    }
+    if (course.studentIds.includes(account.id))
+      return { status: 200, body: { outcome: "already_enrolled", courseId: course.id } };
+    const valid = course.codes.some(
+      (k) => k.active && normalizeCode(k.code) === code && Date.parse(k.validUntil) > now.getTime(),
+    );
+    if (!valid) {
+      state.enrollmentGuesses.set(account.id, guesses + 1);
+      return { error: "expired_code" };
+    }
+    course.studentIds.push(account.id);
+    const outcome = state.assignments.some((a) => a.courseId === course.id)
+      ? "enrolled"
+      : "enrolled_no_assignment";
+    return { status: 200, body: { outcome, courseId: course.id } };
+  },
+  // SRV-02 (PO-7): the notice of the current version was read; the first time is kept.
+  "student.notice-read.post": ({ state, account, params, body, now }) => {
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId);
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (assignment === undefined || account === null || !course?.studentIds.includes(account.id))
+      return { error: "not_found" };
+    if (body.versionNo !== assignment.version) return { error: "conflict" };
+    const key = `${account.id}:${assignment.version}`;
+    const readAt = assignment.read.get(key) ?? now.toISOString();
+    assignment.read.set(key, readAt);
+    return { status: 200, body: { readAt } };
+  },
+  // UGOVORI-API (SRV-NG): the notice of the current version, as E-6 shows it.
+  "student.notice.get": ({ state, account, params }) => {
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId);
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    if (assignment === undefined || account === null || !course?.studentIds.includes(account.id))
+      return { error: "not_found" };
+    const c = assignment.content;
+    const acknowledged = assignment.acknowledged.get(account.id);
+    return {
+      status: 200,
+      body: {
+        assignmentId: assignment.id,
+        versionNo: assignment.version,
+        templateVersion: 1,
+        ...{ title: c.title, instructions: c.instructions, workType: c.workType },
+        ...{ opensAt: c.opensAt, dueAt: c.dueAt, aiPolicy: c.aiPolicy },
+        aiPurposes: c.aiPolicy === "prohibited" ? [] : c.aiPurposes,
+        ...{ evidenceProfile: c.evidenceProfile, wordMin: c.wordMin, wordMax: c.wordMax },
+        readAt: assignment.read.get(`${account.id}:${assignment.version}`) ?? null,
+        acknowledgedAt: acknowledged?.version === assignment.version ? acknowledged.at : null,
+      },
+    };
+  },
   "institution.acknowledgment.post": ({ state, account, params, body, now }) => {
     const assignment = state.assignments.find((a) => a.id === params.assignmentId);
     const course = state.courses.find((c) => c.id === assignment?.courseId);
@@ -146,6 +221,10 @@ export const INSTITUTION_HANDLERS: Handlers = {
       wordMin: body.wordMin,
       wordMax: body.wordMax,
     };
+    // UGOVORI-API: the creation's groups, outside tools and summary-only mode stay with the assignment.
+    for (const key of ["groupIds", "externalToolsAllowed", "aiSummaryOnly"] as const)
+      if (assignment.content[key] !== undefined)
+        Object.assign(content, { [key]: assignment.content[key] });
     if (content.wordMin !== null && content.wordMax !== null && content.wordMin > content.wordMax)
       return { error: "invalid_input" };
     if (content.aiPolicy === "prohibited" && content.aiPurposes.length > 0)

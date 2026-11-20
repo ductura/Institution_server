@@ -16,15 +16,11 @@ import type { WithActor } from "./with-actor.ts";
 type Refusal = Refused<"unauthenticated" | "forbidden" | "conflict" | "invalid">;
 
 export type AssignmentWorkLanguageOutcome =
-  | { readonly status: "updated"; readonly version: number }
-  | Refusal
-  | Unavailable;
+  { readonly status: "updated"; readonly version: number } | Refusal | Unavailable;
 
 /** The language the work has afterwards: its exception, or the assignment's with null. */
 export type WorkLanguageOutcome =
-  | { readonly status: "updated"; readonly language: WorkLanguage }
-  | Refusal
-  | Unavailable;
+  { readonly status: "updated"; readonly language: WorkLanguage } | Refusal | Unavailable;
 
 export type WorkLanguages = {
   setAssignmentWorkLanguage(

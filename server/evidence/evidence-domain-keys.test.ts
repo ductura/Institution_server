@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ActorTransaction } from "../database/with-actor.ts";
 
-import { readEvidenceDomainKeys } from "./evidence-domain-keys";
+import { readEvidenceDomainKeys } from "./evidence-domain-keys.ts";
 
 // Invented domain and key; the SPKI is 32 repeated bytes, not a key anyone holds.
 const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
@@ -64,7 +64,7 @@ describe("readEvidenceDomainKeys", () => {
       ],
     });
     expect(calls).toHaveLength(1);
-    expect(calls[0][1]).toEqual([DOMAIN]);
+    expect(calls[0]![1]).toEqual([DOMAIN]);
   });
 
   it("gives an empty list when RLS shows no key", async () => {

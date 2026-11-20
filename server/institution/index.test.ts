@@ -2,7 +2,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import * as area from "./index.ts";
 import type {
-  AssignmentVersionBody,
   CourseBody,
   EnrollmentBody,
   EnrollmentCodeBody,
@@ -10,11 +9,15 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the body parsers, the service factory, the access log read (SRV-11) and the student's write bodies (SRV-10)", () => {
+  it("exports only the body parsers, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10), the student's courses (SRV-09), the assignment content (SRV-14) and the submission state and requirements reads (SRV-22)", () => {
     expect(Object.keys(area).sort()).toEqual([
       "MAX_ENROLLMENT_CODE_LENGTH",
+      "WORK_TYPES",
       "accessLogCursorOf",
       "createInstitutionService",
+      // SRV-14: the content of an assignment version (assignment-input.ts).
+      "isAssignmentVersion",
+      "parseAssignmentInput",
       "parseAssignmentVersionBody",
       "parseAssignmentWorkLanguageBody",
       "parseCourseBody",
@@ -24,22 +27,23 @@ describe("server/institution public interface", () => {
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
       "readStudentAccessLog",
+      "readStudentRequirements",
+      "readStudentSubmission",
+      "studentCoursesOf",
     ]);
   });
 
-  it("has a service of nine methods and closed bodies", () => {
+  it("has a service of eight methods and closed bodies", () => {
     expectTypeOf<keyof InstitutionService>().toEqualTypeOf<
       | "createCourse"
       | "issueEnrollmentCode"
       | "revokeEnrollmentCode"
       | "removeStudent"
       | "allowStudentReturn"
-      | "publishAssignmentVersion"
       | "setAssignmentWorkLanguage"
       | "setWorkLanguage"
       | "setWorkLanguageForDocument"
     >();
-    expectTypeOf<keyof AssignmentVersionBody>().toEqualTypeOf<"expectedVersion" | "content">();
     expectTypeOf<keyof CourseBody>().toEqualTypeOf<"name" | "academicYear" | "aiPolicy">();
     expectTypeOf<EnrollmentCodeBody>().toEqualTypeOf<{ validUntil: string }>();
     expectTypeOf<EnrollmentBody>().toEqualTypeOf<{ code: string }>();

@@ -2,7 +2,7 @@
 import { fc, test } from "@fast-check/vitest";
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { Transform } from "@tiptap/pm/transform";
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 
 import {
   digestCanonicalDocumentV2,
@@ -16,6 +16,9 @@ import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
 import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer.ts";
 import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
+
+// Every generated edit runs both drivers, including real Web Crypto digests.
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * Granica 8 (#638), property: random edits, some with a forged or shifted
@@ -35,18 +38,18 @@ const start: JcsJsonValue = {
   nodes: [
     {
       type: "paragraph",
-      id: ids[0],
+      id: ids[0]!,
       children: [{ type: "text", text: "Prvi odlomak čž.", marks: [] }],
     },
     {
       type: "heading",
-      id: ids[1],
+      id: ids[1]!,
       level: 2,
       children: [{ type: "text", text: "Naslov 😀", marks: [] }],
     },
     {
       type: "paragraph",
-      id: ids[2],
+      id: ids[2]!,
       children: [{ type: "text", text: "Treći odlomak.", marks: [] }],
     },
   ],
@@ -78,9 +81,9 @@ function change(tr: Transform, o: Op): void {
   if (o.kind === "insert" && o.text) tr.insert(x, schema.text(o.text));
   if (o.kind === "delete") tr.delete(from, to);
   if (o.kind === "join") tr.join(x);
-  if (o.kind === "bold") tr.addMark(from, to, schema.marks.bold.create());
+  if (o.kind === "bold") tr.addMark(from, to, schema.marks.bold!.create());
   if (o.kind === "split")
-    tr.split(x, 1, [{ type: schema.nodes.paragraph, attrs: { nodeId: null } }]);
+    tr.split(x, 1, [{ type: schema.nodes.paragraph!, attrs: { nodeId: null } }]);
 }
 
 /** One event per edit ProseMirror accepts; 1 in 5 removed hashes forged, 1 in 10 of a shifted range. */
@@ -108,14 +111,14 @@ async function segmentOf(ops: Op[]): Promise<EvidenceSegmentV2 | null> {
       const json = step.toJSON() as Record<string, unknown>;
       const [from, to] = [json.from as number, json.to as number];
       if (json.stepType === "replace" && to > from && !json.structure) {
-        const shifted = Math.min(to + 1, tr.docs[i].content.size);
+        const shifted = Math.min(to + 1, tr.docs[i]!.content.size);
         try {
           json.removedSha256 =
             o.forge < 2
               ? OTHER_HASH
               : o.forge < 3
-                ? removedRangeSha256(tr.docs[i], from, shifted)
-                : removedRangeSha256(tr.docs[i], from, to);
+                ? removedRangeSha256(tr.docs[i]!, from, shifted)
+                : removedRangeSha256(tr.docs[i]!, from, to);
         } catch {
           json.removedSha256 = OTHER_HASH; // half a surrogate pair has no JCS form
         }

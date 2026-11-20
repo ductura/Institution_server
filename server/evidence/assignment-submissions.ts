@@ -17,7 +17,7 @@ const DIGITS = /^[0-9]{1,16}$/;
 const SQLSTATE = /^[0-9A-Z]{5}$/;
 const NO_STORE = { "cache-control": "no-store" };
 
-export interface AssignmentSubmission {
+export type AssignmentSubmission = {
   studentId: string;
   /** The student's work, null while there is none. */
   documentId: string | null;
@@ -27,7 +27,7 @@ export interface AssignmentSubmission {
   /** ISO UTC, always on a whole minute. */
   requestedMinute: string | null;
   afterDeadline: boolean | null;
-}
+};
 
 export type AssignmentSubmissionsByAssignment =
   | { kind: "ok"; submissions: ReadonlyMap<string, AssignmentSubmission[]> }
@@ -151,10 +151,10 @@ export async function readAssignmentSubmissions(
   return { kind: "ok", submissions: read.submissions.get(assignmentId.toLowerCase()) ?? [] };
 }
 
-export interface AssignmentSubmissionsDeps {
+export type AssignmentSubmissionsDeps = {
   withActor: WithActor;
-  sessionToken?: string;
-}
+  sessionToken?: string | undefined;
+};
 
 function refuse(status: number, error: string): Response {
   return Response.json({ error }, { status, headers: NO_STORE });

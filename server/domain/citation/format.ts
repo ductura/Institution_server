@@ -98,11 +98,16 @@ function editorName(editor: Person): string {
 
 function formatAccessed(iso: string, label: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
-  const date = match ? new Date(Date.UTC(+match[1], +match[2] - 1, +match[3])) : undefined;
-  if (!match || !date || date.getUTCMonth() !== +match[2] - 1 || date.getUTCDate() !== +match[3]) {
+  const date = match ? new Date(Date.UTC(+match[1]!, +match[2]! - 1, +match[3]!)) : undefined;
+  if (
+    !match ||
+    !date ||
+    date.getUTCMonth() !== +match[2]! - 1 ||
+    date.getUTCDate() !== +match[3]!
+  ) {
     throw new CitationInputError("accessed must be a valid YYYY-MM-DD date");
   }
-  return `(${label} ${+match[3]}. ${+match[2]}. ${match[1]}.)`;
+  return `(${label} ${+match[3]!}. ${+match[2]!}. ${match[1]!}.)`;
 }
 
 function body(source: Source, style: CitationStyle): string {
@@ -153,7 +158,7 @@ function sortKey(author: Author): string {
 function compareSources(a: Source, b: Source): number {
   const length = Math.min(a.authors.length, b.authors.length);
   for (let i = 0; i < length; i++) {
-    const byName = collator.compare(sortKey(a.authors[i]), sortKey(b.authors[i]));
+    const byName = collator.compare(sortKey(a.authors[i]!), sortKey(b.authors[i]!));
     if (byName !== 0) return byName;
   }
   if (a.authors.length !== b.authors.length) return a.authors.length - b.authors.length;
@@ -168,10 +173,13 @@ function compareYearSuffixes(a: string, b: string): number {
 }
 
 /** The suffix at `index`: 0 is `a`, 25 is `z`, 26 is `aa`, 701 is `zz`, 702 is `aaa`. */
+// The year suffixes a, b, …, z, aa, … (written out: no text is built from codes).
+const LATIN_LETTERS = "abcdefghijklmnopqrstuvwxyz";
+
 function yearSuffixAt(index: number): string {
   let suffix = "";
   for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) {
-    suffix = String.fromCharCode(97 + ((n - 1) % 26)) + suffix;
+    suffix = LATIN_LETTERS.charAt((n - 1) % 26) + suffix;
   }
   return suffix;
 }

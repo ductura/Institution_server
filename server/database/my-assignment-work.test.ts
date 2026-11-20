@@ -1,5 +1,5 @@
 // DAN-989-2a (contract Ductus#1836 c.6957393091): the state of the student's own
-// work per assignment, from the rows of app.student_workspace(). Who asks comes
+// work per assignment, from app.student_workspace() and app.my_submission_state(). Who asks comes
 // only from the token inside withActor; one row the port cannot vouch for makes
 // the whole answer row_malformed. Negative cases first. Every token and id below
 // is invented.
@@ -21,11 +21,11 @@ const A = "00000000-0000-4000-8000-0000000000a1";
 const B = "00000000-0000-4000-8000-0000000000b2";
 const C = "00000000-0000-4000-8000-0000000000c3";
 // The columns as the driver names them; built from entries, as they are no camelCase names.
-const row = (id: unknown, document: unknown = null, revision: unknown = null): object =>
+const row = (id: unknown, document: unknown = null, state: unknown = "none"): object =>
   Object.fromEntries([
     ["assignment_id", id],
     ["document_id", document],
-    ["submitted_revision", revision],
+    ["state", state],
   ]);
 
 function reader(answer: unknown) {
@@ -150,7 +150,7 @@ describe("my assignment work: refusals", () => {
   // JSON.parse makes `__proto__` an own key and keeps Object.prototype; only `inherited`
   // above proves that a column from the prototype is none.
   const ownProto = JSON.parse(
-    `{"__proto__": ${JSON.stringify(row(A))}, "toString": "${A}", "document_id": null, "submitted_revision": null}`,
+    `{"__proto__": ${JSON.stringify(row(A))}, "toString": "${A}", "document_id": null, "state": "none"}`,
   ) as object;
   const bad: [string, unknown][] = [
     ["rows that are not a list", { length: 1, 0: row(A) }],
@@ -160,7 +160,8 @@ describe("my assignment work: refusals", () => {
     ["only inherited columns", [inherited]],
     ["a throwing assignment_id getter", [getter]],
     ["own __proto__ and toString keys, no assignment_id", [ownProto]],
-    ["no assignment_id", [JSON.parse('{"document_id": null, "submitted_revision": null}')]],
+    ["no assignment_id", [JSON.parse('{"document_id": null, "state": "none"}')]],
+    ["no state", [JSON.parse(`{"assignment_id": "${A}", "document_id": null}`)]],
     ...(
       [
         null,
@@ -174,11 +175,13 @@ describe("my assignment work: refusals", () => {
     ...(["", " d", "d ", "d\u0000", "d\u2028", "x".repeat(257), 7, false] as unknown[]).map(
       (d): [string, unknown] => [`document_id ${JSON.stringify(d)}`, [row(A, d)]],
     ),
-    ...(["0", 0, "-1", "+1", "1.0", "01", "9007199254740992", 1.5, true, ""] as unknown[]).map(
-      (v): [string, unknown] => [`submitted_revision ${JSON.stringify(v)}`, [row(A, "d", v)]],
+    ...([null, "", "not_found", "unknown", "None", "none\n", 0, 1.5, true, {}] as unknown[]).map(
+      (value): [string, unknown] => [`state ${JSON.stringify(value)}`, [row(A, "d", value)]],
     ),
-    ["a submission without a work", [row(A, null, "1")]],
-    ["repeated rows with different revisions", [row(A, "d1", "1"), row(A, "d2", "2")]],
+    ["a pending receipt without a work", [row(A, null, "ceka")]],
+    ["a confirmed receipt without a work", [row(A, null, "potvrdeno")]],
+    ["repeated rows with different states", [row(A, "d1", "ceka"), row(A, "d2", "potvrdeno")]],
+    ["repeated rows with and without submission", [row(A, "d1", "ceka"), row(A, "d2")]],
     ["repeated rows with and without a work", [row(A, "d1"), row(A)]],
   ];
   it.each(bad)("answers row_malformed for the whole list: %s", async (_name, rows) => {
@@ -195,7 +198,9 @@ describe("my assignment work: the state per assignment", () => {
     expect(r.seen).toEqual([
       {
         token: TOKEN,
-        text: "SELECT assignment_id, document_id, submitted_revision FROM app.student_workspace()",
+        text: `SELECT w.assignment_id, w.document_id, s.state
+  FROM app.student_workspace() w
+  LEFT JOIN LATERAL app.my_submission_state(w.assignment_id) s ON true`,
         values: [],
       },
     ]);
@@ -203,8 +208,14 @@ describe("my assignment work: the state per assignment", () => {
 
   it("gives one state per assignment, ordered by assignmentId", async () => {
     const astral = `${"x".repeat(255)}\u{1f4dd}`;
-    const r = reader([row(C, "d3", "4"), row(B, astral), row(A), row(C, "d4", 4), row(B, "d2")]);
-    const first = reader([row(A, "d", "1"), row(A, "e", 1)]);
+    const r = reader([
+      row(C, "d3", "ceka"),
+      row(B, astral),
+      row(A),
+      row(C, "d4", "ceka"),
+      row(B, "d2"),
+    ]);
+    const first = reader([row(A, "d", "potvrdeno"), row(A, "e", "potvrdeno")]);
     expect(await first.work.read(TOKEN)).toEqual({
       ok: true,
       value: [{ assignmentId: A, workState: "submitted" }],

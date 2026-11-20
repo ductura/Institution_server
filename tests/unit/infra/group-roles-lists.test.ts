@@ -11,17 +11,17 @@ import { describe, expect, it } from "vitest";
 // in one place only.
 const ROOT = new URL("../../../", import.meta.url);
 const FILES = {
-  rolesMigration: "db/migrations/20261003210000_roles.sql",
-  bootstrap: "db/local/migrator.sql",
-  checkMigration: "db/migrations/20261101201000_roles_check.sql",
+  rolesMigration: "db/main/migrations/20261003210000_roles.sql",
+  bootstrap: "db/main/local/migrator.sql",
+  checkMigration: "db/main/migrations/20261101201000_roles_check.sql",
 } as const;
 
 /** The quoted names inside `group_roles CONSTANT text[] := ARRAY[...]`. */
 function groupRoles(sql: string): string[] {
   const lists = [...sql.matchAll(/group_roles\s+CONSTANT\s+text\[\]\s*:=\s*ARRAY\[([^\]]*)\]/g)];
   if (lists.length !== 1) throw new Error(`expected one group_roles list, found ${lists.length}`);
-  const body = lists[0][1].replace(/--[^\n]*/g, "");
-  const names = [...body.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  const body = lists[0]![1]!.replace(/--[^\n]*/g, "");
+  const names = [...body.matchAll(/'([^']*)'/g)].map((m) => m[1]!);
   const rest = body.replace(/'[^']*'/g, "").replace(/[\s,]/g, "");
   if (rest !== "") throw new Error(`unexpected text in the group_roles list: ${rest}`);
   return names;

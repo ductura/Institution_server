@@ -22,7 +22,7 @@ export type AccessLogRole = "teacher" | "mentor" | "seminar_teacher" | "unknown"
 export type AccessLogSurface =
   "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown";
 
-export interface AccessLogEntry {
+export type AccessLogEntry = {
   id: string;
   /** Epoch milliseconds of the window's start; for order only, never shown. */
   at: number;
@@ -30,9 +30,9 @@ export interface AccessLogEntry {
   surface: AccessLogSurface;
   /** Null when the reader has no name pair; never a stand-in. */
   reader: { givenName: string; familyName: string } | null;
-}
+};
 
-export interface AccessLogRow {
+export type AccessLogRow = {
   id: string;
   /** Epoch milliseconds of the window's start, for an unambiguous `datetime`. */
   at: number;
@@ -42,9 +42,9 @@ export interface AccessLogRow {
   role: AccessLogRole;
   surface: AccessLogSurface;
   reader: AccessLogEntry["reader"];
-}
+};
 
-export interface AccessLogDay {
+export type AccessLogDay = {
   /** Zagreb date, `2026-11-10`. */
   key: string;
   year: number;
@@ -54,7 +54,7 @@ export interface AccessLogDay {
   /** 0 is Sunday. */
   weekday: number;
   entries: AccessLogRow[];
-}
+};
 
 type Row = Record<string, unknown>;
 
@@ -85,9 +85,10 @@ export function zonedInstantOf(value: string): number {
   if (match === null || /[1-9]/.test(match[7]?.slice(3) ?? "")) return Number.NaN;
   // Date.parse rolls an impossible date over (2026-02-30 reads as 2026-03-02,
   // hour 24 as the next day; #1968 QA c.6816961587), so the fields are checked first.
+  // Six groups, always present after the match (noUncheckedIndexedAccess).
   const [year, month, day, hour, minute, second] = match
     .slice(1, 7)
-    .map((part) => Number(part ?? "0"));
+    .map((part) => Number(part ?? "0")) as [number, number, number, number, number, number];
   if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return Number.NaN;
   if (hour > 23 || minute > 59 || second > 59) return Number.NaN;
   return Date.parse(value);

@@ -1,6 +1,6 @@
 // The student removal, student return and assignment version routes on a real
 // server with the real pipeline, over the real institution service and a fake
-// InstitutionMembers port: every vector of the three contracts a socket can
+// InstitutionMembers and InstitutionAssignments ports: every vector of the three contracts a socket can
 // reach is sent as its bytes; a refusal before the port leaves it uncalled.
 // Port of the HTTP edge of Ductus student-removal-route.ts,
 // student-return-route.ts and assignment-version-route.ts at 078c780. All
@@ -11,7 +11,7 @@ import { connect } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type {
-  AssignmentVersionOutcome,
+  InstitutionAssignments,
   InstitutionCourses,
   InstitutionMembers,
   StudentRemovalOutcome,
@@ -20,6 +20,7 @@ import type {
 } from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
+import { createInstitutionAssignmentRoutes } from "./institution-assignments.ts";
 import { createInstitutionCourseRoutes } from "./institution-courses.ts";
 import { createLayers } from "./pipeline.ts";
 import { type Running, startServer } from "./start.ts";
@@ -74,22 +75,31 @@ async function start() {
   const members = {
     removeStudent: record("removeStudent") as () => Promise<StudentRemovalOutcome>,
     allowStudentReturn: record("allowStudentReturn") as () => Promise<StudentReturnOutcome>,
-    publishAssignmentVersion: record(
-      "publishAssignmentVersion",
-    ) as () => Promise<AssignmentVersionOutcome>,
   } satisfies InstitutionMembers;
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
     layers: createLayers({ expectedOrigin: ORIGIN }),
     databases: createDatabases(),
-    routes: createInstitutionCourseRoutes({
-      courses: {} as InstitutionCourses,
-      languages: {} as WorkLanguages,
-      members,
-      recordActivity: async (token) => activity.push(token),
-      timeoutMs: 300,
-    }),
+    routes: [
+      ...createInstitutionCourseRoutes({
+        courses: {} as InstitutionCourses,
+        languages: {} as WorkLanguages,
+        members,
+        recordActivity: async (token) => activity.push(token),
+        timeoutMs: 300,
+      }),
+      ...createInstitutionAssignmentRoutes({
+        assignments: {
+          createAssignment: async () => {
+            throw new Error("unexpected assignment creation");
+          },
+          publishVersion: record("publishVersion") as InstitutionAssignments["publishVersion"],
+        },
+        recordActivity: async (token) => activity.push(token),
+        timeoutMs: 300,
+      }),
+    ],
   });
 }
 afterEach(async () => {
@@ -164,7 +174,7 @@ const OUTCOME: Record<Kind, Record<string, unknown>> = {
 const METHOD: Record<Kind, string> = {
   removal: "removeStudent",
   return: "allowStudentReturn",
-  version: "publishAssignmentVersion",
+  version: "publishVersion",
 };
 
 const cases = (Object.keys(ROUTES) as Kind[]).flatMap((kind) =>
@@ -226,13 +236,13 @@ describe("what reaches the port", () => {
     expect(got.status).toBe(201);
     expect(JSON.parse(got.body)).toEqual({ assignmentId: ASSIGNMENT, versionNo: 7 });
     const { expectedVersion, ...content } = published.request.body as Record<string, unknown>;
-    expect(calls[0]!.args).toEqual([activity[0], upper, expectedVersion, content]);
+    expect(calls[0]!.args).toEqual([activity[0], ASSIGNMENT, expectedVersion, content]);
   });
 
   it("a tightening the RPC refuses is 422 invalid_input; an unknown status is 503", async () => {
     for (const [answer, status] of [
       [{ status: "invalid" }, 422],
-      [{ status: "conflict" }, 503],
+      [{ status: "unexpected" }, 503],
     ] as const) {
       outcome = answer;
       await start();

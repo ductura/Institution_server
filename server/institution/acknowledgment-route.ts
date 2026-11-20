@@ -2,7 +2,9 @@ import type { NextRequest } from "next/server";
 
 import { NOTICE_TEMPLATE_VERSION } from "../domain/notice/fingerprint.ts";
 import { expectedOrigin } from "../external/srce-auth/config.ts";
-import { SESSION_COOKIE_NAME } from "../session/session-token.ts";
+// As the mounted node:http writes (server/http/student-writes.ts): a session this
+// browser has ended reads as no cookie (DAN-99).
+import { liveSessionTokenFromCookie } from "../session/index.ts";
 import { withActor } from "../database/index.ts";
 import type { WithActor } from "../database/with-actor.ts";
 import { checkMutationRequest, readBodyWithLimit } from "../http/fetch-mutation-request.ts";
@@ -172,7 +174,7 @@ export function createAcknowledgmentPostHandler(
     return handleAcknowledgment(request, assignmentId, {
       withActor: actor,
       expectedOrigin: origin,
-      sessionToken: request.cookies.get(SESSION_COOKIE_NAME)?.value,
+      sessionToken: liveSessionTokenFromCookie(request.headers.get("cookie") ?? undefined),
     });
   };
 }

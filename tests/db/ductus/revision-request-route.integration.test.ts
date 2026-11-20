@@ -11,7 +11,7 @@ import {
 } from "../../../server/collaboration/revision-requests.ts";
 import { createWithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-314 step 2f (contract on #1091, c.6696530499; plan of attack #1506):
 // the route handler over the real createWithActor and the real RPCs, end to
@@ -106,7 +106,7 @@ async function stored(requestId: string) {
        FROM collaboration.revision_request r WHERE r.id = $1`,
     [requestId],
   );
-  const row = result.rows[0];
+  const row = result.rows[0]!;
   return { state: row.state, rowSeq: Number(row.row_seq), responses: Number(row.responses) };
 }
 
@@ -282,7 +282,7 @@ const Q_PRIME = {
 // Appends a revision with its checkpoint and moves the document to it, as the save path leaves them.
 async function reach(revision: number) {
   const client = await admin.connect();
-  const body = Q_TEXTS[revision - 1];
+  const body = Q_TEXTS[revision - 1]!;
   const hash = createHash("sha256").update(body, "utf8").digest("hex");
   try {
     await client.query("BEGIN");
@@ -425,7 +425,7 @@ describe("revision request route over the real RPCs", () => {
             "SELECT count(*) AS n FROM collaboration.revision_request WHERE document_id = $1",
             [documents.boris],
           )
-        ).rows[0].n,
+        ).rows[0]!.n,
       );
     const before = await count();
     const refusedCreate = await call("create", "vesna", {
@@ -498,16 +498,16 @@ describe("revision request route over the real RPCs", () => {
     const conflicts = results.filter((r) => r.status === 409);
     expect(applied).toHaveLength(1);
     expect(conflicts).toHaveLength(1);
-    expect(applied[0].json).toMatchObject({ outcome: "applied", state: "responded" });
-    expect(conflicts[0].json).toEqual({
+    expect(applied[0]!.json).toMatchObject({ outcome: "applied", state: "responded" });
+    expect(conflicts[0]!.json).toEqual({
       outcome: "conflict",
-      row_seq: applied[0].json.row_seq,
+      row_seq: applied[0]!.json.row_seq,
       version: 1,
       state: "responded",
     });
     expect(await stored(requestId)).toEqual({
       state: "responded",
-      rowSeq: applied[0].json.row_seq,
+      rowSeq: applied[0]!.json.row_seq,
       responses: 1,
     });
   });

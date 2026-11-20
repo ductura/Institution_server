@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-12 step 3 / DAN-87 (plan #385 A6, owner decisions P5 and P8): pgTAP runs
 // in one transaction and cannot race two calls. Here two app connections
@@ -197,7 +197,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   appPool = new pg.Pool({ connectionString: applicationUrl(), max: 2 });
   withActor = createWithActor(appPool);
@@ -209,7 +209,7 @@ beforeAll(async () => {
           "SELECT outcome, submission_request_id FROM app.request_submission($1, 1)",
           [documentId],
         )
-      ).rows[0],
+      ).rows[0]!,
   );
   expect(request.outcome).toBe("requested");
   requestId = request.submission_request_id;
@@ -228,7 +228,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -249,7 +249,7 @@ describe("submission concurrency", () => {
     });
 
     const firstRun = withActor(token, async (tx) => {
-      const row = (await tx.query<RecordRow>(recordSql, [requestId, artifactHash])).rows[0];
+      const row = (await tx.query<RecordRow>(recordSql, [requestId, artifactHash])).rows[0]!;
       firstResult(row);
       await holdFirst; // Keep the uncommitted submission until the second call waits on it.
       return row;
@@ -262,10 +262,10 @@ describe("submission concurrency", () => {
       firstRow = await firstQuery;
       secondRun = withActor(
         token,
-        async (tx) => (await tx.query<RecordRow>(recordSql, [requestId, artifactHash])).rows[0],
+        async (tx) => (await tx.query<RecordRow>(recordSql, [requestId, artifactHash])).rows[0]!,
       );
       secondAnsweredBeforeRelease = await Promise.race([
-        secondRun.then(
+        secondRun!.then(
           () => true,
           () => true,
         ),

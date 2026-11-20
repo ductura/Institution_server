@@ -158,7 +158,10 @@ describe("issueSubmissionReceipt", () => {
     const digest = await digestSubmissionReceiptPayloadV1(payload);
     expect(issued.receipt.payload).toEqual(payload);
     expect(issued.receipt.payloadDigestSha256).toBe(digest.sha256);
-    expect(await signer.verify(digest.signingInput, issued.receipt.signature)).toBe(true);
+    expect(await signer.verify(digest.signingInput, issued.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
   });
 
   it("gives the same receipt for the same submission and key (A6)", async () => {
@@ -189,13 +192,25 @@ describe("issueSubmissionReceipt", () => {
   });
 
   const good = new DevelopmentEd25519SigningKeyProvider("submission-test-key", "v1");
-  const envelope = async (): Promise<SignatureEnvelope> =>
-    good.sign((await digestSubmissionReceiptPayloadV1(payload)).signingInput);
+  const envelope = async (): Promise<SignatureEnvelope> => {
+    const signed = await good.sign((await digestSubmissionReceiptPayloadV1(payload)).signingInput);
+    if (!signed.ok) throw new Error("the development signer refused");
+    return signed.value;
+  };
+  // Ductura's SigningKeyProvider answers a Result: every fake answers one, so
+  // each row reaches the check it names. A refusal ({ ok: false }) is
+  // Ductura's form of the Ductus throw and fails closed the same way.
+  const ok = <T>(value: T) => Promise.resolve({ ok: true as const, value });
+  const refused = () =>
+    Promise.resolve({
+      ok: false as const,
+      error: { code: "SIGNER_UNAVAILABLE", messageKey: "izmisljeni.kljuc" },
+    });
 
   it.each([
     [
       "a signer with no key",
-      { sign: () => Promise.reject(new Error("no key")), verify: () => Promise.resolve(true) },
+      { sign: () => Promise.reject(new Error("no key")), verify: () => ok(true) },
     ],
     [
       "a signer that throws",
@@ -203,25 +218,34 @@ describe("issueSubmissionReceipt", () => {
         sign: () => {
           throw new Error("down");
         },
-        verify: () => Promise.resolve(true),
+        verify: () => ok(true),
       },
     ],
+    ["a signer that refuses", { sign: refused, verify: () => ok(true) }],
     [
       "a signature of another algorithm",
       {
-        sign: async () => ({
-          ...(await envelope()),
-          algorithm: "ECDSA_P256_SHA256" as const,
-          signatureEncoding: "der" as const,
-        }),
-        verify: () => Promise.resolve(true),
+        sign: async () =>
+          ok({
+            ...(await envelope()),
+            algorithm: "ECDSA_P256_SHA256" as const,
+            signatureEncoding: "der" as const,
+          }),
+        verify: () => ok(true),
       },
     ],
-    ["a signature that does not verify", { sign: envelope, verify: () => Promise.resolve(false) }],
-    ["a check that throws", { sign: envelope, verify: () => Promise.reject(new Error("down")) }],
+    [
+      "a signature that does not verify",
+      { sign: async () => ok(await envelope()), verify: () => ok(false) },
+    ],
+    [
+      "a check that throws",
+      { sign: async () => ok(await envelope()), verify: () => Promise.reject(new Error("down")) },
+    ],
+    ["a check that refuses", { sign: async () => ok(await envelope()), verify: refused }],
     [
       "a check that is not true",
-      { sign: envelope, verify: () => Promise.resolve("yes" as unknown as boolean) },
+      { sign: async () => ok(await envelope()), verify: () => ok("yes" as unknown as boolean) },
     ],
   ])("fails closed with %s (E5)", async (_name, signer) => {
     expect(await issueSubmissionReceipt(signer, payload)).toEqual({

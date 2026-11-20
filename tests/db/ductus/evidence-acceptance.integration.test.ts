@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-189 / attack plan #356 item 5: pgTAP can establish CAS semantics but
 // cannot prove a real lock race inside one transaction. This uses two app
@@ -302,7 +302,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_app', $1::text, $2::text) AS ddl",
     [login, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await insertFixture();
   appPool = new pg.Pool({ connectionString: applicationUrl(), max: 2 });
   withActor = createWithActor(appPool);
@@ -321,7 +321,7 @@ afterAll(async () => {
       "SELECT format('DROP ROLE IF EXISTS %I', $1::text) AS ddl",
       [login],
     );
-    await admin.query(drop.rows[0].ddl);
+    await admin.query(drop.rows[0]!.ddl);
   } finally {
     await admin.end();
   }
@@ -344,7 +344,7 @@ describe("atomic evidence reserve concurrency", () => {
     });
 
     const firstRun = withActor(token, async (tx) => {
-      const row = (await tx.query<ReserveRow>(reserveSql, first.values)).rows[0];
+      const row = (await tx.query<ReserveRow>(reserveSql, first.values)).rows[0]!;
       firstResult(row);
       await holdFirst; // Keep package/document row locks until request two is waiting.
       return row;
@@ -357,10 +357,10 @@ describe("atomic evidence reserve concurrency", () => {
       firstRow = await firstQuery;
       secondRun = withActor(
         token,
-        async (tx) => (await tx.query<ReserveRow>(reserveSql, second.values)).rows[0],
+        async (tx) => (await tx.query<ReserveRow>(reserveSql, second.values)).rows[0]!,
       );
       secondAnsweredBeforeRelease = await Promise.race([
-        secondRun.then(
+        secondRun!.then(
           () => true,
           () => true,
         ),
@@ -403,12 +403,12 @@ describe("atomic evidence reserve concurrency", () => {
       [packageId],
     );
     expect(pending.rows).toHaveLength(1);
-    const { id, receipt_payload: payload } = pending.rows[0];
+    const { id, receipt_payload: payload } = pending.rows[0]!;
     const outcome = await withActor(
       token,
       async (tx) =>
-        (await tx.query<{ outcome: string }>(attachSql, [id, sha256Hex(payload), envelope])).rows[0]
-          .outcome,
+        (await tx.query<{ outcome: string }>(attachSql, [id, sha256Hex(payload), envelope]))
+          .rows[0]!.outcome,
     );
     expect(outcome).toBe("other_transaction");
     expect(
@@ -426,9 +426,9 @@ describe("atomic evidence reserve concurrency", () => {
     );
     const same = command(`segment-${suffix}-t`, "e".repeat(64), {
       sequence: 2,
-      predecessor: state.rows[0].head,
+      predecessor: state.rows[0]!.head,
       baseRevision: 1,
-      initial: state.rows[0].hash,
+      initial: state.rows[0]!.hash,
       snapshot: "snapshot-two",
     });
     let firstReserved!: (row: ReserveRow & { attached: string }) => void;
@@ -442,14 +442,14 @@ describe("atomic evidence reserve concurrency", () => {
       releaseFirst = resolve;
     });
     const firstRun = withActor(token, async (tx) => {
-      const row = (await tx.query<ReserveRow>(reserveSql, same.values)).rows[0];
+      const row = (await tx.query<ReserveRow>(reserveSql, same.values)).rows[0]!;
       const attached = (
         await tx.query<{ outcome: string }>(attachSql, [
           row.receipt_id,
           sha256Hex(row.receipt_payload ?? ""),
           envelope,
         ])
-      ).rows[0].outcome;
+      ).rows[0]!.outcome;
       firstReserved({ ...row, attached });
       await holdFirst;
       return row;
@@ -462,10 +462,10 @@ describe("atomic evidence reserve concurrency", () => {
       first = await firstQuery;
       secondRun = withActor(
         token,
-        async (tx) => (await tx.query<ReserveRow>(reserveSql, same.values)).rows[0],
+        async (tx) => (await tx.query<ReserveRow>(reserveSql, same.values)).rows[0]!,
       );
       secondAnsweredBeforeRelease = await Promise.race([
-        secondRun.then(
+        secondRun!.then(
           () => true,
           () => true,
         ),

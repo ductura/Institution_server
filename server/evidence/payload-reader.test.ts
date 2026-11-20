@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { InstitutionRoutedPayloadStore } from "../external/storage/institution-routed-payload-store.ts";
 
-import { createEvidencePayloadReader, STORAGE_NOT_CONFIGURED } from "./payload-reader";
+import { createEvidencePayloadReader, STORAGE_NOT_CONFIGURED } from "./payload-reader.ts";
 
 // Synthetic only: invented institutions, bucket names and a placeholder key.
 const FAK_A = "11111111-1111-4111-8111-111111111111";

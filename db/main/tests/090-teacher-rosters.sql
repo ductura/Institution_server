@@ -36,7 +36,8 @@ BEGIN
   v_result := pg_temp.ask(p_actor, format(
     $q$ SELECT coalesce(string_agg(w.student_id::text || ':' || coalesce(w.given_name, '-') || '/'
                                    || coalesce(w.family_name, '-'), ' ' ORDER BY w.n), 'none')
-          FROM %s(%s) WITH ORDINALITY AS w (student_id, given_name, family_name, n) $q$,
+          FROM (SELECT f.student_id, f.given_name, f.family_name, row_number() OVER () AS n
+                  FROM %s(%s) f) w $q$,
     p_function, coalesce(quote_literal(pg_temp.id(p_target)::text) || '::uuid', 'NULL::uuid')));
   FOR r IN SELECT name, id FROM person LOOP
     v_result := replace(v_result, r.id::text, r.name);
@@ -100,7 +101,8 @@ SELECT is_empty(
         AND a.grantee = 0 $$,
   'PUBLIC executes neither list');
 SELECT is(pg_get_function_result('app.teacher_course_students(uuid)'::regprocedure),
-  'TABLE(student_id uuid, given_name text, family_name text)', 'the course list returns the student and the name pair only');
+  'TABLE(student_id uuid, given_name text, family_name text, group_name text)',
+  'the course list returns the student, the name pair and the seminar group only (SRV-28)');
 SELECT is(pg_get_function_result('app.teacher_assignment_names(uuid)'::regprocedure),
   'TABLE(student_id uuid, given_name text, family_name text)', 'the assignment list returns the student and the name pair only');
 SELECT is(pg_get_function_arguments('app.teacher_course_students(uuid)'::regprocedure), 'p_course_id uuid',
@@ -165,6 +167,50 @@ SELECT is((SELECT counts FROM before), pg_temp.written(),
   'neither list writes an audit or evidence row: no work opening, no fast path window');
 SELECT is((SELECT count(*) FROM audit.access_log), 0::bigint, 'no access log row at all');
 SELECT is((SELECT count(*) FROM evidence.fast_path_window), 0::bigint, 'no fast path window at all');
+
+-- SRV-28: the seminar group beside each student, and the collaborator (C-7).
+-- Vesna holds K1, opens G1 and G2, makes Marko (now a teacher of K2 only)
+-- the teacher of G1 and puts Ana in G1 and Dora in G2; Boris has no group.
+INSERT INTO ref VALUES ('g1', pg_temp.ask('vesna', $$ SELECT institution.create_seminar_group({k1}, 'Grupa 1') $$)),
+                       ('g2', pg_temp.ask('vesna', $$ SELECT institution.create_seminar_group({k1}, 'Grupa 2') $$));
+SELECT is(
+  (SELECT string_agg(pg_temp.ask('vesna', c), ' ' ORDER BY n) FROM unnest(ARRAY[
+     $$ SELECT 'ok' FROM institution.set_course_holder({k1}, {vesna}) $$,
+     $$ SELECT 'ok' FROM institution.assign_group_teacher({g1}, {marko}) $$,
+     $$ SELECT 'ok' FROM institution.assign_group_student({g1}, {ana}) $$,
+     $$ SELECT 'ok' FROM institution.assign_group_student({g2}, {dora}) $$]) WITH ORDINALITY AS t (c, n)),
+  'ok ok ok ok', 'the groups of K1 are set through the RPCs');
+CREATE FUNCTION pg_temp.groups(p_actor text, p_course text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result text;
+  r record;
+BEGIN
+  v_result := pg_temp.ask(p_actor, format(
+    $q$ SELECT coalesce(string_agg(w.student_id::text || ':' || coalesce(w.group_name, '-'), ' ' ORDER BY w.n), 'none')
+          FROM (SELECT f.student_id, f.group_name, row_number() OVER () AS n FROM app.teacher_course_students(%L::uuid) f) w $q$,
+    pg_temp.id(p_course)));
+  FOR r IN SELECT name, id FROM person LOOP
+    v_result := replace(v_result, r.id::text, r.name);
+  END LOOP;
+  RETURN v_result;
+END
+$$;
+SELECT is(pg_temp.groups('vesna', 'k1'), 'ana:Grupa 1 dora:Grupa 2 boris:-',
+  'the holder: every student of the course with the own open group, none without one');
+SELECT is(pg_temp.course('marko', 'k1'), 'ana:Iskra/Prva',
+  'the collaborator, teacher of G1: the students of the own group with the name pair, not the whole course');
+SELECT is(pg_temp.groups('marko', 'k1'), 'ana:Grupa 1', 'the collaborator: with the group');
+SELECT is(pg_temp.submitters('marko', 'z1'), 'ana', 'assignment_submissions lets the collaborator through for the same students');
+SELECT is(pg_temp.groups(a.who, 'k1'), 'none', a.why)
+  FROM (VALUES ('ana', 'a student of the course, in a group, gets nothing'),
+               ('nina', 'an open teacher membership without a confirmed role still gets nothing'),
+               ('petra', 'a teacher of another institution gets nothing'),
+               ('iva', 'the administrator gets nothing')) AS a (who, why);
+UPDATE institution.seminar_group_member SET valid_to = now()
+ WHERE group_id = pg_temp.id('g2') AND user_id = pg_temp.id('dora') AND valid_to IS NULL;
+SELECT is(pg_temp.groups('vesna', 'k1'), 'ana:Grupa 1 dora:- boris:-', 'an ended group place is no group');
+SELECT is((SELECT counts FROM before), pg_temp.written(), 'the course list with groups writes no audit or evidence row');
 
 -- A teacher who leaves the course loses both lists at once.
 UPDATE institution.course_member SET member_to = now()

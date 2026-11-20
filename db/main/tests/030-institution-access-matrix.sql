@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1603);
+SELECT plan(1675);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -214,6 +214,9 @@ SELECT bag_eq(
     'assign_group_teacher(p_group_id uuid, p_teacher_id uuid) definer app',
     'assign_group_student(p_group_id uuid, p_student_id uuid) definer app',
     'end_group_assignment(p_group_id uuid, p_user_id uuid) definer app',
+    'actor_group_access(p_course_id uuid)',
+    'require_group_manager(p_course_id uuid, p_collaborator boolean, OUT user_id uuid, OUT institution_id uuid)',
+    'course_groups(p_course_id uuid) definer app',
     'can(p_action text, p_document_id text) definer app',
     'actor_group_student(p_course_id uuid, p_student_id uuid)',
     'actor_group_work(p_assignment_id uuid, p_student_id uuid)',
@@ -235,6 +238,7 @@ SELECT bag_eq(
     'request_mentorship(p_teacher_id uuid, p_work_type text) definer app',
     'withdraw_mentorship_request(p_request_id uuid) definer app',
     'approve_mentorship_request(p_request_id uuid) definer app',
+    'decline_mentorship_request(p_request_id uuid, p_reason text) definer app',
     'refuse_rule_version_change()',
     'check_rule_version_event() definer',
     'publish_faculty_rule_version(p_work_type text, p_expected_version integer, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean) definer app',
@@ -277,6 +281,142 @@ SELECT is_empty(
        AND (p.proowner <> 'ductus_identity'::regrole OR NOT coalesce('search_path=""' = ANY (p.proconfig), false)) $$,
   'every institution function belongs to the NOLOGIN owner role and pins an empty search_path'
 );
+
+-- 1b. SRV-20: the submission state by assignment lives in schema app; its
+-- reader app.submission_state_of is never the web role's. One cell per actor
+-- of the fixture on Z1 of K1 (no submission in this fixture, so a student of
+-- the course reads none) and on Z3 of fak-b.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.submission_state_of(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-20: only its owner and the identity role execute app.submission_state_of, never ductus_app'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.my_submission_state(uuid)', 'app.my_assignment_requirements(uuid)',
+                             'app.teacher_submission_state(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-20: only ductus_app and the owner execute the three state RPCs'
+);
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT state FROM app.my_submission_state(%s)', c.assignment)), c.state,
+  format('SRV-20: %s reads the own submission state on %s: %s', c.actor, c.assignment, c.state)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'none'), ('dora', '{z1}', 'none'), ('vesna', '{z1}', 'not_found'), ('marko', '{z1}', 'not_found'),
+  ('boris', '{z1}', 'not_found'), ('iva', '{z1}', 'not_found'), ('nina', '{z1}', 'not_found'),
+  ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'none'), ('ana', '{z3}', 'not_found'), ('petra', '{z3}', 'not_found')
+) AS c (actor, assignment, state);
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT outcome FROM app.my_assignment_requirements(%s)', c.assignment)), c.outcome,
+  format('SRV-20: %s reads the requirements of %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'found'), ('dora', '{z1}', 'found'), ('vesna', '{z1}', 'not_found'), ('marko', '{z1}', 'not_found'),
+  ('boris', '{z1}', 'not_found'), ('tomo', '{z1}', 'not_found'), ('tomo', '{z3}', 'found'), ('petra', '{z3}', 'not_found')
+) AS c (actor, assignment, outcome);
+SELECT is(
+  coalesce(substr(pg_temp.ask(c.actor, format('SELECT state FROM app.teacher_submission_state(%s, %s)', c.assignment, c.student)),
+                  1, 5), 'NULL'), c.state,
+  format('SRV-20: %s reads the state of %s on %s: %s', c.actor, c.student, c.assignment, c.state)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '{ana}', 'none'), ('vesna', '{z1}', '{dora}', 'none'), ('marko', '{z1}', '{ana}', 'ZD403'),
+  ('ana', '{z1}', '{ana}', 'ZD403'), ('dora', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('iva', '{z1}', '{ana}', 'ZD403'), ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'),
+  ('petra', '{z3}', '{tomo}', 'none'), ('vesna', '{z3}', '{tomo}', 'ZD403'), ('tomo', '{z3}', '{tomo}', 'ZD403'),
+  ('vesna', '{z1}', '{boris}', 'ZD403'), ('vesna', '{z1}', '{tomo}', 'ZD403')
+) AS c (actor, assignment, student, state);
+SELECT is(
+  substr(pg_temp.ask('ana', 'SELECT state FROM app.submission_state_of({z1}, {ana})'), 1, 5), '42501',
+  'SRV-20: the web role cannot call the reader of the state'
+);
+
+-- 1c. SRV-21: a student's notes (evidence.submission_note) only through the
+-- two RPCs; the writer and the reader of the table are never the web role's.
+-- One cell per actor of the fixture on Z1 of K1 and Z3 of fak-b; the rest of
+-- the matrix (seminar group, collaborator, mentor, removal, append-only) is
+-- in 147-submission-note.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.submission_note_append(uuid,uuid,text)', 'app.submission_notes_of(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-21: only their owner and the identity role execute the writer and the reader of the notes'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.add_submission_note(uuid,text)', 'app.submission_notes(uuid,uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-21: only ductus_app and the owner execute the two note RPCs'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT ''ok'' FROM app.add_submission_note(%s, %L)', c.assignment, 'Napomena ' || c.actor)), 1, 5),
+  c.outcome, format('SRV-21: %s adds a note on %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'ok'), ('dora', '{z1}', 'ok'), ('vesna', '{z1}', 'ZD403'), ('marko', '{z1}', 'ZD403'),
+  ('boris', '{z1}', 'ZD403'), ('iva', '{z1}', 'ZD403'), ('tomo', '{z1}', 'ZD403'), ('tomo', '{z3}', 'ok'),
+  ('petra', '{z3}', 'ZD403')
+) AS c (actor, assignment, outcome);
+SELECT is(
+  substr(pg_temp.ask('ana', format('SELECT ''ok'' FROM app.add_submission_note({z1}, %L)', repeat('a', 601))), 1, 5), 'ZD422',
+  'SRV-21: a note of 601 characters is refused'
+);
+SELECT is(
+  coalesce(substr(pg_temp.ask(c.actor, format('SELECT string_agg(text, ''|'') FROM app.submission_notes(%s, %s)',
+                                              c.assignment, c.student)), 1, 13), 'NULL'), c.result,
+  format('SRV-21: %s reads the notes of %s on %s: %s', c.actor, c.student, c.assignment, c.result)
+)
+FROM (VALUES
+  ('ana', '{z1}', '{ana}', 'Napomena ana'), ('vesna', '{z1}', '{ana}', 'Napomena ana'),
+  ('dora', '{z1}', '{ana}', 'ZD403: forbid'), ('marko', '{z1}', '{ana}', 'ZD403: forbid'),
+  ('iva', '{z1}', '{ana}', 'ZD403: forbid'), ('petra', '{z3}', '{tomo}', 'Napomena tomo'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
+) AS c (actor, assignment, student, result);
+
+-- 1d. SRV-28: the decline of a mentorship request and the overview of an
+-- assignment, one cell per actor; the rest of their matrix (states, reason,
+-- the trail; collaborator, groups, receipts) is in 104-mentorship-request.sql
+-- and 086-assignment-submissions.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['institution.decline_mentorship_request(uuid,text)', 'app.assignment_overview(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-28: only ductus_app and the owner execute the decline and the overview'
+);
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT count(*)::text FROM app.assignment_overview(%s)', c.assignment)), c.rows,
+  format('SRV-28: %s reads the overview of %s: %s', c.actor, c.assignment, c.rows)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '2'), ('marko', '{z1}', '0'), ('ana', '{z1}', '0'), ('dora', '{z1}', '0'), ('boris', '{z1}', '0'),
+  ('iva', '{z1}', '0'), ('nina', '{z1}', '0'), ('petra', '{z1}', '0'), ('petra', '{z3}', '1')
+) AS c (actor, assignment, rows);
+INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
+SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.decline_mentorship_request({rq}, NULL)::text $$), 1, 5), c.outcome,
+  format('SRV-28: %s declines Ana''s request to Vesna: %s', c.actor, c.outcome)
+)
+FROM (VALUES (1, 'marko', 'ZD403'), (2, 'ana', 'ZD403'), (3, 'iva', 'ZD403'), (4, 'petra', 'ZD403'),
+             (5, 'tomo', 'ZD403'), (6, 'vesna', 'true')) AS c (n, actor, outcome)
+ORDER BY c.n;
 
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.

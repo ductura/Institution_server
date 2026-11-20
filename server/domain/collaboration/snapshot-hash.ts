@@ -33,14 +33,24 @@ export function snapshotHash(text: string): string {
   for (let offset = 0; offset < padded.length; offset += 64) {
     for (let t = 0; t < 16; t++) w[t] = view.getUint32(offset + t * 4);
     for (let t = 16; t < 64; t++) {
-      const s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >>> 3);
-      const s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >>> 10);
-      w[t] = (w[t - 16] + s0 + w[t - 7] + s1) >>> 0;
+      const s0 = rotr(w[t - 15]!, 7) ^ rotr(w[t - 15]!, 18) ^ (w[t - 15]! >>> 3);
+      const s1 = rotr(w[t - 2]!, 17) ^ rotr(w[t - 2]!, 19) ^ (w[t - 2]! >>> 10);
+      w[t] = (w[t - 16]! + s0 + w[t - 7]! + s1) >>> 0;
     }
-    let [a, b, c, d, e, f, g, k] = h;
+    // Eight words, read once per block (noUncheckedIndexedAccess).
+    let [a, b, c, d, e, f, g, k] = h as unknown as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
     for (let t = 0; t < 64; t++) {
       const t1 =
-        (k + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[t] + w[t]) >>> 0;
+        (k + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[t]! + w[t]!) >>> 0;
       const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
       k = g;
       g = f;
@@ -51,14 +61,14 @@ export function snapshotHash(text: string): string {
       b = a;
       a = (t1 + t2) >>> 0;
     }
-    h[0] += a;
-    h[1] += b;
-    h[2] += c;
-    h[3] += d;
-    h[4] += e;
-    h[5] += f;
-    h[6] += g;
-    h[7] += k;
+    h[0]! += a;
+    h[1]! += b;
+    h[2]! += c;
+    h[3]! += d;
+    h[4]! += e;
+    h[5]! += f;
+    h[6]! += g;
+    h[7]! += k;
   }
   return Array.from(h, (x) => x.toString(16).padStart(8, "0")).join("");
 }
