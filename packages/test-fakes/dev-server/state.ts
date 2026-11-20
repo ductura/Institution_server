@@ -134,6 +134,14 @@ export type Consultation = {
   additions: { id: string; text: string; createdAt: string }[];
 };
 
+export type WorkMilestone = {
+  id: string;
+  title: string;
+  description: string;
+  dueAt: string | null;
+  state: "open" | "submitted" | "approved" | "returned";
+};
+
 /** An excerpt attached to a source of a student's work (SRV-1102). */
 export type SourceProof = {
   readonly id: string;
@@ -235,6 +243,8 @@ export type State = {
     documentId: string;
     slot: Operations["work.consultation-slots.post"]["success"]["body"];
   }[];
+  /** Proofs attached so far, removed ones included: the next proof id never repeats. */
+  sourceProofCount: number;
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -250,6 +260,7 @@ export type State = {
   revisionRequests: RevisionRequest[];
   /** The consultation records of the works (SRV-1105), additions in the order made. */
   consultations: Consultation[];
+  milestones: Map<string, WorkMilestone[]>;
 };
 
 /**
@@ -273,6 +284,7 @@ export function normalizeCode(code: string): string {
 
 /** Fixed, invented ids (UUID v4 form) of the starting data. */
 export const IDS = {
+  milestone: "00000000-0000-4000-8000-000000001103",
   student: "5a000000-0000-4000-8000-000000000001",
   student2: "5a000000-0000-4000-8000-000000000002",
   teacher: "7e000000-0000-4000-8000-000000000001",
@@ -422,6 +434,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     workSources: [],
     sourceProofs: [],
     consultationSlots: [],
+    sourceProofCount: 0,
     enrollmentGuesses: new Map(),
     mentorships: [
       {
@@ -450,6 +463,20 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     threads: new Map(),
     revisionRequests: [],
     consultations: [],
+    milestones: new Map([
+      [
+        IDS.document,
+        [
+          {
+            id: IDS.milestone,
+            title: "Nacrt",
+            description: "Nacrt za pregled",
+            dueAt: "2026-12-01T12:00:00.000Z",
+            state: "open",
+          },
+        ],
+      ],
+    ]),
   };
 }
 

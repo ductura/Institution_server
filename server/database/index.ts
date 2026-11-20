@@ -219,6 +219,16 @@ export type {
   StoredWordRange,
 } from "./my-submission-state.ts";
 export {
+  createStudentNoticeReader,
+  STUDENT_NOTICE_DATABASE_ERROR,
+  STUDENT_NOTICE_ERRORS,
+  STUDENT_NOTICE_NOT_FOUND,
+  STUDENT_NOTICE_ROW_MALFORMED,
+  STUDENT_NOTICE_UNAUTHENTICATED,
+  type StoredNotice,
+  type StudentNoticeReader,
+} from "./student-notice.ts";
+export {
   createInterfaceLocaleStore,
   INTERFACE_LOCALE_DATABASE_ERROR,
   INTERFACE_LOCALE_ERRORS,
@@ -284,6 +294,12 @@ export {
   type DeadlineExtensions,
 } from "./deadline-extensions/index.ts";
 export {
+  createSubmittedWorksReader,
+  type SubmittedWorkSource,
+  type SubmittedWorksOutcome,
+  type SubmittedWorksReader,
+} from "./submitted-works/index.ts";
+export {
   createWorkVersionsReader,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
@@ -302,6 +318,7 @@ export {
   type ListAnswer,
   type RecordInput,
 } from "./consultation-records/index.ts";
+export { createWorkMilestones } from "./work-milestones/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";

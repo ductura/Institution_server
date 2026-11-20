@@ -108,6 +108,10 @@ export const LOCALE_IMPORT_ALLOWED: Readonly<
     specifier: "../../locales/index.ts",
     name: "receiptPdfHr",
   }),
+  "server/http/merlin-roster/index.ts": Object.freeze({
+    specifier: "../../../locales/index.ts",
+    name: "merlinHr",
+  }),
 });
 
 type ImportShape = {

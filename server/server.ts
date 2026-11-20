@@ -25,6 +25,7 @@ import {
   createMeRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
+  createStudentNoticeRouteFor,
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createSourceProofRoutesFor,
@@ -35,6 +36,7 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createMerlinRosterRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -45,6 +47,7 @@ import {
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
@@ -177,6 +180,7 @@ async function main(): Promise<void> {
       ...createLiveRoutesFor(databases.main),
       createCollaborationCommentsRouteFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
+      ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
       createAcknowledgmentRouteFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).
@@ -203,12 +207,16 @@ async function main(): Promise<void> {
       // SRV-22: the student's own submission state and word range of one
       // assignment, the receipt byte for byte as the submission bound it.
       ...createStudentSubmissionRoutesFor(databases.main),
+      // SRV-NG: the notice of the current version for a student of the course (E-6).
+      createStudentNoticeRouteFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
+      // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
+      ...createMerlinRosterRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
