@@ -21,6 +21,7 @@ import {
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
   createInstitutionAssignmentRoutesFor,
+  createAssignmentCurrentVersionRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
@@ -201,6 +202,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createInstitutionAssignmentRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createAssignmentCurrentVersionRouteFor(databases.main)",
+    ids: ["institution.assignment.get"],
+    routes: () => [createAssignmentCurrentVersionRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-12: the administrator's course over the main database.
     call: "createAdminCourseRouteFor(databases.main)",
     ids: ["institution.admin-courses.post"],
@@ -353,6 +359,7 @@ describe("CONTRACT_ONLY", () => {
         ...[...DAN_806, ...DAN_840, ...DAN_989, ...DAN_931],
         ...["institution.admin-courses.post", "institution.course-groups.get"],
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
+        "institution.assignment.get",
         ...["student.submission.get", "student.assignment-requirements.get"],
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
@@ -382,6 +389,7 @@ describe("routes the entry point mounts itself", () => {
       ...INSTITUTION_COURSE_ROUTES,
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
+      "institution.assignment.get",
       "institution.admin-courses.post",
       "institution.course-groups.get",
       "institution.course-groups.post",
