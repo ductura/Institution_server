@@ -2,7 +2,7 @@
 import { fc, test } from "@fast-check/vitest";
 import type { Node as PmNode } from "@tiptap/pm/model";
 import { Transform } from "@tiptap/pm/transform";
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 
 import {
   digestCanonicalDocumentV2,
@@ -16,6 +16,9 @@ import type { JcsJsonValue } from "../../domain/forensics/jcs.ts";
 
 import { createBrowserEditStepsV1Replayer } from "./edit-steps-v1-browser-replayer.ts";
 import { createEditStepsV1Replayer, removedRangeSha256 } from "./edit-steps-v1-replayer.ts";
+
+// Every generated edit runs both drivers, including real Web Crypto digests.
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * Granica 8 (#638), property: random edits, some with a forged or shifted
