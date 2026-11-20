@@ -1,6 +1,14 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import {
+  type ActorTransaction,
+  actorReader,
+  closePools,
+  withActor,
+} from "../../server/database/index.ts";
 import {
   canonicalizeJcs,
   digestSubmissionReceiptPayloadV2,
@@ -11,12 +19,16 @@ import {
   REVISION_ZERO_SHA256,
 } from "../../server/domain/index.ts";
 import { createEditStepsV1Replayer } from "../../server/external/storage/index.ts";
-import { SESSION_COOKIE_NAME } from "../../server/session/index.ts";
+import { SESSION_COOKIE_NAME, sessionTokenFromCookie } from "../../server/session/index.ts";
 
-import { assertLocal, ISSUER, stackOptions } from "./config.ts";
-import { parseFlags } from "./lokalno.ts";
+import { adminTarget, assertLocal, DATABASE, ISSUER, loginUrl, stackOptions } from "./config.ts";
+import { databaseUrl, LOCAL_DIR, parseFlags } from "./lokalno.ts";
 
 const TIMEOUT_MS = 15_000;
+const DEMO_INSTITUTION = "demo-fakultet";
+const MENTORSHIP_STUDENT = "sim:student:demo-student-5@demo.ductus.test";
+const MENTORSHIP_TEACHER = "demo-teacher";
+const MENTORSHIP_WORK_TYPE = "bachelor_thesis";
 const SCENARIOS = [
   {
     account: "demo-student-3",
@@ -109,7 +121,7 @@ async function redirect(response: Response, expectedOrigin: string, path?: strin
   return url;
 }
 
-export async function signIn(origin: string, issuer: string, account: string) {
+async function signInSession(origin: string, issuer: string, account: string) {
   const go = browser(origin, issuer);
   const login = new URL("/api/v1/auth/login?returnTo=/app/web/", origin);
   const authorize = await redirect(await go(login), issuer);
@@ -126,10 +138,12 @@ export async function signIn(origin: string, issuer: string, account: string) {
   const answer = await go(callback);
   const session = answer.headers
     .getSetCookie()
-    .some((line) => line.startsWith(`${SESSION_COOKIE_NAME}=`));
+    .map((line) => line.split(";", 1)[0] ?? "")
+    .filter((pair) => pair.startsWith(`${SESSION_COOKIE_NAME}=`))
+    .join("; ");
   await redirect(answer, origin, "/app/web/");
   if (!session) throw new Error("Lažni OIDC nije otvorio sesiju.");
-  return (path: string, body?: object) =>
+  const api = (path: string, body?: object) =>
     go(new URL(`/api/v1/${path}`, origin), {
       ...(body === undefined ? {} : { method: "POST", body: JSON.stringify(body) }),
       headers: {
@@ -139,6 +153,11 @@ export async function signIn(origin: string, issuer: string, account: string) {
         "ductus-protocol": "1",
       },
     });
+  return { api, session };
+}
+
+export async function signIn(origin: string, issuer: string, account: string) {
+  return (await signInSession(origin, issuer, account)).api;
 }
 
 type Api = Awaited<ReturnType<typeof signIn>>;
@@ -275,24 +294,129 @@ export async function seedSubmission(api: Api, scenario: Scenario) {
     throw new Error("Stanje studentskog rada nije submitted.");
 }
 
+async function signOut(api: Api) {
+  const logout = await api("auth/logout", {});
+  await logout.body?.cancel();
+}
+
+function localAppDatabaseUrl() {
+  const target = adminTarget(databaseUrl(process.env, LOCAL_DIR));
+  let secrets: { appPassword?: unknown } | null;
+  try {
+    secrets = JSON.parse(
+      readFileSync(join(LOCAL_DIR, "lokalno-tajne.json"), "utf8"),
+    ) as typeof secrets;
+  } catch {
+    throw new Error("Lokalne tajne nisu čitljive. Najprije pokreni pnpm lokalno.");
+  }
+  const password = secrets?.appPassword;
+  if (typeof password !== "string" || !/^[A-Za-z0-9_-]{32,128}$/u.test(password))
+    throw new Error("Nedostaje valjana lokalna lozinka aplikacijske uloge.");
+  return loginUrl(target, "ductus_app_local", password, DATABASE);
+}
+
+async function demoMentorshipRequest(studentToken: string, teacherId: string) {
+  const find = async (tx: ActorTransaction) =>
+    (
+      await tx.query<{ id: string; pending: boolean }>(
+        `SELECT id, (withdrawn_at IS NULL AND approved_at IS NULL AND declined_at IS NULL) AS pending
+           FROM institution.mentorship_request
+          WHERE institution_id = app.current_institution_id()
+            AND student_id = app.current_user_id()
+            AND teacher_id = $1 AND work_type = $2
+          ORDER BY pending DESC, id
+          LIMIT 1`,
+        [teacherId, MENTORSHIP_WORK_TYPE],
+      )
+    ).rows[0];
+
+  try {
+    return await withActor(studentToken, async (tx) => {
+      // Preserve a completed request on reruns, including a teacher's decision.
+      const existing = await find(tx);
+      if (existing !== undefined) return existing;
+
+      // The RPC takes its student from the session and has no title argument.
+      const created = await tx.query<{ id: string }>(
+        "SELECT institution.request_mentorship($1, $2) AS id",
+        [teacherId, MENTORSHIP_WORK_TYPE],
+      );
+      const id = created.rows[0]?.id;
+      if (typeof id !== "string") throw new Error("Baza nije vratila identifikator zahtjeva.");
+      return { id, pending: true };
+    });
+  } catch (error) {
+    // Another run may have made the same request after the read. The RPC
+    // serializes creation, so only accept a conflict if that exact request exists.
+    if (error instanceof Error && "code" in error && error.code === "ZD409") {
+      const existing = await withActor(studentToken, find);
+      if (existing !== undefined) return existing;
+    }
+    throw error;
+  }
+}
+
+async function seedMentorshipRequest(origin: string) {
+  process.env.APP_DATABASE_URL = localAppDatabaseUrl();
+  const teacher = await signInSession(origin, ISSUER, MENTORSHIP_TEACHER);
+  try {
+    const teacherToken = sessionTokenFromCookie(teacher.session);
+    if (teacherToken === undefined) throw new Error("Nedostaje lokalna sesija nastavnika.");
+    const teacherActor = await actorReader.currentActorWithInstitution(teacherToken);
+    const teacherId = teacherActor.userId;
+    if (teacherId === null || teacherActor.institutionSlug !== DEMO_INSTITUTION)
+      throw new Error("Nastavnik nije u lokalnoj demo ustanovi.");
+
+    const student = await signInSession(origin, ISSUER, MENTORSHIP_STUDENT);
+    try {
+      const studentToken = sessionTokenFromCookie(student.session);
+      if (studentToken === undefined) throw new Error("Nedostaje lokalna sesija studenta.");
+      const studentActor = await actorReader.currentActorWithInstitution(studentToken);
+      const studentId = studentActor.userId;
+      if (studentId === null || studentActor.institutionSlug !== DEMO_INSTITUTION)
+        throw new Error("Student nije u lokalnoj demo ustanovi.");
+
+      const request = await demoMentorshipRequest(studentToken, teacherId);
+      if (request.pending) {
+        // Pending requests have their own HTTP route in SRV-31. Until then,
+        // check visibility through the same application role and teacher session.
+        const visible = await withActor(teacherToken, (tx) =>
+          tx.query(
+            "SELECT id FROM institution.mentorship_request WHERE id = $1 AND student_id = $2",
+            [request.id, studentId],
+          ),
+        );
+        if (visible.rowCount !== 1)
+          throw new Error("Nastavnik ne vidi novi zahtjev za mentorstvo.");
+      }
+    } finally {
+      await signOut(student.api);
+    }
+  } finally {
+    await signOut(teacher.api);
+  }
+}
+
 async function main() {
   assertLocal(process.env);
   const { direct } = parseFlags(process.argv.slice(2));
+  const { origin } = stackOptions(direct);
   for (const scenario of SCENARIOS) {
-    const api = await signIn(
-      stackOptions(direct).origin,
-      ISSUER,
-      `sim:student:${scenario.account}@demo.ductus.test`,
-    );
+    const api = await signIn(origin, ISSUER, `sim:student:${scenario.account}@demo.ductus.test`);
     try {
       await seedSubmission(api, scenario);
       console.log(
         `${scenario.account}: ${scenario.afterDeadline ? "predano nakon roka" : "predano"}.`,
       );
     } finally {
-      const logout = await api("auth/logout", {});
-      await logout.body?.cancel();
+      await signOut(api);
     }
+  }
+  try {
+    await seedMentorshipRequest(origin);
+    console.log("demo-student-5: zahtjev za mentorstvo pripremljen.");
+  } finally {
+    await closePools();
   }
 }
 
