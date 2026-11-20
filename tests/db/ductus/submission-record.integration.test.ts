@@ -18,18 +18,18 @@ import {
 } from "../../../server/domain/document/revision-zero.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "../../../server/domain/forensics/jcs.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import {
-  readEvidenceCommitContext,
-  type EvidenceCommitContext,
-} from "../../../server/database/commit-evidence.ts";
-import { commitEvidenceRequest } from "../../../server/evidence/service.ts";
-import { createEvidenceReceiptSigner } from "../../../server/http/evidence-deps.ts";
+import type { EvidenceCommitContext } from "../../../server/database/commit-context.ts";
 import { reconstructSubmissionRecord } from "../../../server/evidence/submission-record.ts";
 import { handleSubmissionRequest } from "../../../server/evidence/submission-route.ts";
 import type { SigningKeyProvider } from "../../../server/external/keys/signing-key-provider.ts";
 import { digestSubmissionReceiptPayloadV2 } from "../../../server/domain/forensics/submission-receipt-v2.ts";
 
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
+import {
+  commitEvidenceRequest,
+  createEvidenceReceiptSigner,
+  readEvidenceCommitContext,
+} from "./evidence-ports.ts";
 
 // B-12 step 4b1 / DAN-87: the reconstruction of a submission request over the
 // real database, with segments of real ductus-edit-steps-v1 steps committed
@@ -42,7 +42,7 @@ requireLoopbackDatabaseUrl(
   SAFE_ADMIN_URL,
   "The submission record test runs only against a loopback database (DATABASE_URL).",
 );
-const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const suffix = randomBytes(5).toString("hex");
 const login = `it_subrec_${suffix}`;
 const password = randomBytes(24).toString("hex");
@@ -134,7 +134,10 @@ beforeAll(async () => {
     [login, password],
   );
   await admin.query(ddl.rows[0].ddl);
-  const key = await signer().publicVerificationKey();
+  // Ductura's signer answers a Result (server/external/keys/signing-key-provider.ts).
+  const published = await signer().publicVerificationKey();
+  if (!published.ok) throw new Error(`no development key: ${published.error.code}`);
+  const key = published.value;
   const statements: [string, unknown[]][] = [
     [
       "INSERT INTO identity.institution (id, slug) VALUES ($1, $2)",
@@ -500,7 +503,10 @@ describe("POST /api/submission (B-12 step 4b2)", () => {
     expect(body.receipt.payload.receiptSchema).toBe("ductus-submission-receipt-v2");
     const digest = await digestSubmissionReceiptPayloadV2(body.receipt.payload);
     expect(body.receipt.payloadDigestSha256).toBe(digest.sha256);
-    expect(await base.verify(digest.signingInput, body.receipt.signature)).toBe(true);
+    expect(await base.verify(digest.signingInput, body.receipt.signature)).toEqual({
+      ok: true,
+      value: true,
+    });
 
     // A later request reads the bound receipt and never asks the signer.
     const again = await submit(store, token, undefined, counting);

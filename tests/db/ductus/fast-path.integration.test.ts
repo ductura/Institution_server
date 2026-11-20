@@ -22,8 +22,8 @@ import {
 } from "../../../server/domain/forensics/evidence-segment-v2.ts";
 import { canonicalizeJcs } from "../../../server/domain/forensics/jcs.ts";
 import { createWithActor, type WithActor } from "../../../server/database/with-actor.ts";
-import { createEvidencePayloadReader } from "../../../server/http/evidence-deps.ts";
-import { handleProcessSummaryRequest } from "../../../server/database/replay-source.ts";
+import { createEvidencePayloadReader } from "./evidence-ports.ts";
+import { handleProcessSummaryRequest } from "../../../server/projection/process-summary.ts";
 import { handleFastPathRequest, type FastPathRead } from "../../../server/teacher/fast-path.ts";
 
 import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
