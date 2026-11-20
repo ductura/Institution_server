@@ -180,6 +180,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { documentId: IDS.document, from: 0 },
     },
   },
+  "institution.assignment.get": { request: { path: A, as: "nastavnik" } },
+  "institution.enrollment-code-state.get": {
+    request: {
+      path: `${C}/enrollment-code/state`,
+      as: "nastavnik",
+    },
+  },
   "institution.acknowledgment.post": {
     request: {
       path: `${A}/acknowledgment`,

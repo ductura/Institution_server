@@ -147,6 +147,17 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7019668458",
   },
+  // UGOVORI-API (Ductus#2028 c.7020597404, SRV-AV): Ductus reads the current
+  // version in its teacher page, not in a route.
+  "app/api/institution/assignments/[assignmentId]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7020597404",
+  },
+  // UGOVORI-API (Ductus#2028 c.7019844365): Ductus has no read of the code's state.
+  "app/api/institution/courses/[courseId]/enrollment-code/state/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7019844365",
+  },
   "app/api/settings/values/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus@078c780:docs/DECISIONS.md#D-298",
@@ -187,6 +198,8 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.notice-read.post",
   "student.enrollments.post",
   "student.notice.get",
+  "institution.assignment.get",
+  "institution.enrollment-code-state.get",
 ];
 
 /**

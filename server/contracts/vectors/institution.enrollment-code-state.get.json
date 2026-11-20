@@ -1,0 +1,164 @@
+{
+  "route": "institution.enrollment-code-state.get",
+  "vectors": [
+    {
+      "name": "issued",
+      "kind": "success",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "current": {
+            "validUntil": "2026-12-31T22:59:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "none-or-revoked",
+      "kind": "success",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "current": null
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000002121"
+        }
+      }
+    },
+    {
+      "name": "cross-site",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
+          "sec-fetch-site": "cross-site"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000002122"
+        }
+      }
+    },
+    {
+      "name": "malformed-id",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "params": {
+          "courseId": "nije-uuid"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000002123"
+        }
+      }
+    },
+    {
+      "name": "not-found-or-not-a-teacher-of-the-course",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000002124"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000002125"
+        }
+      }
+    }
+  ]
+}

@@ -75,6 +75,10 @@ export type AssignmentContent = {
   importAllowed: boolean;
   wordMin: number | null;
   wordMax: number | null;
+  /** UGOVORI-API, set only at creation: the course's groups it is for (lowercase). */
+  groupIds?: string[];
+  externalToolsAllowed?: boolean;
+  aiSummaryOnly?: boolean;
 };
 
 export type Assignment = {
