@@ -26,8 +26,25 @@ const NS =
   'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
 const REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
+/** Characters outside XML 1.0's allowed set are printed as U+FFFD, never dropped silently. */
+function xmlSafe(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    const c = ch.codePointAt(0) ?? 0;
+    const ok =
+      c === 9 ||
+      c === 10 ||
+      c === 13 ||
+      (c >= 0x20 && c <= 0xd7ff) ||
+      (c >= 0xe000 && c <= 0xfffd) ||
+      c >= 0x10000;
+    out += ok ? ch : "\uFFFD";
+  }
+  return out;
+}
+
 export function xmlEscape(text: string): string {
-  return text.replace(
+  return xmlSafe(text).replace(
     /[&<>"]/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c,
   );

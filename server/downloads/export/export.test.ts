@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { crc32 } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { newNodeId, type CanonicalDocumentV4, type NodeId } from "../../domain/index.ts";
+import { xmlEscape } from "./docx.ts";
 import { buildExportModel, renderDocx, type ExportCover, type ExportLabels } from "./index.ts";
 
 const LABELS: ExportLabels = {
@@ -99,6 +100,13 @@ describe("buildExportModel", () => {
       model.blocks.filter((b) => b.kind === "box").map((b) => (b as { label: string }).label),
     ).toEqual(["Thm 1.", "Proof"]);
     expect(model.blocks.find((b) => b.kind === "formula")).toMatchObject({ number: 1 });
+  });
+});
+
+describe("xmlEscape", () => {
+  it("replaces characters XML 1.0 forbids and keeps valid ones", () => {
+    expect(xmlEscape("a\u0000b\u000Bc\uD800d\tč\n")).toBe("a\uFFFDb\uFFFDc\uFFFDd\tč\n");
+    expect(xmlEscape("\u{1F600}")).toBe("\u{1F600}");
   });
 });
 
