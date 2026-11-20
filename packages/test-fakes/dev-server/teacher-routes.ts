@@ -111,7 +111,11 @@ const WORKING_CRITERIA = new WeakMap<State, Map<string, CriterionValue>>();
 
 function taughtWork(state: State, account: Account | null, documentId: string): boolean {
   const work = state.works.find((w) => w.documentId === documentId);
-  return work !== undefined && taught(state, account, work.assignmentId) !== null;
+  if (work === undefined || account === null) return false;
+  const assignment = taught(state, account, work.assignmentId);
+  const course = state.courses.find((c) => c.id === assignment?.courseId);
+  // A teacher of one group reaches only the works of that group's students (C-7).
+  return course !== undefined && visibleStudents(course, account).includes(work.studentId);
 }
 function criterionKey(state: State, account: Account, documentId: string, id: string): string {
   if (!WORKING_CRITERIA.has(state)) WORKING_CRITERIA.set(state, new Map());

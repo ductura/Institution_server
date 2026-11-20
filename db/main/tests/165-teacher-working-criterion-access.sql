@@ -1,5 +1,5 @@
 -- SRV-1107 (wave 11, Ductus#2051): the six criteria of the mentor's rubric as
--- the teacher's working note (20261121105000, B-9). The access matrix of the
+-- the teacher's working note (20261121140000, B-9). The access matrix of the
 -- table: only the author reads a row, and only while a teacher of the work; the
 -- student of the work, another teacher of the same work, a stranger, an
 -- administrator and another institution never do. Nothing here touches the
