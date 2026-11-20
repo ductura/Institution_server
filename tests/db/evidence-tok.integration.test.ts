@@ -43,8 +43,11 @@ import {
 // the keys open hands out, and the replay returns bytes whose chain ends in the
 // JCS hash of exactly that document. Refused: a document with a field the
 // schema does not know (B-8) and a segment whose final hash is not the
-// document's. The seed is idempotent, so a rerun continues the same work from
-// its current head. Development signer only (NODE_ENV test); its seed is
+// document's. SRV-33: the same flow over a document v2 (a source and a
+// citation) on a v2 work, which the test makes itself for an invented student
+// (no seed), and each version refused on a work of the other. The seed and
+// the v2 fixture are idempotent, so a rerun continues the same works from
+// their current heads. Development signer only (NODE_ENV test); its seed is
 // random and lives outside the repository. Every person and text is invented.
 const ADMIN_URL =
   process.env.DATABASE_URL ?? "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
@@ -56,6 +59,8 @@ const TITLE = "Seminarski rad: kućno kompostiranje";
 const password = randomBytes(24).toString("hex");
 const suffix = randomBytes(4).toString("hex");
 const token = randomBytes(32).toString("base64url");
+/** The session of the invented student of the v2 work (SRV-33). */
+const tokenV2 = randomBytes(32).toString("base64url");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 /** The same hash with its last character changed. */
 const broken = (hash: string) => `${hash.slice(0, -1)}${hash.endsWith("0") ? "1" : "0"}`;
@@ -94,6 +99,77 @@ async function keepPayloads(): Promise<void> {
     return stored;
   };
 }
+/**
+ * SRV-33: the v2 work, made as app.open_student_work makes a work, but from the
+ * v2 revision 0 (evidence.revision_zero_document_v2()), which no route makes
+ * yet (step 2 of document v2 §7). An invented student signs in through the
+ * login function with `$2` as the session, enrols with the seed's code,
+ * confirms the notice of the seeded assignment `$1`, and gets the work; on a
+ * rerun only the session is new. Every name is invented. The two values reach
+ * the block as settings of its own transaction.
+ */
+const V2_WORK_FIXTURE = `
+DO $v2$
+DECLARE
+  c_issuer constant text := 'http://localhost:8090';
+  c_home_org constant text := 'demo.ductus.test';
+  c_subject constant text := 'srv16-v2-student';
+  v_assignment uuid := current_setting('srv16.assignment')::uuid;
+  v_token text := current_setting('srv16.token');
+  v_course uuid;
+  v_user uuid;
+  v_institution uuid;
+  v_version integer;
+  v_outcome text;
+  v_domain uuid;
+  v_project text := gen_random_uuid()::text;
+  v_document text := gen_random_uuid()::text;
+BEGIN
+  SET LOCAL ROLE ductus_auth;
+  PERFORM identity.open_session(c_issuer, c_subject, 'srv16-v2@' || c_home_org, c_home_org,
+                                sha256(convert_to(v_token, 'UTF8')), 'Iva', 'Primjerić', false);
+  RESET ROLE;
+  SELECT u.id, u.institution_id INTO STRICT v_user, v_institution FROM identity.user_account u
+   WHERE u.oidc_issuer = c_issuer AND u.oidc_subject = c_subject;
+  SELECT a.course_id, a.current_version INTO STRICT v_course, v_version
+    FROM institution.assignment a WHERE a.id = v_assignment;
+
+  SET LOCAL ROLE ductus_app;
+  PERFORM set_config('app.session_token', v_token, true);
+  IF institution.actor_course_role(v_course) IS NULL THEN
+    SELECT e.outcome INTO v_outcome FROM institution.enroll_with_code('UPIS2026DEMO') e;
+    IF v_outcome IS DISTINCT FROM 'enrolled' THEN
+      RAISE EXCEPTION 'the v2 student was not enrolled (%)', v_outcome;
+    END IF;
+  END IF;
+  IF NOT institution.has_acknowledged_current(v_assignment) THEN
+    PERFORM institution.acknowledge_notice(v_assignment, v_version, 1);
+  END IF;
+  RESET ROLE;
+
+  IF EXISTS (SELECT 1 FROM evidence.project p WHERE p.assignment_id = v_assignment
+              AND p.institution_id = v_institution AND p.principal_id = v_user) THEN
+    RETURN;
+  END IF;
+  SELECT d.id INTO STRICT v_domain FROM evidence.domain d WHERE d.institution_id = v_institution;
+  INSERT INTO evidence.project (id, institution_id, assignment_id, principal_id)
+  VALUES (v_project, v_institution, v_assignment, v_user);
+  INSERT INTO evidence.document (id, institution_id, project_id, principal_id, current_revision, current_content_hash)
+  VALUES (v_document, v_institution, v_project, v_user, 0,
+          encode(sha256(convert_to(evidence.revision_zero_document_v2(), 'UTF8')), 'hex'));
+  INSERT INTO evidence.document_revision (document_id, institution_id, revision, principal_id, content_hash)
+  SELECT d.id, d.institution_id, 0, d.principal_id, d.current_content_hash
+    FROM evidence.document d WHERE d.id = v_document;
+  INSERT INTO evidence.document_checkpoint (document_id, institution_id, revision, body)
+  VALUES (v_document, v_institution, 0, evidence.revision_zero_document_v2());
+  INSERT INTO evidence.package (
+    id, institution_id, evidence_domain_id, document_id, project_id, principal_id, evidence_profile_id,
+    max_payload_bytes
+  ) VALUES (gen_random_uuid()::text, v_institution, v_domain, v_document, v_project, v_user,
+            'standard-v1', 2097152);
+END
+$v2$;`;
+
 let app: pg.Pool;
 let server: Running;
 let assignmentId: string;
@@ -144,7 +220,7 @@ function written(start: { schemaVersion: number; nodes: { id: string }[] }) {
 }
 
 type Answer = { status: number; body: Record<string, unknown>; text: string };
-function post(path: string, body: unknown): Promise<Answer> {
+function post(path: string, body: unknown, session = token): Promise<Answer> {
   const text = JSON.stringify(body);
   return new Promise((resolve, reject) => {
     const req = httpRequest(
@@ -158,7 +234,7 @@ function post(path: string, body: unknown): Promise<Answer> {
           "sec-fetch-site": "same-origin",
           "content-type": "application/json",
           "ductus-protocol": "1",
-          cookie: `__Host-ductus_session=${token}`,
+          cookie: `__Host-ductus_session=${session}`,
           "content-length": String(Buffer.byteLength(text)),
         },
       },
@@ -201,6 +277,21 @@ beforeAll(async () => {
      VALUES (sha256(convert_to($1, 'UTF8')), $2, $3, now() + interval '1 hour')`,
     [token, seeded.student, seeded.institution],
   );
+  const fixture = await admin.connect();
+  try {
+    await fixture.query("BEGIN");
+    await fixture.query(
+      "SELECT set_config('srv16.assignment', $1, true), set_config('srv16.token', $2, true)",
+      [assignmentId, tokenV2],
+    );
+    await fixture.query(V2_WORK_FIXTURE);
+    await fixture.query("COMMIT");
+  } catch (error) {
+    await fixture.query("ROLLBACK");
+    throw error;
+  } finally {
+    fixture.release();
+  }
   const key = await signer.publicVerificationKey();
   if (!key.ok) throw new Error("development key");
   await admin.query(
@@ -263,10 +354,16 @@ type Opened = {
 };
 type Segment = Record<string, unknown> & { events: Record<string, unknown>[] };
 
-const open = async () => (await post("/api/v1/evidence/open", { assignmentId })).body as Opened;
+const open = async (session = token) =>
+  (await post("/api/v1/evidence/open", { assignmentId }, session)).body as Opened;
 
 /** One commit of `content` over the work as `opened` left it, by a segment that ends in `claimed`. */
-async function commitOver(opened: Opened, content: Document, claimed = sha256(content.document)) {
+async function commitOver(
+  opened: Opened,
+  content: Document,
+  claimed = sha256(content.document),
+  session = token,
+) {
   const { chain } = JSON.parse(
     readFileSync(join(ROOT, "server/domain/forensics/golden-vectors/evidence-v2.json"), "latin1"),
   ) as { chain: { segments: { segment: Segment }[] } };
@@ -302,76 +399,148 @@ async function commitOver(opened: Opened, content: Document, claimed = sha256(co
     segments: [base64(segment)],
     document: base64(content.document),
   };
-  return { segment, request, answer: await post("/api/v1/evidence/commit", request) };
+  return { segment, request, answer: await post("/api/v1/evidence/commit", request, session) };
 }
 type Document = ReturnType<typeof written>;
 type Start = Parameters<typeof written>[0];
 const startOf = (opened: Opened) =>
   JSON.parse(Buffer.from(opened.document, "base64").toString()) as Start;
 
+// SRV-33: a source and a citation of it, invented, in the second block (a
+// paragraph). The segment stays in the edit-steps v1 format the server takes
+// today: its steps write the text, and the citation and the source are in the
+// snapshot the segment ends in (v2 steps are a later step, document v2 §5.4).
+const SOURCE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const SOURCE = {
+  type: "book",
+  id: SOURCE_ID,
+  authors: [{ kind: "person", family: "Prezime", given: "Ime" }],
+  year: 2020,
+  title: "Izvor 1",
+  place: "Zagreb",
+  publisher: "Nakladnik",
+};
+function cited(content: Document): Document {
+  const doc = JSON.parse(content.document) as {
+    nodes: { children: Record<string, unknown>[] }[];
+    sources: unknown[];
+  };
+  doc.nodes[1]!.children.push({ type: "citation", sourceId: SOURCE_ID, locator: "str. 12" });
+  // A rerun continues a document that already has the source: ids are unique.
+  if (!doc.sources.some((source) => (source as { id: string }).id === SOURCE_ID)) {
+    doc.sources = [...doc.sources, SOURCE];
+  }
+  return { ...content, document: canonicalizeJcs(doc) };
+}
+
+/** Open, one commit of `make(start)`, a receipt that verifies, and a replay that ends in it. */
+async function wholeFlow(session: string, make: (start: Start) => Document) {
+  const opened = await open(session);
+  expect(opened.status).toBe("opened");
+  expect(sha256(Buffer.from(opened.document, "base64").toString("utf8"))).toBe(opened.documentHash);
+  const content = make(startOf(opened));
+
+  const { segment, request, answer } = await commitOver(
+    opened,
+    content,
+    sha256(content.document),
+    session,
+  );
+  expect(answer.status).toBe(200);
+  expect(answer.body).toMatchObject({
+    status: "committed",
+    revision: opened.currentRevision + 1,
+    receipt: { status: "signed" },
+  });
+  const signedReceipt = (
+    answer.body.receipt as { signedReceipt: { payload: Record<string, unknown> } }
+  ).signedReceipt;
+  const verified = await verifySignedEvidenceReceiptV2(
+    signedReceipt,
+    {
+      documentId: opened.documentId,
+      clientTransactionId: request.clientTransactionId,
+      revision: opened.currentRevision + 1,
+      evidenceDomainId: domainId,
+    },
+    opened.receiptKeys,
+  );
+  expect(verified).toMatchObject({ ok: true });
+  expect(signedReceipt.payload.segmentHash).toBe(sha256(segment));
+
+  // The replay hands back the stored bytes; the chain they make ends in the
+  // committed document, and open now serves exactly that document. One
+  // commit is one segment, so this segment has index `currentRevision`. A
+  // rerun over the same database reads only this segment, pinned to the
+  // head it makes: earlier runs' payloads lived in their own process.
+  const from = opened.currentRevision;
+  const head = { segmentHash: sha256(segment), segmentCount: from + 1 };
+  const page = await post(
+    "/api/v1/evidence/replay",
+    { documentId: opened.documentId, from, ...(from === 0 ? {} : { head }) },
+    session,
+  );
+  expect(page.status).toBe(200);
+  expect(page.text).toBe(canonicalizeJcs(page.body));
+  expect(page.body).toMatchObject({ head, from, next: null, segments: [segment] });
+  let hash = from === 0 ? sha256(String(page.body.startDocument)) : opened.documentHash;
+  expect(hash).toBe(opened.documentHash);
+  for (const bytes of page.body.segments as string[]) {
+    const checked = await verifyCanonicalEvidencePayloadV2(new TextEncoder().encode(bytes));
+    if (!checked.ok) throw new Error(`replayed segment refused: ${checked.reason}`);
+    expect(checked.segment.initialDocumentHash).toBe(hash);
+    hash = checked.segment.finalDocumentHash;
+  }
+  expect(hash).toBe(sha256(content.document));
+  const reopened = await open(session);
+  expect(reopened).toMatchObject({
+    currentRevision: opened.currentRevision + 1,
+    documentHash: hash,
+    headSegmentHash: sha256(segment),
+  });
+  expect(Buffer.from(reopened.document, "base64").toString("utf8")).toBe(content.document);
+  return { start: startOf(opened), content };
+}
+
 describe("SRV-16: the evidence of the seeded work, from open to replay", () => {
   it("open -> commit -> Ed25519 receipt -> replay ends in the JCS hash of the same document", async () => {
-    const opened = await open();
-    expect(opened.status).toBe("opened");
-    expect(sha256(Buffer.from(opened.document, "base64").toString("utf8"))).toBe(
-      opened.documentHash,
-    );
-    const content = written(startOf(opened));
+    const { start, content } = await wholeFlow(token, written);
+    expect(start.schemaVersion).toBe(1);
+    expect(JSON.parse(content.document)).toMatchObject({ schemaVersion: 1 });
+  });
 
-    const { segment, request, answer } = await commitOver(opened, content);
-    expect(answer.status).toBe(200);
-    expect(answer.body).toMatchObject({
-      status: "committed",
-      revision: opened.currentRevision + 1,
-      receipt: { status: "signed" },
-    });
-    const signedReceipt = (
-      answer.body.receipt as { signedReceipt: { payload: Record<string, unknown> } }
-    ).signedReceipt;
-    const verified = await verifySignedEvidenceReceiptV2(
-      signedReceipt,
-      {
-        documentId: opened.documentId,
-        clientTransactionId: request.clientTransactionId,
-        revision: opened.currentRevision + 1,
-        evidenceDomainId: domainId,
-      },
-      opened.receiptKeys,
-    );
-    expect(verified).toMatchObject({ ok: true });
-    expect(signedReceipt.payload.segmentHash).toBe(sha256(segment));
+  it("SRV-33: the same flow over a document v2 with a source and a citation, on a v2 work", async () => {
+    const { start, content } = await wholeFlow(tokenV2, (begin) => cited(written(begin)));
+    expect(start.schemaVersion).toBe(2);
+    expect(JSON.parse(content.document)).toMatchObject({ schemaVersion: 2, sources: [SOURCE] });
+  });
 
-    // The replay hands back the stored bytes; the chain they make ends in the
-    // committed document, and open now serves exactly that document. One
-    // commit is one segment, so this segment has index `currentRevision`. A
-    // rerun over the same database reads only this segment, pinned to the
-    // head it makes: earlier runs' payloads lived in their own process.
-    const from = opened.currentRevision;
-    const head = { segmentHash: sha256(segment), segmentCount: from + 1 };
-    const page = await post("/api/v1/evidence/replay", {
-      documentId: opened.documentId,
-      from,
-      ...(from === 0 ? {} : { head }),
+  // Each work keeps the version of its revision 0 (document v2 §7 t. 4): the
+  // database refuses the revision and writes nothing. The commit path answers
+  // that as unavailable until the work's version reaches the commit context
+  // (database step 2, Ductus#2028 c.7035293975), when this becomes a 422.
+  it.each([
+    [
+      "a v1 document on the v2 work",
+      () => tokenV2,
+      // Only the new blocks: the v2 work's own may hold a citation, which v1 refuses.
+      () => written({ schemaVersion: 1, nodes: [] }),
+    ],
+    [
+      "a v2 document on the v1 work",
+      () => token,
+      (start: Start) => cited(written({ ...start, schemaVersion: 2, sources: [] } as Start)),
+    ],
+  ])("SRV-33: %s is refused and changes nothing", async (_, session, make) => {
+    const opened = await open(session());
+    const content = make(startOf(opened));
+    const { answer } = await commitOver(opened, content, sha256(content.document), session());
+    expect(answer.status).toBe(503);
+    expect(answer.body).toEqual({ status: "unavailable", stage: "repository" });
+    expect(await open(session())).toMatchObject({
+      currentRevision: opened.currentRevision,
+      documentHash: opened.documentHash,
     });
-    expect(page.status).toBe(200);
-    expect(page.text).toBe(canonicalizeJcs(page.body));
-    expect(page.body).toMatchObject({ head, from, next: null, segments: [segment] });
-    let hash = from === 0 ? sha256(String(page.body.startDocument)) : opened.documentHash;
-    expect(hash).toBe(opened.documentHash);
-    for (const bytes of page.body.segments as string[]) {
-      const checked = await verifyCanonicalEvidencePayloadV2(new TextEncoder().encode(bytes));
-      if (!checked.ok) throw new Error(`replayed segment refused: ${checked.reason}`);
-      expect(checked.segment.initialDocumentHash).toBe(hash);
-      hash = checked.segment.finalDocumentHash;
-    }
-    expect(hash).toBe(sha256(content.document));
-    const reopened = await open();
-    expect(reopened).toMatchObject({
-      currentRevision: opened.currentRevision + 1,
-      documentHash: hash,
-      headSegmentHash: sha256(segment),
-    });
-    expect(Buffer.from(reopened.document, "base64").toString("utf8")).toBe(content.document);
   });
 
   it("B-8: a document with a field the schema does not know is refused and changes nothing", async () => {
