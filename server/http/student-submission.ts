@@ -21,6 +21,7 @@ import { reportServerError } from "./error-catalog.ts";
 import { sendProblem } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 import { type Route, sendJson } from "./router.ts";
+import { createTeacherSubmissionReceiptRoute } from "./teacher-submission-receipt.ts";
 
 type Answer = { status: 200; body: unknown } | { status: 401 | 404 | 503 };
 type Read = (reader: MySubmissionStateReader, token: string, id: string) => Promise<Answer>;
@@ -75,9 +76,11 @@ export function createStudentSubmissionRoutes(reader: MySubmissionStateReader): 
   ];
 }
 
-/** The routes over main's application withActor. */
+/** The routes over main's application withActor, with the teacher's read of SRV-30. */
 export function createStudentSubmissionRoutesFor(
   main: Pick<Databases["main"], "withActor">,
 ): Route[] {
-  return createStudentSubmissionRoutes(createMySubmissionStateReader(main.withActor));
+  const reader = createMySubmissionStateReader(main.withActor);
+  // SRV-30: the teacher's read of one student's state shares the reader.
+  return [...createStudentSubmissionRoutes(reader), createTeacherSubmissionReceiptRoute(reader)];
 }

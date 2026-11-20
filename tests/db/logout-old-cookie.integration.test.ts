@@ -205,6 +205,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-30: a live session that reads no work of that student gets 404 (ZD403).
+  "teacher.submission-receipt.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
   "student.assignment-requirements.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/requirements`,

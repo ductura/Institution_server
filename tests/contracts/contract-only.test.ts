@@ -299,7 +299,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
   {
     // SRV-22: the student's submission state and word range over the main database.
     call: "...createStudentSubmissionRoutesFor(databases.main)",
-    ids: ["student.submission.get", "student.assignment-requirements.get"],
+    ids: [
+      "student.submission.get",
+      "student.assignment-requirements.get",
+      "teacher.submission-receipt.get",
+    ],
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
@@ -416,6 +420,7 @@ describe("CONTRACT_ONLY", () => {
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
         "institution.assignment.get",
         ...["student.submission.get", "student.assignment-requirements.get"],
+        "teacher.submission-receipt.get",
         "student.submission-notes.get",
         "student.submission-notes.post",
         "live.document.get",
@@ -466,6 +471,7 @@ describe("routes the entry point mounts itself", () => {
       "projection.process-summary.post",
       "student.submission.get",
       "student.assignment-requirements.get",
+      "teacher.submission-receipt.get",
       "public.verification.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
