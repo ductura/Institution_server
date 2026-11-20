@@ -63,6 +63,15 @@ export type MySubmissionStateReader = {
   state(token: string | undefined, assignmentId: string): Promise<Result<StoredSubmissionState>>;
   /** The word range of the current version of `assignmentId`, for a student of its course. */
   requirements(token: string | undefined, assignmentId: string): Promise<Result<StoredWordRange>>;
+  /**
+   * SRV-30: the same state of one student, for a reader of that student's work
+   * (app.teacher_submission_state). Any refusal of the database (ZD403) is NOT_FOUND.
+   */
+  teacherState(
+    token: string | undefined,
+    assignmentId: string,
+    studentId: string,
+  ): Promise<Result<StoredSubmissionState>>;
 };
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
@@ -76,6 +85,10 @@ const STATE_SQL = `SELECT state, revision::text AS revision,
     to_char(requested_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS requested_at,
     receipt_payload, payload_digest_sha256, signature
   FROM app.my_submission_state($1::uuid)`;
+const TEACHER_STATE_SQL = `SELECT state, revision::text AS revision,
+    to_char(requested_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS requested_at,
+    receipt_payload, payload_digest_sha256, signature
+  FROM app.teacher_submission_state($1::uuid, $2::uuid)`;
 const REQUIREMENTS_SQL = `SELECT outcome, word_min, word_max
   FROM app.my_assignment_requirements($1::uuid)`;
 
@@ -159,20 +172,23 @@ function rangeOf(rows: unknown): StoredWordRange | typeof NOT_FOUND | null {
 async function readOne<T>(
   withActor: WithActor,
   token: string | undefined,
-  assignmentId: string,
+  ids: readonly string[],
   sql: string,
   parse: (rows: unknown) => T | typeof NOT_FOUND | null,
+  refusalIsNotFound = false,
 ): Promise<Result<T>> {
   if (token === undefined || !TOKEN.test(token)) return fail(MY_SUBMISSION_STATE_UNAUTHENTICATED);
-  if (!UUID.test(assignmentId)) return fail(MY_SUBMISSION_STATE_NOT_FOUND);
+  if (!ids.every((id) => UUID.test(id))) return fail(MY_SUBMISSION_STATE_NOT_FOUND);
   let rows: unknown;
   try {
-    rows = await withActor(token, async (tx) => (await tx.query(sql, [assignmentId])).rows);
+    rows = await withActor(token, async (tx) => (await tx.query(sql, [...ids])).rows);
   } catch (thrown) {
+    const code = codeOf(thrown);
+    // ZD403 is the teacher read's one answer for every refusal (SRV-20): not found (C-23).
+    // The student reads answer not_found as a row, so a ZD403 there stays an error.
+    if (refusalIsNotFound && code === "ZD403") return fail(MY_SUBMISSION_STATE_NOT_FOUND);
     return fail(
-      codeOf(thrown) === "ZD401"
-        ? MY_SUBMISSION_STATE_UNAUTHENTICATED
-        : MY_SUBMISSION_STATE_DATABASE_ERROR,
+      code === "ZD401" ? MY_SUBMISSION_STATE_UNAUTHENTICATED : MY_SUBMISSION_STATE_DATABASE_ERROR,
     );
   }
   let value: T | typeof NOT_FOUND | null;
@@ -187,8 +203,10 @@ async function readOne<T>(
 
 export function createMySubmissionStateReader(withActor: WithActor): MySubmissionStateReader {
   return {
-    state: (token, assignmentId) => readOne(withActor, token, assignmentId, STATE_SQL, stateOf),
+    state: (token, assignmentId) => readOne(withActor, token, [assignmentId], STATE_SQL, stateOf),
     requirements: (token, assignmentId) =>
-      readOne(withActor, token, assignmentId, REQUIREMENTS_SQL, rangeOf),
+      readOne(withActor, token, [assignmentId], REQUIREMENTS_SQL, rangeOf),
+    teacherState: (token, assignmentId, studentId) =>
+      readOne(withActor, token, [assignmentId, studentId], TEACHER_STATE_SQL, stateOf, true),
   };
 }

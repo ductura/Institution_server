@@ -276,7 +276,8 @@ export const TEACHER_HANDLERS: Handlers = {
     });
     return { status: 200, body: { students } };
   },
-  "teacher.submission-receipt.get": ({ state, account, params, now }) => {
+  // P-5 (c.7010418731): no work content, so this read writes no access log.
+  "teacher.submission-receipt.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = taught(state, account, params.assignmentId);
     const studentId = params.studentId.toLowerCase();
@@ -287,16 +288,6 @@ export const TEACHER_HANDLERS: Handlers = {
     );
     if (work === undefined || work.submittedAt === null)
       return { status: 200, body: { state: "none" } };
-    recordOpening(
-      state,
-      {
-        documentId: work.documentId,
-        readerId: account.id,
-        role: "teacher",
-        surface: "submitted_text",
-      },
-      now,
-    );
     if (work.submissionReceipt === null)
       return {
         status: 200,

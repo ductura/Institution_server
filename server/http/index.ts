@@ -3,6 +3,7 @@
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
+export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
@@ -217,6 +218,7 @@ export {
   parseAssignmentIdsBody,
   type TeacherReadOptions,
 } from "./teacher-reads.ts";
+export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-requests.ts";
 export {
   createStudentAssignmentsRoute,
   createStudentAssignmentsRouteFor,

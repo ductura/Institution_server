@@ -35,6 +35,14 @@ SELECT id, CASE slug WHEN 'demo-fakultet' THEN 'Demo fakultet (test)' ELSE 'Demo
   FROM identity.institution WHERE slug IN ('demo-fakultet', 'demo-fakultet-b')
 ON CONFLICT (institution_id) DO NOTHING;
 
+-- The invented bachelor thesis request can become a mentored work.
+INSERT INTO institution.faculty_work_rule (
+  institution_id, work_type, ai_policy, ai_purposes, evidence_profile, import_allowed
+)
+SELECT id, 'bachelor_thesis', 'prohibited', ARRAY[]::text[], 'basic', false
+FROM identity.institution WHERE slug = 'demo-fakultet'
+ON CONFLICT (institution_id, work_type) DO NOTHING;
+
 -- Every invented institution with logins gets its one evidence domain, so
 -- open_student_work can start a work (the same row and region that
 -- evidence-signing-key.sql makes when none exists).

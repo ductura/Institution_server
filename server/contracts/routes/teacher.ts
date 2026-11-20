@@ -438,7 +438,7 @@ export const teacherSubmissionReceiptGet = defineRoute({
   inventory: "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission/route.ts",
   access: "course_teacher",
   summary:
-    "The same submission state and signed receipt as student.submission.get, for a student the caller may read. This read is logged. Inaccessible, unknown and malformed ids return the same 404.",
+    "The same submission state and signed receipt as student.submission.get, for a student the caller may read. The read has no work content and writes nothing to the access log (P-5). Inaccessible, unknown and malformed ids return the same 404.",
   request: {
     params: closed({
       assignmentId: Type.String({ minLength: 1 }),
