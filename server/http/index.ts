@@ -188,6 +188,10 @@ export {
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
 export {
+  createStudentSubmissionRoutes,
+  createStudentSubmissionRoutesFor,
+} from "./student-submission.ts";
+export {
   bearerMatches,
   checkProvisionBody,
   createInternalInstitutionRoutes,
