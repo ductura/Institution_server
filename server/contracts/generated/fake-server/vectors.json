@@ -19746,6 +19746,119 @@
     }
   },
   {
+    "route": "student.receipt-pdf.get",
+    "name": "receipt",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "filename": "potvrda-predaje.pdf",
+        "pdfBase64": "JVBERi0xLjcKJYGBgYEKCjUgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMTgKPj4Kc3RyZWFtCnicJYrBCgIxEEPv+Yo5C+K0tpkWRFh1xYMXYX5AZBVFD4r4/W6VkPAC74mVQ6XldcFsN9w/w/t6Ok5Na0lFrVSJSfyMtnuEnxokq9hYf2CRqnXcsNqca3bM7BmimnJryWiR6f9Hyo2bsxS/wSfoHQd8AckqHOgKZW5kc3RyZWFtCmVuZG9iagoKNiAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvT2JqU3RtCi9OIDQKL0ZpcnN0IDIwCi9MZW5ndGggMjM4Cj4+CnN0cmVhbQp4nFWP3UoDMRCF7/MU8wI2yTbrZqEU2uIPiCitoCBepLvDEimJNFmpb+9MXCklN5lzzgzf0aCgAmNgDo0FA9X1HBYLIV9+vhDksxswCfng+wTvFFGwhQ8hN3EMGbRYLsU5u3HZHeIg/pZAc/gywQbbR+Tt4sstpjgeO1rg3G0khz/3ePjG7Dt31ajWGqsa2xLddFK+Pe0/sStRHm9O+W6XXcZJYO0Re+/W8UTcil7d1rPKgjV6RpeowyqEmLlV6RMyMfFUTx0vwBlLyN24z2VkUQu5dgkL8JmWUEIXex8GkK8+rELy/wJf/AUBOWQdCmVuZHN0cmVhbQplbmRvYmoKCjcgMCBvYmoKPDwKL1NpemUgOAovUm9vdCAyIDAgUgovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvWFJlZgovTGVuZ3RoIDM5Ci9XIFsgMSAyIDIgXQovSW5kZXggWyAwIDggXQo+PgpzdHJlYW0KeJwVxLENACAIALCCibM/+P8tnITSoehOmymmnFY4hPrl5QFUagMsCmVuZHN0cmVhbQplbmRvYmoKCnN0YXJ0eHJlZgo1NDcKJSVFT0Y="
+      }
+    }
+  },
+  {
+    "route": "student.receipt-pdf.get",
+    "name": "anonymous",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "student.receipt-pdf.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "student.receipt-pdf.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "student.receipt-pdf.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
     "route": "student.submission-notes.get",
     "name": "empty",
     "request": {
@@ -24441,6 +24554,124 @@
     }
   },
   {
+    "route": "teacher.receipt-pdf.get",
+    "name": "receipt",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "studentId": "00000000-0000-4000-8000-0000000000e1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "filename": "potvrda-predaje.pdf",
+        "pdfBase64": "JVBERi0xLjcKJYGBgYEKCjUgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMTgKPj4Kc3RyZWFtCnicJYrBCgIxEEPv+Yo5C+K0tpkWRFh1xYMXYX5AZBVFD4r4/W6VkPAC74mVQ6XldcFsN9w/w/t6Ok5Na0lFrVSJSfyMtnuEnxokq9hYf2CRqnXcsNqca3bM7BmimnJryWiR6f9Hyo2bsxS/wSfoHQd8AckqHOgKZW5kc3RyZWFtCmVuZG9iagoKNiAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvT2JqU3RtCi9OIDQKL0ZpcnN0IDIwCi9MZW5ndGggMjM4Cj4+CnN0cmVhbQp4nFWP3UoDMRCF7/MU8wI2yTbrZqEU2uIPiCitoCBepLvDEimJNFmpb+9MXCklN5lzzgzf0aCgAmNgDo0FA9X1HBYLIV9+vhDksxswCfng+wTvFFGwhQ8hN3EMGbRYLsU5u3HZHeIg/pZAc/gywQbbR+Tt4sstpjgeO1rg3G0khz/3ePjG7Dt31ajWGqsa2xLddFK+Pe0/sStRHm9O+W6XXcZJYO0Re+/W8UTcil7d1rPKgjV6RpeowyqEmLlV6RMyMfFUTx0vwBlLyN24z2VkUQu5dgkL8JmWUEIXex8GkK8+rELy/wJf/AUBOWQdCmVuZHN0cmVhbQplbmRvYmoKCjcgMCBvYmoKPDwKL1NpemUgOAovUm9vdCAyIDAgUgovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvWFJlZgovTGVuZ3RoIDM5Ci9XIFsgMSAyIDIgXQovSW5kZXggWyAwIDggXQo+PgpzdHJlYW0KeJwVxLENACAIALCCibM/+P8tnITSoehOmymmnFY4hPrl5QFUagMsCmVuZHN0cmVhbQplbmRvYmoKCnN0YXJ0eHJlZgo1NDcKJSVFT0Y="
+      }
+    }
+  },
+  {
+    "route": "teacher.receipt-pdf.get",
+    "name": "anonymous",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "studentId": "00000000-0000-4000-8000-0000000000e1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "teacher.receipt-pdf.get",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "studentId": "00000000-0000-4000-8000-0000000000e1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "teacher.receipt-pdf.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "studentId": "00000000-0000-4000-8000-0000000000e1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
+    "route": "teacher.receipt-pdf.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "studentId": "00000000-0000-4000-8000-0000000000e1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001900"
+      }
+    }
+  },
+  {
     "route": "teacher.submissions.get",
     "name": "submissions",
     "request": {
@@ -24567,6 +24798,193 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "work.versions.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "versions": [],
+        "nextBeforeRevision": null
+      }
+    }
+  },
+  {
+    "route": "work.versions.get",
+    "name": "submitted",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "versions": [
+          {
+            "kind": "submission",
+            "revision": 42,
+            "savedMinute": "2026-11-27T22:41:00.000Z",
+            "afterDeadline": false
+          },
+          {
+            "kind": "checkpoint",
+            "revision": 42,
+            "savedMinute": "2026-11-27T22:40:00.000Z"
+          },
+          {
+            "kind": "checkpoint",
+            "revision": 17,
+            "savedMinute": "2026-11-20T16:02:00.000Z"
+          }
+        ],
+        "nextBeforeRevision": null
+      }
+    }
+  },
+  {
+    "route": "work.versions.get",
+    "name": "next-page",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "beforeRevision": "300"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "versions": [
+          {
+            "kind": "checkpoint",
+            "revision": 299,
+            "savedMinute": "2026-11-21T09:15:00.000Z"
+          }
+        ],
+        "nextBeforeRevision": 299
+      }
+    }
+  },
+  {
+    "route": "work.versions.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.versions.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002001"
+      }
+    }
+  },
+  {
+    "route": "work.versions.get",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "beforeRevision": "1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002002"
+      }
+    }
+  },
+  {
+    "route": "work.versions.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002003"
       }
     }
   }

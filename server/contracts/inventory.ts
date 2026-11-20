@@ -117,6 +117,14 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus@9c45857:docs/DECISIONS.md#D-306",
   },
+  "app/api/student/assignments/[assignmentId]/submission/pdf/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",
+  },
+  "app/api/teacher/assignments/[assignmentId]/submissions/[studentId]/pdf/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",
+  },
   // Ductus#2028 c.6993786629 §3.3: Ductus reads the account in its pages; the
   // front of the institution asks for it after the AAI@EduHr login.
   "app/api/me/route.ts": {
@@ -197,6 +205,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7036755565",
   },
+  // SRV-9A (Ductus#2028 c.7041078855, wave 9): the versions of a work; Ductus has no such route.
+  "app/api/works/[documentId]/versions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
+  },
 };
 
 /**
@@ -218,6 +231,8 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.enrollments.post",
   "student.notice.get",
   "institution.enrollment-code-state.get",
+  "student.receipt-pdf.get",
+  "teacher.receipt-pdf.get",
 ];
 
 /**
