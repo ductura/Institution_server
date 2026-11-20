@@ -146,7 +146,7 @@ describe("buildMerlinPackageZip", () => {
   });
 
   it("carries only the CSV and the fingerprints without a submission", () => {
-    const zip = buildMerlinPackageZip({ rows: [], files: [] }, LABELS);
+    const zip = buildMerlinPackageZip({ rows: [], files: [], studentIds: [] }, LABELS);
     expect(readZip(zip.bytes).map((e) => e.name)).toEqual([
       MERLIN_PACKAGE_CSV,
       MERLIN_PACKAGE_FINGERPRINTS,
@@ -161,6 +161,9 @@ describe("buildMerlinPackageZip", () => {
     expect(() => buildMerlinPackageZip({ ...r, files: rest }, LABELS)).toThrow();
     const extra = { name: "drugi-rad-00000000.pdf", bytes: first!.bytes };
     expect(() => buildMerlinPackageZip({ ...r, files: [...r.files, extra] }, LABELS)).toThrow();
+    expect(() =>
+      buildMerlinPackageZip({ ...r, studentIds: r.studentIds.slice(1) }, LABELS),
+    ).toThrow();
     const unsafe = { ...first!, name: "../izlaz.pdf" };
     expect(() => buildMerlinPackageZip({ ...r, files: [unsafe, ...rest] }, LABELS)).toThrow();
   });
@@ -173,15 +176,15 @@ function service(
 ) {
   const calls: string[] = [];
   const reported: unknown[] = [];
-  const stored: { bytes: Uint8Array; sha256: string }[] = [];
+  const stored: { bytes: Uint8Array; sha256: string; studentIds: readonly string[] }[] = [];
   const packages: Packages = {
     request: async () => (
       calls.push("request"),
       { status: "requested", id: P, state: "queued", claimed: true }
     ),
-    complete: async (_t, _a, _p, bytes, sha256) => {
+    complete: async (_t, _a, _p, bytes, sha256, studentIds) => {
       calls.push("complete");
-      stored.push({ bytes, sha256 });
+      stored.push({ bytes, sha256, studentIds });
       return {
         status: "written",
         package: {
@@ -231,6 +234,8 @@ describe("createMerlinPackageService", () => {
     expect(calls).toEqual(["request", "roster", "complete"]);
     expect(stored[0]!.sha256).toBe(sha256Hex(stored[0]!.bytes));
     expect(readZip(stored[0]!.bytes)[0]!.name).toBe(MERLIN_PACKAGE_CSV);
+    // Every student of the roster, also the one without a submission, in row order.
+    expect(stored[0]!.studentIds).toEqual([sid(3), sid(2), sid(1)]);
   });
 
   it("answers a package another request holds without building it", async () => {

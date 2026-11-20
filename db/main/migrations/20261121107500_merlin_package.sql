@@ -12,7 +12,11 @@
 -- download comes from the caller's relation to the work
 -- (institution.work_relation: the teacher of the course or the mentor of the
 -- mentorship, C-23) and from being the one who asked: another teacher of the
--- same course does not see a colleague's package.
+-- same course does not see a colleague's package. A built package also names
+-- the students whose rows and works it carries; it is read or handed out only
+-- while every one of them is still among the students the caller may open
+-- (app.teacher_assignment_students, with the course and group boundaries of
+-- 20261113090000), so access that ends for one work ends for the package too.
 --
 --   institution.merlin_package           the packages; forced RLS, a guard
 --                                        trigger allows only the state moves
@@ -55,6 +59,8 @@ CREATE TABLE institution.merlin_package (
   content bytea,
   sha256 text CHECK (sha256 ~ '^[0-9a-f]{64}$'),
   byte_size integer CHECK (byte_size > 0),
+  -- The students whose rows and works the ZIP carries, sorted; written with the ZIP.
+  student_ids uuid[] CHECK (array_position(student_ids, NULL) IS NULL),
   created_at timestamptz NOT NULL DEFAULT statement_timestamp(),
   -- When a builder last took the package; a queued package older than ten
   -- minutes may be taken again (the builder died).
@@ -65,7 +71,8 @@ CREATE TABLE institution.merlin_package (
   UNIQUE (id, institution_id),
   CHECK ((state = 'ready') = (content IS NOT NULL)),
   CHECK ((content IS NULL) = (sha256 IS NULL) AND (content IS NULL) = (byte_size IS NULL)
-         AND (content IS NULL) = (ready_at IS NULL) AND (content IS NULL) = (expires_at IS NULL)),
+         AND (content IS NULL) = (ready_at IS NULL) AND (content IS NULL) = (expires_at IS NULL)
+         AND (content IS NULL) = (student_ids IS NULL)),
   CHECK (expires_at = ready_at + interval '24 hours'),
   CHECK ((state = 'failed') = (failure_code IS NOT NULL)),
   FOREIGN KEY (assignment_id, institution_id) REFERENCES institution.assignment (id, institution_id),
@@ -134,9 +141,21 @@ CREATE TRIGGER merlin_package_download_immutable BEFORE UPDATE OR DELETE ON inst
 CREATE TRIGGER merlin_package_download_no_truncate BEFORE TRUNCATE ON institution.merlin_package_download
   FOR EACH STATEMENT EXECUTE FUNCTION institution.refuse_merlin_package_download_change();
 
+-- Are all of p_student_ids still students of p_assignment_id the caller may
+-- open? The same set app.fast_path_works reads the roster from. No grant:
+-- only the definer functions below call it.
+CREATE FUNCTION institution.merlin_package_visible(p_assignment_id uuid, p_student_ids uuid[]) RETURNS boolean
+LANGUAGE sql STABLE SET search_path = ''
+AS $$
+  SELECT NOT EXISTS (
+    SELECT unnest(p_student_ids)
+    EXCEPT
+    SELECT s.student_id FROM app.teacher_assignment_students(p_assignment_id) s)
+$$;
+
 -- The caller's package p_package_id of p_assignment_id, locked, while the
--- caller still teaches the work; else ZD403. No grant: only the definer
--- functions below call it.
+-- caller still teaches the work and may still open every student it
+-- carries; else ZD403. No grant: only the definer functions below call it.
 CREATE FUNCTION institution.own_merlin_package(p_assignment_id uuid, p_package_id uuid)
 RETURNS institution.merlin_package
 LANGUAGE plpgsql VOLATILE SET search_path = ''
@@ -151,7 +170,8 @@ BEGIN
    WHERE p.id = p_package_id AND p.assignment_id = p_assignment_id
      AND p.institution_id = v_institution AND p.requested_by = v_user
      FOR UPDATE;
-  IF NOT FOUND OR institution.work_relation(v_user, p_assignment_id) IS DISTINCT FROM 'teacher' THEN
+  IF NOT FOUND OR institution.work_relation(v_user, p_assignment_id) IS DISTINCT FROM 'teacher'
+     OR (v_row.student_ids IS NOT NULL AND NOT institution.merlin_package_visible(p_assignment_id, v_row.student_ids)) THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
   RETURN v_row;
@@ -216,9 +236,12 @@ END
 $$;
 
 -- The builder stores the ZIP of a queued package of the caller's: at most
--- 64 MiB, a ZIP by its first bytes. The fingerprint is computed here and
--- returned, so the builder can compare it with its own before the commit.
-CREATE FUNCTION institution.complete_merlin_package(p_assignment_id uuid, p_package_id uuid, p_content bytea)
+-- 64 MiB, a ZIP by its first bytes, and the students whose rows and works
+-- it carries, each one the caller may open now (else ZD403). The
+-- fingerprint is computed here and returned, so the builder can compare it
+-- with its own before the commit.
+CREATE FUNCTION institution.complete_merlin_package(p_assignment_id uuid, p_package_id uuid, p_content bytea,
+                                                    p_student_ids uuid[])
 RETURNS TABLE (id uuid, state text, sha256 text, byte_size integer, expires_at timestamptz)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
@@ -228,8 +251,13 @@ DECLARE
 BEGIN
   v_row := institution.own_merlin_package(p_assignment_id, p_package_id);
   IF p_content IS NULL OR length(p_content) < 22 OR length(p_content) > 67108864
-     OR substr(p_content, 1, 4) <> '\x504b0304'::bytea THEN
+     OR substr(p_content, 1, 4) <> '\x504b0304'::bytea
+     OR p_student_ids IS NULL OR array_position(p_student_ids, NULL) IS NOT NULL
+     OR cardinality(p_student_ids) <> (SELECT count(DISTINCT x) FROM unnest(p_student_ids) x) THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
+  END IF;
+  IF NOT institution.merlin_package_visible(p_assignment_id, p_student_ids) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
   IF v_row.state <> 'queued' THEN
     RAISE EXCEPTION 'not queued' USING ERRCODE = 'ZD409';
@@ -237,7 +265,9 @@ BEGIN
   RETURN QUERY
     UPDATE institution.merlin_package p
        SET state = 'ready', content = p_content, sha256 = encode(pg_catalog.sha256(p_content), 'hex'),
-           byte_size = length(p_content), ready_at = statement_timestamp(),
+           byte_size = length(p_content),
+           student_ids = ARRAY(SELECT x FROM unnest(p_student_ids) x ORDER BY x),
+           ready_at = statement_timestamp(),
            expires_at = statement_timestamp() + interval '24 hours'
      WHERE p.id = v_row.id
     RETURNING p.id, p.state, p.sha256, p.byte_size, p.expires_at;
@@ -268,7 +298,8 @@ END
 $$;
 
 -- The state of the caller's package; the fingerprint and the expiry once
--- built. Writes nothing.
+-- built. A built package with a student the caller may no longer open is
+-- refused as a package of someone else. Writes nothing.
 CREATE FUNCTION institution.merlin_package_status(p_assignment_id uuid, p_package_id uuid)
 RETURNS TABLE (id uuid, state text, sha256 text, byte_size integer, expires_at timestamptz)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
@@ -286,7 +317,8 @@ BEGIN
     SELECT p.id, institution.merlin_package_state(p.state, p.expires_at), p.sha256, p.byte_size, p.expires_at
       FROM institution.merlin_package p
      WHERE p.id = p_package_id AND p.assignment_id = p_assignment_id
-       AND p.institution_id = v_institution AND p.requested_by = v_user;
+       AND p.institution_id = v_institution AND p.requested_by = v_user
+       AND (p.student_ids IS NULL OR institution.merlin_package_visible(p_assignment_id, p.student_ids));
   IF NOT FOUND THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
@@ -318,15 +350,16 @@ $$;
 
 REVOKE ALL ON FUNCTION institution.guard_merlin_package() FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.refuse_merlin_package_download_change() FROM PUBLIC;
+REVOKE ALL ON FUNCTION institution.merlin_package_visible(uuid, uuid[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.own_merlin_package(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.merlin_package_state(text, timestamptz) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.request_merlin_package(uuid, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION institution.complete_merlin_package(uuid, uuid, bytea) FROM PUBLIC;
+REVOKE ALL ON FUNCTION institution.complete_merlin_package(uuid, uuid, bytea, uuid[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.fail_merlin_package(uuid, uuid, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.merlin_package_status(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION institution.download_merlin_package(uuid, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION institution.request_merlin_package(uuid, text) TO ductus_app;
-GRANT EXECUTE ON FUNCTION institution.complete_merlin_package(uuid, uuid, bytea) TO ductus_app;
+GRANT EXECUTE ON FUNCTION institution.complete_merlin_package(uuid, uuid, bytea, uuid[]) TO ductus_app;
 GRANT EXECUTE ON FUNCTION institution.fail_merlin_package(uuid, uuid, text) TO ductus_app;
 GRANT EXECUTE ON FUNCTION institution.merlin_package_status(uuid, uuid) TO ductus_app;
 GRANT EXECUTE ON FUNCTION institution.download_merlin_package(uuid, uuid) TO ductus_app;
@@ -343,10 +376,11 @@ SET LOCAL ROLE ductus_identity;
 DROP FUNCTION institution.download_merlin_package(uuid, uuid);
 DROP FUNCTION institution.merlin_package_status(uuid, uuid);
 DROP FUNCTION institution.fail_merlin_package(uuid, uuid, text);
-DROP FUNCTION institution.complete_merlin_package(uuid, uuid, bytea);
+DROP FUNCTION institution.complete_merlin_package(uuid, uuid, bytea, uuid[]);
 DROP FUNCTION institution.request_merlin_package(uuid, text);
 DROP FUNCTION institution.merlin_package_state(text, timestamptz);
 DROP FUNCTION institution.own_merlin_package(uuid, uuid);
+DROP FUNCTION institution.merlin_package_visible(uuid, uuid[]);
 DROP TABLE institution.merlin_package_download;
 DROP TABLE institution.merlin_package;
 DROP FUNCTION institution.refuse_merlin_package_download_change();

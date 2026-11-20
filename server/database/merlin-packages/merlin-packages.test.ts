@@ -17,6 +17,7 @@ const KEY = "4b1e2c3d-0000-4000-8000-00000000aaa1";
 const ZIP = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4]);
 const SHA = createHash("sha256").update(ZIP).digest("hex");
 const EXPIRES = new Date("2026-11-22T09:15:00.000Z");
+const STUDENTS = ["00000000-0000-4000-8000-0000000000e1", "00000000-0000-4000-8000-0000000000e2"];
 
 function port(answer: unknown) {
   const seen: { text: string; values: readonly unknown[] | undefined }[] = [];
@@ -102,7 +103,7 @@ describe("request", () => {
 describe("complete", () => {
   it("stores the bytes and confirms the database's fingerprint and size", async () => {
     const { port: p, seen } = port([ready()]);
-    expect(await p.complete(TOKEN, A, P, ZIP, SHA)).toEqual({
+    expect(await p.complete(TOKEN, A, P, ZIP, SHA, STUDENTS)).toEqual({
       status: "written",
       package: {
         id: P,
@@ -114,6 +115,15 @@ describe("complete", () => {
     });
     expect(seen[0]!.values?.slice(0, 2)).toEqual([A, P]);
     expect(Buffer.from(seen[0]!.values?.[2] as Uint8Array).equals(Buffer.from(ZIP))).toBe(true);
+    expect(seen[0]!.text).toContain("$4::uuid[]");
+    expect(seen[0]!.values?.[3]).toEqual(STUDENTS);
+  });
+
+  it("never sends a student list with a malformed or repeated id", async () => {
+    const { port: p, seen } = port([ready()]);
+    await expect(p.complete(TOKEN, A, P, ZIP, SHA, ["nije-uuid"])).rejects.toThrow();
+    await expect(p.complete(TOKEN, A, P, ZIP, SHA, [STUDENTS[0]!, STUDENTS[0]!])).rejects.toThrow();
+    expect(seen).toEqual([]);
   });
 
   it.each([
@@ -123,14 +133,14 @@ describe("complete", () => {
     ["a queued answer", { id: P, state: "queued", sha256: null, byteSize: null, expiresAt: null }],
     ["an expiry that is not a date", ready({ expiresAt: "sutra" })],
   ])("throws on %s, so the write rolls back", async (_name, row) => {
-    await expect(port([row]).port.complete(TOKEN, A, P, ZIP, SHA)).rejects.toThrow();
+    await expect(port([row]).port.complete(TOKEN, A, P, ZIP, SHA, STUDENTS)).rejects.toThrow();
   });
 
   it("never sends an empty or an oversized ZIP", async () => {
     const { port: p, seen } = port([ready()]);
-    await expect(p.complete(TOKEN, A, P, new Uint8Array(0), SHA)).rejects.toThrow();
+    await expect(p.complete(TOKEN, A, P, new Uint8Array(0), SHA, STUDENTS)).rejects.toThrow();
     await expect(
-      p.complete(TOKEN, A, P, new Uint8Array(MERLIN_PACKAGE_MAX_BYTES + 1), SHA),
+      p.complete(TOKEN, A, P, new Uint8Array(MERLIN_PACKAGE_MAX_BYTES + 1), SHA, STUDENTS),
     ).rejects.toThrow();
     expect(seen).toEqual([]);
   });
@@ -140,7 +150,9 @@ describe("complete", () => {
     ["ZD403", { status: "not_found" }],
     ["ZD409", { status: "not_ready" }],
   ])("%s is an outcome", async (code, outcome) => {
-    expect(await port(sqlError(code)).port.complete(TOKEN, A, P, ZIP, SHA)).toEqual(outcome);
+    expect(await port(sqlError(code)).port.complete(TOKEN, A, P, ZIP, SHA, STUDENTS)).toEqual(
+      outcome,
+    );
   });
 });
 

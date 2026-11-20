@@ -50,7 +50,7 @@ const STATUS_FIELDS = 'id, state, sha256, byte_size AS "byteSize", expires_at AS
 const REQUEST_SQL =
   "SELECT id, state, claimed FROM institution.request_merlin_package($1::uuid, $2::text)";
 const COMPLETE_SQL = `SELECT ${STATUS_FIELDS}
-  FROM institution.complete_merlin_package($1::uuid, $2::uuid, $3::bytea)`;
+  FROM institution.complete_merlin_package($1::uuid, $2::uuid, $3::bytea, $4::uuid[])`;
 const FAIL_SQL =
   "SELECT id, state FROM institution.fail_merlin_package($1::uuid, $2::uuid, $3::text)";
 const STATUS_SQL = `SELECT ${STATUS_FIELDS} FROM institution.merlin_package_status($1::uuid, $2::uuid)`;
@@ -166,8 +166,11 @@ export function createMerlinPackages(withActor: WithActor) {
       }
     },
     /**
-     * Store the ZIP of a queued package; the database's fingerprint must be
-     * `sha256`, or the write is rolled back and this throws.
+     * Store the ZIP of a queued package with the students whose rows and
+     * works it carries (the database refuses one the caller may not open and
+     * later refuses the package once the caller may no longer open one of
+     * them); the database's fingerprint must be `sha256`, or the write is
+     * rolled back and this throws.
      */
     async complete(
       token: string,
@@ -175,10 +178,14 @@ export function createMerlinPackages(withActor: WithActor) {
       packageId: string,
       content: Uint8Array,
       sha256: string,
+      studentIds: readonly string[],
     ): Promise<MerlinPackageWrite> {
       if (!isId(assignmentId) || !isId(packageId)) return { status: "not_found" };
       if (content.byteLength === 0 || content.byteLength > MERLIN_PACKAGE_MAX_BYTES) {
         throw new Error("merlin package size out of bounds");
+      }
+      if (!studentIds.every(isId) || new Set(studentIds).size !== studentIds.length) {
+        throw new Error("invalid merlin package students");
       }
       try {
         return await withActor(token, async (tx) => {
@@ -186,6 +193,7 @@ export function createMerlinPackages(withActor: WithActor) {
             assignmentId,
             packageId,
             Buffer.from(content.buffer, content.byteOffset, content.byteLength),
+            [...studentIds],
           ]);
           const written = statusOf(rows.length === 1 ? rows[0] : undefined);
           if (

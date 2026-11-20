@@ -5,7 +5,9 @@
 //
 // The build runs in the request that claimed the package, under the
 // caller's session: the roster of SRV-1109 (which also writes the teacher's
-// opening of every work to the access log), then the ZIP, then the store.
+// opening of every work to the access log), then the ZIP, then the store
+// with the students the roster covers, so the database can refuse the
+// package once the caller may no longer open one of them.
 // There is no worker for it yet (open item); the states are those a worker
 // would use, so moving the build there changes no contract. A build that
 // throws is recorded as failed with a closed code and reported; the same
@@ -54,7 +56,14 @@ export function createMerlinPackageService(deps: MerlinPackageServiceDeps) {
       if (read.status === "unauthorized") return { status: "unauthorized" };
       if (read.status === "read") {
         const zip = buildMerlinPackageZip(read.roster, deps.labels);
-        const stored = await packages.complete(token, assignmentId, id, zip.bytes, zip.sha256);
+        const stored = await packages.complete(
+          token,
+          assignmentId,
+          id,
+          zip.bytes,
+          zip.sha256,
+          read.roster.studentIds,
+        );
         if (stored.status === "written") return { status: "accepted", id, state: "ready" };
         if (stored.status !== "not_ready") return stored satisfies Refusal;
         return current(token, assignmentId, id);

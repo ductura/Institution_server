@@ -30,7 +30,7 @@ SELECT ok(NOT EXISTS (
   WHERE has_table_privilege(r, t, p)
 ), 'no runtime role reads or writes either table directly');
 SELECT ok(NOT has_function_privilege('ductus_app', f, 'EXECUTE'), 'the web role cannot call ' || f)
-FROM unnest(ARRAY['institution.own_merlin_package(uuid,uuid)', 'institution.merlin_package_state(text,timestamptz)',
+FROM unnest(ARRAY['institution.own_merlin_package(uuid,uuid)', 'institution.merlin_package_visible(uuid,uuid[])', 'institution.merlin_package_state(text,timestamptz)',
                   'institution.guard_merlin_package()', 'institution.refuse_merlin_package_download_change()']) AS f;
 
 -- Asking: the teacher of the work only; one answer for every refusal.
@@ -74,17 +74,28 @@ SELECT isnt(pg_temp.ask('marko', $$ SELECT id::text FROM institution.request_mer
 -- Building: only a ZIP, only once, the fingerprint the database's.
 SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT sha256 FROM institution.download_merlin_package({z1}, {p1}) $$)),
   'ZD409', 'a queued package cannot be downloaded');
-SELECT is(pg_temp.code(pg_temp.ask('vesna', format('SELECT state FROM institution.complete_merlin_package({z1}, {p1}, %L::bytea)', b.bytes))),
+SELECT is(pg_temp.code(pg_temp.ask('vesna', format('SELECT state FROM institution.complete_merlin_package({z1}, {p1}, %L::bytea, ARRAY[{ana}, {dora}]::uuid[])', b.bytes))),
   'ZD422', 'content ' || coalesce(b.bytes, 'null') || ' is not a ZIP')
 FROM (VALUES ('\x00010203040506070809000102030405060708090001'), ('\x504b0304'), (NULL)) AS b (bytes);
-SELECT is(pg_temp.code(pg_temp.ask('marko', $$ SELECT state FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(1)) $$)),
+SELECT is(pg_temp.code(pg_temp.ask('marko', $$ SELECT state FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(1), ARRAY[{ana}, {dora}]::uuid[]) $$)),
   'ZD403', 'another teacher cannot store Vesna''s package');
-SELECT is(pg_temp.ask('vesna', $$ SELECT format('%s|%s|%s|%s', state, sha256, byte_size, expires_at - statement_timestamp() BETWEEN interval '23 hours 59 minutes' AND interval '24 hours') FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(1)) $$),
+SELECT is(pg_temp.code(pg_temp.ask('vesna', format('SELECT state FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(1), %s)', x.ids))),
+  'ZD422', 'student list ' || x.ids || ' is refused')
+FROM (VALUES ('NULL::uuid[]'), ('ARRAY[{ana}, NULL]::uuid[]'), ('ARRAY[{ana}, {ana}]::uuid[]')) AS x (ids);
+SELECT is(pg_temp.code(pg_temp.ask('vesna', format('SELECT state FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(1), ARRAY[{ana}, %s]::uuid[])', x.who))),
+  'ZD403', 'a package cannot carry ' || x.who || ', whom Vesna may not open on Z1')
+FROM (VALUES ('{boris}'), ('{tomo}'), ('{vesna}')) AS x (who);
+SELECT is((SELECT state FROM institution.merlin_package WHERE id = pg_temp.id('p1')), 'queued',
+  'a refused store leaves the package queued');
+SELECT is(pg_temp.ask('vesna', $$ SELECT format('%s|%s|%s|%s', state, sha256, byte_size, expires_at - statement_timestamp() BETWEEN interval '23 hours 59 minutes' AND interval '24 hours') FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(1), ARRAY[{dora}, {ana}]::uuid[]) $$),
   format('ready|%s|44|t', encode(sha256(pg_temp.zip(1)), 'hex')),
   'Vesna stores the ZIP: ready, its SHA-256, its size, valid for 24 hours');
 SELECT is((SELECT expires_at - ready_at FROM institution.merlin_package WHERE id = pg_temp.id('p1')), interval '24 hours',
   'the expiry is 24 hours after the package was built');
-SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT state FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(2)) $$)),
+SELECT is((SELECT student_ids FROM institution.merlin_package WHERE id = pg_temp.id('p1')),
+  (SELECT array_agg(x ORDER BY x) FROM unnest(ARRAY[pg_temp.id('ana'), pg_temp.id('dora')]) x),
+  'the package names the students it carries, sorted');
+SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT state FROM institution.complete_merlin_package({z1}, {p1}, pg_temp.zip(2), ARRAY[{ana}]::uuid[]) $$)),
   'ZD409', 'a ready package is never built again');
 SELECT is(pg_temp.ask('vesna', $$ SELECT format('%s|%s', state, claimed) FROM institution.request_merlin_package({z1}, 'kljuc-0001') $$),
   'ready|f', 'the same key after the build is the ready package');
@@ -107,6 +118,18 @@ SELECT is((SELECT count(*)::integer FROM institution.merlin_package_download), 1
 SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT sha256 FROM institution.download_merlin_package({z1}, {p1}) $$)), 'ok',
   'Vesna downloads again');
 SELECT is((SELECT count(*)::integer FROM institution.merlin_package_download), 2, 'every download is recorded');
+-- A student who leaves the course takes the package with her: it carries her work.
+UPDATE institution.course_member SET member_to = now()
+ WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('dora');
+SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT sha256 FROM institution.download_merlin_package({z1}, {p1}) $$)), 'ZD403',
+  'with Dora no longer a student Vesna may open, the package that carries her is refused');
+SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT state FROM institution.merlin_package_status({z1}, {p1}) $$)), 'ZD403',
+  'and its state too');
+SELECT is((SELECT count(*)::integer FROM institution.merlin_package_download), 2, 'and nothing is recorded');
+UPDATE institution.course_member SET member_to = NULL
+ WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('dora');
+SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT sha256 FROM institution.download_merlin_package({z1}, {p1}) $$)), 'ok',
+  'back in the course, the package is handed out again');
 -- A teacher who no longer teaches the work loses the package.
 DELETE FROM institution.course_member WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('vesna');
 SELECT is(pg_temp.code(pg_temp.ask('vesna', $$ SELECT sha256 FROM institution.download_merlin_package({z1}, {p1}) $$)), 'ZD403',
@@ -139,9 +162,9 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT format('%s|%s', state, claimed) FROM in
 
 -- Expiry: 24 hours after the build, the state reads expired and nothing is handed out.
 INSERT INTO institution.merlin_package (id, institution_id, assignment_id, requested_by, request_key, state, content, sha256,
-                                        byte_size, created_at, claimed_at, ready_at, expires_at)
+                                        byte_size, student_ids, created_at, claimed_at, ready_at, expires_at)
 SELECT x.id::uuid, pg_temp.id('fak_a'), pg_temp.id('z1'), pg_temp.id('vesna'), x.key, 'ready', pg_temp.zip(3),
-       encode(sha256(pg_temp.zip(3)), 'hex'), 44, now() - x.age, now() - x.age, now() - x.age, now() - x.age + interval '24 hours'
+       encode(sha256(pg_temp.zip(3)), 'hex'), 44, ARRAY[pg_temp.id('ana')], now() - x.age, now() - x.age, now() - x.age, now() - x.age + interval '24 hours'
 FROM (VALUES ('00000000-0000-4000-8000-0000000000f2', 'kljuc-istekli', interval '24 hours 1 minute'),
              ('00000000-0000-4000-8000-0000000000f3', 'kljuc-svjezi', interval '23 hours 59 minutes')) AS x (id, key, age);
 SELECT is(pg_temp.ask('vesna', $$ SELECT state FROM institution.merlin_package_status({z1}, '00000000-0000-4000-8000-0000000000f2') $$),

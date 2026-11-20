@@ -51,6 +51,9 @@ export function buildMerlinPackageZip(
     }
   }
   if (named.size !== files.size) throw new Error("merlin roster and files disagree");
+  if (roster.studentIds.length !== roster.rows.length) {
+    throw new Error("merlin roster and its students disagree");
+  }
   const entries: ZipEntry[] = [
     {
       name: MERLIN_PACKAGE_CSV,

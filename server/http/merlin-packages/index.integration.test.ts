@@ -236,7 +236,8 @@ function memoryPort(clock: { now: number }) {
       rows.push({ id, owner: token, key, state: "queued" });
       return { status: "requested", id, state: "queued", claimed: true };
     },
-    async complete(token, assignmentId, id, content, sha256) {
+    async complete(token, assignmentId, id, content, sha256, studentIds) {
+      expect(studentIds).toEqual(["00000000-0000-4000-8000-0000000000e1"]);
       const r = own(token, assignmentId, id);
       if (r === undefined) return { status: "not_found" };
       if (createHash("sha256").update(content).digest("hex") !== sha256) throw new Error("otisak");

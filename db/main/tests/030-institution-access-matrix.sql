@@ -296,10 +296,11 @@ SELECT bag_eq(
     'deadline_extensions(p_assignment_id uuid) definer app',
     'guard_merlin_package()',
     'refuse_merlin_package_download_change()',
+    'merlin_package_visible(p_assignment_id uuid, p_student_ids uuid[])',
     'own_merlin_package(p_assignment_id uuid, p_package_id uuid)',
     'merlin_package_state(p_state text, p_expires_at timestamp with time zone)',
     'request_merlin_package(p_assignment_id uuid, p_request_key text) definer app',
-    'complete_merlin_package(p_assignment_id uuid, p_package_id uuid, p_content bytea) definer app',
+    'complete_merlin_package(p_assignment_id uuid, p_package_id uuid, p_content bytea, p_student_ids uuid[]) definer app',
     'fail_merlin_package(p_assignment_id uuid, p_package_id uuid, p_code text) definer app',
     'merlin_package_status(p_assignment_id uuid, p_package_id uuid) definer app',
     'download_merlin_package(p_assignment_id uuid, p_package_id uuid) definer app'
