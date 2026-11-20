@@ -65,8 +65,11 @@ REVOKE ALL ON FUNCTION evidence.document_object(text) FROM PUBLIC;
 
 -- Revision 0 is the base: written by app.open_student_work and never deleted
 -- (a checkpoint is never updated or truncated, and nothing deletes one). A
--- later revision that is a JSON object must carry the same schemaVersion, a
--- missing key included; the value is compared as jsonb, so 1 and "1" differ.
+-- later revision that is a JSON object with a schemaVersion must carry the
+-- same one; the value is compared as jsonb, so 1 and "1" differ. An object
+-- without the key is no document of any version (the server's validator
+-- requires it), so like any other text that is no document it is left to the
+-- other checks, as before this migration.
 -- Definer, so the read of revision 0 does not depend on the writer's row
 -- security.
 CREATE FUNCTION evidence.keep_document_schema_version() RETURNS trigger
@@ -84,7 +87,7 @@ BEGIN
    WHERE c.document_id = NEW.document_id AND c.institution_id = NEW.institution_id
      AND c.revision = 0;
   v_new := evidence.document_object(NEW.body);
-  IF v_base IS NULL OR v_new IS NULL THEN
+  IF v_base IS NULL OR v_new IS NULL OR NOT (v_new ? 'schemaVersion') THEN
     RETURN NEW;
   END IF;
   IF (v_new -> 'schemaVersion') IS DISTINCT FROM (v_base -> 'schemaVersion') THEN

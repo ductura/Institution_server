@@ -136,15 +136,13 @@ $$;
 CREATE TEMP TABLE before_refusals AS SELECT pg_temp.written() AS print;
 
 -- 4. A revision of the other version is refused and writes nothing (§7 t. 4,
--- §8 I1), in both directions; so is a version of another JSON type or none.
+-- §8 I1), in both directions; so is a version of another JSON type.
 SELECT matches(pg_temp.commit('ana', 'pkg-a', 'doc-a', pg_temp.val('rev0_hash'), pg_temp.val('v2')),
   '^ZD422:', 'a v2 revision of a v1 work is refused');
 SELECT matches(pg_temp.commit('tomo', 'pkg-t', 'doc-t', pg_temp.val('rev0_v2_hash'), pg_temp.val('v1')),
   '^ZD422:', 'a v1 revision of a v2 work is refused');
 SELECT matches(pg_temp.commit('tomo', 'pkg-t', 'doc-t', pg_temp.val('rev0_v2_hash'), pg_temp.val('v2_text')),
   '^ZD422:', 'a schemaVersion of "2" as text is not version 2');
-SELECT matches(pg_temp.commit('tomo', 'pkg-t', 'doc-t', pg_temp.val('rev0_v2_hash'), pg_temp.val('no_version')),
-  '^ZD422:', 'a document without schemaVersion is refused');
 SELECT matches(pg_temp.commit('ana', 'pkg-a', 'doc-a', pg_temp.val('rev0_hash'), pg_temp.val(n)),
   '^ZD422:', format('a v2 revision of a v1 work is refused though jsonb cannot hold its text (%s)', n))
   FROM unnest(ARRAY['v2_nul', 'v2_surrogate']) AS n;
@@ -163,16 +161,27 @@ SELECT is(
      FROM evidence.document_checkpoint WHERE document_id IN ('doc-a', 'doc-t')),
   'doc-a 0 1 | doc-a 1 1 | doc-t 0 2 | doc-t 1 2', 'each work keeps the version of its revision 0');
 
--- 6. The rule reads only JSON objects: a stored text that is no document is
--- left to the other checks of the checkpoint, as before this migration.
+-- 6. The rule reads only JSON objects with a schemaVersion: a stored text
+-- that is no document (no object, or an object without the key, which the
+-- server's validator never accepts) is left to the other checks of the
+-- checkpoint, as before this migration.
 SET LOCAL ROLE ductus_evidence;
 SET CONSTRAINTS ALL DEFERRED;
 UPDATE evidence.document SET current_revision = 2, current_content_hash = pg_temp.sha('izmisljeni tekst')
  WHERE id = 'doc-a';
 INSERT INTO evidence.document_revision (document_id, institution_id, revision, base_revision, principal_id, content_hash)
 VALUES ('doc-a', pg_temp.id('fak_a'), 2, 1, pg_temp.id('ana'), pg_temp.sha('izmisljeni tekst'));
+UPDATE evidence.document SET current_revision = 2, current_content_hash = pg_temp.sha(pg_temp.val('no_version'))
+ WHERE id = 'doc-t';
+INSERT INTO evidence.document_revision (document_id, institution_id, revision, base_revision, principal_id, content_hash)
+VALUES ('doc-t', pg_temp.id('fak_b'), 2, 1, pg_temp.id('tomo'), pg_temp.sha(pg_temp.val('no_version')));
 SET CONSTRAINTS ALL IMMEDIATE;
 RESET ROLE;
+SELECT is(pg_temp.ask_as('ductus_evidence', 'anon', format(
+  $q$ INSERT INTO evidence.document_checkpoint (document_id, institution_id, revision, body)
+      SELECT 'doc-t', institution_id, 2, %L FROM evidence.document WHERE id = 'doc-t'
+      RETURNING revision $q$, pg_temp.val('no_version'))),
+  '2', 'an object without schemaVersion is not judged by the version rule');
 SELECT is(pg_temp.ask_as('ductus_evidence', 'anon',
   $q$ INSERT INTO evidence.document_checkpoint (document_id, institution_id, revision, body)
       SELECT 'doc-a', institution_id, 2, 'izmisljeni tekst' FROM evidence.document WHERE id = 'doc-a'
