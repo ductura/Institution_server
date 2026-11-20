@@ -8,12 +8,12 @@ import config from "../../vitest.config.ts";
 const LOCAL = "postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus";
 
 describe("integration setup", () => {
-  it("is a setup file of the integration project", () => {
+  it("is a setup file of the database project", () => {
     const projects = (config.test?.projects ?? []) as {
       test?: { name?: string; setupFiles?: string[] };
     }[];
-    const integration = projects.find((project) => project.test?.name === "integration");
-    expect(integration?.test?.setupFiles).toContain("tests/integration/setup.ts");
+    const integration = projects.find((project) => project.test?.name === "database");
+    expect(integration?.test?.setupFiles).toContain("tests/db/setup.ts");
   });
 
   it("accepts unset and local URLs", () => {

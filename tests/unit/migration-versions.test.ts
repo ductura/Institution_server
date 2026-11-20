@@ -6,9 +6,9 @@ import { describe, expect, it } from "vitest";
 // migrations with the same version, the one applied second is skipped without
 // an error. Two PRs that pick the same version therefore pass CI each on its
 // own and break the database only after both are merged.
-const DIRECTORY = new URL("../../db/migrations/", import.meta.url);
+const DIRECTORY = new URL("../../db/main/migrations/", import.meta.url);
 
-describe("db/migrations versions", () => {
+describe("db/main/migrations versions", () => {
   it("names every migration with a 14-digit version and gives no version twice", () => {
     const names = readdirSync(DIRECTORY).filter((name) => name.endsWith(".sql"));
     expect(names.length).toBeGreaterThan(0);
