@@ -196,8 +196,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "collaboration.comments.post",
   "collaboration.revision-requests.post",
   "teacher.fast-path.post",
-  "settings.catalogue.get",
-  "settings.values.get",
   "student.access-log.get",
   "student.notice-read.post",
   "student.enrollments.post",
