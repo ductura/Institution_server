@@ -526,10 +526,10 @@ describe("SRV-16: the evidence of the seeded work, from open to replay", () => {
     expect(JSON.parse(content.document)).toMatchObject({ schemaVersion: 2, sources: [SOURCE] });
   });
 
-  // Each work keeps the version of its revision 0 (document v2 §7 t. 4): the
-  // database refuses the revision and writes nothing. The commit path answers
-  // that as unavailable until the work's version reaches the commit context
-  // (database step 2, Ductus#2028 c.7035293975), when this becomes a 422.
+  // Each work keeps the version of its revision 0 (document v2 §7 t. 4). Since
+  // SRV-7F the work's version reaches the commit context, so the snapshot of
+  // another version is refused as 422 invalid before anything is stored; the
+  // database's own refusal (ZD422) stays behind it.
   it.each([
     [
       "a v1 document on the v2 work",
@@ -546,8 +546,8 @@ describe("SRV-16: the evidence of the seeded work, from open to replay", () => {
     const opened = await open(session());
     const content = make(startOf(opened));
     const { answer } = await commitOver(opened, content, sha256(content.document), session());
-    expect(answer.status).toBe(503);
-    expect(answer.body).toEqual({ status: "unavailable", stage: "repository" });
+    expect(answer.status).toBe(422);
+    expect(answer.body).toEqual({ status: "invalid" });
     expect(await open(session())).toMatchObject({
       currentRevision: opened.currentRevision,
       documentHash: opened.documentHash,

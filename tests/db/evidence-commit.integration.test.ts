@@ -536,6 +536,8 @@ describe("evidence commit context over real PostgreSQL with RLS", () => {
         evidenceProfileId: "standard-v1",
         maxPayloadBytes: expect.any(Number),
         transactionKnown: false,
+        // SRV-7F: a work opened today is v1, read from its revision 0.
+        documentSchemaVersion: 1,
         state: {
           currentRevision: 0,
           documentHash: mia.documentHash,

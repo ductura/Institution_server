@@ -59,6 +59,10 @@ const final = chain.documentStates.find(
 );
 const DOCUMENT = new TextEncoder().encode(canonicalizeJcs(final?.value));
 const INSTITUTION = "00000000-0000-4000-8000-0000000000a1";
+// SRV-7F: the revision 0 hashes as contracts v1, v2 and v3 write them.
+const V1_ZERO = "a102ced8a59b446a86c135c8d87d3ddf9f889e4ac93bcbc1857cd7c2c73ad14b";
+const V2_ZERO = "8f8aa5047daa07e8d68f4952aa70ab3c671eccdf6191bfaf6dcba591735f2618";
+const V3_ZERO = "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
 /** A context row as the database names it; written in camelCase, sent in snake_case. */
 const CONTEXT_ROW = {
   outcome: "ok",
@@ -102,14 +106,26 @@ const snake = (row: Record<string, unknown>) =>
     ]),
   );
 
-function setup(contextRow: Record<string, unknown> = CONTEXT_ROW) {
+function setup(contextRow: Record<string, unknown> = CONTEXT_ROW, revisionZero = V1_ZERO) {
   const queries: { kind: string; values: readonly unknown[] }[] = [];
+  const zeroReads: { kind: string; values: readonly unknown[] }[] = [];
   const withActor: WithActor = async (_token, fn) => {
     const tx: ActorTransaction = {
       async query(text, values = []) {
-        const kind = text.includes("evidence_commit_context") ? "context" : "commit";
-        queries.push({ kind, values });
-        const rows = [snake(kind === "context" ? contextRow : STALE)] as never[];
+        const kind = text.includes("evidence_commit_context")
+          ? "context"
+          : text.includes("evidence.document_revision")
+            ? "revision0"
+            : "commit";
+        // The read of revision 0 is kept apart, so `queries` stays context and commit.
+        (kind === "revision0" ? zeroReads : queries).push({ kind, values });
+        const row =
+          kind === "context"
+            ? snake(contextRow)
+            : kind === "revision0"
+              ? { content_hash: revisionZero }
+              : snake(STALE);
+        const rows = [row] as never[];
         return { rows, rowCount: 1 };
       },
     };
@@ -124,7 +140,7 @@ function setup(contextRow: Record<string, unknown> = CONTEXT_ROW) {
       committer: createEvidenceCommitter(withActor, refusingSigner),
       payloads,
     }).commit("t", { ...REQUEST, ...request });
-  return { run, queries, payloads };
+  return { run, queries, payloads, zeroReads };
 }
 
 const segmentWith = (change: Record<string, unknown>) =>
@@ -418,15 +434,89 @@ describe("createEvidenceService().commit with a document v2", () => {
 
   it("commits a v2 snapshot byte for byte", async () => {
     const text = v2(book);
-    const { run, queries, payloads } = setup();
+    const { run, queries, payloads } = setup(CONTEXT_ROW, V2_ZERO);
     expect((await run(ending(text))).status).toBe("stale_base");
     expect(payloads.putImmutable).toHaveBeenCalledOnce();
     expect(queries.find((q) => q.kind === "commit")?.values.at(-1)).toBe(text);
   });
 
   it("refuses a v2 snapshot with an unknown field before anything is stored", async () => {
-    const { run, queries, payloads } = setup();
+    const { run, queries, payloads } = setup(CONTEXT_ROW, V2_ZERO);
     expect(await run(ending(v2({ ...book, note: "x" })))).toEqual({ status: "invalid" });
+    expect(payloads.putImmutable).not.toHaveBeenCalled();
+    expect(queries.some((q) => q.kind === "commit")).toBe(false);
+  });
+});
+
+// SRV-7F (docs/contracts/document-schema-v3.md §5 t. 7, §7): the step format
+// and the snapshot are judged against the version of the work's revision 0,
+// before anything is stored. Steps of the golden segment, recorded under
+// ductus-edit-steps-v3, are valid v3 steps.
+describe("createEvidenceService().commit by the version of the work", () => {
+  const V3_DOCUMENT = canonicalizeJcs({
+    schemaVersion: 3,
+    nodes: [
+      {
+        type: "paragraph",
+        id: "11111111-1111-4111-8111-111111111111",
+        children: [
+          { type: "text", text: "Izmišljeni odlomak.", marks: [] },
+          { type: "footnote", text: "Izmišljeno objašnjenje." },
+        ],
+      },
+    ],
+    sources: [],
+  });
+  const V1_TEXT = new TextDecoder().decode(DOCUMENT);
+  /** The golden segment under `format`, ending in `text`. */
+  const ending = (text: string, format: string) => {
+    const hash = createHash("sha256").update(text, "utf8").digest("hex");
+    const events = golden.segment.events.map((event, i, all) =>
+      i === all.length - 1 ? { ...event, afterDocumentHash: hash } : event,
+    );
+    return {
+      segment: segmentWith({
+        finalDocumentHash: hash,
+        events,
+        captureContext: { editorModel: "prosemirror", transactionFormat: format },
+      }),
+      document: new TextEncoder().encode(text),
+    };
+  };
+  const V1_STEPS = "ductus-edit-steps-v1";
+  const V3_STEPS = "ductus-edit-steps-v3";
+
+  it("commits v3 steps and a v3 snapshot on a v3 work", async () => {
+    const { run, queries, payloads, zeroReads } = setup(CONTEXT_ROW, V3_ZERO);
+    expect((await run(ending(V3_DOCUMENT, V3_STEPS))).status).toBe("stale_base");
+    expect(payloads.putImmutable).toHaveBeenCalledOnce();
+    expect(zeroReads.map((q) => q.values)).toEqual([[REQUEST.documentId]]);
+    expect(queries.find((q) => q.kind === "commit")?.values.at(-1)).toBe(V3_DOCUMENT);
+  });
+
+  it.each([
+    ["v3 steps on a v1 work", V1_ZERO, V3_DOCUMENT, V3_STEPS],
+    ["v3 steps and a v1 snapshot on a v1 work", V1_ZERO, V1_TEXT, V3_STEPS],
+    ["v3 steps on a v2 work", V2_ZERO, V3_DOCUMENT, V3_STEPS],
+    ["v1 steps on a v3 work", V3_ZERO, V3_DOCUMENT, V1_STEPS],
+    ["v3 steps and a v1 snapshot on a v3 work", V3_ZERO, V1_TEXT, V3_STEPS],
+    ["v1 steps and a v3 snapshot on a v1 work", V1_ZERO, V3_DOCUMENT, V1_STEPS],
+    ["v1 steps and a v1 snapshot on a v2 work", V2_ZERO, V1_TEXT, V1_STEPS],
+    ["v2 steps on a v2 work", V2_ZERO, V1_TEXT, "ductus-edit-steps-v2"],
+  ])("refuses %s as invalid before anything is stored", async (_, zero, text, format) => {
+    const { run, queries, payloads } = setup(CONTEXT_ROW, zero);
+    expect(await run(ending(text, format))).toEqual({ status: "invalid" });
+    expect(payloads.putImmutable).not.toHaveBeenCalled();
+    expect(queries.some((q) => q.kind === "commit")).toBe(false);
+  });
+
+  it("is unavailable, storing nothing, when the work's revision 0 names no version", async () => {
+    const { run, queries, payloads } = setup(CONTEXT_ROW, "c".repeat(64));
+    expect(await run()).toEqual({
+      status: "unavailable",
+      stage: "context",
+      code: "context_malformed",
+    });
     expect(payloads.putImmutable).not.toHaveBeenCalled();
     expect(queries.some((q) => q.kind === "commit")).toBe(false);
   });
@@ -541,8 +631,12 @@ describe("createEvidenceService().commit signing", () => {
   function spying() {
     const withActor: WithActor = async (_token, fn) => {
       const tx: ActorTransaction = {
-        async query() {
-          return { rows: [snake(CONTEXT_ROW)] as never[], rowCount: 1 };
+        async query(text) {
+          // SRV-7F: the context's read of revision 0 names a v1 work.
+          const row = text.includes("evidence.document_revision")
+            ? { content_hash: V1_ZERO }
+            : snake(CONTEXT_ROW);
+          return { rows: [row] as never[], rowCount: 1 };
         },
       };
       return fn(tx);
