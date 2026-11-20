@@ -43,6 +43,7 @@ import {
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createWorkSourceRoutesFor,
   createTextCheckConfigRoute,
@@ -350,6 +351,17 @@ const SESSION_ROUTES = {
     body: () => ({ assignmentIds: [ASSIGNMENT] }),
     live: 200,
   },
+  "teacher.mentorship-requests.get": {
+    method: "GET",
+    path: "/api/v1/teacher/mentorship-requests",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.mentorship-request-decision.post": {
+    path: "/api/v1/teacher/mentorship-requests/decision",
+    body: () => ({ requestId: ASSIGNMENT, decision: "approve" }),
+    live: 403,
+  },
   // Ductus#2028 (w1119o): the live view of a work the account does not own
   // or teach is the same 404 as a missing one. GET carries the protocol, PUT
   // the precondition of a first write and the exact JCS bytes of a document.
@@ -533,6 +545,7 @@ const FACTORIES = [
   "createStudentSubmissionRoutesFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
   "routesOf",
@@ -571,6 +584,7 @@ const MOUNTED = [
   ...createStudentSubmissionRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),
   ...routesOf(AREA_NAMES),

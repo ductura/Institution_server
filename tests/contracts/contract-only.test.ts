@@ -26,6 +26,7 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
@@ -157,14 +158,14 @@ const SRV_19 = [
 // contract first, the route mounted by the entry point in part 4.
 const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
+const SRV_31 = ["teacher.mentorship-requests.get", "teacher.mentorship-request-decision.post"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
   "teacher.course-students.get",
   "teacher.assignment-overview.get",
   "teacher.submission-receipt.get",
-  "teacher.mentorship-requests.get",
-  "teacher.mentorship-request-decision.post",
+  ...SRV_31,
 ] as const;
 
 /** Every route a task has put on the list; nothing else may be there. */
@@ -262,6 +263,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createTeacherReadRoutesFor(databases.main)",
     ids: [...TEACHER_READ_ROUTES],
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createTeacherMentorshipRequestRoutesFor(databases.main)",
+    ids: SRV_31,
+    routes: () =>
+      createTeacherMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     // Ductus#2028 (w1119o): the live view over the main database.
@@ -411,6 +418,7 @@ describe("CONTRACT_ONLY", () => {
       [
         ...["support.problem-report.post", "projection.process-summary.post"],
         ...TEACHER_READ_ROUTES,
+        ...SRV_31,
         ...INSTITUTION_COURSE_ROUTES,
         "institution.course-assignments.post",
         "institution.assignment-versions.post",
@@ -464,6 +472,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      ...SRV_31,
       "live.document.get",
       "live.document.put",
       "institution.acknowledgment.post",

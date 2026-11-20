@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1907);
+SELECT plan(1921);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -424,6 +424,29 @@ FROM (VALUES
 ) AS c (actor, assignment, rows);
 INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.teacher_mentorship_requests()', 'app.approve_mentorship_request_with_work(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-31: the application role and owner execute the two RPCs'
+);
+SELECT ok(has_function_privilege('ductus_app', 'app.teacher_mentorship_requests()', 'EXECUTE')
+       AND has_function_privilege('ductus_app', 'app.approve_mentorship_request_with_work(uuid)', 'EXECUTE'),
+  'SRV-31: the application role can call both RPCs');
+SELECT is(
+  pg_temp.ask(c.actor, $$ SELECT count(*) FROM app.teacher_mentorship_requests() WHERE request_id = {rq} $$),
+  c.rows, 'SRV-31: request visibility for ' || c.actor
+)
+FROM (VALUES ('vesna', '1'), ('marko', '0'), ('ana', '0'), ('iva', '0'), ('petra', '0'), ('anon', '0')) AS c (actor, rows);
+SELECT is(
+  left(pg_temp.ask(c.actor, $$ SELECT app.approve_mentorship_request_with_work({rq}) $$), 5),
+  c.code, 'SRV-31: approval refused for ' || c.actor
+)
+FROM (VALUES ('marko', 'ZD403'), ('ana', 'ZD403'), ('iva', 'ZD403'), ('petra', 'ZD403'),
+             ('tomo', 'ZD403'), ('anon', 'ZD401')) AS c (actor, code);
 SELECT is(
   substr(pg_temp.ask(c.actor, $$ SELECT institution.decline_mentorship_request({rq}, NULL)::text $$), 1, 5), c.outcome,
   format('SRV-28: %s declines Ana''s request to Vesna: %s', c.actor, c.outcome)
