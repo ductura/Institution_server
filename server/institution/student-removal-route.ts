@@ -6,7 +6,7 @@ export const MAX_STUDENT_REMOVAL_BODY_BYTES = 64;
 export interface StudentRemovalDeps {
   withActor: WithActor;
   expectedOrigin: string;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 // A teacher of the course ends one student's membership. The body carries

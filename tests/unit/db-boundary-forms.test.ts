@@ -29,7 +29,7 @@ beforeAll(async () => {
 
 async function boundaryRules(engine: ESLint, filePath: string, code: string) {
   const [result] = await engine.lintText(code, { filePath });
-  return result.messages
+  return result!.messages
     .map((message) => message.ruleId)
     .filter((ruleId) => BOUNDARY_RULES.has(ruleId ?? ""));
 }

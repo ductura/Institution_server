@@ -15,7 +15,7 @@ beforeAll(async () => {
 
 async function restrictedImports(filePath: string, code: string) {
   const [result] = await eslint.lintText(code, { filePath });
-  return result.messages.filter((message) => message.ruleId === "no-restricted-imports").length;
+  return result!.messages.filter((message) => message.ruleId === "no-restricted-imports").length;
 }
 
 describe("pg import boundary (eslint.config.mjs)", () => {

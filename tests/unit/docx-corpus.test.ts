@@ -69,7 +69,7 @@ const count = (xml: string | undefined, re: RegExp) => (xml ?? "").match(re)?.le
 /** Visible paragraph text of word/document.xml: w:t only, so deleted text (w:delText) is left out. */
 const visibleText = (documentXml: string) =>
   [...documentXml.matchAll(/<w:p(?:\s[^>]*)?>([\s\S]*?)<\/w:p>/g)].map((p) =>
-    [...p[1].matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((t) => unescapeXml(t[1])).join(""),
+    [...p[1]!.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((t) => unescapeXml(t[1]!)).join(""),
   );
 
 function observe(bytes: Uint8Array) {
@@ -165,7 +165,7 @@ describe("DOCX corpus (DAN-242)", () => {
     for (const f of pairs) {
       const other = byName.get(f.sameTextAs ?? "");
       expect(other).toBeDefined();
-      expect(observe(committed[f.file]).text).toEqual(observe(committed[other!.file]).text);
+      expect(observe(committed[f.file]!).text).toEqual(observe(committed[other!.file]!).text);
       expect(f.sha256).not.toBe(other!.sha256);
     }
   });
@@ -183,7 +183,7 @@ describe("DOCX corpus (DAN-242)", () => {
         const people = [
           ...xml.matchAll(/w:author="([^"]*)"|<dc:creator>([^<]*)<|<cp:lastModifiedBy>([^<]*)</g),
         ];
-        for (const m of people) expect(names.has(unescapeXml(m[1] ?? m[2] ?? m[3]))).toBe(true);
+        for (const m of people) expect(names.has(unescapeXml(m[1] ?? m[2] ?? m[3]!))).toBe(true);
       }
     }
     for (const name of INVENTED_NAMES) expect(manifestText).not.toContain(name);
@@ -191,7 +191,7 @@ describe("DOCX corpus (DAN-242)", () => {
   });
 
   describe("verifyCorpus rejects", () => {
-    const first = manifest.fixtures[0].file;
+    const first = manifest.fixtures[0]!.file;
     const clone = () => ({ ...committed });
     const fixtureClone = () => JSON.parse(manifestText) as Manifest;
 
@@ -202,8 +202,8 @@ describe("DOCX corpus (DAN-242)", () => {
           fc.nat(),
           fc.integer({ min: 1, max: 255 }),
           (file, at, xor) => {
-            const bytes = new Uint8Array(committed[file]);
-            bytes[at % bytes.length] ^= xor;
+            const bytes = new Uint8Array(committed[file]!);
+            bytes[at % bytes.length] = bytes[at % bytes.length]! ^ xor;
             return verifyCorpus({ ...committed, [file]: bytes }, manifest).length > 0;
           },
         ),
@@ -211,7 +211,7 @@ describe("DOCX corpus (DAN-242)", () => {
     });
 
     it("an extra or a missing file", () => {
-      expect(verifyCorpus({ ...clone(), "09-extra.docx": committed[first] }, manifest)).toEqual([
+      expect(verifyCorpus({ ...clone(), "09-extra.docx": committed[first]! }, manifest)).toEqual([
         "09-extra.docx: not in the manifest",
       ]);
       const missing = clone();
@@ -221,13 +221,13 @@ describe("DOCX corpus (DAN-242)", () => {
 
     it("a wrong trace count, text or part order", () => {
       const m = fixtureClone();
-      m.fixtures[1].traces.ins += 1;
-      m.fixtures[2].text = ["Druga rečenica."];
-      m.fixtures[3].parts.reverse();
+      m.fixtures[1]!.traces.ins += 1;
+      m.fixtures[2]!.text = ["Druga rečenica."];
+      m.fixtures[3]!.parts.reverse();
       expect(verifyCorpus(committed, m)).toEqual([
-        `${m.fixtures[1].file}: traces`,
-        `${m.fixtures[2].file}: text`,
-        `${m.fixtures[3].file}: parts`,
+        `${m.fixtures[1]!.file}: traces`,
+        `${m.fixtures[2]!.file}: text`,
+        `${m.fixtures[3]!.file}: parts`,
       ]);
     });
   });
@@ -240,7 +240,7 @@ describe("DOCX corpus (DAN-242)", () => {
       expect(a.manifest).toBe(manifestText);
       expect(Object.keys(a.files).sort()).toEqual(Object.keys(committed).sort());
       for (const [name, bytes] of Object.entries(a.files))
-        expect(Buffer.from(bytes).equals(Buffer.from(committed[name]))).toBe(true);
+        expect(Buffer.from(bytes).equals(Buffer.from(committed[name]!))).toBe(true);
     });
 
     it("--check passes in another time zone and process", () => {
