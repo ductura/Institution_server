@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1666);
+SELECT plan(1675);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -387,18 +387,27 @@ FROM (VALUES
   ('vesna', '{z3}', '{tomo}', 'ZD403: forbid')
 ) AS c (actor, assignment, student, result);
 
--- 1d. SRV-28: the decline of a mentorship request, one cell per actor; the
--- rest of its matrix (states, reason, the trail) is in
--- 104-mentorship-request.sql.
+-- 1d. SRV-28: the decline of a mentorship request and the overview of an
+-- assignment, one cell per actor; the rest of their matrix (states, reason,
+-- the trail; collaborator, groups, receipts) is in 104-mentorship-request.sql
+-- and 086-assignment-submissions.sql.
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
      FROM (SELECT rolname::text FROM pg_roles
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
            UNION ALL SELECT 'public') AS r
-     CROSS JOIN unnest(ARRAY['institution.decline_mentorship_request(uuid,text)']) f
+     CROSS JOIN unnest(ARRAY['institution.decline_mentorship_request(uuid,text)', 'app.assignment_overview(uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
-  'SRV-28: only ductus_app and the owner execute the decline'
+  'SRV-28: only ductus_app and the owner execute the decline and the overview'
 );
+SELECT is(
+  pg_temp.ask(c.actor, format('SELECT count(*)::text FROM app.assignment_overview(%s)', c.assignment)), c.rows,
+  format('SRV-28: %s reads the overview of %s: %s', c.actor, c.assignment, c.rows)
+)
+FROM (VALUES
+  ('vesna', '{z1}', '2'), ('marko', '{z1}', '0'), ('ana', '{z1}', '0'), ('dora', '{z1}', '0'), ('boris', '{z1}', '0'),
+  ('iva', '{z1}', '0'), ('nina', '{z1}', '0'), ('petra', '{z1}', '0'), ('petra', '{z3}', '1')
+) AS c (actor, assignment, rows);
 INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
 SELECT is(
