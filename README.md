@@ -37,13 +37,19 @@ Kod je u TypeScriptu. Server se za pokretanje gradi u `dist/server.js` (`pnpm bu
 | Račun            | Uloga                                                                                    |
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | `demo-admin`     | administrator ustanove (imenovan kroz `appoint_institution_admin`)                       |
-| `demo-teacher`   | nastavnik, nositelj obaju kolegija; jednom otvorio rad `demo-student` (dnevnik pristupa) |
+| `demo-teacher`   | nastavnik, nositelj triju kolegija; jednom otvorio rad `demo-student` (dnevnik pristupa) |
 | `demo-teacher-2` | nastavnica, suradnica (vodi grupu B)                                                     |
 | `demo-student`   | upisan u seminar, grupa A, obavijest potvrđena, rad otvoren                              |
 | `demo-student-2` | nije upisan (prazni „Moji zadaci”)                                                       |
+| `demo-student-3` | predaje rad o kućnom kompostiranju kroz `pnpm lokalno:predaje`                           |
+| `demo-student-4` | predaje osvrt o gradskim vrtovima nakon roka kroz istu naredbu                           |
 | `demo-bez-uloge` | djelatnik bez potvrđene uloge                                                            |
 
-`demo-admin` i `demo-bez-uloge` su u `db/main/local/lazni-oidc-racuni.json` (`FAKE_OIDC_ACCOUNTS_FILE`); vlastita `.local/oidc-racuni.json` je zamjenjuje. Kolegiji (2026./2027.): „Izmišljeni seminar iz ekologije grada” (grupe A i B, objavljen zadatak „Seminarski rad: kućno kompostiranje”) i „Izmišljeni praktikum iz urbane sociologije” (bez zadatka). Kodovi za upis: `UPIS2026DEMO` (seminar, valjan), `STARI2025KOD` (seminar, istekao i zamijenjen), `PRAZNI2026DEMO` (praktikum, valjan).
+`demo-admin`, `demo-bez-uloge`, `demo-student-3` i `demo-student-4` su u `db/main/local/lazni-oidc-racuni.json` (`FAKE_OIDC_ACCOUNTS_FILE`). Vlastita `.local/oidc-racuni.json` tu datoteku zamjenjuje pa za pripremu predaja mora sadržavati oba nova računa. Kolegiji (2026./2027.) su „Izmišljeni seminar iz ekologije grada” (grupe A i B, `UPIS2026DEMO`), „Izmišljeni praktikum iz urbane sociologije” (bez zadatka, `PRAZNI2026DEMO`) i „Izmišljeni seminar iz urbane hidrologije” (zadatak „Kratki osvrt: gradski vrtovi” s isteklim rokom, `HIDRO2026DEMO`). Stari kod seminara `STARI2025KOD` je istekao i zamijenjen je.
+
+Za SRV-17 pokreni `pnpm lokalno`, a u drugom terminalu `pnpm lokalno:predaje`. Ako je stog pokrenut s `--izravno`, dodaj istu zastavicu i naredbi za predaje. Skripta preko `/api/v1` upisuje dva nova računa, potvrđuje obavijesti, zapisuje izmišljeni tekst i provjerava potpisanu potvrdu iste revizije pri ponovnom zahtjevu. Za `demo-student-3` provjeri stanje `submitted` u `GET /api/v1/student/assignment-work`. `demo-student-2` i dalje ima prazan popis kolegija. Ponovi naredbu za predaje i provjeri da se koristi ista potvrda.
+
+Za taj prolaz stog treba montirane studentske rute za upis, zadatke, obavijest i potvrdu obavijesti te lokalnu pohranu evidencije i registrirani razvojni ključ za potpisivanje. Povezivanje tih preduvjeta s `pnpm lokalno` još je otvoreno na koordinaciji SRV-17.
 
 ## Struktura
 
