@@ -39,6 +39,7 @@ import {
   createEvidenceCommitRouteFor,
   createEvidenceOpenRoute,
   createLayers,
+  createStudentSubmissionRoutesFor,
   createSubmissionRouteFor,
   type Running,
   startServer,
@@ -60,7 +61,7 @@ const ROOT = join(import.meta.dirname, "../..");
 const PATH = "/api/v1/submission";
 const password = randomBytes(24).toString("hex");
 const suffix = randomBytes(4).toString("hex");
-const STUDENTS = ["ana", "bruno", "cvita", "dora"] as const;
+const STUDENTS = ["ana", "bruno", "cvita", "dora", "ema"] as const;
 type Student = (typeof STUDENTS)[number];
 const id = {
   a: randomUUID(),
@@ -68,6 +69,10 @@ const id = {
   vesna: randomUUID(),
   k1: randomUUID(),
   z1: randomUUID(),
+  // SRV-22: an assignment of k1 with a word range, and one of a course without students.
+  z2: randomUUID(),
+  k2: randomUUID(),
+  z3: randomUUID(),
   domainA: randomUUID(),
 };
 const user = Object.fromEntries(STUDENTS.map((s) => [s, randomUUID()])) as Record<Student, string>;
@@ -178,6 +183,29 @@ async function fixture(): Promise<void> {
     [id.z1, id.vesna],
   );
   await q(
+    `INSERT INTO institution.course (id, institution_id, name, academic_year, ai_policy, created_by)
+     VALUES ($1, $2, 'Drugi izmišljeni kolegij (test)', '2026/2027', 'partially_allowed', $3)`,
+    [id.k2, id.a, id.vesna],
+  );
+  for (const [assignment, course, min, max] of [
+    [id.z2, id.k1, 800, 1200],
+    [id.z3, id.k2, null, null],
+  ] as const) {
+    await q(
+      `INSERT INTO institution.assignment (id, course_id, institution_id, current_version, created_by)
+       VALUES ($1, $2, $3, 1, $4)`,
+      [assignment, course, id.a, id.vesna],
+    );
+    await q(
+      `INSERT INTO institution.assignment_version (assignment_id, version_no, title, instructions, work_type,
+         opens_at, due_at, ai_policy, ai_purposes, evidence_profile, import_allowed, created_by,
+         word_min, word_max)
+       VALUES ($1, 1, 'Drugi izmišljeni zadatak (test)', 'Upute.', 'essay', now(),
+         now() + interval '30 days', 'partially_allowed', '{proofreading}', 'basic', true, $2, $3, $4)`,
+      [assignment, id.vesna, min, max],
+    );
+  }
+  await q(
     `INSERT INTO institution.notice_acknowledgment (assignment_id, version_no, student_id, institution_id)
      SELECT $1::uuid, 1, unnest($2::uuid[]), $3::uuid`,
     [id.z1, STUDENTS.map((s) => user[s]), id.a],
@@ -218,6 +246,7 @@ beforeAll(async () => {
       createEvidenceOpenRoute(main),
       createEvidenceCommitRouteFor(main, { signer, payloads }),
       createSubmissionRouteFor(main, { signer, payloads }),
+      ...createStudentSubmissionRoutesFor(main),
     ],
   });
 });
@@ -503,5 +532,99 @@ describe("POST /api/v1/submission over submitWork (SRV-18)", () => {
     expect(answer.status, answer.text).toBe(200);
     expect(answer.body.status).toBe("submitted");
     await expectVerifiable(answer.body.receipt);
+  });
+});
+
+/** A GET of the student's own read under /api/v1/student/assignments. */
+function get(path: string, who: Student | null): Promise<Answer> {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      {
+        host: "127.0.0.1",
+        port: server.port,
+        method: "GET",
+        path: `/api/v1/student/assignments/${path}`,
+        headers: {
+          "sec-fetch-site": "same-origin",
+          ...(who === null ? {} : { cookie: `__Host-ductus_session=${token[who]}` }),
+        },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk: Buffer) => (data += chunk.toString("utf8")));
+        res.on("end", () =>
+          resolve({
+            status: res.statusCode ?? 0,
+            text: data,
+            body: JSON.parse(data) as Record<string, unknown>,
+            headers: res.headers,
+          }),
+        );
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+const withoutRequestId = ({ requestId: _id, ...body }: Record<string, unknown>) => body;
+
+describe("GET the student's submission state and word range (SRV-22)", () => {
+  it("none, then ceka after 503 signing, then potvrdeno with the same receipt bytes the submission answered", async () => {
+    expect((await get(`${id.z1}/submission`, "ema")).text).toBe('{"state":"none"}');
+    const ema = await write("ema", [[{ source: "editor", text: "Izmišljena bilješka o tlu. " }]]);
+    expect((await get(`${id.z1}/submission`, "ema")).text).toBe('{"state":"none"}');
+    outage = true;
+    try {
+      expect((await post(PATH, ema, "ema")).status).toBe(503);
+    } finally {
+      outage = false;
+    }
+    const waiting = await get(`${id.z1}/submission`, "ema");
+    expect(waiting.status, waiting.text).toBe(200);
+    expect(waiting.body).toEqual({
+      state: "ceka",
+      revision: ema.revision,
+      requestedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u),
+    });
+    const submitted = await post(PATH, ema, "ema");
+    expect(submitted.status, submitted.text).toBe(200);
+    const prefix = '{"status":"submitted","receipt":';
+    expect(submitted.text.startsWith(prefix)).toBe(true);
+    const receiptText = submitted.text.slice(prefix.length, -1);
+    const bound = await get(`${id.z1}/submission`, "ema");
+    expect(bound.status).toBe(200);
+    expect(bound.text).toBe(`{"state":"potvrdeno","receipt":${receiptText}}`);
+    await expectVerifiable(bound.body.receipt);
+    // The request instant ceka showed is the one the receipt signs: one submission.
+    const receipt = bound.body.receipt as { payload: { requestedAt: string } };
+    expect(receipt.payload.requestedAt).toBe(waiting.body.requestedAt);
+    expect((await get(`${id.z1}/submission`, "ema")).text).toBe(bound.text);
+  });
+
+  it("an assignment of another course, an unknown and a malformed id are the same 404", async () => {
+    const answers = await Promise.all(
+      [`${id.z3}/submission`, `${randomUUID()}/submission`, "nije-uuid/submission"].map((path) =>
+        get(path, "ana"),
+      ),
+    );
+    for (const answer of answers) {
+      expect(answer.status).toBe(404);
+      expect(withoutRequestId(answer.body)).toEqual(withoutRequestId(answers[0]!.body));
+    }
+    expect((await get(`${id.z3}/requirements`, "ana")).status).toBe(404);
+  });
+
+  it("no session is 401", async () => {
+    expect((await get(`${id.z1}/submission`, null)).status).toBe(401);
+    expect((await get(`${id.z1}/requirements`, null)).status).toBe(401);
+  });
+
+  it("the word range of the current version: none set is null, both set are min and max", async () => {
+    const none = await get(`${id.z1}/requirements`, "ana");
+    expect(none.status, none.text).toBe(200);
+    expect(none.text).toBe('{"wordRange":null}');
+    const range = await get(`${id.z2}/requirements`, "ana");
+    expect(range.text).toBe('{"wordRange":{"min":800,"max":1200}}');
   });
 });

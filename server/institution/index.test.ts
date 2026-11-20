@@ -9,7 +9,7 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the body parsers, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10), the student's courses (SRV-09) and the assignment content (SRV-14)", () => {
+  it("exports only the body parsers, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10), the student's courses (SRV-09), the assignment content (SRV-14) and the submission state and requirements reads (SRV-22)", () => {
     expect(Object.keys(area).sort()).toEqual([
       "MAX_ENROLLMENT_CODE_LENGTH",
       "WORK_TYPES",
@@ -25,6 +25,8 @@ describe("server/institution public interface", () => {
       "parseNoticeReadBody",
       "parseStudentEnrollmentBody",
       "readStudentAccessLog",
+      "readStudentRequirements",
+      "readStudentSubmission",
       "studentCoursesOf",
     ]);
   });

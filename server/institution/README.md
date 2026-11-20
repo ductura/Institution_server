@@ -19,6 +19,7 @@ Servis čita i piše kolegije i kodove upisa u glavnoj bazi samo kroz port `serv
 - `parseCourseBody(value)` i tipove `CourseBody` i `AiPolicy` (`schemas.ts`); funkcija nikad ne baca i vraća novi objekt s točno tri ključa;
 - `parseEnrollmentCodeBody(value)` i tip `EnrollmentCodeBody` (`schemas.ts`); nikad ne baca i vraća novi objekt s točno ključem `validUntil`;
 - `parseEnrollmentBody(value)` i tip `EnrollmentBody` (`schemas.ts`); nikad ne baca i vraća novi objekt s točno ključem `code`;
+- `readStudentSubmission(reader, token, assignmentId)` (`student-submission-route.ts`) i `readStudentRequirements(reader, token, assignmentId)` (`student-requirements-route.ts`), SRV-22: logika ruta `student.submission.get` i `student.assignment-requirements.get` nad portom `MySubmissionStateReader`. `potvrdeno` vraća pohranjenu potvrdu sastavljenu kao u predaji, tek kad je tekst vlastiti JCS, odgovara pohranjenom sažetku i imenuje ovaj zadatak i reviziju; inače 503. Tuđi, nepoznat i neispravan zadatak daju isti 404;
 - `createInstitutionService({ courses })` i tipove `InstitutionService` i `InvalidInput` (`service.ts`): `createCourse(token, value)`, `issueEnrollmentCode(token, courseId, value)` i `revokeEnrollmentCode(token, courseId)`; servis nikad ne baca.
 
 ## Što ne smije uvoziti
