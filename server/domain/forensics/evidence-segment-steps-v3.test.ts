@@ -59,8 +59,13 @@ function segment(format: string, content: JcsJsonValue[]): Record<string, JcsJso
 const text = { type: "text", text: "A" };
 
 describe("segment step format v3 (SRV-7F)", () => {
-  it("names exactly the formats v1 and v3", () => {
-    expect(EVIDENCE_TRANSACTION_FORMATS).toEqual([EDIT_STEP_FORMAT_V1, EDIT_STEP_FORMAT_V3]);
+  // SRV-10E added v4 at the end; evidence-segment-steps-v4.test.ts reads it.
+  it("names exactly the formats v1, v3 and v4", () => {
+    expect(EVIDENCE_TRANSACTION_FORMATS).toEqual([
+      EDIT_STEP_FORMAT_V1,
+      EDIT_STEP_FORMAT_V3,
+      "ductus-edit-steps-v4",
+    ]);
   });
 
   it.each([
@@ -89,7 +94,8 @@ describe("segment step format v3 (SRV-7F)", () => {
     ],
     ["text under format v2", "ductus-edit-steps-v2", [text]],
     ["text under a format in capitals", EDIT_STEP_FORMAT_V3.toUpperCase(), [text]],
-    ["text under format v4", "ductus-edit-steps-v4", [text]],
+    // "text under format v4" moved to evidence-segment-steps-v4.test.ts, where
+    // it is judged by the document's parser of v4 steps (SRV-10E).
   ])("refuses %s", (_, format, content) => {
     expect(isEvidenceSegment(segment(format, content as JcsJsonValue[]))).toBe(false);
   });

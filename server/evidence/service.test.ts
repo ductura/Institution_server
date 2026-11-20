@@ -19,6 +19,9 @@ import {
   isEvidenceSegment,
   MAX_DOCUMENT_SNAPSHOT_BYTES,
   MAX_EVIDENCE_SEGMENT_BYTES,
+  parseEditSteps,
+  REVISION_ZERO_V4_SHA256,
+  verifyVersionedDocumentSnapshot,
 } from "../domain/index.ts";
 
 import { createEvidenceService, type EvidenceCommitRequest } from "./service.ts";
@@ -106,7 +109,15 @@ const snake = (row: Record<string, unknown>) =>
     ]),
   );
 
-function setup(contextRow: Record<string, unknown> = CONTEXT_ROW, revisionZero = V1_ZERO) {
+/**
+ * `workVersion` stands in for the version the database lane will read from a
+ * v4 revision 0 (SRV-10E): until it reads one, a v4 work is context_malformed.
+ */
+function setup(
+  contextRow: Record<string, unknown> = CONTEXT_ROW,
+  revisionZero = V1_ZERO,
+  workVersion?: number,
+) {
   const queries: { kind: string; values: readonly unknown[] }[] = [];
   const zeroReads: { kind: string; values: readonly unknown[] }[] = [];
   const withActor: WithActor = async (_token, fn) => {
@@ -135,11 +146,21 @@ function setup(contextRow: Record<string, unknown> = CONTEXT_ROW, revisionZero =
     putImmutable: vi.fn(async () => ({ status: "stored" as const, storageRef: "memory:put-ref" })),
     storageRefFor: vi.fn(async () => ({ status: "ok" as const, storageRef: "memory:known-ref" })),
   };
+  const real = createEvidenceCommitter(withActor, refusingSigner);
+  const committer: typeof real =
+    workVersion === undefined
+      ? real
+      : {
+          ...real,
+          async readContext(...args) {
+            const read = await real.readContext(...args);
+            if (read.status !== "ok") return read;
+            const documentSchemaVersion = workVersion as typeof read.context.documentSchemaVersion;
+            return { ...read, context: { ...read.context, documentSchemaVersion } };
+          },
+        };
   const run = (request: Partial<EvidenceCommitRequest> = {}) =>
-    createEvidenceService({
-      committer: createEvidenceCommitter(withActor, refusingSigner),
-      payloads,
-    }).commit("t", { ...REQUEST, ...request });
+    createEvidenceService({ committer, payloads }).commit("t", { ...REQUEST, ...request });
   return { run, queries, payloads, zeroReads };
 }
 
@@ -513,6 +534,107 @@ describe("createEvidenceService().commit by the version of the work", () => {
   it("is unavailable, storing nothing, when the work's revision 0 names no version", async () => {
     const { run, queries, payloads } = setup(CONTEXT_ROW, "c".repeat(64));
     expect(await run()).toEqual({
+      status: "unavailable",
+      stage: "context",
+      code: "context_malformed",
+    });
+    expect(payloads.putImmutable).not.toHaveBeenCalled();
+    expect(queries.some((q) => q.kind === "commit")).toBe(false);
+  });
+});
+
+// SRV-10E (docs/contracts/document-schema-v4.md §9 t. 9, §10): v4 steps and a
+// v4 snapshot only on a v4 work, and a v4 work takes no other; each refusal
+// comes before anything is stored. The steps of the golden segment are text,
+// so under -v4 they pass exactly when the document's v4 parser reads them.
+describe("createEvidenceService().commit by the version of the work, v4", () => {
+  const { documentsV4 } = JSON.parse(
+    readFileSync(new URL("../domain/document/golden-vectors-v4.json", import.meta.url), "latin1"),
+  ) as { documentsV4: { name: string; utf8Hex: string }[] };
+  const V4_DOCUMENTS = documentsV4.map((d) => Buffer.from(d.utf8Hex, "hex").toString("utf8"));
+  const V4_DOCUMENT = V4_DOCUMENTS.at(-1)!;
+  const V3_DOCUMENT = canonicalizeJcs({
+    schemaVersion: 3,
+    nodes: [
+      {
+        type: "paragraph",
+        id: "11111111-1111-4111-8111-111111111111",
+        children: [{ type: "text", text: "Izmišljeni odlomak.", marks: [] }],
+      },
+    ],
+    sources: [],
+  });
+  const V1_TEXT = new TextDecoder().decode(DOCUMENT);
+  const ending = (text: string, format: string) => {
+    const hash = createHash("sha256").update(text, "utf8").digest("hex");
+    const events = golden.segment.events.map((event, i, all) =>
+      i === all.length - 1 ? { ...event, afterDocumentHash: hash } : event,
+    );
+    return {
+      segment: segmentWith({
+        finalDocumentHash: hash,
+        events,
+        captureContext: { editorModel: "prosemirror", transactionFormat: format },
+      }),
+      document: new TextEncoder().encode(text),
+    };
+  };
+  const V1_STEPS = "ductus-edit-steps-v1";
+  const V3_STEPS = "ductus-edit-steps-v3";
+  const V4_STEPS = "ductus-edit-steps-v4";
+  const goldenStepsAreV4 = golden.segment.events.every(
+    (event) => parseEditSteps(V4_STEPS, event.steps).ok,
+  );
+
+  it("has golden v4 documents the domain takes", async () => {
+    expect(V4_DOCUMENTS.length).toBeGreaterThan(0);
+    for (const text of V4_DOCUMENTS) {
+      const verified = await verifyVersionedDocumentSnapshot(new TextEncoder().encode(text));
+      expect(verified.ok && verified.document.schemaVersion).toBe(4);
+    }
+  });
+
+  it.each([
+    ["v4 steps on a v1 work", V1_ZERO, 1, V1_TEXT, V4_STEPS],
+    ["v4 steps on a v2 work", V2_ZERO, 2, V1_TEXT, V4_STEPS],
+    ["v4 steps on a v3 work", V3_ZERO, 3, V3_DOCUMENT, V4_STEPS],
+    ["v4 steps and a v4 snapshot on a v3 work", V3_ZERO, 3, V4_DOCUMENT, V4_STEPS],
+    ["v1 steps and a v4 snapshot on a v1 work", V1_ZERO, 1, V4_DOCUMENT, V1_STEPS],
+    ["v1 steps and a v4 snapshot on a v2 work", V2_ZERO, 2, V4_DOCUMENT, V1_STEPS],
+    ["v3 steps and a v4 snapshot on a v3 work", V3_ZERO, 3, V4_DOCUMENT, V3_STEPS],
+    ["v1 steps on a v4 work", V1_ZERO, 4, V4_DOCUMENT, V1_STEPS],
+    ["v3 steps on a v4 work", V1_ZERO, 4, V4_DOCUMENT, V3_STEPS],
+    ["v4 steps and a v3 snapshot on a v4 work", V1_ZERO, 4, V3_DOCUMENT, V4_STEPS],
+    ["v4 steps and a v1 snapshot on a v4 work", V1_ZERO, 4, V1_TEXT, V4_STEPS],
+    ["v1 steps on a work of version 5", V1_ZERO, 5, V1_TEXT, V1_STEPS],
+  ])("refuses %s as invalid before anything is stored", async (_, zero, version, text, format) => {
+    const { run, queries, payloads } = setup(CONTEXT_ROW, zero, version);
+    expect(await run(ending(text, format))).toEqual({ status: "invalid" });
+    expect(payloads.putImmutable).not.toHaveBeenCalled();
+    expect(queries.some((q) => q.kind === "commit")).toBe(false);
+  });
+
+  it.each(V4_DOCUMENTS.map((text, i) => [documentsV4[i]!.name, text]))(
+    "takes v4 steps and the v4 snapshot %s on a v4 work exactly when the steps are v4",
+    async (_, text) => {
+      const { run, queries, payloads } = setup(CONTEXT_ROW, V1_ZERO, 4);
+      const outcome = await run(ending(text, V4_STEPS));
+      if (goldenStepsAreV4) {
+        expect(outcome.status).toBe("stale_base");
+        expect(payloads.putImmutable).toHaveBeenCalledOnce();
+        expect(queries.find((q) => q.kind === "commit")?.values.at(-1)).toBe(text);
+      } else {
+        // Until the document reads ductus-edit-steps-v4 (SRV-10A §11 t. 5).
+        expect(outcome).toEqual({ status: "invalid" });
+        expect(payloads.putImmutable).not.toHaveBeenCalled();
+      }
+    },
+  );
+
+  it("is unavailable, storing nothing, while the database names no v4 work", async () => {
+    // A v4 revision 0 is not one of the hashes the database lane reads yet.
+    const { run, queries, payloads } = setup(CONTEXT_ROW, REVISION_ZERO_V4_SHA256);
+    expect(await run(ending(V4_DOCUMENT, V4_STEPS))).toEqual({
       status: "unavailable",
       stage: "context",
       code: "context_malformed",

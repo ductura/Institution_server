@@ -12,8 +12,8 @@ import type {
   EvidenceCommitter,
 } from "../database/index.ts";
 import {
-  EDIT_STEP_FORMAT_V3,
   type EvidenceSegmentDescriptorV2,
+  evidenceTransactionFormatOfWork,
   exceedsEvidenceSegmentLimit,
   isEvidenceSegmentDescriptorV2,
   isReceiptClientTransactionId,
@@ -103,14 +103,16 @@ async function prepareAndCommit(
     return { status: "invalid" };
   }
   if (verified.byteLength > context.maxPayloadBytes) return { status: "too_large" };
-  // SRV-7F (contract v3 §5 t. 7, §7): the step format is the work's, judged
-  // against its revision 0: ductus-edit-steps-v3 only on a v3 work, and a v3
-  // work takes no other; v1 and v2 works keep ductus-edit-steps-v1.
-  const v3Steps = s.captureContext.transactionFormat === EDIT_STEP_FORMAT_V3;
-  if (v3Steps !== (context.documentSchemaVersion === 3)) return { status: "invalid" };
+  // SRV-7F, SRV-10E (contract v3 §5 t. 7, §7; v4 §9 t. 9): the step format is
+  // the work's, judged against its revision 0: ductus-edit-steps-v1 on a v1 or
+  // v2 work, -v3 only on a v3 work and -v4 only on a v4 work; none takes another.
+  const stepFormat = evidenceTransactionFormatOfWork(context.documentSchemaVersion);
+  if (stepFormat === null || s.captureContext.transactionFormat !== stepFormat) {
+    return { status: "invalid" };
+  }
 
-  // t. 3.4: the snapshot is the document the segment ends in, of schema 1, 2
-  // or 3, and of the work's own version (SRV-7F): refused here, before
+  // t. 3.4: the snapshot is the document the segment ends in, of schema 1 to
+  // 4, and of the work's own version (SRV-7F, SRV-10E): refused here, before
   // storage, as the database would refuse it at the end (document v2 §7 t. 4).
   const snapshot = await verifyVersionedDocumentSnapshot(document);
   if (!snapshot.ok) return { status: snapshot.reason };
