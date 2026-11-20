@@ -395,3 +395,107 @@ export function footnoteNode(text: string): FootnoteNode {
 export function crossReferenceNode(targetId: NodeId): CrossReferenceNode {
   return { type: "crossReference", targetId };
 }
+
+// ---------------------------------------------------------------------------
+// Document v4 (docs/contracts/document-schema-v4.md §1 to §4). Read by
+// `validateDocumentV4` only until the consumers take v4 (contract §11); it
+// is not yet in `DOCUMENT_BLOCK_TYPES_BY_VERSION` or `VersionedDocument`.
+
+export const DOCUMENT_SCHEMA_VERSION_V4 = 4;
+
+/** Longest `tex` of a block formula and of an inline formula (§4.1). */
+export const MAX_FORMULA_TEX_CODE_POINTS = 4000;
+export const MAX_INLINE_FORMULA_TEX_CODE_POINTS = 1000;
+/** Longest `caption` of a code block (§4.2). */
+export const MAX_CODE_CAPTION_CODE_POINTS = 300;
+/** Longest `href` of a link mark (§3). */
+export const MAX_LINK_HREF_LENGTH = 2048;
+
+export const CODE_LANGUAGES = ["c", "html", "java", "javascript", "python", "r", "sql"] as const;
+export type CodeLanguage = (typeof CODE_LANGUAGES)[number];
+
+export const BOX_KINDS = [
+  "definition",
+  "theorem",
+  "lemma",
+  "corollary",
+  "example",
+  "remark",
+  "proof",
+] as const;
+export type BoxKind = (typeof BOX_KINDS)[number];
+
+export type HighlightMark = { color: string; type: "highlight" };
+export type LangMark = { lang: string; type: "lang" };
+export type LinkMark = { href: string; type: "link" };
+export type PasteMark = { pasteId: string; sourceId?: SourceId; type: "paste" };
+
+/** A mark without attributes is a string, one with attributes an object (§3). */
+export type MarkV4 =
+  Mark | "sup" | "sub" | "imported" | HighlightMark | LangMark | LinkMark | PasteMark;
+
+/** Canonical order of mark types (§3); each type appears at most once. */
+export const MARK_V4_ORDER = [
+  "bold",
+  "italic",
+  "sup",
+  "sub",
+  "highlight",
+  "lang",
+  "link",
+  "paste",
+  "imported",
+] as const;
+export type MarkV4Type = (typeof MARK_V4_ORDER)[number];
+
+export function markV4Type(mark: MarkV4): MarkV4Type {
+  return typeof mark === "string" ? mark : mark.type;
+}
+
+export type TextNodeV4 = { type: "text"; text: string; marks: MarkV4[] };
+export type InlineFormulaNode = { type: "inlineFormula"; tex: string };
+export type InlineNodeV4 =
+  TextNodeV4 | CitationNodeV3 | FootnoteNode | CrossReferenceNode | InlineFormulaNode;
+
+export type ParagraphNodeV4 = {
+  type: "paragraph";
+  id: NodeId;
+  children: InlineNodeV4[];
+  variantGroup?: string;
+};
+export type HeadingNodeV4 = {
+  type: "heading";
+  id: NodeId;
+  level: HeadingLevel;
+  children: TextNodeV4[];
+};
+export type BulletItemNodeV4 = { type: "bulletItem"; id: NodeId; children: InlineNodeV4[] };
+export type QuoteNodeV4 = { type: "quote"; id: NodeId; children: InlineNodeV4[] };
+/** Text only, every text node with `marks: []` (§4.2). */
+export type CodeBlockNode = {
+  type: "codeBlock";
+  id: NodeId;
+  children: TextNodeV4[];
+  language?: CodeLanguage;
+  caption?: string;
+};
+/** The only nesting of v4: one or more paragraphs (§4.3). */
+export type BoxNode = { type: "box"; id: NodeId; kind: BoxKind; children: ParagraphNodeV4[] };
+export type FormulaNode = { type: "formula"; id: NodeId; tex: string };
+export type PageBreakNode = { type: "pageBreak"; id: NodeId };
+
+export type DocumentNodeV4 =
+  | ParagraphNodeV4
+  | HeadingNodeV4
+  | BulletItemNodeV4
+  | QuoteNodeV4
+  | CodeBlockNode
+  | BoxNode
+  | FormulaNode
+  | PageBreakNode;
+
+export type CanonicalDocumentV4 = {
+  schemaVersion: typeof DOCUMENT_SCHEMA_VERSION_V4;
+  nodes: DocumentNodeV4[];
+  sources: DocumentSource[];
+};

@@ -2,11 +2,13 @@ import {
   DOCUMENT_SCHEMA_VERSION,
   DOCUMENT_SCHEMA_VERSION_V2,
   DOCUMENT_SCHEMA_VERSION_V3,
+  DOCUMENT_SCHEMA_VERSION_V4,
   newNodeId,
   paragraphNode,
   type CanonicalDocument,
   type CanonicalDocumentV2,
   type CanonicalDocumentV3,
+  type CanonicalDocumentV4,
   type NodeId,
 } from "./schema.ts";
 
@@ -84,3 +86,27 @@ export const REVISION_ZERO_V3_JCS =
  */
 export const REVISION_ZERO_V3_SHA256 =
   "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
+
+/**
+ * Revision 0 of a work of document v4 (docs/contracts/document-schema-v4.md
+ * §10): the v3 revision 0 with `schemaVersion: 4` and no `cover`. No work is
+ * opened with it yet.
+ */
+export function revisionZeroDocumentV4(): CanonicalDocumentV4 {
+  return {
+    schemaVersion: DOCUMENT_SCHEMA_VERSION_V4,
+    nodes: [{ type: "paragraph", id: REVISION_ZERO_NODE_ID, children: [] }],
+    sources: [],
+  };
+}
+
+/** Exact JCS text (RFC 8785) of the v4 revision 0. */
+export const REVISION_ZERO_V4_JCS =
+  '{"nodes":[{"children":[],"id":"00000000-0000-4000-8000-000000000000","type":"paragraph"}],"schemaVersion":4,"sources":[]}';
+
+/**
+ * SHA-256 of the UTF-8 bytes of `REVISION_ZERO_V4_JCS`, lowercase hex, as the
+ * contract writes it (computed with `sha256sum`), never recomputed here.
+ */
+export const REVISION_ZERO_V4_SHA256 =
+  "52da86d9b1344b46cf3028d3cf891bbc78a70a860b4c4e481c792a77b66557d5";
