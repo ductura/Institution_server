@@ -151,6 +151,17 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/domain/forensics/evidence-timing-v1.ts": ["TextDecoder"],
   "server/domain/forensics/evidence-receipt-verifier.ts": ["atob"],
   "server/domain/forensics/submission-receipt-verifier-v2.ts": ["atob"],
+  // Bodies of the Ductus backend copy, strict UTF-8 before JSON.parse: comments,
+  // revision requests, the evidence ingest, the process summary, the fast path
+  // and the new assignment.
+  "server/collaboration/comments.ts": ["TextDecoder"],
+  "server/collaboration/revision-requests.ts": ["TextDecoder"],
+  "server/evidence/ingest-http.ts": ["TextDecoder"],
+  "server/projection/process-summary.ts": ["TextDecoder"],
+  "server/teacher/fast-path.ts": ["TextDecoder"],
+  "server/institution/create-assignment.ts": ["TextDecoder"],
+  // The verified segment payloads of the process summary as text (Ductus copy, as evidence/replay.ts).
+  "server/projection/process-summary-reader.ts": ["TextDecoder"],
   // The contract fake server reads request bodies and paths (test code, U8).
   "server/contracts/generated/fake-server/index.ts": ["TextDecoder", "decodeURIComponent"],
 };
