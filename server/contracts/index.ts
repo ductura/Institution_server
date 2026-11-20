@@ -17,6 +17,7 @@ import {
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   settingsRoutes,
+  sourceLookupPost,
   studentRoutes,
   supportRoutes,
   teacherRoutes,
@@ -38,6 +39,7 @@ export {
   TOO_MANY_REQUESTS,
 };
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
+export { sourceLookupPost };
 export {
   CLIENT_APP_VERSION_PATTERN,
   CLIENT_CONTEXT_VALUES,
@@ -79,6 +81,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherRoutes,
   ...settingsRoutes,
   ...downloadsRoutes,
+  sourceLookupPost,
 ];
 
 /**
