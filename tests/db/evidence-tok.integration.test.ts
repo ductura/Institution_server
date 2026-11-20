@@ -350,6 +350,8 @@ type Opened = {
   currentRevision: number;
   headSegmentHash: string | null;
   lastSequenceTo: number;
+  schemaVersion: number;
+  revisionZeroHash: string;
   receiptKeys: EvidenceDomainKey[];
 };
 type Segment = Record<string, unknown> & { events: Record<string, unknown>[] };
@@ -497,7 +499,16 @@ async function wholeFlow(session: string, make: (start: Start) => Document) {
     currentRevision: opened.currentRevision + 1,
     documentHash: hash,
     headSegmentHash: sha256(segment),
+    // SRV-7F: a later revision still names the version and revision 0 of the work.
+    schemaVersion: opened.schemaVersion,
+    revisionZeroHash: opened.revisionZeroHash,
   });
+  // The revision 0 hashes as the contracts write them (v1 and v2 works here).
+  expect(reopened.revisionZeroHash).toBe(
+    opened.schemaVersion === 2
+      ? "8f8aa5047daa07e8d68f4952aa70ab3c671eccdf6191bfaf6dcba591735f2618"
+      : "a102ced8a59b446a86c135c8d87d3ddf9f889e4ac93bcbc1857cd7c2c73ad14b",
+  );
   expect(Buffer.from(reopened.document, "base64").toString("utf8")).toBe(content.document);
   return { start: startOf(opened), content };
 }

@@ -293,8 +293,13 @@ describe("Ductus open-route: the route over the real opener", () => {
     valid_to: null,
     revoked_at: null,
   };
+  // SRV-7F: the v3 revision 0 as contract v3 §6 writes it.
+  const V3_ZERO = "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141";
   const seen: { text: string; values: readonly unknown[] | undefined }[] = [];
-  function realOpener(submitted: Record<string, unknown>[]) {
+  function realOpener(
+    submitted: Record<string, unknown>[],
+    revisionZero: Record<string, unknown>[] = [{ content_hash: V3_ZERO }],
+  ) {
     seen.length = 0;
     const withActor = (async (_token, fn) => {
       const tx: ActorTransaction = {
@@ -304,9 +309,11 @@ describe("Ductus open-route: the route over the real opener", () => {
             ? [OPENED]
             : text.includes("work_submitted")
               ? submitted
-              : text.includes("evidence.package")
-                ? [{ evidence_domain_id: DOMAIN }]
-                : [KEY];
+              : text.includes("evidence.document_revision")
+                ? revisionZero
+                : text.includes("evidence.package")
+                  ? [{ evidence_domain_id: DOMAIN }]
+                  : [KEY];
           return { rows: rows as never[], rowCount: rows.length };
         },
       };
@@ -330,6 +337,8 @@ describe("Ductus open-route: the route over the real opener", () => {
       currentRevision: 2,
       headSegmentHash: "b".repeat(64),
       lastSequenceTo: 7,
+      schemaVersion: 3,
+      revisionZeroHash: V3_ZERO,
       receiptKeys: [expect.objectContaining({ keyId: "kljuc-r", purpose: "receipt" })],
       submitted: false,
     });
@@ -337,6 +346,7 @@ describe("Ductus open-route: the route over the real opener", () => {
     expect(seen.map((q) => q.values)).toEqual([
       [A1, false],
       [A1],
+      ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       [DOMAIN],
     ]);
@@ -354,6 +364,17 @@ describe("Ductus open-route: the route over the real opener", () => {
       expect(seen[0]?.values).toEqual([A1, true]);
     },
   );
+
+  // SRV-7F: a revision 0 that names no version is no answer, never a guessed one.
+  it.each([
+    ["no revision 0", []],
+    ["a hash that is no revision 0", [{ content_hash: "c".repeat(64) }]],
+  ])("is 503 context when the work has %s", async (_name, rows) => {
+    realOpener([{ submitted: false }], rows);
+    const answer = await post(`{"assignmentId":"${A1}"}`);
+    expect(answer.status).toBe(503);
+    expect(JSON.parse(answer.body)).toEqual({ status: "unavailable", stage: "context" });
+  });
 
   it.each([
     ["a string", [{ submitted: "true" }]],

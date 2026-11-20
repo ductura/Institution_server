@@ -12,6 +12,7 @@
 // (review FAIL c.6947022168 on ductura/server#242).
 import { type AppError, isEvidenceDomainId, isSha256Hex, type Result } from "../domain/index.ts";
 
+import { type DocumentSchemaVersion, readWorkVersion } from "./evidence-work-version.ts";
 import type { ActorTransaction, WithActor } from "./with-actor.ts";
 
 /** A public receipt key of the work's evidence domain, as the contract sends it. */
@@ -35,6 +36,10 @@ export type OpenedWork = {
   documentHash: string;
   headSegmentHash: string | null;
   lastSequenceTo: number;
+  /** SRV-7F: the version of revision 0, and so of the work (contract v3 §7). */
+  schemaVersion: DocumentSchemaVersion;
+  /** SRV-7F: SHA-256 of revision 0 as the database recorded it, at every revision. */
+  revisionZeroHash: string;
   /** The snapshot of currentRevision as the database holds it (JCS text). */
   snapshot: string;
   receiptKeys: ReceiptKey[];
@@ -200,6 +205,11 @@ async function open(
   const submittedRows = await tx.query<Row>(SUBMITTED_SQL, [assignmentId]);
   const submitted = submittedRows.rows.length === 1 ? submittedRows.rows[0]?.submitted : undefined;
   if (typeof submitted !== "boolean") return malformed();
+  // SRV-7F: the version is the server's record of revision 0; at revision 0
+  // the snapshot the work opens with is that revision, so the hashes agree.
+  const version = await readWorkVersion(tx, row.document_id);
+  if (version === null) return malformed();
+  if (currentRevision === 0 && row.document_hash !== version.revisionZeroHash) return malformed();
   const domain = await tx.query<Row>(DOMAIN_SQL, [row.document_id]);
   const domainId = domain.rows[0]?.evidence_domain_id;
   // The id comes from the server's own package row; another form is a fault.
@@ -215,6 +225,8 @@ async function open(
       documentHash: row.document_hash,
       headSegmentHash: row.head_segment_hash,
       lastSequenceTo,
+      schemaVersion: version.schemaVersion,
+      revisionZeroHash: version.revisionZeroHash,
       snapshot: row.snapshot,
       receiptKeys: keys,
       submitted,

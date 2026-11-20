@@ -43,6 +43,7 @@ export type {
   ReceiptSigner,
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
+export type { DocumentSchemaVersion, WorkVersion } from "./evidence-work-version.ts";
 export type { InterfaceLocaleStore } from "./interface-locale.ts";
 export {
   createProblemReportStore,

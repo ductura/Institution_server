@@ -2,7 +2,8 @@
 // Ductus src/server/evidence/open-route.ts at 078c780: the student's work for
 // one assignment, made only on `"start": true`, with its current state, the
 // snapshot of the current revision and the public receipt keys of its
-// evidence domain. Package and institution never leave the server. Method is
+// evidence domain. SRV-7F: also the work's confirmed document version and the
+// server's hash of its revision 0, at every revision (contract v3 §7). Package and institution never leave the server. Method is
 // the router's and Origin pipeline step 7 (docs/vs1-rute.md).
 import { ROUTES } from "../contracts/index.ts";
 import {
@@ -73,6 +74,8 @@ function answerOf(opened: OpenWorkResult): EvidenceAnswer | { readonly body: unk
     documentHash: work.documentHash,
     headSegmentHash: work.headSegmentHash,
     lastSequenceTo: work.lastSequenceTo,
+    schemaVersion: work.schemaVersion,
+    revisionZeroHash: work.revisionZeroHash,
     document: Buffer.from(snapshot, "utf8").toString("base64"),
     receiptKeys: work.receiptKeys,
     submitted: work.submitted,
