@@ -196,6 +196,33 @@ export function sendRouteRefusal(
 }
 
 /**
+ * A response the route's own contract declares with a status of 400 or more
+ * and a body that is not a problem (live.document.put 409 {outcome, token}).
+ * Only a response of this contract, with a body its schema takes, is
+ * answered; anything else answers 500 internal. Headers are cleared as by
+ * sendProblem.
+ */
+export function sendDeclaredResponse(
+  response: ServerResponse,
+  contract: RouteContract,
+  status: number,
+  body: Readonly<Record<string, unknown>>,
+): void {
+  const spec = contract.responses.find((r) => r.status === status);
+  const schema = spec?.body;
+  if (status < 400 || typeof schema !== "object" || !Value.Check(schema, body)) {
+    sendProblem(response, INTERNAL.error.status, INTERNAL.error.code);
+    return;
+  }
+  for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
+  response.addTrailers({});
+  response.statusMessage = STATUS_CODES[status] ?? "";
+  answering.add(response);
+  requestIdOf(response);
+  writeJson(response, status, body);
+}
+
+/**
  * An error of an internal server-to-server route (internal-institutions.ts;
  * contract Ductus#2028 c.6993786629 §2), whose body is {greska, ...} instead
  * of a problem, or no body at all (401, 404, 503). Only an error the route's

@@ -9,15 +9,17 @@ import type {
 } from "./index.ts";
 
 describe("server/institution public interface", () => {
-  it("exports only the body parsers, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10), the student's courses (SRV-09), the assignment content (SRV-14) and the submission state and requirements reads (SRV-22)", () => {
+  it("exports only the notice template version, the body parsers, the service factory, the access log read (SRV-11), the student's write bodies (SRV-10), the student's courses (SRV-09), the assignment content (SRV-14) and the submission state and requirements reads (SRV-22)", () => {
     expect(Object.keys(area).sort()).toEqual([
       "MAX_ENROLLMENT_CODE_LENGTH",
+      "NOTICE_TEMPLATE_VERSION",
       "WORK_TYPES",
       "accessLogCursorOf",
       "createInstitutionService",
       "createStudentNotes",
       // SRV-14: the content of an assignment version (assignment-input.ts).
       "isAssignmentVersion",
+      "parseAcknowledgmentBody",
       "parseAssignmentInput",
       "parseAssignmentVersionBody",
       "parseAssignmentWorkLanguageBody",
@@ -27,6 +29,7 @@ describe("server/institution public interface", () => {
       "parseNoticeReadBody",
       "parseStudentEnrollmentBody",
       "parseWorkLanguageExceptionBody",
+      "readAssignmentCurrentVersion",
       "readStudentAccessLog",
       "readStudentRequirements",
       "readStudentSubmission",

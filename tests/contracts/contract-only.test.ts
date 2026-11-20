@@ -21,9 +21,12 @@ import {
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
   createInstitutionAssignmentRoutesFor,
+  createAssignmentCurrentVersionRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createLiveRoutesFor,
+  createAcknowledgmentRouteFor,
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
@@ -160,6 +163,7 @@ const FROZEN: readonly string[] = [
 // out, is not a mount.
 const NO_WRITER: SettingsWriter = { setValue: () => Promise.reject(new Error("no writer")) };
 const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
+const NO_READER = {} as ActorReader;
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
   {
@@ -207,6 +211,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createInstitutionAssignmentRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createAssignmentCurrentVersionRouteFor(databases.main)",
+    ids: ["institution.assignment.get"],
+    routes: () => [createAssignmentCurrentVersionRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-12: the administrator's course over the main database.
     call: "createAdminCourseRouteFor(databases.main)",
     ids: ["institution.admin-courses.post"],
@@ -227,6 +236,20 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createTeacherReadRoutesFor(databases.main)",
     ids: [...TEACHER_READ_ROUTES],
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // Ductus#2028 (w1119o): the live view over the main database.
+    call: "createLiveRoutesFor(databases.main)",
+    ids: ["live.document.get", "live.document.put"],
+    routes: () =>
+      createLiveRoutesFor({ ...NO_ACTOR, actorReader: NO_READER }).map(
+        (route) => route.contract.id,
+      ),
+  },
+  {
+    call: "createAcknowledgmentRouteFor(databases.main)",
+    ids: ["institution.acknowledgment.post"],
+    routes: () => [createAcknowledgmentRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-18: a student's submission over the process's signer and storage.
@@ -359,9 +382,13 @@ describe("CONTRACT_ONLY", () => {
         ...[...DAN_806, ...DAN_840, ...DAN_989, ...DAN_931],
         ...["institution.admin-courses.post", "institution.course-groups.get"],
         ...["institution.course-groups.post", "institution.course-group-teachers.post"],
+        "institution.assignment.get",
         ...["student.submission.get", "student.assignment-requirements.get"],
         "student.submission-notes.get",
         "student.submission-notes.post",
+        "live.document.get",
+        "live.document.put",
+        "institution.acknowledgment.post",
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -392,11 +419,15 @@ describe("routes the entry point mounts itself", () => {
       ...INSTITUTION_COURSE_ROUTES,
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
+      "institution.assignment.get",
       "institution.admin-courses.post",
       "institution.course-groups.get",
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      "live.document.get",
+      "live.document.put",
+      "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",
       "student.submission.get",

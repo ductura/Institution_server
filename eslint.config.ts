@@ -248,6 +248,11 @@ const DATABASE_NAMES = [
   "assignment_id",
   "mentorship_id",
   "requested_minute",
+  // Result column of the live view publish (live-state.ts) and its tests.
+  "write_token",
+  // Result columns of the notice acknowledgment port and its tests.
+  "acknowledged_at",
+  "notice_fingerprint",
   // Result column of the replay source (replay-source.ts, DAN-818) and its tests.
   "segment_hashes",
   // Result columns of the WebAuthn credential port (webauthn-credentials.ts, DAN-840) and its tests.

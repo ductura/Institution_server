@@ -275,6 +275,15 @@ export function fakeJournalScope(accountId: string): string {
     .digest("hex");
 }
 
+/**
+ * The invented session tag of a fake session (profile.me.get sessionTag): a
+ * new one for every role switch, the same within a session, as the real
+ * server's accountSessionTag. Never a real identifier.
+ */
+export function fakeSessionTag(token: string): string {
+  return createHash("sha256").update(`ductura-fake-session-tag-v1\n${token}`, "utf8").digest("hex");
+}
+
 function account(
   key: AccountKey,
   id: string,

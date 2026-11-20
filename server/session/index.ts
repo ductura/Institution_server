@@ -27,6 +27,8 @@ export type {
   WithActor,
 } from "../database/index.ts";
 export {
+  ACCOUNT_SESSION_TAG_LABEL,
+  accountSessionTag,
   PRINCIPAL_SCOPE_LABEL,
   principalScope,
   SESSION_TAG_LABEL,

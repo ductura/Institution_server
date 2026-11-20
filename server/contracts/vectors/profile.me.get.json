@@ -16,7 +16,8 @@
           "institution": { "slug": "demo-fakultet", "displayName": "Demo fakultet (test)" },
           "roles": ["student"],
           "displayName": "Ana Primjer",
-          "journalScope": "4e84fd38a2f8f663661b8e1b2fc52bad9b9da56f8accead18bfd24ca20b96d12"
+          "journalScope": "4e84fd38a2f8f663661b8e1b2fc52bad9b9da56f8accead18bfd24ca20b96d12",
+          "sessionTag": "c87c2b8c6e066e9f0b3ddbb338a2188630c0364f769518a616173518dc6c603f"
         }
       }
     },
@@ -35,7 +36,8 @@
           "institution": { "slug": "demo-fakultet", "displayName": null },
           "roles": ["institution_admin", "teacher"],
           "displayName": null,
-          "journalScope": "c3c10a7bd4a52fae73329070fefa320aa45810a01f113936745f05b769698a45"
+          "journalScope": "c3c10a7bd4a52fae73329070fefa320aa45810a01f113936745f05b769698a45",
+          "sessionTag": "20b16d54e309bb495b4d7e1b3a4a15de55a95f76ec4646500be44fac8111dc1b"
         }
       }
     },

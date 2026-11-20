@@ -79,6 +79,19 @@ export {
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
+  ACKNOWLEDGMENT_BODY_TIMEOUT_MS,
+  type AcknowledgmentRouteOptions,
+  createAcknowledgmentRoute,
+  createAcknowledgmentRouteFor,
+} from "./acknowledgment.ts";
+export {
+  createLiveRoutes,
+  createLiveRoutesFor,
+  LIVE_BODY_TIMEOUT_MS,
+  LIVE_STATE_HEADER,
+  type LiveRouteOptions,
+} from "./live.ts";
+export {
   createSubmissionRoute,
   createSubmissionRouteFor,
   SUBMISSION_MAX_BYTES,
@@ -105,6 +118,7 @@ export {
   knownError,
   problemOf,
   sendHtmlProblem,
+  sendDeclaredResponse,
   sendProblem,
   sendRouteRefusal,
   type Problem,
@@ -170,6 +184,7 @@ export {
   createInstitutionAssignmentRoutes,
   createInstitutionAssignmentRoutesFor,
 } from "./institution-assignments.ts";
+export { createAssignmentCurrentVersionRouteFor } from "./assignment-current-version.ts";
 export {
   createTeacherAccessRoute,
   createTeacherCoursesRoute,

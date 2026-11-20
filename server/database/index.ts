@@ -73,6 +73,11 @@ export type {
   AssignmentSubmissionsReader,
 } from "./assignment-submissions.ts";
 export type {
+  NoticeAcknowledgmentOutcome,
+  NoticeAcknowledgments,
+} from "./notice-acknowledgment.ts";
+export type { LivePublishOutcome, LiveReadOutcome, LiveStates } from "./live-state.ts";
+export type {
   MentoredWork,
   MentoredWorkOutcome,
   MentoredWorksOutcome,
@@ -235,6 +240,8 @@ export { createInstitutionMembers } from "./institution-members.ts";
 export { createWorkLanguages } from "./work-language.ts";
 export { createAssignmentSubmissionsReader } from "./assignment-submissions.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
+export { createLiveStates } from "./live-state.ts";
+export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";
 export {
   createInstitutionEnrollment,
   ENROLLMENT_DATABASE_ERROR,

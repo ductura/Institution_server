@@ -5,10 +5,12 @@
 // language GET: one well-formed live session cookie, and Sec-Fetch-Site, when
 // sent, must be same-origin (the pipeline checks only state-changing methods).
 // journalScope is principalScope of the internal ids (SRV-JS, Ductus#2028
-// c.7020997158): the ids themselves never leave the server.
+// c.7020997158): the ids themselves never leave the server. sessionTag is
+// accountSessionTag of the live token (SRV-ST, c.7023897577), sent only after
+// the database has confirmed the session.
 import { ROUTES } from "../contracts/index.ts";
 import { createMyAccountReader, type MyAccountReader } from "../database/index.ts";
-import { liveSessionTokenFromCookie, principalScope } from "../session/index.ts";
+import { accountSessionTag, liveSessionTokenFromCookie, principalScope } from "../session/index.ts";
 
 import type { Databases } from "./databases.ts";
 import { reportServerError } from "./error-catalog.ts";
@@ -38,6 +40,7 @@ export function createMeRoute(read: MyAccountReader): Route {
         sendJson(response, 200, {
           ...account.value,
           journalScope: principalScope(account.userId, account.institutionId),
+          sessionTag: accountSessionTag(token),
         });
       } catch (error) {
         reportServerError("route", error, requestIdOf(response), CONTRACT.id);
