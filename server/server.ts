@@ -33,6 +33,7 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createMerlinRosterRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -203,6 +204,8 @@ async function main(): Promise<void> {
       ...createTeacherReadRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
+      // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
+      ...createMerlinRosterRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.

@@ -2,6 +2,8 @@
 // path and mentorships. An assignment the caller does not teach reads as an
 // empty list, as the contract says; the role alone opens no work (C-23).
 
+import { createHash } from "node:crypto";
+
 import type { Operations } from "../../contracts/index.ts";
 import { successBody } from "./contract.ts";
 import type { Handlers } from "./server.ts";
@@ -342,4 +344,61 @@ export const TEACHER_HANDLERS: Handlers = {
       },
     };
   },
+  // SRV-1109: the Merlin roster from the fake submissions; a fingerprint is of
+  // a stand-in text, since the fake renders no files.
+  "teacher.merlin-roster.get": ({ state, account, params }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null) return { error: "not_found" };
+    return {
+      status: 200,
+      body: { rows: merlinRows(state, account, assignment), extensionReasons: [] },
+    };
+  },
+  "teacher.merlin-roster-csv.get": ({ state, account, params }) =>
+    taught(state, account, params.assignmentId) === null
+      ? { error: "not_found" }
+      : {
+          status: 200,
+          headers: {
+            "content-type": "text/csv; charset=utf-8",
+            "content-disposition": 'attachment; filename="merlin-popis.csv"',
+          },
+        },
 };
+
+type MerlinRow = Operations["teacher.merlin-roster.get"]["success"]["body"]["rows"][number];
+
+function merlinRows(state: State, account: Account | null, assignment: Assignment): MerlinRow[] {
+  const fake = (text: string) => createHash("sha256").update(text).digest("hex");
+  return submissions(state, account, assignment)
+    .map((s) => {
+      const student = state.accounts.find((a) => a.id === s.studentId);
+      const names =
+        student === undefined
+          ? { familyName: null, givenName: null }
+          : { familyName: student.familyName, givenName: student.givenName };
+      if (!s.submitted)
+        return {
+          ...names,
+          submitted: false,
+          submittedMinute: null,
+          afterDeadline: null,
+          pdfName: null,
+          pdfSha256: null,
+          docxName: null,
+          docxSha256: null,
+        } as MerlinRow;
+      const base = `student-${s.studentId.replaceAll("-", "").slice(0, 8)}`;
+      return {
+        ...names,
+        submitted: true,
+        submittedMinute: s.requestedMinute,
+        afterDeadline: s.afterDeadline,
+        pdfName: `${base}.pdf`,
+        pdfSha256: fake(`${base}.pdf`),
+        docxName: `${base}.docx`,
+        docxSha256: fake(`${base}.docx`),
+      } as MerlinRow;
+    })
+    .sort((a, b) => (a.familyName ?? "\uffff").localeCompare(b.familyName ?? "\uffff", "hr"));
+}

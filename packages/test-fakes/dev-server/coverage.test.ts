@@ -524,6 +524,20 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
+  "teacher.merlin-roster.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/roster`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.merlin-roster-csv.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/csv`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
 };
 
 async function run(state: State, step: Step) {
