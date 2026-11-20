@@ -227,3 +227,40 @@ describe("the requirements row", () => {
     );
   });
 });
+
+// SRV-30: one student's state for a reader of that student's work, from
+// app.teacher_submission_state(); the same row checks as the student's read.
+describe("teacherState", () => {
+  const S = "00000000-0000-4000-8000-0000000000e1";
+
+  it("sends both ids and reads the same state row", async () => {
+    const { port, seen } = reader([stateRow("ceka", "4", AT)]);
+    expect(await port.teacherState(TOKEN, A, S)).toEqual({
+      ok: true,
+      value: { state: "ceka", revision: 4, requestedAt: AT },
+    });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.text).toContain("app.teacher_submission_state($1::uuid, $2::uuid)");
+    expect(seen[0]!.values).toEqual([A, S]);
+  });
+
+  it("ZD403, the read's answer for every refusal, is not_found; ZD401 stays unauthenticated", async () => {
+    expect(await reader(sqlError("ZD403")).port.teacherState(TOKEN, A, S)).toEqual(
+      fail(MY_SUBMISSION_STATE_NOT_FOUND),
+    );
+    expect(await reader(sqlError("ZD401")).port.teacherState(TOKEN, A, S)).toEqual(
+      fail(MY_SUBMISSION_STATE_UNAUTHENTICATED),
+    );
+    expect(await reader(sqlError("57014")).port.teacherState(TOKEN, A, S)).toEqual(
+      fail(MY_SUBMISSION_STATE_DATABASE_ERROR),
+    );
+  });
+
+  it("a malformed student id is not_found and never sent", async () => {
+    const { port, seen } = reader([stateRow("none")]);
+    expect(await port.teacherState(TOKEN, A, "nije-uuid")).toEqual(
+      fail(MY_SUBMISSION_STATE_NOT_FOUND),
+    );
+    expect(seen).toEqual([]);
+  });
+});

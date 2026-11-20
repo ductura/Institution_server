@@ -46,6 +46,7 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createWorkSourceRoutesFor,
+  createTextCheckConfigRoute,
   evidenceIngestDependencies,
   INTERNAL_PATH_PREFIX,
   type Running,
@@ -203,6 +204,13 @@ const SESSION_ROUTES = {
   "student.submission.get": {
     method: "GET",
     path: `/api/v1/student/assignments/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-30: a live session that reads no work of that student gets 404 (ZD403).
+  "teacher.submission-receipt.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission`,
     body: () => undefined,
     live: 404,
   },
@@ -511,6 +519,7 @@ const FACTORIES = [
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
   "createWorkSourceRoutesFor",
+  "createTextCheckConfigRoute",
   "createSourceLookupRouteFor",
   "createPublicVerificationRouteFor",
   "createDownloadsManifestRoute",
@@ -549,6 +558,7 @@ const MOUNTED = [
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
   ...createWorkSourceRoutesFor(databases.main),
+  createTextCheckConfigRoute(databases.main),
   createSourceLookupRouteFor(databases.main, ENV),
   createPublicVerificationRouteFor(databases.main),
   createDownloadsManifestRoute(),

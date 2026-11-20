@@ -266,7 +266,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "teacher.receipt-pdf.get",
   "teacher.course-students.get",
   "teacher.assignment-overview.get",
-  "teacher.submission-receipt.get",
 ];
 
 /**
