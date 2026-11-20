@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2111);
+SELECT plan(2250);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -18,8 +18,8 @@ SELECT bag_eq(
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
-        'deadline_extension'],
-  'the institution schema holds exactly the twenty-eight tables of this matrix'
+        'deadline_extension', 'merlin_package', 'merlin_package_download'],
+  'the institution schema holds exactly the thirty tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -127,9 +127,11 @@ SELECT bag_eq(
     'work_source: work_source_owner ALL to ductus_identity',
     'work_attachment: work_attachment_owner ALL to ductus_identity',
     'source_proof: source_proof_owner ALL to ductus_identity',
-    'deadline_extension: deadline_extension_owner ALL to ductus_identity'
+    'deadline_extension: deadline_extension_owner ALL to ductus_identity',
+    'merlin_package: merlin_package_owner ALL to ductus_identity',
+    'merlin_package_download: merlin_package_download_owner ALL to ductus_identity'
   ],
-  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source, work_attachment, source_proof or deadline_extension'
+  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source, work_attachment, source_proof, deadline_extension, merlin_package or merlin_package_download'
 );
 -- A version is immutable by its triggers, one of a mentorship's assignment
 -- stays within the faculty's rule, an administrator comes and goes only
@@ -155,7 +157,10 @@ SELECT bag_eq(
         'work_grant: work_grant_binding_fill 23 O',
         'notice_read: notice_read_immutable 27 O', 'notice_read: notice_read_no_truncate 34 O',
         'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O',
-        'deadline_extension: deadline_extension_immutable 27 O', 'deadline_extension: deadline_extension_no_truncate 34 O'],
+        'deadline_extension: deadline_extension_immutable 27 O', 'deadline_extension: deadline_extension_no_truncate 34 O',
+        'merlin_package: merlin_package_guard 27 O', 'merlin_package: merlin_package_no_truncate 34 O',
+        'merlin_package_download: merlin_package_download_immutable 27 O',
+        'merlin_package_download: merlin_package_download_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -288,7 +293,16 @@ SELECT bag_eq(
     'refuse_deadline_extension_change()',
     'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
-    'deadline_extensions(p_assignment_id uuid) definer app'
+    'deadline_extensions(p_assignment_id uuid) definer app',
+    'guard_merlin_package()',
+    'refuse_merlin_package_download_change()',
+    'own_merlin_package(p_assignment_id uuid, p_package_id uuid)',
+    'merlin_package_state(p_state text, p_expires_at timestamp with time zone)',
+    'request_merlin_package(p_assignment_id uuid, p_request_key text) definer app',
+    'complete_merlin_package(p_assignment_id uuid, p_package_id uuid, p_content bytea) definer app',
+    'fail_merlin_package(p_assignment_id uuid, p_package_id uuid, p_code text) definer app',
+    'merlin_package_status(p_assignment_id uuid, p_package_id uuid) definer app',
+    'download_merlin_package(p_assignment_id uuid, p_package_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -677,6 +691,20 @@ FROM (VALUES
   ('boris', 'null'), ('nina', 'null'), ('tomo', 'null'), ('lea', 'null'), ('petra', 'null'), ('anon', 'null')
 ) AS c (actor, result);
 
+-- 1j. SRV-1110: the Merlin package (institution.merlin_package and the record
+-- of its downloads, institution.merlin_package_download) only through their
+-- RPCs; the web role has no privilege or policy on either table. One cell per
+-- actor asking for the package of Z1 of K1; building, reading, downloading,
+-- expiry and the append-only record are in 167-merlin-package-access.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT state FROM institution.request_merlin_package({z1}, ''kljuc-matrica'')'), 1, 6),
+  c.result, format('SRV-1110: %s asks for the Merlin package of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'queued'), ('marko', 'ZD403:'), ('iva', 'ZD403:'), ('ana', 'ZD403:'), ('dora', 'ZD403:'),
+  ('boris', 'ZD403:'), ('nina', 'ZD403:'), ('tomo', 'ZD403:'), ('lea', 'ZD403:'), ('petra', 'ZD403:'),
+  ('anon', 'ZD401:')
+) AS c (actor, result);
+
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
 CREATE FUNCTION pg_temp.probe(p_role text, p_actor text, p_table text, p_op text) RETURNS text
@@ -715,12 +743,13 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension']) WITH ORDINALITY AS t (tbl, n)
+                        'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
+                        'merlin_package', 'merlin_package_download']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
