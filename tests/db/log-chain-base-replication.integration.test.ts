@@ -179,6 +179,18 @@ async function replicate(
     await logs.query(`ALTER SUBSCRIPTION ${name} DISABLE`);
     await logs.query(`ALTER SUBSCRIPTION ${name} SET (slot_name = NONE)`);
     await logs.query(`DROP SUBSCRIPTION ${name}`);
+    // DROP SUBSCRIPTION returns before the walsender of the publisher has let go
+    // of the slot, so on a slow runner the slot is still active (55006) for a
+    // moment. Wait for it to become inactive, then drop it.
+    await until(
+      async () =>
+        (
+          await src.query("SELECT 1 FROM pg_replication_slots WHERE slot_name = $1 AND active", [
+            name,
+          ])
+        ).rowCount === 0,
+      `${name}: the slot released by the walsender`,
+    );
     await src.query("SELECT pg_drop_replication_slot($1)", [name]);
   }
 }
