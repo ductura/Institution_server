@@ -26,6 +26,7 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherRosterRoutesFor,
   createLiveRoutesFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
@@ -71,6 +72,8 @@ const TEACHER_READ_ROUTES = [
   "teacher.submissions.get",
   "teacher.assignment-submissions.post",
 ] as const;
+
+const TEACHER_ROSTER_ROUTES = ["teacher.course-students.get", "teacher.assignment-overview.get"];
 
 export const DAN_803: readonly string[] = [
   "student.assignments.get",
@@ -264,6 +267,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createTeacherRosterRoutesFor(databases.main)",
+    ids: TEACHER_ROSTER_ROUTES,
+    routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // Ductus#2028 (w1119o): the live view over the main database.
     call: "createLiveRoutesFor(databases.main)",
     ids: ["live.document.get", "live.document.put"],
@@ -407,6 +415,7 @@ describe("CONTRACT_ONLY", () => {
       [
         ...["support.problem-report.post", "projection.process-summary.post"],
         ...TEACHER_READ_ROUTES,
+        ...TEACHER_ROSTER_ROUTES,
         ...INSTITUTION_COURSE_ROUTES,
         "institution.course-assignments.post",
         "institution.assignment-versions.post",
@@ -459,6 +468,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      ...TEACHER_ROSTER_ROUTES,
       "live.document.get",
       "live.document.put",
       "institution.acknowledgment.post",
