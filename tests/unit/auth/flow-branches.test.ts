@@ -339,7 +339,7 @@ describe("finishLogin when the session ports fail", () => {
   it("opens the session with the hash of the token it sets, never the token itself", async () => {
     const response = await approvedCallback();
     const token = cookieValue(setCookies(response).get(SESSION_COOKIE_NAME)!);
-    const input = deps.openSession.mock.calls[0][0] as { tokenHash: Buffer };
+    const input = deps.openSession.mock.calls[0]![0] as { tokenHash: Buffer };
     expect(Buffer.isBuffer(input.tokenHash)).toBe(true);
     expect(input.tokenHash.equals(hashSessionToken(token))).toBe(true);
     expect(JSON.stringify(deps.openSession.mock.calls)).not.toContain(token);

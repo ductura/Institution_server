@@ -43,7 +43,7 @@ beforeAll(async () => {
 
 async function lint(filePath: string, code: string) {
   const [result] = await eslint.lintText(code, { filePath });
-  return result.messages;
+  return result!.messages;
 }
 
 describe("pg dynamic import boundary hardening (eslint.config.mjs)", () => {

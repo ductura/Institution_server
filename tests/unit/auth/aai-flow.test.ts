@@ -131,8 +131,8 @@ describe("login against an AAI@EduHr-shaped provider", () => {
     const response = await complete(await begin());
     expect(response.status).toBe(303);
     expect(deps.openSession).toHaveBeenCalledTimes(1);
-    const token = cookieOf(response, SESSION_COOKIE_NAME)!.split(";")[0].split("=")[1];
-    expect(deps.openSession.mock.calls[0][0]).toStrictEqual({
+    const token = cookieOf(response, SESSION_COOKIE_NAME)!.split(";")[0]!.split("=")[1]!;
+    expect(deps.openSession.mock.calls[0]![0]).toStrictEqual({
       issuer: ISSUER,
       subject: ACCOUNT.sub,
       uniqueId: ACCOUNT.uniqueId,
@@ -151,19 +151,19 @@ describe("login against an AAI@EduHr-shaped provider", () => {
   it("DAN-474 hands the sid of the ID token to openSession and logs in without a bad one", async () => {
     idp.state.next = { claims: (claims) => ({ ...claims, sid: "sid-aai-7" }) };
     expect((await complete(await begin())).status).toBe(303);
-    expect(deps.openSession.mock.calls[0][0]).toMatchObject({ sid: "sid-aai-7" });
+    expect(deps.openSession.mock.calls[0]![0]).toMatchObject({ sid: "sid-aai-7" });
 
     for (const sid of ["", "s".repeat(256), "sid\u0001", ["sid-aai-7"]]) {
       deps.openSession.mockClear();
       idp.state.next = { claims: (claims) => ({ ...claims, sid }) };
       expect((await complete(await begin())).status).toBe(303);
-      expect(deps.openSession.mock.calls[0][0]).not.toHaveProperty("sid");
+      expect(deps.openSession.mock.calls[0]![0]).not.toHaveProperty("sid");
     }
   });
 
   it("A17 takes the names from profile, and a request without profile loses them", async () => {
     expect((await complete(await begin())).status).toBe(303);
-    expect(deps.openSession.mock.calls[0][0]).toMatchObject({
+    expect(deps.openSession.mock.calls[0]![0]).toMatchObject({
       givenName: "Maja",
       familyName: "Primjerić",
     });
@@ -172,7 +172,7 @@ describe("login against an AAI@EduHr-shaped provider", () => {
     const attempt = await begin();
     attempt.authorize.searchParams.set("scope", without("profile"));
     expect((await complete(attempt)).status).toBe(303);
-    const input = deps.openSession.mock.calls[0][0];
+    const input = deps.openSession.mock.calls[0]![0];
     expect(input).toMatchObject({ uniqueId: ACCOUNT.uniqueId, homeOrg: ACCOUNT.homeOrg });
     expect(input).not.toHaveProperty("givenName");
     expect(input).not.toHaveProperty("familyName");
@@ -199,7 +199,7 @@ describe("login against an AAI@EduHr-shaped provider", () => {
     const attempt = await begin();
     attempt.authorize.searchParams.set("scope", without("hrEduPersonAffiliation"));
     expect((await complete(attempt)).status).toBe(303);
-    expect(deps.openSession.mock.calls[0][0]).toMatchObject({
+    expect(deps.openSession.mock.calls[0]![0]).toMatchObject({
       uniqueId: ACCOUNT.uniqueId,
       homeOrg: ACCOUNT.homeOrg,
       teacherEligible: false,
@@ -209,10 +209,10 @@ describe("login against an AAI@EduHr-shaped provider", () => {
   it("DAN-304 gives the teacher right for djelatnik and none for student (#1181, items 1 and 4)", async () => {
     idp.state.account = { ...ACCOUNT, affiliation: ["djelatnik"] };
     expect((await complete(await begin())).status).toBe(303);
-    expect(deps.openSession.mock.calls[0][0]).toMatchObject({ teacherEligible: true });
+    expect(deps.openSession.mock.calls[0]![0]).toMatchObject({ teacherEligible: true });
     idp.state.account = { ...ACCOUNT, affiliation: ["student"] };
     expect((await complete(await begin())).status).toBe(303);
-    expect(deps.openSession.mock.calls[1][0]).toMatchObject({ teacherEligible: false });
+    expect(deps.openSession.mock.calls[1]![0]).toMatchObject({ teacherEligible: false });
   });
 
   it.each([
@@ -250,7 +250,7 @@ describe("login against an AAI@EduHr-shaped provider", () => {
       userinfo: (u) => ({ ...u, given_name: ["Maja"], family_name: ["Primjerić"] }),
     };
     expect((await complete(await begin())).status).toBe(303);
-    expect(deps.openSession.mock.calls[0][0]).not.toHaveProperty("givenName");
+    expect(deps.openSession.mock.calls[0]![0]).not.toHaveProperty("givenName");
   });
 
   it("A15 logs a stage and a reason, never a value of the arrays", async () => {

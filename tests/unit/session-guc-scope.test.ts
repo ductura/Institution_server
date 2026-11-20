@@ -57,7 +57,7 @@ function skipSqlOpaque(source: string, i: number): number {
   const dollar = skipDollarQuote(source, i);
   if (dollar !== i) return dollar;
   const escapes =
-    /[eE]/.test(source[i]) && source[i + 1] === "'" && !NAME_CHAR.test(source[i - 1] ?? "");
+    /[eE]/.test(source[i]!) && source[i + 1] === "'" && !NAME_CHAR.test(source[i - 1] ?? "");
   const quote = escapes ? "'" : source[i];
   if (quote !== "'" && quote !== '"') return i;
   let j = escapes ? i + 2 : i + 1;
@@ -104,7 +104,7 @@ const READINGS: SkipOpaque[] = [skipSqlOpaque, skipHostOpaque];
 /** Index of the next character that is not whitespace or a comment. */
 function skipSpace(source: string, i: number, skipOpaque: SkipOpaque): number {
   for (;;) {
-    while (i < source.length && /\s/.test(source[i])) i++;
+    while (i < source.length && /\s/.test(source[i]!)) i++;
     if (!source.startsWith("--", i) && !source.startsWith("/*", i)) return i;
     i = skipOpaque(source, i);
   }
@@ -198,7 +198,7 @@ function sessionScoped(source: string): string[] {
   for (const skipOpaque of READINGS) {
     for (const call of setConfigCalls(source, skipOpaque)) {
       if (calls.has(call.index)) continue;
-      if (call.closed && call.args.length === 3 && isLiteralTrue(call.args[2], skipOpaque))
+      if (call.closed && call.args.length === 3 && isLiteralTrue(call.args[2]!, skipOpaque))
         continue;
       calls.set(call.index, `set_config(${call.args.join(",")})`);
     }

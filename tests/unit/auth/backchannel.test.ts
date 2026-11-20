@@ -68,7 +68,6 @@ beforeEach(() => {
   const oidc = createOidcClient(config, idp.fetch);
   port = vi.fn<BackchannelLogout>(async () => ({ ok: true, closed: 1 }));
   deps = {
-    config,
     discoveredIssuer: () => oidc.discoveredIssuer(),
     keys: createCachedKeySource({ load: () => oidc.jwks() }),
     backchannelLogout: port,
