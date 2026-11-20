@@ -26,6 +26,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createTeacherReadRoutesFor,
   createInstitutionAssignmentRoutesFor,
+  createAssignmentCurrentVersionRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
@@ -140,6 +141,7 @@ async function main(): Promise<void> {
       ...createInstitutionCourseRoutesFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
       ...createInstitutionAssignmentRoutesFor(databases.main),
+      createAssignmentCurrentVersionRouteFor(databases.main),
       // A course's seminar groups and their teachers (SRV-15, Ductus#2028).
       ...createInstitutionGroupRoutesFor(databases.main),
       // The administrator creates a course with its holder (SRV-12 over SRV-07, Ductus#2028).
