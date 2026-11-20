@@ -31,3 +31,4 @@ export { institutionRoutes } from "./institution.ts";
 export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export { consultationSlotRoutes } from "./consultation-slots.ts";

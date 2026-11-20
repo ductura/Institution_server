@@ -67,6 +67,14 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  "app/api/works/[documentId]/consultation-slots/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073682",
+  },
+  "app/api/works/[documentId]/consultation-slots/[slotId]/route.ts": {
+    methods: ["PATCH"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073682",
+  },
   "app/api/process-summary/details/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041269693",

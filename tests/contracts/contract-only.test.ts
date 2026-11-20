@@ -27,6 +27,7 @@ import {
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createConsultationSlotRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -279,6 +280,15 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       createTeacherMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createConsultationSlotRoutesFor(databases.main)",
+    ids: [
+      "work.consultation-slots.get",
+      "work.consultation-slots.post",
+      "work.consultation-slots.patch",
+    ],
+    routes: () => createConsultationSlotRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // Ductus#2028 (w1119o): the live view over the main database.
     call: "createLiveRoutesFor(databases.main)",
     ids: ["live.document.get", "live.document.put"],
@@ -489,6 +499,9 @@ describe("routes the entry point mounts itself", () => {
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       ...SRV_31,
+      "work.consultation-slots.get",
+      "work.consultation-slots.post",
+      "work.consultation-slots.patch",
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",
