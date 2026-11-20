@@ -375,6 +375,63 @@ describe("createEvidenceService().commit", () => {
   });
 });
 
+// SRV-33 (Ductus#2028 c.7009695691): the snapshot may be of schema 2; it goes
+// to the acceptance as received, whose database keeps a work at the version
+// of its revision 0. An unknown field is still refused before storage (B-8).
+describe("createEvidenceService().commit with a document v2", () => {
+  const SRC = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const v2 = (source: Record<string, unknown>) =>
+    canonicalizeJcs({
+      schemaVersion: 2,
+      nodes: [
+        {
+          type: "paragraph",
+          id: "11111111-1111-4111-8111-111111111111",
+          children: [
+            { type: "text", text: "Izmišljeni odlomak.", marks: [] },
+            { type: "citation", sourceId: SRC, locator: "str. 12" },
+          ],
+        },
+      ],
+      sources: [source],
+    });
+  const book = {
+    type: "book",
+    id: SRC,
+    authors: [{ kind: "person", family: "Prezime", given: "Ime" }],
+    year: 2020,
+    title: "Izvor 1",
+    place: "Zagreb",
+    publisher: "Nakladnik",
+  };
+  /** The golden segment, its last event and the segment ending in `text`. */
+  const ending = (text: string) => {
+    const hash = createHash("sha256").update(text, "utf8").digest("hex");
+    const events = golden.segment.events.map((event, i, all) =>
+      i === all.length - 1 ? { ...event, afterDocumentHash: hash } : event,
+    );
+    return {
+      segment: segmentWith({ finalDocumentHash: hash, events }),
+      document: new TextEncoder().encode(text),
+    };
+  };
+
+  it("commits a v2 snapshot byte for byte", async () => {
+    const text = v2(book);
+    const { run, queries, payloads } = setup();
+    expect((await run(ending(text))).status).toBe("stale_base");
+    expect(payloads.putImmutable).toHaveBeenCalledOnce();
+    expect(queries.find((q) => q.kind === "commit")?.values.at(-1)).toBe(text);
+  });
+
+  it("refuses a v2 snapshot with an unknown field before anything is stored", async () => {
+    const { run, queries, payloads } = setup();
+    expect(await run(ending(v2({ ...book, note: "x" })))).toEqual({ status: "invalid" });
+    expect(payloads.putImmutable).not.toHaveBeenCalled();
+    expect(queries.some((q) => q.kind === "commit")).toBe(false);
+  });
+});
+
 // DAN-343 (contract on #896): the server takes a v3 segment and names v3 in
 // the descriptor it commits; citation-form in a v2 segment is refused before
 // anything is stored.
