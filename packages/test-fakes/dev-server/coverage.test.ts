@@ -120,6 +120,14 @@ const SAVE_SOURCE: Step = {
   body: { record: WORK_SOURCE },
 };
 
+const SUBMIT: Step = {
+  path: "/api/v1/submission",
+  as: "student",
+  headers: EVIDENCE,
+  body: { documentId: IDS.document, revision: 1 },
+};
+const SUBMIT_STEPS = [commit("izmisljena-transakcija-1", 0), SUBMIT];
+
 const SCENARIOS: Record<RouteId, Scenario> = {
   "auth.backchannel-logout.post": {
     request: {
@@ -395,6 +403,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.submission.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/submission`, as: "student" },
   },
+  "student.receipt-pdf.get": {
+    before: SUBMIT_STEPS,
+    request: { path: `${STUDENT_ASSIGNMENT}/submission/pdf`, as: "student" },
+  },
   "student.submission-notes.get": {
     before: [NOTE],
     request: { path: `${STUDENT_ASSIGNMENT}/submission-notes`, as: "student" },
@@ -415,12 +427,7 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "submission.submit.post": {
     before: [commit("izmisljena-transakcija-1", 0)],
-    request: {
-      path: "/api/v1/submission",
-      as: "student",
-      headers: EVIDENCE,
-      body: { documentId: IDS.document, revision: 1 },
-    },
+    request: SUBMIT,
   },
   "support.problem-report.post": {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
@@ -446,16 +453,15 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "teacher.mentorships.get": { request: { path: "/api/v1/teacher/mentorships", as: "nastavnik" } },
   "teacher.submissions.get": {
-    before: [
-      commit("izmisljena-transakcija-1", 0),
-      {
-        path: "/api/v1/submission",
-        as: "student",
-        headers: EVIDENCE,
-        body: { documentId: IDS.document, revision: 1 },
-      },
-    ],
+    before: SUBMIT_STEPS,
     request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions`, as: "nastavnik" },
+  },
+  "teacher.receipt-pdf.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions/${IDS.student}/pdf`,
+      as: "nastavnik",
+    },
   },
 };
 

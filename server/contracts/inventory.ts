@@ -222,6 +222,8 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.enrollments.post",
   "student.notice.get",
   "institution.enrollment-code-state.get",
+  "student.receipt-pdf.get",
+  "teacher.receipt-pdf.get",
 ];
 
 /**
