@@ -34,6 +34,7 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
+  createProcessSummaryRouteFor,
   createSettingsValuesPutRoute,
   evidenceIngestDependencies,
   createLayers,
@@ -154,6 +155,9 @@ async function main(): Promise<void> {
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
       createSubmissionRouteFor(databases.main, evidenceDeps),
+      // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
+      // its owner and the teacher; the teacher's read writes the access log.
+      createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).

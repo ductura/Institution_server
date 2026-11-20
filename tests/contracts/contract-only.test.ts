@@ -27,6 +27,7 @@ import {
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createSubmissionRouteFor,
+  createProcessSummaryRouteFor,
   createWebAuthnRoutesFor,
   REFUSING_SIGNER,
   routesOf,
@@ -213,6 +214,14 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     ],
   },
   {
+    // SRV-23: the process summary over the process's storage and the thresholds of the environment.
+    call: "createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env)",
+    ids: ["projection.process-summary.post"],
+    routes: () => [
+      createProcessSummaryRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }, {}).contract.id,
+    ],
+  },
+  {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
     call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
     ids: [
@@ -304,9 +313,10 @@ describe("CONTRACT_ONLY", () => {
       // problem report (851-2d2a), the course routes (852-5a), the download
       // manifest (DAN-932), the teacher's reads (SRV-13) and the assignment
       // routes (SRV-14), group routes (SRV-15), student work state (SRV-AWG)
-      // and submission (SRV-18) are missing too, in task order.
+      // and submission (SRV-18), and process summary (SRV-23) are missing too, in task order.
       [
-        ...["support.problem-report.post", "teacher.courses.get", "institution.courses.post"],
+        ...["support.problem-report.post", "projection.process-summary.post"],
+        ...["teacher.courses.get", "institution.courses.post"],
         ...["institution.course-assignments.post", "institution.enrollment-code.post"],
         ...["institution.enrollment-code-revocation.post", "institution.assignment-versions.post"],
         "submission.submit.post",
@@ -346,6 +356,7 @@ describe("routes the entry point mounts itself", () => {
       "teacher.courses.get",
       "teacher.access.get",
       "submission.submit.post",
+      "projection.process-summary.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",

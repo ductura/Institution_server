@@ -199,7 +199,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "institution.student-return.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
-  "projection.process-summary.post",
   "collaboration.comments.post",
   "collaboration.revision-requests.post",
   "live.document.get",
