@@ -50,7 +50,7 @@ export type MentoredWorkRead =
 
 export interface MentoredWorksDeps {
   withActor: WithActor;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 type Row = Record<string, unknown>;

@@ -102,7 +102,7 @@ describe("login", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(`${APP}/`);
     expect(deps.openSession).toHaveBeenCalledTimes(1);
-    const input = deps.openSession.mock.calls[0][0];
+    const input = deps.openSession.mock.calls[0]![0];
     expect(input).toMatchObject({
       issuer: ISSUER,
       subject: "sub-demo-1",
@@ -381,7 +381,7 @@ describe("login", () => {
       const response = await login();
       expect(response.status).toBe(303);
       expect(deps.openSession).toHaveBeenCalledTimes(1);
-      expect(deps.openSession.mock.calls[0][0].issuer).toBe(ISSUER);
+      expect(deps.openSession.mock.calls[0]![0].issuer).toBe(ISSUER);
     },
   );
 

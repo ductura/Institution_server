@@ -14,7 +14,10 @@ const ORIGIN = "https://ductus.example";
 const COURSE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const TOKEN = "A".repeat(43);
 const ROUTE_URL = `${ORIGIN}/api/institution/courses/${COURSE}/enrollment-code/revocation`;
-const request = (body: BodyInit = "{}", headers: Record<string, string> = {}) =>
+const request = (
+  body: NonNullable<RequestInit["body"]> = "{}",
+  headers: Record<string, string> = {},
+) =>
   new Request(ROUTE_URL, {
     method: "POST",
     headers: { origin: ORIGIN, "content-type": "application/json", ...headers },

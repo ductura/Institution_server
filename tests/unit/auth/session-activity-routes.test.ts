@@ -31,7 +31,7 @@ function exportOf(source: string, method: string): string | null {
     `export\\s+const\\s+${method}\\s*(?::[^=]+)?=\\s*([A-Za-z_$][\\w$]*)\\s*(\\()?`,
   ).exec(source);
   if (!match) return null;
-  return match[1] === "counted" && match[2] === "(" ? "counted" : match[1];
+  return match[1] === "counted" && match[2] === "(" ? "counted" : (match[1] ?? null);
 }
 
 const all = routes(join(REPO, "app"));

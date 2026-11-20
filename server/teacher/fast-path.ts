@@ -261,7 +261,7 @@ export interface FastPathRouteDeps {
   payloads: InstitutionEvidencePayloadReader;
   thresholds: ProcessSummaryThresholds | null;
   expectedOrigin: string;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
   log?: (message: string, code: string) => void;
 }
 

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import exceptions from "./rpc-http-exceptions.json";
+import exceptions from "./rpc-http-exceptions.json" with { type: "json" };
 
 // M2 exit condition (docs/PROGRAM-RAZRADA.md, DAN-487): every RPC that changes
 // state has an HTTP route, or a written reason in rpc-http-exceptions.json.
