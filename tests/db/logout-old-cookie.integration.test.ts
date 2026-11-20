@@ -19,6 +19,7 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
+  createProcessSummaryRouteFor,
   createHealthRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
@@ -92,6 +93,12 @@ const SESSION_ROUTES = {
   "submission.submit.post": {
     path: "/api/v1/submission",
     body: () => ({ documentId: randomUUID(), revision: 1 }),
+    live: 404,
+  },
+  // SRV-23: a live session naming a work it may not read gets 404 and logs nothing.
+  "projection.process-summary.post": {
+    path: "/api/v1/process-summary",
+    body: () => ({ documentId: randomUUID() }),
     live: 404,
   },
   // DAN-826-2b: a live session that is not a network engineer gets 404 and
@@ -285,6 +292,7 @@ const FACTORIES = [
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createSubmissionRouteFor",
+  "createProcessSummaryRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createInternalInstitutionRoutes",
@@ -308,6 +316,7 @@ const MOUNTED = [
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps),
+  createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
@@ -516,6 +525,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id === "support.problem-report.post" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
+        id.startsWith("projection.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
