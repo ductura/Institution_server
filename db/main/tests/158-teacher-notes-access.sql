@@ -1,5 +1,5 @@
 -- SRV-8B (wave 8, Ductus#2051): the mentor's working records of D-130,
--- private notes and comment templates (20261121001000). The access matrix of
+-- private notes and comment templates (20261121120000). The access matrix of
 -- both tables: only the author reads a note, and only while a teacher of the
 -- work; the student of the work, another teacher of the same work, a stranger,
 -- an administrator and another institution never do. Templates belong to

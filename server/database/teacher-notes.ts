@@ -1,6 +1,6 @@
 // SRV-8B (Ductus#2051, D-130): the database port of the mentor's working
 // records, private notes on a student's work and saved comment templates
-// (20261121001000). Each call is one withActor transaction over one RPC of
+// (20261121120000). Each call is one withActor transaction over one RPC of
 // schema collaboration; the RPCs decide who may (the teacher of the work for
 // notes, a confirmed teacher for a new template) and only ever return the
 // caller's own rows. A note is never part of a view of the work: nothing here
