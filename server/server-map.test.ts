@@ -44,6 +44,8 @@ const REQUIRED_AREAS = [
   // PLAN.md §3 area, made by DAN-851-2b (S-M-2, problem report).
   "support",
   "source-lookup",
+  // SRV-9B (Ductus#2028 c.7041664094, ✓ C-6): the public check of a receipt.
+  "public-verification",
   "contracts",
   "domain",
   "test-server",
