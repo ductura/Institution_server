@@ -358,6 +358,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "settings.values.put": {
     request: { path: "/api/v1/settings/values", as: "student", method: "PUT", body: SETTING },
   },
+  "sources.lookup.post": {
+    request: {
+      path: "/api/v1/sources/lookup",
+      as: "student",
+      body: { kind: "doi", identifier: "10.99999/izmisljeni" },
+    },
+  },
   "student.access-log.get": {
     request: { path: `/api/v1/student/works/${IDS.document}/access-log`, as: "student" },
   },

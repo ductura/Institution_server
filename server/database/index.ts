@@ -43,6 +43,7 @@ export type {
   ReceiptSigner,
 } from "./commit-evidence.ts";
 export type { OpenedWork, OpenWorkResult, ReceiptKey, WorkOpener } from "./open-work.ts";
+export type { DocumentSchemaVersion, WorkVersion } from "./evidence-work-version.ts";
 export type { InterfaceLocaleStore } from "./interface-locale.ts";
 export {
   createProblemReportStore,
@@ -235,6 +236,18 @@ export { createPendingReceiptStore } from "./pending-receipt-store.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { readSettingsValues, settingsCatalogue } from "./settings/index.ts";
+export {
+  createWorkSources,
+  isWorkSourceDoi,
+  isWorkSourceIsbn,
+  type WorkSource,
+  type WorkSourceInput,
+  type WorkSourceList,
+  type WorkSourceRemove,
+  type WorkSourceRequirement,
+  type WorkSourceSave,
+  type WorkSources,
+} from "./work-sources/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";

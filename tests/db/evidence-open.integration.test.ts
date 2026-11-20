@@ -288,6 +288,10 @@ describe("evidence/open over real PostgreSQL with RLS", () => {
       headSegmentHash: null,
       lastSequenceTo: 0,
       submitted: false,
+      // SRV-7F: a new work is v1, and at revision 0 the server's record of
+      // revision 0 is the document the work opens with.
+      schemaVersion: 1,
+      revisionZeroHash: first.body.documentHash,
     });
     expect(first.body.receiptKeys).toEqual([
       expect.objectContaining({

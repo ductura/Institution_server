@@ -1,4 +1,4 @@
-import { EDIT_STEP_FORMAT_V1, parseEditSteps } from "../document/index.ts";
+import { EDIT_STEP_FORMAT_V1, EDIT_STEP_FORMAT_V3, parseEditSteps } from "../document/index.ts";
 import { sha256WebCrypto } from "./crypto.ts";
 import { canonicalizeJcs, type JcsJsonValue } from "./jcs.ts";
 
@@ -79,9 +79,20 @@ export type EvidenceEventV2 = {
   afterDocumentHash: string;
 };
 
+/**
+ * The step formats a segment may name (SRV-7F): `ductus-edit-steps-v1`, and
+ * `ductus-edit-steps-v3` of a work of document v3 (docs/contracts/
+ * document-schema-v3.md §5 t. 7, §7). Which of them a work takes is the
+ * server's acceptance's to decide against the version of the work's revision
+ * 0, never this check's. `ductus-edit-steps-v2` is not taken here yet.
+ */
+export const EVIDENCE_TRANSACTION_FORMATS = [EDIT_STEP_FORMAT_V1, EDIT_STEP_FORMAT_V3] as const;
+
+export type EvidenceTransactionFormat = (typeof EVIDENCE_TRANSACTION_FORMATS)[number];
+
 export type EvidenceCaptureContextV2 = {
   editorModel: (typeof EVIDENCE_EDITOR_MODELS_V2)[number];
-  transactionFormat: typeof EDIT_STEP_FORMAT_V1;
+  transactionFormat: EvidenceTransactionFormat;
 };
 
 export type EvidenceSegmentV2 = {
@@ -286,6 +297,7 @@ const EVENT_KEYS = new Set([
   "afterDocumentHash",
 ]);
 const CAPTURE_CONTEXT_KEYS = new Set(["editorModel", "transactionFormat"]);
+const TRANSACTION_FORMATS: ReadonlySet<unknown> = new Set(EVIDENCE_TRANSACTION_FORMATS);
 /** v4 event keys allowed only with one source, and required with it. */
 const BINDING_KEYS_V4: ReadonlyMap<unknown, readonly string[]> = new Map([
   ["import", ["importId", "importManifestSha256"]],
@@ -342,8 +354,8 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * yes or no. The parser builds a clean copy; it is never used, since the hash
  * is over the bytes that were sent and a cleaned copy is not what was sent.
  */
-function areSteps(value: unknown): value is EvidenceStepV2[] {
-  return parseEditSteps(EDIT_STEP_FORMAT_V1, value).ok;
+function areSteps(value: unknown, format: EvidenceTransactionFormat): value is EvidenceStepV2[] {
+  return parseEditSteps(format, value).ok;
 }
 
 function isSortedUniqueStrings(value: unknown): value is string[] {
@@ -400,6 +412,7 @@ function isEvent(
   value: unknown,
   expectedSequence: number,
   version: SegmentVersion,
+  format: EvidenceTransactionFormat,
 ): value is EvidenceEvent {
   if (!isPlainObject(value) || !hasEventKeys(value, version)) return false;
   if (
@@ -410,7 +423,7 @@ function isEvent(
     RESERVED_SOURCES.has(value.source) ||
     !version.sources.has(value.source) ||
     (version.v4 && !hasV4Fields(value)) ||
-    !areSteps(value.steps) ||
+    !areSteps(value.steps, format) ||
     !isSha256(value.beforeDocumentHash) ||
     !isSha256(value.afterDocumentHash)
   ) {
@@ -478,10 +491,11 @@ function isSegmentUnguarded(value: unknown, schemas: VersionsBySchema): boolean 
     !hasOnlyKeys(value.captureContext, CAPTURE_CONTEXT_KEYS) ||
     typeof value.captureContext.editorModel !== "string" ||
     !EDITOR_MODELS.has(value.captureContext.editorModel) ||
-    value.captureContext.transactionFormat !== EDIT_STEP_FORMAT_V1
+    !TRANSACTION_FORMATS.has(value.captureContext.transactionFormat)
   ) {
     return false;
   }
+  const format = value.captureContext.transactionFormat as EvidenceTransactionFormat;
 
   const sequenceFrom = Number(value.sequenceFrom);
   const sequenceTo = Number(value.sequenceTo);
@@ -495,7 +509,7 @@ function isSegmentUnguarded(value: unknown, schemas: VersionsBySchema): boolean 
   for (let index = 0; index < value.events.length; index++) {
     const event = value.events[index];
     if (
-      !isEvent(event, sequenceFrom + index, version) ||
+      !isEvent(event, sequenceFrom + index, version, format) ||
       event.beforeDocumentHash !== previousAfter
     ) {
       return false;

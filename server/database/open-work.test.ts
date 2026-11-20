@@ -9,6 +9,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  REVISION_ZERO_SHA256,
+  REVISION_ZERO_V2_SHA256,
+  REVISION_ZERO_V3_SHA256,
+} from "../domain/index.ts";
+
+import {
   count,
   createWorkOpener,
   OPEN_WORK_DATABASE_ERROR,
@@ -25,7 +31,9 @@ import type { ActorTransaction, WithActor } from "./with-actor.ts";
 const TOKEN = "izmisljeni-token-evidencije-000000000000001";
 const ASSIGNMENT = "00000000-0000-4000-8000-0000000000a1";
 const DOMAIN = "00000000-0000-4000-8000-0000000000d1";
-const HASH = "a".repeat(64);
+// At revision 0 the current document is revision 0 (SRV-7F).
+const HASH = REVISION_ZERO_SHA256;
+const LATER_HASH = "a".repeat(64);
 const OPENED = {
   outcome: "opened",
   document_id: "dokument-izmisljeni-1",
@@ -53,6 +61,7 @@ type Rows = {
   submitted?: Record<string, unknown>[];
   domain?: Record<string, unknown>[];
   keys?: Record<string, unknown>[];
+  revisionZero?: Record<string, unknown>[];
 };
 
 function opener(rows: Rows) {
@@ -65,9 +74,11 @@ function opener(rows: Rows) {
           ? (rows.open ?? [OPENED])
           : text.includes("work_submitted")
             ? (rows.submitted ?? [{ submitted: false }])
-            : text.includes("evidence.package")
-              ? (rows.domain ?? [{ evidence_domain_id: DOMAIN }])
-              : (rows.keys ?? [KEY]);
+            : text.includes("evidence.document_revision")
+              ? (rows.revisionZero ?? [{ content_hash: REVISION_ZERO_SHA256 }])
+              : text.includes("evidence.package")
+                ? (rows.domain ?? [{ evidence_domain_id: DOMAIN }])
+                : (rows.keys ?? [KEY]);
         return { rows: pick as never[], rowCount: pick.length };
       },
     };
@@ -117,6 +128,8 @@ describe("createWorkOpener", () => {
         documentHash: HASH,
         headSegmentHash: null,
         lastSequenceTo: 0,
+        schemaVersion: 1,
+        revisionZeroHash: REVISION_ZERO_SHA256,
         snapshot: OPENED.snapshot,
         receiptKeys: [
           {
@@ -138,6 +151,7 @@ describe("createWorkOpener", () => {
     expect(seen.map((s) => s.values)).toEqual([
       [ASSIGNMENT, true],
       [ASSIGNMENT],
+      ["dokument-izmisljeni-1"],
       ["dokument-izmisljeni-1"],
       [DOMAIN],
     ]);
@@ -189,6 +203,60 @@ describe("createWorkOpener", () => {
   ])("E2: %s is a malformed row", async (_name, rows) => {
     const { open } = opener({ open: rows });
     expect(await open.openWork(TOKEN, ASSIGNMENT, true)).toEqual(ROW_MALFORMED);
+  });
+
+  // SRV-7F (docs/contracts/document-schema-v3.md §7): the version and the hash
+  // of revision 0 come from the server's record, at every revision.
+  it.each([
+    [REVISION_ZERO_SHA256, 1],
+    [REVISION_ZERO_V2_SHA256, 2],
+    [REVISION_ZERO_V3_SHA256, 3],
+  ])("SRV-7F: a later revision over revision 0 %s is a work of version %s", async (hash, v) => {
+    const { open, seen } = opener({
+      open: [{ ...OPENED, current_revision: "7", document_hash: LATER_HASH }],
+      revisionZero: [{ content_hash: hash }],
+    });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, false);
+    expect(result.ok && result.value).toMatchObject({
+      currentRevision: 7,
+      documentHash: LATER_HASH,
+      schemaVersion: v,
+      revisionZeroHash: hash,
+    });
+    const read = seen.find((s) => s.text.includes("evidence.document_revision"));
+    expect(read?.text).toMatch(/revision = 0/);
+    expect(read?.values).toEqual(["dokument-izmisljeni-1"]);
+  });
+
+  it("SRV-7F: at revision 0 a v3 work opens with the v3 revision 0", async () => {
+    const { open } = opener({
+      open: [{ ...OPENED, document_hash: REVISION_ZERO_V3_SHA256 }],
+      revisionZero: [{ content_hash: REVISION_ZERO_V3_SHA256 }],
+    });
+    const result = await open.openWork(TOKEN, ASSIGNMENT, true);
+    expect(result.ok && [result.value.schemaVersion, result.value.revisionZeroHash]).toEqual([
+      3,
+      REVISION_ZERO_V3_SHA256,
+    ]);
+  });
+
+  it.each([
+    ["no revision 0", []],
+    ["two revisions 0", [{ content_hash: HASH }, { content_hash: HASH }]],
+    ["a hash that is no revision 0 the server writes", [{ content_hash: LATER_HASH }]],
+    ["a known hash in capitals", [{ content_hash: REVISION_ZERO_V3_SHA256.toUpperCase() }]],
+    ["an inherited name", [{ content_hash: "__proto__" }]],
+    ["no hash", [{ content_hash: null }]],
+  ])("SRV-7F: %s is a malformed row, never a guessed version", async (_name, rows) => {
+    const { open, seen } = opener({ revisionZero: rows });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual(ROW_MALFORMED);
+    expect(seen.some((s) => s.text.includes("signing_key"))).toBe(false);
+  });
+
+  it("SRV-7F: at revision 0 a current hash other than revision 0's is a malformed row", async () => {
+    // A v1 document hash on a work whose revision 0 is v3: the two records disagree.
+    const { open } = opener({ revisionZero: [{ content_hash: REVISION_ZERO_V3_SHA256 }] });
+    expect(await open.openWork(TOKEN, ASSIGNMENT, false)).toEqual(ROW_MALFORMED);
   });
 
   it.each([

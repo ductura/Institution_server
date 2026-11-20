@@ -84,6 +84,23 @@ it("returns stored rows and the default that applies without them", async () => 
   ]);
 });
 
+it("returns only editor defaults when an institution has no saved editor settings", async () => {
+  query.mockResolvedValueOnce({
+    rows: [{ editorOnly: true, key: null, value: null, bound: null, updated_at: null }],
+  });
+  const response = await get(`${VALUES}?level=institution`);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    level: "institution",
+    course: null,
+    values: [],
+    inherited: [
+      { key: "citation.style", value: "fpzg", source: "default", bound: null },
+      { key: "lekta.profile", value: "fpzg-opci-akademski-rad", source: "default", bound: null },
+    ],
+  });
+});
+
 it.each([
   "",
   "level=",

@@ -99,6 +99,56 @@
       }
     },
     {
+      "name": "opened-v3-later-revision",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-evidencije-000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json",
+          "ductus-protocol": "1"
+        },
+        "body": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "status": "opened",
+          "documentId": "dokument-izmisljeni-zv-1",
+          "evidenceProfileId": "standard-v1",
+          "currentRevision": 4,
+          "documentHash": "f61ab60e181201e8ebd15818fc3fd96faab13b2464bb74942a31f2d62672bc7b",
+          "headSegmentHash": "3c7e9a1f3c7e9a1f3c7e9a1f3c7e9a1f3c7e9a1f3c7e9a1f3c7e9a1f3c7e9a1f",
+          "lastSequenceTo": 9,
+          "schemaVersion": 3,
+          "revisionZeroHash": "b6d1831785f40ae90b5a44a70d28b401913eecd347f02961f14874734fcd9141",
+          "document": "eyJub2RlcyI6W3siY2hpbGRyZW4iOlt7Im1hcmtzIjpbXSwidGV4dCI6Ikl6bWnFoWxqZW5pIG9kbG9tYWsgbyBrb21wb3N0aXJhbmp1LiIsInR5cGUiOiJ0ZXh0In0seyJ0ZXh0IjoiSXptacWhbGplbm8gb2JqYcWhbmplbmplLiIsInR5cGUiOiJmb290bm90ZSJ9XSwiaWQiOiI1ZjBjMWU4YS0zYjdkLTRjMmUtOWE2MS0wZDRlOGIyZjdjMTMiLCJ0eXBlIjoicGFyYWdyYXBoIn1dLCJzY2hlbWFWZXJzaW9uIjozLCJzb3VyY2VzIjpbXX0=",
+          "receiptKeys": [
+            {
+              "algorithm": "Ed25519",
+              "keyId": "ductus-golden-rfc8032-test-1",
+              "keyVersion": "1",
+              "encoding": "spki-der",
+              "keyBase64Url": "MCowBQYDK2VwAyEA11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+              "evidenceDomainId": "d21fe0a3-103c-42e5-a29e-c102f9030af5",
+              "purpose": "receipt",
+              "validFrom": "2026-01-01T00:00:00.000Z",
+              "validTo": null,
+              "revokedAt": null
+            }
+          ],
+          "submitted": false
+        }
+      }
+    },
+    {
       "name": "opened-after-commit",
       "kind": "success",
       "request": {

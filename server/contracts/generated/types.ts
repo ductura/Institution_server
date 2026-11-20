@@ -96,7 +96,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "assignmentId": string; "start"?: boolean };
-    success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
+    success: { status: 200; body: { "status": "opened"; "documentId": string; "evidenceProfileId": string; "currentRevision": number; "documentHash": string; "headSegmentHash": string | null; "lastSequenceTo": number; "schemaVersion"?: 1 | 2 | 3; "revisionZeroHash"?: string; "document": string; "receiptKeys": ({ "algorithm": "Ed25519" | "ECDSA_P256_SHA256" | "RSA_PSS_SHA256"; "keyId": string; "keyVersion": string; "encoding": "spki-der"; "keyBase64Url": string; "evidenceDomainId": string; "purpose": "receipt"; "validFrom": string; "validTo": string | null; "revokedAt": string | null })[]; "submitted": boolean }; headers: {  } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "not_started" | "unavailable";
   };
   "evidence.replay.post": {
@@ -329,6 +329,13 @@ export type Operations = {
     body: { "level": "personal" | "course" | "institution" | "system" | "network_security"; "course": string | null; "key": string; "value": boolean | number | string | null; "locked": boolean; "min": number | null; "max": number | null };
     success: { status: 200; body: { "key": string; "value": boolean | number | string | null; "bound": { "locked": true } | { "min"?: number; "max"?: number } | null; "changed": boolean }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "not_found" | "bound_crossed" | "invalid_input" | "unavailable";
+  };
+  "sources.lookup.post": {
+    params: undefined;
+    query: undefined;
+    body: { "kind": "doi" | "isbn"; "identifier": string };
+    success: { status: 200; body: { "source": { "type": "book" | "chapter" | "article" | null; "title": string; "authors": ({ "name": string; "family"?: string; "given"?: string })[]; "year"?: number; "journal"?: string; "bookTitle"?: string; "publisher"?: string; "place"?: string; "volume"?: string; "issue"?: string; "pages"?: string } | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "forbidden" | "unsupported_media_type" | "invalid_input" | "unavailable" | "timeout";
   };
   "student.access-log.get": {
     params: { "documentId": string };
