@@ -184,7 +184,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "settings.catalogue.get",
   "settings.values.get",
   "student.access-log.get",
-  "student.assignment-work.get",
   "student.notice-read.post",
   "student.enrollments.post",
   "institution.course-groups.get",
