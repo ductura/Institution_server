@@ -134,6 +134,17 @@ export type Consultation = {
   additions: { id: string; text: string; createdAt: string }[];
 };
 
+/** An excerpt attached to a source of a student's work (SRV-1102). */
+export type SourceProof = {
+  readonly id: string;
+  readonly assignmentId: string;
+  readonly studentId: string;
+  readonly sourceId: string;
+  readonly page: string;
+  readonly note: string | null;
+  readonly image: Buffer;
+};
+
 type SubmissionNote = Operations["student.submission-notes.post"]["success"]["body"] & {
   readonly assignmentId: string;
   readonly studentId: string;
@@ -219,6 +230,7 @@ export type State = {
   works: Work[];
   submissionNotes: SubmissionNote[];
   workSources: WorkSource[];
+  sourceProofs: SourceProof[];
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -404,6 +416,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     ],
     submissionNotes: [],
     workSources: [],
+    sourceProofs: [],
     enrollmentGuesses: new Map(),
     mentorships: [
       {

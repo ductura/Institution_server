@@ -19,6 +19,7 @@ import {
   DOCUMENT_SCHEMA_VERSION,
   DOCUMENT_SCHEMA_VERSION_V2,
   DOCUMENT_SCHEMA_VERSION_V3,
+  DOCUMENT_SCHEMA_VERSION_V4,
   canonicalMarks,
   citationNode,
   newNodeId,
@@ -26,12 +27,14 @@ import {
   type CanonicalDocument,
   type CanonicalDocumentV2,
   type CanonicalDocumentV3,
+  type CanonicalDocumentV4,
   type CitationNodeV3,
   type DocumentNodeV3,
   type InlineNodeV3,
   type Mark,
   type VersionedDocument,
 } from "./schema.ts";
+import { normalizeDocumentV4 } from "./consumers-v4.ts";
 
 function sameMarks(a: readonly Mark[], b: readonly Mark[]): boolean {
   return a.length === b.length && a.every((mark, i) => mark === b[i]);
@@ -100,11 +103,17 @@ export function normalizeDocument(
   doc: CanonicalDocumentV3,
   uuidFn?: () => string,
 ): CanonicalDocumentV3;
+export function normalizeDocument(
+  doc: CanonicalDocumentV4,
+  uuidFn?: () => string,
+): CanonicalDocumentV4;
 export function normalizeDocument(doc: VersionedDocument, uuidFn?: () => string): VersionedDocument;
 export function normalizeDocument(
   doc: VersionedDocument,
   uuidFn?: () => string,
 ): VersionedDocument {
+  // A v4 document always holds a block: the validator refuses an empty one.
+  if (doc.schemaVersion === DOCUMENT_SCHEMA_VERSION_V4) return normalizeDocumentV4(doc);
   const normalized = (doc.nodes as readonly DocumentNodeV3[]).map(normalizeNode);
   const nodes = normalized.length === 0 ? [paragraphNode(newNodeId(uuidFn))] : normalized;
 

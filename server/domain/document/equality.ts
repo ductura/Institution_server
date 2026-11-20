@@ -7,7 +7,8 @@
  * equals only a citation with the same source and locator (an absent locator
  * is not ""), and the ordered source list is part of the document (§9.1).
  * In v3 every atom equals only an atom of the same type with the same fields
- * (contract v3 §8), and v3 keeps the sources of v2.
+ * (contract v3 §8), and v3 keeps the sources of v2. In v4 every block,
+ * atom, mark and the cover are compared field by field (contract v4 §11).
  */
 
 import {
@@ -16,6 +17,7 @@ import {
   type InlineNodeV3,
   type VersionedDocument,
 } from "./schema.ts";
+import { withoutBlockIdsV4 } from "./consumers-v4.ts";
 
 function inlineEqual(a: InlineNodeV3, b: InlineNodeV3): boolean {
   if (a.type !== "text" || b.type !== "text") {
@@ -85,6 +87,7 @@ function sameFrame(a: VersionedDocument, b: VersionedDocument): boolean {
  * because comments, evidence and revisions are anchored to those ids.
  */
 export function documentsEqual(a: VersionedDocument, b: VersionedDocument): boolean {
+  if (a.schemaVersion === 4 || b.schemaVersion === 4) return jsonEqual(a, b);
   if (!sameFrame(a, b)) {
     return false;
   }
@@ -102,6 +105,13 @@ export function documentsEqual(a: VersionedDocument, b: VersionedDocument): bool
  * is itself a real change.
  */
 export function contentEqual(a: VersionedDocument, b: VersionedDocument): boolean {
+  if (a.schemaVersion === 4 || b.schemaVersion === 4) {
+    return (
+      a.schemaVersion === 4 &&
+      b.schemaVersion === 4 &&
+      jsonEqual(withoutBlockIdsV4(a), withoutBlockIdsV4(b))
+    );
+  }
   if (!sameFrame(a, b)) {
     return false;
   }

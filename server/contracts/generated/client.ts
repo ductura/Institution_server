@@ -61,6 +61,9 @@ export const ROUTE_TABLE = {
   "student.notice-read.post": { method: "POST", path: "/api/v1/student/assignments/{assignmentId}/notice-read", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_assignment_id","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"409":["conflict"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "student.notice.get": { method: "GET", path: "/api/v1/student/assignments/{assignmentId}/notice", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
   "student.receipt-pdf.get": { method: "GET", path: "/api/v1/student/assignments/{assignmentId}/submission/pdf", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
+  "student.source-proof-image.get": { method: "GET", path: "/api/v1/student/assignments/{assignmentId}/sources/{sourceId}/proofs/{proofId}/image", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
+  "student.source-proofs.get": { method: "GET", path: "/api/v1/student/assignments/{assignmentId}/sources/{sourceId}/proofs", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
+  "student.source-proofs.post": { method: "POST", path: "/api/v1/student/assignments/{assignmentId}/sources/{sourceId}/proofs", body: "multipart/form-data", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "student.submission-notes.get": { method: "GET", path: "/api/v1/student/assignments/{assignmentId}/submission-notes", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
   "student.submission-notes.post": { method: "POST", path: "/api/v1/student/submission-notes", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "student.submission.get": { method: "GET", path: "/api/v1/student/assignments/{assignmentId}/submission", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
@@ -75,6 +78,8 @@ export const ROUTE_TABLE = {
   "teacher.assignment-submissions.post": { method: "POST", path: "/api/v1/teacher/assignment-submissions", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "teacher.course-students.get": { method: "GET", path: "/api/v1/teacher/courses/{courseId}/students", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
   "teacher.courses.get": { method: "GET", path: "/api/v1/teacher/courses", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
+  "teacher.deadline-extension.post": { method: "POST", path: "/api/v1/teacher/assignments/{assignmentId}/deadline-extensions", body: "application/json", headers: ["cache-control"], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
+  "teacher.deadline-extensions.get": { method: "GET", path: "/api/v1/teacher/assignments/{assignmentId}/deadline-extensions", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
   "teacher.fast-path.post": { method: "POST", path: "/api/v1/teacher/fast-path", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "teacher.mentorship-request-decision.post": { method: "POST", path: "/api/v1/teacher/mentorship-requests/decision", body: "application/json", headers: ["cache-control"], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site","forbidden"],"408":["body_timeout"],"409":["conflict"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "teacher.mentorship-requests.get": { method: "GET", path: "/api/v1/teacher/mentorship-requests", body: null, headers: ["cache-control"], errors: {"401":["unauthorized"],"403":["forbidden"],"503":["unavailable"]} },
@@ -135,11 +140,20 @@ export function createClient(baseUrl: string, fetchImpl: typeof fetch = fetch) {
     const init: RequestInit = { method: route.method, redirect: "manual" };
     if (route.body === "application/json") init.body = canonicalJson(input.body);
     if (route.body === "application/x-www-form-urlencoded") init.body = new URLSearchParams(input.body as Record<string, string>).toString();
-    if (route.body !== null) init.headers = { "content-type": route.body };
+    // A multipart body: fetch writes the content type with its boundary itself.
+    if (route.body === "multipart/form-data") {
+      const form = new FormData();
+      for (const [name, value] of Object.entries(input.body as Record<string, string | Blob | undefined>)) {
+        if (value !== undefined) form.append(name, value);
+      }
+      init.body = form;
+    } else if (route.body !== null) init.headers = { "content-type": route.body };
     const res = await fetchImpl(new URL(path, baseUrl), init);
     // In a browser a manual redirect is opaque (status 0); every contracted redirect is a 303.
     if (res.type === "opaqueredirect") return { ok: true, status: 303, body: undefined, headers: {} } as Result<Id>;
-    const body: unknown = res.headers.get("content-type")?.startsWith("application/json") ? await res.json() : undefined;
+    const type = res.headers.get("content-type") ?? "";
+    // A binary answer (image/jpeg) is read as a Blob; it is never a problem body.
+    const body: unknown = type.startsWith("application/json") ? await res.json() : type.startsWith("image/") && res.status < 400 ? await res.blob() : undefined;
     // A status the contract lists as an answer is one even at 400 or above
     // (live.document.put 409 {outcome, token}), unless its body is a problem
     // body: the same status can also be an error (revision-requests 409).

@@ -26,6 +26,7 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createDeadlineExtensionRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -267,6 +268,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-1108: the deadline extensions of an assignment over the main database.
+    call: "...createDeadlineExtensionRoutesFor(databases.main)",
+    ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
+    routes: () => createDeadlineExtensionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createTeacherMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_31,
     routes: () =>
@@ -489,6 +496,8 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      "teacher.deadline-extensions.get",
+      "teacher.deadline-extension.post",
       ...SRV_31,
       "live.document.get",
       "live.document.put",

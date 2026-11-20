@@ -112,13 +112,20 @@ SELECT bag_eq(
             ('collaboration.accept_revision_request(uuid,bigint,bigint,text,jsonb)'),
             ('collaboration.reopen_revision_request(uuid,bigint,text,bigint)'),
             ('collaboration.withdraw_revision_request(uuid,bigint)'),
-            ('collaboration.rereview_revision_request(uuid,bigint)') $$,
-  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs and the seven revision-request RPCs of 110, 112 and 119');
+            ('collaboration.rereview_revision_request(uuid,bigint)'),
+            ('collaboration.create_teacher_note(text,text,jsonb)'),
+            ('collaboration.list_teacher_notes(text)'),
+            ('collaboration.delete_teacher_note(uuid)'),
+            ('collaboration.create_comment_template(text,text)'),
+            ('collaboration.list_comment_templates()'),
+            ('collaboration.delete_comment_template(uuid)') $$,
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
-  $$ VALUES ('collaboration.delete_live_state(text,uuid)'), ('collaboration.delete_revision_requests(text,uuid)') $$,
-  'the retention role executes only delete_live_state and the revision-request delete of 110');
+  $$ VALUES ('collaboration.delete_live_state(text,uuid)'), ('collaboration.delete_revision_requests(text,uuid)'),
+            ('collaboration.delete_teacher_notes(text,uuid)') $$,
+  'the retention role executes only delete_live_state, the revision-request delete of 110 and the note delete of 158');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_worker', 'ductus_auth', 'ductus_evidence']) AS r
