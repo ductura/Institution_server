@@ -20,6 +20,7 @@ import {
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
   createProblemReportRouteFor,
+  createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
   createInstitutionGroupRoutesFor,
@@ -153,7 +154,7 @@ const SRV_19 = [
 ];
 
 // SRV-9B (✓ C-6, Ductus#2028 c.7041664094): the public check of a receipt,
-// contract and service now, the route in the next part.
+// contract first, the route mounted by the entry point in part 4.
 const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
 
@@ -292,6 +293,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createStudentSubmissionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-9B: the public check of a receipt over the main database.
+    call: "createPublicVerificationRouteFor(databases.main)",
+    ids: ["public.verification.post"],
+    routes: () => [createPublicVerificationRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // DAN-840-3f1: over the same origin as the pipeline (server.ts APP_ORIGIN).
     call: "createWebAuthnRoutesFor(databases.main, APP_ORIGIN)",
     ids: [
@@ -385,8 +392,8 @@ describe("CONTRACT_ONLY", () => {
       // problem report (851-2d2a), the course routes (852-5a), the download
       // manifest (DAN-932), the teacher's reads (SRV-13) and the assignment
       // routes (SRV-14), group routes (SRV-15), student work state (SRV-AWG)
-      // and submission (SRV-18), process summary (SRV-23) and submission state and
-      // requirements (SRV-22) are missing too.
+      // and submission (SRV-18), process summary (SRV-23), submission state and
+      // requirements (SRV-22) and the public check (SRV-9B) are missing too.
       [
         ...["support.problem-report.post", "projection.process-summary.post"],
         ...TEACHER_READ_ROUTES,
@@ -404,6 +411,7 @@ describe("CONTRACT_ONLY", () => {
         "live.document.get",
         "live.document.put",
         "institution.acknowledgment.post",
+        "public.verification.post",
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -448,6 +456,7 @@ describe("routes the entry point mounts itself", () => {
       "projection.process-summary.post",
       "student.submission.get",
       "student.assignment-requirements.get",
+      "public.verification.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
