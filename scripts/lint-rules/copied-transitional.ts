@@ -150,6 +150,7 @@ export const COPIED_LINT_TRANSITIONAL: Readonly<Record<string, readonly string[]
   "server/http/evidence-open.integration.test.ts": [N],
   "server/http/fetch-mutation-request.test.ts": [A, I],
   "server/http/process-summary.ts": [A, I],
+  "server/http/teacher-fast-path.ts": [A, I],
   "server/institution/course-students.test.ts": [A, I],
   "server/institution/course-students.ts": [A, I],
   "server/institution/create-assignment.ts": [A, I],

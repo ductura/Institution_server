@@ -112,6 +112,14 @@ export {
   type ReadProcessSummary,
 } from "./process-summary.ts";
 export {
+  createTeacherFastPathRoute,
+  createTeacherFastPathRouteFor,
+  parseTeacherFastPathBody,
+  TEACHER_FAST_PATH_TIMEOUT_MS,
+  type ReadTeacherFastPath,
+  type TeacherFastPathRouteOptions,
+} from "./teacher-fast-path.ts";
+export {
   declaredLengthRefusal,
   readBodyWithLimit,
   type LimitedBodyResult,
