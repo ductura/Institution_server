@@ -62,6 +62,27 @@ export type {
   EnrollmentCodeRevokeOutcome,
   InstitutionCourses,
 } from "./institution-courses.ts";
+export type {
+  InstitutionMembers,
+  StudentRemovalOutcome,
+  StudentReturnOutcome,
+} from "./institution-members.ts";
+export type {
+  AssignmentSubmission,
+  AssignmentSubmissionsOutcome,
+  AssignmentSubmissionsReader,
+} from "./assignment-submissions.ts";
+export type {
+  MentoredWork,
+  MentoredWorkOutcome,
+  MentoredWorksOutcome,
+  MentoredWorksReader,
+} from "./mentored-works.ts";
+export type {
+  AssignmentWorkLanguageOutcome,
+  WorkLanguageOutcome,
+  WorkLanguages,
+} from "./work-language.ts";
 export type { Enrollment, InstitutionEnrollment } from "./institution-enrollment.ts";
 export type {
   AccessLogCursor,
@@ -210,6 +231,10 @@ export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
+export { createInstitutionMembers } from "./institution-members.ts";
+export { createWorkLanguages } from "./work-language.ts";
+export { createAssignmentSubmissionsReader } from "./assignment-submissions.ts";
+export { createMentoredWorksReader } from "./mentored-works.ts";
 export {
   createInstitutionEnrollment,
   ENROLLMENT_DATABASE_ERROR,

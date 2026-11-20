@@ -37,6 +37,12 @@ export {
   type StudentRequirementsAnswer,
   type StudentWordRange,
 } from "./student-requirements-route.ts";
+export {
+  type AssignmentWorkLanguageBody,
+  parseAssignmentWorkLanguageBody,
+  parseWorkLanguageExceptionBody,
+  type WorkLanguageExceptionBody,
+} from "./work-language-bodies.ts";
 export { createInstitutionService, type InstitutionService, type InvalidInput } from "./service.ts";
 export {
   type AssignmentInput,
