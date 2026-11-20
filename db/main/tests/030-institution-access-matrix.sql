@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1806);
+SELECT plan(1907);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -17,8 +17,8 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation', 'notice_read', 'work_source'],
-  'the institution schema holds exactly the twenty-five tables of this matrix'
+        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment'],
+  'the institution schema holds exactly the twenty-six tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -123,9 +123,10 @@ SELECT bag_eq(
     'work_accommodation: work_accommodation_read SELECT to ductus_app',
     'notice_read: notice_read_owner ALL to ductus_identity',
     'notice_read: notice_read_read SELECT to ductus_app',
-    'work_source: work_source_owner ALL to ductus_identity'
+    'work_source: work_source_owner ALL to ductus_identity',
+    'work_attachment: work_attachment_owner ALL to ductus_identity'
   ],
-  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification or work_source'
+  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source or work_attachment'
 );
 -- A version is immutable by its triggers, one of a mentorship's assignment
 -- stays within the faculty's rule, an administrator comes and goes only
@@ -149,7 +150,8 @@ SELECT bag_eq(
         'notice_acknowledgment: notice_acknowledgment_binding_fill 7 O',
         'notice_acknowledgment: notice_acknowledgment_binding_immutable 19 O',
         'work_grant: work_grant_binding_fill 23 O',
-        'notice_read: notice_read_immutable 27 O', 'notice_read: notice_read_no_truncate 34 O'],
+        'notice_read: notice_read_immutable 27 O', 'notice_read: notice_read_no_truncate 34 O',
+        'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -270,7 +272,11 @@ SELECT bag_eq(
     'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',
     'work_sources(p_assignment_id uuid, p_student_id uuid) definer app',
     'save_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_record jsonb, p_requirement text, p_doi text, p_isbn text, p_undated boolean) definer app',
-    'delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid) definer app'
+    'delete_teacher_work_source(p_assignment_id uuid, p_student_id uuid, p_source_id uuid) definer app',
+    'refuse_work_attachment_change()',
+    'add_work_attachment(p_assignment_id uuid, p_media_type text, p_byte_size integer, p_sha256 text, p_storage_ref text, p_pixel_width integer, p_pixel_height integer) definer app',
+    'work_attachments(p_assignment_id uuid, p_student_id uuid) definer app',
+    'read_work_attachment(p_attachment_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -516,6 +522,50 @@ FROM (VALUES
   ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
 ) AS c (actor, outcome);
 
+-- 1g. SRV-10B: the attachments of a work (institution.work_attachment) only
+-- through its three RPCs; the web role has no privilege or policy on the
+-- table. One cell per actor on Z1 of K1 and Z3 of fak-b; the rest (shape,
+-- bounds, the same bytes twice, append-only, seminar group, collaborator,
+-- mentor) is in 156-work-attachment.sql.
+CREATE FUNCTION pg_temp.attach(p_actor text, p_assignment text, p_sha text) RETURNS text
+LANGUAGE sql AS $$
+  SELECT substr(pg_temp.ask(p_actor, format(
+    'SELECT ''ok'' FROM institution.add_work_attachment(%s, ''image/png'', 2048, %L, %L, 640, 480)',
+    p_assignment, p_sha, 'privitci/' || p_sha)), 1, 5)
+$$;
+SELECT is(pg_temp.attach(c.actor, c.assignment, repeat(c.digit, 64)), c.outcome,
+  format('SRV-10B: %s adds an attachment on %s: %s', c.actor, c.assignment, c.outcome))
+FROM (VALUES
+  ('ana', '{z1}', 'a', 'ok'), ('dora', '{z1}', 'b', 'ok'), ('vesna', '{z1}', 'c', 'ZD403'),
+  ('marko', '{z1}', 'c', 'ZD403'), ('iva', '{z1}', 'c', 'ZD403'), ('boris', '{z1}', 'c', 'ZD403'),
+  ('nina', '{z1}', 'c', 'ZD403'), ('tomo', '{z1}', 'c', 'ZD403'), ('lea', '{z1}', 'c', 'ZD403'),
+  ('tomo', '{z3}', 'd', 'ok'), ('petra', '{z3}', 'c', 'ZD403'), ('anon', '{z1}', 'c', 'ZD401')
+) AS c (actor, assignment, digit, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT count(*)::text FROM institution.work_attachments(%s, %s)',
+                                     c.assignment, c.student)), 1, 5), c.result,
+  format('SRV-10B: %s reads the attachments of %s on %s: %s', c.actor, c.student, c.assignment, c.result)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'NULL', '1'), ('ana', '{z1}', '{ana}', '1'), ('vesna', '{z1}', '{ana}', '1'),
+  ('dora', '{z1}', '{ana}', 'ZD403'), ('marko', '{z1}', '{ana}', 'ZD403'), ('iva', '{z1}', '{ana}', 'ZD403'),
+  ('boris', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'), ('petra', '{z3}', '{tomo}', '1'),
+  ('vesna', '{z3}', '{tomo}', 'ZD403'), ('anon', '{z1}', '{ana}', 'ZD401')
+) AS c (actor, assignment, student, result);
+INSERT INTO ref VALUES ('att_ana', pg_temp.ask('ana', $$ SELECT id::text FROM institution.work_attachments({z1}) $$)),
+                       ('att_tomo', pg_temp.ask('tomo', $$ SELECT id::text FROM institution.work_attachments({z3}) $$));
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT sha256 FROM institution.read_work_attachment(%s)', c.att)), 1, 5),
+  c.result, format('SRV-10B: %s reads attachment %s by id: %s', c.actor, c.att, c.result)
+)
+FROM (VALUES
+  ('ana', '{att_ana}', 'aaaaa'), ('vesna', '{att_ana}', 'aaaaa'), ('dora', '{att_ana}', 'ZD403'),
+  ('marko', '{att_ana}', 'ZD403'), ('iva', '{att_ana}', 'ZD403'), ('boris', '{att_ana}', 'ZD403'),
+  ('nina', '{att_ana}', 'ZD403'), ('lea', '{att_ana}', 'ZD403'), ('petra', '{att_ana}', 'ZD403'),
+  ('tomo', '{att_ana}', 'ZD403'), ('petra', '{att_tomo}', 'ddddd'), ('vesna', '{att_tomo}', 'ZD403'),
+  ('ana', '''eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee''', 'ZD403'), ('anon', '{att_ana}', 'ZD401')
+) AS c (actor, att, result);
+
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
 CREATE FUNCTION pg_temp.probe(p_role text, p_actor text, p_table text, p_op text) RETURNS text
@@ -554,12 +604,12 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source']) WITH ORDINALITY AS t (tbl, n)
+                        'notice_read', 'work_source', 'work_attachment']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
