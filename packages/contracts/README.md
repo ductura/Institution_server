@@ -24,3 +24,27 @@ pnpm add https://github.com/ductura/Institution_server/releases/download/contrac
 ```
 
 Tarball je isti onaj koji je `publish.yml` provjerio i objavio; njegov sha256 je u bilješci izdanja.
+
+## Lokalna provjera kandidata za izdanje
+
+Na commitu odabranom za izdanje pokreni `pnpm install --frozen-lockfile`. Verziju kandidata proslijedi kao `RELEASE_VERSION`. Sljedeći primjer u PowerShellu gradi tarball ugovora 3.1.0:
+
+```powershell
+$env:RELEASE_VERSION = '3.1.0'
+pnpm release:tarball contracts
+$env:RELEASE_VERSION = $null
+```
+
+Naredba provjerava sadržaj tarballa i ispisuje njegov SHA-256. Iz novog direktorija s vlastitim `package.json` instaliraj `dist/release/tarball/ductura-contracts-3.1.0.tgz` preko njegove apsolutne putanje i učitaj javne izvoze:
+
+```powershell
+$tarball = 'C:\putanja\do\ductura-contracts-3.1.0.tgz'
+npm install --ignore-scripts $tarball
+@'
+import { createClient } from "@ductura/contracts";
+import api from "@ductura/contracts/openapi/v1.json" with { type: "json" };
+console.log(typeof createClient, api.info.version);
+'@ | node --input-type=module
+```
+
+Za scenarije predaje koristi `@ductura/test-fakes/fake-server` pripremljen iz istog commita (`pnpm release:tarball test-fakes`). Prije drugog pakiranja kopiraj prvi tarball jer naredba isprazni izlazni direktorij. Među vektorima je `student.submission-notes.post` / `unknown-field`, koji očekuje 422 za napomenu s dodatnim poljem `declaration`. Potvrda izjave u ovom valu živi u pregledniku.
