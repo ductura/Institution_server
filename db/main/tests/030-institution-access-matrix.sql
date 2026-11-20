@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1781);
+SELECT plan(1794);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -708,6 +708,35 @@ FROM (VALUES
 ) AS v (n, actor, tbl, what, statement)
 ORDER BY v.n;
 
+-- SRV-7E: the app's settings RPC reads the session institution and gives
+-- each account only the settings it may see.
+INSERT INTO settings.value (level, institution_id, key, value) VALUES
+  ('institution', pg_temp.id('fak_a'), 'citation.style', '"apa"'),
+  ('institution', pg_temp.id('fak_a'), 'lekta.profile', '"demo-profile-a"'),
+  ('institution', pg_temp.id('fak_a'), 'thresholds.paste_event_chars', '250'),
+  ('institution', pg_temp.id('fak_b'), 'citation.style', '"chicago"');
+
+SELECT is(pg_temp.ask(m.actor, $$
+  SELECT string_agg(concat_ws(':', CASE WHEN editor_only THEN 'editor' ELSE 'full' END, key, value), ', ' ORDER BY key)
+  FROM settings.read_institution_values()
+$$), m.expected, format('SRV-7E: settings scope for %s', m.actor))
+FROM (VALUES
+  ('iva', 'full:citation.style:"apa", full:lekta.profile:"demo-profile-a", full:thresholds.paste_event_chars:250'),
+  ('ana', 'editor:citation.style:"apa", editor:lekta.profile:"demo-profile-a"'),
+  ('vesna', 'editor:citation.style:"apa", editor:lekta.profile:"demo-profile-a"'),
+  ('lea', 'full:citation.style:"chicago"'),
+  ('tomo', 'editor:citation.style:"chicago"'),
+  ('nina', 'ZD403: not allowed'),
+  ('boris', 'ZD403: not allowed'),
+  ('closed', 'ZD401: not authenticated'),
+  ('anon', 'ZD401: not authenticated')
+) AS m(actor, expected);
+
+SELECT ok((SELECT prosecdef AND proowner = 'ductus_identity'::regrole AND provolatile = 's'
+                  AND proconfig = ARRAY['search_path=""']::text[]
+           FROM pg_proc WHERE oid = 'settings.read_institution_values()'::regprocedure),
+          'SRV-7E: settings RPC is a confined STABLE definer');
+
 -- 5. Removal works at once: no cached decision (plan 19).
 UPDATE institution.course_member SET member_to = now() WHERE user_id = pg_temp.id('ana');
 SELECT is(
@@ -739,6 +768,10 @@ SELECT is(
   pg_temp.sees('iva'), 'courses: - | members: - | codes: 0 | roles: - | settings: -' || pg_temp.none(),
   'administrator whose role was revoked sees nothing'
 );
+
+SELECT is(pg_temp.ask(a.actor, 'SELECT count(*)::text FROM settings.read_institution_values()'),
+          'ZD403: not allowed', format('SRV-7E: settings denied immediately after revocation for %s', a.actor))
+FROM unnest(ARRAY['ana', 'marko', 'iva']) AS a(actor);
 
 -- 6. Grants by mistake (docs/TESTING.md 5). Every role gets the schema and
 -- every privilege on every table; what still holds is RLS itself. Vesna is
