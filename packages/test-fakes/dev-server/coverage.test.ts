@@ -510,6 +510,20 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { requestId: IDS.mentorship, decision: "approve" },
     },
   },
+  "teacher.deadline-extensions.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/deadline-extensions`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.deadline-extension.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/deadline-extensions`,
+      as: "nastavnik",
+      body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
+    },
+  },
 };
 
 async function run(state: State, step: Step) {
