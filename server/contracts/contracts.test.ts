@@ -132,6 +132,9 @@ describe("route inventory", () => {
       "sources.lookup.post: app/api/sources/lookup/route.ts is not in the inventory",
       "public.verification.post: app/api/public/verification/route.ts is not in the inventory",
       "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
+      "work.consultation-records.get: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
+      "work.consultation-records.post: app/api/works/[documentId]/consultation-records/route.ts is not in the inventory",
+      "work.consultation-additions.post: app/api/works/[documentId]/consultation-records/[recordId]/additions/route.ts is not in the inventory",
     ]);
     const clash = { "app/api/health/route.ts": { methods: ["GET"] as const } };
     expect(
