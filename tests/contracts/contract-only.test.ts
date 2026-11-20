@@ -27,6 +27,7 @@ import {
   createTeacherReadRoutesFor,
   createLiveRoutesFor,
   createAcknowledgmentRouteFor,
+  createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
@@ -180,6 +181,14 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createSettingsValuesPutRoute({ writer: databases.main.settingsWriter })",
     ids: ["settings.values.put"],
     routes: () => [createSettingsValuesPutRoute({ writer: NO_WRITER }).contract.id],
+  },
+  {
+    call: "createSettingsReadRoutes(databases.main)",
+    ids: ["settings.catalogue.get", "settings.values.get"],
+    routes: () =>
+      createSettingsReadRoutes({ ...NO_ACTOR, actorReader: NO_READER }).map(
+        (route) => route.contract.id,
+      ),
   },
   {
     call: "createInterfaceLocaleRoutesFor(databases.main)",
@@ -396,12 +405,11 @@ describe("CONTRACT_ONLY", () => {
   });
 
   it("refuses a DAN-806 route that is mounted", () => {
-    expect(contractOnlyProblems(CONTRACT_ONLY, ids, [...mounted(), "settings.values.get"])).toEqual(
-      ["settings.values.get: mounted"],
-    );
-    expect(contractOnlyProblems([...CONTRACT_ONLY, "settings.values.put"], ids, mounted())).toEqual(
-      ["settings.values.put: mounted"],
-    );
+    for (const id of DAN_806) {
+      expect(contractOnlyProblems([...CONTRACT_ONLY, id], ids, mounted())).toEqual([
+        `${id}: mounted`,
+      ]);
+    }
   });
 });
 
@@ -412,6 +420,8 @@ describe("routes the entry point mounts itself", () => {
       "student.submission-notes.get",
       "student.submission-notes.post",
       "settings.values.put",
+      "settings.catalogue.get",
+      "settings.values.get",
       "profile.interface-locale.get",
       "profile.interface-locale.post",
       "downloads.manifest.get",

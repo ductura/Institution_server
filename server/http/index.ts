@@ -136,7 +136,14 @@ export {
 } from "./ready.ts";
 export { createReadyRoute, type ReadyRouteOptions } from "./ready-route.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
-export { createRouter, routePath, type Handler, type Route, type Router } from "./router.ts";
+export {
+  createRouter,
+  routePath,
+  type Handler,
+  type Route,
+  type Router,
+  sendJson,
+} from "./router.ts";
 export {
   createLayers,
   createPipeline,
@@ -167,6 +174,7 @@ export {
   SETTINGS_PUT_TIMEOUT_MS,
   type SettingsValuesPutOptions,
 } from "./settings-values.ts";
+export { createSettingsReadRoutes } from "./settings/index.ts";
 export {
   createInterfaceLocaleRoutes,
   createInterfaceLocaleRoutesFor,

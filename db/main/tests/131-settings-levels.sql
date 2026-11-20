@@ -92,22 +92,25 @@ SELECT bag_eq(
   ARRAY['ductus_app settings.set_value(text,uuid,text,jsonb,jsonb)',
         'ductus_app_local settings.set_value(text,uuid,text,jsonb,jsonb)',
         'ductus_app settings.read_values(text,uuid)',
-        'ductus_app_local settings.read_values(text,uuid)'],
-  'only the web process calls a function of settings, and only set_value and read_values (DAN-826-3, 139)');
+        'ductus_app_local settings.read_values(text,uuid)',
+        'ductus_app settings.read_institution_values()',
+        'ductus_app_local settings.read_institution_values()'],
+  'only the web process calls the settings write and read functions');
 SELECT is(
   (SELECT string_agg(p.proname || CASE WHEN p.prosecdef THEN ' definer' ELSE '' END, ', ' ORDER BY p.proname)
    FROM pg_proc p WHERE p.pronamespace = 'settings'::regnamespace),
-  'bound_within, fits, is_bound, read_values definer, refuse_change_rewrite, set_value definer',
-  'set_value and read_values (DAN-826-3) are the SECURITY DEFINER functions of the schema');
+  'bound_within, fits, is_bound, read_institution_values definer, read_values definer, refuse_change_rewrite, set_value definer',
+  'the writer and two readers are the SECURITY DEFINER functions of the settings schema');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
      WHERE p.prosecdef AND p.pronamespace <> pg_my_temp_schema()
        AND p.oid <> 'settings.set_value(text,uuid,text,jsonb,jsonb)'::regprocedure
        AND p.oid <> 'settings.read_values(text,uuid)'::regprocedure
+       AND p.oid <> 'settings.read_institution_values()'::regprocedure
        AND (coalesce(p.prosrc, '') ~* 'settings\.(value|change)\M'
             OR EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid
                          AND d.refobjid IN ('settings.value'::regclass, 'settings.change'::regclass))) $$,
-  'no SECURITY DEFINER function but set_value and read_values (DAN-826-3) names either table');
+  'no SECURITY DEFINER function except the writer and two readers names either settings table');
 SELECT doesnt_imatch((SELECT prosrc FROM pg_proc WHERE oid = 'settings.set_value(text,uuid,text,jsonb,jsonb)'::regprocedure),
   '\mEXECUTE\M', 'set_value runs no dynamic SQL');
 
