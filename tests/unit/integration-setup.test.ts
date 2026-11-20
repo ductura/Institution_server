@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
-import { DATABASE_URL_VARIABLES, foreignDatabaseUrls } from "../db/ductus/loopback-database-url.ts";
+import { DATABASE_URL_VARIABLES, foreignDatabaseUrls } from "../db/loopback-database-url.ts";
 import config from "../../vitest.config.ts";
 
 // F-019: the integration project refuses to start against a database that is
@@ -14,6 +16,13 @@ describe("integration setup", () => {
     }[];
     const integration = projects.find((project) => project.test?.name === "database");
     expect(integration?.test?.setupFiles).toContain("tests/db/setup.ts");
+  });
+
+  it("is the setup file that refuses a foreign URL, through the helper tested here", () => {
+    const setup = readFileSync(new URL("../db/setup.ts", import.meta.url), "utf8");
+    expect(setup).toMatch(/import \{ foreignDatabaseUrls \} from "\.\/loopback-database-url\.ts";/);
+    expect(setup).toMatch(/foreignDatabaseUrls\(process\.env\)/);
+    expect(setup).toMatch(/throw new Error\(/);
   });
 
   it("accepts unset and local URLs", () => {

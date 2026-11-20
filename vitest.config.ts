@@ -24,7 +24,6 @@ const PG = `${DIRS}/**/*.pg.integration.test.ts`;
 // The same list is the `exclude` of tsconfig.json, with the reasons.
 const NOT_PORTED = [
   "tests/unit/db-boundary-forms.test.ts",
-  "tests/unit/integration-database-target.test.ts",
   "tests/unit/pg-import-boundary.hardening.test.ts",
   "tests/unit/pg-import-boundary.test.ts",
   "tests/unit/server-route-inventory.test.ts",
