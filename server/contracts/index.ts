@@ -31,6 +31,7 @@ import {
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workMessagesRoutes,
+  consultationRecordsRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -100,6 +101,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...publicVerificationRoutes,
   ...versionsRoutes,
   ...workMessagesRoutes,
+  ...consultationRecordsRoutes,
 ];
 
 /**

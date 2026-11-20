@@ -289,6 +289,18 @@ export {
   type WorkVersionsPage,
   type WorkVersionsReader,
 } from "./work-versions/index.ts";
+export {
+  createConsultationRecords,
+  isCalendarDate,
+  recordsOf,
+  type AddAnswer,
+  type Addition,
+  type ConsultationRecord,
+  type ConsultationRecords,
+  type CreateAnswer,
+  type ListAnswer,
+  type RecordInput,
+} from "./consultation-records/index.ts";
 export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";

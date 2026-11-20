@@ -14,6 +14,7 @@ import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
 import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
+import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import type { Handlers } from "./server.ts";
 
@@ -61,6 +62,7 @@ export const DEV_HANDLERS: Handlers = {
   ...COLLABORATION_HANDLERS,
   ...VERSIONS_HANDLERS,
   ...MESSAGES_HANDLERS,
+  ...CONSULTATION_HANDLERS,
   "sources.lookup.post": ({ account, body }) => {
     if (!account?.roles.includes("student")) return { error: "forbidden" };
     const match =
