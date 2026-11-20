@@ -242,3 +242,20 @@ describe("dev fake server: review findings on #363", () => {
     expect(contractProblems("settings.values.put", ok)).toEqual([]);
   });
 });
+
+describe("dev fake server: session tag", () => {
+  it("keeps the tag within a session and changes it on every new login", async () => {
+    const state = createState();
+    const first = await signIn(state, "student");
+    const tagOf = async (headers: Record<string, string>) => {
+      const me = await send(state, "/api/v1/me", { headers });
+      expect(contractProblems("profile.me.get", me)).toEqual([]);
+      return (me.json as { sessionTag: string }).sessionTag;
+    };
+    const tag = await tagOf(first);
+    expect(tag).toMatch(/^[0-9a-f]{64}$/);
+    expect(await tagOf(first)).toBe(tag);
+    expect(await tagOf(await signIn(state, "student"))).not.toBe(tag);
+    expect(await tagOf(await signIn(state, "nastavnik"))).not.toBe(tag);
+  });
+});
