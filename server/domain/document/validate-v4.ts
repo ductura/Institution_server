@@ -31,6 +31,7 @@ import {
   type TextNodeV4,
 } from "./schema.ts";
 import { checkUnknownFields, validateSources } from "./validate-sources.ts";
+import { IMAGE_FIELDS, validateCover, validateImage } from "./validate-image-v4.ts";
 import { TABLE_FIELDS, validateTable } from "./validate-table-v4.ts";
 import { marksV4Key, validateMarksV4 } from "./validate-marks-v4.ts";
 import {
@@ -46,7 +47,7 @@ export type V4ValidationOutcome =
 
 type Raw = Record<string, unknown>;
 
-const DOCUMENT_FIELDS = new Set(["schemaVersion", "nodes", "sources"]);
+const DOCUMENT_FIELDS = new Set(["schemaVersion", "nodes", "sources", "cover"]);
 const BLOCK_FIELDS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ["paragraph", new Set(["type", "id", "children", "variantGroup"])],
   ["heading", new Set(["type", "id", "level", "children"])],
@@ -57,6 +58,7 @@ const BLOCK_FIELDS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ["formula", new Set(["type", "id", "tex"])],
   ["pageBreak", new Set(["type", "id"])],
   ["table", TABLE_FIELDS],
+  ["image", IMAGE_FIELDS],
 ]);
 const TEXT_FIELDS = new Set(["type", "text", "marks"]);
 const INLINE_FORMULA_FIELDS = new Set(["type", "tex"]);
@@ -81,6 +83,7 @@ export function validateDocumentV4(doc: unknown): V4ValidationOutcome {
     errors.push({ path: "$.schemaVersion", code: "SCHEMA_VERSION_INVALID" });
   }
   const sources = validateSources(Object.hasOwn(doc, "sources") ? doc.sources : undefined, errors);
+  const cover = Object.hasOwn(doc, "cover") ? validateCover(doc.cover, errors) : null;
   if (!Array.isArray(doc.nodes)) {
     errors.push({ path: "$.nodes", code: "NODES_NOT_ARRAY" });
     return { ok: false, errors };
@@ -97,7 +100,10 @@ export function validateDocumentV4(doc: unknown): V4ValidationOutcome {
   if (errors.length > 0) {
     return { ok: false, errors };
   }
-  return { ok: true, doc: { schemaVersion: DOCUMENT_SCHEMA_VERSION_V4, nodes, sources } };
+  return {
+    ok: true,
+    doc: { schemaVersion: DOCUMENT_SCHEMA_VERSION_V4, nodes, sources, ...(cover ? { cover } : {}) },
+  };
 }
 
 function validateBlock(
@@ -136,6 +142,7 @@ function validateBlock(
     return id === null || tex === undefined ? null : { type, id, tex };
   }
   if (type === "table") return validateTable(raw, path, id, errors);
+  if (type === "image") return validateImage(raw, path, id, errors);
   if (type === "box") {
     return validateBox(raw, path, id, seenIds, errors);
   }
