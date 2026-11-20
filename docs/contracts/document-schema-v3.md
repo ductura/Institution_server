@@ -207,7 +207,7 @@ Uz to fast-check svojstva (a) do (g) iz ugovora v2 vrijede za validator i parser
 ## Za klijenta (UI-7A, WEB-7A do WEB-7D)
 
 - Editor v3 imenuje čvorove `citation`, `footnote` i `crossReference`, s atributima iz odjeljka 5, i pretvara ih u kanonski oblik iz odjeljka 3. Prototipni `page` je kanonski `locator`, a prototipni `xref` s `kind` i `target` je `crossReference` s `targetId`.
-- Klijent prije umetanja: obrezuje `via` i tekst fusnote, prijelom retka u fusnoti pretvara u razmak i ne šalje prazan niz (polje izostavlja).
+- Klijent prije umetanja: obrezuje `via` i tekst fusnote, a prijelom retka u fusnoti pretvara u razmak. Neobavezno polje (`locator`, `via`, `rq`) koje bi bilo prazno izostavlja. Fusnota čiji bi tekst bio prazan se ne umeće, a postojeća se uklanja kao cijeli atom (odjeljak 3.3), jer je `text` obavezan.
 - Dok rad nije v3 (odjeljak 7), klijent šalje dokument i korake verzije revizije nula rada, a v3 polja ne šalje.
 - Broj fusnote, tekst unakrsne poveznice i bibliografija računaju se pri prikazu (odjeljak 4).
 
