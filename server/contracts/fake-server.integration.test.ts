@@ -82,8 +82,9 @@ describe("fake server over HTTP", () => {
     // the three WebAuthn routes (DAN-840-1) have four each, framing only: timeout, length twice, stream;
     // teacher.assignment-submissions.post (DAN-903-1) five, as the fast path;
     // student.enrollments.post and student.notice-read.post (SRV-02) five each;
-    // the four mutation routes of SRV-03 five each; student.submission-notes.post (SRV-19) five.
-    expect(VECTORS.length - overHttp.length).toBe(166);
+    // the four mutation routes of SRV-03 five each; student.submission-notes.post (SRV-19) five;
+    // student.work-sources.put and .delete (SRV-7C) five each.
+    expect(VECTORS.length - overHttp.length).toBe(176);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(
