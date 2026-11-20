@@ -114,9 +114,11 @@ describe("fake server over HTTP", () => {
     // the detailed process summary (SRV-9D) adds five more.
     // public.verification.post (SRV-9B) four.
     // teacher.mentorship-request-decision.post (SRV-27) five.
+    // work.consultation-records.post and work.consultation-additions.post (SRV-1105) five each.
     // student.source-proofs.post (SRV-1102) five.
     // teacher.deadline-extension.post (SRV-1108) five.
-    expect(VECTORS.length - overHttp.length).toBe(205);
+    // work.milestones.patch (SRV-1103) five.
+    expect(VECTORS.length - overHttp.length).toBe(220);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

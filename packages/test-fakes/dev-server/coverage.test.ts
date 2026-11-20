@@ -34,6 +34,17 @@ const commit = (txid: string, baseRevision: number): Step => ({
     document: EMPTY_DOCUMENT,
   },
 });
+const CREATE_CONSULTATION: Step = {
+  path: `/api/v1/works/${IDS.document}/consultation-records`,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: {
+    heldOn: "2026-11-18",
+    revision: 1,
+    topic: "Izmišljena struktura rada",
+    agreement: "Dodati zaključak.",
+  },
+};
 const ANCHOR = {
   nodeId: "0a000000-0000-4000-8000-000000000001",
   quote: "Izmišljeno",
@@ -481,6 +492,35 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
+  "work.milestones.get": {
+    request: { path: `/api/v1/works/${IDS.document}/milestones`, as: "student" },
+  },
+  "work.milestones.patch": {
+    request: {
+      method: "PATCH",
+      path: `/api/v1/works/${IDS.document}/milestones/${IDS.milestone}`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { dueAt: "2026-12-03T15:30:00Z" },
+    },
+  },
+  "work.consultation-records.get": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
+    request: { path: `/api/v1/works/${IDS.document}/consultation-records`, as: "student" },
+  },
+  "work.consultation-records.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { ...CREATE_CONSULTATION, as: "nastavnik" },
+  },
+  "work.consultation-additions.post": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
+    request: {
+      path: `/api/v1/works/${IDS.document}/consultation-records/000000c0-0000-4000-8000-000000000001/additions`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { text: "Izmišljena dopuna." },
+    },
+  },
   "work.versions.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
@@ -553,6 +593,20 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
+  "teacher.merlin-roster.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/roster`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.merlin-roster-csv.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/csv`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
 };
 
 async function run(state: State, step: Step) {
@@ -585,6 +639,54 @@ describe("dev fake server covers the whole contract", () => {
     expect(JSON.parse((await run(state, read)).body)).toEqual({ sources: [] });
   });
 
+  it("takes a note with the CR LF line breaks of a form and drops the proofs of a removed source", async () => {
+    const state = createState();
+    expect((await run(state, SAVE_SOURCE)).status).toBe(200);
+    const note = Buffer.from(
+      `--${BOUNDARY}\r\nContent-Disposition: form-data; name="note"\r\n\r\nprvi\r\ndrugi\r\n`,
+    );
+    const added = await run(state, { ...ADD_PROOF, raw: Buffer.concat([note, PROOF_FORM]) });
+    expect(added.status).toBe(201);
+    expect(JSON.parse(added.body)).toMatchObject({ page: "14", note: "prvi\ndrugi" });
+    const remove: Step = {
+      path: SAVE_SOURCE.path,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    };
+    expect((await run(state, remove)).status).toBe(204);
+    expect(state.sourceProofs).toEqual([]);
+    expect((await run(state, SAVE_SOURCE)).status).toBe(200);
+    const read = await run(state, { path: PROOFS, as: "student" });
+    expect(JSON.parse(read.body)).toEqual({ proofs: [] });
+  });
+
+  it("never gives a new proof the id of one that still exists after a source is removed", async () => {
+    const state = createState();
+    const other = { ...WORK_SOURCE, id: "00000000-0000-4000-8000-00000000c0a2" };
+    const saveOther: Step = {
+      ...SAVE_SOURCE,
+      path: `${STUDENT_ASSIGNMENT}/sources/${other.id}`,
+      body: { record: other },
+    };
+    const addOther: Step = {
+      ...ADD_PROOF,
+      path: `${STUDENT_ASSIGNMENT}/sources/${other.id}/proofs`,
+    };
+    for (const step of [SAVE_SOURCE, saveOther, ADD_PROOF, addOther])
+      expect((await run(state, step)).status).toBeLessThan(300);
+    const remove: Step = {
+      path: SAVE_SOURCE.path,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    };
+    expect((await run(state, remove)).status).toBe(204);
+    expect((await run(state, addOther)).status).toBe(201);
+    const ids = state.sourceProofs.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("has a handler and a scenario for every route of ROUTE_TABLE, and nothing else", () => {
     expect(Object.keys(DEV_HANDLERS).sort()).toEqual([...ROUTES].sort());
     expect(ROUTES.filter((route) => typeof DEV_HANDLERS[route] !== "function")).toEqual([]);
@@ -611,6 +713,29 @@ describe("dev fake server covers the whole contract", () => {
       expect(contractProblems(route, answer, code), code).toEqual([]);
     }
   });
+});
+
+it("shares the changed milestone deadline and refuses changes after submission", async () => {
+  const state = createState();
+  const read = SCENARIOS["work.milestones.get"].request;
+  const change = SCENARIOS["work.milestones.patch"].request;
+  expect((await run(state, { ...read, as: "student-2" })).status).toBe(404);
+  expect((await run(state, { ...change, as: "student" })).status).toBe(403);
+
+  const updated = await run(state, change);
+  expect(updated.status).toBe(200);
+  expect(updated.json).toMatchObject({ id: IDS.milestone, dueAt: "2026-12-03T15:30:00.000Z" });
+  for (const as of ["student", "nastavnik"] as const) {
+    expect((await run(state, { ...read, as })).json).toEqual({ milestones: [updated.json] });
+  }
+
+  const submit = SCENARIOS["submission.submit.post"];
+  for (const step of submit.before ?? []) expect((await run(state, step)).status).toBe(200);
+  expect((await run(state, submit.request)).status).toBe(200);
+  expect((await run(state, { ...change, body: { dueAt: "2026-12-04T12:00:00Z" } })).status).toBe(
+    409,
+  );
+  expect((await run(state, read)).json).toEqual({ milestones: [updated.json] });
 });
 
 describe("student submission on the dev fake server", () => {

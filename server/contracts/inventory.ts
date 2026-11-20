@@ -229,6 +229,23 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
+  // SRV-1105 (Ductus#2051, wave 11): the shared record of a consultation and its additions; Ductus has no such route.
+  "app/api/works/[documentId]/milestones/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
+  },
+  "app/api/works/[documentId]/milestones/[milestoneId]/route.ts": {
+    methods: ["PATCH"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
+  },
+  "app/api/works/[documentId]/consultation-records/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",
+  },
+  "app/api/works/[documentId]/consultation-records/[recordId]/additions/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7047671233",
+  },
   // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
   "app/api/teacher/courses/[courseId]/students/route.ts": {
     methods: ["GET"],
@@ -255,6 +272,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  // SRV-1109 (Val 11, N-18, C-16, D-286): the Merlin roster and its CSV; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/merlin/roster/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7048729191",
+  },
+  "app/api/teacher/assignments/[assignmentId]/merlin/csv/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7048729191",
+  },
 };
 
 /**
@@ -273,7 +299,6 @@ export const CONTRACT_ONLY: readonly string[] = [
   "student.access-log.get",
   "student.notice-read.post",
   "student.enrollments.post",
-  "student.notice.get",
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
