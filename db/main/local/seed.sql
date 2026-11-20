@@ -82,6 +82,8 @@ DECLARE
   c_request constant uuid := 'c5ed0000-0000-4000-8000-000000000001';
   c_course constant text := 'Izmišljeni seminar iz ekologije grada';
   c_empty_course constant text := 'Izmišljeni praktikum iz urbane sociologije';
+  c_late_course constant text := 'Izmišljeni seminar iz urbane hidrologije';
+  c_late_request constant uuid := 'c5ed0000-0000-4000-8000-000000000017';
   c_year constant text := '2026/2027';
   c_title constant text := 'Seminarski rad: kućno kompostiranje';
   c_instructions constant text :=
@@ -93,6 +95,7 @@ DECLARE
   v_ids uuid[] := ARRAY[]::uuid[];
   v_course uuid;
   v_empty uuid;
+  v_late uuid;
   v_group_a uuid;
   v_group_b uuid;
   v_assignment uuid;
@@ -140,8 +143,10 @@ BEGIN
   PERFORM set_config('app.session_token', v_tokens[2], true);
   v_course := institution.create_course(c_course, c_year, 'partially_allowed');
   v_empty := institution.create_course(c_empty_course, c_year, 'encouraged');
+  v_late := institution.create_course(c_late_course, c_year, 'partially_allowed');
   PERFORM institution.set_course_holder(v_course, v_ids[2]);
   PERFORM institution.set_course_holder(v_empty, v_ids[2]);
+  PERFORM institution.set_course_holder(v_late, v_ids[2]);
   v_group_a := institution.create_seminar_group(v_course, 'Grupa A');
   v_group_b := institution.create_seminar_group(v_course, 'Grupa B');
   PERFORM institution.assign_group_teacher(v_group_b, v_ids[3]);
@@ -149,6 +154,11 @@ BEGIN
     v_course, c_request, c_title, c_instructions, 'seminar_paper',
     '2026-10-01 08:00:00+02', '2027-01-31 23:59:00+01', 'partially_allowed',
     ARRAY['proofreading', 'literature_search'], 'basic', false, 1500, 2500, 1);
+  PERFORM institution.create_assignment(
+    v_late, c_late_request, 'Kratki osvrt: gradski vrtovi',
+    'Opiši ulogu gradskih vrtova u upravljanju oborinskom vodom.', 'short_paper',
+    '2026-09-01 08:00:00+02', '2026-09-30 23:59:00+02', 'partially_allowed',
+    ARRAY['proofreading'], 'basic', false, NULL, NULL, 1);
   RESET ROLE;
 
   -- The fixed codes: an operator row with the hash the product stores.
@@ -157,7 +167,8 @@ BEGIN
     (v_course, sha256(convert_to('STARI2025KOD', 'UTF8')), '2025-10-31 23:59:00+01', false, v_ids[2],
      '2025-10-01 09:00:00+02'),
     (v_course, sha256(convert_to('UPIS2026DEMO', 'UTF8')), '2027-09-30 23:59:00+02', true, v_ids[2], now()),
-    (v_empty, sha256(convert_to('PRAZNI2026DEMO', 'UTF8')), '2027-09-30 23:59:00+02', true, v_ids[2], now())
+    (v_empty, sha256(convert_to('PRAZNI2026DEMO', 'UTF8')), '2027-09-30 23:59:00+02', true, v_ids[2], now()),
+    (v_late, sha256(convert_to('HIDRO2026DEMO', 'UTF8')), '2027-09-30 23:59:00+02', true, v_ids[2], now())
   ON CONFLICT (code_hash) DO NOTHING;
 
   -- 5. demo-student enrols with the code, joins group A, confirms the notice

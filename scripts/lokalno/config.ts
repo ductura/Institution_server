@@ -104,8 +104,8 @@ export const TOKEN_FILE = "provisioning-token";
 /** The simulator's named accounts (packages/test-fakes/oidc/simulated-accounts.ts). */
 export const ACCOUNTS_FILE = "oidc-racuni.json";
 /**
- * The committed accounts of the local seed (SRV-01): demo-admin and
- * demo-bez-uloge of demo-fakultet, relative to the repository root.
+ * The committed accounts of the local seed (SRV-01 and SRV-17),
+ * relative to the repository root.
  */
 export const SEED_ACCOUNTS_FILE = "db/main/local/lazni-oidc-racuni.json";
 

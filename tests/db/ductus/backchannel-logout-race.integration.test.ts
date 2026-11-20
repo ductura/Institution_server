@@ -27,7 +27,7 @@ async function client(url: string) {
   const c = new pg.Client({ connectionString: url });
   clients.push(c);
   await c.connect();
-  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]
+  const pid = (await c.query<{ pid: number }>("SELECT pg_catalog.pg_backend_pid() AS pid")).rows[0]!
     .pid;
   return { c, pid };
 }
@@ -55,7 +55,7 @@ const openArgs = (tokenHash: Buffer, person: string, sid: string | null) => [
 const LOGOUT = "SELECT identity.backchannel_logout($1, $2, $3, $4) AS n";
 const outcome = (pending: Promise<pg.QueryResult<{ n: number }>>) =>
   pending.then(
-    (r) => String(r.rows[0].n),
+    (r) => String(r.rows[0]!.n),
     (error: { code?: string }) => error.code ?? "error",
   );
 
@@ -107,7 +107,7 @@ beforeAll(async () => {
     "SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L IN ROLE ductus_auth', $1::text, $2::text) AS ddl",
     [AUTH_LOGIN, password],
   );
-  await admin.query(ddl.rows[0].ddl);
+  await admin.query(ddl.rows[0]!.ddl);
   await admin.query(
     "INSERT INTO identity.institution (id, slug, aai_home_org) VALUES ($1, $2, $3)",
     [institution, `bcl-${suffix}`, homeOrg],

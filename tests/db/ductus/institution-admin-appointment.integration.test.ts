@@ -136,7 +136,7 @@ describe("DAN-525 administrator appointment over separate connections", () => {
       expect(await code(first.query(revoke, [faculty, people.iva]))).toBe("ok");
       await second.query("BEGIN");
       await second.query("SET CONSTRAINTS ALL IMMEDIATE");
-      const pid = (await second.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]
+      const pid = (await second.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0]!
         .pid;
       const waiting = code(second.query(revoke, [faculty, people.ana]));
       // The second check waits on the institution's advisory lock until the first commits.

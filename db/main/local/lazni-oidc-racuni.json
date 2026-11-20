@@ -13,6 +13,20 @@
       "uloga": "nastavnik",
       "ime": "Iva",
       "prezime": "Neimenić"
+    },
+    {
+      "korisnik": "demo-student-3",
+      "domena": "demo.ductus.test",
+      "uloga": "student",
+      "ime": "Lana",
+      "prezime": "Brezik"
+    },
+    {
+      "korisnik": "demo-student-4",
+      "domena": "demo.ductus.test",
+      "uloga": "student",
+      "ime": "Niko",
+      "prezime": "Rastović"
     }
   ]
 }
