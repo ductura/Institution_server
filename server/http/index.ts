@@ -10,11 +10,13 @@ export {
   createConsultationRecordRoutesFor,
 } from "./consultation-records/index.ts";
 export { createAttachmentRoutesFor } from "./attachments/index.ts";
+export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
+export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
@@ -247,6 +249,7 @@ export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,
 } from "./student-submission.ts";
+export { createStudentNoticeRoute, createStudentNoticeRouteFor } from "./student-notice.ts";
 export {
   bearerMatches,
   checkProvisionBody,

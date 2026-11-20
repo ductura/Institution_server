@@ -3,6 +3,14 @@ export { DOWNLOADS_ROUTES } from "./routes.ts";
 export { DOWNLOADS_SCHEMAS } from "./schemas.ts";
 export { renderReceiptPdf } from "./receipt-pdf/index.ts";
 export {
+  createMerlinRosterReader,
+  merlinRosterCsv,
+  type MerlinLabels,
+  type MerlinRosterRead,
+  type MerlinRosterReader,
+  type MerlinRosterRow,
+} from "./merlin/roster/index.ts";
+export {
   createDownloadsService,
   DOWNLOADS_ERRORS,
   DOWNLOADS_RELEASES_INVALID,
