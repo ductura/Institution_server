@@ -627,6 +627,54 @@ describe("dev fake server covers the whole contract", () => {
     expect(JSON.parse((await run(state, read)).body)).toEqual({ sources: [] });
   });
 
+  it("takes a note with the CR LF line breaks of a form and drops the proofs of a removed source", async () => {
+    const state = createState();
+    expect((await run(state, SAVE_SOURCE)).status).toBe(200);
+    const note = Buffer.from(
+      `--${BOUNDARY}\r\nContent-Disposition: form-data; name="note"\r\n\r\nprvi\r\ndrugi\r\n`,
+    );
+    const added = await run(state, { ...ADD_PROOF, raw: Buffer.concat([note, PROOF_FORM]) });
+    expect(added.status).toBe(201);
+    expect(JSON.parse(added.body)).toMatchObject({ page: "14", note: "prvi\ndrugi" });
+    const remove: Step = {
+      path: SAVE_SOURCE.path,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    };
+    expect((await run(state, remove)).status).toBe(204);
+    expect(state.sourceProofs).toEqual([]);
+    expect((await run(state, SAVE_SOURCE)).status).toBe(200);
+    const read = await run(state, { path: PROOFS, as: "student" });
+    expect(JSON.parse(read.body)).toEqual({ proofs: [] });
+  });
+
+  it("never gives a new proof the id of one that still exists after a source is removed", async () => {
+    const state = createState();
+    const other = { ...WORK_SOURCE, id: "00000000-0000-4000-8000-00000000c0a2" };
+    const saveOther: Step = {
+      ...SAVE_SOURCE,
+      path: `${STUDENT_ASSIGNMENT}/sources/${other.id}`,
+      body: { record: other },
+    };
+    const addOther: Step = {
+      ...ADD_PROOF,
+      path: `${STUDENT_ASSIGNMENT}/sources/${other.id}/proofs`,
+    };
+    for (const step of [SAVE_SOURCE, saveOther, ADD_PROOF, addOther])
+      expect((await run(state, step)).status).toBeLessThan(300);
+    const remove: Step = {
+      path: SAVE_SOURCE.path,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    };
+    expect((await run(state, remove)).status).toBe(204);
+    expect((await run(state, addOther)).status).toBe(201);
+    const ids = state.sourceProofs.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("has a handler and a scenario for every route of ROUTE_TABLE, and nothing else", () => {
     expect(Object.keys(DEV_HANDLERS).sort()).toEqual([...ROUTES].sort());
     expect(ROUTES.filter((route) => typeof DEV_HANDLERS[route] !== "function")).toEqual([]);

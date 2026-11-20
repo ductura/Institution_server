@@ -189,7 +189,14 @@ function readBody(
     const parts = multipartFields(req.body);
     return parts === null
       ? { ok: false, answer: firstError(route, ["invalid_input", "bad_request"]) ?? NOT_FOUND }
-      : { ok: true, value: { ...parts } };
+      : {
+          ok: true,
+          // A form writes every line break of a text field as CR LF; the
+          // contract takes LF, as the real route keeps it (Base64 has neither).
+          value: Object.fromEntries(
+            Object.entries(parts).map(([name, value]) => [name, value.replaceAll("\r\n", "\n")]),
+          ),
+        };
   }
   const text = Buffer.from(req.body).toString("utf8");
   if (type === "application/x-www-form-urlencoded")
