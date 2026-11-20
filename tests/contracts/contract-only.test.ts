@@ -85,10 +85,14 @@ export const DAN_989: readonly string[] = ["student.assignment-work.get"];
 // contract now, handler in DAN-932), frozen the same way.
 export const DAN_931: readonly string[] = ["downloads.manifest.get"];
 
+// The operation of DAN-843-1 (the operator's read of events, Ductus#2028
+// OPSEG c.6979453212: contract now, handler in 843-2), frozen the same way.
+export const DAN_843: readonly string[] = ["ops.events.get"];
+
 /** Every route a task has put on the list; nothing else may be there. */
 const FROZEN: readonly string[] = [
   ...[...DAN_803, ...DAN_806, ...DAN_840, ...DAN_903, ...DAN_904],
-  ...[...DAN_989, ...DAN_931],
+  ...[...DAN_989, ...DAN_931, ...DAN_843],
 ];
 
 // Routes the entry point mounts itself, over a database the areas cannot be

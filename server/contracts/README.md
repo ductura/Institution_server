@@ -51,7 +51,8 @@ Ovaj dio samo izjavljuje odredište. Tok prijave ga šalje od DAN-1081-Sb.
   - 2 nastavnička čitanja DAN-903;
   - dnevnik pristupa studenta DAN-904;
   - stanje rada po zadatku DAN-989 (`student.assignment-work.get`, handler u 989-2);
-  - manifest preuzimanja DAN-931 (`downloads.manifest.get`; handler je montiran u DAN-932, pa ruta više nije na popisu). Pada ako je na popisu ruta izvan tih popisa, ruta bez ugovora ili ruta montirana u nekom području, te ako ruta s tih popisa s ugovorom i bez handlera nije na popisu (Ductus#1836 c.6905207008, potvrda c.6905290513).
+  - manifest preuzimanja DAN-931 (`downloads.manifest.get`; handler je montiran u DAN-932, pa ruta više nije na popisu);
+  - operatorsko čitanje događaja DAN-843-1 (`ops.events.get`, handler u 843-2). Pada ako je na popisu ruta izvan tih popisa, ruta bez ugovora ili ruta montirana u nekom području, te ako ruta s tih popisa s ugovorom i bez handlera nije na popisu (Ductus#1836 c.6905207008, potvrda c.6905290513).
 
 ## Manifest preuzimanja (DAN-931)
 
@@ -66,3 +67,26 @@ Operatorska ruta se izjavljuje dvaput: staza je `/api/v1/ops` ili ispod nje (to 
 - svaka montirana ruta koja je operatorska po id-u ili po stazi na pokrenutom poslužitelju bez kolačića dobiva 401 koraka 8.
 
 Poslužitelj pokrenut tek nakon pokretanja (na zahtjev ili timer) brojač ne vidi. Test provodi samo izjavu rute: ruta izvan `/api/v1/ops` koja mijenja operatorske razine (npr. `settings.values.put`) nije operatorska ruta u tom smislu i nju štiti baza.
+
+## Operatorsko čitanje događaja (DAN-843-1)
+
+`routes/ops.ts` (S-1K.5-b): `GET /api/v1/ops/events?from=…&to=…[&after=…]` nad funkcijom `public.operator_log` baze zapisa (S-1K.5-a, DAN-835-1; funkcija, ne pogled, jer čita prozor). Funkcija maskira svaki zapis: adresa ostaje samo kao mreža. Dio računala uvijek se reže, a maska duža od /24 (IPv4) ili /48 (IPv6) skraćuje se na nju. Kraća maska ostaje (npr. `10.0.0.0/8`, pgTAP `db/logs/tests/040-operator-log.sql`, slučaj 3). Polje čije ime ne počinje ASCII slovom iza kojeg su samo ASCII slova i znamenke, ili koje u bilo kojem obliku slova sadrži `token`, `cookie`, `secret`, `password`, `credential`, `bearer`, `authorization` ili `session` ne izlazi, pa ga ni shema ne prima (review na #328, b6edc3e). Prozor je poluotvoren `[from, to)`, najviše 24 sata (točno 24 dopušteno). Stranica ima najviše 1000 događaja, poredanih po `seq`; `next` je `seq` zadnjeg događaja pune stranice, inače `null`. Shema to veže uz duljinu: stranica od najviše 999 događaja ima `next: null`, a stranica od točno 1000 broj. Shema provjerava oblik:
+
+- `from` i `to` su stvarni UTC trenuci kalendara (kao `student.access-log.get`);
+- `after` je broj od 0 do 2^53−1 bez vodeće nule (uzorak znamenku po znamenku, provjeren proročištem);
+- `kind` je kao provjera `log_entry_kind_shape`;
+- `fields` je zatvoren rječnik skalarnih vrijednosti (`additionalProperties: false`, jer ga TypeBox inače ne zatvara), s imenima koja `operator_log` zadržava; `ops-events.test.ts` pravilo čita iz same migracije i uspoređuje ga sa shemom na više od 100 imena.
+
+Svaki uzorak je samo ASCII (`[0-9]`, nikad `\d`, ni u klasi) i završava s `(?![\s\S])`. `ops-events.test.ts` provjerava i to, uz svaki dan od 1999. do 2032. i rubove kalendara iz QA #256. Ostalo kaže sažetak, a provodi handler u 843-2: `from` < `to`, granica od 24 h, 422 za ponovljen ili nepoznat parametar i 503 za cijelu stranicu zbog jednog neprovjerenog retka. `access` je `signed_in`, jer `ACCESS` još nema `operator`. Pristup odlučuje pipeline: korak 3 (mreža) i korak 8 (živa sesija, serverski popis operatora i potvrđen drugi faktor, tim redom; DAN-1092-1). Kad korak 8 ne može pitati popis operatora ili drugi faktor, vraća 503, pa vektor `unavailable` daje i on, ne samo handler.
+
+Vektori su zahtjevi i odgovori koje stvarni server može dati (DAN-843-1b, Ductus#2028 c.6981773723). `tests/contracts/ops-events-step-8.test.ts` provjerava sljedeće:
+
+- svaki vektor prolazi stvarni korak 8, a oba porta dobivaju token koji `server/session` čita iz kolačića; `newSessionToken` iz tih 32 bajta kao slučajnosti daje upravo taj token;
+- 401, 403 i 503 tijela su ona koja korak 8 piše;
+- svaki redak vektora `page` je zapis koji katalog zapisa propušta, maskiran kao u `operator_log`, a `seq` stranice ide bez rupa, jer lanac zapisa ne preskače `seq` (rupu može dati samo pomak sata baze unatrag, koji vektor nema);
+- redak `traffic.request` je ono što piše `createTrafficRecorder` (`anonymous`, `not_checked`, `requestId` kao UUID v4);
+- ostali retci (`authz.operator_denied`, `traffic.ip_denied`) su ono što stvarni koraci 3 i 8 iz `createLayers` zapišu kroz `createOperatorDenialLog` za zahtjev retka `traffic.request` s istim `requestId`, i to sa statusom tog retka. Retci prijave (`authn.login_*`) više nisu u vektoru, jer ih nijedan proizvođač ovog servera ne piše u zapis;
+- prozor svakog vektora osim 422 je onaj koji `operator_log` čita: `from` prije `to`, najviše 24 sata;
+- status retka `traffic.request` je onaj koji ruta može dati: izjavljeni za tu metodu ili 405 za metodu koju nijedna ruta na stazi nema, 404 za rutu `none`, 429, 499 i 500 svugdje, 401, 403 i 503 samo na operatorskoj stazi (`isOpsPath`) te 403 koraka 7 samo gdje ga stvarni sloj porijekla daje (ne na ruti pružatelja identiteta). Model je server s montiranom ovom rutom (843-2); ostale rute iz `CONTRACT_ONLY` router nema, pa npr. `GET /api/v1/settings/values` daje 405. Provjera ide za svaku rutu iz `inventory.ts`.
+
+TS preslika maske provjerava se na svih 14 slučajeva pgTAP 040. Poznata granica: uzorak `requestId` u tijelima grešaka je zajednički `REQUEST_ID_PATTERN` i završava s `$` (DAN-1098). Test uzoraka ga izuzima samo po točnom tekstu.

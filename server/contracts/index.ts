@@ -11,6 +11,7 @@ import {
   liveRoutes,
   INTERNAL,
   METHOD_NOT_ALLOWED,
+  opsRoutes,
   platformRoutes,
   profileRoutes,
   projectionRoutes,
@@ -79,6 +80,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherRoutes,
   ...settingsRoutes,
   ...downloadsRoutes,
+  ...opsRoutes,
 ];
 
 /**
