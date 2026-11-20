@@ -607,6 +607,32 @@ describe("dev fake server covers the whole contract", () => {
     expect(JSON.parse(read.body)).toEqual({ proofs: [] });
   });
 
+  it("never gives a new proof the id of one that still exists after a source is removed", async () => {
+    const state = createState();
+    const other = { ...WORK_SOURCE, id: "00000000-0000-4000-8000-00000000c0a2" };
+    const saveOther: Step = {
+      ...SAVE_SOURCE,
+      path: `${STUDENT_ASSIGNMENT}/sources/${other.id}`,
+      body: { record: other },
+    };
+    const addOther: Step = {
+      ...ADD_PROOF,
+      path: `${STUDENT_ASSIGNMENT}/sources/${other.id}/proofs`,
+    };
+    for (const step of [SAVE_SOURCE, saveOther, ADD_PROOF, addOther])
+      expect((await run(state, step)).status).toBeLessThan(300);
+    const remove: Step = {
+      path: SAVE_SOURCE.path,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    };
+    expect((await run(state, remove)).status).toBe(204);
+    expect((await run(state, addOther)).status).toBe(201);
+    const ids = state.sourceProofs.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("has a handler and a scenario for every route of ROUTE_TABLE, and nothing else", () => {
     expect(Object.keys(DEV_HANDLERS).sort()).toEqual([...ROUTES].sort());
     expect(ROUTES.filter((route) => typeof DEV_HANDLERS[route] !== "function")).toEqual([]);

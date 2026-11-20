@@ -255,8 +255,9 @@ export const STUDENT_HANDLERS: Handlers = {
     );
     if (!jpeg || mine.length >= 200) return { error: "invalid_input" };
     const proof = {
-      // In order, so a script can name the proof it attached: …-d00000000001, then …02.
-      id: `00000000-0000-4000-8000-d${String(state.sourceProofs.length + 1).padStart(11, "0")}`,
+      // In order, so a script can name the proof it attached: …-d00000000001, then …02;
+      // counted over every proof ever attached, so a removed one never lends its id.
+      id: `00000000-0000-4000-8000-d${String((state.sourceProofCount += 1)).padStart(11, "0")}`,
       assignmentId: source.assignmentId,
       studentId: account.id,
       sourceId: source.id,
