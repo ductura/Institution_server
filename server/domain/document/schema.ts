@@ -492,10 +492,35 @@ export type DocumentNodeV4 =
   | CodeBlockNode
   | BoxNode
   | FormulaNode
-  | PageBreakNode;
+  | PageBreakNode
+  | TableNode;
 
 export type CanonicalDocumentV4 = {
   schemaVersion: typeof DOCUMENT_SCHEMA_VERSION_V4;
   nodes: DocumentNodeV4[];
   sources: DocumentSource[];
+};
+
+// Document v4, the table (contract v4 §5.1).
+
+/** Most cells of one table, longest cell and longest figure title or source. */
+export const MAX_TABLE_CELLS = 3000;
+export const MAX_TABLE_CELL_CODE_POINTS = 1000;
+export const MAX_FIGURE_TEXT_CODE_POINTS = 500;
+
+export type TableCellFill = { color: string; column: number; row: number };
+export type TableMerge = { column: number; columnSpan: number; row: number; rowSpan: number };
+
+export type TableNode = {
+  type: "table";
+  id: NodeId;
+  rows: string[][];
+  header: boolean;
+  stripes: boolean;
+  landscape: boolean;
+  headerFill?: string;
+  cellFills?: TableCellFill[];
+  merges?: TableMerge[];
+  title?: string;
+  source?: string;
 };

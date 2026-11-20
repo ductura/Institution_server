@@ -31,6 +31,7 @@ import {
   type TextNodeV4,
 } from "./schema.ts";
 import { checkUnknownFields, validateSources } from "./validate-sources.ts";
+import { TABLE_FIELDS, validateTable } from "./validate-table-v4.ts";
 import { marksV4Key, validateMarksV4 } from "./validate-marks-v4.ts";
 import {
   validateCitation,
@@ -55,6 +56,7 @@ const BLOCK_FIELDS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ["box", new Set(["type", "id", "kind", "children"])],
   ["formula", new Set(["type", "id", "tex"])],
   ["pageBreak", new Set(["type", "id"])],
+  ["table", TABLE_FIELDS],
 ]);
 const TEXT_FIELDS = new Set(["type", "text", "marks"]);
 const INLINE_FORMULA_FIELDS = new Set(["type", "tex"]);
@@ -133,6 +135,7 @@ function validateBlock(
     );
     return id === null || tex === undefined ? null : { type, id, tex };
   }
+  if (type === "table") return validateTable(raw, path, id, errors);
   if (type === "box") {
     return validateBox(raw, path, id, seenIds, errors);
   }
