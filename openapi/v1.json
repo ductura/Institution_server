@@ -23019,7 +23019,7 @@
     "/api/v1/settings/values": {
       "get": {
         "operationId": "settings.values.get",
-        "summary": "The rows of one level in the caller's scope (course names the course for the course level and is absent for every other), and for every visible catalogue key of that level the value that holds without it (source: a higher level or default) and the narrowest higher bound. Students and teachers can read only citation.style and lekta.profile of their own institution at the institution level. A level or course that is not the caller's gives 404, the same as a course that does not exist (C-23: another's is nonexistent).",
+        "summary": "The rows of one level in the caller's scope (course names the course for the course level and is absent for every other), and for every catalogue key of that level the value that holds without it (source: a higher level or default) and the narrowest higher bound. A level or course that is not the caller's gives 404, the same as a course that does not exist (C-23: another's is nonexistent).",
         "x-access": "signed_in",
         "x-inventory": "app/api/settings/values/route.ts",
         "parameters": [
