@@ -1,5 +1,6 @@
 // Public interface of server/institution; other areas import only this file.
 export { readAssignmentCurrentVersion } from "./assignment-current-version/index.ts";
+export { readAssignmentOverview, readTeacherRoster } from "./course-students.ts";
 export {
   type AiPolicy,
   type CourseBody,

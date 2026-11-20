@@ -13,6 +13,7 @@ import {
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
   createAssignmentCurrentVersionRouteFor,
+  createAttachmentRoutesFor,
   createAuthRoutes,
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
@@ -47,6 +48,7 @@ import {
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
@@ -206,6 +208,19 @@ const SESSION_ROUTES = {
   },
   // SRV-1101: the same for the text check configuration.
   // SRV-1102: the proofs of a source; a live session that is no student of the work gets 404.
+  // SRV-10C: the attachments of a work; a live session that is no party to the work gets 404.
+  "work.attachments.post": {
+    method: "POST",
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/attachments`,
+    body: () => ({ imageBase64: "iVBORw0KGgo=" }),
+    live: 404,
+  },
+  "work.attachments.get": {
+    method: "GET",
+    path: `/api/v1/work-attachments/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
   "work.milestones.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/milestones`,
@@ -434,6 +449,18 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  "teacher.course-students.get": {
+    method: "GET",
+    path: `/api/v1/teacher/courses/${ASSIGNMENT}/students`,
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.assignment-overview.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/overview`,
+    body: () => undefined,
+    live: 200,
+  },
   // SRV-1108: a live session that teaches no such assignment gets 404.
   "teacher.deadline-extensions.get": {
     method: "GET",
@@ -651,6 +678,7 @@ const FACTORIES = [
   "createCollaborationCommentsRouteFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
+  "createAttachmentRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -664,6 +692,7 @@ const FACTORIES = [
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createMerlinRosterRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
@@ -698,6 +727,7 @@ const MOUNTED = [
   createCollaborationCommentsRouteFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
+  ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
@@ -711,6 +741,7 @@ const MOUNTED = [
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),

@@ -1,4 +1,5 @@
 import {
+  attachmentRoutes,
   authRoutes,
   clientRoutes,
   collaborationRoutes,
@@ -54,6 +55,7 @@ export {
 };
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
+export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
   CLIENT_APP_VERSION_PATTERN,
   CLIENT_CONTEXT_VALUES,
@@ -87,6 +89,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
+  ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
   ...teacherWorkingCriteriaRoutes,
