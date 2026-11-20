@@ -456,9 +456,9 @@
       ]
     },
     {
-      "name": "v4-not-a-version",
+      "name": "v5-not-a-version",
       "value": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "sources": [],
         "nodes": [
           {

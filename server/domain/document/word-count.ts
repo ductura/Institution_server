@@ -1,4 +1,5 @@
-import type { InlineNodeV3, VersionedDocument } from "./schema.ts";
+import { documentWordCountV4 } from "./consumers-v4.ts";
+import type { DocumentNodeV3, InlineNodeV3, VersionedDocument } from "./schema.ts";
 
 /**
  * Word count over the canonical text: whitespace-separated runs, counted per
@@ -9,11 +10,13 @@ import type { InlineNodeV3, VersionedDocument } from "./schema.ts";
  * one. The text of a footnote is not counted.
  *
  * A reading aid, nothing more. It is never evidence about authorship and
- * never decides anything.
+ * never decides anything. A v4 document is counted by `documentWordCountV4`
+ * (contract v4 §11).
  */
 export function documentWordCount(doc: VersionedDocument): number {
+  if (doc.schemaVersion === 4) return documentWordCountV4(doc);
   let total = 0;
-  for (const node of doc.nodes) {
+  for (const node of doc.nodes as readonly DocumentNodeV3[]) {
     const children: readonly InlineNodeV3[] = node.children;
     const text = children.map((child) => (child.type === "text" ? child.text : " ")).join("");
     for (const word of text.split(/\s+/u)) {
