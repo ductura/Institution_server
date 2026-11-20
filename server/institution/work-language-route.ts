@@ -15,7 +15,7 @@ const MAX_VERSION = 2_147_483_647;
 export interface WorkLanguageRouteDeps {
   withActor: WithActor;
   expectedOrigin: string;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 const REFUSAL: Record<WorkLanguageRefusal, [number, string]> = {

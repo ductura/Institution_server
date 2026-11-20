@@ -20,8 +20,8 @@ const FILES = {
 function groupRoles(sql: string): string[] {
   const lists = [...sql.matchAll(/group_roles\s+CONSTANT\s+text\[\]\s*:=\s*ARRAY\[([^\]]*)\]/g)];
   if (lists.length !== 1) throw new Error(`expected one group_roles list, found ${lists.length}`);
-  const body = lists[0][1].replace(/--[^\n]*/g, "");
-  const names = [...body.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  const body = lists[0]![1]!.replace(/--[^\n]*/g, "");
+  const names = [...body.matchAll(/'([^']*)'/g)].map((m) => m[1]!);
   const rest = body.replace(/'[^']*'/g, "").replace(/[\s,]/g, "");
   if (rest !== "") throw new Error(`unexpected text in the group_roles list: ${rest}`);
   return names;

@@ -31,7 +31,7 @@ const WORK_TYPES = new Set([
 
 export interface TeacherCoursesDeps {
   withActor: WithActor;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 export interface TeacherAssignment {

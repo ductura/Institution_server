@@ -41,7 +41,11 @@ export interface AssignmentInput {
 
 type JsonObject = Record<string, unknown>;
 
-function json(body: unknown, status: number, headers?: ResponseInit["headers"]): Response {
+function json(
+  body: unknown,
+  status: number,
+  headers?: ConstructorParameters<typeof Headers>[0],
+): Response {
   const responseHeaders = new Headers(headers);
   responseHeaders.set("content-type", "application/json; charset=utf-8");
   responseHeaders.set("cache-control", "no-store");

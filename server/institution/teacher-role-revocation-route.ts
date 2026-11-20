@@ -6,7 +6,7 @@ export const MAX_TEACHER_ROLE_REVOCATION_BODY_BYTES = 64;
 export interface TeacherRoleRevocationDeps {
   withActor: WithActor;
   expectedOrigin: string;
-  sessionToken?: string;
+  sessionToken?: string | undefined;
 }
 
 // An administrator of the institution ends one person's confirmed teacher
