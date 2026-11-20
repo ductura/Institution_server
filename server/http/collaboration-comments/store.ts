@@ -1,0 +1,99 @@
+import type { ActorTransaction } from "../../database/index.ts";
+import { verifyDocumentSnapshot } from "../../evidence/index.ts";
+
+const LIST = `SELECT thread_id AS "threadId", comment_id AS "commentId",
+  comment_position AS position, author_role AS "authorRole", is_own AS "isOwn",
+  body, anchor, state, created_window AS "createdWindow", deleted_window AS "deletedWindow"
+  FROM collaboration.list_comments($1)`;
+export const ACTS = {
+  create: { keys: ["documentId", "body", "anchor"] },
+  reply: { keys: ["threadId", "body"], sql: "SELECT collaboration.reply_comment($1, $2) AS id" },
+  resolve: { keys: ["threadId"], sql: "SELECT collaboration.resolve_thread($1)" },
+  reopen: { keys: ["threadId"], sql: "SELECT collaboration.reopen_thread($1)" },
+  delete: { keys: ["commentId"], sql: "SELECT collaboration.delete_comment($1)" },
+  list: { keys: ["documentId"], sql: LIST },
+} as const;
+export type Action = keyof typeof ACTS;
+
+type Anchor = {
+  nodeId: string;
+  quote: string;
+  prefix: string;
+  suffix: string;
+  startHint: number;
+  endHint: number;
+};
+type Answer = { status: 200; body: unknown } | { status: 204 | 409 | 422 | 503 };
+
+async function checkAnchor(
+  tx: ActorTransaction,
+  documentId: unknown,
+  anchor: Anchor,
+): Promise<200 | 409 | 422 | 503> {
+  const { startHint: start, endHint: end, quote, prefix, suffix } = anchor;
+  if (end - start !== quote.length) return 422;
+  // This RPC checks the same relationship as create_comment and selects the
+  // submitted revision when one exists. It records the teacher's access.
+  const { rows } = await tx.query(
+    "SELECT outcome, content_hash AS hash, body FROM collaboration.read_live_state($1, NULL)",
+    [documentId],
+  );
+  const row = rows.length === 1 ? rows[0] : undefined;
+  if (row?.outcome === "empty") return 409;
+  if ((row?.outcome !== "state" && row?.outcome !== "submitted") || typeof row.body !== "string") {
+    return 503;
+  }
+  const snapshot = await verifyDocumentSnapshot(Buffer.from(row.body, "utf8"));
+  if (!snapshot.ok || snapshot.sha256 !== row.hash) return 503;
+  const node = snapshot.document.nodes.find(({ id }) => id === anchor.nodeId);
+  if (node === undefined) return 409;
+  const text = node.children.map((child) => child.text).join("");
+  // Hints are UTF-16 offsets. For a new comment the selection must still be
+  // exact. After storage, clients can relocate the anchor as the text evolves.
+  return text.slice(start, end) === quote &&
+    text.slice(0, start).endsWith(prefix) &&
+    text.startsWith(suffix, end)
+    ? 200
+    : 409;
+}
+
+const iso = (value: unknown) =>
+  value instanceof Date && Number.isFinite(value.getTime()) ? value.toISOString() : value;
+
+export async function execute(
+  tx: ActorTransaction,
+  action: Action,
+  input: Record<string, unknown>,
+): Promise<Answer> {
+  if (action === "create") {
+    const { documentId, body, anchor } = input;
+    if (anchor === null) {
+      const { rows } = await tx.query("SELECT collaboration.create_general_comment($1, $2) AS id", [
+        documentId,
+        body,
+      ]);
+      return { status: 200, body: rows[0] };
+    }
+    const status = await checkAnchor(tx, documentId, anchor as Anchor);
+    if (status !== 200) return { status };
+    const { rows } = await tx.query(
+      "SELECT collaboration.create_comment($1, $2, $3::jsonb) AS id",
+      [documentId, body, JSON.stringify(anchor)],
+    );
+    return { status: 200, body: rows[0] };
+  }
+  const { keys, sql } = ACTS[action];
+  const { rows } = await tx.query(
+    sql,
+    keys.map((key) => input[key]),
+  );
+  if (action === "list") {
+    const comments = rows.map((row) => ({
+      ...row,
+      createdWindow: iso(row.createdWindow),
+      deletedWindow: iso(row.deletedWindow),
+    }));
+    return { status: 200, body: { comments } };
+  }
+  return action === "reply" ? { status: 200, body: rows[0] } : { status: 204 };
+}

@@ -28,6 +28,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
+  createCollaborationCommentsRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -280,6 +281,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       ),
   },
   {
+    call: "createCollaborationCommentsRouteFor(databases.main)",
+    ids: ["collaboration.comments.post"],
+    routes: () => [createCollaborationCommentsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "createAcknowledgmentRouteFor(databases.main)",
     ids: ["institution.acknowledgment.post"],
     routes: () => [createAcknowledgmentRouteFor(NO_ACTOR).contract.id],
@@ -433,6 +439,7 @@ describe("CONTRACT_ONLY", () => {
         "student.submission-notes.post",
         "live.document.get",
         "live.document.put",
+        "collaboration.comments.post",
         "institution.acknowledgment.post",
         "public.verification.post",
       ]
@@ -475,6 +482,7 @@ describe("routes the entry point mounts itself", () => {
       ...SRV_31,
       "live.document.get",
       "live.document.put",
+      "collaboration.comments.post",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",
