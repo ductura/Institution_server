@@ -11,7 +11,7 @@ import type { Operations } from "../../contracts/index.ts";
 import { successBody } from "./contract.ts";
 
 import type { Handlers } from "./server.ts";
-import type { Account, Assignment, State, WorkSource } from "./state.ts";
+import type { Account, Assignment, SourceProof, State, WorkSource } from "./state.ts";
 
 /** Assignments of the courses the account is a student in. */
 export function studentAssignments(state: State, account: Account): Assignment[] {
@@ -25,6 +25,26 @@ function ownAssignment(state: State, account: Account, id: string): Assignment |
   return studentAssignments(state, account).find(
     (assignment) => assignment.id === id.toLowerCase(),
   );
+}
+
+/** A source of the caller's own work (one the caller added or a teacher's), or undefined. */
+function ownSource(state: State, account: Account, assignmentId: string, sourceId: string) {
+  const assignment = ownAssignment(state, account, assignmentId);
+  return state.workSources.find(
+    (s) =>
+      s.assignmentId === assignment?.id &&
+      s.studentId === account.id &&
+      s.id === sourceId.toLowerCase(),
+  );
+}
+
+function proofAnswer(proof: SourceProof) {
+  return {
+    id: proof.id,
+    page: proof.page,
+    note: proof.note,
+    imagePath: `/api/v1/student/assignments/${proof.assignmentId}/sources/${proof.sourceId}/proofs/${proof.id}/image`,
+  };
 }
 
 export const STUDENT_HANDLERS: Handlers = {
@@ -193,6 +213,67 @@ export const STUDENT_HANDLERS: Handlers = {
     if (old === undefined || old.requirement !== null) return { error: "not_found" };
     state.workSources = state.workSources.filter((s) => s !== old);
     return { status: 204 };
+  },
+  // SRV-1102: the proofs of a source of the own work. The image arrives in
+  // Base64 from the multipart reader; only a JPEG is kept, never a whole PDF.
+  "student.source-proofs.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const source = ownSource(state, account, params.assignmentId, params.sourceId);
+    if (source === undefined) return { error: "not_found" };
+    const proofs = state.sourceProofs
+      .filter(
+        (p) =>
+          p.studentId === account.id &&
+          p.assignmentId === source.assignmentId &&
+          p.sourceId === source.id,
+      )
+      .map(proofAnswer);
+    return { status: 200, body: { proofs } };
+  },
+  "student.source-proofs.post": ({ state, account, params, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    const source = ownSource(state, account, params.assignmentId, params.sourceId);
+    if (source === undefined) return { error: "not_found" };
+    const image = Buffer.from(String(body.image as unknown), "base64");
+    const jpeg =
+      image.length >= 4 &&
+      image.length <= 1_048_576 &&
+      image[0] === 0xff &&
+      image[1] === 0xd8 &&
+      image[2] === 0xff;
+    const mine = state.sourceProofs.filter(
+      (p) => p.studentId === account.id && p.assignmentId === source.assignmentId,
+    );
+    if (!jpeg || mine.length >= 200) return { error: "invalid_input" };
+    const proof = {
+      // In order, so a script can name the proof it attached: …-d00000000001, then …02.
+      id: `00000000-0000-4000-8000-d${String(state.sourceProofs.length + 1).padStart(11, "0")}`,
+      assignmentId: source.assignmentId,
+      studentId: account.id,
+      sourceId: source.id,
+      page: body.page,
+      note: body.note?.replaceAll("\r\n", "\n") ?? null,
+      image,
+    };
+    state.sourceProofs.push(proof);
+    return { status: 201, body: proofAnswer(proof) };
+  },
+  "student.source-proof-image.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const source = ownSource(state, account, params.assignmentId, params.sourceId);
+    const proof = state.sourceProofs.find(
+      (p) =>
+        p.studentId === account?.id &&
+        p.sourceId === source?.id &&
+        p.assignmentId === source?.assignmentId &&
+        p.id === params.proofId.toLowerCase(),
+    );
+    if (proof === undefined) return { error: "not_found" };
+    return {
+      status: 200,
+      headers: { "cache-control": "private, no-store" },
+      body: new Blob([proof.image], { type: "image/jpeg" }),
+    };
   },
   "student.access-log.get": ({ state, account, params, query }) => {
     const work = state.works.find((w) => w.documentId === params.documentId);

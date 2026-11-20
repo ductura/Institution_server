@@ -19,7 +19,10 @@ const VectorSchema = closed({
     params: Type.Optional(Type.Record(Type.String(), Type.String())),
     query: Type.Optional(Type.Record(Type.String(), Type.String())),
     headers: Type.Optional(Headers),
-    /** A JSON body or form fields, as the route's content type says. */
+    /**
+     * A JSON body or form fields, as the route's content type says; a
+     * multipart file part (contentMediaType) is written in Base64.
+     */
     body: Type.Optional(Type.Unknown()),
     /** Bytes sent as they are, for a body that is not valid by design. */
     rawBody: Type.Optional(Type.String()),
@@ -27,7 +30,11 @@ const VectorSchema = closed({
   response: closed({
     status: Type.Integer({ minimum: 200, maximum: 599 }),
     contentType: Type.Optional(
-      Type.Union([Type.Literal("application/json"), Type.Literal("text/html")]),
+      Type.Union([
+        Type.Literal("application/json"),
+        Type.Literal("text/html"),
+        Type.Literal("image/jpeg"),
+      ]),
     ),
     headers: Type.Optional(
       Type.Record(Type.String(), Type.Union([Type.String(), Type.Array(Type.String())])),
@@ -55,7 +62,8 @@ export type Vector = {
   };
   readonly response: {
     readonly status: number;
-    readonly contentType?: "application/json" | "text/html";
+    /** image/jpeg: `body` is the bytes in Base64. */
+    readonly contentType?: "application/json" | "text/html" | "image/jpeg";
     readonly headers?: Readonly<Record<string, string | readonly string[]>>;
     readonly body?: unknown;
   };
@@ -143,7 +151,7 @@ function checkVector(
     }
     const spec = route.responses.find((s) => s.status === response.status);
     if (!spec) return [...problems, `status ${response.status} is not a contract success`];
-    problems.push(...checkBody(spec.body ?? "none", response, check));
+    problems.push(...checkBody(spec.contentType ?? spec.body ?? "none", response, check));
     for (const header of spec.headers ?? []) {
       if (!present(response.headers?.[header])) problems.push(`missing header ${header}`);
     }
@@ -157,11 +165,21 @@ function checkVector(
   return problems;
 }
 
+/** Base64 of bytes that start with the JPEG marker FF D8 FF. */
+const JPEG_BASE64 = /^\/9j\/[A-Za-z0-9+/]*={0,2}$/u;
+
 function checkBody(
-  expected: TSchema | "none" | "html",
+  expected: TSchema | "none" | "html" | "image/jpeg",
   response: Vector["response"],
   check: SchemaCheck,
 ): string[] {
+  if (expected === "image/jpeg") {
+    return response.contentType === "image/jpeg" &&
+      typeof response.body === "string" &&
+      JPEG_BASE64.test(response.body)
+      ? []
+      : ["the contract answers with JPEG bytes"];
+  }
   if (expected === "none") {
     return response.body === undefined && response.contentType === undefined
       ? []
