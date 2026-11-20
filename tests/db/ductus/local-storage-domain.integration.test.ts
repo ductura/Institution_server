@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import pg from "pg";
@@ -15,7 +14,8 @@ import {
   sigV4Authorization,
 } from "../../../server/external/storage/s3-signature.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { localScriptArgs } from "./local-psql.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-8 step 4b / DAN-83 (docs/BACKEND.md 4.1 and 4.13): the db/local script
 // gives an institution its storage domain in the local store of compose.yaml,
@@ -36,14 +36,15 @@ const credentials = {
   secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "ductus-local-only",
 };
 const run = promisify(execFile);
-const SCRIPT = fileURLToPath(
-  new URL("../../db/local/evidence-storage-domain.mjs", import.meta.url),
-);
+const SCRIPT = new URL("../../../db/main/local/evidence-storage-domain.mjs", import.meta.url);
 const suffix = randomBytes(5).toString("hex");
-const [own, other, regional] = ["own", "other", "regional"].map((name) => ({
+const institution = (name: string) => ({
   id: randomUUID(),
   slug: `it-${name}-${suffix}`,
-}));
+});
+const own = institution("own");
+const other = institution("other");
+const regional = institution("regional");
 const bucketOf = (slug: string) => `ductus-evidence-${slug}`;
 const admin = new pg.Pool({ connectionString: SAFE_ADMIN_URL, max: 1 });
 const written: string[][] = [];
@@ -65,7 +66,9 @@ async function provision(
   extra: Record<string, string> = {},
   args = ["--institution", slug],
 ) {
-  return run(process.execPath, [SCRIPT, ...args], { env: env(extra) }).then(
+  return run(process.execPath, localScriptArgs(SCRIPT.href, SAFE_ADMIN_URL, args), {
+    env: env(extra),
+  }).then(
     ({ stdout }) => ({ ok: true as const, out: stdout.trim() }),
     (error: { stderr: string }) => ({ ok: false as const, out: error.stderr }),
   );
@@ -85,7 +88,7 @@ async function s3(method: "GET" | "PUT", path: string[], body = new Uint8Array()
   const response = await fetch(signed.url, {
     method,
     headers: signed.headers,
-    body: method === "PUT" ? body : undefined,
+    ...(method === "PUT" && body ? { body } : {}),
   });
   return { status: response.status, text: await response.text() };
 }

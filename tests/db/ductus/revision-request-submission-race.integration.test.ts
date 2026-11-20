@@ -7,7 +7,7 @@ import { resolveTextAnchor, type TextAnchor } from "../../../server/domain/colla
 import { snapshotHash } from "../../../server/domain/collaboration/snapshot-hash.ts";
 import { createWithActor, type ActorTransaction } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-314 step 2a (contract on #1091, c.6684460326; plan of attack #1506):
 // pgTAP runs in one transaction and cannot race two calls. Here two real

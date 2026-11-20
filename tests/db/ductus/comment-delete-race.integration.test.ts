@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createWithActor, type ActorTransaction } from "../../../server/database/with-actor.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-215 (M6.1-P03, contract on #1836, attack plan #1886, items N8 and N9):
 // pgTAP runs in one transaction and cannot race two calls. Here two real

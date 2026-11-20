@@ -16,7 +16,10 @@ import { canonicalizeJcs } from "../../server/domain/forensics/jcs.ts";
 // bytes and hash against the same literals (db/tests/046-evidence-open-work.sql);
 // this keeps the migration and the TypeScript constants from drifting apart.
 const MIGRATION = "20261019150000_evidence_open_work.sql";
-const TEXT = readFileSync(new URL(`../../db/migrations/${MIGRATION}`, import.meta.url), "utf8");
+const TEXT = readFileSync(
+  new URL(`../../db/main/migrations/${MIGRATION}`, import.meta.url),
+  "utf8",
+);
 const UP = TEXT.slice(0, TEXT.indexOf("-- migrate:down"));
 
 describe("open_student_work migration", () => {

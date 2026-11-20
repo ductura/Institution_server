@@ -16,7 +16,12 @@ import { sendRouteRefusal } from "./problem.ts";
 /** A refusal as the route's contract answers it: {status} and its headers. */
 export type EvidenceAnswer = {
   readonly status: number;
-  readonly body: { readonly status: string; readonly stage?: string };
+  /** The refusal's code, and the fields its contract adds (a 409 of submission). */
+  readonly body: {
+    readonly status: string;
+    readonly stage?: string;
+    readonly [field: string]: unknown;
+  };
   readonly headers?: { readonly "retry-after"?: string };
   /** The body was not read to its end: the connection closes with the answer. */
   readonly close?: true;

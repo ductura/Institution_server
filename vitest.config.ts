@@ -1,5 +1,7 @@
 import { configDefaults, defineConfig } from "vitest/config";
 
+import { PENDING_TESTS } from "./server/pending-tests.ts";
+
 // Five projects: unit, property and integration told apart by file suffix,
 // database by its folder (tests/db), integration-pg by *.pg.integration.test.ts. Tests live only in server/,
 // packages/, test-support/, scripts/, infra/, db/, locales/ (and lint rule tests in tests/) with a .test.ts suffix; other
@@ -14,8 +16,8 @@ const INTEGRATION = `${DIRS}/**/*.integration.test.ts`;
 // applied through scripts/db/migrate-locked.ts). Ported from Ductus
 // tests/integration at d52a92c3 (S-0.13, DAN-726); `pnpm test:database`.
 const DATABASE = "tests/db/**/*.integration.test.ts";
-// Ductus-only suites and originals of ported suites. Keep in sync with tsconfig.json.
-const DUCTUS_LEGACY_DATABASE = [
+// Ductus-only suites and originals of ported suites. Keep in sync with tsconfig.ductus-tests.json.
+export const DUCTUS_LEGACY_DATABASE = [
   "tests/db/ductus/aai-login.integration.test.ts",
   "tests/db/ductus/app-database.integration.test.ts",
   "tests/db/ductus/assignment-submissions-route.integration.test.ts",
@@ -51,7 +53,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: [`${DIRS}/**/*.test.ts`],
-          exclude: [PROPERTY, INTEGRATION],
+          exclude: [PROPERTY, INTEGRATION, ...PENDING_TESTS],
           environment: "node",
         },
       },

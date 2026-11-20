@@ -8,7 +8,7 @@ import {
 } from "../../../server/domain/collaboration/revision-input.ts";
 
 import { BLANKS, TEXT_CASES } from "../../unit/revision-text-cases.ts";
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-314 step 2d (contract on #1091, c.6696530499; plan of attack #1506
 // class 8, docs/backend/suradnja.md 4.14 G1 to G9): the route refuses early

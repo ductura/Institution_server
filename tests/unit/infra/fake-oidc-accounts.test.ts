@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ACCOUNTS, findDemoAccount, isDemoAccountId } from "../../../infra/fake-oidc/accounts.mjs";
+import { ACCOUNTS, findDemoAccount, isDemoAccountId } from "@ductura/test-fakes/oidc";
 
 // #184: the fake OIDC provider (local and CI only) must know exactly the
 // declared demo accounts, never a property every object inherits.

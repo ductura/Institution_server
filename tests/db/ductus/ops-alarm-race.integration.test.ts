@@ -11,7 +11,7 @@ import {
   type AlarmStore,
 } from "../../../server/alarms/readiness-alarms.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 import { holdWorkerPresence } from "./worker-presence.ts";
 
 // DAN-184 (contract on #1836, c.6821517800; round 3 c.6867544247): pgTAP runs
