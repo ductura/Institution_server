@@ -29,12 +29,15 @@ import {
   TOO_MANY_REQUESTS,
   versionsRoutes,
   webauthnRoutes,
+  workMilestonesRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkSourceRecord } from "./routes/index.ts";
+export { WorkMilestone, WorkMilestoneDueInput, WorkMilestoneId } from "./routes/index.ts";
+export { workMilestonesRoutes };
 
 export {
   ERROR_CATALOG_DATA,
@@ -94,6 +97,7 @@ export const ROUTES: readonly RouteContract[] = [
   sourceLookupPost,
   ...publicVerificationRoutes,
   ...versionsRoutes,
+  ...workMilestonesRoutes,
 ];
 
 /**

@@ -233,6 +233,7 @@ export {
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
+export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,

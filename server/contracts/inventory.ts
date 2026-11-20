@@ -220,6 +220,14 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
+  "app/api/works/[documentId]/milestones/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
+  },
+  "app/api/works/[documentId]/milestones/[milestoneId]/route.ts": {
+    methods: ["PATCH"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073172",
+  },
   // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
   "app/api/teacher/courses/[courseId]/students/route.ts": {
     methods: ["GET"],
