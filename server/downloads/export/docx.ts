@@ -52,6 +52,22 @@ export function xmlEscape(text: string): string {
 
 type Links = string[];
 
+/** A line feed is a break and a tab a tab stop; a literal one in `w:t` is not rendered (§4.2 allows both). */
+function textParts(text: string): string {
+  return text
+    .split(/(\n|\t)/)
+    .map((part) =>
+      part === "\n"
+        ? "<w:br/>"
+        : part === "\t"
+          ? "<w:tab/>"
+          : part === ""
+            ? ""
+            : `<w:t xml:space="preserve">${xmlEscape(part)}</w:t>`,
+    )
+    .join("");
+}
+
 function run(r: ExportRun, extra = ""): string {
   const props =
     (r.bold ? "<w:b/>" : "") +
@@ -61,7 +77,7 @@ function run(r: ExportRun, extra = ""): string {
     (r.highlight ? `<w:shd w:val="clear" w:color="auto" w:fill="${r.highlight.slice(1)}"/>` : "") +
     (r.language ? `<w:lang w:val="${xmlEscape(r.language)}"/>` : "") +
     extra;
-  return `<w:r>${props ? `<w:rPr>${props}</w:rPr>` : ""}<w:t xml:space="preserve">${xmlEscape(r.text)}</w:t></w:r>`;
+  return `<w:r>${props ? `<w:rPr>${props}</w:rPr>` : ""}${textParts(r.text)}</w:r>`;
 }
 
 function runs(items: readonly ExportRun[], links: Links): string {

@@ -90,6 +90,7 @@ export function buildExportModel(doc: CanonicalDocumentV4, labels: ExportLabels)
   let formulas = 0;
   let listings = 0;
   let title = "";
+  let titleSeen = false;
   const blocks: ExportBlock[] = [];
   for (const node of doc.nodes) {
     switch (node.type) {
@@ -97,7 +98,10 @@ export function buildExportModel(doc: CanonicalDocumentV4, labels: ExportLabels)
         counters[node.level - 1] = (counters[node.level - 1] ?? 0) + 1;
         for (let i = node.level; i < 3; i += 1) counters[i] = 0;
         const runs = runsOf(node.children);
-        if (node.level === 1 && title === "") title = runs.map((r) => r.text).join("");
+        if (node.level === 1 && !titleSeen) {
+          titleSeen = true;
+          title = runs.map((r) => r.text).join("");
+        }
         blocks.push({
           kind: "heading",
           level: node.level,

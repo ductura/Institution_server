@@ -110,6 +110,19 @@ describe("xmlEscape", () => {
   });
 });
 
+describe("title", () => {
+  it("is the first level 1 heading even when it is empty", () => {
+    const empty = { type: "heading" as const, id: id(30), level: 1 as const, children: [] };
+    const later = {
+      type: "heading" as const,
+      id: id(31),
+      level: 1 as const,
+      children: [t("Second")],
+    };
+    expect(buildExportModel({ ...DOC, nodes: [empty, later] }, LABELS).title).toBe("");
+  });
+});
+
 describe("renderDocx", () => {
   const model = buildExportModel(DOC, LABELS);
   const bytes = renderDocx(model, COVER);
@@ -133,6 +146,16 @@ describe("renderDocx", () => {
     expect(doc).toContain('w:type="page"');
     expect(parts.get("word/_rels/document.xml.rels")).toContain(
       'Target="https://primjer.hr/?a=1&amp;b=2"',
+    );
+  });
+  it("writes line feeds and tabs as breaks and tab stops", () => {
+    const m = buildExportModel(
+      { ...DOC, nodes: [{ type: "paragraph", id: id(20), children: [t("a\nb\tc")] }] },
+      LABELS,
+    );
+    const doc = entries(renderDocx(m, COVER)).get("word/document.xml") ?? "";
+    expect(doc).toContain(
+      '<w:t xml:space="preserve">a</w:t><w:br/><w:t xml:space="preserve">b</w:t><w:tab/><w:t xml:space="preserve">c</w:t>',
     );
   });
   it("takes page shape from the setup, not the document", () => {
