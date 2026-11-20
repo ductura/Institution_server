@@ -50,14 +50,18 @@ it.each([
   { ...APPROVE, decision: "decline", reason: "📝".repeat(601) },
   { ...APPROVE, decision: "decline", reason: "\u0000" },
 ])("rejects invalid decision body %j before SQL", async (body) => {
-  const withActor = vi.fn<WithActor>();
+  const withActor = vi.fn((): never => {
+    throw new Error("refused body reached SQL");
+  });
   const send = await start(withActor);
   expect((await send("/decision", post(body))).status).toBe(422);
   expect(withActor).not.toHaveBeenCalled();
 });
 
 it("applies the session, origin, content type and size guards before SQL", async () => {
-  const withActor = vi.fn<WithActor>();
+  const withActor = vi.fn((): never => {
+    throw new Error("refused request reached SQL");
+  });
   const send = await start(withActor);
   expect((await send("", {})).status).toBe(401);
   expect(
