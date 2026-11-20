@@ -43,6 +43,7 @@ import {
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
+  createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -180,6 +181,7 @@ async function main(): Promise<void> {
       // B-13 step 3 (SRV-23): the process summary of one work, the same bytes for
       // its owner and the teacher; the teacher's read writes the access log.
       createProcessSummaryRouteFor(databases.main, evidenceDeps, process.env),
+      createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, process.env),
       // N-05 (SRV-8E): the teacher's fast path through the works of one assignment,
       // over the same storage and thresholds as the process summary.
       createTeacherFastPathRouteFor(databases.main, evidenceDeps, process.env),
