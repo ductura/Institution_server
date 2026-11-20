@@ -95,6 +95,29 @@ export const VALIDATION_ERROR_CODES = [
   "FOOTNOTE_NOT_ALLOWED",
   "CROSS_REFERENCE_TARGET_INVALID",
   "CROSS_REFERENCE_NOT_ALLOWED",
+  // Document v4 (docs/contracts/document-schema-v4.md), appended likewise.
+  "MARKS_EXCLUSIVE",
+  "MARK_ATTRIBUTE_INVALID",
+  "VARIANT_GROUP_INVALID",
+  "FORMULA_TEX_INVALID",
+  "INLINE_FORMULA_NOT_ALLOWED",
+  "CODE_LANGUAGE_INVALID",
+  "CODE_CAPTION_INVALID",
+  "CODE_CONTENT_INVALID",
+  "BOX_KIND_INVALID",
+  "BOX_CHILDREN_INVALID",
+  "BLOCK_FLAG_INVALID",
+  "FIGURE_TITLE_INVALID",
+  "FIGURE_SOURCE_INVALID",
+  "TABLE_ROWS_INVALID",
+  "TABLE_CELL_INVALID",
+  "TABLE_MERGE_INVALID",
+  "TABLE_FILL_INVALID",
+  "IMAGE_ATTACHMENT_INVALID",
+  "IMAGE_CROP_INVALID",
+  "IMAGE_LAYOUT_INVALID",
+  "COVER_INVALID",
+  "COVER_FIELD_INVALID",
 ] as const;
 
 export type ValidationErrorCode = (typeof VALIDATION_ERROR_CODES)[number];
@@ -337,7 +360,7 @@ function validateAtom(
  * `""` is refused so one meaning has one form. `via` and `rq` are fields of
  * v3 only; in v2 they are UNKNOWN_FIELD.
  */
-function validateCitation(
+export function validateCitation(
   raw: Record<string, unknown>,
   path: string,
   rules: DocumentSchemaVersion,
@@ -383,7 +406,7 @@ function validateCitation(
 }
 
 /** A footnote atom (contract v3 §3.3): tidy plain text of 1 to 2000 code points. */
-function validateFootnote(
+export function validateFootnote(
   raw: Record<string, unknown>,
   path: string,
   errors: ValidationError[],
@@ -400,7 +423,7 @@ function validateFootnote(
  * A cross reference atom (contract v3 §3.4). Whether a block with the target
  * id exists, and is a heading, is not checked: either way it is valid.
  */
-function validateCrossReference(
+export function validateCrossReference(
   raw: Record<string, unknown>,
   path: string,
   errors: ValidationError[],
