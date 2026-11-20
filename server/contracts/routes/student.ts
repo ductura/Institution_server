@@ -2,8 +2,9 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
+import { SignedSubmissionReceipt } from "./evidence.ts";
 import { MUTATION_GUARD } from "./shared.ts";
-import { END, Name } from "./teacher.ts";
+import { CODE_POINT, END, Name } from "./teacher.ts";
 
 // Literal port of Ductus 078c780 src/components/student/my-assignments-read.ts
 // (#711, "Moji zadaci"): Ductus reads it in a server component, so the route
@@ -236,7 +237,8 @@ export const studentNoticeReadPost = defineRoute({
 const AiPurpose = oneOf([
   ...["formatting", "proofreading", "literature_search", "transcription", "translation"],
 ]);
-const WordBound = Type.Union([Type.Integer({ minimum: 1, maximum: 1_000_000 }), Type.Null()]);
+const WordCount = Type.Integer({ minimum: 1, maximum: 1_000_000 });
+const WordBound = Type.Union([WordCount, Type.Null()]);
 
 export const studentNoticeGet = defineRoute({
   id: "student.notice.get",
@@ -279,10 +281,109 @@ export const studentNoticeGet = defineRoute({
   ],
 });
 
+// SRV-19 adds routes because a new member of an existing closed body would
+// require a major release of @ductura/contracts.
+const { revision, requestedAt } = SignedSubmissionReceipt.properties.payload.properties;
+const assignmentParams = closed({ assignmentId: Type.String({ minLength: 1 }) });
+const assignmentReadErrors = [
+  error(401, "unauthorized"),
+  error(404, "not_found"),
+  error(503, "unavailable"),
+] as const;
+
+export const StudentSubmissionState = Type.Union([
+  closed({ state: Type.Literal("none") }),
+  closed({ state: Type.Literal("ceka"), revision, requestedAt }),
+  closed({ state: Type.Literal("potvrdeno"), receipt: SignedSubmissionReceipt }),
+]);
+
+export const studentSubmissionGet = defineRoute({
+  id: "student.submission.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/submission",
+  inventory: "app/api/student/assignments/[assignmentId]/submission/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The caller's submission for this assignment. An accessible assignment with no submission returns none. ceka means the submission was recorded but no signed receipt is attached yet. potvrdeno carries the same signed receipt as submission.submit.post. An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: assignmentParams },
+  responses: [{ status: 200, description: "submission state", body: StudentSubmissionState }],
+  errors: assignmentReadErrors,
+});
+
+const WordRange = Type.Union([
+  closed({ min: WordCount, max: WordBound }),
+  closed({ min: Type.Null(), max: WordCount }),
+  Type.Null(),
+]);
+
+export const studentAssignmentRequirementsGet = defineRoute({
+  id: "student.assignment-requirements.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/requirements",
+  inventory: "app/api/student/assignments/[assignmentId]/requirements/route.ts",
+  access: "student_enrolled",
+  summary:
+    "The word range of the current assignment version. A null bound leaves that end open; when both bounds are present min is at most max. A null range means neither bound is set. An inaccessible, unknown or malformed assignment id returns 404.",
+  request: { params: assignmentParams },
+  responses: [{ status: 200, description: "word range", body: closed({ wordRange: WordRange }) }],
+  errors: assignmentReadErrors,
+});
+
+const NoteText = Type.String({
+  pattern: `^(?=[\\s\\S]*\\S)(?:${CODE_POINT}|[^\\u0000\\uD800-\\uDFFF]){1,600}${END}`,
+});
+const SubmissionNote = closed({ id: LowerUuid, text: NoteText, createdAt: Instant });
+
+export const studentSubmissionNotesGet = defineRoute({
+  id: "student.submission-notes.get",
+  method: "GET",
+  path: "/api/v1/student/assignments/{assignmentId}/submission-notes",
+  inventory: "app/api/student/assignments/[assignmentId]/submission-notes/route.ts",
+  access: "student_enrolled",
+  summary: "The caller's notes for an accessible assignment, oldest first, then by id.",
+  request: { params: assignmentParams },
+  responses: [
+    {
+      status: 200,
+      description: "notes, possibly empty",
+      body: closed({ notes: Type.Array(SubmissionNote) }),
+    },
+  ],
+  errors: assignmentReadErrors,
+});
+
+export const studentSubmissionNotesPost = defineRoute({
+  id: "student.submission-notes.post",
+  method: "POST",
+  path: "/api/v1/student/submission-notes",
+  inventory: "app/api/student/submission-notes/route.ts",
+  access: "student_enrolled",
+  summary:
+    "Adds a note for the caller's assignment. The text has 1 to 600 Unicode code points and contains a non-whitespace character. Notes are append-only and stay separate from the submission and signed receipt.",
+  request: {
+    contentType: "application/json",
+    // Fits 600 supplementary characters even when sent as escaped surrogate pairs.
+    maxBodyBytes: 8192,
+    body: closed({ assignmentId: LowerUuid, text: NoteText }),
+  },
+  responses: [{ status: 201, description: "added note", body: SubmissionNote }],
+  errors: [
+    ...MUTATION_GUARD,
+    ...assignmentReadErrors,
+    error(415, "unsupported_media_type"),
+    error(400, "invalid_json"),
+    error(422, "invalid_input"),
+  ],
+});
+
 export const studentRoutes = [
   studentAssignmentsGet,
   studentAccessLogGet,
   studentAssignmentWorkGet,
   studentNoticeReadPost,
   studentNoticeGet,
+  studentSubmissionGet,
+  studentAssignmentRequirementsGet,
+  studentSubmissionNotesGet,
+  studentSubmissionNotesPost,
 ] as const;

@@ -22,9 +22,9 @@ export type EvidenceContextResolution =
   | { status: "not_found" }
   | { status: "unavailable"; reason: string };
 
-export interface EvidenceContextPort {
+export type EvidenceContextPort = {
   resolve(evidencePackageId: string): Promise<EvidenceContextResolution>;
-}
+};
 
 export type EvidencePayloadPutResult =
   | { status: "stored"; storageRef: string }
@@ -33,7 +33,7 @@ export type EvidencePayloadPutResult =
   | { status: "invalid" }
   | { status: "unavailable"; reason: string };
 
-export interface EvidencePayloadStore {
+export type EvidencePayloadStore = {
   /**
    * Stores exact canonical bytes immutably under
    * `evidenceObjectKey` (institution, package, hash). Repeating the same key
@@ -49,12 +49,12 @@ export interface EvidencePayloadStore {
     segmentHash: string;
     canonicalPayload: string;
   }): Promise<EvidencePayloadPutResult>;
-}
+};
 
 export type EvidenceStorageRefResult =
   { status: "ok"; storageRef: string } | { status: "unavailable"; reason: string };
 
-export interface EvidencePayloadLocator {
+export type EvidencePayloadLocator = {
   /**
    * The `storageRef` that `putImmutable` gives for this key, computed without
    * any request to the store: a retry under a known idempotency key names the
@@ -66,7 +66,7 @@ export interface EvidencePayloadLocator {
     evidencePackageId: string;
     segmentHash: string;
   }): Promise<EvidenceStorageRefResult>;
-}
+};
 
 export type EvidenceAcceptanceRecord = {
   clientRequestId: string;
@@ -129,7 +129,7 @@ export type ReserveEvidenceAcceptanceResult =
  * of the same command must return duplicate_pending so the exact same receipt
  * payload can be signed later without minting a new acceptance time/id.
  */
-export interface EvidenceAcceptanceRepository {
+export type EvidenceAcceptanceRepository = {
   lookup(input: EvidenceAcceptanceIdentity): Promise<LookupEvidenceAcceptanceResult>;
 
   reserve(input: ReserveEvidenceAcceptanceInput): Promise<ReserveEvidenceAcceptanceResult>;
@@ -144,4 +144,4 @@ export interface EvidenceAcceptanceRepository {
     | { status: "not_found" }
     | { status: "unavailable"; reason: string }
   >;
-}
+};

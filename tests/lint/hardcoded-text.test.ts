@@ -235,6 +235,31 @@ describe("local/no-hardcoded-text", () => {
 });
 
 describe("DECODER_ALLOWED", () => {
+  // Orchestrator decision Ductus#2028 c.7030643662: Croatian collation and the
+  // private-use sentinel of the Ductus copy.
+  it("allows Intl only as Intl.Collator, and String.fromCodePoint only where listed", async () => {
+    const collating = "server/institution/teacher-roles.ts";
+    expect(DECODER_ALLOWED[collating]).toEqual(["Intl"]);
+    expect(await ids('export const c = new Intl.Collator("hr");', collating)).toEqual([]);
+    for (const code of [
+      'export const d = new Intl.DateTimeFormat("hr").format(new Date(0));',
+      "export const n = (x: number) => x.toLocaleString();",
+      "export const i = Intl;",
+      'export const c = String.fromCodePoint(0xe000) + new Intl.Collator("hr").compare("a", "b");',
+    ])
+      expect(await ids(code, collating), code).toContain("builder");
+    const sentinel = "server/domain/collaboration/revision-input.ts";
+    expect(DECODER_ALLOWED[sentinel]).toEqual(["fromCodePoint"]);
+    expect(await ids("export const s = String.fromCodePoint(0xe000);", sentinel)).toEqual([]);
+    for (const code of [
+      'export const s = String.fromCodePoint("x" as unknown as number);',
+      "export const s = String.fromCharCode(0x41);",
+      "export const s = String.raw`a`;",
+      'export const c = new Intl.Collator("hr");',
+    ])
+      expect(await ids(code, sentinel), code).toContain("builder");
+  });
+
   it("allows a listed decoder on input, never on a literal", async () => {
     const file = "server/contracts/work-id.ts";
     expect(DECODER_ALLOWED[file]).toEqual(["decodeURIComponent"]);
@@ -421,12 +446,15 @@ describe("repository config", () => {
       expect(await ruleOn(f), f).toBe(false);
   });
 
-  it("keeps the transitional list empty and closed (DAN-782)", () => {
-    expect(TEXT_TRANSITIONAL).toEqual([]);
+  it("keeps the transitional list closed (DAN-782; Ductus#2028 c.7030643662)", () => {
+    expect(TEXT_TRANSITIONAL).toEqual([
+      "server/domain/text/compare-hr.ts",
+      "server/external/storage/editor/schema.ts",
+    ]);
   });
 
-  // A file on the transitional list must still hold text; today the list is
-  // empty, and the check stays for any entry an orchestrator decision adds.
+  // A file on the transitional list must still hold text, so an entry leaves
+  // the list once its text has moved.
   it("keeps every file on the transitional list still needed", async () => {
     const only = new ESLint({
       cwd: ROOT,

@@ -12,11 +12,11 @@ import {
 export const MAX_WORK_LANGUAGE_BODY_BYTES = 128;
 const MAX_VERSION = 2_147_483_647;
 
-export interface WorkLanguageRouteDeps {
+export type WorkLanguageRouteDeps = {
   withActor: WithActor;
   expectedOrigin: string;
   sessionToken?: string | undefined;
-}
+};
 
 const REFUSAL: Record<WorkLanguageRefusal, [number, string]> = {
   unauthorized: [401, "unauthorized"],

@@ -85,6 +85,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
         revision: 0,
         lastChangeAt: now.toISOString(),
         submittedAt: null,
+        submissionReceipt: null,
         document: EMPTY_DOCUMENT,
         segments: [],
         lastSequenceTo: 0,
@@ -270,16 +271,12 @@ export const EVIDENCE_HANDLERS: Handlers = {
       afterDeadline: requestedAt > assignment.content.dueAt,
       signedAt: microsecond(requestedAt),
     } as const;
-    return {
-      status: 200,
-      body: {
-        status: "submitted",
-        receipt: {
-          payload,
-          payloadDigestSha256: sha256(JSON.stringify(payload)),
-          signature: UNSIGNED_SUBMISSION,
-        },
-      },
+    const receipt = {
+      payload,
+      payloadDigestSha256: sha256(canonicalizeJcs(payload)),
+      signature: UNSIGNED_SUBMISSION,
     };
+    work.submissionReceipt = receipt;
+    return { status: 200, body: { status: "submitted", receipt } };
   },
 };

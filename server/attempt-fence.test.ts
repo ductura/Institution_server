@@ -6,6 +6,8 @@ import { pathToFileURL } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
 
+import { SERVER_NODE_FLAGS } from "../scripts/build/index.ts";
+
 // DAN-517 (attack plan #1826, W-3 and W-4): the fence ends a real node
 // process. Each case is a child that arms the fence and then behaves as one
 // class of attempt; what is compared is how the child ended and what it wrote.
@@ -43,7 +45,9 @@ ${body}
 `,
   );
   const started = Date.now();
-  const child = spawn(process.execPath, [file], { stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [...SERVER_NODE_FLAGS, file], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   let stdout = "";
   let stderr = "";
   child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString()));

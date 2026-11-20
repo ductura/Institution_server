@@ -3,11 +3,11 @@ import { readEmptyMutation, respond, rpcErrorResponse } from "./mutation-route";
 
 export const MAX_STUDENT_RETURN_BODY_BYTES = 64;
 
-export interface StudentReturnDeps {
+export type StudentReturnDeps = {
   withActor: WithActor;
   expectedOrigin: string;
   sessionToken?: string | undefined;
-}
+};
 
 // A teacher of the course lets one removed student enrol again; the student
 // still needs a valid code, nothing here enrols anyone. The body carries

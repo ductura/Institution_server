@@ -256,14 +256,14 @@ export async function readFastPath(
   return { kind: "unavailable" };
 }
 
-export interface FastPathRouteDeps {
+export type FastPathRouteDeps = {
   withActor: WithActor;
   payloads: InstitutionEvidencePayloadReader;
   thresholds: ProcessSummaryThresholds | null;
   expectedOrigin: string;
   sessionToken?: string | undefined;
   log?: (message: string, code: string) => void;
-}
+};
 
 function refuse(status: number, error: string): Response {
   return Response.json({ error }, { status, headers: NO_STORE });

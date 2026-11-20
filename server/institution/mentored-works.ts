@@ -30,7 +30,7 @@ export type MentoredWorkType =
   "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis";
 export type MentoredWorkState = "not_started" | "in_progress" | "submitted";
 
-export interface MentoredWork {
+export type MentoredWork = {
   mentorshipId: string;
   assignmentId: string;
   /** Null until the student starts the work. */
@@ -40,7 +40,7 @@ export interface MentoredWork {
   title: string;
   workType: MentoredWorkType;
   workState: MentoredWorkState;
-}
+};
 
 export type MentoredWorksRead =
   { kind: "ok"; works: MentoredWork[] } | { kind: "unauthorized" | "unavailable" };
@@ -48,10 +48,10 @@ export type MentoredWorksRead =
 export type MentoredWorkRead =
   { kind: "ok"; work: MentoredWork } | { kind: "unauthorized" | "not_found" | "unavailable" };
 
-export interface MentoredWorksDeps {
+export type MentoredWorksDeps = {
   withActor: WithActor;
   sessionToken?: string | undefined;
-}
+};
 
 type Row = Record<string, unknown>;
 

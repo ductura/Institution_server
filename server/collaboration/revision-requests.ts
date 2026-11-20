@@ -48,16 +48,16 @@ export const REVISION_ACTIONS: readonly RevisionAction[] = [
   "list",
 ];
 
-export interface RevisionDeps {
+export type RevisionDeps = {
   withActor: WithActor;
   expectedOrigin: string;
   sessionToken?: string;
-}
+};
 
 type Input = Record<string, unknown>;
 type Row = Record<string, unknown>;
 
-interface Spec {
+type Spec = {
   /** Exactly these keys, sorted. */
   keys: readonly string[];
   /** The id key, checked before the values: a malformed id is answered as ZD403 (G7). */
@@ -65,7 +65,7 @@ interface Spec {
   valid(input: Input): boolean;
   sql: string;
   params(input: Input): unknown[];
-}
+};
 
 // Each call is spelled out in full: the RPC/HTTP inventory looks for "collaboration.name(".
 const TRANSITION = "SELECT outcome, row_seq, version, state FROM ";
