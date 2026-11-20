@@ -7,6 +7,7 @@ export {
   type EvidenceService,
 } from "./service.ts";
 export {
+  isReplayDocumentId,
   MAX_REPLAY_PAGE_SEGMENTS,
   readReplayPage,
   REPLAY_FORMAT,
@@ -50,3 +51,12 @@ export {
   MAX_DOCUMENT_SNAPSHOT_BYTES,
   verifyDocumentSnapshot,
 } from "../domain/index.ts";
+
+// The comparison of two versions of a work (SRV-9E): both texts reconstructed
+// from the record by the replayers the caller gives, the difference by blocks.
+export {
+  compareWorkVersions,
+  type CompareDeps,
+  type CompareEntry,
+  type CompareResult,
+} from "./compare/index.ts";

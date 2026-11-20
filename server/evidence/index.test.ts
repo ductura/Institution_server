@@ -3,7 +3,7 @@ import * as domain from "../domain/index.ts";
 import * as area from "./index.ts";
 
 describe("server/evidence public interface", () => {
-  it("exports the service factory, the replay reader, the pending receipt signer, the retry decision and loop, the submission (SRV-18) and the domain's wire limits and snapshot check, nothing else", () => {
+  it("exports the service factory, the replay reader, the pending receipt signer, the retry decision and loop, the submission (SRV-18), the comparison of two versions (SRV-9E) and the domain's wire limits and snapshot check, nothing else", () => {
     expect(Object.keys(area).sort()).toEqual([
       "DUCTUS_ASYNC_COMMIT_PROTOCOL",
       "DUCTUS_PROTOCOL_VERSION",
@@ -13,10 +13,12 @@ describe("server/evidence public interface", () => {
       "MAX_SIGNATURE_RETRY_ATTEMPTS",
       "MAX_SIGNATURE_RETRY_DELAY_MS",
       "REPLAY_FORMAT",
+      "compareWorkVersions",
       "createEvidenceService",
       "createSignPendingReceipt",
       "createSignPendingReceiptWithRetry",
       "decideSignatureRetry",
+      "isReplayDocumentId",
       "readReplayPage",
       "signatureRetryDelayMs",
       "submitWork",
