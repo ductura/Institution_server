@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // Five projects: unit, property and integration told apart by file suffix,
 // database by its folder (tests/db), integration-pg by *.pg.integration.test.ts. Tests live only in server/,
@@ -44,6 +44,8 @@ const PG = `${DIRS}/**/*.pg.integration.test.ts`;
 
 export default defineConfig({
   test: {
+    // Inline projects inherit these exact legacy file exclusions.
+    exclude: [...configDefaults.exclude, ...DUCTUS_LEGACY_DATABASE],
     projects: [
       {
         test: {
@@ -70,7 +72,7 @@ export default defineConfig({
         test: {
           name: "database",
           include: [DATABASE],
-          exclude: [PG, ...DUCTUS_LEGACY_DATABASE],
+          exclude: [PG],
           environment: "node",
           // F-019: refuses a database URL that is not this machine's.
           setupFiles: ["tests/db/setup.ts"],
