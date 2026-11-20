@@ -23,6 +23,7 @@ import {
   supportRoutes,
   teacherRoutes,
   TOO_MANY_REQUESTS,
+  versionsRoutes,
   webauthnRoutes,
 } from "./routes/index.ts";
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
@@ -85,6 +86,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...settingsRoutes,
   ...downloadsRoutes,
   sourceLookupPost,
+  ...versionsRoutes,
 ];
 
 /**
