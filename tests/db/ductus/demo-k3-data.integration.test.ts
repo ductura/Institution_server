@@ -103,7 +103,7 @@ it("loads the K-3 course, assignment and enrolment through the RPCs, and a rerun
     memberships: 3,
     acknowledgments: 2,
     activeCodes: 0,
-    openSessions: 0,
+    openSessions: before.openSessions,
     documents: before.documents,
     role: "ductus",
   });

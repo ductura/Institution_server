@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
-import { nativePsqlTarget } from "../../../db/main/local/psql-target.ts";
+import { nativePsqlTarget } from "../../../db/main/local/index.ts";
 
 import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
 
