@@ -81,7 +81,7 @@ const SAMPLE: Row[] = [
 ];
 
 function database(answer: { rows?: Row[]; code?: string }) {
-  const calls: { text: string; values?: readonly unknown[] }[] = [];
+  const calls: { text: string; values?: readonly unknown[] | undefined }[] = [];
   const withActor = vi.fn(
     async (_token: string | null | undefined, fn: (tx: ActorTransaction) => Promise<unknown>) =>
       fn({

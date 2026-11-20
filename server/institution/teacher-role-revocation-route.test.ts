@@ -15,7 +15,10 @@ const TEACHER = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const OTHER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const TOKEN = "A".repeat(43);
 const ROUTE_URL = `${ORIGIN}/api/institution/teachers/${TEACHER}/role-revocation`;
-const request = (body: BodyInit = "{}", headers: Record<string, string> = {}) =>
+const request = (
+  body: NonNullable<RequestInit["body"]> = "{}",
+  headers: Record<string, string> = {},
+) =>
   new Request(ROUTE_URL, {
     method: "POST",
     headers: { origin: ORIGIN, "content-type": "application/json", ...headers },
