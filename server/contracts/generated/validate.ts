@@ -792,7 +792,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }),
   "student.work-sources.put:body": (() => {
-  const local0 = /^10\.[0-9]{4,9}\/[!-~]{1,300}(?![\s\S])/;
+  const local0 = /^10\.[0-9]{4,9}\/[!-@\[-~]{1,300}(?![\s\S])/;
   const local1 = /^(?:[0-9]{9}[0-9X]|97[89][0-9]{10})(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (

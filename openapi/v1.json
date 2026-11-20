@@ -28724,7 +28724,7 @@
                   "doi": {
                     "anyOf": [
                       {
-                        "pattern": "^10\\.[0-9]{4,9}/[!-~]{1,300}(?![\\s\\S])",
+                        "pattern": "^10\\.[0-9]{4,9}/[!-@\\[-~]{1,300}(?![\\s\\S])",
                         "maxLength": 300,
                         "type": "string"
                       },
@@ -28815,11 +28815,11 @@
                                         "type": "string"
                                       },
                                       "family": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "given": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -28837,11 +28837,11 @@
                                         "type": "string"
                                       },
                                       "name": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "acronym": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -28855,7 +28855,7 @@
                               "type": "integer"
                             },
                             "title": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "type": {
@@ -28863,11 +28863,11 @@
                               "type": "string"
                             },
                             "place": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "publisher": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             }
                           }
@@ -28908,11 +28908,11 @@
                                         "type": "string"
                                       },
                                       "family": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "given": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -28930,11 +28930,11 @@
                                         "type": "string"
                                       },
                                       "name": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "acronym": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -28948,7 +28948,7 @@
                               "type": "integer"
                             },
                             "title": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "type": {
@@ -28956,19 +28956,19 @@
                               "type": "string"
                             },
                             "journal": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,500}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,500}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "volume": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "issue": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "pages": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             }
                           }
@@ -29012,11 +29012,11 @@
                                         "type": "string"
                                       },
                                       "family": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "given": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -29034,11 +29034,11 @@
                                         "type": "string"
                                       },
                                       "name": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "acronym": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -29052,7 +29052,7 @@
                               "type": "integer"
                             },
                             "title": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "type": {
@@ -29077,30 +29077,30 @@
                                     "type": "string"
                                   },
                                   "family": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "given": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   }
                                 }
                               }
                             },
                             "bookTitle": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "place": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "publisher": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "pages": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             }
                           }
@@ -29142,11 +29142,11 @@
                                         "type": "string"
                                       },
                                       "family": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "given": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -29164,11 +29164,11 @@
                                         "type": "string"
                                       },
                                       "name": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       },
                                       "acronym": {
-                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                        "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                         "type": "string"
                                       }
                                     }
@@ -29182,7 +29182,7 @@
                               "type": "integer"
                             },
                             "title": {
-                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                               "type": "string"
                             },
                             "type": {
@@ -29195,7 +29195,7 @@
                               "type": "string"
                             },
                             "accessed": {
-                              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$",
+                              "pattern": "^(?:[1-9]\\d{3}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[1-9]\\d(?:0[48]|[2468][048]|[13579][26])|(?:12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)00)-02-29)(?![\\s\\S])",
                               "type": "string"
                             }
                           }
@@ -29205,7 +29205,7 @@
                     "doi": {
                       "anyOf": [
                         {
-                          "pattern": "^10\\.[0-9]{4,9}/[!-~]{1,300}(?![\\s\\S])",
+                          "pattern": "^10\\.[0-9]{4,9}/[!-@\\[-~]{1,300}(?![\\s\\S])",
                           "maxLength": 300,
                           "type": "string"
                         },
@@ -29897,11 +29897,11 @@
                                               "type": "string"
                                             },
                                             "family": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "given": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -29919,11 +29919,11 @@
                                               "type": "string"
                                             },
                                             "name": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "acronym": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -29937,7 +29937,7 @@
                                     "type": "integer"
                                   },
                                   "title": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "type": {
@@ -29945,11 +29945,11 @@
                                     "type": "string"
                                   },
                                   "place": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "publisher": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   }
                                 }
@@ -29990,11 +29990,11 @@
                                               "type": "string"
                                             },
                                             "family": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "given": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -30012,11 +30012,11 @@
                                               "type": "string"
                                             },
                                             "name": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "acronym": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -30030,7 +30030,7 @@
                                     "type": "integer"
                                   },
                                   "title": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "type": {
@@ -30038,19 +30038,19 @@
                                     "type": "string"
                                   },
                                   "journal": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,500}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,500}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "volume": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "issue": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "pages": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   }
                                 }
@@ -30094,11 +30094,11 @@
                                               "type": "string"
                                             },
                                             "family": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "given": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -30116,11 +30116,11 @@
                                               "type": "string"
                                             },
                                             "name": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "acronym": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -30134,7 +30134,7 @@
                                     "type": "integer"
                                   },
                                   "title": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "type": {
@@ -30159,30 +30159,30 @@
                                           "type": "string"
                                         },
                                         "family": {
-                                          "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                          "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                           "type": "string"
                                         },
                                         "given": {
-                                          "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                          "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                           "type": "string"
                                         }
                                       }
                                     }
                                   },
                                   "bookTitle": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "place": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "publisher": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "pages": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   }
                                 }
@@ -30224,11 +30224,11 @@
                                               "type": "string"
                                             },
                                             "family": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "given": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,200}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -30246,11 +30246,11 @@
                                               "type": "string"
                                             },
                                             "name": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,300}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             },
                                             "acronym": {
-                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
+                                              "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,50}(?<!\\s)(?![\\s\\S])",
                                               "type": "string"
                                             }
                                           }
@@ -30264,7 +30264,7 @@
                                     "type": "integer"
                                   },
                                   "title": {
-                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
+                                    "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\u2066-\\u206f\\ufeff\\uD800-\\uDFFF]){1,1000}(?<!\\s)(?![\\s\\S])",
                                     "type": "string"
                                   },
                                   "type": {
@@ -30277,7 +30277,7 @@
                                     "type": "string"
                                   },
                                   "accessed": {
-                                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$",
+                                    "pattern": "^(?:[1-9]\\d{3}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[1-9]\\d(?:0[48]|[2468][048]|[13579][26])|(?:12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)00)-02-29)(?![\\s\\S])",
                                     "type": "string"
                                   }
                                 }
@@ -30287,7 +30287,7 @@
                           "doi": {
                             "anyOf": [
                               {
-                                "pattern": "^10\\.[0-9]{4,9}/[!-~]{1,300}(?![\\s\\S])",
+                                "pattern": "^10\\.[0-9]{4,9}/[!-@\\[-~]{1,300}(?![\\s\\S])",
                                 "maxLength": 300,
                                 "type": "string"
                               },
