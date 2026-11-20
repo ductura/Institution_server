@@ -283,6 +283,12 @@ export {
   type DeadlineExtensions,
 } from "./deadline-extensions/index.ts";
 export {
+  createSubmittedWorksReader,
+  type SubmittedWorkSource,
+  type SubmittedWorksOutcome,
+  type SubmittedWorksReader,
+} from "./submitted-works/index.ts";
+export {
   createMerlinPackages,
   type MerlinPackageDownload,
   type MerlinPackageRead,

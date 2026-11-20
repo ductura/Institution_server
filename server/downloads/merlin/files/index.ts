@@ -7,10 +7,3 @@ export {
   type WorkFiles,
   type WorkFilesInput,
 } from "./render.ts";
-export {
-  createSubmittedWorksReader,
-  sourceOf,
-  type SubmittedWorkSource,
-  type SubmittedWorksOutcome,
-  type SubmittedWorksReader,
-} from "./source.ts";

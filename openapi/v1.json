@@ -42730,7 +42730,7 @@
                                 "type": "boolean"
                               },
                               "pdfName": {
-                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}\\.pdf$",
+                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}(?:[0-9a-f]{24})?\\.pdf$",
                                 "type": "string"
                               },
                               "pdfSha256": {
@@ -42738,7 +42738,7 @@
                                 "type": "string"
                               },
                               "docxName": {
-                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}\\.docx$",
+                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}(?:[0-9a-f]{24})?\\.docx$",
                                 "type": "string"
                               },
                               "docxSha256": {
@@ -42825,7 +42825,7 @@
                                 "type": "boolean"
                               },
                               "pdfName": {
-                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}\\.pdf$",
+                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}(?:[0-9a-f]{24})?\\.pdf$",
                                 "type": "string"
                               },
                               "pdfSha256": {
@@ -42833,7 +42833,7 @@
                                 "type": "string"
                               },
                               "docxName": {
-                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}\\.docx$",
+                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}(?:[0-9a-f]{24})?\\.docx$",
                                 "type": "string"
                               },
                               "docxSha256": {

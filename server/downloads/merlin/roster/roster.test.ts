@@ -10,7 +10,8 @@ import {
   type CanonicalDocument,
 } from "../../../domain/index.ts";
 import { merlinHr } from "../../../../locales/index.ts";
-import { sha256Hex, type SubmittedWorkSource } from "../files/index.ts";
+import type { SubmittedWorkSource } from "../../../database/index.ts";
+import { sha256Hex } from "../files/index.ts";
 
 import {
   buildMerlinRoster,
@@ -139,6 +140,25 @@ describe("buildMerlinRoster", () => {
     expect(rows.at(-1)).toMatchObject({ pdfName: "student-00000000.pdf", afterDeadline: true });
     // Distinct documents, distinct fingerprints.
     expect(new Set(named.map((r) => r.pdfSha256)).size).toBe(named.length);
+  });
+
+  it("gives two students who would share a file name the whole id, so a name names one file", async () => {
+    const twins = [
+      student(1, null, null, 1),
+      student(2, null, null, 1),
+      student(3, "Anić", "Demo", 1),
+    ];
+    const { rows, files } = await buildMerlinRoster(
+      [submitted(1, 1), submitted(2, 1), submitted(3, 1)],
+      twins,
+      MERLIN_EXPORT_LABELS,
+    );
+    expect(rows.map((r) => r.pdfName)).toEqual([
+      "anic-demo-00000000.pdf",
+      "student-00000000000040008000000000000001.pdf",
+      "student-00000000000040008000000000000002.pdf",
+    ]);
+    expect(new Set(files.map((f) => f.name)).size).toBe(files.length);
   });
 
   it("has only the columns of D-286 and the files: no summary, reason or criterion", async () => {

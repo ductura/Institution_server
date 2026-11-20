@@ -25,7 +25,9 @@ const Instant = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{
 const Minute = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\.000Z$" });
 const Sha256 = Type.String({ pattern: "^[0-9a-f]{64}$" });
 const FileName = (extension: string) =>
-  Type.String({ pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}\\.${extension}$` });
+  Type.String({
+    pattern: `^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}(?:[0-9a-f]{24})?\\.${extension}$`,
+  });
 const literals = <T extends string>(values: readonly T[]) =>
   Type.Union(values.map((value) => Type.Literal(value)));
 

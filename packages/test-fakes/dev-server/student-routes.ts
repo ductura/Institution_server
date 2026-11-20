@@ -212,6 +212,15 @@ export const STUDENT_HANDLERS: Handlers = {
     );
     if (old === undefined || old.requirement !== null) return { error: "not_found" };
     state.workSources = state.workSources.filter((s) => s !== old);
+    // The proofs of the source go with it, as institution.delete_work_source removes them.
+    state.sourceProofs = state.sourceProofs.filter(
+      (p) =>
+        !(
+          p.assignmentId === old.assignmentId &&
+          p.studentId === old.studentId &&
+          p.sourceId === old.id
+        ),
+    );
     return { status: 204 };
   },
   // SRV-1102: the proofs of a source of the own work. The image arrives in
@@ -246,13 +255,14 @@ export const STUDENT_HANDLERS: Handlers = {
     );
     if (!jpeg || mine.length >= 200) return { error: "invalid_input" };
     const proof = {
-      // In order, so a script can name the proof it attached: …-d00000000001, then …02.
-      id: `00000000-0000-4000-8000-d${String(state.sourceProofs.length + 1).padStart(11, "0")}`,
+      // In order, so a script can name the proof it attached: …-d00000000001, then …02;
+      // counted over every proof ever attached, so a removed one never lends its id.
+      id: `00000000-0000-4000-8000-d${String((state.sourceProofCount += 1)).padStart(11, "0")}`,
       assignmentId: source.assignmentId,
       studentId: account.id,
       sourceId: source.id,
       page: body.page,
-      note: body.note?.replaceAll("\r\n", "\n") ?? null,
+      note: body.note ?? null,
       image,
     };
     state.sourceProofs.push(proof);

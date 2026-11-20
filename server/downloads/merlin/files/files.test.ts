@@ -1,7 +1,8 @@
-// SRV-1109: the files of a submitted work and the reader of their source. All
+// SRV-1109: the files of a submitted work. All
 // names, texts and ids are invented.
 import { createHash } from "node:crypto";
 
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -14,7 +15,8 @@ import {
 } from "../../../domain/index.ts";
 import { merlinHr } from "../../../../locales/index.ts";
 
-import { fileBaseName, renderWorkFiles, sha256Hex, sourceOf } from "./index.ts";
+import { fileBaseName, renderWorkFiles, sha256Hex } from "./index.ts";
+import { wrap } from "./render.ts";
 
 const id = (n: number): NodeId =>
   newNodeId(() => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
@@ -35,6 +37,12 @@ describe("fileBaseName", () => {
     );
     expect(fileBaseName("O'Neill", "Ana", "abcdef12-0000-4000-8000-000000000000")).toBe(
       "o-neill-ana-abcdef12",
+    );
+  });
+
+  it("takes the whole id when asked", () => {
+    expect(fileBaseName("Anić", "Demo", "abcdef12-3456-4789-8abc-def012345678", true)).toBe(
+      "anic-demo-abcdef12345647898abcdef012345678",
     );
   });
 
@@ -77,37 +85,18 @@ describe("renderWorkFiles", () => {
   });
 });
 
-describe("sourceOf", () => {
-  const row = {
-    student_id: S,
-    given_name: "Demo",
-    family_name: "Anić",
-    document_id: "rad-izmisljeni-1",
-    submitted: true,
-    revision: "7",
-    body: "{}",
-  };
-
-  it("reads a work row and a row without a work", () => {
-    expect(sourceOf(row)).toEqual({
-      studentId: S,
-      givenName: "Demo",
-      familyName: "Anić",
-      work: { documentId: "rad-izmisljeni-1", submitted: true, revision: 7, body: "{}" },
-    });
-    expect(
-      sourceOf({ ...row, document_id: null, submitted: null, revision: null, body: null }),
-    ).toEqual({ studentId: S, givenName: "Demo", familyName: "Anić", work: null });
+describe("wrap", () => {
+  it("splits a word wider than the line, so no line passes the margin", async () => {
+    const font = await (await PDFDocument.create()).embedFont(StandardFonts.Helvetica);
+    const url = `https://izmisljeno.invalid/${"a1b2c3".repeat(40)}`;
+    const lines = wrap(font, `Izvor: ${url} kraj`, 11, 200);
+    expect(lines.length).toBeGreaterThan(2);
+    for (const line of lines) expect(font.widthOfTextAtSize(line, 11)).toBeLessThanOrEqual(200);
+    expect(lines.join("").replaceAll(" ", "")).toBe(`Izvor:${url}kraj`);
   });
 
-  it.each([
-    ["an upper-case id", { student_id: S.toUpperCase() }],
-    ["half a name pair", { given_name: null }],
-    ["a revision that is not a number", { revision: "x" }],
-    ["a missing text", { body: null }],
-    ["a submission flag that is not a boolean", { submitted: "true" }],
-    ["fields without a work", { document_id: null }],
-  ])("throws on %s", (_, change) => {
-    expect(() => sourceOf({ ...row, ...change })).toThrow();
+  it("keeps short words whole", async () => {
+    const font = await (await PDFDocument.create()).embedFont(StandardFonts.Helvetica);
+    expect(wrap(font, "jedan dva tri", 11, 500)).toEqual(["jedan dva tri"]);
   });
 });

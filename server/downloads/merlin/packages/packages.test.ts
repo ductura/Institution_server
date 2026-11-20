@@ -13,7 +13,8 @@ import {
 } from "../../../domain/index.ts";
 import { merlinHr } from "../../../../locales/index.ts";
 import type { MerlinPackageServiceDeps } from "./index.ts";
-import { sha256Hex, type SubmittedWorkSource } from "../files/index.ts";
+import type { SubmittedWorkSource } from "../../../database/index.ts";
+import { sha256Hex } from "../files/index.ts";
 import {
   buildMerlinRoster,
   merlinRosterCsv,

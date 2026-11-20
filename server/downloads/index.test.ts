@@ -18,7 +18,6 @@ describe("server/downloads public interface", () => {
       "createDownloadsService",
       "createMerlinPackageService",
       "createMerlinRosterReader",
-      "createSubmittedWorksReader",
       "merlinRosterCsv",
       "renderReceiptPdf",
     ]);

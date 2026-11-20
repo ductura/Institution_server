@@ -19,13 +19,19 @@ function slug(text: string): string {
     .replace(/^-+|-+$/gu, "");
 }
 
-/** prezime-ime-<8 hex>, or student-<8 hex> without a name pair. */
+/**
+ * prezime-ime-<8 hex>, or student-<8 hex> without a name pair. With `whole`,
+ * all 32 hex digits of the id: the roster asks for it when two students would
+ * otherwise get the same name.
+ */
 export function fileBaseName(
   familyName: string | null,
   givenName: string | null,
   studentId: string,
+  whole = false,
 ): string {
-  const short = studentId.replaceAll("-", "").slice(0, 8);
+  const hex = studentId.replaceAll("-", "");
+  const short = whole ? hex : hex.slice(0, 8);
   const name = [familyName ?? "", givenName ?? ""].map(slug).filter((part) => part !== "");
   return [...(name.length === 0 ? ["student"] : name), short].join("-");
 }

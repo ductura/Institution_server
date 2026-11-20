@@ -231,6 +231,8 @@ export type State = {
   submissionNotes: SubmissionNote[];
   workSources: WorkSource[];
   sourceProofs: SourceProof[];
+  /** Proofs attached so far, removed ones included: the next proof id never repeats. */
+  sourceProofCount: number;
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
@@ -417,6 +419,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     submissionNotes: [],
     workSources: [],
     sourceProofs: [],
+    sourceProofCount: 0,
     enrollmentGuesses: new Map(),
     mentorships: [
       {

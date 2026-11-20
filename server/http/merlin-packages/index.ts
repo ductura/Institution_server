@@ -21,13 +21,13 @@ import {
   createAssignmentSubmissionsReader,
   createDeadlineExtensions,
   createMerlinPackages,
+  createSubmittedWorksReader,
   type MerlinPackageStatus,
   type WithActor,
 } from "../../database/index.ts";
 import {
   createMerlinPackageService,
   createMerlinRosterReader,
-  createSubmittedWorksReader,
   type MerlinPackageService,
 } from "../../downloads/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
