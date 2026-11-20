@@ -21,6 +21,7 @@ import {
   createEvidenceOpenRoute,
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
+  createProcessSummaryDetailsRouteFor,
   createProcessSummaryRouteFor,
   createTeacherFastPathRouteFor,
   createStudentAssignmentWorkRouteFor,
@@ -130,6 +131,12 @@ const SESSION_ROUTES = {
   // SRV-23: a live session naming a work it may not read gets 404 and logs nothing.
   "projection.process-summary.post": {
     path: "/api/v1/process-summary",
+    body: () => ({ documentId: randomUUID() }),
+    live: 404,
+  },
+  // SRV-9D: the details read answers the same 404 for a work the caller may not read.
+  "projection.process-summary-details.post": {
+    path: "/api/v1/process-summary/details",
     body: () => ({ documentId: randomUUID() }),
     live: 404,
   },
@@ -494,6 +501,7 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
+  "createProcessSummaryDetailsRouteFor",
   "createTeacherFastPathRouteFor",
   "createStudentSubmissionRoutesFor",
   "createMeRouteFor",
@@ -528,6 +536,7 @@ const MOUNTED = [
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
+  createProcessSummaryDetailsRouteFor(databases.main, evidenceDeps, ENV),
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
   ...createStudentSubmissionRoutesFor(databases.main),
   createMeRouteFor(databases.main),
