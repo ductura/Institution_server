@@ -27,23 +27,17 @@ it("stores shared comments under ductus_app without changing the work or its rev
       ),
     );
     const withActor: WithActor = async (token, run) => {
-      await db.exec("SAVEPOINT comment_request");
+      await db.query("SELECT set_config('app.session_token', $1, true)", [token]);
+      await db.exec("SET LOCAL ROLE ductus_app");
       try {
-        await db.query("SELECT set_config('app.session_token', $1, true)", [token]);
-        await db.exec("SET LOCAL ROLE ductus_app");
-        const result = await run({
+        return await run({
           async query<Row>(sql: string, args?: readonly unknown[]) {
             const { rows } = await db.query<Row>(sql, [...(args ?? [])]);
             return { rows, rowCount: rows.length };
           },
         });
-        await db.exec("RESET ROLE");
-        return result;
-      } catch (error) {
-        await db.exec("ROLLBACK TO SAVEPOINT comment_request");
-        throw error;
       } finally {
-        await db.exec("RELEASE SAVEPOINT comment_request");
+        await db.exec("RESET ROLE");
       }
     };
     const published = await withActor(STUDENT, (tx) =>
