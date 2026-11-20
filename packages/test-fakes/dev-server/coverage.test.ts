@@ -474,6 +474,14 @@ function routeOf(step: Step): RouteId {
 const ROUTES = Object.keys(ROUTE_TABLE) as RouteId[];
 
 describe("dev fake server covers the whole contract", () => {
+  it("refuses a work source whose record lacks its fields, and stores nothing", async () => {
+    const state = createState();
+    const step = { ...SAVE_SOURCE, body: { record: { id: WORK_SOURCE.id } } };
+    expect((await run(state, step)).status).toBe(422);
+    const read = SCENARIOS["student.work-sources.get"].request;
+    expect(JSON.parse((await run(state, read)).body)).toEqual({ sources: [] });
+  });
+
   it("has a handler and a scenario for every route of ROUTE_TABLE, and nothing else", () => {
     expect(Object.keys(DEV_HANDLERS).sort()).toEqual([...ROUTES].sort());
     expect(ROUTES.filter((route) => typeof DEV_HANDLERS[route] !== "function")).toEqual([]);

@@ -3,6 +3,10 @@
 // caller's own memberships and works are ever read.
 import { randomUUID } from "node:crypto";
 
+import { Value } from "@sinclair/typebox/value";
+
+import { WorkSourceRecord } from "../../../server/contracts/index.ts";
+
 import type { Handlers } from "./server.ts";
 import type { Account, Assignment, State, WorkSource } from "./state.ts";
 
@@ -125,7 +129,9 @@ export const STUDENT_HANDLERS: Handlers = {
     if (account === null) return { error: "unauthorized" };
     const assignment = ownAssignment(state, account, params.assignmentId);
     if (assignment === undefined) return { error: "not_found" };
-    if (body.record.id !== params.sourceId) return { error: "invalid_input" };
+    // The wire checks one level only; the deep shape is checked here, as the real server does.
+    if (!Value.Check(WorkSourceRecord, body.record) || body.record.id !== params.sourceId)
+      return { error: "invalid_input" };
     const mine = state.workSources.filter(
       (s) => s.assignmentId === assignment.id && s.studentId === account.id,
     );
