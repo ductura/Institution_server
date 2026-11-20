@@ -1,5 +1,5 @@
 import { isWorkId } from "../contracts/index.ts";
-import type { WithActor } from "../database/index.ts";
+import type { WithActor } from "../database/with-actor.ts";
 
 /**
  * DAN-344 R-2 (#923, contract c.6434766713 point 2; D-170 as amended on #87):
@@ -147,11 +147,10 @@ type OverviewStudent = GroupStudent &
 const ROSTER_SQL = `WITH roster AS MATERIALIZED (
   SELECT * FROM app.teacher_course_students($1::uuid)
 ), works AS (
-  SELECT overview.student_id, a.id AS assignment_id, w.document_id, overview.evidence_record
-    FROM institution.assignment a
-    CROSS JOIN LATERAL app.assignment_overview(a.id) overview
-    LEFT JOIN LATERAL app.assignment_works(a.id) w ON w.student_id = overview.student_id
-   WHERE a.course_id = $1::uuid
+  SELECT overview.student_id, a.assignment_id, w.document_id, overview.evidence_record
+    FROM app.teacher_course_assignment_ids($1::uuid) a
+    CROSS JOIN LATERAL app.assignment_overview(a.assignment_id) overview
+    LEFT JOIN LATERAL app.assignment_works(a.assignment_id) w ON w.student_id = overview.student_id
 )
 SELECT r.student_id::text AS student_id, r.given_name, r.family_name, r.group_name AS "groupName",
        w.assignment_id::text AS "assignmentId", w.document_id AS "documentId",
