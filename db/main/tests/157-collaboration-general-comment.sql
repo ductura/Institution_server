@@ -40,7 +40,7 @@ RESET ROLE;
 -- Catalogue: one more SECURITY DEFINER function of the identity role, for the web role only.
 SELECT is((SELECT format('%s|%s', p.prosecdef, p.proowner::regrole) FROM pg_proc p
     WHERE p.oid = 'collaboration.create_general_comment(text,text)'::regprocedure),
-  'true|ductus_identity', 'create_general_comment is a SECURITY DEFINER function of the identity role');
+  't|ductus_identity', 'create_general_comment is a SECURITY DEFINER function of the identity role');
 SELECT bag_eq(
   $$ SELECT r FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence', 'public']) AS r
       WHERE r <> 'public' AND has_function_privilege(r, 'collaboration.create_general_comment(text,text)', 'EXECUTE') $$,
