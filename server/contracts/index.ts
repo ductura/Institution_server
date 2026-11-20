@@ -14,6 +14,7 @@ import {
   platformRoutes,
   profileRoutes,
   projectionRoutes,
+  receiptPdfRoutes,
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   settingsRoutes,
@@ -84,6 +85,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherRoutes,
   ...settingsRoutes,
   ...downloadsRoutes,
+  ...receiptPdfRoutes,
   sourceLookupPost,
 ];
 
