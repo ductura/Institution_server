@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(1907);
+SELECT plan(2006);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -17,8 +17,8 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment'],
-  'the institution schema holds exactly the twenty-six tables of this matrix'
+        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof'],
+  'the institution schema holds exactly the twenty-seven tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -124,9 +124,10 @@ SELECT bag_eq(
     'notice_read: notice_read_owner ALL to ductus_identity',
     'notice_read: notice_read_read SELECT to ductus_app',
     'work_source: work_source_owner ALL to ductus_identity',
-    'work_attachment: work_attachment_owner ALL to ductus_identity'
+    'work_attachment: work_attachment_owner ALL to ductus_identity',
+    'source_proof: source_proof_owner ALL to ductus_identity'
   ],
-  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source or work_attachment'
+  'policies: the owner on every table, ductus_app for SELECT alone, nobody on enrollment_attempt, faculty_work_rule, notification, work_source, work_attachment or source_proof'
 );
 -- A version is immutable by its triggers, one of a mentorship's assignment
 -- stays within the faculty's rule, an administrator comes and goes only
@@ -276,7 +277,11 @@ SELECT bag_eq(
     'refuse_work_attachment_change()',
     'add_work_attachment(p_assignment_id uuid, p_media_type text, p_byte_size integer, p_sha256 text, p_storage_ref text, p_pixel_width integer, p_pixel_height integer) definer app',
     'work_attachments(p_assignment_id uuid, p_student_id uuid) definer app',
-    'read_work_attachment(p_attachment_id uuid) definer app'
+    'read_work_attachment(p_attachment_id uuid) definer app',
+    'source_proof_text_valid(p_text text, p_max integer, p_lines boolean)',
+    'add_source_proof(p_assignment_id uuid, p_source_id uuid, p_page text, p_note text, p_image bytea) definer app',
+    'source_proofs(p_assignment_id uuid, p_source_id uuid, p_student_id uuid) definer app',
+    'read_source_proof_image(p_assignment_id uuid, p_source_id uuid, p_proof_id uuid, p_student_id uuid) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -566,6 +571,51 @@ FROM (VALUES
   ('ana', '''eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee''', 'ZD403'), ('anon', '{att_ana}', 'ZD401')
 ) AS c (actor, att, result);
 
+-- 1h. SRV-1102: the proofs of a source (institution.source_proof) only
+-- through its three RPCs; the web role has no privilege or policy on the
+-- table. One cell per actor on source A of Z1 of K1 and of Z3 of fak-b; the
+-- rest (shape, a whole PDF, bounds, the removed source, seminar group,
+-- mentor) is in 160-source-proof-access.sql.
+INSERT INTO ref VALUES ('pf_src', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+SELECT is(substr(pg_temp.ask(c.actor, format('SELECT ''ok'' FROM institution.save_work_source(%s, %L::jsonb)',
+                                             c.assignment, pg_temp.source_json())), 1, 5), 'ok',
+  format('SRV-1102 fixture: %s has source A on %s', c.actor, c.assignment))
+FROM (VALUES ('ana', '{z1}'), ('tomo', '{z3}')) AS c (actor, assignment);
+SELECT is(
+  substr(pg_temp.ask(c.actor, format(
+    'SELECT ''ok'' FROM institution.add_source_proof(%s, {pf_src}, ''14'', NULL, ''\xffd8ffe0ffd9''::bytea)',
+    c.assignment)), 1, 5),
+  c.outcome, format('SRV-1102: %s attaches a proof to source A on %s: %s', c.actor, c.assignment, c.outcome)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'ok'), ('dora', '{z1}', 'ZD403'), ('vesna', '{z1}', 'ZD403'), ('marko', '{z1}', 'ZD403'),
+  ('iva', '{z1}', 'ZD403'), ('boris', '{z1}', 'ZD403'), ('nina', '{z1}', 'ZD403'), ('tomo', '{z1}', 'ZD403'),
+  ('lea', '{z1}', 'ZD403'), ('tomo', '{z3}', 'ok'), ('petra', '{z3}', 'ZD403'), ('anon', '{z1}', 'ZD401')
+) AS c (actor, assignment, outcome);
+SELECT is(
+  substr(pg_temp.ask(c.actor, format('SELECT count(*)::text FROM institution.source_proofs(%s, {pf_src}, %s)',
+                                     c.assignment, c.student)), 1, 5), c.result,
+  format('SRV-1102: %s reads the proofs of %s on %s: %s', c.actor, c.student, c.assignment, c.result)
+)
+FROM (VALUES
+  ('ana', '{z1}', 'NULL', '1'), ('vesna', '{z1}', '{ana}', '1'), ('dora', '{z1}', '{ana}', 'ZD403'),
+  ('marko', '{z1}', '{ana}', 'ZD403'), ('iva', '{z1}', '{ana}', 'ZD403'), ('boris', '{z1}', '{ana}', 'ZD403'),
+  ('nina', '{z1}', '{ana}', 'ZD403'), ('petra', '{z1}', '{ana}', 'ZD403'), ('lea', '{z1}', '{ana}', 'ZD403'),
+  ('petra', '{z3}', '{tomo}', '1'), ('vesna', '{z3}', '{tomo}', 'ZD403'), ('anon', '{z1}', '{ana}', 'ZD401')
+) AS c (actor, assignment, student, result);
+INSERT INTO ref VALUES ('pf_ana', pg_temp.ask('ana', $$ SELECT id::text FROM institution.source_proofs({z1}, {pf_src}) $$));
+SELECT is(
+  substr(pg_temp.ask(c.actor, format(
+    'SELECT sha256 FROM institution.read_source_proof_image({z1}, {pf_src}, {pf_ana}, %s)', c.student)), 1, 5),
+  c.result, format('SRV-1102: %s reads the image of Ana''s proof: %s', c.actor, c.result)
+)
+FROM (VALUES
+  ('ana', 'NULL', left(encode(sha256('\xffd8ffe0ffd9'::bytea), 'hex'), 5)),
+  ('vesna', '{ana}', left(encode(sha256('\xffd8ffe0ffd9'::bytea), 'hex'), 5)),
+  ('dora', '{ana}', 'ZD403'), ('dora', 'NULL', 'ZD403'), ('marko', '{ana}', 'ZD403'), ('iva', '{ana}', 'ZD403'),
+  ('petra', '{ana}', 'ZD403'), ('lea', '{ana}', 'ZD403'), ('anon', '{ana}', 'ZD401')
+) AS c (actor, student, result);
+
 -- 2. Role by table by operation, as it is migrated. Each cell runs the
 -- statement as that role and reports why it stopped.
 CREATE FUNCTION pg_temp.probe(p_role text, p_actor text, p_table text, p_op text) RETURNS text
@@ -604,12 +654,12 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source', 'work_attachment']) WITH ORDINALITY AS t (tbl, n)
+                        'notice_read', 'work_source', 'work_attachment', 'source_proof']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
