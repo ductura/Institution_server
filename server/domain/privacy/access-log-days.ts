@@ -22,7 +22,7 @@ export type AccessLogRole = "teacher" | "mentor" | "seminar_teacher" | "unknown"
 export type AccessLogSurface =
   "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "unknown";
 
-export interface AccessLogEntry {
+export type AccessLogEntry = {
   id: string;
   /** Epoch milliseconds of the window's start; for order only, never shown. */
   at: number;
@@ -30,9 +30,9 @@ export interface AccessLogEntry {
   surface: AccessLogSurface;
   /** Null when the reader has no name pair; never a stand-in. */
   reader: { givenName: string; familyName: string } | null;
-}
+};
 
-export interface AccessLogRow {
+export type AccessLogRow = {
   id: string;
   /** Epoch milliseconds of the window's start, for an unambiguous `datetime`. */
   at: number;
@@ -42,9 +42,9 @@ export interface AccessLogRow {
   role: AccessLogRole;
   surface: AccessLogSurface;
   reader: AccessLogEntry["reader"];
-}
+};
 
-export interface AccessLogDay {
+export type AccessLogDay = {
   /** Zagreb date, `2026-11-10`. */
   key: string;
   year: number;
@@ -54,7 +54,7 @@ export interface AccessLogDay {
   /** 0 is Sunday. */
   weekday: number;
   entries: AccessLogRow[];
-}
+};
 
 type Row = Record<string, unknown>;
 

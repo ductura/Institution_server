@@ -16,15 +16,15 @@ export const GROUP_NAME_MAX_LENGTH = 120;
 
 export type TeachingTeamRole = "holder" | "group_teacher";
 
-export interface TeachingTeamSourceRowV0 {
+export type TeachingTeamSourceRowV0 = {
   readonly courseKey: string;
   readonly role: TeachingTeamRole;
   readonly groupName?: string;
   readonly issuer: string;
   readonly uniqueId: string;
-}
+};
 
-export interface TeachingTeamMappingContext {
+export type TeachingTeamMappingContext = {
   readonly institutionKey: string;
   /** The only issuer whose identifiers can match an account. */
   readonly issuer: string;
@@ -32,7 +32,7 @@ export interface TeachingTeamMappingContext {
   readonly courses: ReadonlyMap<string, string>;
   /** Exact uniqueId under `issuer` → account id. */
   readonly accounts: ReadonlyMap<string, string>;
-}
+};
 
 export type TeachingTeamCandidate =
   | {
@@ -57,10 +57,10 @@ export type TeachingTeamIssueCode =
   | "duplicate"
   | "invalid_group_name";
 
-export interface TeachingTeamIssue {
+export type TeachingTeamIssue = {
   readonly row: number;
   readonly code: TeachingTeamIssueCode;
-}
+};
 
 export type TeachingTeamMappingResult =
   | {

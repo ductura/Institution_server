@@ -27,7 +27,7 @@ import { canonicalizeJcs, type JcsJsonValue } from "../forensics/jcs.ts";
  */
 
 /** Applies the steps of one event one by one; supplied by an adapter. */
-export interface ReplayStepReplayer<TDocument> {
+export type ReplayStepReplayer<TDocument> = {
   readonly transactionFormat: string;
   /** Reads a canonical document; throws if it is not a valid one. */
   load(canonical: JcsJsonValue): TDocument;
@@ -52,7 +52,7 @@ export interface ReplayStepReplayer<TDocument> {
   toView(document: TDocument): JcsJsonValue;
   /** Plain text of the top-level block with that id, or `null` when there is none. */
   blockText(document: TDocument, blockId: string): string | null;
-}
+};
 
 export type ReplayChangeKind = "insert" | "delete" | "replace" | "format" | "structure";
 

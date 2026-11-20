@@ -18,7 +18,7 @@ import {
   MANIFEST_FILE,
 } from "../fixtures/docx-corpus/generate.ts";
 
-interface Fixture {
+type Fixture = {
   file: string;
   sha256: string;
   size: number;
@@ -32,10 +32,10 @@ interface Fixture {
     coreProperties: string[];
   };
   sameTextAs?: string;
-}
-interface Manifest {
+};
+type Manifest = {
   fixtures: Fixture[];
-}
+};
 
 /** Parts of a ZIP of stored entries, in file order; throws on anything else. */
 function readStoredZip(bytes: Uint8Array): [string, string][] {
