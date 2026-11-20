@@ -23,7 +23,9 @@ import {
   sourceLookupPost,
   studentRoutes,
   studentSourcesRoutes,
+  sourceProofsRoutes,
   textCheckConfigRoutes,
+  deadlineExtensionRoutes,
   supportRoutes,
   teacherRoutes,
   TOO_MANY_REQUESTS,
@@ -35,8 +37,13 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
-export { WorkSourceRecord } from "./routes/index.ts";
-export { WorkMilestone, WorkMilestoneDueInput, WorkMilestoneId } from "./routes/index.ts";
+export {
+  SourceProof,
+  WorkMilestone,
+  WorkMilestoneDueInput,
+  WorkMilestoneId,
+  WorkSourceRecord,
+} from "./routes/index.ts";
 export { workMilestonesRoutes };
 
 export {
@@ -83,7 +90,9 @@ export const ROUTES: readonly RouteContract[] = [
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
+  ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
+  ...deadlineExtensionRoutes,
   ...supportRoutes,
   ...projectionRoutes,
   ...collaborationRoutes,
