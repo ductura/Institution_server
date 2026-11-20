@@ -40,6 +40,7 @@ import {
   createEvidenceReplayRouteFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
+  createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   evidenceIngestDependencies,
   createLayers,
@@ -136,8 +137,9 @@ async function main(): Promise<void> {
       ...createStudentNotesRoutesFor(databases.main),
       // The desktop packages over the release configuration built in (S-1H.5-b, DAN-932).
       createDownloadsManifestRoute(),
-      // Settings by level (S-1J-g, DAN-826): the write over settings.set_value.
+      // Settings by level (S-1J-g, DAN-826; SRV-7E).
       createSettingsValuesPutRoute({ writer: databases.main.settingsWriter }),
+      ...createSettingsReadRoutes(databases.main),
       // The interface language (S-M-1, DAN-851): GET and POST over the profile service.
       ...createInterfaceLocaleRoutesFor(databases.main),
       // The problem report (S-M-2, DAN-851): POST over the support service.
