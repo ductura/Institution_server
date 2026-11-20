@@ -486,3 +486,11 @@ export function databaseHealth(): Promise<HealthReport> {
 export async function closePools(): Promise<void> {
   await registry.close();
 }
+export {
+  createWorkMessages,
+  type WorkMessage,
+  type WorkMessageCreated,
+  type WorkMessageList,
+  type WorkMessageRefusal,
+  type WorkMessages,
+} from "./work-messages/index.ts";

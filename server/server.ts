@@ -41,6 +41,7 @@ import {
   createProblemReportRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
+  createWorkMessagesRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
   createEvidenceOpenRoute,
@@ -171,6 +172,8 @@ async function main(): Promise<void> {
       // with PUT, every reader gets the same bytes and ETag with GET.
       ...createLiveRoutesFor(databases.main),
       createCollaborationCommentsRouteFor(databases.main),
+      // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
+      ...createWorkMessagesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
       createAcknowledgmentRouteFor(databases.main),
       // WebAuthn as the second factor of operators, never a way to sign in (S-1E-g, DAN-840; D-09).

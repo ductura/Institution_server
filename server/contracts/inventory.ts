@@ -220,6 +220,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
   },
+  // SRV-1106 (Val 11, Ductus#2051 c.7048423523; E§3.5 mentor2, PO-22): the messages of a work; Ductus has no such route.
+  "app/api/works/[documentId]/messages/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423523",
+  },
   // SRV-27 (Ductus#2028 c.7009405737, wave 5): teacher reads of students, overview, receipt and mentorship requests.
   "app/api/teacher/courses/[courseId]/students/route.ts": {
     methods: ["GET"],

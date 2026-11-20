@@ -18,6 +18,7 @@ export { StudentSubmissionState, studentRoutes } from "./student.ts";
 export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
+export { workMessagesRoutes } from "./work-messages.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
 export { sourceLookupPost } from "./source-lookup.ts";
