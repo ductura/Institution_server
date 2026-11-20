@@ -27,6 +27,7 @@ import {
   createStudentSubmissionRoutesFor,
   createStudentNotesRoutesFor,
   createWorkSourceRoutesFor,
+  createWorkVersionsRouteFor,
   createSourceLookupRouteFor,
   createTeacherReadRoutesFor,
   createInstitutionAssignmentRoutesFor,
@@ -172,6 +173,8 @@ async function main(): Promise<void> {
       createEvidenceCommitRouteFor(databases.main, evidenceDeps),
       // DAN-818: one replay page, read from the same storage as commit writes.
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
+      // SRV-9A: the versions of a work, the same page for its owner and its teacher.
+      createWorkVersionsRouteFor(databases.main),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
       createSubmissionRouteFor(databases.main, evidenceDeps),
