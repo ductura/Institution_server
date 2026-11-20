@@ -27,7 +27,7 @@ import { readProcessSummary } from "../../../server/projection/process-summary-r
 import { processSummarySource } from "./process-summary-source.ts";
 import { handleFastPathRequest, type FastPathRead } from "../../../server/teacher/fast-path.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-11c (#757, DAN-308): the teacher's fast path over the real
 // app.fast_path_works under withActor and the payloads stored in the local S3

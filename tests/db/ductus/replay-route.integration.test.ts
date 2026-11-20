@@ -26,7 +26,7 @@ import {
 import { createActorReader } from "../../../server/database/index.ts";
 
 import { postTestRoute, startTestRoute } from "./http-route.ts";
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-344 PR A (contract on #923): the owner and the teacher get the same
 // replay bytes through the API (PRODUCT 5 rule 5), over the real read RPCs

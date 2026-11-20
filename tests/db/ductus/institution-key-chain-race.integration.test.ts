@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // DAN-442 (D-199, plan of attack #1432, D1 and D2): a child keyed to the
 // institution of its parent and a concurrent move of that parent to another
@@ -20,7 +20,7 @@ requireLoopbackDatabaseUrl(
   ADMIN_URL,
   "The race test runs only against a loopback database (DATABASE_URL).",
 );
-const MIGRATIONS = fileURLToPath(new URL("../../db/migrations/", import.meta.url));
+const MIGRATIONS = fileURLToPath(new URL("../../../db/main/migrations/", import.meta.url));
 
 function upSection(file: string) {
   const text = readFileSync(`${MIGRATIONS}${file}`, "utf8");

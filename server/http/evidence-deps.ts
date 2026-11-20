@@ -49,12 +49,17 @@ export const STORAGE_NOT_CONFIGURED: Payloads = Object.freeze({
   readImmutable: async () => notConfigured,
 });
 
-/** A signer that never signs: the commit answers 503 signing and keeps nothing. */
-export const REFUSING_SIGNER: Pick<SigningKeyProvider, "sign"> = Object.freeze({
+/**
+ * A signer that never signs: the commit and the submission answer 503
+ * signing and keep nothing.
+ */
+export const REFUSING_SIGNER: SigningKeyProvider = Object.freeze({
   sign: () => Promise.reject(new Error("signing_key_unavailable")),
+  verify: () => Promise.reject(new Error("signing_key_unavailable")),
+  publicVerificationKey: () => Promise.reject(new Error("signing_key_unavailable")),
 });
 
-function signerOf(env: Env, repositoryRoot: string): Pick<SigningKeyProvider, "sign"> {
+function signerOf(env: Env, repositoryRoot: string): SigningKeyProvider {
   try {
     return new PersistentDevelopmentEd25519SigningKeyProvider(env, repositoryRoot);
   } catch {
@@ -81,11 +86,16 @@ function payloadsOf(env: Env): Payloads {
   }
 }
 
-/** The signer and storage of this process; `repositoryRoot` is where the server runs from. */
+/**
+ * The signer and storage of this process; `repositoryRoot` is where the
+ * server runs from. The signer is the whole provider: a
+ * submission (submission.ts, SRV-18) also reads its public key and checks
+ * its signature; commit uses only `sign`.
+ */
 export function evidenceIngestDependencies(
   env: Env,
   repositoryRoot: string,
-): EvidenceIngestDependencies {
+): EvidenceIngestDependencies & { readonly signer: SigningKeyProvider } {
   // A copy, as Ductus handed over: later changes of the process environment change nothing.
   const own: Env = { ...env };
   // Only the process's own value: Ductus read env.X === "1", which an

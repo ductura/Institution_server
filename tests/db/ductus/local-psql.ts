@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { nativePsqlTarget } from "../../../db/main/local/index.ts";
 
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 export function localPsqlTarget(databaseUrl: string) {
   const url = new URL(requireLoopbackDatabaseUrl(databaseUrl, "DATABASE_URL"));

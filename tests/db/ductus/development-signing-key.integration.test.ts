@@ -20,7 +20,7 @@ import { createWithActor, type WithActor } from "../../../server/database/with-a
 import { receiptKeys } from "../../../server/database/open-work.ts";
 
 import { localScriptArgs } from "./local-psql.ts";
-import { requireLoopbackDatabaseUrl } from "./loopback-database-url.ts";
+import { requireLoopbackDatabaseUrl } from "../loopback-database-url.ts";
 
 // B-8 step 4a / DAN-83 (docs/BACKEND.md 4.13 t. 7; ADR 2026-10-11 7 (b)): a
 // receipt signed by one process must verify after a restart with the key the

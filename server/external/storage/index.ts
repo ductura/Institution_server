@@ -36,3 +36,6 @@ export {
   type DomainPayloadStore,
 } from "./institution-routed-payload-store.ts";
 export { InMemoryEvidencePayloadStore } from "./in-memory-evidence-payload-store.ts";
+// The replayer of edit steps v1 that a submission reconstructs with (SRV-18);
+// a test builds the hashes of its invented events with the same one.
+export { createEditStepsV1Replayer } from "./edit-steps-v1-replayer.ts";

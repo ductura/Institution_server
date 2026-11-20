@@ -14,7 +14,7 @@ import {
   DEMO_HOME_ORG,
   DEMO_HOME_ORG_B,
   demoAccountClaims,
-} from "../../../packages/test-fakes/oidc/accounts.ts";
+} from "@ductura/test-fakes/oidc";
 
 // DAN-483: the two invented institutions of db/local/seed.sql share the fake
 // provider's issuer, so only the home organisation and the realm of the
