@@ -38,17 +38,15 @@ const BODY = POST_CONTRACT.request.body!;
 const BODY_TIMEOUT_MS = 5_000;
 const BIDI = /[‪-‮⁦-⁩]/u;
 
-/** The status and problem code of a closed refusal of the port. */
-const REFUSALS = {
-  unauthenticated: [401, "unauthorized"],
-  not_found: [404, "not_found"],
-  invalid: [422, "invalid_input"],
-  unavailable: [503, "unavailable"],
-} as const;
-
-function refusalOf(response: ServerResponse, status: keyof typeof REFUSALS): void {
-  const [code, problem] = REFUSALS[status];
-  return sendProblem(response, code, problem);
+/** Answers a closed refusal of the port with its status and problem code. */
+function refusalOf(
+  response: ServerResponse,
+  status: "unauthenticated" | "not_found" | "invalid" | "unavailable",
+): void {
+  if (status === "unauthenticated") return sendProblem(response, 401, "unauthorized");
+  if (status === "not_found") return sendProblem(response, 404, "not_found");
+  if (status === "invalid") return sendProblem(response, 422, "invalid_input");
+  return sendProblem(response, 503, "unavailable");
 }
 
 export function createWorkMessagesGetRoute(messages: WorkMessages): Route {

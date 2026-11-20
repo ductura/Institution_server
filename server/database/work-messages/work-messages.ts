@@ -8,7 +8,7 @@
 // unauthenticated, ZD403 not_found (one answer for "not yours", "not there"
 // and "no relation", C-23), ZD422 invalid, anything else unavailable. A row
 // of an unexpected shape is unavailable too.
-import type { ActorTransaction, WithActor } from "../with-actor.ts";
+import type { ActorTransaction, WithActor } from "../index.ts";
 
 export type WorkMessage = {
   readonly id: string;

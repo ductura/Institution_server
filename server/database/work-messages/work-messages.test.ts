@@ -4,7 +4,7 @@
 // db/main/tests/164-work-message-access.sql.
 import { describe, expect, it } from "vitest";
 
-import type { WithActor } from "../with-actor.ts";
+import type { WithActor } from "../index.ts";
 
 import { createWorkMessages } from "./work-messages.ts";
 
