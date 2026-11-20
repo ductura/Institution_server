@@ -1,6 +1,8 @@
 // Platform, client context, sign-in and profile routes of the dev fake server.
 // Sign-in goes only through the local role switch: login sends the browser
 // there, the callback ends at "/" and no provider is ever called (D-09).
+import { createHash } from "node:crypto";
+
 import { API_VERSION, MIN_CLIENT_VERSION } from "../../../server/contracts/index.ts";
 import { clearedSessionCookie, type Handlers } from "./server.ts";
 import { INSTITUTION } from "./state.ts";
@@ -8,6 +10,10 @@ import { INSTITUTION } from "./state.ts";
 /** Invented WebAuthn values (32 bytes as base64url): the fake never checks a ceremony. */
 const CHALLENGE = Buffer.alloc(32, 7).toString("base64url");
 const RP_ID = "localhost";
+
+/** An invented journal scope: stable per fake account, never a real identifier. */
+const journalScope = (accountId: string): string =>
+  createHash("sha256").update(`ductura-fake-journal-scope-v1\n${accountId}`, "utf8").digest("hex");
 
 export const ACCOUNT_HANDLERS: Handlers = {
   "platform.health.get": () => ({
@@ -93,6 +99,7 @@ export const ACCOUNT_HANDLERS: Handlers = {
             institution: { ...INSTITUTION },
             roles: [...account.roles],
             displayName: `${account.givenName} ${account.familyName}`,
+            journalScope: journalScope(account.id),
           },
         },
   "profile.interface-locale.get": ({ account }) =>
