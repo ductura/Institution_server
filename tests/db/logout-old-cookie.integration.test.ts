@@ -16,6 +16,7 @@ import {
   createAuthRoutes,
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
+  createConsultationRecordRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
   createEvidenceCommitRouteFor,
@@ -131,6 +132,23 @@ const SESSION_ROUTES = {
     path: "/api/v1/comments/list",
     body: () => ({ documentId: randomUUID() }),
     live: 403,
+  },
+  // SRV-1105: a work it may not read is 404 for the list and for both writes.
+  "work.consultation-records.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/consultation-records`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.consultation-records.post": {
+    path: `/api/v1/works/${randomUUID()}/consultation-records`,
+    body: () => ({ heldOn: "2026-11-18", revision: 1, topic: "Tema", agreement: "" }),
+    live: 404,
+  },
+  "work.consultation-additions.post": {
+    path: `/api/v1/works/${randomUUID()}/consultation-records/${randomUUID()}/additions`,
+    body: () => ({ text: "Dopuna." }),
+    live: 404,
   },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
   "submission.submit.post": {
@@ -540,6 +558,7 @@ const FACTORIES = [
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
+  "createConsultationRecordRoutesFor",
   "createAcknowledgmentRouteFor",
   "createWebAuthnRoutesFor",
   "createEvidenceCommitRouteFor",
@@ -580,6 +599,7 @@ const MOUNTED = [
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
+  ...createConsultationRecordRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
   ...createWebAuthnRoutesFor(databases.main, ORIGIN),
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),

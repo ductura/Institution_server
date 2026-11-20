@@ -64,7 +64,8 @@ CREATE TABLE collaboration.consultation_record (
   topic text NOT NULL CHECK (collaboration.is_consultation_text(topic, 1, 200)),
   agreement text NOT NULL CHECK (collaboration.is_consultation_text(agreement, 0, 2000)),
   created_by uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  -- clock_timestamp: rows made in one transaction still keep the order they were made in.
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE (id, institution_id),
   FOREIGN KEY (assignment_id, institution_id) REFERENCES institution.assignment (id, institution_id),
   FOREIGN KEY (owner_id, institution_id) REFERENCES identity.user_account (id, institution_id),
@@ -78,7 +79,8 @@ CREATE TABLE collaboration.consultation_addition (
   institution_id uuid NOT NULL,
   body text NOT NULL CHECK (collaboration.is_consultation_text(body, 1, 2000)),
   author_id uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  -- clock_timestamp: rows made in one transaction still keep the order they were made in.
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   FOREIGN KEY (record_id, institution_id) REFERENCES collaboration.consultation_record (id, institution_id),
   FOREIGN KEY (author_id, institution_id) REFERENCES identity.user_account (id, institution_id)
 );

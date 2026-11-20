@@ -34,6 +34,17 @@ const commit = (txid: string, baseRevision: number): Step => ({
     document: EMPTY_DOCUMENT,
   },
 });
+const CREATE_CONSULTATION: Step = {
+  path: `/api/v1/works/${IDS.document}/consultation-records`,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: {
+    heldOn: "2026-11-18",
+    revision: 1,
+    topic: "Izmišljena struktura rada",
+    agreement: "Dodati zaključak.",
+  },
+};
 const ANCHOR = {
   nodeId: "0a000000-0000-4000-8000-000000000001",
   quote: "Izmišljeno",
@@ -452,6 +463,23 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
+  "work.consultation-records.get": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
+    request: { path: `/api/v1/works/${IDS.document}/consultation-records`, as: "student" },
+  },
+  "work.consultation-records.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { ...CREATE_CONSULTATION, as: "nastavnik" },
+  },
+  "work.consultation-additions.post": {
+    before: [commit("izmisljena-transakcija-1", 0), CREATE_CONSULTATION],
+    request: {
+      path: `/api/v1/works/${IDS.document}/consultation-records/000000c0-0000-4000-8000-000000000001/additions`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { text: "Izmišljena dopuna." },
+    },
+  },
   "work.versions.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
