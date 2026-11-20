@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error } from "../schema/index.ts";
 
-import { ProcessSummaryV1 } from "./process-summary-shape.ts";
+import { Minute, ProcessSummaryV1 } from "./process-summary-shape.ts";
 import { MUTATION_GUARD } from "./shared.ts";
 
 // Literal port of Ductus 078c780 app/api/process-summary/route.ts and
@@ -36,4 +36,29 @@ export const processSummaryPost = defineRoute({
   ],
 });
 
-export const projectionRoutes = [processSummaryPost] as const;
+const processSummaryDetailsPost = defineRoute({
+  ...processSummaryPost,
+  id: "projection.process-summary-details.post",
+  path: "/api/v1/process-summary/details",
+  inventory: "app/api/process-summary/details/route.ts",
+  summary:
+    "The same accepted record for the owner and course teacher, with active editing minutes (sum of session spans excluding record gaps) and the coarse times of recorded imports and assistant transfers.",
+  responses: [
+    {
+      status: 200,
+      description: "the summary and its details",
+      body: closed({
+        summary: ProcessSummaryV1,
+        activeEditingMinutes: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+        keyEvents: Type.Array(
+          closed({
+            kind: Type.Union([Type.Literal("import"), Type.Literal("ai-transfer")]),
+            at: closed({ from: Minute, to: Minute }),
+          }),
+        ),
+      }),
+    },
+  ],
+});
+
+export const projectionRoutes = [processSummaryPost, processSummaryDetailsPost] as const;
