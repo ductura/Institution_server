@@ -217,6 +217,7 @@ export {
   parseAssignmentIdsBody,
   type TeacherReadOptions,
 } from "./teacher-reads.ts";
+export { createTeacherMentorshipRequestRoutesFor } from "./teacher-mentorship-requests.ts";
 export {
   createStudentAssignmentsRoute,
   createStudentAssignmentsRouteFor,
