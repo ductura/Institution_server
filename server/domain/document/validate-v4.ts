@@ -26,6 +26,7 @@ import {
   type CodeLanguage,
   type DocumentNodeV4,
   type InlineNodeV4,
+  type MarkV4,
   type NodeId,
   type ParagraphNodeV4,
   type TextNodeV4,
@@ -269,7 +270,8 @@ function validateBox(
 
 /**
  * The inline children of a text block. In a heading each atom gets its own
- * NOT_ALLOWED code; in a code block an atom or a mark is CODE_CONTENT_INVALID.
+ * NOT_ALLOWED code; in a code block an atom, or a mark other than `paste` and
+ * `imported`, is CODE_CONTENT_INVALID.
  */
 function validateInlineChildren(
   rawChildren: unknown[],
@@ -293,7 +295,7 @@ function validateInlineChildren(
     }
     const text = validateText(raw, childPath, errors);
     if (!text) return;
-    if (blockType === "codeBlock" && text.marks.length > 0) {
+    if (blockType === "codeBlock" && !text.marks.every(isProvenanceMark)) {
       errors.push({ path: `${childPath}.marks`, code: "CODE_CONTENT_INVALID" });
     }
     if (previous && marksV4Key(previous.marks) === marksV4Key(text.marks)) {
@@ -303,6 +305,11 @@ function validateInlineChildren(
     children.push(text);
   });
   return children;
+}
+
+/** `paste` and `imported`, the only marks a code block takes (contract §4.2). */
+function isProvenanceMark(mark: MarkV4): boolean {
+  return mark === "imported" || (typeof mark === "object" && mark.type === "paste");
 }
 
 function validateAtom(raw: Raw, path: string, errors: ValidationError[]): InlineNodeV4 | null {

@@ -94,7 +94,7 @@ U v1 do v3 `marks` je niz nizova `"bold"` i `"italic"`. U v4 element niza je ili
 - `sup` i `sub` se isključuju: tekst s obje oznake daje `MARKS_EXCLUSIVE` (prototip `excludes`).
 - Oznaka bez atributa piše se samo kao niz; objekt `{"type": "bold"}` je `MARK_INVALID`. Oznaka s atributima piše se samo kao objekt; niz `"lang"` je `MARK_INVALID`. Objekt oznake ima zatvoren skup ključeva (`UNKNOWN_FIELD`); nevaljan atribut daje `MARK_ATTRIBUTE_INVALID` s putem atributa.
 - `ADJACENT_TEXT_SAME_MARKS` u v4 uspoređuje oznake s atributima: dva susjedna tekstna čvora s `lang` `en` i `de` nisu iste oznake, a s dva puta `en` jesu.
-- Oznake smiju stajati na tekstu u `paragraph`, `heading`, `bulletItem` i `quote`, a u `codeBlock` ne (odjeljak 4.2). Inline atomi i dalje nemaju `marks`.
+- Oznake smiju stajati na tekstu u `paragraph`, `heading`, `bulletItem` i `quote`. U `codeBlock` smiju samo oznake podrijetla `paste` i `imported`, a oznake oblikovanja ne (odjeljak 4.2). Inline atomi i dalje nemaju `marks`.
 - U dokumentima v1 do v3 svaka oznaka osim `bold` i `italic`, i svaki objekt u `marks`, daje `MARK_INVALID`, kao danas.
 
 ### 3.1 `paste` i `imported` (✓ B-7)
@@ -155,9 +155,10 @@ U retku (inline atom):
 | ---------- | ---------------------------------------------------------------------------- | ----------------------- |
 | `language` | neobavezan; jedan od `c`, `html`, `java`, `javascript`, `python`, `r`, `sql` | `CODE_LANGUAGE_INVALID` |
 | `caption`  | neobavezan; uredan tekst do 300                                              | `CODE_CAPTION_INVALID`  |
-| `children` | niz tekstnih čvorova s `marks: []`; bez inline atoma                         | `CODE_CONTENT_INVALID`  |
+| `children` | niz tekstnih čvorova; od oznaka samo `paste` i `imported`; bez inline atoma  | `CODE_CONTENT_INVALID`  |
 
 - Blok koda je tekstni blok kao odlomak, pa se u njemu tipka koracima nad tekstom. Tekst smije sadržavati prijelom retka (U+000A), kao svaki tekstni čvor. Prazan blok koda je `children: []`.
+- Izbor ugovora: oznake podrijetla `paste` i `imported` smiju na tekst bloka koda, jer oznaka ostaje do uklanjanja samog teksta (odjeljak 3.1, ✓ B-7): kod zalijepljen ili uvezen u blok koda, i odlomak s takvim tekstom pretvoren u blok koda, zadržavaju oznaku. Oznake oblikovanja (`bold` do `link`) u bloku koda ne postoje; pretvorba odlomka u blok koda ih uklanja kao `removeMark`.
 - Odsutan `language` znači „bez bojenja” (prototip `''`). Prototipni `c` pokriva C, C++ i C#.
 - Broj ispisa („Ispis 2.”) se ne sprema; izvodi se redom blokova koda.
 - Tab: editor ga pretvara u četiri razmaka (prototip). Validator ne odbija tab u tekstu koda, jer ga ne odbija ni u drugom tekstu.
@@ -333,13 +334,13 @@ Izvođenje iz dokumenta je čista i totalna funkcija: svaki dokument valjan po o
 
 Format v4 je format v3 (ugovor v3, odjeljak 5) uz ova pravila. Sve ostalo vrijedi nepromijenjeno: zatvoreni ključevi, zabranjeni `__proto__`, `constructor` i `prototype`, ID novog bloka `null` (uz iznimku iz točke 3), `MAX_EDIT_STEP_BYTES`, kanonski oblik i kodovi odbijanja.
 
-1. **Slice.** Slice smije sadržavati blokove, atome i oznake iz odjeljaka 2 do 5 u obliku dokumenta, s istim pravilima polja. Nevaljano polje daje `invalid_value` s putem polja, a čvor na mjestu gdje ga v4 ne dopušta (atom u naslovu, oznaka u bloku koda, blok koji nije odlomak u okviru) `invalid_node`. Formati v1 do v3 sve to odbijaju s `invalid_node` ili `unknown_field`, kao danas.
+1. **Slice.** Slice smije sadržavati blokove, atome i oznake iz odjeljaka 2 do 5 u obliku dokumenta, s istim pravilima polja. Nevaljano polje daje `invalid_value` s putem polja, a čvor na mjestu gdje ga v4 ne dopušta (atom u naslovu, oznaka oblikovanja u bloku koda, blok koji nije odlomak u okviru) `invalid_node`. Formati v1 do v3 sve to odbijaju s `invalid_node` ili `unknown_field`, kao danas.
 2. **Jedna pozicija.** `from`, `to` i `gapFrom` koji bi presjekli inline atom ili atom bloka odbijaju se s `invalid_position`.
 3. **Promjena polja atoma bloka je zamjena.** Izmjena tablice (svaka ćelija, redak, boja, spajanje), slike (privitak, obrezivanje, širina, poravnanje), formule i zastavica piše se kao `replace` točno jedne pozicije atoma bloka sliceom s jednim atomom iste vrste i s `removedSha256` starog atoma. Atom u tom sliceu nosi `nodeId` zamijenjenog bloka: to je nastavak bloka, kao otvorena strana slicea u v2. Replayer provjerava da je `nodeId` jednak i da je vrsta ista; inače `not_canonical`. Tako ProseMirror piše `setNodeMarkup` nad listom (`replaceWith`).
 4. **B-12.** Svaki korak koji uklanja raspon s barem jednim atomom (inline ili bloka) nosi `removedSha256`: SHA-256 nad `removedRangeCanonical`, JCS sliceom sa svim poljima. Uklanjanje teksta s oznakama nosi hash kao u v1 do v3; oznake s atributima su u JCS-u.
 5. **Okvir.** Omatanje odlomaka u `box`, skidanje okvira (tekst ostaje) i promjena `kind` pišu se kao `replaceAround` (ProseMirror `wrapIn`, `lift`, `setNodeMarkup` nad čvorom koji nije list). Promjena `language` ili `caption` bloka koda i `variantGroup` odlomka također su `replaceAround`, kao promjena razine naslova u v1.
 6. **Oznake.** `addMark` i `removeMark` rade s `bold`, `italic`, `sup`, `sub`, `highlight`, `lang` i `link`. S `paste` ili `imported` odbijaju se s `invalid_mark` (✓ B-7, odjeljak 3.1). `addMark` koji bi na tekst s `sup` dodao `sub` (ili obrnuto) zamjenjuje oznaku, kao ProseMirror `excludes`; replay to drži testom. Oznake preko atoma i bloka koda ostavljaju ih bez oznaka.
-7. **Naslovnica.** Novi korak `coverSet` postavlja cijeli `cover` (`{type: "coverSet", cover: {…}}`) ili ga uklanja (`{type: "coverSet"}` bez `cover`). Ako dokument već ima `cover`, korak nosi `removedSha256` nad JCS-om starog `cover`, kao `sourceSet` u v2. Korak koji ne mijenja ništa odbija se s `not_canonical`.
+7. **Naslovnica.** Novi korak `coverSet` postavlja cijeli `cover` (`{stepType: "coverSet", cover: {…}}`) ili ga uklanja (`{stepType: "coverSet"}` bez `cover`); diskriminator je `stepType`, kao u svim koracima od v1. Ako dokument već ima `cover`, korak nosi `removedSha256` nad JCS-om starog `cover`, kao `sourceSet` u v2. Korak koji ne mijenja ništa odbija se s `not_canonical`.
 8. **Koraci nad izvorima.** `sourceSet` i `sourceRemove` kao u v2.
 9. **Izbor formata.** Replay bira format prema `schemaVersion` revizije nula rada: `1` do `3` kao u v3, `4` je `ductus-edit-steps-v4`. Svaki drugi format nad radom se odbija i ništa se ne upisuje. `parseEditSteps` prima sva četiri formata i za nepoznat vraća `unsupported_format`.
 
@@ -397,7 +398,7 @@ Klase 1 do 45 iz ugovora v2 i v3 vrijede i za v4, uz zamjenu verzije. Novo:
 | 50    | susjedni tekst s `lang` `en` i `de`; s dva puta `en`; s `link` različitih adresa                                                                                                      | prihvat; `ADJACENT_TEXT_SAME_MARKS`; prihvat                                                     |
 | 51    | `variantGroup`: valjan, nil, velika slova, na naslovu, skupina s jednim odlomkom                                                                                                      | prihvat; `VARIANT_GROUP_INVALID`; `UNKNOWN_FIELD`; prihvat                                       |
 | 52    | formula i `inlineFormula`: bez `tex`, `""`, 4000/4001 i 1000/1001 kodnih točaka, prijelom retka, razmak na rubu; `inlineFormula` u naslovu                                            | prihvat do granice; inače `FORMULA_TEX_INVALID`; `INLINE_FORMULA_NOT_ALLOWED`                    |
-| 53    | blok koda: tekst s prijelomima retka, prazan, s oznakom, s navodom, nepoznat jezik, `caption` 301                                                                                     | prihvat; `CODE_CONTENT_INVALID`; `CODE_LANGUAGE_INVALID`; `CODE_CAPTION_INVALID`                 |
+| 53    | blok koda: tekst s prijelomima retka, prazan, s `paste` ili `imported`, s oznakom oblikovanja, s navodom, nepoznat jezik, `caption` 301                                               | prihvat; prihvat; `CODE_CONTENT_INVALID`; `CODE_LANGUAGE_INVALID`; `CODE_CAPTION_INVALID`        |
 | 54    | okvir: svih sedam vrsta, prazan, s naslovom, s okvirom, s tablicom, ponovljen ID unutar i izvan okvira, dva uzastopna okvira iste vrste                                               | prihvat; `BOX_CHILDREN_INVALID`; `NODE_ID_DUPLICATE`; prihvat                                    |
 | 55    | `pageBreak` s bilo kojim dodatnim poljem                                                                                                                                              | `UNKNOWN_FIELD`                                                                                  |
 | 56    | tablica: 1×1, 3000 i 3001 ćelija, nejednaki retci, prazan redak, ćelija s prijelomom retka, broj u ćeliji, zastavica kao `0` ili odsutna                                              | prihvat; `TABLE_ROWS_INVALID`; `TABLE_CELL_INVALID`; `BLOCK_FLAG_INVALID`                        |

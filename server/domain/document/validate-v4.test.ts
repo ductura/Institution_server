@@ -139,10 +139,31 @@ describe("code block (§4.2, class 53)", () => {
     accepts(doc({ type: "codeBlock", id: P, children: [] }));
   });
 
-  it("refuses a mark, an atom, an unknown language and a long caption", () => {
-    expect(errorsOf(doc({ type: "codeBlock", id: P, children: [text("x", ["bold"])] }))).toEqual([
-      ["$.nodes[0].children[0].marks", "CODE_CONTENT_INVALID"],
-    ]);
+  it("keeps the provenance marks paste and imported on code (§3.1, B-7)", () => {
+    accepts(
+      doc({
+        type: "codeBlock",
+        id: P,
+        children: [
+          text("x = 1\n", [{ pasteId: A, type: "paste" }]),
+          text("y = 2", ["imported"]),
+          text("\nz = 3", [{ pasteId: A, type: "paste" }, "imported"]),
+        ],
+      }),
+    );
+  });
+
+  it("refuses a formatting mark, an atom, an unknown language and a long caption", () => {
+    for (const marks of [
+      ["bold"],
+      ["sup"],
+      [{ lang: "en", type: "lang" }],
+      ["italic", "imported"],
+    ]) {
+      expect(errorsOf(doc({ type: "codeBlock", id: P, children: [text("x", marks)] }))).toEqual([
+        ["$.nodes[0].children[0].marks", "CODE_CONTENT_INVALID"],
+      ]);
+    }
     expect(
       errorsOf(
         doc({ type: "codeBlock", id: P, children: [{ type: "footnote", text: "Bilješka." }] }),
