@@ -367,4 +367,33 @@ export const TEACHER_HANDLERS: Handlers = {
         }
       : { status: 200, body: { decision: "decline" } };
   },
+  // SRV-1108: the fake keeps no extensions; it answers a record from the request.
+  "teacher.deadline-extensions.get": ({ state, account, params }) =>
+    taught(state, account, params.assignmentId) === null
+      ? { error: "not_found" }
+      : { status: 200, body: { extensions: [] } },
+  "teacher.deadline-extension.post": ({ state, account, params, body, now }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null || account === null) return { error: "not_found" };
+    const studentId = body.scope === "one" ? body.studentId.toLowerCase() : null;
+    if (studentId !== null && !studentsOf(state, account, assignment).includes(studentId))
+      return { error: "not_found" };
+    if (body.dueAt <= assignment.content.dueAt) return { error: "invalid_input" };
+    return {
+      status: 201,
+      body: {
+        extension: {
+          id: "de000000-0000-4000-8000-000000000001",
+          scope: body.scope,
+          studentId,
+          previousDueAt: new Date(assignment.content.dueAt).toISOString(),
+          dueAt: body.dueAt,
+          reasonId: body.reasonId,
+          createdBy: account.id,
+          createdAt: now.toISOString(),
+        },
+        existingSubmissionsUnchanged: false,
+      },
+    };
+  },
 };

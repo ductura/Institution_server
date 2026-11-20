@@ -28,11 +28,13 @@ import {
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkingCriteriaRoutesFor,
+  createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
   createWorkVersionsRouteFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createDeadlineExtensionRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -146,6 +148,7 @@ async function main(): Promise<void> {
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
+      ...createSourceProofRoutesFor(databases.main),
       createTextCheckConfigRoute(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
       ...createTeacherWorkingCriteriaRoutesFor(databases.main),
@@ -203,6 +206,8 @@ async function main(): Promise<void> {
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
+      // SRV-1108: the deadline extensions of an assignment for its teacher.
+      ...createDeadlineExtensionRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.

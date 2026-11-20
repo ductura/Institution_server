@@ -23,7 +23,9 @@ import {
   sourceLookupPost,
   studentRoutes,
   studentSourcesRoutes,
+  sourceProofsRoutes,
   textCheckConfigRoutes,
+  deadlineExtensionRoutes,
   supportRoutes,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
@@ -35,7 +37,7 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
-export { WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 
 export {
   ERROR_CATALOG_DATA,
@@ -81,8 +83,10 @@ export const ROUTES: readonly RouteContract[] = [
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
+  ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
   ...teacherWorkingCriteriaRoutes,
+  ...deadlineExtensionRoutes,
   ...supportRoutes,
   ...projectionRoutes,
   ...collaborationRoutes,
