@@ -657,6 +657,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     ],
     request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
   },
+  "notifications.list.get": {
+    request: { path: "/api/v1/notifications", as: "student" },
+  },
+  "notifications.read.post": {
+    request: {
+      method: "POST",
+      path: "/api/v1/notifications/00000000-0000-4000-8000-000000001701/read",
+      as: "student",
+    },
+  },
   "work.direct-edit.get": {
     before: [
       {

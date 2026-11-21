@@ -152,6 +152,8 @@ describe("route inventory", () => {
       "work.version.get: app/api/works/[documentId]/versions/[revision]/route.ts is not in the inventory",
       "work.messages.get: app/api/works/[documentId]/messages/route.ts is not in the inventory",
       "work.messages.post: app/api/works/[documentId]/messages/route.ts is not in the inventory",
+      "notifications.list.get: app/api/notifications/route.ts is not in the inventory",
+      "notifications.read.post: app/api/notifications/[id]/read/route.ts is not in the inventory",
       "work.comment-drafts.get: app/api/works/[documentId]/comment-drafts/route.ts is not in the inventory",
       "work.comment-drafts.post: app/api/works/[documentId]/comment-drafts/route.ts is not in the inventory",
       "work.comment-draft.delete: app/api/comment-drafts/[commentId]/route.ts is not in the inventory",

@@ -39,6 +39,7 @@ import {
   versionsRoutes,
   workVersionGet,
   workMessagesRoutes,
+  notificationsRoutes,
   commentsRoutes,
   directEditRoutes,
   workMilestonesRoutes,
@@ -51,6 +52,12 @@ export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export {
+  NotificationId,
+  NotificationsPage,
+  NOTIFICATIONS_PAGE_SIZE,
+  notificationsRoutes,
+} from "./routes/index.ts";
 
 export {
   ERROR_CATALOG_DATA,
@@ -123,6 +130,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...versionsRoutes,
   workVersionGet,
   ...workMessagesRoutes,
+  ...notificationsRoutes,
   ...commentsRoutes,
   ...directEditRoutes,
   ...consultationRecordsRoutes,
