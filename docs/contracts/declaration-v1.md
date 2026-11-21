@@ -100,12 +100,12 @@ Student potvrđuje tekst obrasca iz `form`. Potvrda nije unaprijed označena (S-
 
 ### 1.4 `humanHelp`: izjava o ljudskoj pomoći (R-09)
 
-| Ključ            | Oblik                                                                                                                                  |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `received`       | JSON boolean                                                                                                                           |
-| `entries`        | niz od 0 do `MAX_HUMAN_HELP_ENTRIES` objekata `{ kind, text }`; uz `received: false` mora biti prazan, uz `true` mora imati barem jedan unos |
+| Ključ            | Oblik                                                                                                                                                                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `received`       | JSON boolean                                                                                                                                                                                                                                  |
+| `entries`        | niz od 0 do `MAX_HUMAN_HELP_ENTRIES` objekata `{ kind, text }`; uz `received: false` mora biti prazan, uz `true` mora imati barem jedan unos                                                                                                  |
 | `entries[].kind` | zatvoren skup `HUMAN_HELP_KINDS`: `language` (jezik i pravopis), `structure` (struktura i plan rada), `sources` (izvori i literatura), `content` (rasprava o sadržaju), `technical` (tehnička pomoć), `other`; nepoznata vrijednost se odbija |
-| `entries[].text` | izjavni tekst, pravila iz 1.6, 1 do `MAX_DECLARED_TEXT_CODE_POINTS`; uz polje stoji uputa da se ne upisuju imena ni osobni podaci drugih osoba (uputa, ne provjera) |
+| `entries[].text` | izjavni tekst, pravila iz 1.6, 1 do `MAX_DECLARED_TEXT_CODE_POINTS`; uz polje stoji uputa da se ne upisuju imena ni osobni podaci drugih osoba (uputa, ne provjera)                                                                           |
 
 Vrsta pomoći je zatvoren skup ([OD-12], zatvoreno 21. 11.). Redoslijed unosa je studentov i ulazi u hash.
 
@@ -394,13 +394,13 @@ Poruke izmišljenog razgovora i njihovi `content_sha256` (SHA-256 UTF-8 bajtova)
 
 Vanjski prilog `text/plain`, 47 bajtova, sadržaj `Izmišljeni ispis razgovora iz vanjskog alata.` i jedan novi redak: `a2851d45f6fc65bb4dc7832a57ea004c345ceab128d1576f61c116969282de90`
 
-Payload JCS (1315 bajtova):
+Payload JCS (1333 bajta):
 
 ```
-{"ai":{"attachments":[{"conversationId":"1f2e3d4c-5b6a-4987-8a6b-5c4d3e2f1a0b","messagesSha256":"4e3b9c6ac3fb78cb2d24ca5d69d6206f4a23e4f03c2f7561ad2dd40dc549dbc5","reason":"transferred","throughSeq":2},{"byteLength":47,"contentSha256":"a2851d45f6fc65bb4dc7832a57ea004c345ceab128d1576f61c116969282de90","externalAttachmentId":"6e5d4c3b-2a19-4f8e-9d7c-6b5a4f3e2d1c","format":"text/plain","reason":"external_upload"}],"declaredTools":[{"phaseText":"Završna dorada","purposeText":"Lektura uvoda","toolLabel":"Izmišljeni vanjski alat"}],"recorded":[{"aiTransferId":"9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d","aiTransferSha256":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}],"use":"used"},"assignmentId":"3b7e2f4a-9c1d-4e8b-a5f6-0d2c4b6a8e91","assignmentVersion":1,"confirmedAt":"2026-11-02T10:40:00.123456Z","declarationId":"5d0c6a3e-8f21-4b7a-9c45-1e2f3a4b5c6d","declarationSchema":"ductura-declaration-v1","declarationVersion":1,"documentId":"doc-1","form":{"formId":"fpzg-izjava","formSha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","formVersion":1},"humanHelp":{"entries":[{"text":"Izmišljena kolegica pročitala je uvod i predložila kraću rečenicu."}],"received":true},"ownWork":{"confirmed":true},"principalId":"72cd1705-85fc-4754-a382-c2500d038368","revision":7}
+{"ai":{"attachments":[{"conversationId":"1f2e3d4c-5b6a-4987-8a6b-5c4d3e2f1a0b","messagesSha256":"4e3b9c6ac3fb78cb2d24ca5d69d6206f4a23e4f03c2f7561ad2dd40dc549dbc5","reason":"transferred","throughSeq":2},{"byteLength":47,"contentSha256":"a2851d45f6fc65bb4dc7832a57ea004c345ceab128d1576f61c116969282de90","externalAttachmentId":"6e5d4c3b-2a19-4f8e-9d7c-6b5a4f3e2d1c","format":"text/plain","reason":"external_upload"}],"declaredTools":[{"phaseText":"Završna dorada","purposeText":"Lektura uvoda","toolLabel":"Izmišljeni vanjski alat"}],"recorded":[{"aiTransferId":"9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d","aiTransferSha256":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}],"use":"used"},"assignmentId":"3b7e2f4a-9c1d-4e8b-a5f6-0d2c4b6a8e91","assignmentVersion":1,"confirmedAt":"2026-11-02T10:40:00.123456Z","declarationId":"5d0c6a3e-8f21-4b7a-9c45-1e2f3a4b5c6d","declarationSchema":"ductura-declaration-v1","declarationVersion":1,"documentId":"doc-1","form":{"formId":"fpzg-izjava","formSha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","formVersion":1},"humanHelp":{"entries":[{"kind":"language","text":"Izmišljena kolegica pročitala je uvod i predložila kraću rečenicu."}],"received":true},"ownWork":{"confirmed":true},"principalId":"72cd1705-85fc-4754-a382-c2500d038368","revision":7}
 ```
 
-`declarationSha256`: `a1c818b5639565bec0a173d44b174feab6956725c8665802fbc311af01d1f1bd`
+`declarationSha256`: `f89129ae57b4451a03b41615f3dd1f35a6b7de2841a17535f2ce525c95870638`
 
 `formSha256` i `aiTransferSha256` su namjerno ponovljeni znakovi; nisu hash stvarnog obrasca ni zapisa. `formId` `fpzg-izjava` u vektoru je samo oznaka oblika; testovi izvan vektora koriste `test-izjava` dok [OD-11] nije zatvoren.
 
