@@ -11,6 +11,12 @@ export {
   type ExportLabels,
 } from "./export/index.ts";
 export {
+  createSnapshotPdf,
+  freezePdfSource,
+  localPdfConverter,
+  type ConvertDocx,
+} from "./export/pdf/index.ts";
+export {
   createMerlinRosterReader,
   merlinRosterCsv,
   type MerlinLabels,
