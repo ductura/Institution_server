@@ -24,6 +24,7 @@ export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
+export { portableRecordRoutes } from "./portable-record.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export {

@@ -127,6 +127,11 @@ export const LOCALE_IMPORT_ALLOWED: Readonly<
     specifier: "../../../locales/index.ts",
     name: "merlinHr",
   }),
+  // SRV-1312: the receipt PDF inside the portable record has the same labels.
+  "server/http/portable-record/index.ts": Object.freeze({
+    specifier: "../../../locales/index.ts",
+    name: "receiptPdfHr",
+  }),
 });
 
 type ImportShape = {

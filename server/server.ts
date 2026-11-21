@@ -43,6 +43,7 @@ import {
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createPortableRecordRouteFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
@@ -276,6 +277,8 @@ async function main(): Promise<void> {
       createWorkVersionsRouteFor(databases.main),
       // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
       createWorkExportRouteFor(databases.main),
+      // SRV-1312: the portable record of the student's own submission, a checked deterministic ZIP.
+      createPortableRecordRouteFor(databases.main, APP_ORIGIN),
       excludePracticeAssignment(
         createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
         databases.main,
