@@ -97,6 +97,7 @@ import {
   installShutdown,
   logStartupFailed,
   logStartupRefused,
+  facultyRulesProblems,
   parseTrustedProxies,
   readRateLimitConfig,
   readinessCheckFor,
@@ -115,7 +116,8 @@ import {
 // 1. Environment. A bad value stops the start before anything listens; the
 //    line names the variable, never its value. TRUSTED_PROXIES (addresses and
 //    CIDR ranges) is optional; unset, X-Forwarded-For is never read. The
-//    institutions file built into the server must pass its schema (DAN-911).
+//    institutions file built into the server must pass its schema (DAN-911),
+//    and so must every config/faculties/<faculty>/rules.json (SRV-1405).
 //    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
 const rateLimitConfig = readRateLimitConfig(process.env);
@@ -126,6 +128,7 @@ const problems = [
   ...originProblems(process.env),
   ...metricsIntervalProblems(process.env),
   ...institutionsProblems(),
+  ...facultyRulesProblems(),
   ...testModeProblems(process.env),
   ...rateLimitConfig.problems,
   ...(TRUSTED_PROXIES === null
