@@ -21,6 +21,7 @@ export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
+export { commentsRoutes } from "./comments.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";

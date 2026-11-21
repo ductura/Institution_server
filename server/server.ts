@@ -51,6 +51,7 @@ import {
   createProblemReportRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
+  createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
@@ -189,6 +190,8 @@ async function main(): Promise<void> {
       createCollaborationCommentsRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
+      // SRV-1703: delayed comments (D-51), the comment bank (N-03) and the changes since the last review (N-05).
+      ...createCommentRoutesFor(databases.main, evidenceDeps),
       ...createConsultationRecordRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
