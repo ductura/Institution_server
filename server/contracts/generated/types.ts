@@ -386,6 +386,13 @@ export type Operations = {
     success: { status: 200; body: { "institution": { "slug": string; "displayName": string | null }; "roles": ("student" | "teacher" | "network_engineer" | "institution_admin")[]; "displayName": string | null; "journalScope": string; "sessionTag": string }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "profile.staff-affiliation.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "confirmed": true; "source": "hrEduPersonAffiliation" | "eduPersonAffiliation" | "eduPersonScopedAffiliation"; "confirmedAt": string } | { "confirmed": false; "code": "staff_affiliation_missing" }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "projection.process-summary-details.post": {
     params: undefined;
     query: undefined;
@@ -614,6 +621,13 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "appVersion": string; "browser": { "family": "chromium" | "firefox" | "safari" | "other"; "major": number | null }; "category": "technical" | "account" | "course"; "description": string; "route": string | null; "syncState": "EDITING" | "SAVING_LOCAL" | "LOCAL_DURABLE" | "SYNCING" | "SYNCED" | "CONFLICT" | "ERROR" | "RECOVERY_REQUIRED" | null };
+    success: { status: 201; body: { "reference": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "too_many_reports" | "unavailable";
+  };
+  "support.problem-reports.post": {
+    params: undefined;
+    query: undefined;
+    body: { "category": "technical" | "account" | "course"; "description": string; "appVersion": string };
     success: { status: 201; body: { "reference": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "too_many_reports" | "unavailable";
   };
