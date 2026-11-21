@@ -362,6 +362,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7069253604",
   },
+  // SRV-1807 (plan M8.6, Ductus#2052 c.7069763588): the 24 hour link to the export package and the confirmation for the registrar; Ductus has no such route.
+  "app/api/student/submissions/[submissionId]/package-link/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069763588",
+  },
+  "app/api/student/submissions/[submissionId]/package/[kind]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069763588",
+  },
   "app/api/works/[documentId]/versions/[revision]/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7062949322",
