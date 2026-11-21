@@ -41,7 +41,9 @@ export const ASSIGNMENT_COPY_HANDLERS: Handlers = {
     // The groups are the source course's and stay there.
     const content = { ...source.content, opensAt, dueAt };
     delete content.groupIds;
-    const text = JSON.stringify([to.id, content]);
+    // The work language is copied too and lives outside the content, so a
+    // replay after it changed is a conflict, as in institution.copy_assignment.
+    const text = JSON.stringify([to.id, content, source.language]);
     let seen = COPIES.get(state);
     if (seen === undefined) COPIES.set(state, (seen = new Map()));
     const key = `${account.id}:${body.requestKey.toLowerCase()}`;
