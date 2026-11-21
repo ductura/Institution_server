@@ -588,6 +588,7 @@ export {
   type WorkMessageRefusal,
   type WorkMessages,
 } from "./work-messages/index.ts";
+export { createNotifications } from "./notifications/index.ts";
 export {
   ASSISTANT_REQUEST_STATES,
   createAssistantRequests,

@@ -19,6 +19,7 @@ import { STUDENT_HANDLERS } from "./student-routes.ts";
 import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import { COMMENTS_HANDLERS } from "./comments-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
+import { NOTIFICATION_HANDLERS } from "./notification-routes.ts";
 import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
@@ -75,6 +76,7 @@ export const DEV_HANDLERS: Handlers = {
   ...VERSIONS_HANDLERS,
   ...WORK_EXPORT_HANDLERS,
   ...MESSAGES_HANDLERS,
+  ...NOTIFICATION_HANDLERS,
   ...COMMENTS_HANDLERS,
   ...DIRECT_EDIT_HANDLERS,
   ...CONSULTATION_HANDLERS,

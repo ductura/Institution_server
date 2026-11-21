@@ -31,6 +31,7 @@ import {
   createTeacherFastPathRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
+  createNotificationsRoutesFor,
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
@@ -181,6 +182,17 @@ const SESSION_ROUTES = {
   "work.messages.post": {
     path: `/api/v1/works/${randomUUID()}/messages`,
     body: () => ({ text: "Izmišljena poruka." }),
+    live: 404,
+  },
+  "notifications.list.get": {
+    method: "GET",
+    path: "/api/v1/notifications",
+    body: () => undefined,
+    live: 200,
+  },
+  "notifications.read.post": {
+    path: `/api/v1/notifications/${randomUUID()}/read`,
+    body: () => undefined,
     live: 404,
   },
   // SRV-1703: a work it may not teach, a draft or an entry that is not its own, and a student asking for a bank are all 404.
@@ -883,6 +895,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
+  "createNotificationsRoutesFor",
   "createCommentRoutesFor",
   "createDirectEditRoutesFor",
   "createConsultationRecordRoutesFor",
@@ -949,6 +962,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
+  ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
@@ -1212,6 +1226,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
+        id.startsWith("notifications.") ||
         id.startsWith("live.") ||
         id.startsWith("collaboration.") ||
         id.startsWith("projection.") ||
