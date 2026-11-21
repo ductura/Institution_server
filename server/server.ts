@@ -164,14 +164,14 @@ async function main(): Promise<void> {
   // One signer and one storage per process, shared by commit and replay.
   const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
   const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
-  const running = await startServer({
+  const options = {
     host,
     port,
     databases,
     shutdown,
     layers: LAYERS,
     security: SECURITY,
-    routes: limitAccount([
+    routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
       // Readiness (SRV-1812, M11.3): 503 until the main database answers and
       // its migrations are done; storage and signing are reported. Draining
@@ -272,14 +272,17 @@ async function main(): Promise<void> {
       // Login over AAI@EduHr (S-1E-a; D-09: the fake provider only in development and test).
       ...createAuthRoutes(process.env),
       ...routesOf(AREAS),
-    ]),
-  }).catch((error: unknown) => {
-    // A system error has a code (EADDRINUSE, EACCES); anything else is a
-    // programming error of the route table, whose message names no value.
-    logStartupFailed(error);
-    process.exitCode = 1;
-    return undefined;
-  });
+    ],
+  };
+  const running = await startServer({ ...options, routes: limitAccount(options.routes) }).catch(
+    (error: unknown) => {
+      // A system error has a code (EADDRINUSE, EACCES); anything else is a
+      // programming error of the route table, whose message names no value.
+      logStartupFailed(error);
+      process.exitCode = 1;
+      return undefined;
+    },
+  );
   if (running === undefined) return;
 
   // Metrics (S-1K.4-b, DAN-834-5a): every METRICS_INTERVAL_MS one round of
