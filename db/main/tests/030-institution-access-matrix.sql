@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2466);
+SELECT plan(2478);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -681,6 +681,36 @@ SELECT is_empty(
 SELECT is(
   substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_versions('doc-nema') $$), 1, 9),
   c.outcome, format('SRV-9A: %s reads the versions of a missing work: %s', c.actor, c.outcome)
+)
+FROM (VALUES
+  ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),
+  ('iva', 'not_found'), ('boris', 'not_found'), ('nina', 'not_found'), ('tomo', 'not_found'),
+  ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
+) AS c (actor, outcome);
+
+-- 1f2. SRV-1310: the source of the DOCX export of a work only through
+-- app.read_work_export; its reader of the evidence rows is never the web
+-- role's. The owner, the teacher, the version and the access log are in
+-- 153-work-export.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_work_export(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.work_export_rows(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1310: only ductus_app and the owner execute the read; only the identity role and the owner the helper'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_export('doc-nema') $$), 1, 9),
+  c.outcome, format('SRV-1310: %s reads the export source of a missing work: %s', c.actor, c.outcome)
 )
 FROM (VALUES
   ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),

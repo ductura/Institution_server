@@ -331,6 +331,11 @@ export {
   type WorkVersionsReader,
 } from "./work-versions/index.ts";
 export {
+  createWorkExportReader,
+  type WorkExportReader,
+  type WorkExportSource,
+} from "./work-export/index.ts";
+export {
   createConsultationRecords,
   isCalendarDate,
   recordsOf,

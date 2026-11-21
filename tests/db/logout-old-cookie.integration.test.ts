@@ -34,6 +34,7 @@ import {
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkExportRouteFor,
   createWorkPdfRouteFor,
   createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
@@ -296,6 +297,13 @@ const SESSION_ROUTES = {
   "work.versions.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/versions`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1310: the export of a work it may not read is 404, as a missing work.
+  "work.export.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export?format=docx`,
     body: () => undefined,
     live: 404,
   },
@@ -897,6 +905,7 @@ const FACTORIES = [
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
+  "createWorkExportRouteFor",
   "createWorkPdfRouteFor",
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
@@ -963,6 +972,7 @@ const MOUNTED = [
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createWorkVersionsRouteFor(databases.main),
+  createWorkExportRouteFor(databases.main),
   createWorkPdfRouteFor(databases.main, undefined),
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
