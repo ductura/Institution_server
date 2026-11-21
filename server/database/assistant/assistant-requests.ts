@@ -31,7 +31,15 @@ export type AssistantRejectReason =
   | "purpose_not_allowed"
   | "budget_exceeded"
   | "request_outcome_unknown"
-  | "provider_failed";
+  | "provider_failed"
+  // ai-tools-v1 "Ishodi" (SRV-1207): reasons of provider_failed.
+  | "tool_step_limit"
+  | "response_too_large"
+  | "request_revoked";
+
+/** The reason a sent request fails with (fail_request). */
+export type AssistantFailReason =
+  "provider_failed" | "tool_step_limit" | "response_too_large" | "request_revoked";
 
 export type AssistantRefusal = {
   readonly status:
@@ -55,6 +63,13 @@ export type BeginRequestInput = {
   readonly providerId: string;
   readonly modelId: string;
   readonly configVersion: string;
+  /**
+   * The tools the server permits for this institution: the code set ∩ the
+   * switch ∩ the ready tools of the faculty setting (ai-tools-v1, SRV-1207).
+   * The database narrows it with the teacher's setting and the policy.
+   * Empty or absent: no tool, no loop.
+   */
+  readonly offeredTools?: readonly string[];
 };
 
 export type BegunRequest = {
@@ -67,6 +82,8 @@ export type BegunRequest = {
   readonly replayed: boolean;
   /** Only for a replay of a completed request. */
   readonly response: { readonly id: string; readonly text: string } | null;
+  /** The allowed set reserved with the request; empty when it has no tool loop. */
+  readonly tools: readonly string[];
 };
 
 export type AssistantMessage = {
@@ -121,6 +138,7 @@ export type AssistantRequests = {
     token: string,
     requestId: string,
     actualMicro: bigint | null,
+    reason?: AssistantFailReason,
   ): Promise<
     | { readonly status: "ok"; readonly state: AssistantRequestState; readonly accepted: boolean }
     | AssistantRefusal
@@ -146,11 +164,11 @@ export type AssistantRequests = {
 
 const SQL = {
   begin:
-    'SELECT request_id AS "requestId", conversation_id AS "conversationId", state, reason, replayed, response_id AS "responseId", response FROM assistant.begin_request($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+    'SELECT request_id AS "requestId", conversation_id AS "conversationId", state, reason, replayed, response_id AS "responseId", response, tools FROM assistant.begin_request($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::text[])',
   markSent: "SELECT state, reason FROM assistant.mark_sent($1)",
   complete:
     'SELECT state, accepted, response_id AS "responseId" FROM assistant.complete_request($1, $2, $3::bigint)',
-  fail: "SELECT state, accepted FROM assistant.fail_request($1, 'provider_failed', $2::bigint)",
+  fail: "SELECT state, accepted FROM assistant.fail_request($1, $3, $2::bigint)",
   markOutcomeUnknown: "SELECT assistant.mark_outcome_unknown($1) AS state",
   read: 'SELECT seq, message_id AS id, request_id AS "requestId", role, content, content_sha256 AS "contentSha256", created_at AS "createdAt", request_state AS "requestState" FROM assistant.read_conversation($1)',
   publish:
@@ -164,6 +182,9 @@ const REASONS: readonly string[] = [
   "budget_exceeded",
   "request_outcome_unknown",
   "provider_failed",
+  "tool_step_limit",
+  "response_too_large",
+  "request_revoked",
 ];
 
 /** Thrown inside the transaction for a row of an unexpected shape. */
@@ -261,14 +282,17 @@ export function createAssistantRequests(withActor: WithActor): AssistantRequests
           input.providerId,
           input.modelId,
           input.configVersion,
+          [...(input.offeredTools ?? [])],
         ]);
-        const { requestId, conversationId, replayed, responseId, response } = row;
+        const { requestId, conversationId, replayed, responseId, response, tools } = row;
         if (
           !isId(requestId) ||
           (conversationId !== null && !isId(conversationId)) ||
           typeof replayed !== "boolean" ||
           (responseId !== null && !isId(responseId)) ||
-          (response !== null && typeof response !== "string")
+          (response !== null && typeof response !== "string") ||
+          !Array.isArray(tools) ||
+          !(tools as unknown[]).every((name) => typeof name === "string")
         ) {
           throw new Malformed();
         }
@@ -283,6 +307,7 @@ export function createAssistantRequests(withActor: WithActor): AssistantRequests
             isId(responseId) && typeof response === "string"
               ? { id: responseId, text: response }
               : null,
+          tools: [...(tools as string[])],
         };
       }),
     markSent: (token, requestId) =>
@@ -300,9 +325,9 @@ export function createAssistantRequests(withActor: WithActor): AssistantRequests
           throw new Malformed();
         return { status: "ok" as const, state: state(row["state"]), accepted, responseId };
       }),
-    fail: (token, requestId, actualMicro) =>
+    fail: (token, requestId, actualMicro, failReason = "provider_failed") =>
       run(token, "conflict", async (tx) => {
-        const row = await one(tx, SQL.fail, [requestId, micro(actualMicro)]);
+        const row = await one(tx, SQL.fail, [requestId, micro(actualMicro), failReason]);
         if (typeof row["accepted"] !== "boolean") throw new Malformed();
         return { status: "ok" as const, state: state(row["state"]), accepted: row["accepted"] };
       }),

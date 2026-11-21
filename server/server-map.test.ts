@@ -27,6 +27,7 @@ const REQUIRED_AREAS = [
   "external/email",
   // SRV-1201 (Ductus ai-request-v1, M9.0-S2 step 1): the AI assistant port's adapter.
   "external/assistant",
+  "external/assistant-tools",
   "database",
   "log",
   "metrics",
@@ -218,7 +219,12 @@ describe("docs/server-map.md", () => {
     // The assistant adapter implements the port type held in domain the same
     // way (SRV-1201, ai-request-v1 "Port i sintetički adapter").
     const infrastructure = ["settings", "log", "metrics"];
-    const mayUseDomain = ["external/storage", "external/keys", "external/assistant"];
+    const mayUseDomain = [
+      "external/storage",
+      "external/keys",
+      "external/assistant",
+      "external/assistant-tools",
+    ];
     for (const area of keys.filter((k) => k.startsWith("external/"))) {
       const allowed = mayUseDomain.includes(area) ? [...infrastructure, "domain"] : infrastructure;
       expect(
@@ -228,7 +234,7 @@ describe("docs/server-map.md", () => {
     }
   });
 
-  it("lets only storage, keys and the assistant among the adapters import domain", () => {
+  it("lets only storage, keys, the assistant and its tools among the adapters import domain", () => {
     expect(imports.get("external/storage")).toContain("domain");
     expect(imports.get("external/keys")).toContain("domain");
     expect(imports.get("external/srce-auth")).not.toContain("domain");
@@ -237,7 +243,12 @@ describe("docs/server-map.md", () => {
       importers("domain")
         .filter((a) => a.startsWith("external/"))
         .sort(),
-    ).toEqual(["external/assistant", "external/keys", "external/storage"]);
+    ).toEqual([
+      "external/assistant",
+      "external/assistant-tools",
+      "external/keys",
+      "external/storage",
+    ]);
   });
 
   it("names as callers exactly the areas that may import each area", () => {

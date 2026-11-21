@@ -574,6 +574,7 @@ export {
   ASSISTANT_REQUEST_STATES,
   createAssistantRequests,
   sweepAndSettle,
+  type AssistantFailReason,
   type AssistantMessage,
   type AssistantRefusal,
   type AssistantRejectReason,
@@ -584,6 +585,7 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+export * from "./assistant-tools/index.ts";
 
 export {
   checkExternalAttachmentBytes,

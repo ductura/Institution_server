@@ -307,6 +307,12 @@ ALTER TABLE assistant.conversation DISABLE TRIGGER conversation_no_truncate;
 ALTER TABLE assistant.request DISABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.message DISABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.cost_ledger DISABLE TRIGGER cost_ledger_no_truncate;
+-- The tool setting of an assignment, its trail, the tool steps and the loop
+-- reservations of the requests (SRV-1207) refuse TRUNCATE too.
+ALTER TABLE assistant.assignment_tool_setting DISABLE TRIGGER assignment_tool_setting_no_truncate;
+ALTER TABLE audit.assistant_tool_setting_event DISABLE TRIGGER assistant_tool_setting_event_no_truncate;
+ALTER TABLE assistant.tool_step DISABLE TRIGGER tool_step_no_truncate;
+ALTER TABLE assistant.tool_loop_reservation DISABLE TRIGGER tool_loop_reservation_no_truncate;
 -- Declarations and their uploads reference evidence projects of the assignment.
 ALTER TABLE declaration.statement DISABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment DISABLE TRIGGER attachment_no_truncate;
