@@ -15,7 +15,8 @@ export type CommentDraft = {
   readonly commentId: string;
   readonly position: number;
   readonly text: string;
-  readonly anchor: Readonly<Record<string, unknown>>;
+  /** The anchor of the thread as stored; null for a general comment. */
+  readonly anchor: Readonly<Record<string, unknown>> | null;
   readonly state: "open" | "answered" | "resolved";
   readonly createdWindow: string;
 };
@@ -40,6 +41,7 @@ export type CommentDelay = {
   ): Promise<CommentDelayResult<{ threadId: string }>>;
   replyDraft(
     token: string,
+    documentId: string,
     threadId: string,
     text: string,
   ): Promise<CommentDelayResult<{ commentId: string }>>;
@@ -58,7 +60,7 @@ export type CommentDelay = {
 
 const SQL = {
   createDraft: "SELECT collaboration.create_comment_draft($1, $2, $3::jsonb) AS id",
-  replyDraft: "SELECT collaboration.reply_comment_draft($1::uuid, $2) AS id",
+  replyDraft: "SELECT collaboration.reply_comment_draft($1, $2::uuid, $3) AS id",
   listDrafts:
     'SELECT thread_id AS "threadId", comment_id AS "commentId", comment_position AS position, body AS text, anchor, state, created_window AS "createdWindow" FROM collaboration.list_comment_drafts($1)',
   discardDraft: "SELECT collaboration.discard_comment_draft($1::uuid)",
@@ -107,7 +109,9 @@ const revision = (value: unknown): number => {
 
 function toDraft(row: Record<string, unknown>): CommentDraft {
   const { anchor, state, position } = row;
-  if (typeof anchor !== "object" || anchor === null || Array.isArray(anchor)) throw new Malformed();
+  if (anchor !== null && (typeof anchor !== "object" || Array.isArray(anchor))) {
+    throw new Malformed();
+  }
   if (state !== "open" && state !== "answered" && state !== "resolved") throw new Malformed();
   if (!Number.isSafeInteger(position)) throw new Malformed();
   return {
@@ -115,7 +119,7 @@ function toDraft(row: Record<string, unknown>): CommentDraft {
     commentId: text(row.commentId),
     position: position as number,
     text: text(row.text),
-    anchor: anchor as Record<string, unknown>,
+    anchor: anchor as Record<string, unknown> | null,
     state,
     createdWindow: instant(row.createdWindow),
   };
@@ -148,10 +152,10 @@ export function createCommentDelay(withActor: WithActor): CommentDelay {
           (await one(tx, SQL.createDraft, [documentId, body, JSON.stringify(anchor)])).id,
         ),
       })),
-    replyDraft: (token, threadId, body) =>
+    replyDraft: (token, documentId, threadId, body) =>
       run(token, async (tx) => ({
         status: "ok" as const,
-        commentId: text((await one(tx, SQL.replyDraft, [threadId, body])).id),
+        commentId: text((await one(tx, SQL.replyDraft, [documentId, threadId, body])).id),
       })),
     listDrafts: (token, documentId) =>
       run(token, async (tx) => ({

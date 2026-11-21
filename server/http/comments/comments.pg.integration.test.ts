@@ -67,7 +67,7 @@ it("keeps a draft from the student until it is published, keeps the bank private
     const opened = await delay.createDraft(TEACHER, WORK, "Izmišljena napomena o izvoru.", ANCHOR);
     expect(opened).toMatchObject({ status: "ok" });
     const threadId = "threadId" in opened ? opened.threadId : "";
-    expect(await delay.replyDraft(TEACHER, threadId, "Izmišljen nastavak.")).toMatchObject({
+    expect(await delay.replyDraft(TEACHER, WORK, threadId, "Izmišljen nastavak.")).toMatchObject({
       status: "ok",
     });
     expect(await visible(STUDENT)).toEqual([]);
@@ -81,7 +81,9 @@ it("keeps a draft from the student until it is published, keeps the bank private
     expect(await delay.createDraft(STUDENT, WORK, "Tekst.", ANCHOR)).toEqual({
       status: "not_found",
     });
-    expect(await delay.replyDraft(STUDENT, threadId, "Tekst.")).toEqual({ status: "not_found" });
+    expect(await delay.replyDraft(STUDENT, WORK, threadId, "Tekst.")).toEqual({
+      status: "not_found",
+    });
     expect(await delay.createDraft(TEACHER, WORK, "   ", ANCHOR)).toEqual({ status: "invalid" });
 
     // Publishing gives both comments at once; the student can then reply.

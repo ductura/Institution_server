@@ -712,7 +712,7 @@ export type Operations = {
     params: { "documentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown }; "state": "open" | "answered" | "resolved"; "createdWindow": string })[] }; headers: {  } };
+    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string })[] }; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
   "work.comment-drafts.post": {

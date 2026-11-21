@@ -62,8 +62,8 @@ const Draft = closed({
   /** 1 opens a thread, more is a reply. */
   position: Type.Integer({ minimum: 1, maximum: 10_000 }),
   text: Type.String(),
-  /** The anchor of the thread as stored. */
-  anchor: Type.Object({}, { additionalProperties: true }),
+  /** The anchor of the thread as stored; null for a general comment. */
+  anchor: Type.Union([Type.Object({}, { additionalProperties: true }), Type.Null()]),
   state: literals(["open", "answered", "resolved"]),
   /** The 5-minute window of writing (P-03), never the exact instant. */
   createdWindow: Instant,

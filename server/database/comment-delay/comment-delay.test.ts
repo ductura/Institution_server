@@ -47,7 +47,7 @@ describe("createCommentDelay", () => {
   });
 
   it("drafts a reply, lists drafts, discards one and publishes", async () => {
-    expect(await scripted([{ id: ID }]).port.replyDraft("t", ID, "Tekst.")).toEqual({
+    expect(await scripted([{ id: ID }]).port.replyDraft("t", "doc-a", ID, "Tekst.")).toEqual({
       status: "ok",
       commentId: ID,
     });
@@ -55,6 +55,12 @@ describe("createCommentDelay", () => {
     expect(listed).toEqual({
       status: "ok",
       drafts: [{ ...DRAFT, createdWindow: "2026-11-21T09:00:00.000Z" }],
+    });
+    expect(
+      await scripted([{ ...DRAFT, anchor: null }]).port.listDrafts("t", "doc-a"),
+    ).toMatchObject({
+      status: "ok",
+      drafts: [{ anchor: null }],
     });
     const discard = scripted([{}]);
     expect(await discard.port.discardDraft("t", ID)).toEqual({ status: "ok" });
@@ -96,7 +102,7 @@ describe("createCommentDelay", () => {
   it("answers unavailable for a malformed row or a throwing error code", async () => {
     for (const row of [
       { ...DRAFT, state: "published" },
-      { ...DRAFT, anchor: null },
+      { ...DRAFT, anchor: 5 },
       { ...DRAFT, createdWindow: "nije datum" },
       { ...DRAFT, position: 1.5 },
     ]) {

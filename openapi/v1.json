@@ -48823,9 +48823,16 @@
                             "type": "string"
                           },
                           "anchor": {
-                            "additionalProperties": true,
-                            "type": "object",
-                            "properties": {}
+                            "anyOf": [
+                              {
+                                "additionalProperties": true,
+                                "type": "object",
+                                "properties": {}
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "state": {
                             "anyOf": [

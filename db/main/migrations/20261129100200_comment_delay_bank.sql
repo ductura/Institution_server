@@ -26,7 +26,7 @@
 --   collaboration.thread_for_actor                a student reaches only a thread with a published comment
 --   collaboration.list_comments                   the student's reading: published comments only; the teacher's too
 --   collaboration.create_comment_draft            the teacher of the work opens a draft thread
---   collaboration.reply_comment_draft             the teacher drafts a reply
+--   collaboration.reply_comment_draft             the teacher drafts a reply on a thread of the named work
 --   collaboration.list_comment_drafts             the caller's own drafts on a work
 --   collaboration.discard_comment_draft           the author removes a draft
 --   collaboration.publish_comments                the author publishes every draft on a work at once
@@ -158,7 +158,7 @@ $$;
 
 -- The teacher drafts a reply to a thread of the work. The thread's state moves
 -- when the reply is published, not now.
-CREATE FUNCTION collaboration.reply_comment_draft(p_thread_id uuid, p_body text) RETURNS uuid
+CREATE FUNCTION collaboration.reply_comment_draft(p_document_id text, p_thread_id uuid, p_body text) RETURNS uuid
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
@@ -177,6 +177,10 @@ BEGIN
   -- caller's own draft thread: never into another teacher's unpublished one.
   SELECT c.document_id, c.institution_id, c.created_by INTO v_doc
     FROM collaboration.comment_thread c WHERE c.id = t.thread_id;
+  -- The thread must belong to the work named in the path.
+  IF v_doc.document_id IS DISTINCT FROM p_document_id THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
   IF v_doc.created_by <> actor.user_id AND NOT EXISTS (
        SELECT 1 FROM collaboration.comment x WHERE x.thread_id = t.thread_id AND x.published_at IS NOT NULL) THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
@@ -246,6 +250,7 @@ DECLARE
   actor record;
   c record;
   t record;
+  v_doc record;
   v_gone uuid;
 BEGIN
   SELECT * INTO actor FROM institution.require_actor();
@@ -255,10 +260,15 @@ BEGIN
   IF c.thread_id IS NULL THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
-  SELECT th.document_id INTO t FROM collaboration.comment_thread th WHERE th.id = c.thread_id;
+  SELECT th.document_id INTO v_doc FROM collaboration.comment_thread th WHERE th.id = c.thread_id;
   -- The lock first, as publish_comments takes it, then the thread row.
-  PERFORM pg_advisory_xact_lock(hashtextextended('comment_draft:' || t.document_id || actor.user_id, 0));
-  PERFORM 1 FROM collaboration.comment_thread th WHERE th.id = c.thread_id FOR UPDATE;
+  PERFORM pg_advisory_xact_lock(hashtextextended('comment_draft:' || v_doc.document_id || actor.user_id, 0));
+  -- The relation to the work is decided now, so a teacher removed from the
+  -- course changes nothing; the thread row is locked here.
+  SELECT * INTO t FROM collaboration.thread_for_actor(c.thread_id, true);
+  IF t.role IS DISTINCT FROM 'teacher' THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
   -- Checked again under the lock: it may have been published meanwhile.
   DELETE FROM collaboration.comment x
    WHERE x.id = p_comment_id AND x.author_id = actor.user_id AND x.published_at IS NULL
@@ -395,7 +405,7 @@ $$;
 
 REVOKE ALL ON FUNCTION
   collaboration.create_comment_draft(text, text, jsonb),
-  collaboration.reply_comment_draft(uuid, text),
+  collaboration.reply_comment_draft(text, uuid, text),
   collaboration.list_comment_drafts(text),
   collaboration.discard_comment_draft(uuid),
   collaboration.publish_comments(text),
@@ -405,7 +415,7 @@ REVOKE ALL ON FUNCTION
 FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION
   collaboration.create_comment_draft(text, text, jsonb),
-  collaboration.reply_comment_draft(uuid, text),
+  collaboration.reply_comment_draft(text, uuid, text),
   collaboration.list_comment_drafts(text),
   collaboration.discard_comment_draft(uuid),
   collaboration.publish_comments(text),
@@ -433,7 +443,7 @@ DROP TABLE collaboration.work_review;
 DROP FUNCTION collaboration.publish_comments(text);
 DROP FUNCTION collaboration.discard_comment_draft(uuid);
 DROP FUNCTION collaboration.list_comment_drafts(text);
-DROP FUNCTION collaboration.reply_comment_draft(uuid, text);
+DROP FUNCTION collaboration.reply_comment_draft(text, uuid, text);
 DROP FUNCTION collaboration.create_comment_draft(text, text, jsonb);
 DELETE FROM collaboration.comment WHERE published_at IS NULL;
 DELETE FROM collaboration.comment_thread t WHERE NOT EXISTS (SELECT 1 FROM collaboration.comment c WHERE c.thread_id = t.id);

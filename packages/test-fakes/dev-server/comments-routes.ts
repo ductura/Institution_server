@@ -19,6 +19,7 @@ type Draft = {
   readonly state: "open";
   readonly createdWindow: string;
   readonly authorId: string;
+  readonly documentId: string;
 };
 type BankEntry = {
   readonly id: string;
@@ -69,10 +70,12 @@ export const COMMENTS_HANDLERS: Handlers = {
     if (account === null) return { error: "unauthorized" };
     const work = state.works.find((w) => w.documentId === params.documentId);
     if (readerOf(state, work, account) !== "teacher") return { error: "not_found" };
-    const own = draftsOf(state).filter((d) => d.authorId === account.id);
+    const own = draftsOf(state).filter(
+      (d) => d.authorId === account.id && d.documentId === params.documentId,
+    );
     return {
       status: 200,
-      body: { drafts: own.map(({ authorId: _author, ...draft }) => draft) },
+      body: { drafts: own.map(({ authorId: _author, documentId: _document, ...draft }) => draft) },
     };
   },
   "work.comment-drafts.post": ({ state, account, params, body, now }) => {
@@ -92,10 +95,16 @@ export const COMMENTS_HANDLERS: Handlers = {
         state: "open",
         createdWindow: windowOf(now),
         authorId: account.id,
+        documentId: work!.documentId,
       });
       return { status: 201, body: { threadId } };
     }
-    const first = drafts.find((d) => d.threadId === body.threadId && d.authorId === account.id);
+    const first = drafts.find(
+      (d) =>
+        d.threadId === body.threadId &&
+        d.authorId === account.id &&
+        d.documentId === params.documentId,
+    );
     if (first === undefined) return { error: "not_found" };
     const commentId = nextId(state);
     drafts.push({
@@ -127,11 +136,12 @@ export const COMMENTS_HANDLERS: Handlers = {
     const work = state.works.find((w) => w.documentId === params.documentId);
     if (readerOf(state, work, account) !== "teacher") return { error: "not_found" };
     const drafts = draftsOf(state);
-    const own = drafts.filter((d) => d.authorId === account.id);
+    const mine = (d: Draft) => d.authorId === account.id && d.documentId === params.documentId;
+    const own = drafts.filter(mine);
     if (own.length === 0) return { error: "conflict" };
     DRAFTS.set(
       state,
-      drafts.filter((d) => d.authorId !== account.id),
+      drafts.filter((d) => !mine(d)),
     );
     return { status: 200, body: { published: own.length } };
   },

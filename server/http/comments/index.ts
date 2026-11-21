@@ -188,7 +188,7 @@ export function createCommentDraftRoutes(delay: CommentDelay): Route[] {
           }
           const threadId = idOf(body.threadId);
           if (threadId === null) return sendProblem(response, 404, "not_found");
-          const answer = await delay.replyDraft(scope.token, threadId, body.text);
+          const answer = await delay.replyDraft(scope.token, scope.documentId, threadId, body.text);
           if (answer.status === "ok")
             return sendJson(response, 201, { commentId: answer.commentId });
           return refusalOf(response, answer.status);

@@ -124,7 +124,7 @@ SELECT bag_eq(
             ('collaboration.list_working_criteria(text)'),
             ('collaboration.save_working_criterion(text,text,smallint,text)'),
             ('collaboration.create_comment_draft(text,text,jsonb)'),
-            ('collaboration.reply_comment_draft(uuid,text)'),
+            ('collaboration.reply_comment_draft(text,uuid,text)'),
             ('collaboration.list_comment_drafts(text)'),
             ('collaboration.discard_comment_draft(uuid)'),
             ('collaboration.publish_comments(text)'),

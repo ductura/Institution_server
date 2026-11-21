@@ -37,7 +37,7 @@ SELECT is_empty(
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.oid IN ('collaboration.create_comment_draft(text,text,jsonb)'::regprocedure,
-        'collaboration.reply_comment_draft(uuid,text)'::regprocedure, 'collaboration.list_comment_drafts(text)'::regprocedure,
+        'collaboration.reply_comment_draft(text,uuid,text)'::regprocedure, 'collaboration.list_comment_drafts(text)'::regprocedure,
         'collaboration.discard_comment_draft(uuid)'::regprocedure, 'collaboration.publish_comments(text)'::regprocedure,
         'collaboration.mark_work_reviewed(text)'::regprocedure, 'collaboration.get_work_review(text)'::regprocedure,
         'collaboration.delete_work_reviews(text,uuid)'::regprocedure)
@@ -45,11 +45,11 @@ SELECT is_empty(
   'the eight functions are SECURITY DEFINER functions of the identity role with an empty search_path');
 SELECT bag_eq(
   $$ SELECT r || ' ' || f FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence', 'ductus_test_stranger']) AS r
-      CROSS JOIN unnest(ARRAY['collaboration.create_comment_draft(text,text,jsonb)', 'collaboration.reply_comment_draft(uuid,text)',
+      CROSS JOIN unnest(ARRAY['collaboration.create_comment_draft(text,text,jsonb)', 'collaboration.reply_comment_draft(text,uuid,text)',
         'collaboration.list_comment_drafts(text)', 'collaboration.discard_comment_draft(uuid)', 'collaboration.publish_comments(text)',
         'collaboration.mark_work_reviewed(text)', 'collaboration.get_work_review(text)', 'collaboration.delete_work_reviews(text,uuid)']) AS f
       WHERE has_function_privilege(r, f, 'EXECUTE') $$,
-  $$ VALUES ('ductus_app collaboration.create_comment_draft(text,text,jsonb)'), ('ductus_app collaboration.reply_comment_draft(uuid,text)'),
+  $$ VALUES ('ductus_app collaboration.create_comment_draft(text,text,jsonb)'), ('ductus_app collaboration.reply_comment_draft(text,uuid,text)'),
             ('ductus_app collaboration.list_comment_drafts(text)'), ('ductus_app collaboration.discard_comment_draft(uuid)'),
             ('ductus_app collaboration.publish_comments(text)'), ('ductus_app collaboration.mark_work_reviewed(text)'),
             ('ductus_app collaboration.get_work_review(text)'), ('ductus_retention collaboration.delete_work_reviews(text,uuid)') $$,
@@ -91,10 +91,13 @@ SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.list_comment_
   'the student reads no list of drafts');
 SELECT is(pg_temp.ask('ana', $$ SELECT collaboration.reply_comment({t1}::uuid, 'Odgovor.') $$), 'ZD403: forbidden',
   'the student cannot reply to a thread with no published comment');
-SELECT is(pg_temp.ask('ana', $$ SELECT collaboration.reply_comment_draft({t1}::uuid, 'Odgovor.') $$), 'ZD403: forbidden',
+SELECT is(pg_temp.ask('ana', $$ SELECT collaboration.reply_comment_draft('doc-a', {t1}::uuid, 'Odgovor.') $$), 'ZD403: forbidden',
   'the student cannot draft a reply');
 SELECT is(pg_temp.ask('ana', $$ SELECT collaboration.resolve_thread({t1}::uuid) $$), 'ZD403: forbidden',
   'the student cannot resolve a thread of drafts');
+
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft('doc-b', {t1}::uuid, 'Krivi rad.') $$), 'ZD403: forbidden',
+  'a draft reply names the work the thread belongs to: another work is refused');
 
 -- An immediate comment stays immediate (existing behaviour).
 SELECT matches(pg_temp.ask('marko', format($$ SELECT collaboration.create_comment('doc-a', 'Odmah vidljivo.', %L::jsonb) $$, (SELECT a FROM anchor_json))),
@@ -104,7 +107,7 @@ SELECT is(pg_temp.ask('ana', $$ SELECT string_agg(body, '|') FROM collaboration.
 
 -- A draft reply on a published thread.
 INSERT INTO ref SELECT 'c1', pg_temp.ask('ana', format($$ SELECT collaboration.create_comment('doc-a', 'Pitanje studenta.', %L::jsonb) $$, (SELECT a FROM anchor_json)));
-INSERT INTO ref SELECT 'd1', pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft({c1}::uuid, 'Odgovor nastavnice.') $$);
+INSERT INTO ref SELECT 'd1', pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft('doc-a', {c1}::uuid, 'Odgovor nastavnice.') $$);
 SELECT matches((SELECT val FROM ref WHERE name = 'd1'), '^[0-9a-f-]{36}$', 'Vesna drafts a reply on Ana''s own thread');
 SELECT is(pg_temp.ask('ana', $$ SELECT count(*) FROM collaboration.list_comments('doc-a') c WHERE c.comment_position = 2 $$), '0',
   'Ana does not read the draft reply');
@@ -150,9 +153,9 @@ SELECT is((SELECT count(*) FROM collaboration.comment_thread WHERE id = (SELECT 
 -- reply keeps the opening; the bound of 500 holds for replies too.
 INSERT INTO ref SELECT 'y1', pg_temp.ask('vesna',
   format($$ SELECT collaboration.create_comment_draft('doc-a', 'Nova nit.', %L::jsonb) $$, (SELECT a FROM anchor_json)));
-SELECT is(pg_temp.ask('marko', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Tuđa nit.') $$), 'ZD403: forbidden',
+SELECT is(pg_temp.ask('marko', $$ SELECT collaboration.reply_comment_draft('doc-a', {y1}::uuid, 'Tuđa nit.') $$), 'ZD403: forbidden',
   'another teacher cannot draft a reply into an unpublished thread of Vesna''s');
-INSERT INTO ref SELECT 'yr', pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Vlastiti nastavak.') $$);
+INSERT INTO ref SELECT 'yr', pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft('doc-a', {y1}::uuid, 'Vlastiti nastavak.') $$);
 SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({yr}::uuid) $$), '',
   'Vesna discards only her draft reply');
 SELECT is((SELECT count(*) FROM collaboration.comment WHERE thread_id = (SELECT val::uuid FROM ref WHERE name = 'y1')), 1::bigint,
@@ -163,9 +166,9 @@ SELECT (SELECT val::uuid FROM ref WHERE name = 'y1'), pg_temp.id('fak_a'), 1 + g
 FROM generate_series(1, 498) g;
 RESET ROLE;
 -- Vesna now holds 499 drafts on the work (the opening and 498 more... plus none else): one more fits, the next does not.
-SELECT matches(pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Petstoti.') $$), '^[0-9a-f-]{36}$',
+SELECT matches(pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft('doc-a', {y1}::uuid, 'Petstoti.') $$), '^[0-9a-f-]{36}$',
   'the 500th draft of an author on a work is accepted');
-SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Šeststoti.') $$), 'ZD422: invalid input',
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft('doc-a', {y1}::uuid, 'Šeststoti.') $$), 'ZD422: invalid input',
   'the 501st is refused, replies included');
 INSERT INTO ref SELECT 'yo', (SELECT c.id::text FROM collaboration.comment c WHERE c.thread_id = (SELECT val::uuid FROM ref WHERE name = 'y1') AND c.position = 1);
 SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({yo}::uuid) $$), '',
@@ -173,6 +176,18 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({yo
 SELECT is((SELECT count(*) FROM collaboration.comment WHERE thread_id = (SELECT val::uuid FROM ref WHERE name = 'y1')), 0::bigint,
   'takes the thread''s other drafts and the thread with it');
 SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM collaboration.list_comment_drafts('doc-a') $$), '0', 'no draft is left');
+
+-- A teacher removed from the course cannot discard a draft she wrote earlier.
+INSERT INTO ref SELECT 'w1', pg_temp.ask('vesna',
+  format($$ SELECT collaboration.create_comment_draft('doc-a', 'Zadnji nacrt.', %L::jsonb) $$, (SELECT a FROM anchor_json)));
+INSERT INTO ref SELECT 'wc', (SELECT c.id::text FROM collaboration.comment c WHERE c.thread_id = (SELECT val::uuid FROM ref WHERE name = 'w1'));
+UPDATE institution.course_member SET member_to = now()
+ WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('vesna') AND member_to IS NULL;
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({wc}::uuid) $$), 'ZD403: forbidden',
+  'Vesna, no longer a teacher of K1, cannot discard her draft');
+UPDATE institution.course_member SET member_to = NULL
+ WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('vesna');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({wc}::uuid) $$), '', 'back in the course she can');
 
 -- 5. The comment bank (N-03) is private to its teacher.
 INSERT INTO ref SELECT 'b1', pg_temp.ask('vesna', $$ SELECT template_id FROM collaboration.create_comment_template('Navedite izvor.', 'must') $$);
