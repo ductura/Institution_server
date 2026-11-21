@@ -1,5 +1,6 @@
 import { canonicalizeJcs, isSubmissionInstant } from "../forensics/index.ts";
 import {
+  attachmentId,
   compareAttachments,
   isConversationAttachment,
   isExternalAttachment,
@@ -135,6 +136,10 @@ export function attachmentListProblem(
   list: readonly DeclarationAttachment[],
 ): AttachmentListProblem | null {
   if (!strictlyIncreasing(list, compareAttachments)) return "order";
+  // The order compares the reason first, so one conversation under two reasons
+  // passes it; a conversation id must be unique across the whole list.
+  const conversationIds = list.filter(isConversationAttachment).map(attachmentId);
+  if (new Set(conversationIds).size !== conversationIds.length) return "order";
   let external = 0;
   let externalBytes = 0;
   let studentAdded = 0;

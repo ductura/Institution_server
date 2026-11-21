@@ -304,6 +304,9 @@ describe("section 2.2 reasons", () => {
     ]);
     expect(attachmentListProblem(sorted)).toBeNull();
     expect(attachmentListProblem([sorted[0]!, sorted[0]!])).toBe("order");
+    const twoReasons = [conversation(1, "transferred"), conversation(1, "student_added")];
+    expect(attachmentListProblem(twoReasons)).toBe("order");
+    expect(valid((p) => void (p.ai.attachments = twoReasons))).toBe(false);
   });
 });
 

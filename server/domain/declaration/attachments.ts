@@ -77,7 +77,7 @@ export function computeMessagesSha256(contentSha256s: readonly string[]): string
   return sha256Hex(canonicalizeJcs([...contentSha256s]));
 }
 
-const attachmentId = (a: DeclarationAttachment): string =>
+export const attachmentId = (a: DeclarationAttachment): string =>
   a.reason === EXTERNAL_ATTACHMENT_REASON ? a.externalAttachmentId : a.conversationId;
 
 const reasonRank = (reason: AttachmentReason): number => ATTACHMENT_REASON_ORDER.indexOf(reason);
