@@ -1,4 +1,8 @@
 BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap;
+-- pgTAP lives in public; the roles migration takes USAGE on it from PUBLIC.
+GRANT USAGE ON SCHEMA public TO ductus_identity, ductus_app, ductus_auth;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO ductus_identity, ductus_app, ductus_auth;
 SELECT plan(10);
 
 SET LOCAL ROLE ductus_identity;
