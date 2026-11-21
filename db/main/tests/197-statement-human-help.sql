@@ -40,23 +40,27 @@ INSERT INTO ref SELECT 'statement-upload', pg_temp.ask('ana', format(
   'SELECT declaration.upload_attachment(%L, %L, convert_to(%L, ''UTF8''))->>''externalAttachmentId''',
   pg_temp.id('z1'), 'text/plain', 'Izmišljeni ispis'));
 SELECT matches(pg_temp.val('statement-upload'), '^[0-9a-f-]{36}$', 'a TXT upload returns an id');
+SELECT is(pg_temp.save_statement('ana', jsonb_set(pg_temp.statement_body(0,1), '{confirm}', 'false'))
+  #>> '{statement,state}', 'draft', 'the same declaration can first be saved as a draft');
 INSERT INTO ref SELECT 'statement-saved', pg_temp.save_statement('ana',
-  jsonb_set(pg_temp.statement_body(0,1), '{ai,externalAttachmentIds}',
+  jsonb_set(pg_temp.statement_body(1,1), '{ai,externalAttachmentIds}',
     jsonb_build_array(pg_temp.val('statement-upload'))))::text;
 SELECT is(pg_temp.val('statement-saved')::jsonb #>> '{statement,state}', 'confirmed',
   'the complete text is confirmed');
 SELECT is(pg_temp.val('statement-saved')::jsonb #>> '{statement,payload,revision}', '1',
   'the response names the exact revision');
+SELECT is(pg_temp.val('statement-saved')::jsonb #>> '{statement,payload,declarationVersion}', '1',
+  'the first confirmation has version one even after a draft was saved');
 SELECT is(pg_temp.val('statement-saved')::jsonb #>> '{statement,payload,ai,attachments,0,contentSha256}',
   pg_temp.sha('Izmišljeni ispis'), 'the payload binds the bytes of the selected upload');
-SELECT is(pg_temp.save_statement('ana', pg_temp.statement_body(0, 1))->>'status',
+SELECT is(pg_temp.save_statement('ana', pg_temp.statement_body(1, 1))->>'status',
   'conflict', 'another writer with the same base version cannot overwrite the first');
 SELECT is(pg_temp.ask('ana', $$ SELECT outcome FROM app.request_submission('doc-a',1) $$),
   'requested', 'the usual submission RPC accepts the work');
 SELECT is((SELECT declaration_sha256 FROM evidence.submission_request WHERE document_id='doc-a'),
   pg_temp.val('statement-saved')::jsonb #>> '{statement,declarationSha256}',
   'the request pins the exact confirmed hash');
-SELECT is(pg_temp.save_statement('ana', pg_temp.statement_body(1, 1))->>'status',
+SELECT is(pg_temp.save_statement('ana', pg_temp.statement_body(2, 1))->>'status',
   'conflict', 'a save with the correct base still cannot change the bound statement');
 SELECT is(pg_temp.ask('ana', format('SELECT declaration.read_statement(%L)#>>''{statement,state}''',
   pg_temp.id('z1'))), 'bound', 'the student reads the pinned statement');

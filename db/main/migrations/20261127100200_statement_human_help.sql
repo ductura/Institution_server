@@ -192,6 +192,7 @@ DECLARE
   v_selected jsonb;
   v_count integer;
   v_version bigint;
+  v_previous jsonb;
   v_id uuid := gen_random_uuid();
   v_payload text;
 BEGIN
@@ -211,7 +212,8 @@ BEGIN
        = (v_actor.institution_id, p_assignment, v_actor.user_id))
   THEN RETURN '{"status":"conflict"}'; END IF;
 
-  IF octet_length(p_form_file) NOT BETWEEN 1 AND 128000 OR p_form_file IS NULL
+  IF p_form_file IS NULL THEN RETURN '{"status":"conflict"}'; END IF;
+  IF octet_length(p_form_file) NOT BETWEEN 1 AND 128000
      OR octet_length(p_body::text) > 800000
   THEN RETURN '{"status":"invalid_input"}'; END IF;
   v_form := p_form_file::jsonb;
@@ -231,8 +233,15 @@ BEGIN
      OR jsonb_typeof(v_help->'entries') IS DISTINCT FROM 'array'
      OR jsonb_typeof(v_ai->'declaredTools') IS DISTINCT FROM 'array'
      OR jsonb_typeof(v_ai->'externalAttachmentIds') IS DISTINCT FROM 'array'
-     OR coalesce(v_ai->>'use','') NOT IN ('', 'used', 'not_used')
+     OR v_ai->'use' IS NULL OR v_ai->'use' NOT IN ('null'::jsonb, '"used"'::jsonb, '"not_used"'::jsonb)
      OR (v_ai->'attachments') IS DISTINCT FROM '[]'::jsonb
+  THEN RETURN '{"status":"invalid_input"}'; END IF;
+  IF v_help IS DISTINCT FROM jsonb_build_object('received',v_help->'received','entries',v_help->'entries')
+     OR v_ai IS DISTINCT FROM jsonb_build_object('use',v_ai->'use','declaredTools',v_ai->'declaredTools',
+       'attachments','[]'::jsonb,'externalAttachmentIds',v_ai->'externalAttachmentIds')
+     OR p_body IS DISTINCT FROM jsonb_build_object('baseVersion',v_version,'revision',v_document.current_revision,
+       'form',p_body->'form','ownWork',jsonb_build_object('confirmed',p_body#>'{ownWork,confirmed}'),
+       'humanHelp',v_help,'ai',v_ai,'confirm',p_body->'confirm')
   THEN RETURN '{"status":"invalid_input"}'; END IF;
   IF jsonb_array_length(v_help->'entries') > 20 OR jsonb_array_length(v_ai->'declaredTools') > 20
      OR jsonb_array_length(v_ai->'externalAttachmentIds') > 10
@@ -262,8 +271,14 @@ BEGIN
        OR (v_help->'received' = 'true'::jsonb) <> (jsonb_array_length(v_help->'entries') > 0)
        OR (v_ai->>'use' = 'not_used' AND jsonb_array_length(v_ai->'declaredTools') > 0)
     THEN RETURN '{"status":"conflict"}'; END IF;
+    SELECT s.payload_jcs::jsonb INTO v_previous FROM declaration.statement s
+      WHERE (s.institution_id, s.assignment_id, s.principal_id) = (v_actor.institution_id, p_assignment, v_actor.user_id)
+        AND s.payload_jcs IS NOT NULL
+      ORDER BY s.version DESC LIMIT 1;
     v_payload := declaration.canonical_payload(jsonb_build_object('declarationSchema','ductura-declaration-v1',
-      'declarationId',v_id, 'declarationVersion',v_version + 1, 'principalId',v_actor.user_id,
+      'declarationId',coalesce(v_previous->>'declarationId',v_id::text),
+      'declarationVersion',coalesce((v_previous->>'declarationVersion')::bigint,0) + 1,
+      'principalId',v_actor.user_id,
       'assignmentId',p_assignment,'assignmentVersion',v_assignment_version,'documentId',v_document.id,
       'revision',v_document.current_revision,'form',p_body->'form','ownWork','{"confirmed":true}'::jsonb,
       'humanHelp',jsonb_build_object('received',v_help->'received','entries',v_help->'entries'),
@@ -281,6 +296,8 @@ BEGIN
       v_payload, encode(sha256(convert_to(v_payload, 'UTF8')), 'hex'));
   RETURN declaration.view_statement(v_actor.institution_id, p_assignment, v_actor.user_id,
     v_document.current_revision, v_assignment_version);
+EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN
+  RETURN '{"status":"invalid_input"}';
 END $$;
 
 CREATE FUNCTION declaration.upload_attachment(p_assignment uuid, p_format text, p_content bytea) RETURNS jsonb
