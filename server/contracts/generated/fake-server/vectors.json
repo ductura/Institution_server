@@ -37133,6 +37133,30 @@
     }
   },
   {
+    "route": "teacher.declaration.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      },
+      "params": {
+        "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+        "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
     "route": "teacher.fast-path.post",
     "name": "students",
     "request": {

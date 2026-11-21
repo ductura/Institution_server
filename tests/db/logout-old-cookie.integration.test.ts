@@ -72,6 +72,7 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
+  createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
@@ -632,6 +633,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1213: a live session that may not read that declaration gets 404 (ZD403).
+  "teacher.declaration.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/declaration`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-NG: a live session naming an assignment it is no student of gets 404.
   "student.notice.get": {
     method: "GET",
@@ -1164,6 +1172,7 @@ const FACTORIES = [
   "createStaffAffiliationRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
+  "createTeacherDeclarationRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
   "createTeacherRosterRoutesFor",
@@ -1254,6 +1263,7 @@ const MOUNTED = [
   createStaffAffiliationRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
+  createTeacherDeclarationRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
