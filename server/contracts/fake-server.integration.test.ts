@@ -135,7 +135,8 @@ describe("fake server over HTTP", () => {
     // SRV-1407: the four mentorship request moves five each.
     // SRV-1413: creating a mentor note has five framing vectors.
     // SRV-1701: five framing vectors for marking a notification read.
-    expect(VECTORS.length - overHttp.length).toBe(319);
+    // teacher.assignment-copy.post (SRV-1904) five.
+    expect(VECTORS.length - overHttp.length).toBe(324);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

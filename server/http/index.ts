@@ -22,6 +22,10 @@ export {
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
 export { createStudentDeadlineHistoryRouteFor } from "./student-deadline-history.ts";
+export {
+  createAssignmentCopyRoute,
+  createAssignmentCopyRouteFor,
+} from "./assignment-copy/index.ts";
 export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {

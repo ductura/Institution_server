@@ -603,6 +603,13 @@ export type Operations = {
     success: { status: 200; body: { "access": "allowed" | "denied"; "scope": string }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "teacher.assignment-copy.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "requestKey": string; "courseId": string; "opensAt"?: string; "dueAt"?: string };
+    success: { status: 201; body: { "id": string; "versionNo": 1 }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
+  };
   "teacher.assignment-overview.get": {
     params: { "assignmentId": string };
     query: undefined;

@@ -1153,6 +1153,32 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "teacher.assignment-copy.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.assignment-copy.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local2 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const local3 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['requestKey'] === 'string') &&
+      local0.test(value['requestKey']) &&
+      (typeof value['courseId'] === 'string') &&
+      local1.test(value['courseId']) &&
+      (value['opensAt'] !== undefined ? ((typeof value['opensAt'] === 'string') && local2.test(value['opensAt'])) : true) &&
+      (value['dueAt'] !== undefined ? ((typeof value['dueAt'] === 'string') && local3.test(value['dueAt'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['requestKey', 'courseId', 'opensAt', 'dueAt'].includes(key))
+    )
+  }
+  })(),
   "teacher.assignment-overview.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

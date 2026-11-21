@@ -888,6 +888,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
+  "teacher.assignment-copy.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/copy`,
+      as: "nastavnik",
+      body: { requestKey: "00000000-0000-4000-8000-000000190401", courseId: IDS.course },
+    },
+  },
   "teacher.merlin-roster.get": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/roster`,
