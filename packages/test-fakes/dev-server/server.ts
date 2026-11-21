@@ -165,6 +165,7 @@ const BODY_ERRORS = [
   "invalid_input",
   "invalid",
   "invalid_document",
+  "pdf_no_text_layer",
   "invalid_logout_token",
   "bad_request",
   "invalid_json",

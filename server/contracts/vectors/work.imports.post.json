@@ -521,6 +521,37 @@
       }
     },
     {
+      "name": "pdf-no-text-layer",
+      "kind": "error",
+      "code": "pdf_no_text_layer",
+      "request": {
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+          "origin": "https://ductura.example.invalid",
+          "sec-fetch-site": "same-origin",
+          "content-type": "application/json"
+        },
+        "body": {
+          "fileBase64": "JVBERi0xLjQgaXptaXNsamVuaSBza2VuIGJleiB0ZWtzdGE=",
+          "fileName": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "pdf_no_text_layer",
+          "code": "pdf_no_text_layer",
+          "messageKey": "errors.pdfNoTextLayer",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-0000000000d0"
+        }
+      }
+    },
+    {
       "name": "import-not-allowed",
       "kind": "error",
       "code": "import_not_allowed",
