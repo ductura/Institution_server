@@ -107,8 +107,17 @@ SELECT is(pg_temp.read('ana', gen_random_uuid()), '{"status": "not_found"}', 'an
 
 -- 3. After the submission the course teacher still reads nothing here; the
 -- read of the bound version is a later step and goes through its own RPC.
+-- The production path: the deferred check fires at commit, after the RPC's
+-- definer context has ended, with the web login as the current user.
+SET CONSTRAINTS declaration.statement_attachments_complete DEFERRED;
 SELECT is(pg_temp.save('ana', pg_temp.statement_body(2, true)) #>> '{statement,state}', 'confirmed',
-  'fixture: Ana confirms again');
+  'fixture: Ana confirms again, with the attachment check deferred as in production');
+-- Fire it as the web role. A failure here aborts the transaction, so every
+-- later test fails with it (ask_as cannot run a statement without a result).
+SET LOCAL ROLE ductus_app;
+SET CONSTRAINTS declaration.statement_attachments_complete IMMEDIATE;
+RESET ROLE;
+SELECT pass('the deferred check passes at commit as the web role');
 SELECT is(pg_temp.ask('ana', $$ SELECT outcome FROM app.request_submission('doc-a',1) $$), 'requested',
   'fixture: Ana submits');
 SELECT is(pg_temp.read('vesna', pg_temp.id('z1')), pg_temp.read('ana', gen_random_uuid()),
@@ -154,6 +163,14 @@ SELECT throws_ok($$ SELECT pg_temp.put_row(gen_random_uuid(), 21, pg_temp.payloa
   'a confirmed row cannot carry a payload of another student');
 SELECT throws_ok($$ SELECT pg_temp.put_row(gen_random_uuid(), 22, replace(pg_temp.payload(9), ',', ', ')) $$,
   '23514', NULL, 'a confirmed row keeps only canonical bytes');
+SELECT throws_ok(format($$ SELECT pg_temp.put_row(gen_random_uuid(), %s,
+  declaration.canonical_payload(pg_temp.payload(9)::jsonb - %L)) $$, f.version, f.field), '23514', NULL,
+  'a confirmed row cannot leave out ' || f.field)
+  FROM (VALUES (50, 'declarationSchema'), (51, 'principalId'), (52, 'assignmentId'), (53, 'assignmentVersion'),
+               (54, 'documentId'), (55, 'revision')) f(version, field);
+SELECT throws_ok($$ SELECT pg_temp.put_row(gen_random_uuid(), 25,
+  declaration.canonical_payload(jsonb_set(pg_temp.payload(9)::jsonb, '{principalId}', 'null'))) $$, '23514', NULL,
+  'a confirmed row cannot name no student');
 SELECT throws_ok($$ SELECT pg_temp.put_row(gen_random_uuid(), 23,
   replace(pg_temp.payload(9), 'ductura-declaration-v1', 'ductus-declaration-v1')) $$,
   '23514', NULL, 'a confirmed row names the declaration schema of OD-14');
