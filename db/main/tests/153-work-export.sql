@@ -61,9 +61,9 @@ SELECT is(pg_temp.call('ana', 'pkg-a', 'request-3',
     2, repeat('e', 64), repeat('f', 64), repeat('9', 64)), 'reserved', 'fixture: Ana commits revision 3');
 
 -- Without a revision the newest saved version, the same for the owner and the teacher.
-SELECT is(left(pg_temp.export(a.name), 16), 'found:3:saved:', a.name || ' reads revision 3 as the newest saved version')
+SELECT is(left(pg_temp.export(a.name), 14), 'found:3:saved:', a.name || ' reads revision 3 as the newest saved version')
 FROM (VALUES ('ana'), ('vesna')) AS a (name);
-SELECT is(left(pg_temp.export('ana', 'doc-a', c.revision), 16), c.line, 'Ana reads revision ' || c.revision)
+SELECT is(left(pg_temp.export('ana', 'doc-a', c.revision), 14), c.line, 'Ana reads revision ' || c.revision)
 FROM (VALUES (1::bigint, 'found:1:saved:'), (2, 'found:2:saved:')) AS c (revision, line);
 SELECT is(pg_temp.export('vesna', 'doc-a', 9), 'not_found', 'a revision that does not exist is not_found');
 
@@ -88,7 +88,7 @@ SELECT is(pg_temp.replay_log(), ARRAY['doc-a|ana|vesna|teacher'],
 -- The submission of revision 1 cuts the versions there, for both readers.
 SELECT is(pg_temp.ask('ana', format('SELECT outcome FROM app.record_submission(%L::uuid, %L)', pg_temp.req(),
   pg_temp.h('d'))), 'recorded', 'fixture: the submission of revision 1 is recorded');
-SELECT is(left(pg_temp.export(a.name), 20), 'found:1:submitted:', a.name || ' reads the submitted revision, nothing after')
+SELECT is(left(pg_temp.export(a.name), 18), 'found:1:submitted:', a.name || ' reads the submitted revision, nothing after')
 FROM (VALUES ('ana'), ('vesna')) AS a (name);
 SELECT is(pg_temp.export('vesna', 'doc-a', 2), 'not_found', 'a revision after the submission is not_found');
 
@@ -96,7 +96,7 @@ SELECT is(pg_temp.export('vesna', 'doc-a', 2), 'not_found', 'a revision after th
 UPDATE institution.course_member SET member_to = now()
  WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('vesna');
 SELECT is(pg_temp.export('vesna'), 'not_found', 'Vesna, gone from K1, gets not_found');
-SELECT is(left(pg_temp.export('ana'), 20), 'found:1:submitted:', 'Ana still reads her work');
+SELECT is(left(pg_temp.export('ana'), 18), 'found:1:submitted:', 'Ana still reads her work');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -90,7 +90,6 @@ export function createWorkExportRoute(read: WorkExportReader): Route {
         const docx = renderWorkDocx({
           body: source.body,
           revision: source.revision,
-          kind: source.kind,
           savedAt: source.savedAt,
           labels: merlinHr.exportLabels,
         });

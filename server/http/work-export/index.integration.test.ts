@@ -137,3 +137,19 @@ it("answers the database's refusals and failures as the contract's", async () =>
   }
   quiet.mockRestore();
 });
+
+it("keeps the fingerprint of a version when it is submitted afterwards", async () => {
+  const sha = async (kind: string) => {
+    await running?.close();
+    const { url } = await serve([{ ...FOUND, kind }]);
+    const response = await get(url());
+    return [
+      response.headers.get("x-export-snapshot-sha256"),
+      await response.arrayBuffer(),
+    ] as const;
+  };
+  const saved = await sha("saved");
+  const submitted = await sha("submitted");
+  expect(saved[0]).toBe(submitted[0]);
+  expect(Buffer.from(saved[1]).equals(Buffer.from(submitted[1]))).toBe(true);
+});
