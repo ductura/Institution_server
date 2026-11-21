@@ -123,6 +123,7 @@ describe("fake server over HTTP", () => {
     // work.messages.post (SRV-1106) five.
     // work.milestones.patch (SRV-1103) five, teacher.working-criterion.put (SRV-1107) five.
     // student.assistant-request.post (SRV-1204) five.
+    // Declaration save and upload have five framing vectors each.
     expect(VECTORS.length - overHttp.length).toBe(254);
   });
 
