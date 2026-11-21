@@ -32,6 +32,7 @@ import {
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createRetentionRouteFor,
   createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
@@ -347,6 +348,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createPilotMetricsRouteFor(databases.main)",
     ids: ["ops.pilot-metrics.get"],
     routes: () => [createPilotMetricsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    call: "createRetentionRouteFor(databases.main)",
+    ids: ["institution.retention.get"],
+    routes: () => [createRetentionRouteFor(NO_ACTOR).contract.id],
   },
   {
     call: "createWorkAccessRouteFor(databases.main)",
@@ -780,6 +786,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.config.get",
       "institution.config-versions.post",
       "ops.pilot-metrics.get",
+      "institution.retention.get",
       "work.access.get",
       ...TEACHER_ROSTER_ROUTES,
       "teacher.submission-detail.get",
