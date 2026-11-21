@@ -182,6 +182,43 @@ describe("reviewFlagsFromEvidence (P-2 proposal)", () => {
     expect(result.flags).toEqual([]);
   });
 
+  it("reads the rhythm per step, so many keystrokes in one event are not a pause", () => {
+    // 450 characters in 15 events of 30 steps, 100 ms apart: the events start
+    // 3 s apart, but no step is more than 100 ms after the one before it. Found
+    // on real Ductura evidence, where one capture event holds many keystrokes.
+    const events = Array.from({ length: 15 }, (_, e) => ({
+      sequence: e + 1,
+      source: "editor",
+      steps: Array.from({ length: 30 }, (_, i) => ({
+        stepType: "replace",
+        from: e * 30 + i + 1,
+        to: e * 30 + i + 1,
+        slice: { content: [{ type: "text", text: "a" }] },
+      })),
+      beforeDocumentHash: HASH,
+      afterDocumentHash: HASH,
+    }));
+    const segment = {
+      evidenceSchema: "ductus-evidence-segment-v2",
+      sequenceFrom: 1,
+      sequenceTo: 15,
+      observedStartedAt: minute(0),
+      observedEndedAt: minute(0),
+      events,
+    } as unknown as EvidenceSegment;
+    const timing: EvidenceTimingV1 = {
+      timingFormat: "ductus-evidence-timing-v1",
+      segmentHash: HASH,
+      events: events.map((e, index) => ({
+        sequence: e.sequence,
+        stepOffsetsMs: Array.from({ length: 30 }, (_, i) => (index * 30 + i) * 100),
+      })),
+    };
+    const result = reviewFlagsFromEvidence([{ segment, timing }], { rhythmRecorded: true });
+    expect(result.bursts.map((b) => b.chars)).toEqual([450]);
+    expect(result.flags.map((f) => f.rule)).toEqual(["R-2", "R-3"]);
+  });
+
   it("flags evidence the client sent with no flag of its own: the result depends only on the record", () => {
     // The segment format has no field for a client flag (redteam-integrity.test.ts:
     // an extra field is refused), so a driven browser cannot claim "no flag".

@@ -144,53 +144,47 @@ export function reviewFlagsFromEvidence(
     const startedAt = Date.parse(item.segment.observedStartedAt);
     if (offsets === null) close();
 
+    // One event of the capture layer can hold many keystrokes (its steps), each
+    // with its own offset: the rhythm is read per step, so the time inside an
+    // event is never taken for a pause (found on real Ductura evidence, Lab S06).
     for (const event of item.segment.events) {
       const typed = event.source === "editor";
-      let inserted = 0;
-      let removed = 0;
-      let wentBack = false;
-      for (const raw of event.steps) {
+      const stepOffsets = offsets?.get(event.sequence);
+      if (typed && offsets === null) untimedTypingEvents += 1;
+      event.steps.forEach((raw, index) => {
         const shape = stepShape(raw as Step);
-        if (!shape) continue;
-        if (typed) {
-          inserted += shape.inserted;
-          removed += shape.removed;
-          if (shape.from < frontier - LAST_WORD_SLACK) wentBack = true;
-        }
+        if (!shape) return;
+        const wentBack = typed && shape.from < frontier - LAST_WORD_SLACK;
         // Every change moves the end of the typed text if it lies before it.
         if (shape.from < frontier)
           frontier = Math.max(shape.from, frontier + shape.inserted - shape.removed);
         if (typed) frontier = Math.max(frontier, shape.from + shape.inserted);
-      }
-      if (!typed) continue;
-      if (offsets === null) {
-        untimedTypingEvents += 1;
-        continue;
-      }
-      const at = startedAt + (offsets.get(event.sequence)?.[0] ?? 0);
-      const current: (ServerBurst & { endedAt: number }) | null = open;
-      if (current && at - current.endedAt <= REVIEW_BURST_QUIET_MS) {
-        current.longestPauseMs = Math.max(
-          current.longestPauseMs,
-          Math.max(0, at - current.endedAt),
-        );
-        current.endedAt = at;
-        current.sequenceTo = event.sequence;
-        current.chars += inserted;
-        current.removed += removed;
-        if (wentBack) current.wentBack += 1;
-      } else {
-        close();
-        open = {
-          sequenceFrom: event.sequence,
-          sequenceTo: event.sequence,
-          chars: inserted,
-          longestPauseMs: 0,
-          wentBack: wentBack ? 1 : 0,
-          removed,
-          endedAt: at,
-        };
-      }
+        if (!typed || offsets === null) return;
+        const at = startedAt + (stepOffsets?.[index] ?? 0);
+        const current: (ServerBurst & { endedAt: number }) | null = open;
+        if (current && at - current.endedAt <= REVIEW_BURST_QUIET_MS) {
+          current.longestPauseMs = Math.max(
+            current.longestPauseMs,
+            Math.max(0, at - current.endedAt),
+          );
+          current.endedAt = Math.max(current.endedAt, at);
+          current.sequenceTo = event.sequence;
+          current.chars += shape.inserted;
+          current.removed += shape.removed;
+          if (wentBack) current.wentBack += 1;
+        } else {
+          close();
+          open = {
+            sequenceFrom: event.sequence,
+            sequenceTo: event.sequence,
+            chars: shape.inserted,
+            longestPauseMs: 0,
+            wentBack: wentBack ? 1 : 0,
+            removed: shape.removed,
+            endedAt: at,
+          };
+        }
+      });
     }
   }
   close();
