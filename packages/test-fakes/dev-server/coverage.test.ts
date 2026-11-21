@@ -558,6 +558,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/profile/interface-locale", as: "student", body: { locale: "en" } },
   },
   "profile.me.get": { request: { path: "/api/v1/me", as: "administrator" } },
+  "profile.staff-affiliation.get": {
+    request: { path: "/api/v1/me/staff-affiliation", as: "nastavnik" },
+  },
   "projection.process-summary.post": {
     request: {
       path: "/api/v1/process-summary",
@@ -668,6 +671,17 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "support.problem-report.post": {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
+  },
+  "support.problem-reports.post": {
+    request: {
+      path: "/api/v1/problem-reports",
+      as: "student",
+      body: {
+        appVersion: REPORT.appVersion,
+        category: REPORT.category,
+        description: REPORT.description,
+      },
+    },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
   "work.milestones.get": {
