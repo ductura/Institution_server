@@ -6,6 +6,10 @@
  * A refusal names the reason, never a value, so nothing the provider sent
  * reaches a log or a response.
  */
+import { type StaffAffiliation, staffAffiliationFromClaims } from "./affiliation.ts";
+
+export { TEACHER_AFFILIATIONS } from "./affiliation.ts";
+
 export type LoginIdentity = {
   subject: string;
   uniqueId: string;
@@ -17,11 +21,17 @@ export type LoginIdentity = {
   givenName?: string;
   familyName?: string;
   /**
-   * Whether hrEduPersonAffiliation allows a teacher role to be confirmed
-   * (D-171, DAN-304). Only this fact leaves here, never the value; a missing
+   * Whether the login's staff affiliation allows a teacher role to be
+   * confirmed (D-171, DAN-304, SRV-1403; affiliation.ts). Only this fact leaves here, never the value; a missing
    * or malformed attribute is false and never refuses the login.
    */
   teacherEligible: boolean;
+  /**
+   * The staff affiliation the fact rests on (SRV-1403): which attribute gave
+   * it and, for a scoped value, its scope. Present exactly when
+   * teacherEligible is true; never the value itself.
+   */
+  staffAffiliation?: StaffAffiliation;
   /**
    * The provider's login session id from the ID token (Back-Channel Logout
    * 1.0 2.1), kept so a back-channel logout can name this session (DAN-474).
@@ -90,42 +100,6 @@ function nameFromClaims(claims: Claims): { givenName: string; familyName: string
 }
 
 /**
- * The hrEduPersonAffiliation values that allow a teacher role (D-171).
- *
- * NEPROVJERENO (DAN-304, #1181): not yet read in the source itself, the
- * code list hrEdu004 of the hrEdu schema register
- * (www.aaiedu.hr/sheme/sifrarnici, annex 4 of schema v1.2). `djelatnik` is
- * seen in public extracts, `vanjski suradnik` is not confirmed. When the
- * code list differs, only this constant and its test change.
- */
-export const TEACHER_AFFILIATIONS: readonly string[] = Object.freeze([
-  "djelatnik",
-  "vanjski suradnik",
-]);
-
-// The attribute is multi-valued; more members than any person holds is not
-// an affiliation, and the bound keeps the scan short.
-const MAX_AFFILIATIONS = 32;
-
-/**
- * True only when one member is exactly one of TEACHER_AFFILIATIONS: no
- * case folding, trimming or other normalisation. A string counts as one
- * member. A member that does not pass `check` counts for nothing; an array
- * with a hole, or longer than the bound, gives no right at all.
- */
-function teacherEligibleFrom(value: unknown): boolean {
-  const members = typeof value === "string" ? [value] : value;
-  if (!Array.isArray(members) || members.length > MAX_AFFILIATIONS) return false;
-  for (let i = 0; i < members.length; i += 1) {
-    if (!Object.hasOwn(members, i)) return false;
-  }
-  return members.some((member) => {
-    const checked = check(member);
-    return "value" in checked && TEACHER_AFFILIATIONS.includes(checked.value);
-  });
-}
-
-/**
  * `idToken` holds the verified ID token claims. `userinfo`, when the provider
  * released attributes there, must name the same subject (OIDC Core 5.3.2);
  * its attributes take precedence over the ID token's.
@@ -148,8 +122,13 @@ export function identityFromClaims(idToken: Claims, userinfo?: Claims): ClaimsRe
     subject: subject.value,
     uniqueId: uniqueId.value,
     homeOrg: homeOrg.value,
-    teacherEligible: teacherEligibleFrom(merged.hrEduPersonAffiliation),
+    teacherEligible: false,
   };
+  const affiliation = staffAffiliationFromClaims(merged, homeOrg.value);
+  if (affiliation !== undefined) {
+    identity.teacherEligible = true;
+    identity.staffAffiliation = affiliation;
+  }
   const names = nameFromClaims(merged);
   if (names) Object.assign(identity, names);
   // Only the ID token names the provider's session; userinfo never does.

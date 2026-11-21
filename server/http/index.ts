@@ -3,6 +3,7 @@
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
+export { createSourceNotebookRoutesFor } from "./source-notebook/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
@@ -251,6 +252,10 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export {
+  createStaffAffiliationRoute,
+  createStaffAffiliationRouteFor,
+} from "./staff-affiliation.ts";
 export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
 export {
@@ -339,6 +344,7 @@ export {
   type ProblemReportFaultRecord,
   type ProblemReportRouteOptions,
 } from "./support-problem-report.ts";
+export { createProblemReportsRouteFor } from "./problem-report/index.ts";
 export {
   createWebAuthnRoutes,
   createWebAuthnRoutesFor,

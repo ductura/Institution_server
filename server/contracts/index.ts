@@ -22,6 +22,7 @@ import {
   METHOD_NOT_ALLOWED,
   platformRoutes,
   profileRoutes,
+  staffAffiliationRoutes,
   projectionRoutes,
   publicVerificationPost,
   publicVerificationRoutes,
@@ -33,12 +34,14 @@ import {
   sourceLookupPost,
   studentRoutes,
   studentSourcesRoutes,
+  sourceNotebookRoutes,
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
   merlinRosterRoutes,
   merlinPackageRoutes,
   supportRoutes,
+  problemReportsPost,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
   TOO_MANY_REQUESTS,
@@ -60,6 +63,7 @@ export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 export {
@@ -86,6 +90,8 @@ export {
   mentorNotesPost,
 } from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
+export { STAFF_AFFILIATION_SOURCES } from "./routes/index.ts";
+export { ProblemReportInput, problemReportsPost } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
@@ -120,9 +126,11 @@ export const ROUTES: readonly RouteContract[] = [
   ...authRoutes,
   ...webauthnRoutes,
   ...profileRoutes,
+  ...staffAffiliationRoutes,
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
+  ...sourceNotebookRoutes,
   ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
@@ -132,6 +140,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,
   ...supportRoutes,
+  problemReportsPost,
   ...projectionRoutes,
   ...collaborationRoutes,
   ...consultationSlotRoutes,

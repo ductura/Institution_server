@@ -147,6 +147,15 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+// SRV-1403: the caller's own staff affiliation (identity.my_staff_affiliation).
+export {
+  createMyStaffAffiliationReader,
+  STAFF_AFFILIATION_MISSING_CODE,
+  STAFF_AFFILIATION_SOURCE_NAMES,
+  type MyStaffAffiliation,
+  type MyStaffAffiliationReader,
+  type MyStaffAffiliationResult,
+} from "./staff-affiliation.ts";
 export {
   createSchemaReadinessReader,
   MIGRATION_LOCK_KEY,
@@ -280,6 +289,7 @@ export {
   type WorkSourceSave,
   type WorkSources,
 } from "./work-sources/index.ts";
+export { createSourceNotebook, type SourceNoteFields } from "./source-notebook/index.ts";
 export {
   createSourceProofs,
   isSourceProofJpeg,
