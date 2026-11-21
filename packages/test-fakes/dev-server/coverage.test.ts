@@ -402,6 +402,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.assignment.get": { request: { path: A, as: "nastavnik" } },
+  "teacher.assignment-grade.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/grade`, as: "nastavnik" },
+  },
   "institution.enrollment-code-state.get": {
     request: {
       path: `${C}/enrollment-code/state`,

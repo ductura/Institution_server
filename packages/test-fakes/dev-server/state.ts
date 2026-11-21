@@ -80,6 +80,7 @@ export type AssignmentContent = {
   groupIds?: string[];
   externalToolsAllowed?: boolean;
   aiSummaryOnly?: boolean;
+  isPractice?: boolean;
 };
 
 export type Assignment = {

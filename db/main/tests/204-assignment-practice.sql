@@ -2,7 +2,7 @@
 BEGIN;
 \ir fixtures/institution.inc
 SET LOCAL lc_messages TO 'C';
-SELECT plan(12);
+SELECT plan(14);
 
 SELECT is(pg_temp.ask('vesna', $$ SELECT is_practice::text FROM institution.assignment WHERE id = {z1} $$),
   'false', 'assignments inserted without the flag remain regular');
@@ -22,6 +22,8 @@ SELECT is(pg_temp.create_practice(true), (SELECT val FROM ref WHERE name = 'prac
 SELECT is(pg_temp.create_practice(false), 'ZD409: conflict', 'a changed flag cannot reuse the key');
 SELECT is(pg_temp.ask('vesna', $$ SELECT is_practice::text FROM institution.assignment WHERE id = {practice} $$),
   'true', 'the flag is stored');
+SELECT is(pg_temp.ask('ana', $$ SELECT institution.actor_assignment_role({practice}) $$),
+  'student', 'practice remains visible to an enrolled student');
 SELECT throws_ok($$ UPDATE institution.assignment SET is_practice = false WHERE id = pg_temp.id('practice') $$,
   'ZD409', 'practice status is immutable', 'the assignment cannot become regular');
 
@@ -36,6 +38,8 @@ SELECT is(pg_temp.ask('anon', $$ SELECT institution.assignment_grade_state({prac
 
 SELECT is(pg_temp.ask('vesna', $$ SELECT state FROM institution.request_merlin_package({practice}, 'kljuc-probni') $$),
   'ZD403: forbidden', 'the Merlin package RPC rejects practice assignments');
+SELECT is((SELECT count(*) FROM institution.merlin_package WHERE assignment_id = pg_temp.id('practice')),
+  0::bigint, 'a refused request creates no package');
 SELECT is(pg_temp.ask('vesna', $$ SELECT state FROM institution.request_merlin_package({z1}, 'kljuc-redovni') $$),
   'queued', 'the Merlin package RPC still accepts a regular assignment');
 
