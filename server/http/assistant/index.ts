@@ -14,16 +14,32 @@
 // handed in, never from the request, and nothing is retried with another
 // provider (P7). Every answer is a code of the closed set "Ishodi".
 //
-// The port input carries only the five fields of buildPortInput: no student,
+// SRV-1207 (M9.0-S3): step 5 of Ductus docs/contracts/ai-tools-v1.md, the
+// tool loop with this route as its real caller. Before begin_request the
+// route reads what the faculty setting permits for the session's institution
+// (config/faculties: CODE_TOOLS ∩ switch ∩ ready, OC-1, OC-2; for the pilot
+// always nothing) and hands it in; the database narrows it with the teacher's
+// setting and the policy and reserves the loop. After mark_sent the loop of
+// server/external/assistant-tools drives the port, begin_tool_step,
+// finish_tool_step and the search guard. tool_step_limit, response_too_large
+// and request_revoked are kept as the reason of provider_failed; the answer
+// stays provider_failed, since a new code in the closed set of the route's
+// contract would break its clients (contracts:breaking).
+//
+// The port input carries only the six fields of buildPortInput: no student,
 // work, institution, assignment, conversation or request id, and no other text
 // of the work (G8, G9, S3). The production composition has no adapter and no
 // configuration, so the route answers ai_disabled before the database (P1,
 // Q-10); the synthetic adapter exists only in the test composition.
+import { resolve } from "node:path";
+
 import { Value } from "@sinclair/typebox/value";
 
 import { ROUTES } from "../../contracts/index.ts";
 import {
+  createActorReader,
   createAssistantRequests,
+  createAssistantTools,
   createStudentNoticeReader,
   STUDENT_NOTICE_NOT_FOUND,
   STUDENT_NOTICE_UNAUTHENTICATED,
@@ -31,6 +47,7 @@ import {
   type AssistantRejectReason,
   type AssistantRequests,
   type AssistantRequestState,
+  type AssistantTools,
   type WithActor,
 } from "../../database/index.ts";
 import {
@@ -47,6 +64,16 @@ import {
   type AssistantRequest,
   type PurposeCatalogVersion,
 } from "../../external/assistant/index.ts";
+import {
+  createSearchGuard,
+  NO_TRANSPORT,
+  readFacultyAiSettings,
+  runToolLoop,
+  type FacultyAiSettings,
+  type SearchGuard,
+  type ToolLoopResult,
+  type ToolName,
+} from "../../external/assistant-tools/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
 
 import {
@@ -68,8 +95,6 @@ export {
 } from "./config.ts";
 
 const BODY_TIMEOUT_MS = 5_000;
-/** The longest answer the port may give, in code points; the server's choice. */
-export const MAX_RESPONSE_CODE_POINTS = 8_000;
 /** How long the route waits for the port before the outcome is unknown. */
 export const PORT_TIMEOUT_MS = 60_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
@@ -89,10 +114,23 @@ export type AssistantProvider = {
   readonly port: AssistantPort;
 };
 
+/** The tools side of the route (ai-tools-v1). */
+export type AssistantRouteTools = {
+  readonly db: AssistantTools;
+  /** The faculty setting, read once at composition (OC-1). */
+  readonly settings: FacultyAiSettings;
+  /** The slug of the session's institution, or null. */
+  readonly institutionOf: (token: string) => Promise<string | null>;
+  /** The guard of an institution: its destinations (empty in the pilot) and the transport. */
+  readonly guardFor: (institutionSlug: string | null) => SearchGuard;
+};
+
 export type AssistantRouteDeps = {
   readonly requests: AssistantRequests;
   readonly rules: AssignmentRulesReader;
   readonly provider: AssistantProvider | null;
+  /** Absent: no tool is ever permitted and every tool request ends the loop. */
+  readonly tools?: AssistantRouteTools | null;
   readonly portTimeoutMs?: number;
 };
 
@@ -136,9 +174,18 @@ function failureOf(refusal: AssistantRefusal): Failure {
   return { failure: "unavailable" };
 }
 
+/** The answer for a reason: the three codes of ai-tools-v1 answer provider_failed. */
+function answerReason(reason: AssistantRejectReason): Outcome {
+  return reason === "tool_step_limit" ||
+    reason === "response_too_large" ||
+    reason === "request_revoked"
+    ? "provider_failed"
+    : reason;
+}
+
 /** The outcome of a request found in a state the route does not drive further. */
 function settledOutcome(state: AssistantRequestState, reason: AssistantRejectReason | null) {
-  if (state === "rejected") return reason === null ? null : reason;
+  if (state === "rejected") return reason === null ? null : answerReason(reason);
   if (state === "sent") return "in_progress";
   if (state === "outcome_unknown" || state === "settled") return "request_outcome_unknown";
   if (state === "provider_failed") return "provider_failed";
@@ -183,6 +230,12 @@ async function run(
 ): Promise<Answer | Failure> {
   const { requests } = deps;
   const { config, port } = provider;
+  // What the faculty setting permits for the session's institution (OC-1,
+  // OC-2): the pilot permits nothing, so no loop is ever reserved.
+  const tools = deps.tools ?? null;
+  const slug = tools === null ? null : await tools.institutionOf(token);
+  const offeredTools: readonly ToolName[] =
+    tools === null ? [] : tools.settings.permittedTools(slug);
   const begun = await requests.begin(token, {
     idempotencyKey: request.idempotencyKey,
     assignmentId: request.assignmentId,
@@ -193,6 +246,7 @@ async function run(
     providerId: config.provider.providerId,
     modelId: config.provider.modelId,
     configVersion: config.configVersion,
+    offeredTools,
   });
   if (begun.status !== "ok") {
     if (begun.status === "forbidden" || begun.status === "idempotency_conflict") {
@@ -242,7 +296,7 @@ async function run(
     return failureOf(sent);
   }
   if (sent.state === "rejected") {
-    return { outcome: sent.reason === null ? "forbidden" : sent.reason, ...ids };
+    return { outcome: sent.reason === null ? "forbidden" : answerReason(sent.reason), ...ids };
   }
   if (composed === null || !composed.ok) {
     // The database let it through where the rules in code did not: never call
@@ -251,31 +305,58 @@ async function run(
     return { outcome: "request_outcome_unknown", ...ids };
   }
 
-  // Only now, after the commit of sent, the one call of the one provider (R2, P7).
-  const outcome = await callPort(
-    port,
-    buildPortInput({
+  // Only now, after the commit of sent, the calls of the one provider (R2,
+  // P7): one call, or the tool loop when the request has one (ai-tools-v1).
+  const result = await runToolLoop(
+    {
+      callPort: (input) => callPort(port, input, deps.portTimeoutMs ?? PORT_TIMEOUT_MS),
+      beginStep: async (step) => {
+        if (tools === null) return { status: "refused" };
+        const begunStep = await tools.db.beginToolStep(token, {
+          requestId,
+          ...step,
+          offeredTools: tools.settings.permittedTools(slug),
+        });
+        return begunStep.status === "ok" ? begunStep : { status: "refused" };
+      },
+      finishStep: async (finish) => {
+        if (tools === null) return false;
+        return (await tools.db.finishToolStep(token, { requestId, ...finish })).status === "ok";
+      },
+      guard:
+        tools === null
+          ? createSearchGuard({ destinations: [], transport: NO_TRANSPORT })
+          : tools.guardFor(slug),
+    },
+    {
       instructions: composed.instructions,
+      history: [],
       paragraph: request.paragraph,
       purposeKey: request.purposeKey,
       modelId: config.provider.modelId,
-      maxResponseCodePoints: MAX_RESPONSE_CODE_POINTS,
-    }),
-    deps.portTimeoutMs ?? PORT_TIMEOUT_MS,
+      tools: begun.tools.filter((name): name is ToolName => name === "web_search"),
+    },
   );
+  return settle(requests, token, requestId, conversationId, result, ids);
+}
 
-  if (outcome.kind === "success") {
-    const checked = checkResponse(outcome.text);
-    if (!checked.ok || checked.text.trim() === "") {
-      return finishFailed(requests, token, requestId, outcome.actualMicro, ids);
-    }
-    const done = await requests.complete(token, requestId, checked.text, outcome.actualMicro);
+/** The end of a request from the result of its calls. */
+async function settle(
+  requests: AssistantRequests,
+  token: string,
+  requestId: string,
+  conversationId: string,
+  result: ToolLoopResult,
+  ids: { readonly requestId: string; readonly conversationId: string | null },
+): Promise<Answer | Failure> {
+  if (result.kind === "success") {
+    const done = await requests.complete(token, requestId, result.text, result.totalMicro);
     if (done.status === "ok" && done.accepted && done.responseId !== null) {
       return {
         outcome: "completed",
         requestId,
         conversationId,
-        response: { id: done.responseId, text: checked.text },
+        response: { id: done.responseId, text: result.text },
       };
     }
     if (done.status === "ok") return { outcome: "request_outcome_unknown", ...ids };
@@ -283,11 +364,16 @@ async function run(
     await requests.markOutcomeUnknown(token, requestId);
     return { outcome: "request_outcome_unknown", ...ids };
   }
-  if (outcome.kind === "provider_error") {
-    return finishFailed(requests, token, requestId, outcome.actualMicro ?? null, ids);
+  if (result.kind === "provider_error") {
+    return finishFailed(requests, token, requestId, result.totalMicro, ids);
   }
-  // Timeout or abort after sending: the cost stays reserved until the worker
-  // settles it; a later answer is dropped (R7).
+  if (result.kind !== "unknown") {
+    // tool_step_limit, response_too_large or request_revoked: settled at the
+    // sum of the calls made, the reason kept on the request.
+    return finishFailed(requests, token, requestId, result.totalMicro, ids, result.kind);
+  }
+  // Timeout, abort or a refused step: the cost stays reserved until the
+  // worker settles it; a later answer is dropped (R7).
   await requests.markOutcomeUnknown(token, requestId);
   return { outcome: "request_outcome_unknown", ...ids };
 }
@@ -298,8 +384,13 @@ async function finishFailed(
   requestId: string,
   actualMicro: bigint | null,
   ids: { readonly requestId: string; readonly conversationId: string | null },
+  reason:
+    | "tool_step_limit"
+    | "response_too_large"
+    | "request_revoked"
+    | "provider_failed" = "provider_failed",
 ): Promise<Answer | Failure> {
-  const failed = await requests.fail(token, requestId, actualMicro);
+  const failed = await requests.fail(token, requestId, actualMicro, reason);
   if (failed.status === "ok") {
     return { outcome: failed.accepted ? "provider_failed" : "request_outcome_unknown", ...ids };
   }
@@ -442,5 +533,32 @@ export function createAssistantRoutesFor(main: { withActor: WithActor }): Route[
     requests: createAssistantRequests(main.withActor),
     rules: assignmentRulesFrom(main.withActor),
     provider: null,
+    tools: assistantRouteToolsFor(
+      main.withActor,
+      readFacultyAiSettings(resolve("config/faculties")),
+    ),
   });
+}
+
+/**
+ * The tools side over main's withActor and a faculty setting: the institution
+ * from the session, the guard with the institution's destinations and no
+ * transport (OC-2: there is no real fetch; the pilot's lists are empty).
+ */
+export function assistantRouteToolsFor(
+  withActor: WithActor,
+  settings: FacultyAiSettings,
+): AssistantRouteTools {
+  const actors = createActorReader(withActor);
+  return {
+    db: createAssistantTools(withActor),
+    settings,
+    institutionOf: async (token) =>
+      (await actors.currentActorWithInstitution(token)).institutionSlug,
+    guardFor: (slug) =>
+      createSearchGuard({
+        destinations: settings.searchDestinations(slug),
+        transport: NO_TRANSPORT,
+      }),
+  };
 }

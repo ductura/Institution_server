@@ -222,6 +222,7 @@ export type Mentorship = {
   readonly studentId: string;
   readonly assignmentId: string;
   readonly title: string;
+  readonly dueAt: string;
   readonly workType: "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis";
   documentId: string | null;
 };
@@ -440,7 +441,8 @@ export function createState(receiptSigner = createReceiptSigner()): State {
           aiPolicy: "partially_allowed",
           aiPurposes: ["proofreading", "literature_search"],
           evidenceProfile: "basic",
-          importAllowed: false,
+          // SRV-1803: the demo assignment allows import, so the local import can be tried.
+          importAllowed: true,
           wordMin: 1500,
           wordMax: 2500,
         },
@@ -487,6 +489,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
         studentId: IDS.student,
         assignmentId: IDS.thesis,
         title: "Završni rad: zelene površine u izmišljenom gradu",
+        dueAt: "2027-05-01T12:00:00.000Z",
         workType: "bachelor_thesis",
         documentId: null,
       },

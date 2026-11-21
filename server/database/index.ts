@@ -612,6 +612,7 @@ export {
   ASSISTANT_REQUEST_STATES,
   createAssistantRequests,
   sweepAndSettle,
+  type AssistantFailReason,
   type AssistantMessage,
   type AssistantRefusal,
   type AssistantRejectReason,
@@ -622,6 +623,7 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+export * from "./assistant-tools/index.ts";
 export { SWEEP_DUE_MAX, sweepDue, type SweepDue } from "./assistant/index.ts";
 
 export {
@@ -645,5 +647,15 @@ export {
   type DirectEditState,
   type TeacherEditOutcome,
 } from "./direct-edit/index.ts";
+export {
+  createImports,
+  type ImportConfirmed,
+  type ImportConfirmRejection,
+  type ImportGate,
+  type ImportPrepared,
+  type ImportRefusal,
+  type Imports,
+  type PrepareImportInput,
+} from "./import/index.ts";
 export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";

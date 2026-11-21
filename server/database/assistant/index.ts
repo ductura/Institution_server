@@ -2,6 +2,7 @@ export {
   ASSISTANT_REQUEST_STATES,
   createAssistantRequests,
   sweepAndSettle,
+  type AssistantFailReason,
   type AssistantMessage,
   type AssistantRefusal,
   type AssistantRejectReason,

@@ -1,5 +1,5 @@
 // The port of copying an assignment (SRV-1904, P-D4; migration
-// 20261201190400): the teacher of an assignment copies it into a course they
+// 20261202190400): the teacher of an assignment copies it into a course they
 // teach. The copy is a new assignment at version 1 with the content of the
 // source's current version; the write goes through the RPC only, and the
 // author and institution come only from the session.

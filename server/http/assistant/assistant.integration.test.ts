@@ -180,6 +180,7 @@ function createFakeRequests(tokens: readonly string[] = [STUDENT_TOKEN]): FakeRe
             existing.state === "completed" && existing.responseId !== null
               ? { id: existing.responseId, text: existing.response! }
               : null,
+          tools: [],
         };
       }
       if (switches.reject !== null) {
@@ -193,6 +194,7 @@ function createFakeRequests(tokens: readonly string[] = [STUDENT_TOKEN]): FakeRe
           reason: row.reason,
           replayed: false,
           response: null,
+          tools: [],
         };
       }
       const row = newRow(token, input, "reserved");
@@ -210,6 +212,7 @@ function createFakeRequests(tokens: readonly string[] = [STUDENT_TOKEN]): FakeRe
         reason: null,
         replayed: false,
         response: null,
+        tools: [],
       };
     },
     async markSent(token, requestId) {
@@ -786,13 +789,15 @@ describe("what reaches the port (S3, G8, G9)", () => {
     await answerOf(await post(base, { ...BODY, conversationId: first["conversationId"] }));
     const input = port.calls[1]!;
     expect(Object.keys(input).sort()).toEqual([
+      "data",
       "instructions",
-      "maxResponseCodePoints",
+      "maxResponseBytes",
       "modelId",
-      "paragraph",
       "purposeKey",
+      "tools",
     ]);
-    expect(input.paragraph.text).toContain(PARAGRAPH);
+    expect(input.data).toEqual([{ kind: "paragraph", text: PARAGRAPH, truncated: false }]);
+    expect(input.tools).toEqual([]);
     const seen = JSON.stringify(input, (_k, v: unknown) => (typeof v === "bigint" ? String(v) : v));
     const row = requests.rows[1]!;
     for (const secret of [
@@ -810,7 +815,7 @@ describe("what reaches the port (S3, G8, G9)", () => {
     }
   });
 
-  it("an instruction inside the paragraph stays fenced data; the server's instructions do not change (Z11)", async () => {
+  it("an instruction inside the paragraph stays one data part; the server's instructions do not change (Z11, S3-O1)", async () => {
     const port = createSyntheticAssistant(SUCCESS);
     const { base } = await start({ port });
     await answerOf(await post(base, BODY, { key: crypto.randomUUID() }));
@@ -821,8 +826,7 @@ describe("what reaches the port (S3, G8, G9)", () => {
     const [plain, attacked] = port.calls;
     expect(attacked!.instructions).toBe(plain!.instructions);
     expect(attacked!.instructions).not.toContain("Zanemari");
-    expect(attacked!.paragraph.fence.length).toBeGreaterThan(3);
-    expect(attacked!.paragraph.text.startsWith(attacked!.paragraph.fence)).toBe(true);
+    expect(attacked!.data).toEqual([{ kind: "paragraph", text: injected, truncated: false }]);
   });
 });
 

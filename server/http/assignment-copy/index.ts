@@ -2,7 +2,7 @@
 // (teacher.assignment-copy.post), SRV-1904 (P-D4): the teacher of an
 // assignment copies it into a course they teach. The HTTP edge only; the rules
 // are the database's (server/database/assignment-copy, migration
-// 20261201190400). The origin layer checks the POST before it gets here. A
+// 20261202190400). The origin layer checks the POST before it gets here. A
 // malformed, refused or unknown id is the same 404 (C-23); a body the contract
 // does not accept is 422; an answer outside the contract, or a throw, is 503
 // and the throw is reported, never a partial answer.

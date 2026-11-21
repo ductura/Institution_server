@@ -1,0 +1,10 @@
+{
+  "format": "ductura-faculty-ai-v1",
+  "version": 1,
+  "faculty": "fpzg",
+  "aiSwitch": {
+    "transcription": false,
+    "tools": false
+  },
+  "searchDestinations": []
+}

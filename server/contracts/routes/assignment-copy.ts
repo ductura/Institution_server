@@ -8,7 +8,7 @@ import { MUTATION_GUARD } from "./shared.ts";
 // of an assignment copies it into a course they teach. The copy is a new
 // assignment at version 1 with the content of the source's current version;
 // the source is not changed, and no submission and no row about a student is
-// copied. Database: institution.copy_assignment (20261201190400).
+// copied. Database: institution.copy_assignment (20261202190400).
 
 /** Lowercase UUID. */
 const LowerUuid = Type.String({

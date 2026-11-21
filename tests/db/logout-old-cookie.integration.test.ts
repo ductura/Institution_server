@@ -21,6 +21,7 @@ import {
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
@@ -37,6 +38,7 @@ import {
   createWorkMessagesRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
+  createImportRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
   createWorkPdfRouteFor,
@@ -150,6 +152,7 @@ const WORK_SOURCE = {
 const SOURCE_NOTES = `/api/v1/works/doc-izmisljeni-rad/sources/${WORK_SOURCE.id}/notes`;
 const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 
+const IMPORT_ID = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -281,6 +284,17 @@ const SESSION_ROUTES = {
     body: () => ({ mode: "direct" }),
     live: 404,
   },
+  // SRV-1803: a work it may not import into is 404; an import of it is not found.
+  "work.imports.post": {
+    path: `/api/v1/works/${randomUUID()}/imports`,
+    body: () => ({ fileBase64: "UEsDBA==", fileName: null }),
+    live: 404,
+  },
+  "work.imports.confirm.post": {
+    path: `/api/v1/works/${randomUUID()}/imports/${IMPORT_ID}/confirm`,
+    body: () => ({ importId: IMPORT_ID, manifestSha256: "0".repeat(64) }),
+    live: 404,
+  },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
   "submission.submit.post": {
     path: "/api/v1/submission",
@@ -347,6 +361,12 @@ const SESSION_ROUTES = {
     path: `/api/v1/works/${randomUUID()}/consultation-slots/${randomUUID()}`,
     body: () => ({ action: "confirm" }),
     live: 403,
+  },
+  "mentorship.key-dates.get": {
+    method: "GET",
+    path: `/api/v1/mentorships/${randomUUID()}/key-dates`,
+    body: () => undefined,
+    live: 404,
   },
   // SRV-1407: a request, or a teacher, the account has no relation to is 404.
   "mentorship.requests.post": {
@@ -1016,6 +1036,7 @@ const FACTORIES = [
   "createNotificationsRoutesFor",
   "createCommentRoutesFor",
   "createDirectEditRoutesFor",
+  "createImportRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
@@ -1028,6 +1049,7 @@ const FACTORIES = [
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
+  "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
@@ -1097,6 +1119,7 @@ const MOUNTED = [
   ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
+  ...createImportRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
@@ -1109,6 +1132,7 @@ const MOUNTED = [
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
+  ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
