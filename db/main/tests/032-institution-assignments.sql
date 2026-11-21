@@ -311,6 +311,11 @@ ALTER TABLE assistant.cost_ledger DISABLE TRIGGER cost_ledger_no_truncate;
 ALTER TABLE declaration.statement DISABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment DISABLE TRIGGER attachment_no_truncate;
 ALTER TABLE declaration.conversation_attachment DISABLE TRIGGER conversation_attachment_no_truncate;
+-- SRV-1903: the withdrawal switch references the assignment; a withdrawal and
+-- its bound signature reference the submission. All three are append-only.
+ALTER TABLE institution.submission_withdrawal_setting DISABLE TRIGGER submission_withdrawal_setting_no_truncate;
+ALTER TABLE evidence.submission_withdrawal DISABLE TRIGGER evidence_submission_withdrawal_no_truncate;
+ALTER TABLE evidence.submission_withdrawal_receipt DISABLE TRIGGER evidence_submission_withdrawal_receipt_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
