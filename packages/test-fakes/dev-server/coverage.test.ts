@@ -647,6 +647,17 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "support.problem-report.post": {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
   },
+  "support.problem-reports.post": {
+    request: {
+      path: "/api/v1/problem-reports",
+      as: "student",
+      body: {
+        appVersion: REPORT.appVersion,
+        category: REPORT.category,
+        description: REPORT.description,
+      },
+    },
+  },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
   "work.milestones.get": {
     request: { path: `/api/v1/works/${IDS.document}/milestones`, as: "student" },

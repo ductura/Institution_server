@@ -21,6 +21,7 @@ import {
   createDownloadsManifestRoute,
   createWorkPdfRouteFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -258,6 +259,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createProblemReportRouteFor(databases.main)",
     ids: ["support.problem-report.post"],
     routes: () => [createProblemReportRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    call: "createProblemReportsRouteFor(databases.main)",
+    ids: ["support.problem-reports.post"],
+    routes: () => [createProblemReportsRouteFor(NO_ACTOR).contract.id],
   },
   {
     // DAN-852-5a: the three course routes over the main database.
@@ -620,6 +626,7 @@ describe("routes the entry point mounts itself", () => {
       "profile.interface-locale.post",
       "downloads.manifest.get",
       "support.problem-report.post",
+      "support.problem-reports.post",
       ...INSTITUTION_COURSE_ROUTES,
       "institution.course-assignments.post",
       "institution.assignment-versions.post",

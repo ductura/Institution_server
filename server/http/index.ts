@@ -327,6 +327,7 @@ export {
   type ProblemReportFaultRecord,
   type ProblemReportRouteOptions,
 } from "./support-problem-report.ts";
+export { createProblemReportsRouteFor } from "./problem-report/index.ts";
 export {
   createWebAuthnRoutes,
   createWebAuthnRoutesFor,

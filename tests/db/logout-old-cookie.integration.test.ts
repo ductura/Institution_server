@@ -54,6 +54,7 @@ import {
   createLayers,
   createMeRouteFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   createSourceLookupRouteFor,
@@ -576,6 +577,15 @@ const SESSION_ROUTES = {
     }),
     live: 201,
   },
+  "support.problem-reports.post": {
+    path: "/api/v1/problem-reports",
+    body: () => ({
+      appVersion: "1.4.0",
+      category: "technical",
+      description: "Izmišljeni problem s unosom.",
+    }),
+    live: 201,
+  },
   // DAN-852-5a: the course routes. The accounts here hold no teacher role and
   // no course, so a live session is 403 forbidden from each RPC and writes nothing.
   "institution.courses.post": {
@@ -928,6 +938,7 @@ const FACTORIES = [
   "createSettingsReadRoutes",
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
+  "createProblemReportsRouteFor",
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
@@ -998,6 +1009,7 @@ const MOUNTED = [
   ...createSettingsReadRoutes(databases.main),
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
+  createProblemReportsRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
@@ -1253,7 +1265,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     await expectSignedOut(await post("/api/v1/auth/logout", token));
     expect(await sessionEnd(token)).toMatchObject({ reason: "logout" });
     expect(await savedLocale(token)).toEqual(["en"]);
-    expect(await storedReports(token)).toBe(1);
+    expect(await storedReports(token)).toBe(2);
     for (const id of SESSION_IDS) {
       const answer = await call(
         id,
@@ -1269,6 +1281,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("settings.") ||
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
+        id === "support.problem-reports.post" ||
         id === "sources.lookup.post" ||
         id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
@@ -1290,8 +1303,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       expect(Value.Check(spec?.body as never, body)).toBe(true);
     }
     expect(await savedLocale(token)).toEqual(["en"]);
-    // The old cookie's report reached no row: still only the live one.
-    expect(await storedReports(token)).toBe(1);
+    // Only the two reports submitted with the live session were written.
+    expect(await storedReports(token)).toBe(2);
   });
 
   it("the interface language: POST en, then GET en for the same session; another gets null", async () => {
