@@ -22,3 +22,6 @@ compose.yaml text eol=lf
 # tests hash and parse their raw bytes, so a CRLF checkout would change them.
 # server/domain/index.test.ts checks the attributes and bytes.
 server/domain/forensics/golden-vectors/** text eol=lf
+# The declaration form fixture (SRV-1210): formSha256 is the hash of its raw
+# bytes without the one trailing LF, so a CRLF checkout would change it.
+server/domain/declaration/testdata/** text eol=lf
