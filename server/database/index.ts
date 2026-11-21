@@ -335,6 +335,16 @@ export {
   type DeadlineExtensions,
 } from "./deadline-extensions/index.ts";
 export {
+  createEventDisputes,
+  EVENT_DISPUTE_KINDS,
+  type EventDispute,
+  type EventDisputeAdd,
+  type EventDisputeInput,
+  type EventDisputeKind,
+  type EventDisputeList,
+  type EventDisputes,
+} from "./event-disputes/index.ts";
+export {
   createSubmissionWithdrawals,
   type StoredWithdrawalReceipt,
   type SubmissionHistoryEvent,
