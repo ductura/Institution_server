@@ -89,7 +89,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "documentId": string; "clientTransactionId": string; "baseRevision": number; "segments": (string)[]; "document": string };
-    success: { status: 200; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "signed"; "signedReceipt": { "payload": { "receiptSchema": "ductus-evidence-receipt-v2"; "receiptId": string; "evidencePackageId": string; "documentId": string; "sessionId": string; "segmentId": string; "segmentHash": string; "predecessorSegmentHash": string | null; "previousReceiptId": string | null; "evidenceSchema": "ductus-evidence-segment-v2" | "ductus-evidence-segment-v3"; "evidenceProfileId": string; "sequenceFrom": number; "sequenceTo": number; "eventCount": number; "payloadBytes": number; "acceptedAt": string; "revision": number; "clientTransactionId": string; "evidenceDomainId": string; "principalId": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } } }; headers: {  } } | { status: 202; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "pending_signature" } }; headers: { "retry-after"?: string } };
+    success: { status: 200; body: { "status": "committed" | "duplicate"; "duplicate"?: true; "revision": number; "receipt": { "status": "signed"; "signedReceipt": { "payload": { "receiptSchema": "ductus-evidence-receipt-v2"; "receiptId": string; "evidencePackageId": string; "documentId": string; "sessionId": string; "segmentId": string; "segmentHash": string; "predecessorSegmentHash": string | null; "previousReceiptId": string | null; "evidenceSchema": "ductus-evidence-segment-v2" | "ductus-evidence-segment-v3"; "evidenceProfileId": string; "sequenceFrom": number; "sequenceTo": number; "eventCount": number; "payloadBytes": number; "acceptedAt": string; "revision": number; "clientTransactionId": string; "evidenceDomainId": string; "principalId": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } } }; headers: {  } } | { status: 202; body: { "status": "committed" | "duplicate"; "duplicate"?: true; "revision": number; "receipt": { "status": "pending_signature" } }; headers: { "retry-after"?: string } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "stale_base" | "chain_conflict" | "not_continuous" | "txid_reused" | "document_mismatch" | "unavailable";
   };
   "evidence.open.post": {
@@ -393,6 +393,27 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "completed"; "requestId": string; "conversationId": string; "response": { "id": string; "text": string } } | { "outcome": "idempotency_conflict" | "forbidden" | "ai_disabled" | "purpose_not_allowed" | "budget_exceeded" | "in_progress" | "request_outcome_unknown" | "provider_failed"; "requestId": string | null; "conversationId": string | null }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "precondition_required" | "invalid_input" | "unavailable";
   };
+  "student.declaration-attachments.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable";
+  };
+  "student.declaration.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "none" | "draft" | "confirmed" | "stale" | "bound"; "submitted": boolean; "currentRevision": number | null; "version": number; "formText": string | null; "currentForm": { "formId": string; "formVersion": number; "formSha256": string; "text": string } | null; "draft": { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used" | null; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string })[]; "externalAttachmentIds": (string)[] }; "confirm": boolean } | null; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string } | null; "declarationSha256": string | null; "uploads": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "student.declaration.put": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; [key: string]: unknown }; "ai": { "use": "used" | "not_used" | null; [key: string]: unknown }; "confirm": boolean };
+    success: { status: 200; body: { "state": "none" | "draft" | "confirmed" | "stale" | "bound"; "submitted": boolean; "currentRevision": number | null; "version": number; "formText": string | null; "currentForm": { "formId": string; "formVersion": number; "formSha256": string; "text": string } | null; "draft": { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used" | null; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string })[]; "externalAttachmentIds": (string)[] }; "confirm": boolean } | null; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string } | null; "declarationSha256": string | null; "uploads": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable" | "invalid_json" | "unsupported_media_type";
+  };
   "student.enrollments.post": {
     params: undefined;
     query: undefined;
@@ -525,6 +546,27 @@ export type Operations = {
     body: { "assignmentIds": (string)[] };
     success: { status: 200; body: { "assignments": ({ "assignmentId": string; "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] })[] }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "unauthorized" | "unsupported_media_type" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "teacher.comment-bank.delete": {
+    params: { "entryId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.comment-bank.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "entries": ({ "id": string; "kind": "must" | "sugg" | "q" | "praise"; "text": string; "createdAt": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "unavailable";
+  };
+  "teacher.comment-bank.post": {
+    params: undefined;
+    query: undefined;
+    body: { "text": string; "kind": "must" | "sugg" | "q" | "praise" };
+    success: { status: 201; body: { "id": string; "createdAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "teacher.course-students.get": {
     params: { "courseId": string };
@@ -673,6 +715,41 @@ export type Operations = {
     success: { status: 200; body: { "attachmentId": string; "attachmentSha256": string; "mediaType": "image/png" | "image/jpeg"; "byteSize": number; "pixelWidth": number | null; "pixelHeight": number | null; "created": boolean }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
   };
+  "work.changes-since-review.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "reviewedRevision": number | null; "currentRevision": number; "changed": boolean; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "text": string; "change": "unchanged" | "removed" | "added" } | { "kind": "heading"; "level": number; "text": string; "change": "unchanged" | "removed" | "added" })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.comment-draft.delete": {
+    params: { "commentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.comment-drafts.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "drafts": ({ "threadId": string; "commentId": string; "position": number; "text": string; "anchor": { [key: string]: unknown } | null; "state": "open" | "answered" | "resolved"; "createdWindow": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.comment-drafts.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "text": string; "anchor": { "nodeId": string; "quote": string; "prefix": string; "suffix": string; "startHint": number; "endHint": number } } | { "threadId": string; "text": string };
+    success: { status: 201; body: { "threadId": string } | { "commentId": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "conflict" | "unavailable";
+  };
+  "work.comments.publish.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "published": number }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
   "work.consultation-additions.post": {
     params: { "documentId": string; "recordId": string };
     query: undefined;
@@ -756,6 +833,13 @@ export type Operations = {
     body: { "dueAt": string };
     success: { status: 200; body: { "id": string; "title": string; "description": string; "dueAt": string | null; "state": "open" | "submitted" | "approved" | "returned" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "invalid_json" | "forbidden" | "conflict" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.review.post": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
   };
   "work.versions.get": {
     params: { "documentId": string };

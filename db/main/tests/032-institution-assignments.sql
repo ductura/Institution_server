@@ -286,6 +286,8 @@ ALTER TABLE evidence.submission DISABLE TRIGGER evidence_submission_no_truncate;
 ALTER TABLE evidence.submission_receipt_issuance DISABLE TRIGGER submission_receipt_issuance_no_truncate;
 ALTER TABLE evidence.submission_receipt DISABLE TRIGGER submission_receipt_no_truncate;
 ALTER TABLE evidence.document_checkpoint DISABLE TRIGGER evidence_checkpoint_no_truncate;
+-- A reconstruction checkpoint (SRV-1503) references the package and is append-only.
+ALTER TABLE evidence.reconstruction_checkpoint DISABLE TRIGGER reconstruction_checkpoint_no_truncate;
 -- The access log (080) references the assignment too and is append-only.
 ALTER TABLE audit.access_log DISABLE TRIGGER access_log_no_truncate;
 -- The notice read mark (SRV-06) references the assignment and is append-only.
@@ -305,6 +307,9 @@ ALTER TABLE assistant.conversation DISABLE TRIGGER conversation_no_truncate;
 ALTER TABLE assistant.request DISABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.message DISABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.cost_ledger DISABLE TRIGGER cost_ledger_no_truncate;
+-- Declarations and their uploads reference evidence projects of the assignment.
+ALTER TABLE declaration.statement DISABLE TRIGGER statement_no_truncate;
+ALTER TABLE declaration.external_attachment DISABLE TRIGGER attachment_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
@@ -314,12 +319,15 @@ ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;
+ALTER TABLE declaration.statement ENABLE TRIGGER statement_no_truncate;
+ALTER TABLE declaration.external_attachment ENABLE TRIGGER attachment_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;
 ALTER TABLE audit.access_log ENABLE TRIGGER access_log_no_truncate;
 ALTER TABLE evidence.submission_receipt ENABLE TRIGGER submission_receipt_no_truncate;
 ALTER TABLE evidence.submission_receipt_issuance ENABLE TRIGGER submission_receipt_issuance_no_truncate;
+ALTER TABLE evidence.reconstruction_checkpoint ENABLE TRIGGER reconstruction_checkpoint_no_truncate;
 ALTER TABLE evidence.document_checkpoint ENABLE TRIGGER evidence_checkpoint_no_truncate;
 ALTER TABLE evidence.submission ENABLE TRIGGER evidence_submission_no_truncate;
 ALTER TABLE evidence.submission_request ENABLE TRIGGER evidence_submission_request_no_truncate;

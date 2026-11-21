@@ -124,7 +124,10 @@ describe("fake server over HTTP", () => {
     // work.milestones.patch (SRV-1103) five, teacher.working-criterion.put (SRV-1107) five.
     // student.assistant-request.post (SRV-1204) five.
     // work.direct-edit.put (SRV-1702) five.
-    expect(VECTORS.length - overHttp.length).toBe(249);
+    // Declaration save and upload have five framing vectors each.
+    // SRV-1703: work.comment-drafts.post, work.comment-draft.delete, work.comments.publish.post,
+    // teacher.comment-bank.post, teacher.comment-bank.delete and work.review.post five each.
+    expect(VECTORS.length - overHttp.length).toBe(289);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

@@ -6,6 +6,7 @@
 import {
   appOrigin,
   environmentProblems,
+  EXIT_CONFIGURATION,
   listenAddress,
   listenProblems,
   originProblems,
@@ -42,6 +43,7 @@ import {
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
+  createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -51,6 +53,7 @@ import {
   createProblemReportRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
+  createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createDirectEditRoutesFor,
   createConsultationRecordRoutesFor,
@@ -70,8 +73,12 @@ import {
   createMetricsSampling,
   createShutdownCoordinator,
   createHealthRoute,
+  createReadyRoute,
   installShutdown,
+  logStartupFailed,
+  logStartupRefused,
   parseTrustedProxies,
+  readinessCheckFor,
   routesOf,
   serverShutdownHooks,
   startServer,
@@ -141,8 +148,9 @@ const AREAS: readonly AreaWithRoutes[] = [
 
 async function main(): Promise<void> {
   if (problems.length > 0) {
-    for (const problem of problems) console.error(`startup refused: ${problem}`);
-    process.exitCode = 1;
+    // One structured line per problem (server/log), then EX_CONFIG (SRV-1812).
+    logStartupRefused(problems);
+    process.exitCode = EXIT_CONFIGURATION;
     return;
   }
   const { host, port } = listenAddress(process.env);
@@ -159,6 +167,13 @@ async function main(): Promise<void> {
     security: SECURITY,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
+      // Readiness (SRV-1812, M11.3): 503 until the main database answers and
+      // its migrations are done; storage and signing are reported. Draining
+      // answers 503 too, so a balancer stops sending before the listener closes.
+      createReadyRoute({
+        check: readinessCheckFor(databases.main, evidenceDeps),
+        draining: () => shutdown.state() !== "running",
+      }),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
@@ -197,6 +212,8 @@ async function main(): Promise<void> {
       createCollaborationCommentsRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
+      // SRV-1703: delayed comments (D-51), the comment bank (N-03) and the changes since the last review (N-05).
+      ...createCommentRoutesFor(databases.main, evidenceDeps),
       // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
       ...createDirectEditRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
@@ -243,6 +260,7 @@ async function main(): Promise<void> {
       ...createMerlinPackageRoutesFor(databases.main),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
       ...createAssistantRoutesFor(databases.main),
+      ...createStatementRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.
@@ -254,8 +272,7 @@ async function main(): Promise<void> {
   }).catch((error: unknown) => {
     // A system error has a code (EADDRINUSE, EACCES); anything else is a
     // programming error of the route table, whose message names no value.
-    const { code, message } = error as { code?: string; message?: string };
-    console.error(code === undefined ? `startup failed: ${message}` : `listen failed: ${code}`);
+    logStartupFailed(error);
     process.exitCode = 1;
     return undefined;
   });
