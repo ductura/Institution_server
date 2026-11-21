@@ -37,6 +37,10 @@ describe("the locales imports of the login page and receipt PDF", () => {
       [FLOW]: { specifier: "../../locales/index.ts", name: "messagesHr" },
       [RECEIPT]: { specifier: "../../locales/index.ts", name: "receiptPdfHr" },
       [MERLIN]: { specifier: "../../../locales/index.ts", name: "merlinHr" },
+      "server/http/work-export/index.ts": {
+        specifier: "../../../locales/index.ts",
+        name: "merlinHr",
+      },
     });
     expect(Object.isFrozen(LOCALE_IMPORT_ALLOWED)).toBe(true);
   });

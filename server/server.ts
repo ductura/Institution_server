@@ -21,6 +21,7 @@ import {
   createAuthRoutes,
   createClientContextRoute,
   createDownloadsManifestRoute,
+  createWorkPdfRouteFor,
   createDatabases,
   createEvidenceCommitRouteFor,
   createInstitutionCourseRoutesFor,
@@ -241,6 +242,7 @@ async function main(): Promise<void> {
       createWorkVersionsRouteFor(databases.main),
       // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
       createWorkExportRouteFor(databases.main),
+      createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
