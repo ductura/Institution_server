@@ -20,6 +20,7 @@ import {
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
@@ -356,6 +357,17 @@ const SESSION_ROUTES = {
   "mentorship.request-withdraw.post": {
     path: `/api/v1/mentorship-requests/${randomUUID()}/withdraw`,
     body: () => undefined,
+    live: 404,
+  },
+  "mentorship.notes.get": {
+    method: "GET",
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.notes.post": {
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => ({ body: "Izmisljena biljeska." }),
     live: 404,
   },
   "student.assignment-work.get": {
@@ -932,6 +944,7 @@ const FACTORIES = [
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
+  "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
@@ -1000,6 +1013,7 @@ const MOUNTED = [
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
+  ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),

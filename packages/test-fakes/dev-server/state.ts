@@ -271,6 +271,13 @@ export type State = {
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
   mentorshipRequests: MentorshipRequest[];
+  mentorNotes: {
+    id: string;
+    mentorshipId: string;
+    mentorId: string;
+    body: string;
+    createdAt: string;
+  }[];
   /** Openings of a work by a reader, newest last. */
   accessLog: AccessEntry[];
   /** Setting rows by "<level>:<course or ->:<owner>:<key>". */
@@ -463,6 +470,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     sourceProofCount: 0,
     enrollmentGuesses: new Map(),
     mentorshipRequests: [],
+    mentorNotes: [],
     mentorships: [
       {
         id: IDS.mentorship,
