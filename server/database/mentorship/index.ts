@@ -35,3 +35,6 @@ export function createMentorshipRequestStore(withActor: WithActor) {
       one<boolean>(token, WITHDRAW_SQL, [requestId], "done"),
   };
 }
+
+export { createStudentMentorshipReader } from "./student.ts";
+export type { MentorCandidateRow, StudentMentorshipRequestRow } from "./student.ts";

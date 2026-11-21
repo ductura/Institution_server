@@ -1,0 +1,149 @@
+{
+  "route": "mentorship.student-requests.get",
+  "vectors": [
+    {
+      "name": "own-requests",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "requests": [
+            {
+              "requestId": "00000000-0000-4000-8000-000000001421",
+              "teacherId": "00000000-0000-4000-8000-000000001414",
+              "teacherName": {
+                "givenName": "Vesna",
+                "familyName": "Izmišljena"
+              },
+              "workType": "master_thesis",
+              "requestedAt": "2027-02-03T10:00:00.000Z",
+              "state": "requested",
+              "endedAt": null,
+              "mentorshipId": null
+            },
+            {
+              "requestId": "00000000-0000-4000-8000-000000001422",
+              "teacherId": "00000000-0000-4000-8000-000000001415",
+              "teacherName": null,
+              "workType": "bachelor_thesis",
+              "requestedAt": "2027-01-20T09:30:00.000Z",
+              "state": "approved",
+              "endedAt": "2027-01-22T08:00:00.000Z",
+              "mentorshipId": "00000000-0000-4000-8000-000000001431"
+            },
+            {
+              "requestId": "00000000-0000-4000-8000-000000001423",
+              "teacherId": "00000000-0000-4000-8000-000000001414",
+              "teacherName": {
+                "givenName": "Vesna",
+                "familyName": "Izmišljena"
+              },
+              "workType": "bachelor_thesis",
+              "requestedAt": "2027-01-10T12:00:00.000Z",
+              "state": "declined",
+              "endedAt": "2027-01-12T12:00:00.000Z",
+              "mentorshipId": null
+            },
+            {
+              "requestId": "00000000-0000-4000-8000-000000001424",
+              "teacherId": "00000000-0000-4000-8000-000000001415",
+              "teacherName": null,
+              "workType": "bachelor_thesis",
+              "requestedAt": "2027-01-05T12:00:00.000Z",
+              "state": "withdrawn",
+              "endedAt": "2027-01-06T12:00:00.000Z",
+              "mentorshipId": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "no-requests",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "requests": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {},
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "name": "teacher-forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000000003"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000000004"
+        }
+      }
+    }
+  ]
+}
