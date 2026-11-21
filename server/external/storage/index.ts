@@ -39,3 +39,5 @@ export { InMemoryEvidencePayloadStore } from "./in-memory-evidence-payload-store
 // The replayer of edit steps v1 that a submission reconstructs with (SRV-18);
 // a test builds the hashes of its invented events with the same one.
 export { createEditStepsV1Replayer } from "./edit-steps-v1-replayer.ts";
+// SRV-1703: the comparison of a review reads records in document v3 too.
+export { createEditStepsV3Replayer } from "./edit-steps-v2-replayer.ts";
