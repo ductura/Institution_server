@@ -61,6 +61,7 @@ import {
   createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
@@ -331,6 +332,8 @@ async function main(): Promise<void> {
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),
+      // SRV-1406: the versioned rules of the institution, for its administrator.
+      ...createInstitutionConfigRoutesFor(databases.main),
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),

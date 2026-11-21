@@ -66,6 +66,12 @@ export {
   WITHDRAWAL_RECEIPT_SCHEMA,
 } from "./submissions.ts";
 export { AssignmentCopyInput, assignmentCopyRoutes } from "./assignment-copy.ts";
+export {
+  InstitutionConfigInput,
+  InstitutionConfigVersion,
+  InstitutionRules,
+  institutionConfigRoutes,
+} from "./institution-config.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { mentorshipStudentRoutes } from "./mentorship-student.ts";

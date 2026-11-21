@@ -140,6 +140,7 @@ describe("fake server over HTTP", () => {
     // SRV-1814: five framing vectors for the minimal problem report.
     // work.imports.post and work.imports.confirm.post (SRV-1803) five each.
     // teacher.assignment-copy.post (SRV-1904) five.
+    // institution.config-versions.post (SRV-1406) five.
     // SRV-1903: the student's withdrawal and the teacher's switch five each.
     // student-work.start.post (SRV-1412) five.
     expect(VECTORS.length - overHttp.length).toBe(389);
