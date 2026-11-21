@@ -43,6 +43,7 @@ import {
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createSourceLookupRouteFor,
@@ -54,6 +55,7 @@ import {
   createDeadlineExtensionRoutesFor,
   createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createAssignmentCopyRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -74,6 +76,7 @@ import {
   createWorkMessagesRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
+  createImportRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
@@ -245,6 +248,8 @@ async function main(): Promise<void> {
       ...createCommentRoutesFor(databases.main, evidenceDeps),
       // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
       ...createDirectEditRoutesFor(databases.main),
+      // SRV-1803: a DOCX import into a work and its idempotent confirmation.
+      ...createImportRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
@@ -269,6 +274,7 @@ async function main(): Promise<void> {
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
       ...createMentorshipRequestRoutesFor(databases.main),
+      ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
@@ -302,6 +308,8 @@ async function main(): Promise<void> {
       // SRV-1903: withdrawal of a submission, the history and the teacher's switch,
       // signed with the same signer as the submission receipt.
       ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
+      // SRV-1904 (P-D4): the teacher copies an assignment into a course they teach.
+      createAssignmentCopyRouteFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
       ...createMerlinRosterRoutesFor(databases.main).map((route) =>
         excludePracticeAssignment(route, databases.main),

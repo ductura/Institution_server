@@ -14,6 +14,7 @@ import { test } from "vitest";
 import {
   checkBase,
   checkLedger,
+  checkVersions,
   DATABASES,
   DIR,
   LEDGER,
@@ -190,6 +191,34 @@ test("CLI: a deleted base migration, an unknown base and a directory in db/main/
     assert.equal(r.cli("--base", "not-a-sha").status, 1);
     mkdirSync(path.join(r.dir, "db", "main", "migrations", "nested"));
     assert.equal(r.cli().status, 1);
+  } finally {
+    rmSync(r.dir, { recursive: true, force: true });
+  }
+});
+
+test("a version used by two migrations of one database fails and names both files", () => {
+  const dup = "20261001000000_other.sql";
+  const errors = checkVersions(files({ [A]: "a", [dup]: "x", [B]: "b" }), "db/main/migrations");
+  assert.equal(errors.length, 1);
+  assert.match(errors[0] as string, new RegExp(`${A} and ${dup}`));
+  assert.deepEqual(checkVersions(files({ [A]: "a", [B]: "b" })), []);
+});
+
+test("CLI: a duplicate version fails the check, --base and --write, and --write keeps the ledger", () => {
+  const r = repo();
+  try {
+    r.put(A, "a\n");
+    assert.equal(r.cli("--write").status, 0);
+    const base = r.commit();
+    const ledger = path.join(r.dir, "db", "main", "migrations.sum");
+    const before = readFileSync(ledger, "utf8");
+    r.put("20261001000000_dup.sql", "d\n");
+    for (const args of [[], ["--base", base], ["--write"]]) {
+      const result = r.cli(...args);
+      assert.equal(result.status, 1, args.join(" ") || "check");
+      assert.match(String(result.stderr), new RegExp(`${A} and 20261001000000_dup\\.sql`));
+    }
+    assert.equal(readFileSync(ledger, "utf8"), before, "--write wrote nothing");
   } finally {
     rmSync(r.dir, { recursive: true, force: true });
   }

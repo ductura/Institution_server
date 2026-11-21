@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2773);
+SELECT plan(2803);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -25,7 +25,7 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole,
   'maintenance_window has forced RLS and the operations owner')
   FROM pg_class c WHERE c.oid = 'identity.maintenance_window'::regclass;
-SELECT results_eq($$ SELECT policyname::text, cmd::text, roles = ARRAY['ductus_identity'::name]
+SELECT results_eq($$ SELECT policyname::text COLLATE "default", cmd::text, roles = ARRAY['ductus_identity'::name]
   FROM pg_policies WHERE schemaname = 'identity' AND tablename = 'maintenance_window' ORDER BY policyname $$,
   $$ VALUES ('maintenance_read'::text, 'SELECT'::text, true), ('maintenance_record', 'INSERT', true) $$,
   'maintenance_window lets the operator read and append');
@@ -60,6 +60,45 @@ SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   f.signature || ': private to the evidence owner')
   FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
                ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)')) f(signature)
+  LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+-- SRV-1207, ai-tools-v1 "Matrica pristupa": the tool setting, the steps, the
+-- loop reservation and the setting trail are reached only by their owner; the
+-- application only through the definer RPCs, the worker and PUBLIC not at all.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+    AND NOT has_table_privilege('ductus_worker', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+    AND ARRAY(SELECT p.policyname::text FROM pg_policies p
+      WHERE p.schemaname = t.nsp AND p.tablename = c.relname
+        AND p.roles = ARRAY['ductus_identity'::name] AND p.cmd = 'ALL') = ARRAY[t.policy]
+    AND (SELECT count(*) FROM pg_policies p WHERE p.schemaname = t.nsp AND p.tablename = c.relname) = 1,
+  t.nsp || '.' || t.rel || ': forced RLS and only the identity owner has access')
+  FROM (VALUES ('assistant', 'assignment_tool_setting', 'assignment_tool_setting_owner'),
+               ('assistant', 'tool_step', 'tool_step_owner'),
+               ('assistant', 'tool_loop_reservation', 'tool_loop_reservation_owner'),
+               ('audit', 'assistant_tool_setting_event', 'assistant_tool_setting_event_owner')) t(nsp, rel, policy)
+  LEFT JOIN pg_class c ON c.oid = to_regclass(t.nsp || '.' || t.rel);
+SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig) AND p.proowner = 'ductus_identity'::regrole
+    AND has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
+  f.signature || ': definer RPC with an empty path, only for the application')
+  FROM (VALUES ('assistant.begin_request(uuid,uuid,uuid,integer,text,text,text,text,text,text[])'),
+               ('assistant.set_assignment_tools(uuid,integer,text[])'),
+               ('assistant.read_assignment_tools(uuid)'),
+               ('assistant.begin_tool_step(uuid,integer,text,text,text,boolean,text[])'),
+               ('assistant.finish_tool_step(uuid,integer,text,text,integer,boolean)')) f(signature)
+  LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+SELECT ok('search_path=""' = ANY(p.proconfig)
+    AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
+  f.signature || ': private to the identity owner')
+  FROM (VALUES ('assistant.code_tools()'), ('assistant.tool_step_max()'), ('assistant.is_tool_list(text[])'),
+               ('assistant.intersect_tools(text[],text[])'), ('assistant.latest_tools(uuid)'),
+               ('assistant.allowed_tools_now(assistant.request,text[])'),
+               ('assistant.guard_tool_step_change()'), ('assistant.guard_tool_setting_version()'),
+               ('assistant.check_tool_setting_event()'), ('assistant.check_tool_setting_has_event()')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
@@ -436,6 +475,7 @@ SELECT bag_eq(
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
     'deadline_extensions(p_assignment_id uuid) definer app',
     'student_deadline_history(p_assignment_id uuid) definer app',
+    'copy_assignment(p_assignment_id uuid, p_course_id uuid, p_request_id uuid, p_opens_at timestamp with time zone, p_due_at timestamp with time zone) definer app',
       'list_notifications(p_before uuid, p_reminder_seconds integer) definer app',
       'read_notification(p_id uuid) definer app',
     'guard_merlin_package()',
@@ -948,6 +988,20 @@ FROM (VALUES
   ('vesna', 'queued'), ('marko', 'ZD403:'), ('iva', 'ZD403:'), ('ana', 'ZD403:'), ('dora', 'ZD403:'),
   ('boris', 'ZD403:'), ('nina', 'ZD403:'), ('tomo', 'ZD403:'), ('lea', 'ZD403:'), ('petra', 'ZD403:'),
   ('anon', 'ZD401:')
+) AS c (actor, result);
+
+-- 1k. SRV-1904 (P-D4): copying an assignment only through
+-- institution.copy_assignment, which needs the caller to teach the source and
+-- the target course. One cell per actor copying Z1 into K1; Vesna's opening
+-- after the deadline passes the relation check and stops at the input, so the
+-- matrix writes no assignment. The copy itself is in 206-assignment-copy.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.copy_assignment({z1}, {k1}, gen_random_uuid(), now() + interval '2 days', now() + interval '1 day') $$), 1, 5),
+  c.result, format('SRV-1904: %s copies Z1 into K1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'ZD422'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('boris', 'ZD403'), ('nina', 'ZD403'), ('tomo', 'ZD403'), ('lea', 'ZD403'), ('petra', 'ZD403'),
+  ('anon', 'ZD401')
 ) AS c (actor, result);
 
 -- SRV-1103: actor-level cases are in 161-work-milestone-access.sql.

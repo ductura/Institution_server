@@ -22,10 +22,10 @@ import { createSyntheticAssistant } from "./synthetic-assistant.ts";
 function input(): AssistantPortInput {
   return buildPortInput({
     instructions: "Upute poslužitelja za svrhu proofreading (izmišljeno).",
-    paragraph: "Izmišljeni odlomak o gradskom vijeću.",
+    data: [{ kind: "paragraph", text: "Izmišljeni odlomak o gradskom vijeću.", truncated: false }],
+    tools: [],
     purposeKey: "proofreading",
     modelId: "model-test-1",
-    maxResponseCodePoints: 200,
   });
 }
 

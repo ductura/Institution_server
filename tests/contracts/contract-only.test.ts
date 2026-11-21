@@ -35,6 +35,7 @@ import {
   createDeadlineExtensionRoutesFor,
   createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createAssignmentCopyRouteFor,
   createConsultationSlotRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
@@ -42,6 +43,7 @@ import {
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createLiveRoutesFor,
@@ -361,6 +363,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       ),
   },
   {
+    // SRV-1904 (P-D4): copying an assignment over the main database.
+    call: "createAssignmentCopyRouteFor(databases.main)",
+    ids: ["teacher.assignment-copy.post"],
+    routes: () => [createAssignmentCopyRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-1109: the Merlin roster of an assignment and its CSV over the main database.
     call: "...createMerlinRosterRoutesFor(databases.main)",
     ids: ["teacher.merlin-roster.get", "teacher.merlin-roster-csv.get"],
@@ -410,6 +418,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_1407,
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createKeyDatesRoutesFor(databases.main)",
+    ids: ["mentorship.key-dates.get"],
+    routes: () => createKeyDatesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createTeachingTeamRoutesFor(databases.main)",
@@ -699,6 +712,7 @@ describe("routes the entry point mounts itself", () => {
       "teacher.submission-history.get",
       "teacher.submission-withdrawal.get",
       "teacher.submission-withdrawal.post",
+      "teacher.assignment-copy.post",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",
       "teacher.merlin-packages.post",
@@ -714,6 +728,7 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
       ...SRV_1407,
+      "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,
       "live.document.get",

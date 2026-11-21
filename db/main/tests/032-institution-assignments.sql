@@ -307,6 +307,12 @@ ALTER TABLE assistant.conversation DISABLE TRIGGER conversation_no_truncate;
 ALTER TABLE assistant.request DISABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.message DISABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.cost_ledger DISABLE TRIGGER cost_ledger_no_truncate;
+-- The tool setting of an assignment, its trail, the tool steps and the loop
+-- reservations of the requests (SRV-1207) refuse TRUNCATE too.
+ALTER TABLE assistant.assignment_tool_setting DISABLE TRIGGER assignment_tool_setting_no_truncate;
+ALTER TABLE audit.assistant_tool_setting_event DISABLE TRIGGER assistant_tool_setting_event_no_truncate;
+ALTER TABLE assistant.tool_step DISABLE TRIGGER tool_step_no_truncate;
+ALTER TABLE assistant.tool_loop_reservation DISABLE TRIGGER tool_loop_reservation_no_truncate;
 -- Declarations, their uploads and conversation attachments reference evidence projects of the assignment.
 ALTER TABLE declaration.statement DISABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment DISABLE TRIGGER attachment_no_truncate;
@@ -316,6 +322,9 @@ ALTER TABLE declaration.conversation_attachment DISABLE TRIGGER conversation_att
 ALTER TABLE institution.submission_withdrawal_setting DISABLE TRIGGER submission_withdrawal_setting_no_truncate;
 ALTER TABLE evidence.submission_withdrawal DISABLE TRIGGER evidence_submission_withdrawal_no_truncate;
 ALTER TABLE evidence.submission_withdrawal_receipt DISABLE TRIGGER evidence_submission_withdrawal_receipt_no_truncate;
+-- The record of an import (SRV-1803) references the assignment; it is append only.
+ALTER TABLE collaboration.import_event DISABLE TRIGGER import_event_no_truncate;
+ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmation_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
@@ -325,9 +334,15 @@ ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;
+ALTER TABLE assistant.assignment_tool_setting ENABLE TRIGGER assignment_tool_setting_no_truncate;
+ALTER TABLE audit.assistant_tool_setting_event ENABLE TRIGGER assistant_tool_setting_event_no_truncate;
+ALTER TABLE assistant.tool_step ENABLE TRIGGER tool_step_no_truncate;
+ALTER TABLE assistant.tool_loop_reservation ENABLE TRIGGER tool_loop_reservation_no_truncate;
 ALTER TABLE declaration.statement ENABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment ENABLE TRIGGER attachment_no_truncate;
 ALTER TABLE declaration.conversation_attachment ENABLE TRIGGER conversation_attachment_no_truncate;
+ALTER TABLE collaboration.import_event ENABLE TRIGGER import_event_no_truncate;
+ALTER TABLE collaboration.import_confirmation ENABLE TRIGGER import_confirmation_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;

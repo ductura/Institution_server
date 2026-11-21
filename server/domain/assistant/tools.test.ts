@@ -2,15 +2,15 @@
 // S3-D1 to S3-D4, S3-D6, S3-N2). All queries and destinations are invented.
 import { describe, expect, it } from "vitest";
 
+import { aiSwitchOf, serverPermittedTools } from "./faculty-ai-config.ts";
 import {
+  AI_SWITCH_OFF,
   allowedTools,
   CODE_TOOLS,
   makeAiSwitchReader,
   matchToolName,
   parseAssignmentTools,
-  PRODUCTION_SEARCH_DESTINATIONS,
   QUERY_MAX,
-  readInstitutionAiSwitch,
   readyTools,
   validateToolArgs,
 } from "./tools.ts";
@@ -98,9 +98,10 @@ describe("validateToolArgs (S3-D4, S3-N2)", () => {
 });
 
 describe("institution switch", () => {
-  it("the production reader has both flags off for any institution", () => {
-    expect(readInstitutionAiSwitch(INSTITUTION)).toEqual({ transcription: false, tools: false });
-    expect(readInstitutionAiSwitch("")).toEqual({ transcription: false, tools: false });
+  it("an institution without a faculty setting has both flags off (OC-1)", () => {
+    expect(aiSwitchOf(null)).toEqual({ transcription: false, tools: false });
+    expect(AI_SWITCH_OFF).toEqual({ transcription: false, tools: false });
+    expect(Object.isFrozen(AI_SWITCH_OFF)).toBe(true);
   });
 
   it("a synthetic reader turns a flag on only for exactly true", () => {
@@ -127,18 +128,18 @@ describe("institution switch", () => {
 });
 
 describe("readyTools", () => {
-  it("search is never ready in production", () => {
-    expect(PRODUCTION_SEARCH_DESTINATIONS).toEqual([]);
-    expect(readyTools(PRODUCTION_SEARCH_DESTINATIONS)).toEqual([]);
+  it("search is ready only with a destination; the pilot list is empty (OC-2)", () => {
+    expect(readyTools([])).toEqual([]);
     expect(readyTools([DESTINATION])).toEqual(["web_search"]);
   });
 
-  it("no tool is offered with the production switch and destinations", () => {
+  it("no tool is offered without a setting or with the pilot's empty destination list", () => {
+    expect(serverPermittedTools(null)).toEqual([]);
     expect(
       allowedTools({
-        institutionSwitch: readInstitutionAiSwitch(INSTITUTION),
+        institutionSwitch: aiSwitchOf(null),
         assignmentTools: ["web_search"],
-        ready: readyTools(PRODUCTION_SEARCH_DESTINATIONS),
+        ready: readyTools([]),
       }),
     ).toEqual([]);
   });

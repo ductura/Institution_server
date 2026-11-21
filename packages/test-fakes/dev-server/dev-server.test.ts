@@ -220,7 +220,6 @@ describe("dev fake server: institution rules as the database keeps them", () => 
       { wordMax: 2000 },
       { aiPolicy: "encouraged" },
       { aiPurposes: ["translation"] },
-      { importAllowed: true },
     ]) {
       const refused = await send(state, `${A}/versions`, {
         body: { ...version, ...change },
@@ -230,6 +229,12 @@ describe("dev fake server: institution rules as the database keeps them", () => 
     }
     const ok = await send(state, `${A}/versions`, { body: { ...version, wordMin: 1000 }, headers });
     expect(ok.status).toBe(201);
+    // D-282: the version above turned import off (the demo allows it, SRV-1803); it never comes back on.
+    const reopened = await send(state, `${A}/versions`, {
+      body: { ...version, expectedVersion: 2, wordMin: 1000, importAllowed: true },
+      headers,
+    });
+    expect(reopened.status).toBe(422);
     expect(state.assignments[0]?.content).toMatchObject({
       opensAt: "2026-10-01T06:00:00.000Z",
       dueAt: "2027-01-31T22:59:00.000Z",
