@@ -116,6 +116,7 @@ describe("route inventory", () => {
       "teacher.working-criteria.get: app/api/teacher/works/[documentId]/working-criteria/route.ts is not in the inventory",
       "teacher.working-criterion.put: app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts is not in the inventory",
       "course.aggregate.get: app/api/courses/[id]/aggregate/route.ts is not in the inventory",
+      "ops.pilot-metrics.get: app/api/ops/pilot-metrics/route.ts is not in the inventory",
       "teacher.deadline-extensions.get: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
       "teacher.deadline-extension.post: app/api/teacher/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",
       "student.deadline-history.get: app/api/student/assignments/[assignmentId]/deadline-extensions/route.ts is not in the inventory",

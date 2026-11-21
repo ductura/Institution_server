@@ -19135,6 +19135,194 @@
     }
   },
   {
+    "route": "ops.pilot-metrics.get",
+    "name": "pilot-metrics",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "asOf": "2026-11-20T23:00:00.000Z",
+        "minimumGroup": 5,
+        "submissions": {
+          "recorded": 10,
+          "notRecorded": 5
+        },
+        "receipts": {
+          "issued": 5,
+          "pending": 5
+        },
+        "helpRequests": {
+          "total": 10,
+          "saveProblems": 5
+        },
+        "receiptTime": {
+          "p50Ms": 3000,
+          "p95Ms": 4800
+        }
+      }
+    }
+  },
+  {
+    "route": "ops.pilot-metrics.get",
+    "name": "small-groups-hidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "asOf": "2026-11-20T23:00:00.000Z",
+        "minimumGroup": 5,
+        "submissions": {
+          "recorded": 5,
+          "notRecorded": null
+        },
+        "receipts": {
+          "issued": null,
+          "pending": null
+        },
+        "helpRequests": {
+          "total": 5,
+          "saveProblems": null
+        },
+        "receiptTime": {
+          "p50Ms": null,
+          "p95Ms": null
+        }
+      }
+    }
+  },
+  {
+    "route": "ops.pilot-metrics.get",
+    "name": "no-data",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "asOf": "2026-11-20T23:00:00.000Z",
+        "minimumGroup": 5,
+        "submissions": {
+          "recorded": 0,
+          "notRecorded": 0
+        },
+        "receipts": {
+          "issued": 0,
+          "pending": 0
+        },
+        "helpRequests": {
+          "total": 0,
+          "saveProblems": 0
+        },
+        "receiptTime": {
+          "p50Ms": null,
+          "p95Ms": null
+        }
+      }
+    }
+  },
+  {
+    "route": "ops.pilot-metrics.get",
+    "name": "unauthenticated",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthenticated",
+        "code": "unauthenticated",
+        "messageKey": "errors.unauthenticated",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000190601"
+      }
+    }
+  },
+  {
+    "route": "ops.pilot-metrics.get",
+    "name": "forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000190602"
+      }
+    }
+  },
+  {
+    "route": "ops.pilot-metrics.get",
+    "name": "invalid-input",
+    "request": {
+      "query": {
+        "institution": "demo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000190603"
+      }
+    }
+  },
+  {
+    "route": "ops.pilot-metrics.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000190604"
+      }
+    }
+  },
+  {
     "route": "platform.health.get",
     "name": "alive",
     "request": {},
@@ -19169,7 +19357,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.65.0",
+        "apiVersion": "1.66.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19185,7 +19373,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.65.0",
+        "apiVersion": "1.66.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

@@ -926,6 +926,7 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "teacher.courses.get": { request: { path: "/api/v1/teacher/courses", as: "nastavnik-2" } },
+  "ops.pilot-metrics.get": { request: { path: "/api/v1/ops/pilot-metrics", as: "administrator" } },
   "course.aggregate.get": {
     request: { path: `/api/v1/courses/${IDS.course}/aggregate`, as: "nastavnik" },
   },

@@ -351,6 +351,13 @@ export type Operations = {
     success: { status: 204; body: undefined; headers: {  } };
     errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error";
   };
+  "ops.pilot-metrics.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "asOf": string; "minimumGroup": 5; "submissions": { "recorded": 0 | number | null; "notRecorded": 0 | number | null }; "receipts": { "issued": 0 | number | null; "pending": 0 | number | null }; "helpRequests": { "total": 0 | number | null; "saveProblems": 0 | number | null }; "receiptTime": { "p50Ms": number | null; "p95Ms": number | null } }; headers: {  } };
+    errorCode: "unauthenticated" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "platform.health.get": {
     params: undefined;
     query: undefined;

@@ -51,6 +51,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
+  createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
@@ -300,6 +301,8 @@ async function main(): Promise<void> {
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
       createCourseAggregateRouteFor(databases.main),
+      // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
+      createPilotMetricsRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),

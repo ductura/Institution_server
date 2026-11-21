@@ -21,6 +21,8 @@ export const ACCESS = [
   "course_teacher",
   "mentor_teacher",
   "institution_admin",
+  // An account on the server's operator list with a confirmed second factor (step 8, /api/v1/ops).
+  "operator",
 ] as const;
 export type Access = (typeof ACCESS)[number];
 
