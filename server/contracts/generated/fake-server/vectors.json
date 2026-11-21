@@ -14993,7 +14993,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.50.0",
+        "apiVersion": "1.51.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15009,7 +15009,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.50.0",
+        "apiVersion": "1.51.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -38042,6 +38042,129 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-0000000000bd"
+      }
+    }
+  },
+  {
+    "route": "work.export-pdf.get",
+    "name": "ordinary",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "documentId": "demo-work"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=demo-pdf-export-test-0000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "filename": "rad.pdf",
+        "pdfBase64": "JVBERi0xLjcKJYGBgYEKCjUgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMTgKPj4Kc3RyZWFtCnicJYrBCgIxEEPv+Yo5C+K0tpkWRFh1xYMXYX5AZBVFD4r4/W6VkPAC74mVQ6XldcFsN9w/w/t6Ok5Na0lFrVSJSfyMtnuEnxokq9hYf2CRqnXcsNqca3bM7BmimnJryWiR6f9Hyo2bsxS/wSfoHQd8AckqHOgKZW5kc3RyZWFtCmVuZG9iagoKNiAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvT2JqU3RtCi9OIDQKL0ZpcnN0IDIwCi9MZW5ndGggMjM4Cj4+CnN0cmVhbQp4nFWP3UoDMRCF7/MU8wI2yTbrZqEU2uIPiCitoCBepLvDEimJNFmpb+9MXCklN5lzzgzf0aCgAmNgDo0FA9X1HBYLIV9+vhDksxswCfng+wTvFFGwhQ8hN3EMGbRYLsU5u3HZHeIg/pZAc/gywQbbR+Tt4sstpjgeO1rg3G0khz/3ePjG7Dt31ajWGqsa2xLddFK+Pe0/sStRHm9O+W6XXcZJYO0Re+/W8UTcil7d1rPKgjV6RpeowyqEmLlV6RMyMfFUTx0vwBlLyN24z2VkUQu5dgkL8JmWUEIXex8GkK8+rELy/wJf/AUBOWQdCmVuZHN0cmVhbQplbmRvYmoKCjcgMCBvYmoKPDwKL1NpemUgOAovUm9vdCAyIDAgUgovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvWFJlZgovTGVuZ3RoIDM5Ci9XIFsgMSAyIDIgXQovSW5kZXggWyAwIDggXQo+PgpzdHJlYW0KeJwVxLENACAIALCCibM/+P8tnITSoehOmymmnFY4hPrl5QFUagMsCmVuZHN0cmVhbQplbmRvYmoKCnN0YXJ0eHJlZgo1NDcKJSVFT0Y=",
+        "outputSha256": "689fa9c1ff2c134be75500701725707d8a1ed2d6d82f163cc95a56cec5c5e546",
+        "format": "pdf",
+        "reportHash": null,
+        "docxBase64": "UEsDBBQAAAgAAAAAIQDwSsJ/LAIAACwCAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48VHlwZXMgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvY29udGVudC10eXBlcyI+PERlZmF1bHQgRXh0ZW5zaW9uPSJyZWxzIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLXBhY2thZ2UucmVsYXRpb25zaGlwcyt4bWwiLz48RGVmYXVsdCBFeHRlbnNpb249InhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3htbCIvPjxPdmVycmlkZSBQYXJ0TmFtZT0iL3dvcmQvZG9jdW1lbnQueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwuZG9jdW1lbnQubWFpbit4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii93b3JkL3N0eWxlcy54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQud29yZHByb2Nlc3NpbmdtbC5zdHlsZXMreG1sIi8+PC9UeXBlcz5QSwMEFAAACAAAAAAhAJv9N+opAQAAKQEAAAsAAABfcmVscy8ucmVsczw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48UmVsYXRpb25zaGlwcyB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL3BhY2thZ2UvMjAwNi9yZWxhdGlvbnNoaXBzIj48UmVsYXRpb25zaGlwIElkPSJySWQxIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL29mZmljZURvY3VtZW50IiBUYXJnZXQ9IndvcmQvZG9jdW1lbnQueG1sIi8+PC9SZWxhdGlvbnNoaXBzPlBLAwQUAAAIAAAAACEAgitSgRoBAAAaAQAAHAAAAHdvcmQvX3JlbHMvZG9jdW1lbnQueG1sLnJlbHM8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+PFJlbGF0aW9uc2hpcHMgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvcmVsYXRpb25zaGlwcyI+PFJlbGF0aW9uc2hpcCBJZD0icklkUyIgVHlwZT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcy9zdHlsZXMiIFRhcmdldD0ic3R5bGVzLnhtbCIvPjwvUmVsYXRpb25zaGlwcz5QSwMEFAAACAAAAAAhAO9Em1mcAwAAnAMAAA8AAAB3b3JkL3N0eWxlcy54bWw8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+PHc6c3R5bGVzIHhtbG5zOnc9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy93b3JkcHJvY2Vzc2luZ21sLzIwMDYvbWFpbiIgeG1sbnM6cj0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcyI+PHc6c3R5bGUgdzp0eXBlPSJwYXJhZ3JhcGgiIHc6c3R5bGVJZD0iVGl0bGUiPjx3Om5hbWUgdzp2YWw9IlRpdGxlIi8+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSI0MCIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkhlYWRpbmcxIj48dzpuYW1lIHc6dmFsPSJoZWFkaW5nIDEiLz48dzpwUHI+PHc6a2VlcE5leHQvPjwvdzpwUHI+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSIzMiIvPjwvdzpy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",
+        "noticeKey": "workExport.plainPdf"
+      }
+    }
+  },
+  {
+    "route": "work.export-pdf.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "documentId": "demo-work"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "work.export-pdf.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "documentId": "demo-work"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=demo-pdf-export-test-0000000000000000000000",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "work.export-pdf.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "documentId": "demo-work"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=demo-pdf-export-test-0000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "work.export-pdf.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+        "documentId": "demo-work"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=demo-pdf-export-test-0000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000000"
       }
     }
   },
