@@ -192,12 +192,15 @@ type DocxParagraph = {
 };
 
 const LOCAL_HEADER = 0x04034b50;
+const CENTRAL_HEADER = 0x02014b50;
+const END_RECORD = 0x06054b50;
 const DOCUMENT_PART = "word/document.xml";
 
 /** The entries of a ZIP with stored (uncompressed) entries, each checked against its CRC-32. */
 function readStoredZip(bytes: Uint8Array): Map<string, Uint8Array> {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const entries = new Map<string, Uint8Array>();
+  const locals: { name: string; crc: number; size: number; offset: number }[] = [];
   let at = 0;
   while (at + 4 <= bytes.length && view.getUint32(at, true) === LOCAL_HEADER) {
     if (view.getUint16(at + 8, true) !== 0) throw new Error("docx: compressed entry");
@@ -213,8 +216,37 @@ function readStoredZip(bytes: Uint8Array): Map<string, Uint8Array> {
     if (crc32(data) >>> 0 !== crc) throw new Error(`docx: ${name} fails its CRC-32`);
     if (entries.has(name)) throw new Error(`docx: ${name} twice`);
     entries.set(name, data);
+    locals.push({ name, crc, size, offset: at });
     at = dataStart + size;
   }
+  // The central directory names each local entry in order, then the end record
+  // points at it and closes the file: without them no archive reader opens it.
+  const centralStart = at;
+  for (const entry of locals) {
+    if (at + 46 > bytes.length || view.getUint32(at, true) !== CENTRAL_HEADER)
+      throw new Error(`docx: no central directory entry for ${entry.name}`);
+    const nameLength = view.getUint16(at + 28, true);
+    const extraLength = view.getUint16(at + 30, true);
+    const commentLength = view.getUint16(at + 32, true);
+    const name = new TextDecoder().decode(bytes.subarray(at + 46, at + 46 + nameLength));
+    if (
+      name !== entry.name ||
+      view.getUint32(at + 16, true) !== entry.crc ||
+      view.getUint32(at + 24, true) !== entry.size ||
+      view.getUint32(at + 42, true) !== entry.offset
+    )
+      throw new Error(`docx: central directory entry for ${entry.name} does not match`);
+    at += 46 + nameLength + extraLength + commentLength;
+  }
+  if (
+    at + 22 !== bytes.length ||
+    view.getUint32(at, true) !== END_RECORD ||
+    view.getUint16(at + 8, true) !== locals.length ||
+    view.getUint16(at + 10, true) !== locals.length ||
+    view.getUint32(at + 12, true) !== at - centralStart ||
+    view.getUint32(at + 16, true) !== centralStart
+  )
+    throw new Error("docx: no valid end of central directory record");
   return entries;
 }
 
@@ -309,6 +341,8 @@ type Expected =
       readonly runs: readonly DocxRun[];
     }
   | { readonly at: string; readonly decoration: true }
+  /** A code caption: a derived "<label> <n>." and then the author's caption text. */
+  | { readonly at: string; readonly caption: string }
   | { readonly at: string; readonly pageBreak: true }
   | { readonly at: string; readonly formula: string };
 
@@ -429,7 +463,7 @@ function readBlock(node: DocumentNodeV4, at: string, snapshot: ExportSnapshot, r
         .join("")
         .split("\n")
         .forEach((line, i) => push({ at: `${at} line ${i}`, runs: [{ text: line }] }));
-      push({ at: `${at} caption`, decoration: true });
+      push({ at: `${at} caption`, caption: node.caption ?? "" });
       return;
     case "formula":
       push({ at, formula: node.tex });
@@ -480,6 +514,12 @@ function formulaLine(tex: string, text: string): boolean {
   return text.startsWith(`${tex}\t(`) && /^\d+\)$/u.test(text.slice(tex.length + 2));
 }
 
+/** "<label> <n>." alone, or followed by a space and exactly the author's caption. */
+function captionLine(caption: string, text: string): boolean {
+  const label = caption === "" ? text : text.slice(0, -(caption.length + 1));
+  return (caption === "" || text.endsWith(` ${caption}`)) && /^\S(?:.*\S)? \d+\.$/u.test(label);
+}
+
 const show = (runs: readonly DocxRun[]): string => JSON.stringify(runs);
 
 function matchParagraph(expected: Expected, actual: DocxParagraph): string | undefined {
@@ -493,6 +533,12 @@ function matchParagraph(expected: Expected, actual: DocxParagraph): string | und
     return actual.runs.length === 1 && actual.runs[0]!.text !== ""
       ? undefined
       : `${expected.at}: expected one label run, DOCX has ${show(actual.runs)}`;
+  if ("caption" in expected)
+    return actual.style === "Caption" &&
+      actual.runs.length === 1 &&
+      captionLine(expected.caption, actual.runs[0]!.text)
+      ? undefined
+      : `${expected.at}: expected caption ${JSON.stringify(expected.caption)}, DOCX has ${show(actual.runs)}`;
   if ("formula" in expected)
     return actual.runs.length === 1 && formulaLine(expected.formula, actual.runs[0]!.text)
       ? undefined
@@ -767,6 +813,32 @@ describe("a deliberate difference fails the check (SRV-1512 acceptance 2)", () =
         `docx: prints ${JSON.stringify(text)}, which the snapshot marks omitted`,
       );
     }
+  });
+
+  it("in the DOCX: the author's code caption lost or changed", async () => {
+    const good = await channels();
+    for (const caption of ["Ispis 1.", "Ispis 1. Izmišljeni broj"]) {
+      const docx = docxOf(good.snapshot, (m) => ({
+        ...m,
+        blocks: m.blocks.map((b) => (b.kind === "code" ? { ...b, caption } : b)),
+      }));
+      expect(await compareDisplayChannels({ ...good, docx })).toEqual([
+        expect.stringMatching(/^docx node 9 \(codeBlock\) caption: expected caption /u),
+      ]);
+    }
+  });
+
+  it("in the DOCX bytes: an archive cut before its central directory", async () => {
+    const good = await channels();
+    const central = Buffer.from(good.docx).indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+    expect(central).toBeGreaterThan(0);
+    expect(await compareDisplayChannels({ ...good, docx: good.docx.slice(0, central) })).toEqual([
+      expect.stringMatching(/^docx: docx: no central directory entry for /u),
+    ]);
+    const noEnd = good.docx.slice(0, good.docx.length - 22);
+    expect(await compareDisplayChannels({ ...good, docx: noEnd })).toEqual([
+      "docx: docx: no valid end of central directory record",
+    ]);
   });
 
   it("in the DOCX bytes: a flipped byte fails the container check", async () => {
