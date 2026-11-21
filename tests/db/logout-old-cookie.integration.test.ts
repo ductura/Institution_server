@@ -13,6 +13,7 @@ import {
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
   createAttachmentRoutesFor,
   createAuthRoutes,
   createClientContextRoute,
@@ -20,6 +21,7 @@ import {
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
   createDatabases,
@@ -45,6 +47,7 @@ import {
   createStudentNoticeRouteFor,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -54,6 +57,7 @@ import {
   createLayers,
   createMeRouteFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   createSourceLookupRouteFor,
@@ -360,6 +364,23 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "institution.teaching-team.get": {
+    method: "GET",
+    path: `/api/v1/courses/${randomUUID()}/team`,
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.teaching-team.post": {
+    path: `/api/v1/courses/${randomUUID()}/team`,
+    body: () => ({ assistantIds: [] }),
+    live: 403,
+  },
+  "institution.teaching-group-members.put": {
+    method: "PUT",
+    path: `/api/v1/courses/${randomUUID()}/groups/${randomUUID()}/members`,
+    body: () => ({ assistantIds: [], studentIds: [] }),
+    live: 403,
+  },
   "mentorship.notes.get": {
     method: "GET",
     path: `/api/v1/mentorships/${randomUUID()}/notes`,
@@ -573,6 +594,15 @@ const SESSION_ROUTES = {
       description: "Izmišljeni opis: gumb za spremanje ne reagira.",
       route: "/zadaci",
       syncState: "SYNCED",
+    }),
+    live: 201,
+  },
+  "support.problem-reports.post": {
+    path: "/api/v1/problem-reports",
+    body: () => ({
+      appVersion: "1.4.0",
+      category: "technical",
+      description: "Izmišljeni problem s unosom.",
     }),
     live: 201,
   },
@@ -855,6 +885,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "teacher.assignment-grade.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/grade`,
+    body: () => undefined,
+    live: 404,
+  },
   "institution.assignment-versions.post": {
     path: `/api/v1/institution/assignments/${COURSE}/versions`,
     body: () => ({
@@ -913,6 +949,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 const FACTORIES = [
   "createHealthRoute",
   "createReadyRoute",
+  "createStatusRouteFor",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -928,9 +965,11 @@ const FACTORIES = [
   "createSettingsReadRoutes",
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
+  "createProblemReportsRouteFor",
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
+  "createAssignmentGradeRouteFor",
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
@@ -951,6 +990,7 @@ const FACTORIES = [
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
+  "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
@@ -983,6 +1023,11 @@ const MOUNTED = [
     check: async () => ({ ready: true, capabilities: {}, codes: {} }),
     draining: () => false,
   }),
+  createStatusRouteFor(
+    databases.main,
+    async () => ({ ready: true, capabilities: {}, codes: {} }),
+    () => false,
+  ),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
@@ -998,9 +1043,11 @@ const MOUNTED = [
   ...createSettingsReadRoutes(databases.main),
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
+  createProblemReportsRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
+  createAssignmentGradeRouteFor(databases.main),
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
@@ -1021,6 +1068,7 @@ const MOUNTED = [
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
+  ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
@@ -1253,7 +1301,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     await expectSignedOut(await post("/api/v1/auth/logout", token));
     expect(await sessionEnd(token)).toMatchObject({ reason: "logout" });
     expect(await savedLocale(token)).toEqual(["en"]);
-    expect(await storedReports(token)).toBe(1);
+    expect(await storedReports(token)).toBe(2);
     for (const id of SESSION_IDS) {
       const answer = await call(
         id,
@@ -1269,6 +1317,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("settings.") ||
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
+        id === "support.problem-reports.post" ||
         id === "sources.lookup.post" ||
         id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
@@ -1290,8 +1339,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       expect(Value.Check(spec?.body as never, body)).toBe(true);
     }
     expect(await savedLocale(token)).toEqual(["en"]);
-    // The old cookie's report reached no row: still only the live one.
-    expect(await storedReports(token)).toBe(1);
+    // Only the two reports submitted with the live session were written.
+    expect(await storedReports(token)).toBe(2);
   });
 
   it("the interface language: POST en, then GET en for the same session; another gets null", async () => {

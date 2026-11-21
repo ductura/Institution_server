@@ -21,9 +21,11 @@ import {
   createDownloadsManifestRoute,
   createWorkPdfRouteFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
@@ -39,6 +41,7 @@ import {
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
+  createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -187,6 +190,11 @@ const SRV_1407 = [
   "mentorship.request-decline.post",
   "mentorship.request-withdraw.post",
 ];
+const SRV_1408 = [
+  "institution.teaching-team.get",
+  "institution.teaching-team.post",
+  "institution.teaching-group-members.put",
+];
 const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
@@ -260,6 +268,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createProblemReportRouteFor(NO_ACTOR).contract.id],
   },
   {
+    call: "createProblemReportsRouteFor(databases.main)",
+    ids: ["support.problem-reports.post"],
+    routes: () => [createProblemReportsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // DAN-852-5a: the three course routes over the main database.
     call: "createInstitutionCourseRoutesFor(databases.main)",
     ids: [...INSTITUTION_COURSE_ROUTES],
@@ -275,6 +288,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createAssignmentCurrentVersionRouteFor(databases.main)",
     ids: ["institution.assignment.get"],
     routes: () => [createAssignmentCurrentVersionRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    call: "createAssignmentGradeRouteFor(databases.main)",
+    ids: ["teacher.assignment-grade.get"],
+    routes: () => [createAssignmentGradeRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-12: the administrator's course over the main database.
@@ -374,6 +392,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_1407,
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createTeachingTeamRoutesFor(databases.main)",
+    ids: SRV_1408,
+    routes: () => createTeachingTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createMentorNotesRoutesFor(databases.main)",
@@ -620,10 +643,12 @@ describe("routes the entry point mounts itself", () => {
       "profile.interface-locale.post",
       "downloads.manifest.get",
       "support.problem-report.post",
+      "support.problem-reports.post",
       ...INSTITUTION_COURSE_ROUTES,
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.assignment.get",
+      "teacher.assignment-grade.get",
       "institution.admin-courses.post",
       "institution.course-groups.get",
       "institution.course-groups.post",
@@ -650,6 +675,7 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
       ...SRV_1407,
+      ...SRV_1408,
       ...SRV_1413,
       "live.document.get",
       "live.document.put",

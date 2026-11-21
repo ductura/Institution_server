@@ -36,6 +36,7 @@ export { directEditRoutes } from "./direct-edit.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
+export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";
 export { sourceLookupPost } from "./source-lookup.ts";
 export { publicVerificationPost, publicVerificationRoutes } from "./public-verification.ts";
 export { collaborationRoutes } from "./collaboration.ts";
@@ -55,6 +56,7 @@ export {
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
+export { teachingTeamRoutes } from "./teaching-team.ts";
 export {
   MentorNoteInput,
   MentorshipNoteParams,
