@@ -41,6 +41,7 @@ import {
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
+  createAssistantRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -76,6 +77,7 @@ import {
 } from "./http/index.ts";
 import {
   institutionsProblems,
+  isNonProductionBuild,
   metricsIntervalMs,
   metricsIntervalProblems,
   testModeProblems,
@@ -117,6 +119,11 @@ const LAYERS = createLayers({
   trustedProxies: TRUSTED_PROXIES ?? [],
 });
 
+// SRV-1401 (M1.6): CSP, Permissions-Policy and HSTS on every answer, HSTS
+// only outside local work (NODE_ENV development or test, the one definition
+// of production); idle sessions get 401 session_idle_expired after 30 minutes.
+const SECURITY = { local: isNonProductionBuild(process.env.NODE_ENV) };
+
 // 4. Areas whose routes are mounted. Every server/<area>/routes.ts is named
 //    here (server/server.test.ts); test-server mounts its own.
 const AREAS: readonly AreaWithRoutes[] = [
@@ -148,6 +155,7 @@ async function main(): Promise<void> {
     databases,
     shutdown,
     layers: LAYERS,
+    security: SECURITY,
     routes: [
       createHealthRoute({ health: databases.health, serverVersion: SERVER_VERSION }),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
@@ -230,6 +238,8 @@ async function main(): Promise<void> {
       ...createMerlinRosterRoutesFor(databases.main),
       // SRV-1110: the Merlin package of an assignment and its download, for its teacher.
       ...createMerlinPackageRoutesFor(databases.main),
+      // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
+      ...createAssistantRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.

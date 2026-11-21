@@ -1,5 +1,6 @@
 import {
   attachmentRoutes,
+  assistantRoutes,
   authRoutes,
   clientRoutes,
   collaborationRoutes,
@@ -56,6 +57,7 @@ export {
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
 };
+export { SESSION_IDLE_EXPIRED } from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
@@ -103,6 +105,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...projectionRoutes,
   ...collaborationRoutes,
   ...consultationSlotRoutes,
+  ...assistantRoutes,
   ...liveRoutes,
   ...enrollmentRoutes,
   ...institutionRoutes,

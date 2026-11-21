@@ -10,6 +10,7 @@ export {
   INTERNAL,
   METHOD_NOT_ALLOWED,
   platformRoutes,
+  SESSION_IDLE_EXPIRED,
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
@@ -39,3 +40,4 @@ export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
+export { assistantRoutes } from "./assistant.ts";
