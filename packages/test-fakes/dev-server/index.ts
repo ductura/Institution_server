@@ -10,6 +10,8 @@ import { STATEMENT_HANDLERS } from "./statement-routes.ts";
 import { ATTACHMENT_HANDLERS } from "./attachment-routes.ts";
 import { COLLABORATION_HANDLERS } from "./collaboration-routes.ts";
 import { CONSULTATION_SLOT_HANDLERS } from "./consultation-slots.ts";
+import { MENTORSHIP_REQUEST_HANDLERS } from "./mentorship-requests.ts";
+import { TEACHING_TEAM_HANDLERS } from "./teaching-team-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
 import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
@@ -24,6 +26,7 @@ import { NOTIFICATION_HANDLERS } from "./notification-routes.ts";
 import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
+import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
 import type { Handlers } from "./server.ts";
@@ -73,6 +76,9 @@ export const DEV_HANDLERS: Handlers = {
   ...EVIDENCE_HANDLERS,
   ...COLLABORATION_HANDLERS,
   ...CONSULTATION_SLOT_HANDLERS,
+  ...MENTORSHIP_REQUEST_HANDLERS,
+  ...TEACHING_TEAM_HANDLERS,
+  ...MENTOR_NOTES_HANDLERS,
   ...ASSISTANT_HANDLERS,
   ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,

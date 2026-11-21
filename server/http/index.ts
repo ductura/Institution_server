@@ -7,6 +7,9 @@ export { createSourceNotebookRoutesFor } from "./source-notebook/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
+export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
+export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
+export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -20,6 +23,7 @@ export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
+export { createStudentDeadlineHistoryRouteFor } from "./student-deadline-history.ts";
 export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
@@ -103,7 +107,9 @@ export { CHECK_DEADLINE_MS, createHealthRoute, type HealthState } from "./health
 export {
   createInstitutionCourseRoutes,
   createInstitutionCourseRoutesFor,
+  decodeOnce,
   INSTITUTION_BODY_TIMEOUT_MS,
+  readInstitutionJson,
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
@@ -154,12 +160,15 @@ export {
 export {
   knownError,
   problemOf,
+  sendBareRefusal,
   sendHtmlProblem,
   sendDeclaredResponse,
   sendProblem,
   sendRouteRefusal,
   type Problem,
 } from "./problem.ts";
+export { createStatusRouteFor } from "./status/index.ts";
+export { singleFlight } from "./ready-outcomes.ts";
 export {
   createReadyCheck,
   READY_TIMEOUT_MS,
@@ -243,6 +252,10 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export {
+  createStaffAffiliationRoute,
+  createStaffAffiliationRouteFor,
+} from "./staff-affiliation.ts";
 export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
 export {
@@ -254,6 +267,7 @@ export {
   createInstitutionAssignmentRoutesFor,
 } from "./institution-assignments.ts";
 export { createAssignmentCurrentVersionRouteFor } from "./assignment-current-version.ts";
+export { createAssignmentGradeRouteFor, excludePracticeAssignment } from "./assignments/index.ts";
 export {
   createTeacherAccessRoute,
   createTeacherCoursesRoute,
@@ -325,6 +339,7 @@ export {
   type ProblemReportFaultRecord,
   type ProblemReportRouteOptions,
 } from "./support-problem-report.ts";
+export { createProblemReportsRouteFor } from "./problem-report/index.ts";
 export {
   createWebAuthnRoutes,
   createWebAuthnRoutesFor,

@@ -79,11 +79,12 @@ const flags = (attributes: RoleAttributes): string =>
     .map((value) => (value ? "t" : "f"))
     .join("");
 
-test("the cluster holds exactly the ductus_* roles of Ductus, with their attributes", () => {
+test("the cluster holds exactly the expected ductus_* roles, with their attributes", () => {
   const expected = new Map<string, string>([
     [MIGRATOR_ROLE, flags(MIGRATOR_ATTRIBUTES)],
     ...GROUP_ROLES.map((role): [string, string] => [role, flags(GROUP_ATTRIBUTES)]),
     ...MIGRATION_ROLES.map((role): [string, string] => [role, flags(GROUP_ATTRIBUTES)]),
+    ["ductus_problem_report_reader", flags(GROUP_ATTRIBUTES)],
     ...LOGIN_ROLES.map(({ login }): [string, string] => [login, flags(LOGIN_ATTRIBUTES)]),
   ]);
   const rows = query(

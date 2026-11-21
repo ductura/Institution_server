@@ -50,6 +50,8 @@ export type Course = {
   readonly createdBy: string;
   studentIds: string[];
   groups: Group[];
+  /** Explicit assistant roster; false marks a revoked assistant. */
+  teachingAssistants?: Map<string, boolean>;
   codes: EnrollmentCode[];
   /** Removed students, refused by a code until a teacher lets them back. */
   removed: string[];
@@ -80,6 +82,7 @@ export type AssignmentContent = {
   groupIds?: string[];
   externalToolsAllowed?: boolean;
   aiSummaryOnly?: boolean;
+  isPractice?: boolean;
 };
 
 export type Assignment = {
@@ -223,6 +226,16 @@ export type Mentorship = {
   documentId: string | null;
 };
 
+/** SRV-1407: a mentorship request and where it ended. */
+export type MentorshipRequest = {
+  readonly id: string;
+  readonly studentId: string;
+  readonly teacherId: string;
+  readonly workType: Mentorship["workType"];
+  state: "requested" | "approved" | "declined" | "withdrawn";
+  mentorshipId: string | null;
+};
+
 export type AccessEntry = {
   readonly id: string;
   readonly documentId: string;
@@ -248,6 +261,9 @@ export type State = {
   assignments: Assignment[];
   works: Work[];
   submissionNotes: SubmissionNote[];
+  deadlineExtensions: (Operations["teacher.deadline-extension.post"]["success"]["body"]["extension"] & {
+    assignmentId: string;
+  })[];
   workSources: WorkSource[];
   sourceNotes: Map<string, Operations["work.source-notes.post"]["success"]["body"][]>;
   sourceProofs: SourceProof[];
@@ -261,6 +277,14 @@ export type State = {
   /** Refused enrolment codes, by account id (too_many_attempts after five). */
   enrollmentGuesses: Map<string, number>;
   mentorships: Mentorship[];
+  mentorshipRequests: MentorshipRequest[];
+  mentorNotes: {
+    id: string;
+    mentorshipId: string;
+    mentorId: string;
+    body: string;
+    createdAt: string;
+  }[];
   /** Openings of a work by a reader, newest last. */
   accessLog: AccessEntry[];
   /** Setting rows by "<level>:<course or ->:<owner>:<key>". */
@@ -446,6 +470,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
       },
     ],
     submissionNotes: [],
+    deadlineExtensions: [],
     workSources: [],
     sourceNotes: new Map(),
     sourceProofs: [],
@@ -453,6 +478,8 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     attachments: [],
     sourceProofCount: 0,
     enrollmentGuesses: new Map(),
+    mentorshipRequests: [],
+    mentorNotes: [],
     mentorships: [
       {
         id: IDS.mentorship,
@@ -505,7 +532,11 @@ export function accountByKey(state: State, key: AccountKey): Account {
 
 /** Teachers of a course: its holder and the teachers of its groups. */
 export function courseTeachers(course: Course): string[] {
-  return [course.holderId, ...course.groups.flatMap((g) => g.teacherIds)];
+  const groupTeachers = course.groups.flatMap((g) => g.teacherIds);
+  return [
+    course.holderId,
+    ...groupTeachers.filter((id) => course.teachingAssistants?.get(id) !== false),
+  ];
 }
 
 /** The course of a work, when it exists. */

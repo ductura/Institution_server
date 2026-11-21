@@ -222,7 +222,7 @@ export const INSTITUTION_HANDLERS: Handlers = {
       wordMax: body.wordMax,
     };
     // UGOVORI-API: the creation's groups, outside tools and summary-only mode stay with the assignment.
-    for (const key of ["groupIds", "externalToolsAllowed", "aiSummaryOnly"] as const)
+    for (const key of ["groupIds", "externalToolsAllowed", "aiSummaryOnly", "isPractice"] as const)
       if (assignment.content[key] !== undefined)
         Object.assign(content, { [key]: assignment.content[key] });
     if (content.wordMin !== null && content.wordMax !== null && content.wordMin > content.wordMax)

@@ -13,12 +13,16 @@ import {
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
   createAttachmentRoutesFor,
   createAuthRoutes,
   createClientContextRoute,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
+  createMentorshipRequestRoutesFor,
+  createTeachingTeamRoutesFor,
+  createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
@@ -43,6 +47,7 @@ import {
   createStudentNoticeRouteFor,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -51,7 +56,9 @@ import {
   createLiveRoutesFor,
   createLayers,
   createMeRouteFor,
+  createStaffAffiliationRouteFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   createSourceLookupRouteFor,
@@ -61,6 +68,7 @@ import {
   createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createStudentDeadlineHistoryRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -339,6 +347,55 @@ const SESSION_ROUTES = {
     body: () => ({ action: "confirm" }),
     live: 403,
   },
+  // SRV-1407: a request, or a teacher, the account has no relation to is 404.
+  "mentorship.requests.post": {
+    path: "/api/v1/mentorship-requests",
+    body: () => ({ teacherId: randomUUID(), workType: "master_thesis" }),
+    live: 404,
+  },
+  "mentorship.request-approve.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/approve`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.request-decline.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/decline`,
+    body: () => ({}),
+    live: 404,
+  },
+  "mentorship.request-withdraw.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/withdraw`,
+    body: () => undefined,
+    live: 404,
+  },
+  "institution.teaching-team.get": {
+    method: "GET",
+    path: `/api/v1/courses/${randomUUID()}/team`,
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.teaching-team.post": {
+    path: `/api/v1/courses/${randomUUID()}/team`,
+    body: () => ({ assistantIds: [] }),
+    live: 403,
+  },
+  "institution.teaching-group-members.put": {
+    method: "PUT",
+    path: `/api/v1/courses/${randomUUID()}/groups/${randomUUID()}/members`,
+    body: () => ({ assistantIds: [], studentIds: [] }),
+    live: 403,
+  },
+  "mentorship.notes.get": {
+    method: "GET",
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.notes.post": {
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => ({ body: "Izmisljena biljeska." }),
+    live: 404,
+  },
   "student.assignment-work.get": {
     method: "GET",
     path: "/api/v1/student/assignment-work",
@@ -549,6 +606,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-1403: the caller's own staff affiliation; it only reads.
+  "profile.staff-affiliation.get": {
+    method: "GET",
+    path: "/api/v1/me/staff-affiliation",
+    body: () => undefined,
+    live: 200,
+  },
   // DAN-851-2d2a: the problem report. The body is its JCS form (keys in
   // order), which the service asks for; a live report is 201 and stored.
   "support.problem-report.post": {
@@ -560,6 +624,15 @@ const SESSION_ROUTES = {
       description: "Izmišljeni opis: gumb za spremanje ne reagira.",
       route: "/zadaci",
       syncState: "SYNCED",
+    }),
+    live: 201,
+  },
+  "support.problem-reports.post": {
+    path: "/api/v1/problem-reports",
+    body: () => ({
+      appVersion: "1.4.0",
+      category: "technical",
+      description: "Izmišljeni problem s unosom.",
     }),
     live: 201,
   },
@@ -655,6 +728,12 @@ const SESSION_ROUTES = {
   "teacher.deadline-extension.post": {
     path: `/api/v1/teacher/assignments/${randomUUID()}/deadline-extensions`,
     body: () => ({ scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" }),
+    live: 404,
+  },
+  "student.deadline-history.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/deadline-extensions`,
+    body: () => undefined,
     live: 404,
   },
   // SRV-1109: a live session that teaches no such assignment gets 404.
@@ -836,6 +915,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "teacher.assignment-grade.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/grade`,
+    body: () => undefined,
+    live: 404,
+  },
   "institution.assignment-versions.post": {
     path: `/api/v1/institution/assignments/${COURSE}/versions`,
     body: () => ({
@@ -894,6 +979,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 const FACTORIES = [
   "createHealthRoute",
   "createReadyRoute",
+  "createStatusRouteFor",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -910,9 +996,11 @@ const FACTORIES = [
   "createSettingsReadRoutes",
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
+  "createProblemReportsRouteFor",
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
+  "createAssignmentGradeRouteFor",
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
@@ -932,6 +1020,9 @@ const FACTORIES = [
   "createWorkPdfRouteFor",
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
+  "createMentorshipRequestRoutesFor",
+  "createTeachingTeamRoutesFor",
+  "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
@@ -940,11 +1031,13 @@ const FACTORIES = [
   "createStudentSubmissionRoutesFor",
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
+  "createStaffAffiliationRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createCourseAggregateRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
+  "createStudentDeadlineHistoryRouteFor",
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
   "createAssistantRoutesFor",
@@ -962,6 +1055,11 @@ const MOUNTED = [
     check: async () => ({ ready: true, capabilities: {}, codes: {} }),
     draining: () => false,
   }),
+  createStatusRouteFor(
+    databases.main,
+    async () => ({ ready: true, capabilities: {}, codes: {} }),
+    () => false,
+  ),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
@@ -978,9 +1076,11 @@ const MOUNTED = [
   ...createSettingsReadRoutes(databases.main),
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
+  createProblemReportsRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
+  createAssignmentGradeRouteFor(databases.main),
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
@@ -1000,6 +1100,9 @@ const MOUNTED = [
   createWorkPdfRouteFor(databases.main, undefined),
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
+  ...createMentorshipRequestRoutesFor(databases.main),
+  ...createTeachingTeamRoutesFor(databases.main),
+  ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
@@ -1008,11 +1111,13 @@ const MOUNTED = [
   ...createStudentSubmissionRoutesFor(databases.main),
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
+  createStaffAffiliationRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
+  createStudentDeadlineHistoryRouteFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createMerlinPackageRoutesFor(databases.main),
   ...createAssistantRoutesFor(databases.main),
@@ -1230,7 +1335,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     await expectSignedOut(await post("/api/v1/auth/logout", token));
     expect(await sessionEnd(token)).toMatchObject({ reason: "logout" });
     expect(await savedLocale(token)).toEqual(["en"]);
-    expect(await storedReports(token)).toBe(1);
+    expect(await storedReports(token)).toBe(2);
     for (const id of SESSION_IDS) {
       const answer = await call(
         id,
@@ -1246,6 +1351,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("settings.") ||
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
+        id === "support.problem-reports.post" ||
         id === "sources.lookup.post" ||
         id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
@@ -1256,6 +1362,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
         id.startsWith("work.") ||
+        id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
@@ -1266,8 +1373,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       expect(Value.Check(spec?.body as never, body)).toBe(true);
     }
     expect(await savedLocale(token)).toEqual(["en"]);
-    // The old cookie's report reached no row: still only the live one.
-    expect(await storedReports(token)).toBe(1);
+    // Only the two reports submitted with the live session were written.
+    expect(await storedReports(token)).toBe(2);
   });
 
   it("the interface language: POST en, then GET en for the same session; another gets null", async () => {
