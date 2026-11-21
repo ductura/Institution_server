@@ -13287,6 +13287,1152 @@
     }
   },
   {
+    "route": "institution.teaching-group-members.put",
+    "name": "success",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "updated": true
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140819"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140820"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140821"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "40961"
+      },
+      "rawBody": "{\"assistantIds\":[\"7e000000-0000-4000-8000-000000000002\"],\"studentIds\":[\"5a000000-0000-4000-8000-000000000001\"]}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000140822"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "200"
+      },
+      "rawBody": "{\"assistantIds\":[\"7e000000-0000-4000-8000-000000000002\"],\"studentIds\":[\"5a000000-0000-4000-8000-000000000001\"]}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000140823"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140824"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140825"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "200"
+      },
+      "rawBody": "{"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140826"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000140827"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "conflict",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000140828"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000140829"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"assistantIds\":[\"7e000000-0000-4000-8000-000000000002\"],\"studentIds\":[\"5a000000-0000-4000-8000-000000000001\"]}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000140830"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140831"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "id": "nije-uuid",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000140832"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "not-a-thesis",
+    "request": {
+      "params": {
+        "id": "nije-uuid",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000140833"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-group-members.put",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "groupId": "9a000000-0000-4000-8000-00000000000a"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ],
+        "studentIds": [
+          "5a000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140834"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.get",
+    "name": "success",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "holderId": "7e000000-0000-4000-8000-000000000001",
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000140800"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.get",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000140801"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140802"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000140803"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "success",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "updated": true
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140804"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140805"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140806"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "40961"
+      },
+      "rawBody": "{\"assistantIds\":[\"7e000000-0000-4000-8000-000000000002\"]}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000140807"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "200"
+      },
+      "rawBody": "{\"assistantIds\":[\"7e000000-0000-4000-8000-000000000002\"]}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000140808"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140809"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140810"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "200"
+      },
+      "rawBody": "{"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140811"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000140812"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000140813"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"assistantIds\":[\"7e000000-0000-4000-8000-000000000002\"]}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000140814"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000140815"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000140816"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "not-a-thesis",
+    "request": {
+      "params": {
+        "id": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000140817"
+      }
+    }
+  },
+  {
+    "route": "institution.teaching-team.post",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "id": "c0000000-0000-4000-8000-000000000001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavni-tim-0000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "assistantIds": [
+          "7e000000-0000-4000-8000-000000000002"
+        ]
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000140818"
+      }
+    }
+  },
+  {
     "route": "institution.work-language.post",
     "name": "set",
     "request": {
@@ -15126,6 +16272,2663 @@
     }
   },
   {
+    "route": "mentorship.notes.get",
+    "name": "listed",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "notes": [
+          {
+            "id": "00000000-0000-4000-8000-0000000014f1",
+            "body": "Probna biljeska.",
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "notes": []
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001701"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000001702"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001703"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001705"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "created",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-0000000014f1",
+        "body": "Probna biljeska.",
+        "createdAt": "2026-11-21T12:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014ed"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014ee"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014ef"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "65537"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "rawBody": "{\"body\":\"Probna biljeska.\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000014f0"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "81"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "rawBody": "{\"body\":\"Probna biljeska.\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000014f1"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014f2"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014f3"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "81"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "rawBody": "{\"bo"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014f4"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000014f5"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b2"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000014f6"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000014f8"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "rawBody": "{\"body\":\"Probna biljeska.\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-0000000014f9"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "rawBody": "{\"body\":\"Probna biljeska.\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014fa"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "unknown-field",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "unknown": "x",
+        "body": "Probna biljeska."
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000014fb"
+      }
+    }
+  },
+  {
+    "route": "mentorship.notes.post",
+    "name": "blank-note",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000014b1"
+      },
+      "body": {
+        "body": " "
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000014fc"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "approved",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1",
+        "state": "approved",
+        "mentorshipId": "00000000-0000-4000-8000-0000000014b1"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "approved-again",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1",
+        "state": "approved",
+        "mentorshipId": "00000000-0000-4000-8000-0000000014b1"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014e1"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014e2"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014e3"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "16385"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000014e4"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "22"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000014e5"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014e6"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "9999"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014e7"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "22"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014e8"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000014e9"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000014ea"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "conflict",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-0000000014eb"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-approve.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000014ec"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "declined-with-reason",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1",
+        "state": "declined"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "declined-without-reason",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1",
+        "state": "declined"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014ed"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014ee"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014ef"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "8193"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{\"reason\":\"Izmi\\u0161ljeni razlog: mentorstvo je popunjeno.\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000014f0"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "81"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{\"reason\":\"Izmi\\u0161ljeni razlog: mentorstvo je popunjeno.\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000014f1"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014f2"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014f3"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "81"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{\"r"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014f4"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000014f5"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000014f6"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "conflict",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-0000000014f7"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno."
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000014f8"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{\"reason\":\"Izmi\\u0161ljeni razlog: mentorstvo je popunjeno.\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-0000000014f9"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{\"reason\":\"Izmi\\u0161ljeni razlog: mentorstvo je popunjeno.\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014fa"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "unknown-field",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": "Izmišljeni razlog: mentorstvo je popunjeno.",
+        "unknown": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000014fb"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-decline.post",
+    "name": "blank-reason",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-mentorstvo-01",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "body": {
+        "reason": " "
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000014fc"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "withdrawn",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1",
+        "state": "withdrawn"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014fd"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014fe"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014ff"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "16385"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000001500"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "22"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000001501"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000001502"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "9999"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000001503"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "22"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000001504"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001505"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001506"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "conflict",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000001507"
+      }
+    }
+  },
+  {
+    "route": "mentorship.request-withdraw.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      },
+      "params": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001508"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "requested",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "requestId": "00000000-0000-4000-8000-0000000014a1",
+        "state": "requested"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014d1"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014d2"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000014d3"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1025"
+      },
+      "rawBody": "{\"teacherId\":\"00000000-0000-4000-8000-0000000014c1\",\"workType\":\"bachelor_thesis\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000014d4"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "101"
+      },
+      "rawBody": "{\"teacherId\":\"00000000-0000-4000-8000-0000000014c1\",\"workType\":\"bachelor_thesis\"}"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000014d5"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014d6"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "9999"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014d7"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "101"
+      },
+      "rawBody": "{\"t"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014d8"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000014d9"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000014da"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "conflict",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "conflict",
+        "code": "conflict",
+        "messageKey": "errors.conflict",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-0000000014db"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000014dc"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"teacherId\":\"00000000-0000-4000-8000-0000000014c1\",\"workType\":\"bachelor_thesis\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-0000000014dd"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"teacherId\":\"00000000-0000-4000-8000-0000000014c1\",\"workType\":\"bachelor_thesis\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000014de"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "unknown-field",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "bachelor_thesis",
+        "unknown": "x"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000014df"
+      }
+    }
+  },
+  {
+    "route": "mentorship.requests.post",
+    "name": "not-a-thesis",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-mentorstvo-0001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "teacherId": "00000000-0000-4000-8000-0000000014c1",
+        "workType": "essay"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000014e0"
+      }
+    }
+  },
+  {
+    "route": "notifications.list.get",
+    "name": "inbox",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "notifications": [
+          {
+            "id": "00000000-0000-4000-8000-000000001701",
+            "kind": "deadline_reminder",
+            "targetId": "a5000000-0000-4000-8000-000000000001",
+            "createdAt": "2026-11-21T08:00:00.000Z",
+            "readAt": null
+          }
+        ],
+        "nextBefore": null
+      }
+    }
+  },
+  {
+    "route": "notifications.list.get",
+    "name": "unauthorized",
+    "request": {
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000000ba"
+      }
+    }
+  },
+  {
+    "route": "notifications.list.get",
+    "name": "not-found",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "query": {
+        "before": "00000000-0000-4000-8000-000000001702"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000000bc"
+      }
+    }
+  },
+  {
+    "route": "notifications.list.get",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "query": {
+        "before": "invalid"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000bb"
+      }
+    }
+  },
+  {
+    "route": "notifications.list.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000000bd"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "read",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      }
+    },
+    "response": {
+      "status": 204
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000000ba"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001702"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000000bc"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000000bd"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "sec-fetch-site": "same-origin"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000b0"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000b1"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000b2"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "16385"
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000000b3"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      }
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000000b4"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "-1"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000b5"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "101"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000b6"
+      }
+    }
+  },
+  {
+    "route": "notifications.read.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-000000001701"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-length": "51"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000b7"
+      }
+    }
+  },
+  {
     "route": "platform.health.get",
     "name": "alive",
     "request": {},
@@ -15160,7 +18963,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.53.0",
+        "apiVersion": "1.57.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15176,7 +18979,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.53.0",
+        "apiVersion": "1.57.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -20203,6 +24006,133 @@
         "messageKey": "errors.unauthorized",
         "status": 401,
         "requestId": "00000000-0000-4000-8000-00000000d112"
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "list",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "extensions": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000f1",
+            "scope": "one",
+            "previousDueAt": "2026-12-20T23:00:00.000Z",
+            "dueAt": "2026-12-27T23:00:00.000Z",
+            "reasonId": "justified",
+            "createdAt": "2026-11-21T09:15:00.000Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000f2",
+            "scope": "all",
+            "previousDueAt": "2026-12-20T23:00:00.000Z",
+            "dueAt": "2027-01-10T23:00:00.000Z",
+            "reasonId": "all",
+            "createdAt": "2026-11-21T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "extensions": []
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000000d100"
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000d101"
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000000d102"
       }
     }
   },
@@ -38451,6 +42381,157 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "route": "work.export.get",
+    "name": "newest-version",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "format": "docx"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "headers": {
+        "cache-control": "private, no-store",
+        "x-export-snapshot-sha256": "e5d274b5e85d84800c77e864927c11b756d2c734e958f416fed5d988ae1c167c"
+      },
+      "body": "UEsDBBQAAAgAAAAAIQDwSsJ/LAIAACwCAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48VHlwZXMgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvY29udGVudC10eXBlcyI+PERlZmF1bHQgRXh0ZW5zaW9uPSJyZWxzIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLXBhY2thZ2UucmVsYXRpb25zaGlwcyt4bWwiLz48RGVmYXVsdCBFeHRlbnNpb249InhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3htbCIvPjxPdmVycmlkZSBQYXJ0TmFtZT0iL3dvcmQvZG9jdW1lbnQueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwuZG9jdW1lbnQubWFpbit4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii93b3JkL3N0eWxlcy54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQud29yZHByb2Nlc3NpbmdtbC5zdHlsZXMreG1sIi8+PC9UeXBlcz5QSwMEFAAACAAAAAAhAJv9N+opAQAAKQEAAAsAAABfcmVscy8ucmVsczw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48UmVsYXRpb25zaGlwcyB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL3BhY2thZ2UvMjAwNi9yZWxhdGlvbnNoaXBzIj48UmVsYXRpb25zaGlwIElkPSJySWQxIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL29mZmljZURvY3VtZW50IiBUYXJnZXQ9IndvcmQvZG9jdW1lbnQueG1sIi8+PC9SZWxhdGlvbnNoaXBzPlBLAwQUAAAIAAAAACEAgitSgRoBAAAaAQAAHAAAAHdvcmQvX3JlbHMvZG9jdW1lbnQueG1sLnJlbHM8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+PFJlbGF0aW9uc2hpcHMgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvcmVsYXRpb25zaGlwcyI+PFJlbGF0aW9uc2hpcCBJZD0icklkUyIgVHlwZT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcy9zdHlsZXMiIFRhcmdldD0ic3R5bGVzLnhtbCIvPjwvUmVsYXRpb25zaGlwcz5QSwMEFAAACAAAAAAhAO9Em1mcAwAAnAMAAA8AAAB3b3JkL3N0eWxlcy54bWw8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+PHc6c3R5bGVzIHhtbG5zOnc9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy93b3JkcHJvY2Vzc2luZ21sLzIwMDYvbWFpbiIgeG1sbnM6cj0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcyI+PHc6c3R5bGUgdzp0eXBlPSJwYXJhZ3JhcGgiIHc6c3R5bGVJZD0iVGl0bGUiPjx3Om5hbWUgdzp2YWw9IlRpdGxlIi8+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSI0MCIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkhlYWRpbmcxIj48dzpuYW1lIHc6dmFsPSJoZWFkaW5nIDEiLz48dzpwUHI+PHc6a2VlcE5leHQvPjwvdzpwUHI+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSIzMiIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkhlYWRpbmcyIj48dzpuYW1lIHc6dmFsPSJoZWFkaW5nIDIiLz48dzpwUHI+PHc6a2VlcE5leHQvPjwvdzpwUHI+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSIyOCIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkhlYWRpbmczIj48dzpuYW1lIHc6dmFsPSJoZWFkaW5nIDMiLz48dzpwUHI+PHc6a2VlcE5leHQvPjwvdzpwUHI+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSIyNCIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkNhcHRpb24iPjx3Om5hbWUgdzp2YWw9ImNhcHRpb24iLz48dzpyUHI+PHc6aS8+PHc6c3ogdzp2YWw9IjIwIi8+PC93OnJQcj48L3c6c3R5bGU+PC93OnN0eWxlcz5QSwMEFAAACAAAAAAhAPRAzsSeBQAAngUAABEAAAB3b3JkL2RvY3VtZW50LnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48dzpkb2N1bWVudCB4bWxuczp3PSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvd29yZHByb2Nlc3NpbmdtbC8yMDA2L21haW4iIHhtbG5zOnI9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9vZmZpY2VEb2N1bWVudC8yMDA2L3JlbGF0aW9uc2hpcHMiPjx3OmJvZHk+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpqYyB3OnZhbD0iY2VudGVyIi8+PC93OnBQcj48dzpyPjwvdzpyPjwvdzpwPjx3OnA+PHc6cFByPjx3OmpjIHc6dmFsPSJjZW50ZXIiLz48L3c6cFByPjx3OnI+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpwU3R5bGUgdzp2YWw9IlRpdGxlIi8+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48dzp0IHhtbDpzcGFjZT0icHJlc2VydmUiPkl6bWnFoWxqZW5pIHJhZCBvIGtvbXBvc3RpcmFuanU8L3c6dD48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpqYyB3OnZhbD0iY2VudGVyIi8+PC93OnBQcj48dzpyPjwvdzpyPjwvdzpwPjx3OnA+PHc6cFByPjx3OmpjIHc6dmFsPSJjZW50ZXIiLz48L3c6cFByPjx3OnI+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpqYyB3OnZhbD0iY2VudGVyIi8+PC93OnBQcj48dzpyPjwvdzpyPjwvdzpwPjx3OnA+PHc6cFByPjx3OmpjIHc6dmFsPSJjZW50ZXIiLz48L3c6cFByPjx3OnI+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnI+PHc6YnIgdzp0eXBlPSJwYWdlIi8+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6cFN0eWxlIHc6dmFsPSJIZWFkaW5nMSIvPjwvdzpwUHI+PHc6cj48dzp0IHhtbDpzcGFjZT0icHJlc2VydmUiPjEgPC93OnQ+PC93OnI+PHc6cj48dzp0IHhtbDpzcGFjZT0icHJlc2VydmUiPkl6bWnFoWxqZW5pIHJhZCBvIGtvbXBvc3RpcmFuanU8L3c6dD48L3c6cj48L3c6cD48dzpwPjx3OnI+PHc6dCB4bWw6c3BhY2U9InByZXNlcnZlIj5Jem1pxaFsamVuaSBvZGxvbWFrLjwvdzp0PjwvdzpyPjwvdzpwPjx3OnNlY3RQcj48dzpwZ1N6IHc6dz0iMTE5MDYiIHc6aD0iMTY4MzgiLz48dzpwZ01hciB3OnRvcD0iMTQxOCIgdzpyaWdodD0iMTQxOCIgdzpib3R0b209IjE0MTgiIHc6bGVmdD0iMTQxOCIgdzpoZWFkZXI9IjcwOSIgdzpmb290ZXI9IjcwOSIgdzpndXR0ZXI9IjAiLz48L3c6c2VjdFByPjwvdzpib2R5Pjwvdzpkb2N1bWVudD5QSwECFAAUAAAIAAAAACEA8ErCfywCAAAsAgAAEwAAAAAAAAAAAAAAAAAAAAAAW0NvbnRlbnRfVHlwZXNdLnhtbFBLAQIUABQAAAgAAAAAIQCb/TfqKQEAACkBAAALAAAAAAAAAAAAAAAAAF0CAABfcmVscy8ucmVsc1BLAQIUABQAAAgAAAAAIQCCK1KBGgEAABoBAAAcAAAAAAAAAAAAAAAAAK8DAAB3b3JkL19yZWxzL2RvY3VtZW50LnhtbC5yZWxzUEsBAhQAFAAACAAAAAAhAO9Em1mcAwAAnAMAAA8AAAAAAAAAAAAAAAAAAwUAAHdvcmQvc3R5bGVzLnhtbFBLAQIUABQAAAgAAAAAIQD0QM7EngUAAJ4FAAARAAAAAAAAAAAAAAAAAMwIAAB3b3JkL2RvY3VtZW50LnhtbFBLBQYAAAAABQAFAEABAACZDgAAAAA="
+    }
+  },
+  {
+    "route": "work.export.get",
+    "name": "named-version",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "format": "docx",
+        "versionId": "42"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "headers": {
+        "cache-control": "private, no-store",
+        "x-export-snapshot-sha256": "e5d274b5e85d84800c77e864927c11b756d2c734e958f416fed5d988ae1c167c"
+      },
+      "body": "UEsDBBQAAAgAAAAAIQDwSsJ/LAIAACwCAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48VHlwZXMgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvY29udGVudC10eXBlcyI+PERlZmF1bHQgRXh0ZW5zaW9uPSJyZWxzIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLXBhY2thZ2UucmVsYXRpb25zaGlwcyt4bWwiLz48RGVmYXVsdCBFeHRlbnNpb249InhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3htbCIvPjxPdmVycmlkZSBQYXJ0TmFtZT0iL3dvcmQvZG9jdW1lbnQueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwuZG9jdW1lbnQubWFpbit4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii93b3JkL3N0eWxlcy54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQud29yZHByb2Nlc3NpbmdtbC5zdHlsZXMreG1sIi8+PC9UeXBlcz5QSwMEFAAACAAAAAAhAJv9N+opAQAAKQEAAAsAAABfcmVscy8ucmVsczw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48UmVsYXRpb25zaGlwcyB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL3BhY2thZ2UvMjAwNi9yZWxhdGlvbnNoaXBzIj48UmVsYXRpb25zaGlwIElkPSJySWQxIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL29mZmljZURvY3VtZW50IiBUYXJnZXQ9IndvcmQvZG9jdW1lbnQueG1sIi8+PC9SZWxhdGlvbnNoaXBzPlBLAwQUAAAIAAAAACEAgitSgRoBAAAaAQAAHAAAAHdvcmQvX3JlbHMvZG9jdW1lbnQueG1sLnJlbHM8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+PFJlbGF0aW9uc2hpcHMgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvcmVsYXRpb25zaGlwcyI+PFJlbGF0aW9uc2hpcCBJZD0icklkUyIgVHlwZT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcy9zdHlsZXMiIFRhcmdldD0ic3R5bGVzLnhtbCIvPjwvUmVsYXRpb25zaGlwcz5QSwMEFAAACAAAAAAhAO9Em1mcAwAAnAMAAA8AAAB3b3JkL3N0eWxlcy54bWw8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+PHc6c3R5bGVzIHhtbG5zOnc9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy93b3JkcHJvY2Vzc2luZ21sLzIwMDYvbWFpbiIgeG1sbnM6cj0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcyI+PHc6c3R5bGUgdzp0eXBlPSJwYXJhZ3JhcGgiIHc6c3R5bGVJZD0iVGl0bGUiPjx3Om5hbWUgdzp2YWw9IlRpdGxlIi8+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSI0MCIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkhlYWRpbmcxIj48dzpuYW1lIHc6dmFsPSJoZWFkaW5nIDEiLz48dzpwUHI+PHc6a2VlcE5leHQvPjwvdzpwUHI+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSIzMiIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkhlYWRpbmcyIj48dzpuYW1lIHc6dmFsPSJoZWFkaW5nIDIiLz48dzpwUHI+PHc6a2VlcE5leHQvPjwvdzpwUHI+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSIyOCIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkhlYWRpbmczIj48dzpuYW1lIHc6dmFsPSJoZWFkaW5nIDMiLz48dzpwUHI+PHc6a2VlcE5leHQvPjwvdzpwUHI+PHc6clByPjx3OmIvPjx3OnN6IHc6dmFsPSIyNCIvPjwvdzpyUHI+PC93OnN0eWxlPjx3OnN0eWxlIHc6dHlwZT0icGFyYWdyYXBoIiB3OnN0eWxlSWQ9IkNhcHRpb24iPjx3Om5hbWUgdzp2YWw9ImNhcHRpb24iLz48dzpyUHI+PHc6aS8+PHc6c3ogdzp2YWw9IjIwIi8+PC93OnJQcj48L3c6c3R5bGU+PC93OnN0eWxlcz5QSwMEFAAACAAAAAAhAPRAzsSeBQAAngUAABEAAAB3b3JkL2RvY3VtZW50LnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48dzpkb2N1bWVudCB4bWxuczp3PSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvd29yZHByb2Nlc3NpbmdtbC8yMDA2L21haW4iIHhtbG5zOnI9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9vZmZpY2VEb2N1bWVudC8yMDA2L3JlbGF0aW9uc2hpcHMiPjx3OmJvZHk+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpqYyB3OnZhbD0iY2VudGVyIi8+PC93OnBQcj48dzpyPjwvdzpyPjwvdzpwPjx3OnA+PHc6cFByPjx3OmpjIHc6dmFsPSJjZW50ZXIiLz48L3c6cFByPjx3OnI+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpwU3R5bGUgdzp2YWw9IlRpdGxlIi8+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48dzp0IHhtbDpzcGFjZT0icHJlc2VydmUiPkl6bWnFoWxqZW5pIHJhZCBvIGtvbXBvc3RpcmFuanU8L3c6dD48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpqYyB3OnZhbD0iY2VudGVyIi8+PC93OnBQcj48dzpyPjwvdzpyPjwvdzpwPjx3OnA+PHc6cFByPjx3OmpjIHc6dmFsPSJjZW50ZXIiLz48L3c6cFByPjx3OnI+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnBQcj48dzpqYyB3OnZhbD0iY2VudGVyIi8+PC93OnBQcj48dzpyPjwvdzpyPjwvdzpwPjx3OnA+PHc6cFByPjx3OmpjIHc6dmFsPSJjZW50ZXIiLz48L3c6cFByPjx3OnI+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6amMgdzp2YWw9ImNlbnRlciIvPjwvdzpwUHI+PHc6cj48L3c6cj48L3c6cD48dzpwPjx3OnI+PHc6YnIgdzp0eXBlPSJwYWdlIi8+PC93OnI+PC93OnA+PHc6cD48dzpwUHI+PHc6cFN0eWxlIHc6dmFsPSJIZWFkaW5nMSIvPjwvdzpwUHI+PHc6cj48dzp0IHhtbDpzcGFjZT0icHJlc2VydmUiPjEgPC93OnQ+PC93OnI+PHc6cj48dzp0IHhtbDpzcGFjZT0icHJlc2VydmUiPkl6bWnFoWxqZW5pIHJhZCBvIGtvbXBvc3RpcmFuanU8L3c6dD48L3c6cj48L3c6cD48dzpwPjx3OnI+PHc6dCB4bWw6c3BhY2U9InByZXNlcnZlIj5Jem1pxaFsamVuaSBvZGxvbWFrLjwvdzp0PjwvdzpyPjwvdzpwPjx3OnNlY3RQcj48dzpwZ1N6IHc6dz0iMTE5MDYiIHc6aD0iMTY4MzgiLz48dzpwZ01hciB3OnRvcD0iMTQxOCIgdzpyaWdodD0iMTQxOCIgdzpib3R0b209IjE0MTgiIHc6bGVmdD0iMTQxOCIgdzpoZWFkZXI9IjcwOSIgdzpmb290ZXI9IjcwOSIgdzpndXR0ZXI9IjAiLz48L3c6c2VjdFByPjwvdzpib2R5Pjwvdzpkb2N1bWVudD5QSwECFAAUAAAIAAAAACEA8ErCfywCAAAsAgAAEwAAAAAAAAAAAAAAAAAAAAAAW0NvbnRlbnRfVHlwZXNdLnhtbFBLAQIUABQAAAgAAAAAIQCb/TfqKQEAACkBAAALAAAAAAAAAAAAAAAAAF0CAABfcmVscy8ucmVsc1BLAQIUABQAAAgAAAAAIQCCK1KBGgEAABoBAAAcAAAAAAAAAAAAAAAAAK8DAAB3b3JkL19yZWxzL2RvY3VtZW50LnhtbC5yZWxzUEsBAhQAFAAACAAAAAAhAO9Em1mcAwAAnAMAAA8AAAAAAAAAAAAAAAAAAwUAAHdvcmQvc3R5bGVzLnhtbFBLAQIUABQAAAgAAAAAIQD0QM7EngUAAJ4FAAARAAAAAAAAAAAAAAAAAMwIAAB3b3JkL2RvY3VtZW50LnhtbFBLBQYAAAAABQAFAEABAACZDgAAAAA="
+    }
+  },
+  {
+    "route": "work.export.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "format": "docx"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.export.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "format": "docx",
+        "versionId": "42"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002001"
+      }
+    }
+  },
+  {
+    "route": "work.export.get",
+    "name": "pdf-not-ready",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "format": "pdf"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002002"
+      }
+    }
+  },
+  {
+    "route": "work.export.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1"
+      },
+      "query": {
+        "format": "docx"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-izvoz-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002003"
       }
     }
   },

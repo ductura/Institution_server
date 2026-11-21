@@ -1,6 +1,6 @@
 // SRV-1207 (M9.0-S3, Ductus#2052): the database port of the assistant's
 // tools, step 3 of Ductus docs/contracts/ai-tools-v1.md (migration
-// 20261130100000_assistant_tools). Each call is one withActor transaction
+// 20261130100100_assistant_tools). Each call is one withActor transaction
 // over one RPC of schema assistant: the teacher's setting of an assignment
 // (set_assignment_tools, read_assignment_tools) and the steps of the AI
 // route's tool loop (begin_tool_step, finish_tool_step). The database decides

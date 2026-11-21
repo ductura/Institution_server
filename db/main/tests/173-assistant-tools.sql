@@ -1,5 +1,5 @@
 -- SRV-1207 (M9.0-S3, Ductus#2052): the tools of the assistant in the database
--- (20261130100000), step 3 of Ductus docs/contracts/ai-tools-v1.md; plan of
+-- (20261130100100), step 3 of Ductus docs/contracts/ai-tools-v1.md; plan of
 -- attack Ductus#1664 S3-D1, S3-D3, S3-D5, S3-U5, S3-I2, S3-Z1. One
 -- transaction, so one call after another; the races of "Istodobnost" are in
 -- tests/db/assistant-tools.integration.test.ts.

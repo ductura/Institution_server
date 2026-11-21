@@ -6,6 +6,9 @@ export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
+export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
+export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
+export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -19,6 +22,7 @@ export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
+export { createStudentDeadlineHistoryRouteFor } from "./student-deadline-history.ts";
 export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
@@ -102,7 +106,9 @@ export { CHECK_DEADLINE_MS, createHealthRoute, type HealthState } from "./health
 export {
   createInstitutionCourseRoutes,
   createInstitutionCourseRoutesFor,
+  decodeOnce,
   INSTITUTION_BODY_TIMEOUT_MS,
+  readInstitutionJson,
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {
@@ -278,6 +284,7 @@ export {
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
+export { createWorkExportRoute, createWorkExportRouteFor } from "./work-export/index.ts";
 export { createWorkVersionRouteFor } from "./time-machine/index.ts";
 export {
   createCommentBankRoutes,
@@ -290,6 +297,7 @@ export {
   createWorkMessagesPostRoute,
   createWorkMessagesRoutesFor,
 } from "./work-messages/index.ts";
+export { createNotificationsRoutesFor } from "./notifications/index.ts";
 export {
   createDirectEditGetRoute,
   createDirectEditPutRoute,
