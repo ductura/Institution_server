@@ -18,7 +18,6 @@ export type WorkDocxInput = {
   /** The exact stored bytes of the text of the revision. */
   readonly body: string;
   readonly revision: number;
-  readonly kind: "saved" | "submitted";
   /** When the version was stored, an ISO instant. */
   readonly savedAt: string;
   readonly labels: ExportLabels;
@@ -42,7 +41,9 @@ export function renderWorkDocx(input: WorkDocxInput): WorkDocx {
     // A v1 to v3 document has only the blocks of v4 that the export reads (as the Merlin files).
     document: checked.doc as CanonicalDocumentV4,
     versionId: String(input.revision),
-    kind: input.kind,
+    // Always "saved": the kind of a revision changes when it is submitted, and the
+    // fingerprint of the same document and versionId must not change with it.
+    kind: "saved",
     pageSetup: A4_PAGE,
     // No name, institution or mentor is read for the cover yet (open item in the PR).
     cover: { institution: "", unit: "", workType: "", student: "", mentor: "" },
