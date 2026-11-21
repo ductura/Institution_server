@@ -441,7 +441,8 @@ export function createState(receiptSigner = createReceiptSigner()): State {
           aiPolicy: "partially_allowed",
           aiPurposes: ["proofreading", "literature_search"],
           evidenceProfile: "basic",
-          importAllowed: false,
+          // SRV-1803: the demo assignment allows import, so the local import can be tried.
+          importAllowed: true,
           wordMin: 1500,
           wordMax: 2500,
         },

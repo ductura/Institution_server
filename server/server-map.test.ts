@@ -55,6 +55,8 @@ const REQUIRED_AREAS = [
   "worker",
   // SRV-1401 (DAN-296, M1.6): idle expiry of a session.
   "identity",
+  // SRV-1803 (M8.2, Ductus#2052 c.7062877544): the DOCX import reader.
+  "import",
   "contracts",
   "domain",
   "test-server",
