@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2830);
+SELECT plan(2838);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -687,7 +687,43 @@ FROM (VALUES
   ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
   ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
 ) AS c (actor, result);
-INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
+-- SRV-1301 (M10.0-S1): the erasure contract. The tombstones have forced RLS
+-- and only their owner reaches them; only the retention role executes the
+-- two erasure RPCs, and the private steps belong to the two table owners.
+-- The rest (append-only, the access log guard, the tombstone) is in
+-- 180-erasure-tombstone.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND NOT EXISTS (SELECT 1 FROM aclexplode(c.relacl) a WHERE a.grantee <> c.relowner),
+  'SRV-1301: erasure has forced RLS and no privilege outside its owner')
+  FROM pg_class c WHERE c.oid = 'evidence.erasure'::regclass;
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_retention', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.erasure_append(text,text,text,uuid)', 'app.erasure_of(text,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1301: only the retention role and the owner execute the erasure RPCs'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.erasure_recorded(text,text)', 'app.access_log_hash(uuid)', 'app.access_log_erase(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1301: the private erasure steps are only for the two table owners'
+);
+SELECT is(pg_temp.ask_as(c.role, 'anon', $$ SELECT count(*)::text FROM app.erasure_of('access_log', {nobody}) $$), c.result,
+  format('SRV-1301: %s reads a tombstone: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', '42501: permission denied for function erasure_of'),
+  ('ductus_identity', '42501: permission denied for function erasure_of'),
+  ('ductus_worker', '42501: permission denied for function erasure_of'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_retention', '0')
+) AS c (role, result);
+INSERT INTO ref VALUES ('rq',pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
