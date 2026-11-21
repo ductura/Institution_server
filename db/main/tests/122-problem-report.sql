@@ -48,10 +48,11 @@ SELECT ok(
    FROM pg_class c WHERE c.oid = 'identity.problem_report'::regclass),
   'problem_report has ENABLE and FORCE ROW LEVEL SECURITY and belongs to ductus_identity'
 );
-SELECT is(
-  (SELECT string_agg(pol.polname || ' ' || pol.polcmd::text || ' ' || array_to_string(pol.polroles::regrole[], ','), ' | ')
-   FROM pg_policy pol WHERE pol.polrelid = 'identity.problem_report'::regclass),
-  'problem_report_operator_read r ductus_problem_report_reader | problem_report_own_read r ductus_app | problem_report_owner * ductus_identity',
+SELECT bag_eq(
+  $$ SELECT pol.polname || ' ' || pol.polcmd::text || ' ' || array_to_string(pol.polroles::regrole[], ',')
+     FROM pg_policy pol WHERE pol.polrelid = 'identity.problem_report'::regclass $$,
+  ARRAY['problem_report_operator_read r ductus_problem_report_reader',
+        'problem_report_own_read r ductus_app', 'problem_report_owner * ductus_identity'],
   'the owner and the two read-only policies are the only policies'
 );
 SELECT is(
