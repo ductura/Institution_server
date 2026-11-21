@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createFakeSigner, tombstone } from "../checkpoint.fixture.ts";
-import {
-  encodeErasureCheckpoint,
-  erasureCheckpointPayload,
-  erasureCheckpointSigningInput,
-  type ErasureTombstone,
-  type SignedErasureCheckpoint,
-} from "../erasure-checkpoint.ts";
+import { createDeletionService, type ErasureTombstone } from "../index.ts";
+import { createFakeSigner, createFakeStore, tombstone } from "./restore-drill.fixture.ts";
 import { runRestoreDrill } from "./restore-drill.ts";
 
 const SYNTHETIC = "5d5d5d5d-0000-4000-8000-000000000001";
@@ -18,12 +12,16 @@ function drillTombstone(seed: number): ErasureTombstone {
 
 async function checkpointOf(records: ErasureTombstone[], institutionId = SYNTHETIC) {
   const signer = createFakeSigner();
-  const payload = await erasureCheckpointPayload(institutionId, records);
-  const signature = await signer.sign(erasureCheckpointSigningInput(payload));
+  const built = await createDeletionService({
+    signer,
+    store: createFakeStore(),
+  }).checkpointErasures({
+    institutionId,
+    records,
+  });
   const key = await signer.publicVerificationKey();
-  if (!signature.ok || !key.ok) throw new Error("fake signer failed");
-  const checkpoint: SignedErasureCheckpoint = { payload, signature: signature.value };
-  return { bytes: encodeErasureCheckpoint(checkpoint), publicKey: key.value };
+  if (!built.ok || !key.ok) throw new Error("fake checkpoint failed");
+  return { bytes: built.value.bytes, publicKey: key.value };
 }
 
 const TOMBSTONES = [drillTombstone(1), drillTombstone(2), drillTombstone(3)];
@@ -102,7 +100,8 @@ describe("restore drill (M10.Z1)", () => {
 
     it("a checkpoint of another institution", async () => {
       const otherId = "5d5d5d5d-0000-4000-8000-000000000002";
-      const { bytes, publicKey } = await checkpointOf(TOMBSTONES, otherId);
+      const other = TOMBSTONES.map((t) => ({ ...t, institutionId: otherId }));
+      const { bytes, publicKey } = await checkpointOf(other, otherId);
       const result = await runRestoreDrill({
         institutionId: SYNTHETIC,
         checkpoint: bytes,

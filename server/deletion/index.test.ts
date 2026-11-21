@@ -17,6 +17,7 @@ describe("server/deletion public interface", () => {
       "MAX_ERASURE_CHECKPOINT_RECORDS",
       "SYNTHETIC_INSTITUTION_PATTERN",
       "createDeletionService",
+      "readErasureTombstones",
       "runRestoreDrill",
       "verifyErasureCheckpoint",
     ]);

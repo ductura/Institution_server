@@ -14,7 +14,7 @@ import {
   type ErasureCheckpointProblem,
   type ErasureDataClass,
   type ErasureTombstone,
-} from "../erasure-checkpoint.ts";
+} from "../index.ts";
 
 /** Synthetic institutions of the drill carry this prefix; no real one may. */
 export const SYNTHETIC_INSTITUTION_PATTERN = /^5d5d5d5d-0000-4000-8000-[0-9a-f]{12}$/;

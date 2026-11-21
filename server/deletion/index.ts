@@ -8,6 +8,7 @@ export {
   ERASURE_REASONS,
   MAX_ERASURE_CHECKPOINT_BYTES,
   MAX_ERASURE_CHECKPOINT_RECORDS,
+  readErasureTombstones,
   verifyErasureCheckpoint,
   type ErasureCheckpointPayload,
   type ErasureCheckpointProblem,
