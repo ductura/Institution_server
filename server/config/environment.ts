@@ -104,3 +104,9 @@ export function shutdownGraceMs(env: Env = process.env): number {
   const value = env.SHUTDOWN_GRACE_MS;
   return value === undefined ? DEFAULT_SHUTDOWN_GRACE_MS : Number(value);
 }
+
+// SRV-1812 (plan M11.3): the exit code of a start refused by its environment,
+// EX_CONFIG of sysexits.h, so a supervisor tells a bad configuration (fix the
+// variables) from a crash or a busy port (exit 1). The line before it names
+// the variable, never its value.
+export const EXIT_CONFIGURATION = 78;

@@ -1,6 +1,7 @@
 import {
   attachmentRoutes,
   assistantRoutes,
+  statementRoutes,
   authRoutes,
   clientRoutes,
   collaborationRoutes,
@@ -38,6 +39,8 @@ import {
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workMessagesRoutes,
+  commentsRoutes,
+  directEditRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -58,6 +61,7 @@ export {
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
 };
+export { SESSION_IDLE_EXPIRED } from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export { STAFF_AFFILIATION_SOURCES } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
@@ -108,6 +112,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...collaborationRoutes,
   ...consultationSlotRoutes,
   ...assistantRoutes,
+  ...statementRoutes,
   ...liveRoutes,
   ...enrollmentRoutes,
   ...institutionRoutes,
@@ -119,6 +124,8 @@ export const ROUTES: readonly RouteContract[] = [
   ...publicVerificationRoutes,
   ...versionsRoutes,
   ...workMessagesRoutes,
+  ...commentsRoutes,
+  ...directEditRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

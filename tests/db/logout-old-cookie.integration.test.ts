@@ -29,13 +29,16 @@ import {
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
+  createCommentRoutesFor,
   createWorkMessagesRoutesFor,
+  createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
   createHealthRoute,
+  createReadyRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -56,6 +59,7 @@ import {
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
+  createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
@@ -173,6 +177,80 @@ const SESSION_ROUTES = {
   "work.messages.post": {
     path: `/api/v1/works/${randomUUID()}/messages`,
     body: () => ({ text: "Izmišljena poruka." }),
+    live: 404,
+  },
+  // SRV-1703: a work it may not teach, a draft or an entry that is not its own, and a student asking for a bank are all 404.
+  "work.comment-drafts.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/comment-drafts`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.comment-drafts.post": {
+    path: `/api/v1/works/${randomUUID()}/comment-drafts`,
+    body: () => ({
+      text: "Izmišljena napomena.",
+      anchor: {
+        nodeId: randomUUID(),
+        quote: "odlomak",
+        prefix: "",
+        suffix: "",
+        startHint: 0,
+        endHint: 7,
+      },
+    }),
+    live: 404,
+  },
+  "work.comment-draft.delete": {
+    method: "DELETE",
+    path: `/api/v1/comment-drafts/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.comments.publish.post": {
+    path: `/api/v1/works/${randomUUID()}/comments/publish`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.comment-bank.get": {
+    method: "GET",
+    path: "/api/v1/teacher/comment-bank",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.comment-bank.post": {
+    path: "/api/v1/teacher/comment-bank",
+    body: () => ({ text: "Izmišljeno: navedite izvor.", kind: "must" }),
+    live: 404,
+  },
+  "teacher.comment-bank.delete": {
+    method: "DELETE",
+    path: `/api/v1/teacher/comment-bank/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.review.post": {
+    path: `/api/v1/works/${randomUUID()}/review`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.changes-since-review.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/changes-since-review`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1702: a work it may not read is 404 for the setting and for setting it.
+  "work.direct-edit.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/direct-edit`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.direct-edit.put": {
+    method: "PUT",
+    path: `/api/v1/works/${randomUUID()}/direct-edit`,
+    body: () => ({ mode: "direct" }),
     live: 404,
   },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
@@ -568,6 +646,23 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "student.declaration.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.declaration.put": {
+    method: "PUT",
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration`,
+    body: () => ({}),
+    live: 422,
+  },
+  "student.declaration-attachments.post": {
+    path: `/api/v1/student/assignments/${randomUUID()}/declaration-attachments`,
+    body: () => ({}),
+    live: 422,
+  },
   "teacher.assignment-submissions.post": {
     path: "/api/v1/teacher/assignment-submissions",
     body: () => ({ assignmentIds: [ASSIGNMENT] }),
@@ -736,6 +831,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 /** The route factories server/server.ts calls in its `routes` list, in order. */
 const FACTORIES = [
   "createHealthRoute",
+  "createReadyRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -759,6 +855,8 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
+  "createCommentRoutesFor",
+  "createDirectEditRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
@@ -782,6 +880,7 @@ const FACTORIES = [
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
   "createAssistantRoutesFor",
+  "createStatementRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
   "createAuthRoutes",
@@ -790,6 +889,11 @@ const FACTORIES = [
 const evidenceDeps = evidenceIngestDependencies(ENV, ROOT);
 const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
+  // Public readiness; no session, so no 401 in its contract.
+  createReadyRoute({
+    check: async () => ({ ready: true, capabilities: {}, codes: {} }),
+    draining: () => false,
+  }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
@@ -813,6 +917,8 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
+  ...createCommentRoutesFor(databases.main, evidenceDeps),
+  ...createDirectEditRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
@@ -836,6 +942,7 @@ const MOUNTED = [
   ...createMerlinRosterRoutesFor(databases.main),
   ...createMerlinPackageRoutesFor(databases.main),
   ...createAssistantRoutesFor(databases.main),
+  ...createStatementRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),
   ...createAuthRoutes(ENV),

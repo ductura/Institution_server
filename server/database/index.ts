@@ -153,6 +153,12 @@ export {
   type MyStaffAffiliationReader,
   type MyStaffAffiliationResult,
 } from "./staff-affiliation.ts";
+export {
+  createSchemaReadinessReader,
+  MIGRATION_LOCK_KEY,
+  type SchemaReadiness,
+  type SchemaReadinessReader,
+} from "./schema-readiness.ts";
 export { createInstitutionAssignments } from "./institution-assignments.ts";
 export { createInstitutionGroups } from "./institution-groups.ts";
 export { createAdminCourses } from "./admin-courses.ts";
@@ -253,6 +259,13 @@ export { readReceiptKeys } from "./receipt-keys.ts";
 // The worker's receipt store: the key read and the attach of a signature
 // (820b-2b-2), same login and owner.
 export { createPendingReceiptStore } from "./pending-receipt-store.ts";
+// The worker's read of the segment object a pending receipt names (SRV-1502).
+export {
+  createPendingReceiptObjectSource,
+  type PendingReceiptObject,
+  type PendingReceiptObjectRead,
+  type PendingReceiptObjectSource,
+} from "./receipts/index.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export {
@@ -559,6 +572,14 @@ export async function closePools(): Promise<void> {
   await registry.close();
 }
 export {
+  createCommentDelay,
+  type CommentDelay,
+  type CommentDelayRefusal,
+  type CommentDelayResult,
+  type CommentDraft,
+  type WorkReviewState,
+} from "./comment-delay/index.ts";
+export {
   createWorkMessages,
   type WorkMessage,
   type WorkMessageCreated,
@@ -580,3 +601,25 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+
+export {
+  checkExternalAttachmentBytes,
+  createStatementPort,
+  incompleteFields,
+  isExternalFormat,
+  parseDeclarationFormFile,
+  parseDeclarationPutBody,
+  type FormReader,
+  type StatementOperation,
+  type StatementPort,
+} from "./statement/index.ts";
+export {
+  createDirectEdits,
+  type DirectEditEntry,
+  type DirectEditMode,
+  type DirectEditRefusal,
+  type DirectEdits,
+  type DirectEditSet,
+  type DirectEditState,
+  type TeacherEditOutcome,
+} from "./direct-edit/index.ts";
