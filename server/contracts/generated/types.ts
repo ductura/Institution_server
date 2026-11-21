@@ -848,6 +848,13 @@ export type Operations = {
     success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
   };
+  "work.version.get": {
+    params: { "documentId": string; "revision": string };
+    query: { "compareFrom"?: string };
+    body: undefined;
+    success: { status: 200; body: { "revision": number; "document": string } | { "from": number; "to": number; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "change": "unchanged" | "removed" | "added"; "text": string } | { "kind": "heading"; "level": number; "change": "unchanged" | "removed" | "added"; "text": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.versions.get": {
     params: { "documentId": string };
     query: { "beforeRevision"?: string };

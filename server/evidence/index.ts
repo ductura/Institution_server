@@ -78,3 +78,8 @@ export {
   type CompareEntry,
   type CompareResult,
 } from "./compare/index.ts";
+export { blocksOf, diffBlocks, MAX_COMPARE_BLOCKS } from "./compare/index.ts";
+export {
+  verifyCanonicalEvidencePayloadV2,
+  verifyVersionedDocumentSnapshot,
+} from "../domain/index.ts";

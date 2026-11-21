@@ -128,6 +128,7 @@ export const ROUTE_TABLE = {
   "work.milestones.get": { method: "GET", path: "/api/v1/works/{documentId}/milestones", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
   "work.milestones.patch": { method: "PATCH", path: "/api/v1/works/{documentId}/milestones/{milestoneId}", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site","forbidden"],"404":["not_found"],"408":["body_timeout"],"409":["conflict"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.review.post": { method: "POST", path: "/api/v1/works/{documentId}/review", body: null, headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"409":["conflict"],"413":["body_too_large"],"503":["unavailable"]} },
+  "work.version.get": { method: "GET", path: "/api/v1/works/{documentId}/versions/{revision}", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.versions.get": { method: "GET", path: "/api/v1/works/{documentId}/versions", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"422":["invalid_input"],"503":["unavailable"]} },
 } as const;
 

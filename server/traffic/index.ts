@@ -11,6 +11,7 @@ export {
 } from "./client-ip.ts";
 export {
   checkRateLimits,
+  classOf,
   createRateLimiter,
   DEFAULT_RATE_LIMITS,
   RATE_LIMIT_CLASSES,

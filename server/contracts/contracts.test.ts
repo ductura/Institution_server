@@ -150,6 +150,7 @@ describe("route inventory", () => {
       "sources.lookup.post: app/api/sources/lookup/route.ts is not in the inventory",
       "public.verification.post: app/api/public/verification/route.ts is not in the inventory",
       "work.versions.get: app/api/works/[documentId]/versions/route.ts is not in the inventory",
+      "work.version.get: app/api/works/[documentId]/versions/[revision]/route.ts is not in the inventory",
       "work.messages.get: app/api/works/[documentId]/messages/route.ts is not in the inventory",
       "work.messages.post: app/api/works/[documentId]/messages/route.ts is not in the inventory",
       "work.comment-drafts.get: app/api/works/[documentId]/comment-drafts/route.ts is not in the inventory",
