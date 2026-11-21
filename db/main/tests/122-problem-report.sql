@@ -51,8 +51,8 @@ SELECT ok(
 SELECT is(
   (SELECT string_agg(pol.polname || ' ' || pol.polcmd::text || ' ' || array_to_string(pol.polroles::regrole[], ','), ' | ')
    FROM pg_policy pol WHERE pol.polrelid = 'identity.problem_report'::regclass),
-  'problem_report_owner * ductus_identity',
-  'the only policy is the owner''s'
+  'problem_report_operator_read r ductus_problem_report_reader | problem_report_own_read r ductus_app | problem_report_owner * ductus_identity',
+  'the owner and the two read-only policies are the only policies'
 );
 SELECT is(
   (SELECT string_agg(t.tgname, ',') FROM pg_trigger t WHERE t.tgrelid = 'identity.problem_report'::regclass AND NOT t.tgisinternal),
@@ -81,7 +81,8 @@ END
 $$;
 SELECT is(pg_temp.probe(r.role, o.op), r.expect[o.n], format('%s: %s on problem_report', r.role, o.op))
 FROM (VALUES
-  ('ductus_app', ARRAY['no table privilege', 'no table privilege', 'no table privilege', 'no table privilege']),
+  ('ductus_app', ARRAY['rows=0', 'no table privilege', 'no table privilege', 'no table privilege']),
+  ('ductus_problem_report_reader', ARRAY['rows=0', 'no table privilege', 'no table privilege', 'no table privilege']),
   ('ductus_auth', ARRAY['no table privilege', 'no table privilege', 'no table privilege', 'no table privilege']),
   ('ductus_evidence', ARRAY['no schema privilege', 'no schema privilege', 'no schema privilege', 'no schema privilege']),
   ('ductus_migrator', ARRAY['no table privilege', 'no table privilege', 'no table privilege', 'no table privilege']),
@@ -139,7 +140,7 @@ FROM (VALUES
   ('empty description', 'technical', '', '/', '1.0.0', 'chromium', 1, 'SYNCED'),
   ('description of spaces and line breaks', 'technical', E' \n\t ', '/', '1.0.0', 'chromium', 1, 'SYNCED'),
   ('description of a no-break and a zero width space', 'technical', chr(160) || chr(8203), '/', '1.0.0', 'chromium', 1, 'SYNCED'),
-  ('description of 1001 characters', 'technical', repeat('a', 1001), '/', '1.0.0', 'chromium', 1, 'SYNCED'),
+  ('description of 2001 characters', 'technical', repeat('a', 2001), '/', '1.0.0', 'chromium', 1, 'SYNCED'),
   ('description with a control character', 'technical', 'a' || chr(1) || 'b', '/', '1.0.0', 'chromium', 1, 'SYNCED'),
   ('description with DEL', 'technical', 'a' || chr(127) || 'b', '/', '1.0.0', 'chromium', 1, 'SYNCED'),
   ('description with a bidi override', 'technical', 'a' || chr(8238) || 'b', '/', '1.0.0', 'chromium', 1, 'SYNCED'),
@@ -161,8 +162,8 @@ FROM (VALUES
 ) AS c (what, category, description, route, app_version, family, major, sync);
 SELECT is(pg_temp.submit('ana', 'technical', 'Opis.', '/', '1.0.0', 'chromium', 3000000000, 'SYNCED'),
           '22003: value "3000000000" is out of range for type integer', 'a browser major beyond integer is refused before the call');
-SELECT is(pg_temp.submit('ana', 'account', repeat('ž', 1000), '/', '1.0.0', 'safari', 0, NULL) ~ '^PR-[0-9A-F]{10}$', true,
-  '1000 characters, not bytes, is the limit');
+SELECT is(pg_temp.submit('ana', 'account', repeat('ž', 2000), '/', '1.0.0', 'safari', 0, NULL) ~ '^PR-[0-9A-F]{10}$', true,
+  '2000 characters, not bytes, is the database limit');
 -- DAN-429: the public status page /stanje is a page in the shell, so its
 -- route is in the set; the same migration carries /kako-radi (DAN-431, #1973)
 -- and the access log route (DAN-294, #1969). DAN-386 (#1836 c.6858305983):

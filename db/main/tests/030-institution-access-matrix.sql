@@ -6,7 +6,16 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2529);
+SELECT plan(2530);
+
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
+    AND has_table_privilege('ductus_app', c.oid, 'SELECT')
+    AND has_table_privilege('ductus_problem_report_reader', c.oid, 'SELECT')
+    AND NOT has_table_privilege('public', c.oid, 'SELECT')
+    AND NOT has_table_privilege('ductus_app', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE')
+    AND NOT has_table_privilege('ductus_problem_report_reader', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE'),
+  'problem reports have forced RLS and only app and operations read grants outside the owner')
+  FROM pg_class c WHERE c.oid = 'identity.problem_report'::regclass;
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
