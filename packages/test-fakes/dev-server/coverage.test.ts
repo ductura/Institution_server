@@ -281,6 +281,13 @@ const MENTORSHIP_REQUEST = `${MENTORSHIP_REQUESTS}/b1400000-0000-4000-8000-00000
 
 const SCENARIOS: Record<RouteId, Scenario> = {
   "mentorship.requests.post": { request: REQUEST_MENTORSHIP },
+  "mentorship.student-requests.get": {
+    before: [REQUEST_MENTORSHIP],
+    request: { path: "/api/v1/student/mentorship-requests", as: "student" },
+  },
+  "mentorship.student-mentor-candidates.get": {
+    request: { path: "/api/v1/student/mentor-candidates", as: "student" },
+  },
   "mentorship.key-dates.get": {
     request: { path: `/api/v1/mentorships/${IDS.mentorship}/key-dates`, as: "student" },
   },

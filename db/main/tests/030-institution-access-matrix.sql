@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2730);
+SELECT plan(2749);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -727,6 +727,35 @@ SELECT is(
 FROM (VALUES (1, 'marko', 'ZD403'), (2, 'ana', 'ZD403'), (3, 'iva', 'ZD403'), (4, 'petra', 'ZD403'),
              (5, 'tomo', 'ZD403'), (6, 'vesna', 'true')) AS c (n, actor, outcome)
 ORDER BY c.n;
+-- SRV-1414: the student's own requests and the teachers a student may ask.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.student_mentorship_requests()', 'app.student_mentor_candidates()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1414: only the application role and the owner execute the student mentorship reads'
+);
+SELECT ok(has_function_privilege('ductus_app', 'app.student_mentorship_requests()', 'EXECUTE')
+       AND has_function_privilege('ductus_app', 'app.student_mentor_candidates()', 'EXECUTE'),
+  'SRV-1414: the application role can call both student mentorship reads');
+SELECT is(
+  pg_temp.ask(c.actor, $$ SELECT coalesce(string_agg(state, ','), '') FROM app.student_mentorship_requests()
+                          WHERE request_id = {rq} $$),
+  c.result, format('SRV-1414: %s reads Ana''s request among the own: %s', c.actor, c.result)
+)
+FROM (VALUES ('ana', 'declined'), ('dora', ''), ('boris', ''), ('iva', ''), ('nina', ''), ('tomo', ''),
+             ('vesna', 'ZD403: forbidden'), ('marko', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'),
+             ('anon', 'ZD401: not authenticated')) AS c (actor, result);
+SELECT is(
+  pg_temp.ask(c.actor, $$ SELECT coalesce(string_agg(p.name, ',' ORDER BY p.name), '')
+                          FROM app.student_mentor_candidates() m JOIN person p ON p.id = m.teacher_id $$),
+  c.result, format('SRV-1414: %s may ask: %s', c.actor, c.result)
+)
+FROM (VALUES ('ana', 'marko,vesna'), ('boris', 'marko,vesna'), ('nina', 'marko,vesna'), ('tomo', 'petra'),
+             ('vesna', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'),
+             ('anon', 'ZD401: not authenticated')) AS c (actor, result);
 
 -- 1e. SRV-7B: the sources of a work (institution.work_source) only through
 -- its three RPCs; the web role has no privilege or policy on the table. One
