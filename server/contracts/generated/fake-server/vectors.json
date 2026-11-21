@@ -19040,7 +19040,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.60.0",
+        "apiVersion": "1.61.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19056,7 +19056,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.60.0",
+        "apiVersion": "1.61.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -43946,6 +43946,88 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-0000000000cf"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "pdf-preview",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "JVBERi0xLjcKJYGBgYEKCjUgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMTgKPj4Kc3RyZWFtCnicHYrBCsJADAXv+YqchWI2pm93QYRWt3jwIuQHRGpR9KBIv9+tDMxhmDf1TsILn4nWx/E5j9/79dJEycmSxJRZjf1Gi08U/mtgrRJhf9HWcuxwQI4b7NGhRUFWacXMoIIBVvtQj4Bey479Qb6i4nSmHyBVG+EKZW5kc3RyZWFtCmVuZG9iagoKNiAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvT2JqU3RtCi9OIDQKL0ZpcnN0IDIwCi9MZW5ndGggMjM4Cj4+CnN0cmVhbQp4nFWP3UoDMRCF7/MU8wI2yTbrZqEU2uIPiCitoCBepLvDEimJNFmpb+9MXCklN5lzzgzf0aCgAmNgDo0FA9X1HBYLIV9+vhDksxswCfng+wTvFFGwhQ8hN3EMGbRYLsU5u3HZHeIg/pZAc/gywQbbR+Tt4sstpjgeO1rg3G0khz/3ePjG7Dt31ajWGqsa2xLddFK+Pe0/sStRHm9O+W6XXcZJYO0Re+/W8UTcil7d1rPKgjV6RpeowyqEmLlV6RMyMfFUTx0vwBlLyN24z2VkUQu5dgkL8JmWUEIXex8GkK8+rELy/wJf/AUBOWQdCmVuZHN0cmVhbQplbmRvYmoKCjcgMCBvYmoKPDwKL1NpemUgOAovUm9vdCAyIDAgUgovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvWFJlZgovTGVuZ3RoIDM5Ci9XIFsgMSAyIDIgXQovSW5kZXggWyAwIDggXQo+PgpzdHJlYW0KeJwVxLENACAIALCCibM/+P8tnITSoehOmymmnFY4hPrl5QFUagMsCmVuZHN0cmVhbQplbmRvYmoKCnN0YXJ0eHJlZgo1NDcKJSVFT0Y=",
+        "fileName": "Izmisljeni rad.pdf"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6d",
+        "manifestSha256": "7401dd30174d08421b4d6d7e01dc09b121b5667d3390eaf4d392fc07101cda65",
+        "source": "import",
+        "evidenceKind": "imported",
+        "fileFormat": "pdf",
+        "content": {
+          "schemaVersion": 2,
+          "nodes": [
+            {
+              "type": "paragraph",
+              "id": "00000000-0000-4000-8000-000000000003",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Izmisljeni PDF odlomak.",
+                  "marks": []
+                }
+              ]
+            }
+          ],
+          "sources": []
+        },
+        "traces": [],
+        "rawByteLength": 737,
+        "fileName": "Izmisljeni rad.pdf",
+        "baseRevision": 3,
+        "expiresAt": "2026-11-21T10:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "pdf-no-text-layer",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "JVBERi0xLjcKJYGBgYEKCjQgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL1R5cGUgL09ialN0bQovTiAzCi9GaXJzdCAxNAovTGVuZ3RoIDEzNQo+PgpzdHJlYW0KeJxVjUEKwjAQRfdzin+CTlJTTKF0YZciSHEnLoIdSkGMNC3o7Z3oQuQv33t8C4MSzmGDrUfTEJ9eDwEfwyiJeD8NCWeFBj0uxF1c7wsstS393C4s4RZH+kawWf43Msh4llx/OPeS4jpfNVBPbT7IMIVdfOqf0VV1VZQe3tnC1/qtyhv2yCwVCmVuZHN0cmVhbQplbmRvYmoKCjUgMCBvYmoKPDwKL1NpemUgNgovUm9vdCAyIDAgUgovRmlsdGVyIC9GbGF0ZURlY29kZQovVHlwZSAvWFJlZgovTGVuZ3RoIDI5Ci9XIFsgMSAxIDIgXQovSW5kZXggWyAwIDYgXQo+PgpzdHJlYW0KeJxjYPj/n4mFgQGIGYGYiVGAgYHxLwMDAC+TAyMKZW5kc3RyZWFtCmVuZG9iagoKc3RhcnR4cmVmCjI1MwolJUVPRg==",
+        "fileName": "Izmisljeni rad.pdf"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "pdf_no_text_layer",
+        "code": "pdf_no_text_layer",
+        "messageKey": "errors.pdfNoTextLayer",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000d0"
       }
     }
   },

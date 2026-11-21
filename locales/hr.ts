@@ -2014,6 +2014,7 @@ export const hr = {
     invalidAssignmentId: "Zadatak nije ispravno naveden.",
     invalidCode: "Kod za upis ne postoji. Provjerite ga s nastavnikom.",
     invalidDocument: "Tekst rada nije u ispravnom obliku.",
+    pdfNoTextLayer: "PDF nema tekstni sloj. Odaberite PDF koji sadrži tekst.",
     invalidInput: "Poslani podaci nisu ispravni.",
     invalidJson: "Tijelo zahtjeva nije ispravan JSON.",
     invalidLogoutToken: "Zahtjev za odjavu nije ispravan.",

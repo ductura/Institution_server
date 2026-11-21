@@ -50,6 +50,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["notice_changed", "errors.noticeChanged"],
   ["origin_mismatch", "errors.originMismatch"],
   ["origin_missing", "errors.originMissing"],
+  ["pdf_no_text_layer", "errors.pdfNoTextLayer"],
   ["precondition_required", "errors.preconditionRequired"],
   ["record_changed", "errors.recordChanged"],
   ["refused", "errors.refused"],
