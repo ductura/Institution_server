@@ -65,7 +65,7 @@ BEGIN
           AND (e.role = 'teacher' OR NOT app.work_submission_requested(e.id, actor.user_id))
       )
       INSERT INTO institution.notification (institution_id, recipient_id, kind, event_key, target_id, created_at)
-      SELECT actor.institution_id, actor.user_id, 'deadline_reminder', c.event_key, c.id, reminder_at
+      SELECT actor.institution_id, actor.user_id, 'deadline_reminder', c.event_key, c.id, clock_timestamp()
       FROM candidates c
       WHERE NOT EXISTS (SELECT 1 FROM institution.notification n
         WHERE n.recipient_id = actor.user_id AND n.event_key = c.event_key)
