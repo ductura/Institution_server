@@ -11,6 +11,7 @@ import { ATTACHMENT_HANDLERS } from "./attachment-routes.ts";
 import { COLLABORATION_HANDLERS } from "./collaboration-routes.ts";
 import { CONSULTATION_SLOT_HANDLERS } from "./consultation-slots.ts";
 import { MENTORSHIP_REQUEST_HANDLERS } from "./mentorship-requests.ts";
+import { KEY_DATES_HANDLERS } from "./key-dates.ts";
 import { TEACHING_TEAM_HANDLERS } from "./teaching-team-routes.ts";
 import { successBody } from "./contract.ts";
 import { EVIDENCE_HANDLERS } from "./evidence-routes.ts";
@@ -77,6 +78,7 @@ export const DEV_HANDLERS: Handlers = {
   ...COLLABORATION_HANDLERS,
   ...CONSULTATION_SLOT_HANDLERS,
   ...MENTORSHIP_REQUEST_HANDLERS,
+  ...KEY_DATES_HANDLERS,
   ...TEACHING_TEAM_HANDLERS,
   ...MENTOR_NOTES_HANDLERS,
   ...ASSISTANT_HANDLERS,

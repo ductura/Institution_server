@@ -45,10 +45,11 @@ const BEGUN = {
   replayed: false,
   responseId: null,
   response: null,
+  tools: [],
 };
 
 describe("createAssistantRequests", () => {
-  it("begins a request with the nine parameters in the order of the RPC", async () => {
+  it("begins a request with the ten parameters in the order of the RPC", async () => {
     const run = scripted([BEGUN]);
     expect(await run.port.begin("t", INPUT)).toEqual({
       status: "ok",
@@ -58,9 +59,10 @@ describe("createAssistantRequests", () => {
       reason: null,
       replayed: false,
       response: null,
+      tools: [],
     });
     expect(run.calls[0]!.text).toContain(
-      "assistant.begin_request($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+      "assistant.begin_request($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::text[])",
     );
     expect(run.calls[0]!.values).toEqual([
       INPUT.idempotencyKey,
@@ -72,7 +74,22 @@ describe("createAssistantRequests", () => {
       "provider-test-a",
       "model-test-1",
       "test-1",
+      [],
     ]);
+  });
+
+  it("hands in the tools the server permits and returns the reserved set (ai-tools-v1)", async () => {
+    const run = scripted([{ ...BEGUN, tools: ["web_search"] }]);
+    expect(await run.port.begin("t", { ...INPUT, offeredTools: ["web_search"] })).toMatchObject({
+      tools: ["web_search"],
+    });
+    expect(run.calls[0]!.values.at(-1)).toEqual(["web_search"]);
+    expect(await scripted([{ ...BEGUN, tools: null }]).port.begin("t", INPUT)).toEqual({
+      status: "unavailable",
+    });
+    expect(await scripted([{ ...BEGUN, tools: [1] }]).port.begin("t", INPUT)).toEqual({
+      status: "unavailable",
+    });
   });
 
   it("returns the stored response of a replayed completed request", async () => {
@@ -175,8 +192,16 @@ describe("createAssistantRequests", () => {
       state: "provider_failed",
       accepted: true,
     });
-    expect(run.calls[0]!.text).toContain("'provider_failed'");
-    expect(run.calls[0]!.values).toEqual([REQ, null]);
+    expect(run.calls[0]!.text).toContain("assistant.fail_request($1, $3, $2::bigint)");
+    expect(run.calls[0]!.values).toEqual([REQ, null, "provider_failed"]);
+  });
+
+  it("fails a request with a reason of ai-tools-v1", async () => {
+    for (const reason of ["tool_step_limit", "response_too_large", "request_revoked"] as const) {
+      const run = scripted([{ state: "provider_failed", accepted: true }]);
+      expect(await run.port.fail("t", REQ, 21n, reason)).toMatchObject({ accepted: true });
+      expect(run.calls[0]!.values).toEqual([REQ, "21", reason]);
+    }
   });
 
   it("marks the outcome unknown", async () => {

@@ -43,6 +43,7 @@ import {
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createSourceLookupRouteFor,
@@ -268,6 +269,7 @@ async function main(): Promise<void> {
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
       ...createMentorshipRequestRoutesFor(databases.main),
+      ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
