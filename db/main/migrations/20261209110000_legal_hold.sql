@@ -111,21 +111,27 @@ CREATE POLICY legal_hold_owner ON evidence.legal_hold TO ductus_evidence USING (
 
 -- Places one hold; no access check, only the definer RPC of ductus_identity
 -- below calls it, after its own. A work is checked here, where its document
--- is; a student and an assignment are checked by the caller.
-CREATE FUNCTION app.legal_hold_append(p_institution_id uuid, p_subject_type text, p_subject_id text,
-  p_case_reference text, p_placed_by uuid)
+-- is; a student and an assignment are checked by the caller. Neither the
+-- institution nor the actor is a parameter: both come from the session (033, U1).
+CREATE FUNCTION app.legal_hold_append(p_subject_type text, p_subject_id text, p_case_reference text)
 RETURNS uuid
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
+  v_actor record;
   v_id uuid;
 BEGIN
+  SELECT a.user_id, a.institution_id INTO v_actor FROM app.current_actor() a;
+  IF v_actor.institution_id IS NULL OR v_actor.user_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated' USING ERRCODE = 'ZD401';
+  END IF;
   IF p_subject_type = 'work' AND NOT EXISTS (
-       SELECT 1 FROM evidence.document d WHERE d.id = p_subject_id AND d.institution_id = p_institution_id) THEN
+       SELECT 1 FROM evidence.document d
+        WHERE d.id = p_subject_id AND d.institution_id = v_actor.institution_id) THEN
     RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
   INSERT INTO evidence.legal_hold (institution_id, subject_type, subject_id, case_reference, placed_by, placed_at)
-  VALUES (p_institution_id, p_subject_type, p_subject_id, p_case_reference, p_placed_by, now())
+  VALUES (v_actor.institution_id, p_subject_type, p_subject_id, p_case_reference, v_actor.user_id, now())
   RETURNING id INTO v_id;
   RETURN v_id;
 END
@@ -133,41 +139,46 @@ $$;
 
 -- Releases one hold of the institution by an administrator; no access check
 -- beyond the rule of the hold itself. Returns the time of the release.
-CREATE FUNCTION app.legal_hold_release(p_institution_id uuid, p_hold_id uuid, p_released_by uuid, p_reason text)
+CREATE FUNCTION app.legal_hold_release(p_hold_id uuid, p_reason text)
 RETURNS timestamptz
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
+  v_actor record;
   v_hold evidence.legal_hold;
   v_at timestamptz := now();
 BEGIN
+  SELECT a.user_id, a.institution_id INTO v_actor FROM app.current_actor() a;
+  IF v_actor.institution_id IS NULL OR v_actor.user_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated' USING ERRCODE = 'ZD401';
+  END IF;
   SELECT * INTO v_hold FROM evidence.legal_hold h
-   WHERE h.id = p_hold_id AND h.institution_id = p_institution_id
+   WHERE h.id = p_hold_id AND h.institution_id = v_actor.institution_id
    FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
-  IF v_hold.placed_by = p_released_by THEN
+  IF v_hold.placed_by = v_actor.user_id THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
   IF v_hold.released_at IS NOT NULL THEN
     RAISE EXCEPTION 'already released' USING ERRCODE = 'ZD409';
   END IF;
-  UPDATE evidence.legal_hold h SET released_by = p_released_by, release_reason = p_reason, released_at = v_at
+  UPDATE evidence.legal_hold h SET released_by = v_actor.user_id, release_reason = p_reason, released_at = v_at
    WHERE h.id = p_hold_id;
   RETURN v_at;
 END
 $$;
 
--- Every hold of one institution, released ones included, newest first.
-CREATE FUNCTION app.legal_holds_of(p_institution_id uuid)
+-- Every hold of the actor's institution, released ones included, newest first.
+CREATE FUNCTION app.legal_holds_of()
 RETURNS TABLE (hold_id uuid, subject_type text, subject_id text, case_reference text, placed_by uuid,
                placed_at timestamptz, released_by uuid, released_at timestamptz)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
   SELECT h.id, h.subject_type, h.subject_id, h.case_reference, h.placed_by, h.placed_at, h.released_by, h.released_at
-    FROM evidence.legal_hold h
-   WHERE h.institution_id = p_institution_id
+    FROM app.current_actor() a
+    JOIN evidence.legal_hold h ON h.institution_id = a.institution_id
    ORDER BY h.placed_at DESC, h.id
 $$;
 
@@ -208,11 +219,11 @@ BEGIN
 END
 $$;
 
-REVOKE ALL ON FUNCTION app.legal_hold_append(uuid, text, text, text, uuid),
-  app.legal_hold_release(uuid, uuid, uuid, text), app.legal_holds_of(uuid), app.is_on_legal_hold(text, text),
+REVOKE ALL ON FUNCTION app.legal_hold_append(text, text, text),
+  app.legal_hold_release(uuid, text), app.legal_holds_of(), app.is_on_legal_hold(text, text),
   evidence.operator_release_legal_hold(uuid, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION app.legal_hold_append(uuid, text, text, text, uuid),
-  app.legal_hold_release(uuid, uuid, uuid, text), app.legal_holds_of(uuid) TO ductus_identity;
+GRANT EXECUTE ON FUNCTION app.legal_hold_append(text, text, text),
+  app.legal_hold_release(uuid, text), app.legal_holds_of() TO ductus_identity;
 GRANT EXECUTE ON FUNCTION app.is_on_legal_hold(text, text) TO ductus_retention;
 
 RESET ROLE;
@@ -266,8 +277,7 @@ BEGIN
         WHERE a.id = p_subject_id::uuid AND a.institution_id = v_actor.institution_id) THEN
     RAISE EXCEPTION 'not found' USING ERRCODE = 'ZD404';
   END IF;
-  RETURN app.legal_hold_append(v_actor.institution_id, p_subject_type, p_subject_id, p_case_reference,
-                               v_actor.user_id);
+  RETURN app.legal_hold_append(p_subject_type, p_subject_id, p_case_reference);
 END
 $$;
 
@@ -283,7 +293,7 @@ BEGIN
      OR p_reason !~ '[^[:space:]]' THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
-  RETURN app.legal_hold_release(v_actor.institution_id, p_hold_id, v_actor.user_id, p_reason);
+  RETURN app.legal_hold_release(p_hold_id, p_reason);
 END
 $$;
 
@@ -296,7 +306,7 @@ DECLARE
   v_actor record;
 BEGIN
   SELECT * INTO v_actor FROM institution.require_legal_hold_admin();
-  RETURN QUERY SELECT * FROM app.legal_holds_of(v_actor.institution_id);
+  RETURN QUERY SELECT * FROM app.legal_holds_of();
 END
 $$;
 
@@ -324,8 +334,8 @@ SET LOCAL ROLE ductus_migrator;
 SET LOCAL ROLE ductus_evidence;
 DROP FUNCTION evidence.operator_release_legal_hold(uuid, text, text);
 DROP FUNCTION app.is_on_legal_hold(text, text);
-DROP FUNCTION app.legal_holds_of(uuid);
-DROP FUNCTION app.legal_hold_release(uuid, uuid, uuid, text);
-DROP FUNCTION app.legal_hold_append(uuid, text, text, text, uuid);
+DROP FUNCTION app.legal_holds_of();
+DROP FUNCTION app.legal_hold_release(uuid, text);
+DROP FUNCTION app.legal_hold_append(text, text, text);
 DROP TABLE evidence.legal_hold;
 DROP FUNCTION evidence.legal_hold_release_only();

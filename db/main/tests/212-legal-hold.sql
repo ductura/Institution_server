@@ -20,9 +20,9 @@ SELECT is(
   (SELECT string_agg(p.oid::regprocedure::text || ' ' || pg_get_userbyid(p.proowner) || ' '
                      || p.prosecdef || ' ' || ('search_path=""' = ANY (p.proconfig)), ', ' ORDER BY p.oid::regprocedure::text COLLATE "C")
      FROM pg_proc p
-    WHERE p.oid IN ('app.legal_hold_append(uuid,text,text,text,uuid)'::regprocedure,
-                    'app.legal_hold_release(uuid,uuid,uuid,text)'::regprocedure,
-                    'app.legal_holds_of(uuid)'::regprocedure,
+    WHERE p.oid IN ('app.legal_hold_append(text,text,text)'::regprocedure,
+                    'app.legal_hold_release(uuid,text)'::regprocedure,
+                    'app.legal_holds_of()'::regprocedure,
                     'app.is_on_legal_hold(text,text)'::regprocedure,
                     'evidence.operator_release_legal_hold(uuid,text,text)'::regprocedure,
                     'institution.require_legal_hold_admin()'::regprocedure,
@@ -30,10 +30,10 @@ SELECT is(
                     'app.release_legal_hold(uuid,text)'::regprocedure,
                     'app.legal_holds()'::regprocedure)),
   'app.is_on_legal_hold(text,text) ductus_evidence true true, '
-  || 'app.legal_hold_append(uuid,text,text,text,uuid) ductus_evidence true true, '
-  || 'app.legal_hold_release(uuid,uuid,uuid,text) ductus_evidence true true, '
+  || 'app.legal_hold_append(text,text,text) ductus_evidence true true, '
+  || 'app.legal_hold_release(uuid,text) ductus_evidence true true, '
   || 'app.legal_holds() ductus_identity true true, '
-  || 'app.legal_holds_of(uuid) ductus_evidence true true, '
+  || 'app.legal_holds_of() ductus_evidence true true, '
   || 'app.place_legal_hold(text,text,text) ductus_identity true true, '
   || 'app.release_legal_hold(uuid,text) ductus_identity true true, '
   || 'evidence.operator_release_legal_hold(uuid,text,text) ductus_evidence false true, '
@@ -43,21 +43,21 @@ SELECT bag_eq(
   $$ SELECT r || ' ' || f
        FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_identity', 'ductus_evidence',
                          'ductus_auth', 'ductus_test_stranger', 'public']) r
-      CROSS JOIN unnest(ARRAY['app.legal_hold_append(uuid,text,text,text,uuid)',
-                              'app.legal_hold_release(uuid,uuid,uuid,text)', 'app.legal_holds_of(uuid)',
+      CROSS JOIN unnest(ARRAY['app.legal_hold_append(text,text,text)',
+                              'app.legal_hold_release(uuid,text)', 'app.legal_holds_of()',
                               'app.is_on_legal_hold(text,text)', 'evidence.operator_release_legal_hold(uuid,text,text)',
                               'institution.require_legal_hold_admin()', 'app.place_legal_hold(text,text,text)',
                               'app.release_legal_hold(uuid,text)', 'app.legal_holds()']) f
       WHERE has_function_privilege(r, f, 'EXECUTE')
-        AND NOT (r = 'ductus_evidence' AND f IN ('app.legal_hold_append(uuid,text,text,text,uuid)',
-                 'app.legal_hold_release(uuid,uuid,uuid,text)', 'app.legal_holds_of(uuid)',
+        AND NOT (r = 'ductus_evidence' AND f IN ('app.legal_hold_append(text,text,text)',
+                 'app.legal_hold_release(uuid,text)', 'app.legal_holds_of()',
                  'app.is_on_legal_hold(text,text)', 'evidence.operator_release_legal_hold(uuid,text,text)'))
         AND NOT (r = 'ductus_identity' AND f IN ('institution.require_legal_hold_admin()',
                  'app.place_legal_hold(text,text,text)', 'app.release_legal_hold(uuid,text)', 'app.legal_holds()')) $$,
   ARRAY['ductus_app app.place_legal_hold(text,text,text)', 'ductus_app app.release_legal_hold(uuid,text)',
         'ductus_app app.legal_holds()', 'ductus_retention app.is_on_legal_hold(text,text)',
-        'ductus_identity app.legal_hold_append(uuid,text,text,text,uuid)',
-        'ductus_identity app.legal_hold_release(uuid,uuid,uuid,text)', 'ductus_identity app.legal_holds_of(uuid)'],
+        'ductus_identity app.legal_hold_append(text,text,text)',
+        'ductus_identity app.legal_hold_release(uuid,text)', 'ductus_identity app.legal_holds_of()'],
   'the app runs the three RPCs, retention only asks, identity calls the private steps; nobody runs the operator''s');
 SELECT is(pg_get_function_arguments('app.place_legal_hold(text,text,text)'::regprocedure),
   'p_subject_type text, p_subject_id text, p_case_reference text', 'placing names no institution or administrator');
