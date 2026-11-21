@@ -259,6 +259,7 @@ export {
   createInstitutionAssignmentRoutesFor,
 } from "./institution-assignments.ts";
 export { createAssignmentCurrentVersionRouteFor } from "./assignment-current-version.ts";
+export { createAssignmentGradeRouteFor, excludePracticeAssignment } from "./assignments/index.ts";
 export {
   createTeacherAccessRoute,
   createTeacherCoursesRoute,

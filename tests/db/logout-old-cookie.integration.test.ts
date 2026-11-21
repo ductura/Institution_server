@@ -13,6 +13,7 @@ import {
   createAcknowledgmentRouteFor,
   createAdminCourseRouteFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
   createAttachmentRoutesFor,
   createAuthRoutes,
   createClientContextRoute,
@@ -873,6 +874,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "teacher.assignment-grade.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/grade`,
+    body: () => undefined,
+    live: 404,
+  },
   "institution.assignment-versions.post": {
     path: `/api/v1/institution/assignments/${COURSE}/versions`,
     body: () => ({
@@ -949,6 +956,7 @@ const FACTORIES = [
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
+  "createAssignmentGradeRouteFor",
   "createInstitutionGroupRoutesFor",
   "createAdminCourseRouteFor",
   "createLiveRoutesFor",
@@ -1020,6 +1028,7 @@ const MOUNTED = [
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
+  createAssignmentGradeRouteFor(databases.main),
   ...createInstitutionGroupRoutesFor(databases.main),
   createAdminCourseRouteFor(databases.main),
   ...createLiveRoutesFor(databases.main),
