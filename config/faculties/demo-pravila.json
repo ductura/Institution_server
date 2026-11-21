@@ -1,0 +1,9 @@
+{
+  "format": "ductura-institution-config-v1",
+  "faculty": "demo-pravila",
+  "version": 1,
+  "rules": {
+    "evidenceProfile": "basic",
+    "importAllowed": false
+  }
+}

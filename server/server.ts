@@ -87,6 +87,7 @@ import {
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   evidenceIngestDependencies,
+  facultyConfigProblems,
   createLayers,
   createMetricsSampling,
   createShutdownCoordinator,
@@ -125,6 +126,7 @@ const problems = [
   ...originProblems(process.env),
   ...metricsIntervalProblems(process.env),
   ...institutionsProblems(),
+  ...facultyConfigProblems(process.cwd()),
   ...testModeProblems(process.env),
   ...rateLimitConfig.problems,
   ...(TRUSTED_PROXIES === null

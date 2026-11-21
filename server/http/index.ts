@@ -370,3 +370,4 @@ export {
   type ShutdownHook,
 } from "./shutdown.ts";
 export { createStatementRoutesFor } from "./statement/index.ts";
+export { facultyConfigProblems } from "../database/index.ts";

@@ -643,3 +643,4 @@ export {
 } from "./direct-edit/index.ts";
 export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";
+export { facultyConfigProblems } from "./institution-config/index.ts";
