@@ -27,6 +27,7 @@ import {
   createInstitutionCourseRoutesFor,
   createInternalInstitutionRoutes,
   createMeRouteFor,
+  createStaffAffiliationRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
@@ -65,6 +66,7 @@ import {
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createCommentRoutesFor,
@@ -89,6 +91,7 @@ import {
   createShutdownCoordinator,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   installShutdown,
   logStartupFailed,
   logStartupRefused,
@@ -178,7 +181,9 @@ async function main(): Promise<void> {
   const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
   const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
+  const checkReadiness = readinessCheckFor(databases.main, evidenceDeps);
   const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
+  const draining = () => shutdown.state() !== "running";
   const options = {
     host,
     port,
@@ -191,10 +196,8 @@ async function main(): Promise<void> {
       // Readiness (SRV-1812, M11.3): 503 until the main database answers and
       // its migrations are done; storage and signing are reported. Draining
       // answers 503 too, so a balancer stops sending before the listener closes.
-      createReadyRoute({
-        check: readinessCheckFor(databases.main, evidenceDeps),
-        draining: () => shutdown.state() !== "running",
-      }),
+      createReadyRoute({ check: checkReadiness, draining }),
+      createStatusRouteFor(databases.main, checkReadiness, draining),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
@@ -218,6 +221,7 @@ async function main(): Promise<void> {
       ...createInterfaceLocaleRoutesFor(databases.main),
       // The problem report (S-M-2, DAN-851): POST over the support service.
       createProblemReportRouteFor(databases.main),
+      createProblemReportsRouteFor(databases.main),
       // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
       ...createInstitutionCourseRoutesFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
@@ -284,6 +288,8 @@ async function main(): Promise<void> {
       createStudentNoticeRouteFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
+      // SRV-1403: the caller's own staff affiliation, or staff_affiliation_missing.
+      createStaffAffiliationRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),

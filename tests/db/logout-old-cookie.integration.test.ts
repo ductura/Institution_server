@@ -48,6 +48,7 @@ import {
   createStudentNoticeRouteFor,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -56,7 +57,9 @@ import {
   createLiveRoutesFor,
   createLayers,
   createMeRouteFor,
+  createStaffAffiliationRouteFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
   createSourceLookupRouteFor,
@@ -588,6 +591,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-1403: the caller's own staff affiliation; it only reads.
+  "profile.staff-affiliation.get": {
+    method: "GET",
+    path: "/api/v1/me/staff-affiliation",
+    body: () => undefined,
+    live: 200,
+  },
   // DAN-851-2d2a: the problem report. The body is its JCS form (keys in
   // order), which the service asks for; a live report is 201 and stored.
   "support.problem-report.post": {
@@ -599,6 +609,15 @@ const SESSION_ROUTES = {
       description: "Izmišljeni opis: gumb za spremanje ne reagira.",
       route: "/zadaci",
       syncState: "SYNCED",
+    }),
+    live: 201,
+  },
+  "support.problem-reports.post": {
+    path: "/api/v1/problem-reports",
+    body: () => ({
+      appVersion: "1.4.0",
+      category: "technical",
+      description: "Izmišljeni problem s unosom.",
     }),
     live: 201,
   },
@@ -945,6 +964,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 const FACTORIES = [
   "createHealthRoute",
   "createReadyRoute",
+  "createStatusRouteFor",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -960,6 +980,7 @@ const FACTORIES = [
   "createSettingsReadRoutes",
   "createInterfaceLocaleRoutesFor",
   "createProblemReportRouteFor",
+  "createProblemReportsRouteFor",
   "createInstitutionCourseRoutesFor",
   "createInstitutionAssignmentRoutesFor",
   "createAssignmentCurrentVersionRouteFor",
@@ -995,6 +1016,7 @@ const FACTORIES = [
   "createStudentSubmissionRoutesFor",
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
+  "createStaffAffiliationRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createCourseAggregateRouteFor",
@@ -1018,6 +1040,11 @@ const MOUNTED = [
     check: async () => ({ ready: true, capabilities: {}, codes: {} }),
     draining: () => false,
   }),
+  createStatusRouteFor(
+    databases.main,
+    async () => ({ ready: true, capabilities: {}, codes: {} }),
+    () => false,
+  ),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
@@ -1033,6 +1060,7 @@ const MOUNTED = [
   ...createSettingsReadRoutes(databases.main),
   ...createInterfaceLocaleRoutesFor(databases.main),
   createProblemReportRouteFor(databases.main),
+  createProblemReportsRouteFor(databases.main),
   ...createInstitutionCourseRoutesFor(databases.main),
   ...createInstitutionAssignmentRoutesFor(databases.main),
   createAssignmentCurrentVersionRouteFor(databases.main),
@@ -1068,6 +1096,7 @@ const MOUNTED = [
   ...createStudentSubmissionRoutesFor(databases.main),
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
+  createStaffAffiliationRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
@@ -1291,7 +1320,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
     await expectSignedOut(await post("/api/v1/auth/logout", token));
     expect(await sessionEnd(token)).toMatchObject({ reason: "logout" });
     expect(await savedLocale(token)).toEqual(["en"]);
-    expect(await storedReports(token)).toBe(1);
+    expect(await storedReports(token)).toBe(2);
     for (const id of SESSION_IDS) {
       const answer = await call(
         id,
@@ -1307,6 +1336,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("settings.") ||
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
+        id === "support.problem-reports.post" ||
         id === "sources.lookup.post" ||
         id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
@@ -1328,8 +1358,8 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
       expect(Value.Check(spec?.body as never, body)).toBe(true);
     }
     expect(await savedLocale(token)).toEqual(["en"]);
-    // The old cookie's report reached no row: still only the live one.
-    expect(await storedReports(token)).toBe(1);
+    // Only the two reports submitted with the live session were written.
+    expect(await storedReports(token)).toBe(2);
   });
 
   it("the interface language: POST en, then GET en for the same session; another gets null", async () => {

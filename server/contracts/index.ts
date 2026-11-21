@@ -23,6 +23,7 @@ import {
   METHOD_NOT_ALLOWED,
   platformRoutes,
   profileRoutes,
+  staffAffiliationRoutes,
   projectionRoutes,
   publicVerificationPost,
   publicVerificationRoutes,
@@ -40,6 +41,7 @@ import {
   merlinRosterRoutes,
   merlinPackageRoutes,
   supportRoutes,
+  problemReportsPost,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
   TOO_MANY_REQUESTS,
@@ -87,6 +89,8 @@ export {
   mentorNotesPost,
 } from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
+export { STAFF_AFFILIATION_SOURCES } from "./routes/index.ts";
+export { ProblemReportInput, problemReportsPost } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
@@ -119,6 +123,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...authRoutes,
   ...webauthnRoutes,
   ...profileRoutes,
+  ...staffAffiliationRoutes,
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
@@ -131,6 +136,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,
   ...supportRoutes,
+  problemReportsPost,
   ...projectionRoutes,
   ...collaborationRoutes,
   ...consultationSlotRoutes,

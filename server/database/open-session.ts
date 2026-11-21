@@ -1,6 +1,15 @@
 import type { Pool } from "pg";
 
 /**
+ * The affiliation a login sends (SRV-1403), the shape of StaffAffiliation in
+ * server/external/srce-auth/affiliation.ts, which this area does not import
+ * (docs/server-map.md §2). The database checks the source and the scope again.
+ */
+export type OpenSessionAffiliation =
+  | { source: "hrEduPersonAffiliation" | "eduPersonAffiliation" }
+  | { source: "eduPersonScopedAffiliation"; scope: string };
+
+/**
  * Opening a session at login (B-6, docs/BACKEND.md 4.3). Only the login
  * callback calls this, over its own login in ductus_auth: the web process
  * login (ductus_app) never holds identity.open_session, and this login never
@@ -14,8 +23,15 @@ export type OpenSessionInput = {
   /** Both or neither (#757, O1); without both the stored name is removed. */
   givenName?: string;
   familyName?: string;
-  /** The fact from hrEduPersonAffiliation (DAN-304); false removes the right. */
+  /** The fact from the staff affiliation (DAN-304); false removes the right. */
   teacherEligible: boolean;
+  /**
+   * The affiliation the fact rests on (SRV-1403). The database gives the
+   * right only when the source is one it knows and a scope, when there is
+   * one, is the home organisation of the account's institution. Without it a
+   * true fact is sent as an unscoped hrEduPersonAffiliation value, as before.
+   */
+  staffAffiliation?: OpenSessionAffiliation;
   /**
    * The provider's session id (DAN-474). Only its SHA-256 is stored, on this
    * session; one the database finds invalid is left out and the login stands.
@@ -46,8 +62,19 @@ SELECT CASE WHEN (SELECT NOT r.rolsuper AND NOT r.rolbypassrls
                          AND NOT pg_catalog.pg_has_role(r.oid, 'ductus_app', 'MEMBER')
                     FROM pg_catalog.pg_roles r
                    WHERE r.rolname = session_user AND session_user = current_user)
-            THEN identity.open_session($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            THEN identity.open_session($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        END AS expires`;
+
+/** The source and scope the ten-argument open_session takes; both null for no affiliation. */
+export function affiliationArguments(
+  input: Pick<OpenSessionInput, "teacherEligible" | "staffAffiliation">,
+): [string | null, string | null] {
+  if (input.teacherEligible !== true) return [null, null];
+  const affiliation: OpenSessionAffiliation = input.staffAffiliation ?? {
+    source: "hrEduPersonAffiliation",
+  };
+  return [affiliation.source, "scope" in affiliation ? affiliation.scope : null];
+}
 
 export function createOpenSession(pool: Pick<Pool, "query">): OpenSession {
   return async function openSession(input) {
@@ -60,8 +87,8 @@ export function createOpenSession(pool: Pick<Pool, "query">): OpenSession {
         input.tokenHash,
         input.givenName ?? null,
         input.familyName ?? null,
-        input.teacherEligible === true,
         input.sid ?? null,
+        ...affiliationArguments(input),
       ]);
       const expires = rows[0]?.expires;
       if (!(expires instanceof Date)) {

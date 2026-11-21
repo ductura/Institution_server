@@ -9,12 +9,12 @@ SELECT plan(45);
 -- Group roles: none can log in or step around RLS.
 SELECT bag_eq(
   $$ SELECT rolname::text FROM pg_roles WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin $$,
-  ARRAY['ductus_migrator', 'ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_evidence', 'ductus_identity', 'ductus_auth', 'ductus_queue'],
-  'the seven group roles and the migrator exist, none with a login'
+  ARRAY['ductus_migrator', 'ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_evidence', 'ductus_identity', 'ductus_auth', 'ductus_queue', 'ductus_problem_report_reader'],
+  'the eight group roles and the migrator exist, none with a login'
 );
 SELECT is_empty(
   $$ SELECT rolname FROM pg_roles
-     WHERE rolname IN ('ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_evidence', 'ductus_identity', 'ductus_auth', 'ductus_queue')
+     WHERE rolname IN ('ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_evidence', 'ductus_identity', 'ductus_auth', 'ductus_queue', 'ductus_problem_report_reader')
        AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication) $$,
   'group roles are NOLOGIN, not superuser, without BYPASSRLS, CREATEROLE, CREATEDB or REPLICATION'
 );
@@ -88,6 +88,7 @@ CREATE TEMP VIEW allowed_membership AS
     'ductus_migrator in ductus_evidence: admin',
     'ductus_migrator in ductus_identity: admin',
     'ductus_migrator in ductus_queue: admin',
+    'ductus_migrator in ductus_problem_report_reader: admin',
     'ductus_migrator in ductus_evidence: set',
     'ductus_migrator in ductus_identity: set',
     'ductus_migrator in ductus_queue: set',

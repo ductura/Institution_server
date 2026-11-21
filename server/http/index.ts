@@ -160,12 +160,15 @@ export {
 export {
   knownError,
   problemOf,
+  sendBareRefusal,
   sendHtmlProblem,
   sendDeclaredResponse,
   sendProblem,
   sendRouteRefusal,
   type Problem,
 } from "./problem.ts";
+export { createStatusRouteFor } from "./status/index.ts";
+export { singleFlight } from "./ready-outcomes.ts";
 export {
   createReadyCheck,
   READY_TIMEOUT_MS,
@@ -249,6 +252,10 @@ export {
   type InterfaceLocaleRouteOptions,
 } from "./profile-interface-locale.ts";
 export { createMeRoute, createMeRouteFor } from "./profile-me.ts";
+export {
+  createStaffAffiliationRoute,
+  createStaffAffiliationRouteFor,
+} from "./staff-affiliation.ts";
 export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
 export {
@@ -332,6 +339,7 @@ export {
   type ProblemReportFaultRecord,
   type ProblemReportRouteOptions,
 } from "./support-problem-report.ts";
+export { createProblemReportsRouteFor } from "./problem-report/index.ts";
 export {
   createWebAuthnRoutes,
   createWebAuthnRoutesFor,
