@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2456);
+SELECT plan(2464);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -505,6 +505,23 @@ FROM (VALUES ('vesna', '1'), ('marko', '0'), ('ana', '0'), ('iva', '0'), ('petra
 SELECT is(
   left(pg_temp.ask(c.actor, $$ SELECT app.approve_mentorship_request_with_work({rq}) $$), 5),
   c.code, 'SRV-31: approval refused for ' || c.actor
+)
+FROM (VALUES ('marko', 'ZD403'), ('ana', 'ZD403'), ('iva', 'ZD403'), ('petra', 'ZD403'),
+             ('tomo', 'ZD403'), ('anon', 'ZD401')) AS c (actor, code);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.approve_mentorship_request_once(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1407: only the application role and the owner execute the idempotent approval'
+);
+SELECT ok(has_function_privilege('ductus_app', 'app.approve_mentorship_request_once(uuid)', 'EXECUTE'),
+  'SRV-1407: the application role can call the idempotent approval');
+SELECT is(
+  left(pg_temp.ask(c.actor, $$ SELECT app.approve_mentorship_request_once({rq}) $$), 5),
+  c.code, 'SRV-1407: idempotent approval refused for ' || c.actor
 )
 FROM (VALUES ('marko', 'ZD403'), ('ana', 'ZD403'), ('iva', 'ZD403'), ('petra', 'ZD403'),
              ('tomo', 'ZD403'), ('anon', 'ZD401')) AS c (actor, code);
