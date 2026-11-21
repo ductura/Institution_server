@@ -3,7 +3,9 @@ import type { Account, MentorshipRequest, State } from "./state.ts";
 
 // SRV-1407: the moves of one mentorship request, as the database makes them.
 // Not allowed and unknown both read not_found. The fake records the
-// mentorship id of an approval but opens no work for it.
+// mentorship id of an approval but opens no work for it, so the mentorship
+// reads stay as they were; an approved request still blocks a new one of the
+// kind, as the open mentorship does in the database.
 function own(state: State, account: Account | null, id: string, as: "student" | "teacher") {
   const request = state.mentorshipRequests.find((r) => r.id === id.toLowerCase());
   if (account === null || request === undefined) return null;
@@ -23,7 +25,9 @@ export const MENTORSHIP_REQUEST_HANDLERS: Handlers = {
     const busy =
       state.mentorshipRequests.some(
         (r) =>
-          r.studentId === account.id && r.workType === body.workType && r.state === "requested",
+          r.studentId === account.id &&
+          r.workType === body.workType &&
+          (r.state === "requested" || r.state === "approved"),
       ) ||
       state.mentorships.some((m) => m.studentId === account.id && m.workType === body.workType);
     if (busy) return { error: "conflict" };
