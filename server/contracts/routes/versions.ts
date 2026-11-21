@@ -15,7 +15,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 /** isDocumentId: 1 to 256 code points, trimmed, no control character (as live.ts). */
-const WorkId = Type.String({
+export const WorkId = Type.String({
   pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)(?![\\s\\S])`,
 });
 const Revision = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });

@@ -12,6 +12,7 @@
 // or footnotes fails until its form is written down here. Everything lives in
 // this one test file: the invented work holds Croatian, English and German
 // text, which server code outside tests may not (local/no-hardcoded-text).
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -32,7 +33,13 @@ import {
   type InlineNodeV4,
   type NodeId,
 } from "../../domain/index.ts";
-import { buildExportModel, renderDocx, type ExportLabels } from "../../downloads/index.ts";
+import { convertDocx, VERAPDF_IMAGE } from "../../../spikes/pdf-a/index.ts";
+import {
+  buildExportModel,
+  createSnapshotPdf,
+  renderDocx,
+  type ExportLabels,
+} from "../../downloads/index.ts";
 
 // ---------------------------------------------------------------------------
 // The invented work: no real student, course or text. Footnotes, a table and
@@ -723,6 +730,63 @@ describe("display equality of API, export snapshot and DOCX (R-07)", () => {
   });
 });
 
+if (process.env.PDF_EXPORT_CI === "1") {
+  it("checks both PDF exports against the same revision and requires veraPDF 2u for the archive", async () => {
+    const input = await channels();
+    expect(await compareDisplayChannels(input)).toEqual([]);
+    const normalize = (text: string) => text.normalize("NFC").replace(/\s+/gu, " ").trim();
+    const expected = normalize(
+      docxParagraphs(input.docx)
+        .map((p) => p.runs.map((r) => r.text).join(""))
+        .join("\n"),
+    );
+    const convert = async (docx: Buffer, mode: "archive" | "plain") => {
+      expect(docx).toEqual(Buffer.from(input.docx));
+      return (await convertDocx(docx, mode === "archive" ? "pdf-a-2b" : "plain")).pdf;
+    };
+    const verify = async (pdf: Buffer) => {
+      const result = spawnSync(
+        "docker",
+        [
+          "run",
+          "--rm",
+          "-i",
+          "--pull=never",
+          "--network=none",
+          "--read-only",
+          "--tmpfs=/tmp",
+          "--cap-drop=ALL",
+          "--security-opt=no-new-privileges",
+          VERAPDF_IMAGE,
+          "-f",
+          "2u",
+          "--format",
+          "xml",
+        ],
+        { input: pdf, encoding: "utf8", timeout: 90_000 },
+      );
+      if (result.error) throw result.error;
+      return { outputSha256: createHash("sha256").update(pdf).digest("hex"), xml: result.stdout };
+    };
+    const plain = await createSnapshotPdf(input.snapshot, LABELS, convert);
+    const archive = await createSnapshotPdf(input.snapshot, LABELS, convert, verify);
+    expect(archive.format).toBe("pdfa-2u");
+    const checked = await verify(archive.pdf);
+    expect(checked.xml).toContain('isCompliant="true"');
+    expect(archive.outputSha256).toBe(checked.outputSha256);
+    expect((await verify(plain.pdf)).xml).toContain('isCompliant="false"');
+    for (const { pdf } of [plain, archive]) {
+      const text = spawnSync("pdftotext", ["-enc", "UTF-8", "-raw", "-", "-"], {
+        input: pdf,
+        encoding: "utf8",
+        timeout: 30_000,
+      });
+      expect(text.status, text.stderr).toBe(0);
+      expect(normalize(text.stdout)).toBe(expected);
+    }
+  }, 180_000);
+}
+
 describe("a deliberate difference fails the check (SRV-1512 acceptance 2)", () => {
   it("in the API: one changed letter", async () => {
     const good = await channels();
@@ -854,7 +918,10 @@ describe("a deliberate difference fails the check (SRV-1512 acceptance 2)", () =
 
 describe("the check is required in CI (SRV-1512 acceptance 1)", () => {
   it("runs as its own step of the job Provjere i testovi, over this folder", () => {
-    const workflow = readFileSync(join(ROOT, ".github", "workflows", "ci.yml"), "utf8");
+    const workflow = readFileSync(join(ROOT, ".github", "workflows", "ci.yml"), "utf8").replace(
+      /\r\n/gu,
+      "\n",
+    );
     const checks = workflow.slice(
       workflow.indexOf("\n  checks:\n"),
       workflow.indexOf("\n  database:\n"),
