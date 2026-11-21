@@ -34,6 +34,7 @@ import {
   createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
   createConsultationSlotRoutesFor,
@@ -357,6 +358,21 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createStudentDeadlineHistoryRouteFor(databases.main)",
     ids: ["student.deadline-history.get"],
     routes: () => [createStudentDeadlineHistoryRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // SRV-1903: withdrawal, the histories and the teacher's switch, with the submission's signer.
+    call: "...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps)",
+    ids: [
+      "student.submission-withdrawal.post",
+      "student.submission-history.get",
+      "teacher.submission-history.get",
+      "teacher.submission-withdrawal.get",
+      "teacher.submission-withdrawal.post",
+    ],
+    routes: () =>
+      createSubmissionWithdrawalRoutesFor(NO_ACTOR, { signer: REFUSING_SIGNER }).map(
+        (route) => route.contract.id,
+      ),
   },
   {
     // SRV-1904 (P-D4): copying an assignment over the main database.
@@ -737,6 +753,11 @@ describe("routes the entry point mounts itself", () => {
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       "student.deadline-history.get",
+      "student.submission-withdrawal.post",
+      "student.submission-history.get",
+      "teacher.submission-history.get",
+      "teacher.submission-withdrawal.get",
+      "teacher.submission-withdrawal.post",
       "teacher.assignment-copy.post",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",

@@ -1023,6 +1023,44 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
+  // SRV-1903: the student submits, then withdraws before the deadline.
+  "student.submission-withdrawal.post": {
+    before: [commit("izmisljena-transakcija-1", 0), SUBMIT],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/submission/withdrawal`,
+      as: "student",
+      method: "POST",
+      headers: ORIGIN,
+    },
+  },
+  "student.submission-history.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/submission/history`,
+      as: "student",
+      method: "GET",
+    },
+  },
+  "teacher.submission-history.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/submission-history`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.submission-withdrawal.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submission-withdrawal`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.submission-withdrawal.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submission-withdrawal`,
+      as: "nastavnik",
+      body: { allowed: false },
+    },
+  },
   "teacher.assignment-copy.post": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/copy`,

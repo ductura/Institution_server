@@ -29,6 +29,7 @@ import { IMPORT_HANDLERS } from "./import-routes.ts";
 import { ASSIGNMENT_COPY_HANDLERS } from "./assignment-copy-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
+import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
@@ -96,6 +97,7 @@ export const DEV_HANDLERS: Handlers = {
   ...ASSIGNMENT_COPY_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
+  ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...OPS_HANDLERS,
   "work.export-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
