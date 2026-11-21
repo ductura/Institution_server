@@ -49,8 +49,14 @@ jobs:
           fi
 
   checks:
-    name: Provjere i testovi
+    name: Provjere i testovi (${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-latest
+    strategy:
+      # Two legs split the vitest unit, integration and database projects
+      # by file (vitest --shard); everything else runs on both legs.
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -87,7 +93,9 @@ jobs:
       - name: Formatiranje
         run: pnpm format:check
       - name: Unit testovi
-        run: pnpm test:unit
+        env:
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: pnpm test:unit --shard="$SHARD"
       # SRV-1512 (plan M7.9, R-07): the text of an invented work in the API, the
       # export snapshot and the DOCX must be the same; a difference fails the build.
       # Its own step, so the check is visible and stays required through ci-ok.
@@ -96,7 +104,9 @@ jobs:
       - name: Svojstveni testovi
         run: pnpm test:property
       - name: Integracijski testovi
-        run: pnpm test:integration
+        env:
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: pnpm test:integration --shard="$SHARD"
       # U10-b (DAN-742): the whole path of publish.yml except the upload, with
       # no token: stage and check, pack, check the unpacked tarball, and a dry
       # run of `npm publish` of each tarball.
@@ -156,10 +166,16 @@ jobs:
           [ "$(docker inspect -f '{{.State.ExitCode}}' ductura-test-server)" = 0 ]
 
   database:
-    name: PostgreSQL i pgTAP
+    name: PostgreSQL i pgTAP (${{ matrix.shard }}/${{ strategy.job-total }})
     needs: scope
     if: needs.scope.outputs.profile == 'full'
     runs-on: ubuntu-latest
+    strategy:
+      # Two legs split the vitest unit, integration and database projects
+      # by file (vitest --shard); everything else runs on both legs.
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       PGBIN: /usr/lib/postgresql/17/bin
       PGPORT: "5499"
@@ -334,7 +350,11 @@ jobs:
         env:
           DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
           LOGS_DATABASE_URL: postgres://ductus:ductus-logs-local-only@127.0.0.1:54330/ductus_logs
-        run: pnpm test:database
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        # pnpm test:database split in its two vitest runs, so each gets the shard.
+        run: |
+          pnpm exec vitest run --project database --shard="$SHARD"
+          pnpm test:integration:pg --shard="$SHARD"
       # S-0.15 (DAN-728): the pgTAP matrix ported from Ductus db/tests
       # (db/main/tests) against the migrated and provisioned native main
       # database from `pnpm db:up:native` above, as Ductus runs
