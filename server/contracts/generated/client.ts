@@ -118,7 +118,7 @@ export const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {
   "live.document.put": [200,409],
 };
 
-export const SHARED_ERRORS = {"429":["too_many_requests"],"500":["internal"]} as const;
+export const SHARED_ERRORS = {"401":["session_idle_expired"],"429":["too_many_requests"],"500":["internal"]} as const;
 
 type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body">;
 export type Result<Id extends OperationId> =
