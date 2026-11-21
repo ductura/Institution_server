@@ -80,7 +80,7 @@ export type Operations = {
   };
   "course.aggregate.get": {
     params: { "id": string };
-    query: {  };
+    query: { [key: string]: unknown };
     body: undefined;
     success: { status: 200; body: { "status": "suppressed" } | { "status": "available"; "started": number; "submitted": number; "stages": { "not_started": number; "in_progress": number; "submitted": number } }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "invalid_input" | "unavailable";

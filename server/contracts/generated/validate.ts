@@ -166,7 +166,7 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   "course.aggregate.get:query": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
-      Object.getOwnPropertyNames(value).every(key => [].includes(key))
+      Object.getOwnPropertyNames(value).length <= 0
     )
   }),
   "evidence.commit.post:body": (() => {

@@ -28,7 +28,7 @@ export const courseAggregateGet = defineRoute({
   access: "course_teacher",
   summary:
     "Whole-course snapshot for a course teacher. A student counts once at the furthest work stage. Started includes submitted. Suppresses all counts for fewer than five students, incomplete course access, or any nonempty stage below five. No filters.",
-  request: { params: CourseAggregateParams, query: closed({}) },
+  request: { params: CourseAggregateParams, query: Type.Object({}, { maxProperties: 0 }) },
   responses: [{ status: 200, description: "aggregate or suppressed", body: CourseAggregate }],
   errors: [
     error(401, "unauthorized"),
