@@ -1190,6 +1190,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id === "sources.lookup.post" ||
+        id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("live.") ||
