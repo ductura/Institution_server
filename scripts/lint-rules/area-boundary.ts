@@ -45,6 +45,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   "source-lookup": [],
   "public-verification": ["domain", "database"],
   identity: ["domain"],
+  import: ["domain", "contracts"],
   http: [
     ...["settings", "log", "metrics", "contracts", "traffic", "session", "roles", "legal"],
     ...[
@@ -62,6 +63,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
     ...["external/srce-auth", "external/storage", "external/keys", "external/email"],
     "external/assistant",
     "identity",
+    "import",
   ],
   "test-server": ["http", "settings"],
 };
