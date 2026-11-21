@@ -24,6 +24,7 @@ import {
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
@@ -282,6 +283,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createAssignmentCurrentVersionRouteFor(databases.main)",
     ids: ["institution.assignment.get"],
     routes: () => [createAssignmentCurrentVersionRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    call: "createAssignmentGradeRouteFor(databases.main)",
+    ids: ["teacher.assignment-grade.get"],
+    routes: () => [createAssignmentGradeRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-12: the administrator's course over the main database.
@@ -641,6 +647,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.assignment.get",
+      "teacher.assignment-grade.get",
       "institution.admin-courses.post",
       "institution.course-groups.get",
       "institution.course-groups.post",

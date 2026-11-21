@@ -54,10 +54,13 @@ const contractOf = (id: string) => ROUTES.find((route) => route.id === id)!;
 /** {requestKey, ...content}: the key as a lower-case UUID and the rest as the content, or null. */
 function parseCreateBody(value: unknown) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const { requestKey, ...fields } = value as Record<string, unknown>;
+  const { requestKey, isPractice, ...fields } = value as Record<string, unknown>;
   if (typeof requestKey !== "string" || !UUID.test(requestKey)) return null;
+  if (Object.hasOwn(value, "isPractice") && typeof isPractice !== "boolean") return null;
   const content = parseAssignmentInput(fields);
-  return content === null ? null : { key: requestKey.toLowerCase(), content };
+  return content === null
+    ? null
+    : { key: requestKey.toLowerCase(), content, isPractice: isPractice === true };
 }
 
 export function createInstitutionAssignmentRoutes(
@@ -110,6 +113,7 @@ export function createInstitutionAssignmentRoutes(
           courseId.toLowerCase(),
           body.key,
           body.content,
+          body.isPractice,
         );
       },
       (outcome) => (outcome.status === "created" ? { id: outcome.id } : null),

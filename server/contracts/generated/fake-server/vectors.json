@@ -7086,7 +7086,44 @@
         "evidenceProfile": "basic",
         "importAllowed": false,
         "wordMin": 1500,
-        "wordMax": 2500
+        "wordMax": 2500,
+        "isPractice": false
+      }
+    }
+  },
+  {
+    "route": "institution.assignment.get",
+    "name": "current-practice",
+    "request": {
+      "params": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904",
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601",
+        "versionNo": 2,
+        "title": "Seminarski rad: kućno kompostiranje",
+        "instructions": "Izmišljene upute za izmišljeni zadatak.",
+        "workType": "seminar_paper",
+        "opensAt": "2026-10-01T06:00:00.000Z",
+        "dueAt": "2027-01-31T22:59:00.000Z",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [
+          "proofreading",
+          "literature_search"
+        ],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": 2500,
+        "isPractice": true
       }
     }
   },
@@ -7270,6 +7307,46 @@
         "importAllowed": false,
         "wordMin": 1500,
         "wordMax": 2500
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "id": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      }
+    }
+  },
+  {
+    "route": "institution.course-assignments.post",
+    "name": "created-practice",
+    "request": {
+      "params": {
+        "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "requestKey": "b15e6f70-8192-4da4-8eb5-f60718293a05",
+        "title": "Seminarski rad: kućno kompostiranje",
+        "instructions": "Izmišljene upute za izmišljeni zadatak.",
+        "workType": "seminar_paper",
+        "opensAt": "2026-10-01T08:00:00+02:00",
+        "dueAt": "2027-01-31T23:59:00+01:00",
+        "aiPolicy": "partially_allowed",
+        "aiPurposes": [
+          "proofreading",
+          "literature_search"
+        ],
+        "evidenceProfile": "basic",
+        "importAllowed": false,
+        "wordMin": 1500,
+        "wordMax": 2500,
+        "isPractice": true
       }
     },
     "response": {
@@ -19151,7 +19228,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.58.0",
+        "apiVersion": "1.60.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19167,7 +19244,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.58.0",
+        "apiVersion": "1.60.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19267,7 +19344,13 @@
           "writing": "radi",
           "submission": "radi",
           "mentorView": "nije_ukljuceno"
-        }
+        },
+        "maintenanceWindows": [
+          {
+            "startsAt": "2026-01-16T10:00:00.000Z",
+            "endsAt": "2026-01-16T11:00:00.000Z"
+          }
+        ]
       }
     }
   },
@@ -31202,6 +31285,139 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-000000000004"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-grade.get",
+    "name": "eligible",
+    "request": {
+      "params": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "eligible": true
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-grade.get",
+    "name": "practice",
+    "request": {
+      "params": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "practice_assignment",
+        "code": "practice_assignment",
+        "messageKey": "errors.practiceAssignment",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-000000001901"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-grade.get",
+    "name": "signed-out",
+    "request": {
+      "params": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001901"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-grade.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001901"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-grade.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000001901"
+      }
+    }
+  },
+  {
+    "route": "teacher.assignment-grade.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001901"
       }
     }
   },
