@@ -3,6 +3,7 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -14,8 +15,18 @@ import {
   readFacultyAiSettings,
 } from "./faculty-config.ts";
 
-const ROOT = new URL("../../../config/faculties/", import.meta.url).pathname;
-const repoFiles = readdirSync(ROOT).filter((name) => name.endsWith(".json"));
+const ROOT = fileURLToPath(new URL("../../../config/faculties/", import.meta.url));
+const repoFiles = readdirSync(ROOT)
+  .filter((name) => name.endsWith(".json"))
+  .filter((name) => {
+    const value = JSON.parse(readFileSync(join(ROOT, name), "utf8")) as unknown;
+    return !(
+      typeof value === "object" &&
+      value !== null &&
+      "format" in value &&
+      value.format === "ductura-institution-config-v1"
+    );
+  });
 
 /** Every boolean anywhere in a JSON value, with its path. */
 function booleans(value: unknown, path = "$"): [string, boolean][] {

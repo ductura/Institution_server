@@ -6,7 +6,21 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2712);
+SELECT plan(2714);
+
+SELECT ok(
+  (SELECT relrowsecurity AND relforcerowsecurity
+   FROM pg_class WHERE oid = 'app.institution_config'::regclass)
+  AND has_table_privilege('ductus_app', 'app.institution_config', 'SELECT')
+  AND NOT has_table_privilege('ductus_app', 'app.institution_config', 'INSERT, UPDATE, DELETE, TRUNCATE'),
+  'institution configuration has forced RLS and the application can only read it'
+);
+SELECT bag_eq(
+  $$ SELECT polname::text || ' ' || polcmd::text || ' ' || polroles::regrole[]::text
+     FROM pg_policy WHERE polrelid = 'app.institution_config'::regclass $$,
+  ARRAY['institution_config_owner * {ductus_identity}', 'institution_config_admin_read r {ductus_app}'],
+  'institution configuration policies grant the owner writes and the application scoped reads'
+);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -305,6 +319,8 @@ SELECT bag_eq(
      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
      WHERE c.relnamespace = 'institution'::regnamespace AND NOT t.tgisinternal $$,
   ARRAY['assignment: assignment_practice_immutable 19 O',
+        'assignment: assignment_institution_config_pin 7 O',
+        'assignment: assignment_institution_config_immutable 19 O',
         'assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
         'assignment_version: assignment_version_mentorship_rule 7 O', 'assignment_version: assignment_version_notify 5 O',
         'assignment_version: assignment_version_institution_fill 7 O',

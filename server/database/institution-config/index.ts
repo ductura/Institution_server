@@ -20,7 +20,7 @@ const facultyConfigSchema = z.strictObject({
 
 export type FacultyConfig = z.infer<typeof facultyConfigSchema>;
 const MAX_BYTES = 16 * 1024;
-const FACULTY_FILE = /^([a-z0-9-]{2,32})\.json$/;
+const FACULTY_FILE = /^([a-z0-9-]{2,32})(\.rules)?\.json$/;
 
 type FacultyConfigs = { configs: FacultyConfig[]; problems: string[] };
 
@@ -41,7 +41,8 @@ export function loadFacultyConfigs(root: string): FacultyConfigs {
 
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name, "en"))) {
     if (!/\.json$/i.test(entry.name)) continue;
-    const faculty = FACULTY_FILE.exec(entry.name)?.[1];
+    const name = FACULTY_FILE.exec(entry.name);
+    const faculty = name?.[1];
     if (faculty === undefined || !entry.isFile()) {
       problems.push("FACULTY_CONFIG_INVALID_FILE");
       continue;
@@ -64,14 +65,19 @@ export function loadFacultyConfigs(root: string): FacultyConfigs {
       typeof input === "object" &&
       input !== null &&
       "format" in input &&
-      input.format === FACULTY_AI_CONFIG_FORMAT
+      input.format === FACULTY_AI_CONFIG_FORMAT &&
+      name?.[2] === undefined
     ) {
       const ai = parseFacultyAiConfig(input);
       if (ai.ok && ai.config.faculty === faculty) continue;
     } else {
       const parsed = facultyConfigSchema.safeParse(input, { jitless: true });
       if (parsed.success && parsed.data.faculty === faculty) {
-        configs.push(parsed.data);
+        if (configs.some((config) => config.faculty === faculty)) {
+          problems.push(`FACULTY_CONFIG_DUPLICATE: ${faculty}`);
+        } else {
+          configs.push(parsed.data);
+        }
         continue;
       }
     }

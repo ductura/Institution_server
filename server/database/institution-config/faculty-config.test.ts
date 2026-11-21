@@ -57,4 +57,23 @@ describe("institution configuration on disk", () => {
     writeFileSync(join(directory, "fak-a.json"), "{ malformed");
     expect(loadFacultyConfigs(fixture).problems).toEqual(["FACULTY_CONFIG_INVALID_JSON: fak-a"]);
   });
+
+  it("loads institution rules alongside an existing AI setting and rejects two rules files", () => {
+    const primary = join(directory, "fak-a.json");
+    writeFileSync(
+      primary,
+      JSON.stringify({
+        format: "ductura-faculty-ai-v1",
+        faculty: "fak-a",
+        version: 1,
+        aiSwitch: { transcription: false, tools: false },
+        searchDestinations: [],
+      }),
+    );
+    writeFileSync(join(directory, "fak-a.rules.json"), JSON.stringify(config));
+    expect(loadFacultyConfigs(fixture)).toEqual({ configs: [config], problems: [] });
+
+    writeFileSync(primary, JSON.stringify(config));
+    expect(loadFacultyConfigs(fixture).problems).toEqual(["FACULTY_CONFIG_DUPLICATE: fak-a"]);
+  });
 });
