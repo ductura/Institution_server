@@ -1,0 +1,353 @@
+{
+  "rows": [
+    {
+      "source": "text layer (PDF.js)",
+      "page": "upute",
+      "metrics": {
+        "cer": 0,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 9.497310000000027
+    },
+    {
+      "source": "text layer (PDF.js)",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.0012515644555694619,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 9.497310000000027
+    },
+    {
+      "source": "OCR fast, 100 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.0011641443538998836,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 838.6560870000003,
+      "confidence": 94
+    },
+    {
+      "source": "OCR fast, 100 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.008760951188986232,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 567.2665959999995,
+      "confidence": 94
+    },
+    {
+      "source": "OCR fast, 150 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.0011641443538998836,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 902.9448350000002,
+      "confidence": 95
+    },
+    {
+      "source": "OCR fast, 150 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.007509386733416771,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 775.3211730000003,
+      "confidence": 95
+    },
+    {
+      "source": "OCR fast, 200 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.0011641443538998836,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 936.9543999999996,
+      "confidence": 94
+    },
+    {
+      "source": "OCR fast, 200 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.007509386733416771,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 1017.7663649999995,
+      "confidence": 95
+    },
+    {
+      "source": "OCR fast, 300 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.002328288707799767,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 1540.5532349999994,
+      "confidence": 94
+    },
+    {
+      "source": "OCR fast, 300 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.007509386733416771,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 1554.6253000000015,
+      "confidence": 95
+    },
+    {
+      "source": "OCR fast, 200 dpi, skos 2°, šum 120",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.006984866123399301,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 1141.2797620000001,
+      "confidence": 94
+    },
+    {
+      "source": "OCR fast, 200 dpi, skos 2°, šum 120",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.011264080100125156,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 1232.2324339999996,
+      "confidence": 94
+    },
+    {
+      "source": "OCR fast, 100 dpi, skos 2°, šum 120",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.012805587892898719,
+        "diacriticRecall": 0.9583333333333334,
+        "diacriticTotal": 24,
+        "datesFound": 2,
+        "datesTotal": 5
+      },
+      "ms": 671.6079629999986,
+      "confidence": 91
+    },
+    {
+      "source": "OCR fast, 100 dpi, skos 2°, šum 120",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.02127659574468085,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 1,
+        "datesTotal": 2
+      },
+      "ms": 523.4197930000009,
+      "confidence": 90
+    },
+    {
+      "source": "OCR standard, 100 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.002328288707799767,
+        "diacriticRecall": 0.9583333333333334,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 895.2734420000015,
+      "confidence": 94
+    },
+    {
+      "source": "OCR standard, 100 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.010012515644555695,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 632.6094100000009,
+      "confidence": 94
+    },
+    {
+      "source": "OCR standard, 150 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.002328288707799767,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 1100.3654749999987,
+      "confidence": 94
+    },
+    {
+      "source": "OCR standard, 150 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.007509386733416771,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 1549.2625880000014,
+      "confidence": 95
+    },
+    {
+      "source": "OCR standard, 200 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.002328288707799767,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 1331.1536190000006,
+      "confidence": 94
+    },
+    {
+      "source": "OCR standard, 200 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.008760951188986232,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 1196.3120159999999,
+      "confidence": 95
+    },
+    {
+      "source": "OCR standard, 300 dpi",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.002328288707799767,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 1742.006631999997,
+      "confidence": 94
+    },
+    {
+      "source": "OCR standard, 300 dpi",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.010012515644555695,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 2211.1147859999983,
+      "confidence": 93
+    },
+    {
+      "source": "OCR standard, 200 dpi, skos 2°, šum 120",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.0011641443538998836,
+        "diacriticRecall": 1,
+        "diacriticTotal": 24,
+        "datesFound": 5,
+        "datesTotal": 5
+      },
+      "ms": 1393.662075999997,
+      "confidence": 94
+    },
+    {
+      "source": "OCR standard, 200 dpi, skos 2°, šum 120",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.007509386733416771,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 1249.080188,
+      "confidence": 95
+    },
+    {
+      "source": "OCR standard, 100 dpi, skos 2°, šum 120",
+      "page": "upute",
+      "metrics": {
+        "cer": 0.009313154831199068,
+        "diacriticRecall": 0.9583333333333334,
+        "diacriticTotal": 24,
+        "datesFound": 3,
+        "datesTotal": 5
+      },
+      "ms": 827.6167119999991,
+      "confidence": 91
+    },
+    {
+      "source": "OCR standard, 100 dpi, skos 2°, šum 120",
+      "page": "literatura",
+      "metrics": {
+        "cer": 0.017521902377972465,
+        "diacriticRecall": 1,
+        "diacriticTotal": 42,
+        "datesFound": 2,
+        "datesTotal": 2
+      },
+      "ms": 774.2898310000019,
+      "confidence": 91
+    }
+  ],
+  "initMs": {
+    "fast": 283.65347399999973,
+    "standard": 217.0696530000023
+  },
+  "imageOnlyTextItems": 0,
+  "sizes": {
+    "tesseract.js (src + dist worker)": 171884,
+    "WASM jezgra, SIMD LSTM (.wasm.js)": 3954569,
+    "WASM jezgra, LSTM bez SIMD-a (.wasm.js)": 3954181,
+    "PDF.js legacy (pdf.mjs + pdf.worker.mjs)": 3116046,
+    "model hrv fast": 4103348,
+    "model hrv standard": 13797409
+  }
+}
