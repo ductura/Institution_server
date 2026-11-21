@@ -67,6 +67,10 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  "app/api/assignments/[assignmentId]/works/[documentId]/export/pdf/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063084126",
+  },
   "app/api/student/assistant/requests/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7056107180",
@@ -253,6 +257,10 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/versions/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
+  },
+  "app/api/works/[documentId]/versions/[revision]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062949322",
   },
   // SRV-1106 (Val 11, Ductus#2051 c.7048423523; E§3.5 mentor2, PO-22): the messages of a work; Ductus has no such route.
   "app/api/works/[documentId]/messages/route.ts": {

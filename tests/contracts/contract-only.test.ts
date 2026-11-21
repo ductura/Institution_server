@@ -19,6 +19,7 @@ import {
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
+  createWorkPdfRouteFor,
   createProblemReportRouteFor,
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
@@ -39,6 +40,7 @@ import {
   createConsultationRecordRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createWorkVersionRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -199,6 +201,11 @@ const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
 const NO_READER = {} as ActorReader;
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
+  {
+    call: "createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN)",
+    ids: ["work.export-pdf.get"],
+    routes: () => [createWorkPdfRouteFor(NO_ACTOR, undefined).contract.id],
+  },
   {
     call: "createStudentAssignmentWorkRouteFor(databases.main)",
     ids: ["student.assignment-work.get"],
@@ -368,6 +375,13 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createWorkMilestonesRoutesFor(databases.main)",
     ids: ["work.milestones.get", "work.milestones.patch"],
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createWorkVersionRouteFor(databases.main, evidenceDeps)",
+    ids: ["work.version.get"],
+    routes: () => [
+      createWorkVersionRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }).contract.id,
+    ],
   },
   {
     call: "createAcknowledgmentRouteFor(databases.main)",
@@ -552,6 +566,7 @@ describe("CONTRACT_ONLY", () => {
 describe("routes the entry point mounts itself", () => {
   it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
+      "work.export-pdf.get",
       "student.assignment-work.get",
       "student.submission-notes.get",
       "student.submission-notes.post",
@@ -598,6 +613,7 @@ describe("routes the entry point mounts itself", () => {
       "work.attachments.get",
       "work.milestones.get",
       "work.milestones.patch",
+      "work.version.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",
