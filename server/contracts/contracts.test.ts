@@ -188,6 +188,8 @@ describe("route inventory", () => {
       "student.portable-record.get: app/api/student/submissions/[submissionId]/portable-record/route.ts is not in the inventory",
       "student.submission-package-link.post: app/api/student/submissions/[submissionId]/package-link/route.ts is not in the inventory",
       "student.submission-package.get: app/api/student/submissions/[submissionId]/package/[kind]/route.ts is not in the inventory",
+      "teacher.submissions-bulk-link.post: app/api/teacher/assignments/[assignmentId]/submissions-bulk-link/route.ts is not in the inventory",
+      "teacher.submissions-bulk.get: app/api/teacher/assignments/[assignmentId]/submissions-bulk/[format]/route.ts is not in the inventory",
       "work.version.get: app/api/works/[documentId]/versions/[revision]/route.ts is not in the inventory",
       "work.messages.get: app/api/works/[documentId]/messages/route.ts is not in the inventory",
       "work.messages.post: app/api/works/[documentId]/messages/route.ts is not in the inventory",

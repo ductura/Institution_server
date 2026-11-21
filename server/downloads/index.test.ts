@@ -38,6 +38,7 @@ describe("server/downloads public interface", () => {
       "renderReceiptPdf",
       "renderWorkDocx",
       "verifyPortableRecord",
+      "writeZip",
     ]);
     expect(area.DOWNLOADS_ROUTES).toEqual([]);
     expect(area.DOWNLOADS_SCHEMAS).toEqual({});
