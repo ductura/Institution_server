@@ -386,6 +386,13 @@ export type Operations = {
     success: { status: 200; body: { "institution": { "slug": string; "displayName": string | null }; "roles": ("student" | "teacher" | "network_engineer" | "institution_admin")[]; "displayName": string | null; "journalScope": string; "sessionTag": string }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "profile.staff-affiliation.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "confirmed": true; "source": "hrEduPersonAffiliation" | "eduPersonAffiliation" | "eduPersonScopedAffiliation"; "confirmedAt": string } | { "confirmed": false; "code": "staff_affiliation_missing" }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "projection.process-summary-details.post": {
     params: undefined;
     query: undefined;

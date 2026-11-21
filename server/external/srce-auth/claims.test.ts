@@ -276,7 +276,14 @@ describe("identityFromClaims with AAI@EduHr arrays", () => {
     ] as const) {
       expect(identityFromClaims({ ...AAI, hrEduPersonAffiliation: affiliation })).toStrictEqual({
         ok: true,
-        identity: { ...ANA_IDENTITY, teacherEligible },
+        // SRV-1403: a true fact carries the attribute it rests on.
+        identity: teacherEligible
+          ? {
+              ...ANA_IDENTITY,
+              teacherEligible,
+              staffAffiliation: { source: "hrEduPersonAffiliation" },
+            }
+          : { ...ANA_IDENTITY, teacherEligible },
       });
     }
   });
@@ -425,7 +432,11 @@ describe("teacherEligible from hrEduPersonAffiliation", () => {
     });
     expect(unnamed).toStrictEqual({
       ok: true,
-      identity: { ...ANA_IDENTITY, teacherEligible: true },
+      identity: {
+        ...ANA_IDENTITY,
+        teacherEligible: true,
+        staffAffiliation: { source: "hrEduPersonAffiliation" },
+      },
     });
   });
 

@@ -22,6 +22,7 @@ import {
   METHOD_NOT_ALLOWED,
   platformRoutes,
   profileRoutes,
+  staffAffiliationRoutes,
   projectionRoutes,
   publicVerificationPost,
   publicVerificationRoutes,
@@ -87,6 +88,7 @@ export {
   mentorNotesPost,
 } from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
+export { STAFF_AFFILIATION_SOURCES } from "./routes/index.ts";
 export { ProblemReportInput, problemReportsPost } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
@@ -120,6 +122,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...authRoutes,
   ...webauthnRoutes,
   ...profileRoutes,
+  ...staffAffiliationRoutes,
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
