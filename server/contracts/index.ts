@@ -6,6 +6,10 @@ import {
   clientRoutes,
   collaborationRoutes,
   consultationSlotRoutes,
+  mentorshipRoutes,
+  teachingTeamRoutes,
+  mentorNotesGet,
+  mentorNotesPost,
   courseAggregateGet,
   downloadsRoutes,
   enrollmentRoutes,
@@ -18,6 +22,7 @@ import {
   METHOD_NOT_ALLOWED,
   platformRoutes,
   profileRoutes,
+  staffAffiliationRoutes,
   projectionRoutes,
   publicVerificationPost,
   publicVerificationRoutes,
@@ -35,6 +40,7 @@ import {
   merlinRosterRoutes,
   merlinPackageRoutes,
   supportRoutes,
+  problemReportsPost,
   teacherRoutes,
   teacherWorkingCriteriaRoutes,
   TOO_MANY_REQUESTS,
@@ -42,6 +48,7 @@ import {
   workExportDocxRoutes,
   workVersionGet,
   workMessagesRoutes,
+  notificationsRoutes,
   commentsRoutes,
   directEditRoutes,
   workMilestonesRoutes,
@@ -54,7 +61,14 @@ export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export {
+  NotificationId,
+  NotificationsPage,
+  NOTIFICATIONS_PAGE_SIZE,
+  notificationsRoutes,
+} from "./routes/index.ts";
 
 export {
   ERROR_CATALOG_DATA,
@@ -66,7 +80,15 @@ export {
   TOO_MANY_REQUESTS,
 };
 export { SESSION_IDLE_EXPIRED } from "./routes/index.ts";
+export {
+  MentorNoteInput,
+  MentorshipNoteParams,
+  mentorNotesGet,
+  mentorNotesPost,
+} from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
+export { STAFF_AFFILIATION_SOURCES } from "./routes/index.ts";
+export { ProblemReportInput, problemReportsPost } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
@@ -99,6 +121,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...authRoutes,
   ...webauthnRoutes,
   ...profileRoutes,
+  ...staffAffiliationRoutes,
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
@@ -111,9 +134,14 @@ export const ROUTES: readonly RouteContract[] = [
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,
   ...supportRoutes,
+  problemReportsPost,
   ...projectionRoutes,
   ...collaborationRoutes,
   ...consultationSlotRoutes,
+  ...mentorshipRoutes,
+  ...teachingTeamRoutes,
+  mentorNotesGet,
+  mentorNotesPost,
   ...assistantRoutes,
   ...statementRoutes,
   ...liveRoutes,
@@ -130,6 +158,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...workExportDocxRoutes,
   workVersionGet,
   ...workMessagesRoutes,
+  ...notificationsRoutes,
   ...commentsRoutes,
   ...directEditRoutes,
   ...consultationRecordsRoutes,

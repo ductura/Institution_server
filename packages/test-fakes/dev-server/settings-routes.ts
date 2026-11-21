@@ -70,6 +70,17 @@ function validBound(key: string, level: Level, value: unknown, bound: Bound): bo
   );
 }
 
+function submitReport({ state, account }: { state: State; account: Account | null }) {
+  if (account === null) return { error: "unauthorized" } as const;
+  const sent = state.reports.get(account.id) ?? 0;
+  if (sent >= MAX_REPORTS) return { error: "too_many_reports" } as const;
+  state.reports.set(account.id, sent + 1);
+  return {
+    status: 201,
+    body: { reference: `PR-${randomBytes(5).toString("hex").toUpperCase()}` },
+  } as const;
+}
+
 export const SETTINGS_HANDLERS: Handlers = {
   "settings.catalogue.get": () => ({ status: 200, body: catalogue() }),
   "settings.values.get": ({ state, account, query }) => {
@@ -116,14 +127,6 @@ export const SETTINGS_HANDLERS: Handlers = {
     else state.settings.set(name, { value: body.value, bound, updatedAt: now.toISOString() });
     return { status: 200, body: { key: body.key, value: body.value, bound, changed } };
   },
-  "support.problem-report.post": ({ state, account }) => {
-    if (account === null) return { error: "unauthorized" };
-    const sent = state.reports.get(account.id) ?? 0;
-    if (sent >= MAX_REPORTS) return { error: "too_many_reports" };
-    state.reports.set(account.id, sent + 1);
-    return {
-      status: 201,
-      body: { reference: `PR-${randomBytes(5).toString("hex").toUpperCase()}` },
-    };
-  },
+  "support.problem-report.post": submitReport,
+  "support.problem-reports.post": submitReport,
 };

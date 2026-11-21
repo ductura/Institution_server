@@ -4,4 +4,4 @@ Priključak baze za zahtjeve AI pomoćnika (SRV-1203, korak 3 ugovora Ductus `do
 
 Vlasništvo, politiku, konfiguraciju troška i budžet odlučuje baza; iznosi, granice i student nikad ne dolaze odavde. Odgovor je zatvoren status, nikad poruka baze. Ruta (korak 4) zove pružatelja tek kad `markSent` vrati `sent`.
 
-`sweepDue` (SRV-1205, migracija `20261130120500_assistant_sweep_due.sql`) je popis workera: najviše zadani broj (1 do 1000) ID-ova zahtjeva koje bi `sweep_and_settle` sada promijenio, najstariji prvi, i ništa drugo. Rokove (`stale_reserved_after`, `stale_sent_after`) drži baza. Zove ga posao čišćenja i svođenja u `server/assistant/sweep`.
+`sweepDue` (SRV-1205, migracija `20261201120500_assistant_sweep_due.sql`) je popis workera: najviše zadani broj (1 do 1000) ID-ova zahtjeva koje bi `sweep_and_settle` sada promijenio, najstariji prvi, i ništa drugo. Rokove (`stale_reserved_after`, `stale_sent_after`) drži baza. Zove ga posao čišćenja i svođenja u `server/assistant/sweep`.

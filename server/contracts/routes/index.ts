@@ -25,11 +25,18 @@ export { versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
+export {
+  NotificationId,
+  NotificationsPage,
+  NOTIFICATIONS_PAGE_SIZE,
+  notificationsRoutes,
+} from "./notifications.ts";
 export { commentsRoutes } from "./comments.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
+export { ProblemReportInput, problemReportsPost } from "./problem-report.ts";
 export { sourceLookupPost } from "./source-lookup.ts";
 export { publicVerificationPost, publicVerificationRoutes } from "./public-verification.ts";
 export { collaborationRoutes } from "./collaboration.ts";
@@ -48,7 +55,16 @@ export {
 } from "./course-aggregate.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
+export { mentorshipRoutes } from "./mentorship.ts";
+export { teachingTeamRoutes } from "./teaching-team.ts";
+export {
+  MentorNoteInput,
+  MentorshipNoteParams,
+  mentorNotesGet,
+  mentorNotesPost,
+} from "./mentor-notes.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";
 export { statementRoutes } from "./statement.ts";
+export { STAFF_AFFILIATION_SOURCES, staffAffiliationRoutes } from "./staff-affiliation.ts";

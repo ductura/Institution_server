@@ -14,6 +14,9 @@ import { createRegistry, type HealthReport, type Registry } from "./registry.ts"
 import { createWithActor, type WithActor } from "./with-actor.ts";
 
 export { createConsultationSlotStore } from "./consultation-slots/index.ts";
+export { createMentorshipRequestStore } from "./mentorship/index.ts";
+export { createTeachingTeam } from "./teaching-team/index.ts";
+export { createMentorNotesStore } from "./mentor-notes/index.ts";
 export type {
   BackchannelLogout,
   BackchannelLogoutInput,
@@ -144,6 +147,15 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+// SRV-1403: the caller's own staff affiliation (identity.my_staff_affiliation).
+export {
+  createMyStaffAffiliationReader,
+  STAFF_AFFILIATION_MISSING_CODE,
+  STAFF_AFFILIATION_SOURCE_NAMES,
+  type MyStaffAffiliation,
+  type MyStaffAffiliationReader,
+  type MyStaffAffiliationResult,
+} from "./staff-affiliation.ts";
 export {
   createSchemaReadinessReader,
   MIGRATION_LOCK_KEY,
@@ -588,6 +600,7 @@ export {
   type WorkMessageRefusal,
   type WorkMessages,
 } from "./work-messages/index.ts";
+export { createNotifications } from "./notifications/index.ts";
 export {
   ASSISTANT_REQUEST_STATES,
   createAssistantRequests,
@@ -626,3 +639,4 @@ export {
   type TeacherEditOutcome,
 } from "./direct-edit/index.ts";
 export { createCourseAggregateReader } from "./course-aggregate/index.ts";
+export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";

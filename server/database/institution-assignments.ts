@@ -42,6 +42,7 @@ export type InstitutionAssignments = {
     courseId: string,
     requestKey: string,
     content: AssignmentContent,
+    isPractice?: boolean,
   ): Promise<AssignmentCreateOutcome>;
   publishVersion(
     token: string,
@@ -53,7 +54,7 @@ export type InstitutionAssignments = {
 
 const CREATE_SQL = `SELECT institution.create_assignment(
   $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
-  $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer
+  $8::text, $9::text[], $10::text, $11::boolean, $12::integer, $13::integer, 1, $14::boolean
 ) AS id`;
 const PUBLISH_SQL = `SELECT institution.publish_assignment_version(
   $1::uuid, $2::integer, $3::text, $4::text, $5::text, $6::timestamptz, $7::timestamptz,
@@ -89,12 +90,12 @@ const contentParams = (c: AssignmentContent): unknown[] => [
 
 export function createInstitutionAssignments(withActor: WithActor): InstitutionAssignments {
   return {
-    async createAssignment(token, courseId, requestKey, content) {
+    async createAssignment(token, courseId, requestKey, content, isPractice = false) {
       const readId = (rows: unknown) => {
         const id = single(rows, "id");
         return typeof id === "string" && UUID.test(id) ? id.toLowerCase() : null;
       };
-      const params = [courseId, requestKey, ...contentParams(content)];
+      const params = [courseId, requestKey, ...contentParams(content), isPractice];
       const outcome = await call(
         withActor,
         token,

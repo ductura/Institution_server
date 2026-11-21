@@ -28,6 +28,8 @@
 --     the worker uses the pg-boss queue directly and it holds identifiers only
 --     (D-74); 106-pgboss-queue.sql pins them. The same definition as
 --     open_policy in 012.
+--   * B: SRV-1814 operators read all problem reports. 122-problem-report.sql
+--     pins the one SELECT policy for the dedicated role.
 --
 -- The negative controls are made inside the transaction, seen and dropped;
 -- the file rolls back, so nothing stays.
@@ -58,7 +60,11 @@ CREATE TEMP VIEW open_policy AS
     AND p.polcmd <> 'a'
     AND (p.polqual IS NULL OR p.polqual::text NOT LIKE '%{VAR %')
     AND NOT coalesce(c.relnamespace = to_regnamespace('pgboss')::oid
-                     AND p.polroles = ARRAY[to_regrole('ductus_worker')::oid], false);
+                     AND p.polroles = ARRAY[to_regrole('ductus_worker')::oid], false)
+    AND NOT coalesce(p.polrelid = 'identity.problem_report'::regclass
+                     AND p.polname = 'problem_report_operator_read' AND p.polcmd = 'r'
+                     AND p.polroles = ARRAY['ductus_problem_report_reader'::regrole::oid]
+                     AND pg_get_expr(p.polqual, p.polrelid) = 'true' AND p.polwithcheck IS NULL, false);
 
 CREATE TEMP VIEW probe AS
   SELECT found FROM public_relation WHERE found LIKE 'test\_dan949%'
@@ -128,7 +134,7 @@ DROP SCHEMA test_dan949 CASCADE;
 -- 2. The database as migrated.
 SELECT is_empty('SELECT found FROM public_relation', 'no application relation lives in schema public');
 SELECT is_empty('SELECT found FROM open_policy',
-  'no permissive policy lets every row through for a role that is not the owner of its table');
+  'no permissive policy lets every row through outside the named exceptions');
 SELECT is(
   (SELECT count(*)::int FROM pg_class c
    WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'p', 'f', 'v', 'm', 'S')
