@@ -326,10 +326,12 @@ describe("C. the closed envelope", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("C10: of a repeated key the last one counts, as in Ductus", async () => {
+  it("C10: a repeated key is 422 invalid and never reaches the service (M3.1, N-19)", async () => {
     const body = JSON.stringify(GOOD_BODY).replace("{", '{"baseRevision":99,');
-    await post(body);
-    expect(calls[0]?.request.baseRevision).toBe(GOOD_BODY.baseRevision);
+    const answer = await post(body);
+    expect(answer.status).toBe(422);
+    expect(JSON.parse(answer.body)).toEqual({ status: "invalid" });
+    expect(calls).toHaveLength(0);
   });
 });
 

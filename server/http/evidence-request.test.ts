@@ -64,8 +64,8 @@ describe("parseClosedObject", () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 
-  it("B9: a repeated key keeps the last value, as JSON.parse in Ductus", () => {
-    expect(parse(`{"assignmentId":"${A}","assignmentId":"${B}"}`)).toEqual({ assignmentId: B });
+  it("B9: a repeated key is null (M3.1, N-19; Ductus kept the last value)", () => {
+    expect(parse(`{"assignmentId":"${A}","assignmentId":"${B}"}`)).toBeNull();
   });
 
   it("B10: deeply nested JSON inside the limit is a value, never a throw", () => {
