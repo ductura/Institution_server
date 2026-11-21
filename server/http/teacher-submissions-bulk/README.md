@@ -8,7 +8,7 @@
 - `build.ts`: iz popisa za Merlin (SRV-1109) uzima samo datoteke odabranog formata, svaku provjerava otiskom iz njezina retka, uz nju stavlja PDF potvrde predaje istog studenta (`<naziv>-potvrda.pdf`) i dodaje `otisci.sha256`. Student bez predaje nema datoteku; potvrda koja čeka potpis nije u ZIP-u. Isti ulaz daje iste bajtove.
 - `index.ts`: HTTP rub i sastav postojećih čitanja. Poveznica provjerava pristup čitanjem produljenja roka (SRV-1108: samo nastavnik zadatka, inače `not_found`), bez čitanja rada i bez zapisa. Preuzimanje čita radove kroz `app.fast_path_works` (isto čitanje kao brzi put i paket za Merlin), koje u istoj transakciji upisuje nastavnikovo otvaranje svakog predanog teksta u dnevnik pristupa (SRV-11), pa je svako preuzimanje zapisano. Potvrde čita `app.teacher_submission_state` (SRV-30) i provjerava kao za studenta.
 
-Odgovori: bez sesije 401, `Sec-Fetch-Site` koji nije `same-origin` 403, tuđi, nepoznat i neispravan zadatak te poveznica druge sesije, zadatka ili formata isti 404 (C-23), istekla poveznica 410. Čitanja koja se ne slažu (potvrda drugog studenta, predaja bez stanja), nedostatak `APP_ORIGIN` za QR potvrde ili iznimka daju 503 sa zatvorenim razlogom, nikad djelomičan ZIP.
+Odgovori: bez sesije ili sa sesijom koju baza više ne poznaje 401 (provjera pristupa ide prije provjere poveznice, pa odjavljeni kolačić nikad ne dobije 404 ili 410), `Sec-Fetch-Site` koji nije `same-origin` 403, tuđi, nepoznat i neispravan zadatak te poveznica druge sesije, zadatka ili formata isti 404 (C-23), istekla poveznica 410. Čitanja koja se ne slažu (potvrda drugog studenta, predaja bez stanja), nedostatak `APP_ORIGIN` za QR potvrde ili iznimka daju 503 sa zatvorenim razlogom, nikad djelomičan ZIP.
 
 ## Otvorene stavke
 
