@@ -25,6 +25,12 @@ export { versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
+export {
+  NotificationId,
+  NotificationsPage,
+  NOTIFICATIONS_PAGE_SIZE,
+  notificationsRoutes,
+} from "./notifications.ts";
 export { commentsRoutes } from "./comments.ts";
 export { directEditRoutes } from "./direct-edit.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
