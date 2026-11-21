@@ -34,6 +34,7 @@ import {
   createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createLegalHoldRoutesFor,
   createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
@@ -355,6 +356,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createDeadlineExtensionRoutesFor(databases.main)",
     ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
     routes: () => createDeadlineExtensionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    // SRV-1306: the legal holds of the institution over the main database.
+    call: "...createLegalHoldRoutesFor(databases.main)",
+    ids: [
+      "institution.legal-holds.get",
+      "institution.legal-holds.post",
+      "institution.legal-hold-release.post",
+    ],
+    routes: () => createLegalHoldRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "createStudentDeadlineHistoryRouteFor(databases.main)",
@@ -759,6 +770,9 @@ describe("routes the entry point mounts itself", () => {
       "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
+      "institution.legal-holds.get",
+      "institution.legal-holds.post",
+      "institution.legal-hold-release.post",
       "student.deadline-history.get",
       "student.submission-withdrawal.post",
       "student.submission-history.get",

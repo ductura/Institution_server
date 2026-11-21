@@ -489,6 +489,39 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "institution.legal-hold-release.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['holdId'] === 'string') &&
+      local0.test(value['holdId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "institution.legal-hold-release.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['reason'] === 'string') &&
+      value['reason'].length <= 600 &&
+      value['reason'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "institution.legal-holds.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['subjectType'] === 'work')) || ((value['subjectType'] === 'student')) || ((value['subjectType'] === 'assignment'))) &&
+      (typeof value['subjectId'] === 'string') &&
+      value['subjectId'].length <= 256 &&
+      value['subjectId'].length >= 1 &&
+      (typeof value['caseReference'] === 'string') &&
+      value['caseReference'].length <= 120 &&
+      value['caseReference'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }),
   "institution.role-confirmation.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {

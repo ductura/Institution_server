@@ -1001,6 +1001,40 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "nastavnik",
     },
   },
+  "institution.legal-holds.get": {
+    request: { path: "/api/v1/institution/legal-holds", as: "administrator" },
+  },
+  "institution.legal-holds.post": {
+    request: {
+      path: "/api/v1/institution/legal-holds",
+      as: "administrator",
+      body: {
+        subjectType: "assignment",
+        subjectId: IDS.assignment,
+        caseReference: "IZMISLJENI-SLUCAJ-2026-01",
+      },
+    },
+  },
+  "institution.legal-hold-release.post": {
+    // A hold another administrator placed: the one who placed it may not release it.
+    prepare: (state) => {
+      state.legalHolds.push({
+        holdId: "00000000-0000-4000-8000-0000000000b1",
+        subjectType: "assignment",
+        subjectId: IDS.assignment,
+        caseReference: "IZMISLJENI-SLUCAJ-2026-01",
+        placedBy: "00000000-0000-4000-8000-0000000000a2",
+        placedAt: "2026-11-20T08:00:00.000Z",
+        releasedBy: null,
+        releasedAt: null,
+      });
+    },
+    request: {
+      path: "/api/v1/institution/legal-holds/00000000-0000-4000-8000-0000000000b1/release",
+      as: "administrator",
+      body: { reason: "Izmišljeni razlog: slučaj je zaključen." },
+    },
+  },
   "teacher.declaration.get": {
     before: SUBMIT_STEPS,
     request: {

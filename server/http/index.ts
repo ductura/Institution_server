@@ -273,6 +273,7 @@ export {
 } from "./staff-affiliation.ts";
 export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
+export { createLegalHoldRoutes, createLegalHoldRoutesFor } from "./legal-hold/index.ts";
 export {
   createInstitutionGroupRoutes,
   createInstitutionGroupRoutesFor,
