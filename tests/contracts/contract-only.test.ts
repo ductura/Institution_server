@@ -44,6 +44,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStaffAffiliationRouteFor,
   createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
@@ -400,6 +401,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createStudentNoticeRouteFor(NO_ACTOR).contract.id],
   },
   {
+    // SRV-1403: the caller's own staff affiliation over the main database.
+    call: "createStaffAffiliationRouteFor(databases.main)",
+    ids: ["profile.staff-affiliation.get"],
+    routes: () => [createStaffAffiliationRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-9B: the public check of a receipt over the main database.
     call: "createPublicVerificationRouteFor(databases.main)",
     ids: ["public.verification.post"],
@@ -592,6 +599,7 @@ describe("routes the entry point mounts itself", () => {
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
       "student.notice.get",
+      "profile.staff-affiliation.get",
       "public.verification.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",

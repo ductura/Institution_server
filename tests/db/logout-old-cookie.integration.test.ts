@@ -44,6 +44,7 @@ import {
   createLiveRoutesFor,
   createLayers,
   createMeRouteFor,
+  createStaffAffiliationRouteFor,
   createProblemReportRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -407,6 +408,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-1403: the caller's own staff affiliation; it only reads.
+  "profile.staff-affiliation.get": {
+    method: "GET",
+    path: "/api/v1/me/staff-affiliation",
+    body: () => undefined,
+    live: 200,
+  },
   // DAN-851-2d2a: the problem report. The body is its JCS form (keys in
   // order), which the service asks for; a live report is 201 and stored.
   "support.problem-report.post": {
@@ -767,6 +775,7 @@ const FACTORIES = [
   "createStudentSubmissionRoutesFor",
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
+  "createStaffAffiliationRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
@@ -820,6 +829,7 @@ const MOUNTED = [
   ...createStudentSubmissionRoutesFor(databases.main),
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
+  createStaffAffiliationRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),

@@ -16,6 +16,7 @@ import {
   METHOD_NOT_ALLOWED,
   platformRoutes,
   profileRoutes,
+  staffAffiliationRoutes,
   projectionRoutes,
   publicVerificationPost,
   publicVerificationRoutes,
@@ -58,6 +59,7 @@ export {
   TOO_MANY_REQUESTS,
 };
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
+export { STAFF_AFFILIATION_SOURCES } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
 export {
@@ -90,6 +92,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...authRoutes,
   ...webauthnRoutes,
   ...profileRoutes,
+  ...staffAffiliationRoutes,
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,

@@ -440,6 +440,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/profile/interface-locale", as: "student", body: { locale: "en" } },
   },
   "profile.me.get": { request: { path: "/api/v1/me", as: "administrator" } },
+  "profile.staff-affiliation.get": {
+    request: { path: "/api/v1/me/staff-affiliation", as: "nastavnik" },
+  },
   "projection.process-summary.post": {
     request: {
       path: "/api/v1/process-summary",
