@@ -27,6 +27,7 @@ import {
   createInstitutionCourseRoutesFor,
   createInternalInstitutionRoutes,
   createMeRouteFor,
+  createStaffAffiliationRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
@@ -65,6 +66,7 @@ import {
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createCommentRoutesFor,
@@ -220,6 +222,7 @@ async function main(): Promise<void> {
       ...createInterfaceLocaleRoutesFor(databases.main),
       // The problem report (S-M-2, DAN-851): POST over the support service.
       createProblemReportRouteFor(databases.main),
+      createProblemReportsRouteFor(databases.main),
       // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
       ...createInstitutionCourseRoutesFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
@@ -285,6 +288,8 @@ async function main(): Promise<void> {
       createStudentNoticeRouteFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
+      // SRV-1403: the caller's own staff affiliation, or staff_affiliation_missing.
+      createStaffAffiliationRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),

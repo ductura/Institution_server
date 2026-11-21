@@ -67,9 +67,9 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
-  "app/api/works/[id]/sources/[sourceId]/notes/route.ts": {
-    methods: ["GET", "POST", "PATCH", "DELETE"],
-    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063426191",
+  "app/api/problem-reports/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064518328",
   },
   "app/api/teacher/assignments/[assignmentId]/grade/route.ts": {
     methods: ["GET"],
@@ -103,6 +103,10 @@ export const SERVER_SOURCES: Readonly<
   "app/api/mentorship-requests/[requestId]/withdraw/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/works/[id]/sources/[sourceId]/notes/route.ts": {
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063426191",
   },
   "app/api/notifications/route.ts": {
     methods: ["GET"],
@@ -199,6 +203,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/me/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-6993786629",
+  },
+  // SRV-1403 (M1.3, DAN-304): the caller's own staff affiliation; Ductus has no such route.
+  "app/api/me/staff-affiliation/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062876936",
   },
   // SRV-02 (Ductus#2028 c.7008147932, A-2): the outcomes of enrolment told apart.
   "app/api/student/enrollments/route.ts": {

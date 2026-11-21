@@ -2,6 +2,14 @@
 // from here, never from the files next to it. Ported from Ductus
 // src/server/auth at d52a92c3 (S-0.18, DAN-731).
 export {
+  STAFF_AFFILIATION_MISSING,
+  STAFF_AFFILIATION_SOURCES,
+  STAFF_EDU_PERSON_VALUES,
+  staffAffiliationFromClaims,
+  type StaffAffiliation,
+  type StaffAffiliationSource,
+} from "./affiliation.ts";
+export {
   identityFromClaims,
   TEACHER_AFFILIATIONS,
   type ClaimsResult,

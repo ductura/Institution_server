@@ -27,10 +27,11 @@ CREATE TEMP VIEW app_relation AS
 -- keeps the Ductus roles out of them. Roles that inherit ductus_app (its
 -- logins) are held by the write guard of 010 and the matrices. The
 -- has_*_privilege functions resolve groups and PUBLIC, so a right reached
--- either way shows here. The one exception is the pg-boss queue (DAN-517):
+-- either way shows here. The pg-boss queue is an exception (DAN-517):
 -- the worker uses its tables directly and they hold identifiers only (D-74);
 -- 106 pins those rights exactly. The local worker login inherits them, and 010
 -- holds that a login has no right beyond its group.
+-- SRV-1814 also grants the operator group SELECT on problem reports alone.
 CREATE TEMP VIEW stray_privilege AS
   SELECT r.rolname || ': ' || p.privilege || ' on ' || a.name AS found
   FROM (SELECT rolname::text FROM pg_roles x
@@ -43,10 +44,12 @@ CREATE TEMP VIEW stray_privilege AS
   WHERE (has_table_privilege(r.rolname, a.oid, p.privilege)
          OR (p.privilege IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
              AND has_any_column_privilege(r.rolname, a.oid, p.privilege)))
-    AND NOT (r.rolname IN ('ductus_worker', 'ductus_worker_local') AND a.nspname = 'pgboss');
+    AND NOT (r.rolname IN ('ductus_worker', 'ductus_worker_local') AND a.nspname = 'pgboss')
+    AND NOT (r.rolname = 'ductus_problem_report_reader' AND a.name = 'identity.problem_report'
+             AND p.privilege = 'SELECT');
 
 SELECT is_empty('SELECT found FROM stray_privilege',
-  'no role but the owners and ductus_app, nor PUBLIC, holds a right on an application relation');
+  'application relation grants stay within the named roles and exceptions');
 GRANT SELECT ON institution.course TO ductus_worker;
 SELECT set_eq('SELECT found FROM stray_privilege',
   ARRAY['ductus_worker: SELECT on institution.course', 'ductus_worker_local: SELECT on institution.course'],
@@ -69,8 +72,8 @@ SELECT is_empty('SELECT found FROM stray_privilege', 'the relations are clean ag
 -- row through when USING or WITH CHECK is true, and also when the expression
 -- its command needs is missing: USING for every command but INSERT, and the
 -- check for INSERT, UPDATE and ALL, where WITH CHECK falls back to USING.
--- The pg-boss queue is the exception: its worker policy passes every row
--- (identifiers only, D-74), and 106 pins the policies of that schema.
+-- The pg-boss worker and problem report operator are the named exceptions,
+-- with the exact policies pinned by 106 and 122 respectively.
 CREATE TEMP VIEW open_policy AS
   SELECT schemaname || '.' || tablename || '.' || policyname AS found
   FROM pg_policies
@@ -79,14 +82,18 @@ CREATE TEMP VIEW open_policy AS
          OR (cmd <> 'INSERT' AND qual IS NULL)
          OR (cmd IN ('INSERT', 'UPDATE', 'ALL') AND coalesce(with_check, qual) IS NULL))
     AND NOT roles <@ ARRAY['ductus_identity', 'ductus_evidence', 'ductus_queue']::name[]
-    AND NOT (schemaname = 'pgboss' AND roles = ARRAY['ductus_worker']::name[]);
+    AND NOT (schemaname = 'pgboss' AND roles = ARRAY['ductus_worker']::name[])
+    AND NOT coalesce(schemaname = 'identity' AND tablename = 'problem_report'
+                     AND policyname = 'problem_report_operator_read' AND cmd = 'SELECT'
+                     AND roles = ARRAY['ductus_problem_report_reader']::name[]
+                     AND qual = 'true' AND with_check IS NULL, false);
 CREATE TEMP VIEW public_policy AS
   SELECT schemaname || '.' || tablename || '.' || policyname AS found
   FROM pg_policies
   WHERE schemaname NOT LIKE 'pg\_%' AND schemaname NOT IN ('information_schema', 'public')
     AND 'public' = ANY (roles);
 
-SELECT is_empty('SELECT found FROM open_policy', 'every policy that passes every row names only an owner role');
+SELECT is_empty('SELECT found FROM open_policy', 'policies that pass every row stay within the named exceptions');
 SELECT is_empty('SELECT found FROM public_policy', 'no policy applies to PUBLIC');
 CREATE POLICY test_open ON institution.course FOR SELECT TO ductus_app USING (true);
 SELECT set_eq('SELECT found FROM open_policy', ARRAY['institution.course.test_open'],

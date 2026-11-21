@@ -1,0 +1,23 @@
+{
+  "name": "@ductura/ocr-hrv-spike",
+  "version": "0.0.0",
+  "private": true,
+  "description": "SRV-1808 (M8.7-S): local synthetic spike of Tesseract.js hrv and the PDF.js text layer",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "0.1.100",
+    "dejavu-fonts-ttf": "2.37.3",
+    "pdfjs-dist": "5.4.624",
+    "pdfkit": "0.17.2",
+    "tesseract.js": "6.0.1",
+    "tesseract.js-core": "6.1.2"
+  },
+  "scripts": {
+    "models": "node models.ts",
+    "test": "node --test *.test.ts",
+    "report": "node benchmark.ts"
+  }
+}

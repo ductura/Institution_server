@@ -1218,6 +1218,21 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "support.problem-reports.post:body": (() => {
+  const local0 = /^(?=[\s\S]*[^\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u0008\u000b-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069\uD800-\uDFFF]){1,2000}(?![\s\S])/;
+  const local1 = /^(?:(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})\.(?:0|[1-9][0-9]{0,3})(?:\+[0-9a-f]{7,40})?|[0-9a-f]{7,40})(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['category'] === 'technical')) || ((value['category'] === 'account')) || ((value['category'] === 'course'))) &&
+      (typeof value['description'] === 'string') &&
+      local0.test(value['description']) &&
+      (typeof value['appVersion'] === 'string') &&
+      local1.test(value['appVersion']) &&
+      Object.getOwnPropertyNames(value).length === 3
+    )
+  }
+  })(),
   "teacher.assignment-grade.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
