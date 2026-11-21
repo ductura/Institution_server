@@ -13,10 +13,10 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'role ductus_problem_report_reader already exists with LOGIN or an elevated attribute';
   END IF;
-  EXECUTE format('GRANT CONNECT ON DATABASE %I TO ductus_problem_report_reader', current_database());
 END
 $$;
 
+-- The operator connection is provisioned separately. This role adds table access only.
 GRANT USAGE ON SCHEMA identity TO ductus_problem_report_reader;
 SET LOCAL ROLE ductus_identity;
 
@@ -52,9 +52,4 @@ DROP POLICY problem_report_own_read ON identity.problem_report;
 
 SET LOCAL ROLE ductus_migrator;
 REVOKE USAGE ON SCHEMA identity FROM ductus_problem_report_reader;
-DO $$
-BEGIN
-  EXECUTE format('REVOKE CONNECT ON DATABASE %I FROM ductus_problem_report_reader', current_database());
-END
-$$;
 DROP ROLE ductus_problem_report_reader;

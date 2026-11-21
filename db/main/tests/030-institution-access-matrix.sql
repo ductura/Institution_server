@@ -11,6 +11,7 @@ SELECT plan(2594);
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
     AND has_table_privilege('ductus_problem_report_reader', c.oid, 'SELECT')
+    AND NOT has_database_privilege('ductus_problem_report_reader', current_database(), 'CONNECT')
     AND NOT has_table_privilege('public', c.oid, 'SELECT')
     AND NOT EXISTS (
       SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin
