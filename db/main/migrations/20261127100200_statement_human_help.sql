@@ -83,6 +83,9 @@ $$;
 CREATE FUNCTION declaration.pin_request() RETURNS trigger
 LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
+  -- app.request_submission runs as the evidence owner. Any other caller
+  -- reaches its ordinary RLS check without invoking a private helper.
+  IF current_user <> 'ductus_evidence' THEN RETURN NEW; END IF;
   PERFORM declaration.lock_scope(NEW.institution_id, NEW.assignment_id, NEW.principal_id);
   SELECT s.id, s.content_sha256 INTO NEW.declaration_version_id, NEW.declaration_sha256
     FROM declaration.statement s
