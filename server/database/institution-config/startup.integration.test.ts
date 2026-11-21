@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 import { expect, it } from "vitest";
 
+import { SERVER_NODE_FLAGS } from "../../../scripts/build/index.ts";
+
 const entry = fileURLToPath(new URL("../../server.ts", import.meta.url));
 
 it.each([
@@ -17,7 +19,7 @@ it.each([
     const directory = join(root, "config", "faculties");
     mkdirSync(directory, { recursive: true });
     writeFileSync(join(directory, "fak-a.json"), contents);
-    const result = spawnSync(process.execPath, ["--disallow-code-generation-from-strings", entry], {
+    const result = spawnSync(process.execPath, [...SERVER_NODE_FLAGS, entry], {
       cwd: root,
       encoding: "utf8",
       timeout: 10_000,
