@@ -5,8 +5,9 @@
  *   institution's rules. The rules pass the closed schema before anything
  *   reaches the database; the institution, the author and the version number
  *   come from the session and the database, never from the caller.
- * - `versions`: the versions of the own institution, through RLS (an
- *   administrator of another institution, a teacher and a student read none).
+ * - `versions`: the versions of the own institution, through RLS. Only an
+ *   administrator reads them; any other caller with a session is "forbidden"
+ *   (SRV-1406), so a teacher is told apart from an administrator with none.
  * - `assignmentRules`: the rules an assignment reads, the version it was
  *   created under (`institution.assignment.config_version`). An assignment
  *   created while its institution had no version reads the faculty file
@@ -32,7 +33,7 @@ export type PublishOutcome =
 
 export type VersionsOutcome =
   | { readonly status: "ok"; readonly versions: readonly InstitutionConfigVersion[] }
-  | { readonly status: "unauthorized" };
+  | { readonly status: "unauthorized" | "forbidden" };
 
 export type AssignmentRulesOutcome =
   | { readonly status: "ok"; readonly version: number | null; readonly rules: FacultyRules | null }
@@ -43,6 +44,7 @@ const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 const SQL = {
   publish: "SELECT app.publish_institution_config($1::integer, $2::jsonb) AS version",
   versions: `SELECT (SELECT a.user_id FROM app.current_actor() a) IS NOT NULL AS authenticated,
+      (SELECT institution.actor_has_role('admin')) AS administrator,
       c.version, c.rules, c.created_by AS "createdBy", c.created_at AS "createdAt"
     FROM (SELECT 1) one LEFT JOIN app.institution_config c ON true
     ORDER BY c.version`,
@@ -65,6 +67,7 @@ function storedRules(value: unknown): FacultyRules {
 
 type VersionRow = {
   authenticated: boolean;
+  administrator: boolean | null;
   version: number | null;
   rules: unknown;
   createdBy: string | null;
@@ -115,6 +118,7 @@ export function createInstitutionConfigStore(withActor: WithActor) {
         const first = rows[0];
         if (first === undefined) throw new Error("missing institution config result");
         if (!first.authenticated) return { status: "unauthorized" } as const;
+        if (first.administrator !== true) return { status: "forbidden" } as const;
         const versions = rows
           .filter((row) => row.version !== null)
           .map((row, index) => {
