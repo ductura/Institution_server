@@ -30,6 +30,7 @@ export {
   type FacultyRules,
   type FacultyRulesCatalog,
   type InstitutionConfigStore,
+  type InstitutionConfigVersion,
 } from "./institution-config/index.ts";
 export type {
   BackchannelLogout,

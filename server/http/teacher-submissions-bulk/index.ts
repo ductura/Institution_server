@@ -189,12 +189,17 @@ function downloadRoute(deps: TeacherSubmissionsBulkDeps): Route {
       if (!UUID.test(assignmentId) || !isBulkFormat(format) || linkToken === null) {
         return sendProblem(response, 404, "not_found");
       }
-      const check = checkBulkLink(token, assignmentId, format, linkToken, now());
-      if (check === "invalid") return sendProblem(response, 404, "not_found");
-      if (check === "expired") return sendProblem(response, 410, "not_allowed");
-      const render = deps.renderReceipt;
-      if (render === null) return unavailable(response, "origin_missing");
       try {
+        // The session and the relation first, so a logged-out cookie is 401
+        // whatever link it carries; this read touches no work.
+        const access = await deps.access(token, assignmentId);
+        if (access === "unauthorized") return sendProblem(response, 401, "unauthorized");
+        if (access === "not_found") return sendProblem(response, 404, "not_found");
+        const check = checkBulkLink(token, assignmentId, format, linkToken, now());
+        if (check === "invalid") return sendProblem(response, 404, "not_found");
+        if (check === "expired") return sendProblem(response, 410, "not_allowed");
+        const render = deps.renderReceipt;
+        if (render === null) return unavailable(response, "origin_missing");
         const read = await deps.roster(token, assignmentId);
         if (read.status !== "read") {
           return read.status === "unauthorized"
