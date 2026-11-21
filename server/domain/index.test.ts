@@ -66,6 +66,7 @@ describe("server/domain imports nothing outside itself", () => {
       "citation",
       "collaboration",
       "course-team",
+      "declaration",
       "document",
       "evidence",
       "forensics",
@@ -152,5 +153,16 @@ describe("golden vectors keep LF on every platform", () => {
   it("no file holds a carriage return", () => {
     for (const file of files)
       expect(readFileSync(path.join(repo, file)).includes(0x0d), file).toBe(false);
+  });
+
+  it("checks the declaration form fixture out with eol=lf too (SRV-1210)", () => {
+    const file = "server/domain/declaration/testdata/test-izjava.v1.json";
+    const out = execFileSync("git", ["check-attr", "text", "eol", "--", file], {
+      cwd: repo,
+      encoding: "utf8",
+    });
+    expect(out).toContain(`${file}: eol: lf
+`);
+    expect(readFileSync(path.join(repo, file)).includes(0x0d)).toBe(false);
   });
 });

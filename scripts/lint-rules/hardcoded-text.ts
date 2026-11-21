@@ -155,6 +155,9 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   // Evidence formats: UTF-8 payloads and base64url signatures.
   "server/domain/forensics/evidence-chain-v2.ts": ["TextDecoder"],
   "server/domain/forensics/evidence-timing-v1.ts": ["TextDecoder"],
+  // Declaration v1: strict UTF-8 of the canonical payload and of a text/plain attachment (SRV-1210).
+  "server/domain/declaration/attachments.ts": ["TextDecoder"],
+  "server/domain/declaration/payload.ts": ["TextDecoder"],
   "server/domain/forensics/evidence-receipt-verifier.ts": ["atob"],
   "server/domain/forensics/submission-receipt-verifier-v2.ts": ["atob"],
   // Bodies of the Ductus backend copy, strict UTF-8 before JSON.parse: comments,

@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2248);
+SELECT plan(2312);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -18,8 +18,8 @@ SELECT bag_eq(
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
-        'deadline_extension', 'work_milestone', 'work_milestone_deadline'],
-  'the institution schema holds exactly the thirty tables of this matrix'
+        'deadline_extension', 'consultation_slot', 'work_milestone', 'work_milestone_deadline'],
+  'the institution schema holds exactly the thirty-one tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -128,6 +128,7 @@ SELECT bag_eq(
     'work_attachment: work_attachment_owner ALL to ductus_identity',
     'source_proof: source_proof_owner ALL to ductus_identity',
     'deadline_extension: deadline_extension_owner ALL to ductus_identity',
+    'consultation_slot: consultation_slot_owner ALL to ductus_identity',
     'work_milestone: work_milestone_owner ALL to ductus_identity',
     'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity'
   ],
@@ -290,7 +291,10 @@ SELECT bag_eq(
     'refuse_deadline_extension_change()',
     'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
-    'deadline_extensions(p_assignment_id uuid) definer app'
+    'deadline_extensions(p_assignment_id uuid) definer app',
+    'consultation_slots(p_document_id text) definer app',
+    'request_consultation_slot(p_document_id text, p_starts_at timestamp with time zone) definer app',
+    'act_on_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_starts_at timestamp with time zone) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -739,12 +743,12 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
-                        'work_milestone', 'work_milestone_deadline']) WITH ORDINALITY AS t (tbl, n)
+                        'consultation_slot', 'work_milestone', 'work_milestone_deadline']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'work_milestone', 'work_milestone_deadline') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'consultation_slot', 'work_milestone', 'work_milestone_deadline') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

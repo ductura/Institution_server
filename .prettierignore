@@ -14,6 +14,9 @@ db/main/tests/
 # Golden vectors (S-0.19), byte for byte as in Ductus src/domain/forensics/golden-vectors
 # at d52a92c3: tests hash and parse the raw bytes, so a reformat changes the vectors.
 server/domain/forensics/golden-vectors/*.json
+# Declaration form fixture (SRV-1210): JCS bytes plus one newline; the test hashes
+# the raw bytes, so a reformat changes formSha256.
+server/domain/declaration/testdata/*.json
 # Written by tests/fixtures/docx-corpus/generate.ts and kept byte for byte as in
 # Ductus tests/fixtures/docx-corpus; tests/unit/docx-corpus.test.ts compares it
 # with a fresh run of the generator.
