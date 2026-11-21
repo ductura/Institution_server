@@ -24,12 +24,15 @@ import {
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
+  createAssignmentGradeRouteFor,
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createStudentDeadlineHistoryRouteFor,
   createConsultationSlotRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
@@ -37,9 +40,12 @@ import {
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
+  createTeachingTeamRoutesFor,
+  createMentorNotesRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
   createWorkVersionRouteFor,
@@ -183,6 +189,12 @@ const SRV_1407 = [
   "mentorship.request-decline.post",
   "mentorship.request-withdraw.post",
 ];
+const SRV_1408 = [
+  "institution.teaching-team.get",
+  "institution.teaching-team.post",
+  "institution.teaching-group-members.put",
+];
+const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
@@ -272,6 +284,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createAssignmentCurrentVersionRouteFor(NO_ACTOR).contract.id],
   },
   {
+    call: "createAssignmentGradeRouteFor(databases.main)",
+    ids: ["teacher.assignment-grade.get"],
+    routes: () => [createAssignmentGradeRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-12: the administrator's course over the main database.
     call: "createAdminCourseRouteFor(databases.main)",
     ids: ["institution.admin-courses.post"],
@@ -304,10 +321,20 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createTeacherSubmissionDetailRouteFor(databases.main)",
+    ids: ["teacher.submission-detail.get"],
+    routes: () => [createTeacherSubmissionDetailRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-1108: the deadline extensions of an assignment over the main database.
     call: "...createDeadlineExtensionRoutesFor(databases.main)",
     ids: ["teacher.deadline-extensions.get", "teacher.deadline-extension.post"],
     routes: () => createDeadlineExtensionRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createStudentDeadlineHistoryRouteFor(databases.main)",
+    ids: ["student.deadline-history.get"],
+    routes: () => [createStudentDeadlineHistoryRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-1109: the Merlin roster of an assignment and its CSV over the main database.
@@ -361,6 +388,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createTeachingTeamRoutesFor(databases.main)",
+    ids: SRV_1408,
+    routes: () => createTeachingTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createMentorNotesRoutesFor(databases.main)",
+    ids: SRV_1413,
+    routes: () => createMentorNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // Ductus#2028 (w1119o): the live view over the main database.
     call: "createLiveRoutesFor(databases.main)",
     ids: ["live.document.get", "live.document.put"],
@@ -382,6 +419,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "work.consultation-additions.post",
     ],
     routes: () => createConsultationRecordRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createNotificationsRoutesFor(databases.main, reminderCooldown)",
+    ids: ["notifications.list.get", "notifications.read.post"],
+    routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createAttachmentRoutesFor(databases.main, process.env, process.cwd())",
@@ -599,6 +641,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
       "institution.assignment.get",
+      "teacher.assignment-grade.get",
       "institution.admin-courses.post",
       "institution.course-groups.get",
       "institution.course-groups.post",
@@ -606,8 +649,10 @@ describe("routes the entry point mounts itself", () => {
       ...TEACHER_READ_ROUTES,
       "course.aggregate.get",
       ...TEACHER_ROSTER_ROUTES,
+      "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
+      "student.deadline-history.get",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",
       "teacher.merlin-packages.post",
@@ -623,12 +668,16 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
       ...SRV_1407,
+      ...SRV_1408,
+      ...SRV_1413,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",
       "work.consultation-records.get",
       "work.consultation-records.post",
       "work.consultation-additions.post",
+      "notifications.list.get",
+      "notifications.read.post",
       "work.attachments.post",
       "work.attachments.get",
       "work.milestones.get",
