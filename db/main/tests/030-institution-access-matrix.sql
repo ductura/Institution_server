@@ -121,7 +121,8 @@ SELECT bag_eq(
         'declaration.check_statement_attachments()',
         'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
         'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)',
-        'declaration.is_fresh(declaration.statement,text,bigint,integer)'],
+        'declaration.is_fresh(declaration.statement,text,bigint,integer)',
+        'declaration.bound_declaration_of(uuid,uuid,uuid)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -132,8 +133,9 @@ SELECT bag_eq(
      WHERE p.pronamespace = 'declaration'::regnamespace AND p.proowner <> to_regrole(r.rolname)
        AND has_function_privilege(r.rolname, p.oid, 'EXECUTE') $$,
   ARRAY['ductus_app declaration.read_statement(uuid)', 'ductus_app declaration.save_statement(uuid,jsonb,text)',
-        'ductus_app declaration.upload_attachment(uuid,text,bytea)'],
-  'only the web role executes a declaration function, and only the three student RPCs'
+        'ductus_app declaration.upload_attachment(uuid,text,bytea)',
+        'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)'],
+  'the web role executes only the three student RPCs, and identity only the teacher''s bound-declaration helper'
 );
 SELECT is_empty(
   $$ SELECT r.rolname, p.privilege, c.relname

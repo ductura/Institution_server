@@ -45,22 +45,22 @@ $$;
 -- 1. Catalogue.
 SELECT is(
   (SELECT string_agg(p.oid::regprocedure::text || ' ' || pg_get_userbyid(p.proowner) || ' '
-                     || p.prosecdef || ' ' || ('search_path=""' = ANY (p.proconfig)), ', ' ORDER BY p.proname)
+                     || p.prosecdef || ' ' || ('search_path=""' = ANY (p.proconfig)), ', ' ORDER BY p.proname, p.pronamespace::regnamespace::text)
      FROM pg_proc p
-    WHERE p.oid IN ('app.bound_declaration_of(uuid,uuid)'::regprocedure,
+    WHERE p.oid IN ('declaration.bound_declaration_of(uuid,uuid,uuid)'::regprocedure,
                     'app.teacher_declaration(uuid,uuid)'::regprocedure)),
-  'app.bound_declaration_of(uuid,uuid) ductus_evidence true true, '
+  'declaration.bound_declaration_of(uuid,uuid,uuid) ductus_evidence true true, '
   || 'app.teacher_declaration(uuid,uuid) ductus_identity true true',
   'owners, SECURITY DEFINER and an empty search_path');
 SELECT bag_eq(
   $$ SELECT r || ' ' || f
        FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_identity', 'ductus_evidence',
                          'ductus_auth', 'ductus_test_stranger', 'public']) r
-      CROSS JOIN unnest(ARRAY['app.bound_declaration_of(uuid,uuid)', 'app.teacher_declaration(uuid,uuid)']) f
+      CROSS JOIN unnest(ARRAY['declaration.bound_declaration_of(uuid,uuid,uuid)', 'app.teacher_declaration(uuid,uuid)']) f
       WHERE has_function_privilege(r, f, 'EXECUTE')
-        AND NOT (r = 'ductus_evidence' AND f = 'app.bound_declaration_of(uuid,uuid)')
+        AND NOT (r = 'ductus_evidence' AND f = 'declaration.bound_declaration_of(uuid,uuid,uuid)')
         AND NOT (r = 'ductus_identity' AND f = 'app.teacher_declaration(uuid,uuid)') $$,
-  ARRAY['ductus_app app.teacher_declaration(uuid,uuid)', 'ductus_identity app.bound_declaration_of(uuid,uuid)'],
+  ARRAY['ductus_app app.teacher_declaration(uuid,uuid)', 'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)'],
   'only the app reads through the teacher''s RPC; only identity calls the helper');
 SELECT is(pg_get_function_arguments('app.teacher_declaration(uuid,uuid)'::regprocedure),
   'p_assignment_id uuid, p_student_id uuid', 'the reader names no institution or reader');
@@ -98,10 +98,16 @@ SELECT matches(pg_temp.read('vesna', '{dora}'), '^none', 'Dora submitted nothing
 SELECT matches(pg_temp.read('vesna', '{tomo}'), '^ZD403', 'a student outside the course is refused');
 SELECT matches(pg_temp.read('vesna', 'NULL'), '^ZD403', 'no student is refused');
 SELECT is(pg_temp.logged(), 'vesna:teacher:doc-a', 'the refusals wrote nothing');
-SELECT matches(pg_temp.ask('vesna', 'SELECT count(*)::text FROM app.bound_declaration_of({z1}, {ana})'),
+SELECT matches(pg_temp.ask('vesna', 'SELECT count(*)::text FROM declaration.bound_declaration_of({fak_a}, {z1}, {ana})'),
   '^42501', 'the session cannot call the helper itself');
-SELECT is(pg_get_function_arguments('app.bound_declaration_of(uuid,uuid)'::regprocedure),
-  'p_assignment_id uuid, p_student_id uuid', 'the helper takes the institution from the session, not from its caller');
+SELECT is(pg_get_function_arguments('declaration.bound_declaration_of(uuid,uuid,uuid)'::regprocedure),
+  'p_institution_id uuid, p_assignment_id uuid, p_student_id uuid',
+  'the helper takes the institution its identity caller has from the session');
+SELECT ok(NOT EXISTS (
+  SELECT 1 FROM pg_class c WHERE c.relnamespace = 'declaration'::regnamespace AND c.relkind IN ('r', 'p')
+     AND (has_table_privilege('ductus_identity', c.oid, 'SELECT') OR has_table_privilege('ductus_identity', c.oid, 'INSERT')
+          OR has_table_privilege('ductus_identity', c.oid, 'UPDATE') OR has_table_privilege('ductus_identity', c.oid, 'DELETE'))),
+  'reaching the declaration schema gives identity no table of it');
 
 -- 5. Withdrawn: the declaration is no longer the teacher's.
 INSERT INTO ref SELECT 's1', id::text FROM evidence.submission;
