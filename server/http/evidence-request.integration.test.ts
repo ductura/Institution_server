@@ -227,6 +227,29 @@ describe("A. checks before the body, in order", () => {
     expect(answer.head["cache-control"]).toBe("no-store");
     expect(seen).toEqual([]);
   });
+
+  // M3.1 (B-8): "ingest refuses a wrong or missing Origin and Sec-Fetch-Site",
+  // on the mounted commit path as on open; neither handler is ever reached.
+  it.each([
+    ["no Origin", replace("Origin", null)],
+    ["an opaque Origin", replace("Origin", "null")],
+    ["Origin sent twice", [...GOOD, `Origin: ${ORIGIN}`]],
+    ["Sec-Fetch-Site cross-site", replace("Sec-Fetch-Site", "cross-site")],
+    ["Sec-Fetch-Site same-site", replace("Sec-Fetch-Site", "same-site")],
+    ["Sec-Fetch-Site none", replace("Sec-Fetch-Site", "none")],
+  ])("A6: %s is 403 in step 7 on open and on commit", async (_name, lines) => {
+    let probed = false;
+    probe = () => {
+      probed = true;
+    };
+    for (const path of [OPEN_PATH, PROBE_PATH]) {
+      const answer = await send(port(), path, withLength(lines, BODY), BODY);
+      expect(answer.status).toBe(vector("forbidden").status);
+      expect(answer.body).not.toContain(BODY);
+    }
+    expect(seen).toEqual([]);
+    expect(probed).toBe(false);
+  });
 });
 
 describe("B. the body under its limits", () => {
