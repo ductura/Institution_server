@@ -1,0 +1,200 @@
+{
+  "route": "student.submission-history.get",
+  "vectors": [
+    {
+      "name": "history",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "withdrawalAllowed": true,
+          "dueAt": "2026-12-20T22:59:00.000Z",
+          "events": [
+            {
+              "kind": "submission",
+              "id": "5b0c3e2a-7d14-4f6b-9a8e-1c2d3e4f5a01",
+              "attempt": 1,
+              "submissionId": "5b0c3e2a-7d14-4f6b-9a8e-1c2d3e4f5a01",
+              "revision": 7,
+              "at": "2026-12-20T21:14:05.123Z",
+              "afterDeadline": false,
+              "receipt": {
+                "payload": {
+                  "receiptSchema": "ductus-submission-receipt-v2",
+                  "submissionId": "5b0c3e2a-7d14-4f6b-9a8e-1c2d3e4f5a01",
+                  "evidenceDomainId": "00000000-0000-4000-8000-0000000000d1",
+                  "principalId": "00000000-0000-4000-8000-0000000000e1",
+                  "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+                  "assignmentVersion": 2,
+                  "documentId": "izmisljeni-rad-predaje-0001",
+                  "evidencePackageId": "izmisljeni-paket-0001",
+                  "revision": 7,
+                  "artifactSha256": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+                  "evidenceHeadSegmentHash": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+                  "evidenceRecord": "continuous",
+                  "requestedAt": "2026-12-20T21:14:05.123456Z",
+                  "dueAt": "2026-12-20T22:59:00.000000Z",
+                  "afterDeadline": false,
+                  "signedAt": "2026-12-20T21:14:06.004321Z"
+                },
+                "payloadDigestSha256": "c3c9f04a1911bd4d032a9f71956b646cde7f743c08d6ea266a53413da1758e5a",
+                "signature": {
+                  "algorithm": "Ed25519",
+                  "keyId": "izmisljeni-kljuc-ustanove",
+                  "keyVersion": "1",
+                  "signatureEncoding": "raw",
+                  "signatureBase64Url": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ"
+                }
+              }
+            },
+            {
+              "kind": "withdrawal",
+              "id": "6c1d4f3b-8e25-4a7c-8b9f-2d3e4f5a6b02",
+              "attempt": 1,
+              "submissionId": "5b0c3e2a-7d14-4f6b-9a8e-1c2d3e4f5a01",
+              "revision": 7,
+              "at": "2026-12-20T21:40:00.654Z",
+              "receipt": {
+                "payload": {
+                  "receiptSchema": "ductus-submission-withdrawal-receipt-v1",
+                  "withdrawalId": "6c1d4f3b-8e25-4a7c-8b9f-2d3e4f5a6b02",
+                  "submissionId": "5b0c3e2a-7d14-4f6b-9a8e-1c2d3e4f5a01",
+                  "submissionReceiptSha256": "c3c9f04a1911bd4d032a9f71956b646cde7f743c08d6ea266a53413da1758e5a",
+                  "evidenceDomainId": "00000000-0000-4000-8000-0000000000d1",
+                  "principalId": "00000000-0000-4000-8000-0000000000e1",
+                  "assignmentId": "00000000-0000-4000-8000-0000000000a1",
+                  "withdrawnAt": "2026-12-20T21:40:00.654321Z",
+                  "dueAt": "2026-12-20T22:59:00.000000Z",
+                  "signedAt": "2026-12-20T21:40:00.712345Z"
+                },
+                "payloadDigestSha256": "69144c3a1fb50d3f7571930015a5d954831626cc7ee77ff20d8a01dbf91f4faf",
+                "signature": {
+                  "algorithm": "Ed25519",
+                  "keyId": "izmisljeni-kljuc-ustanove",
+                  "keyVersion": "1",
+                  "signatureEncoding": "raw",
+                  "signatureBase64Url": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ"
+                }
+              }
+            },
+            {
+              "kind": "submission",
+              "id": "7d2e5a4c-9f36-4b8d-8c0a-3e4f5a6b7c03",
+              "attempt": 2,
+              "submissionId": "7d2e5a4c-9f36-4b8d-8c0a-3e4f5a6b7c03",
+              "revision": 9,
+              "at": "2026-12-20T22:05:11.000Z",
+              "afterDeadline": false,
+              "receipt": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "withdrawalAllowed": false,
+          "dueAt": "2026-12-20T22:59:00.000Z",
+          "events": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000190310"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-000000190311"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "params": {
+          "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000190312"
+        }
+      }
+    }
+  ]
+}

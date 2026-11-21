@@ -58,6 +58,7 @@ import {
   createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
   createMerlinRosterRoutesFor,
@@ -321,6 +322,9 @@ async function main(): Promise<void> {
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
       createStudentDeadlineHistoryRouteFor(databases.main),
+      // SRV-1903: withdrawal of a submission, the history and the teacher's switch,
+      // signed with the same signer as the submission receipt.
+      ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
       // SRV-1904 (P-D4): the teacher copies an assignment into a course they teach.
       createAssignmentCopyRouteFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
