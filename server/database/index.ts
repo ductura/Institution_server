@@ -625,3 +625,4 @@ export {
   type Imports,
   type PrepareImportInput,
 } from "./import/index.ts";
+export { createCourseAggregateReader } from "./course-aggregate/index.ts";
