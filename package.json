@@ -20,6 +20,7 @@
     "lokalno:predaje": "node scripts/lokalno/seed-predaja.ts",
     "dev:lazni-server": "node packages/test-fakes/dev-server/main.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ductus-tests.json",
+    "evidence:verify": "node scripts/evidence-verify/index.ts",
     "lint": "eslint --flag unstable_native_nodejs_ts_config -c eslint.config.ts --max-warnings 0 .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
