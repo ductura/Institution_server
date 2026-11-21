@@ -122,7 +122,9 @@ describe("fake server over HTTP", () => {
     // teacher.merlin-packages.post (SRV-1110) five.
     // work.messages.post (SRV-1106) five.
     // work.milestones.patch (SRV-1103) five, teacher.working-criterion.put (SRV-1107) five.
-    expect(VECTORS.length - overHttp.length).toBe(239);
+    // student.assistant-request.post (SRV-1204) five.
+    // work.direct-edit.put (SRV-1702) five.
+    expect(VECTORS.length - overHttp.length).toBe(249);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

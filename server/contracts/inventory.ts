@@ -67,6 +67,14 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  "app/api/student/assistant/requests/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7056107180",
+  },
+  "app/api/student/assistant/conversations/[conversationId]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7056107180",
+  },
   "app/api/works/[documentId]/consultation-slots/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7044073682",
@@ -250,6 +258,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/messages/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423523",
+  },
+  // SRV-1702 (M6.4, DAN-420; D-21, D-34, D-244; Ductus#2052 c.7060411190): the direct-edit setting of a work; Ductus has no such route.
+  "app/api/works/[documentId]/direct-edit/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
   },
   "app/api/student/assignments/[assignmentId]/attachments/route.ts": {
     methods: ["POST"],

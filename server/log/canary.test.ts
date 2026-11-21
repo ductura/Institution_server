@@ -51,7 +51,9 @@ describe("canary through every server log path", () => {
   // code they log through, which this repository does not have yet: "codesLog
   // and the evidence routes' consoleLog" and "the evidence storage reader with
   // a refused configuration" with server/evidence (S-M-*), "instrumentation
-  // with a refused database URL" with the entry point (S-1B-a).
+  // with a refused database URL" with the entry point (S-1B-a). The entry
+  // point's own lines go through createLogger since SRV-1812; their canary is
+  // server/http/startup-log.test.ts.
 
   it("createLogger with a pair inside a pair, an array subclass and a token with a digit run", () => {
     const short = SHORT;

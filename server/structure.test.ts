@@ -30,6 +30,7 @@ const TEMPLATE_AREAS = [
   "support",
   "public-verification",
   "assistant",
+  "worker",
   "database",
   "session",
   "domain",

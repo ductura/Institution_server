@@ -48,6 +48,7 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["precondition_required", "errors.preconditionRequired"],
   ["record_changed", "errors.recordChanged"],
   ["refused", "errors.refused"],
+  ["session_idle_expired", "errors.sessionIdleExpired"],
   ["stale_base", "errors.staleBase"],
   ["stale_revision", "errors.staleRevision"],
   ["timeout", "errors.timeout"],

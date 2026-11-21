@@ -50,6 +50,10 @@ const REQUIRED_AREAS = [
   "public-verification",
   // SRV-1205 (Ductus ai-request-v1 step 5): the worker's sweep of assistant requests.
   "assistant",
+  // SRV-1502 (M3.2, B-9): the worker process, first its receipt signing.
+  "worker",
+  // SRV-1401 (DAN-296, M1.6): idle expiry of a session.
+  "identity",
   "contracts",
   "domain",
   "test-server",

@@ -23,6 +23,7 @@ export {
   createMerlinPackageRoutes,
   createMerlinPackageRoutesFor,
 } from "./merlin-packages/index.ts";
+export { createAssistantRoutes, createAssistantRoutesFor } from "./assistant/index.ts";
 export { createSourceLookupRouteFor } from "./source-lookup.ts";
 export { createPublicVerificationRouteFor } from "./public-verification.ts";
 export {
@@ -166,9 +167,25 @@ export {
   type ReadyStatus,
 } from "./ready.ts";
 export { createReadyRoute, type ReadyRouteOptions } from "./ready-route.ts";
+export {
+  CAPABILITY_TIMEOUT_MS,
+  loggedReadyCheck,
+  MIGRATIONS_MISSING,
+  MIGRATIONS_RUNNING,
+  readinessCapabilities,
+  readinessCheckFor,
+  type ReadinessDependencies,
+} from "./ready-capabilities.ts";
+export { logStartupFailed, logStartupRefused } from "./startup-log.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { parseJson } from "./request-json.ts";
 export { refuse } from "./security-headers.ts";
+export {
+  enforceSecurityHeaders,
+  guardIdleSessions,
+  PRODUCTION_SECURITY,
+  type SecurityMode,
+} from "./security/index.ts";
 export {
   createRouter,
   routePath,
@@ -257,6 +274,11 @@ export {
   createWorkMessagesPostRoute,
   createWorkMessagesRoutesFor,
 } from "./work-messages/index.ts";
+export {
+  createDirectEditGetRoute,
+  createDirectEditPutRoute,
+  createDirectEditRoutesFor,
+} from "./direct-edit/index.ts";
 export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,
