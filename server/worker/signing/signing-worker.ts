@@ -5,9 +5,9 @@
 // Every piece already exists in `database` and `evidence`; this file only
 // puts them together and runs them in passes:
 //
-// - the first pass after start sweeps every pending receipt, however young,
-//   so receipts left by a worker that died mid-signature are recovered at
-//   once (the recovery pass);
+// - the passes after start sweep every pending receipt, however young, until
+//   one has attempted the whole backlog, so receipts left by a worker that
+//   died mid-signature are recovered at once (the recovery passes);
 // - later passes run every `intervalMs` and leave receipts younger than
 //   `graceMs` to the next pass;
 // - one structured log line per pass carries the counts, the number of
@@ -91,7 +91,7 @@ export type ReceiptSigningWorkerDeps = {
 };
 
 export type ReceiptSigningPass = {
-  /** True only for the first pass after start: every pending receipt is due. */
+  /** True until a pass has attempted the whole backlog read after start: every pending receipt is due. */
   recovery: boolean;
   summary: ReconcileSummary;
 };
@@ -171,6 +171,35 @@ function levelOf(summary: ReconcileSummary): "info" | "warn" {
 }
 
 /**
+ * Whether a recovery pass attempted the whole backlog it read: it ran to the
+ * end, no domain was deferred, unavailable or malformed, and fewer receipts
+ * were attempted than one batch, so no domain's read was cut at the batch
+ * limit. Until then every pass stays a recovery pass (grace 0, the same
+ * cursors), so a receipt left by a crashed worker never waits for the grace
+ * period. A backlog that never fits this test keeps grace 0, which is only
+ * the default configuration.
+ */
+function recoveryComplete(summary: ReconcileSummary, batchLimit: number): boolean {
+  const r = summary.receipts;
+  const attempted =
+    r.signed +
+    r.alreadySigned +
+    r.refused +
+    r.held +
+    r.signerRejected +
+    r.unavailable +
+    r.malformed;
+  const d = summary.domains;
+  return (
+    summary.status === "completed" &&
+    d.deferred === 0 &&
+    d.unavailable === 0 &&
+    d.malformed === 0 &&
+    attempted < batchLimit
+  );
+}
+
+/**
  * The receipt signing worker over the worker's own ports (D-71, D-102): the
  * web process never builds it. The signature is stored only after it passes
  * the verifier with a receipt key of the payload's own domain, and only once
@@ -219,8 +248,7 @@ export function createReceiptSigningWorker(deps: ReceiptSigningWorkerDeps): Rece
     const recovery = !recovered;
     try {
       const summary = await (recovery ? recover() : steady());
-      // A recovery pass that could not read the backlog is repeated next time.
-      if (summary.status !== "unavailable") recovered = true;
+      if (recovery && recoveryComplete(summary, config.batchLimit)) recovered = true;
       const done: ReceiptSigningPass = { recovery, summary };
       log(levelOf(summary), RECEIPT_SIGNING_PASS_EVENT, passFields(done));
       return done;

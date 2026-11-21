@@ -215,6 +215,8 @@ describe("createReceiptSigningWorker: crash mid-signature and recovery", () => {
 
     port.behave((_, honest) => honest());
     const next = await w.runPass();
+    // A stopped sweep did not finish recovery: the next pass is still a recovery pass.
+    expect(next?.recovery).toBe(true);
     expect(next?.summary.receipts.signed).toBe(1);
     expect(db.stored.get(RECEIPT)).toEqual(port.expected());
   });
@@ -233,6 +235,63 @@ describe("createReceiptSigningWorker: crash mid-signature and recovery", () => {
     expect(second?.summary.receipts.signed).toBe(1);
     const third = await w.runPass();
     expect(third?.recovery).toBe(false);
+  });
+});
+
+describe("createReceiptSigningWorker: recovery lasts until the startup backlog is attempted", () => {
+  const OTHER = "00000000-0000-4000-8000-0000000000d2";
+
+  it("keeps recovering a domain the first pass deferred, even with a grace period", async () => {
+    const port = fakePort();
+    const db = database(port);
+    // Two young domains, one domain per pass: the other domain is deferred.
+    let otherPending = true;
+    db.queue.backlog.mockImplementation(async () => ({
+      status: "ok" as const,
+      rows: [
+        ...(db.stored.has(RECEIPT)
+          ? []
+          : [{ evidenceDomainId: DOMAIN, pendingCount: 1, oldestCreatedAt: CREATED }]),
+        ...(otherPending
+          ? [{ evidenceDomainId: OTHER, pendingCount: 1, oldestCreatedAt: CREATED }]
+          : []),
+      ],
+    }));
+    db.queue.pendingReceipts.mockImplementation(async (domain, _limit, after) => ({
+      status: "ok" as const,
+      rows: domain === DOMAIN && !db.stored.has(RECEIPT) && after !== RECEIPT ? [ROW] : [],
+    }));
+    const config = { graceMs: 3_600_000, maxDomains: 1, signTimeoutMs: 200 };
+    const { worker: w } = worker(db, port, { config });
+
+    const first = await w.runPass();
+    expect(first?.recovery).toBe(true);
+    expect(first?.summary.domains.deferred).toBe(1);
+    expect(db.stored.has(RECEIPT)).toBe(true);
+    const second = await w.runPass();
+    // Without the fix this pass left the deferred domain as fresh for an hour.
+    expect(second?.recovery).toBe(true);
+    expect(second?.summary.domains.fresh).toBe(0);
+    expect(second?.summary.domains.swept).toBe(1);
+    expect(second?.summary.domains.deferred).toBe(0);
+
+    // That pass attempted the whole backlog it read: the grace period applies after it.
+    const third = await w.runPass();
+    expect(third?.recovery).toBe(false);
+    expect(third?.summary.domains.fresh).toBe(1);
+    otherPending = false;
+  });
+
+  it("keeps recovering while a pass fills a whole batch", async () => {
+    const port = fakePort();
+    const db = database(port);
+    const { worker: w } = worker(db, port, {
+      config: { graceMs: 3_600_000, batchLimit: 1, signTimeoutMs: 200 },
+    });
+    const first = await w.runPass();
+    expect(first?.summary.receipts.signed).toBe(1);
+    // One receipt attempted of a batch of one: the domain may hold more behind it.
+    expect((await w.runPass())?.recovery).toBe(true);
   });
 });
 
