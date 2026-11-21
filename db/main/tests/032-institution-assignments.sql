@@ -317,6 +317,9 @@ ALTER TABLE assistant.tool_loop_reservation DISABLE TRIGGER tool_loop_reservatio
 ALTER TABLE declaration.statement DISABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment DISABLE TRIGGER attachment_no_truncate;
 ALTER TABLE declaration.conversation_attachment DISABLE TRIGGER conversation_attachment_no_truncate;
+-- The record of an import (SRV-1803) references the assignment; it is append only.
+ALTER TABLE collaboration.import_event DISABLE TRIGGER import_event_no_truncate;
+ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmation_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
@@ -333,6 +336,8 @@ ALTER TABLE assistant.tool_loop_reservation ENABLE TRIGGER tool_loop_reservation
 ALTER TABLE declaration.statement ENABLE TRIGGER statement_no_truncate;
 ALTER TABLE declaration.external_attachment ENABLE TRIGGER attachment_no_truncate;
 ALTER TABLE declaration.conversation_attachment ENABLE TRIGGER conversation_attachment_no_truncate;
+ALTER TABLE collaboration.import_event ENABLE TRIGGER import_event_no_truncate;
+ALTER TABLE collaboration.import_confirmation ENABLE TRIGGER import_confirmation_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;

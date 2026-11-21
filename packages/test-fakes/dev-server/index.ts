@@ -25,6 +25,7 @@ import { COMMENTS_HANDLERS } from "./comments-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
 import { NOTIFICATION_HANDLERS } from "./notification-routes.ts";
 import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
+import { IMPORT_HANDLERS } from "./import-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
@@ -89,6 +90,7 @@ export const DEV_HANDLERS: Handlers = {
   ...NOTIFICATION_HANDLERS,
   ...COMMENTS_HANDLERS,
   ...DIRECT_EDIT_HANDLERS,
+  ...IMPORT_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
   "work.export-pdf.get": ({ state, account, params }) => {

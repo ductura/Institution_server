@@ -33,6 +33,8 @@ type Loose = {
   value?: unknown;
   computed?: boolean;
   declare?: boolean;
+  async?: boolean;
+  generator?: boolean;
   kind?: string;
   object?: unknown;
   property?: Loose;
@@ -46,6 +48,7 @@ type Loose = {
   specifiers?: Loose[];
   local?: Loose;
   exportKind?: string;
+  declaration?: Loose | null;
   moduleReference?: Loose;
   imported?: Loose;
   exported?: Loose;
@@ -61,6 +64,8 @@ export const LOADER_GLOBALS: readonly string[] = [
 ];
 /** The pseudo-global of MetaProperty `import.meta`. */
 export const IMPORT_META = "import.meta";
+const PDF_WORKER = "server/import/pdf/worker.ts";
+const PDF_WORKER_URLS: readonly string[] = ["./worker.ts", "./pdf-import-worker.js"];
 
 /**
  * The only files that may use a loader global, each only as `name.member`
@@ -73,6 +78,8 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
   // The watch thread of the attempt fence: the monotonic clock, and the kill
   // of its own process (DAN-822-4, Ductus#1836 c.6948159989).
   "server/database/queue/attempt-fence-watch.ts": { process: ["hrtime", "kill", "pid"] },
+  // ADR import-contract D4: locate the fixed source and bundled worker entry.
+  [PDF_WORKER]: { [IMPORT_META]: ["url"] },
   // The entry point reads the environment and sets the exit code (S-1B-a, DAN-775).
   // On shutdown it listens to SIGTERM and SIGINT and exits with a code (S-1B-c, DAN-778).
   // The working directory is the repository root the development signer's seed
@@ -156,6 +163,8 @@ export const NODE_IMPORTS_ALLOWED: Readonly<
 > = {
   // The watch thread of the attempt fence takes its shared cell (DAN-822-4).
   "server/database/queue/attempt-fence-watch.ts": { "node:worker_threads": ["workerData"] },
+  // ADR import-contract D4: isolate untrusted PDFs behind time and heap limits.
+  [PDF_WORKER]: { "node:worker_threads": ["isMainThread", "parentPort", "Worker", "workerData"] },
 };
 
 // An own property only, so a key of Object.prototype is never an entry.
@@ -220,7 +229,8 @@ export const noDynamicLoad: Rule.RuleModule = {
       importRequire: "`import x = require()` is not allowed in server code (DAN-770).",
       module:
         "'{{spec}}' is not on the allow-list: a relative file in server/, an allowed node: module or a package from dependencies (DAN-770).",
-      nodeExport: "A file that imports under NODE_IMPORTS_ALLOWED exports nothing (DAN-822-4).",
+      nodeExport:
+        "A file that imports under NODE_IMPORTS_ALLOWED cannot export unlisted declarations (DAN-822-4).",
       key: "'{{key}}' reaches a loader (the Function constructor or a native engine) (DAN-770).",
     },
   },
@@ -236,6 +246,22 @@ export const noDynamicLoad: Rule.RuleModule = {
       if (parent?.type !== "MemberExpression" || parent.object !== node || parent.computed)
         return false;
       const member = parent.property?.type === "Identifier" ? parent.property.name : undefined;
+      if (file === PDF_WORKER && name === IMPORT_META) {
+        const target = parent.parent;
+        const [relative, base] = target?.arguments ?? [];
+        const path = relative as Loose | undefined;
+        return (
+          member === "url" &&
+          target?.type === "NewExpression" &&
+          target.callee?.type === "Identifier" &&
+          target.callee.name === "URL" &&
+          target.arguments?.length === 2 &&
+          base === parent &&
+          path?.type === "Literal" &&
+          typeof path.value === "string" &&
+          PDF_WORKER_URLS.includes(path.value)
+        );
+      }
       return member !== undefined && (allowed[name] ?? []).includes(member);
     }
 
@@ -284,10 +310,22 @@ export const noDynamicLoad: Rule.RuleModule = {
         context.report({ node, messageId: "module", data: { spec } });
     }
 
-    // A file with a listed import exports nothing, so no export, alias,
-    // wrapper (`as`, `satisfies`, `!`) or container carries the name out (review
-    // and QA FAIL on #258). Checked at the end, so an export above the import counts.
+    // A listed import cannot be re-exported through an alias, wrapper or container
+    // (review and QA FAIL on #258). Check at the end so exports above the import count.
     const exportNodes: Node[] = [];
+
+    function isPdfWorkerExport(node: Node): boolean {
+      const named = node as unknown as Loose;
+      const declaration = named.declaration;
+      return (
+        file === PDF_WORKER &&
+        named.type === "ExportNamedDeclaration" &&
+        declaration?.type === "FunctionDeclaration" &&
+        declaration.id?.name === "readPdfInWorker" &&
+        declaration.async === true &&
+        declaration.generator !== true
+      );
+    }
 
     function reportGlobal(node: Loose, name: string): void {
       if (inTypeQuery(node) || allowedUse(node, name)) return;
@@ -352,8 +390,9 @@ export const noDynamicLoad: Rule.RuleModule = {
 
     return {
       "Program:exit"() {
-        if (listedImports.size > 0)
-          for (const node of exportNodes) context.report({ node, messageId: "nodeExport" });
+        if (listedImports.size > 0 || file === PDF_WORKER)
+          for (const node of exportNodes)
+            if (!isPdfWorkerExport(node)) context.report({ node, messageId: "nodeExport" });
         const globalScope = context.sourceCode.scopeManager?.globalScope;
         if (!globalScope) return;
         for (const reference of globalScope.through) {
