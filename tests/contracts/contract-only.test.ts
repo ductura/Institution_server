@@ -64,6 +64,10 @@ import {
   createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
+  createStudentAccessLogRouteFor,
+  createStudentAssignmentsRouteFor,
+  createStudentWriteRoutesFor,
+  createTeacherFastPathRouteFor,
   createWebAuthnRoutesFor,
   REFUSING_SIGNER,
   routesOf,
@@ -542,6 +546,32 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     ],
     routes: () => createWebAuthnRoutesFor(NO_WEBAUTHN, null).map((route) => route.contract.id),
   },
+  {
+    // SRV-8E: the teacher's fast path, mounted with SRV-8E and left on the list.
+    call: "createTeacherFastPathRouteFor(databases.main, evidenceDeps, process.env)",
+    ids: ["teacher.fast-path.post"],
+    routes: () => [
+      createTeacherFastPathRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }, {}).contract.id,
+    ],
+  },
+  {
+    // Faza 3 readiness: the student's assignment list over the main database (DAN-803).
+    call: "createStudentAssignmentsRouteFor(databases.main)",
+    ids: ["student.assignments.get"],
+    routes: () => [createStudentAssignmentsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // Faza 3 readiness: the student's own access log over the main database (DAN-904).
+    call: "createStudentAccessLogRouteFor(databases.main)",
+    ids: ["student.access-log.get"],
+    routes: () => [createStudentAccessLogRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // Faza 3 readiness: enrolment by code and the notice read (SRV-02).
+    call: "...createStudentWriteRoutesFor(databases.main)",
+    ids: [...SRV_02],
+    routes: () => createStudentWriteRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
 ];
 const ENTRY_TEXT = readFileSync(new URL("../../server/server.ts", import.meta.url), "utf8");
 
@@ -651,6 +681,8 @@ describe("CONTRACT_ONLY", () => {
         "collaboration.comments.post",
         "institution.acknowledgment.post",
         "public.verification.post",
+        ...["teacher.fast-path.post", "student.assignments.get", "student.access-log.get"],
+        ...SRV_02,
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -746,6 +778,10 @@ describe("routes the entry point mounts itself", () => {
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
+      "teacher.fast-path.post",
+      "student.assignments.get",
+      "student.access-log.get",
+      ...SRV_02,
     ]);
     expect(mounted()).toContain("settings.values.put");
     expect(mounted()).toContain("profile.interface-locale.get");

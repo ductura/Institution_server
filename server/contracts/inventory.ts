@@ -485,15 +485,10 @@ export const SERVER_SOURCES: Readonly<
  * mounted (tests/contracts/contract-only.test.ts).
  */
 export const CONTRACT_ONLY: readonly string[] = [
-  "student.assignments.get",
   "institution.enrollments.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
   "collaboration.revision-requests.post",
-  "teacher.fast-path.post",
-  "student.access-log.get",
-  "student.notice-read.post",
-  "student.enrollments.post",
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",

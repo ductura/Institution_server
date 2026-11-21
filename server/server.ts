@@ -31,6 +31,9 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStudentAssignmentsRouteFor,
+  createStudentAccessLogRouteFor,
+  createStudentWriteRoutesFor,
   createStudentNotesRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkingCriteriaRoutesFor,
@@ -293,6 +296,11 @@ async function main(): Promise<void> {
       ...createStudentSubmissionRoutesFor(databases.main),
       // SRV-NG: the notice of the current version for a student of the course (E-6).
       createStudentNoticeRouteFor(databases.main),
+      // Faza 3 readiness: the student's assignment list (DAN-803), own access log
+      // (DAN-904), enrolment by code and notice read (SRV-02), over the main database.
+      createStudentAssignmentsRouteFor(databases.main),
+      createStudentAccessLogRouteFor(databases.main),
+      ...createStudentWriteRoutesFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
       // SRV-1403: the caller's own staff affiliation, or staff_affiliation_missing.
