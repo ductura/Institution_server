@@ -14993,7 +14993,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.49.0",
+        "apiVersion": "1.50.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15009,7 +15009,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.49.0",
+        "apiVersion": "1.50.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -39544,6 +39544,160 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-00000000c151"
+      }
+    }
+  },
+  {
+    "route": "work.version.get",
+    "name": "snapshot",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "revision": 2,
+        "document": "{\"nodes\":[],\"schemaVersion\":1}"
+      }
+    }
+  },
+  {
+    "route": "work.version.get",
+    "name": "diff",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      },
+      "query": {
+        "compareFrom": "1"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "from": 1,
+        "to": 2,
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "change": "added",
+            "text": "Izmi?ljeni odlomak."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.version.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1",
+        "revision": "2"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.version.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.version.get",
+    "name": "invalid-input",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      },
+      "query": {
+        "compareFrom": "2"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.version.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "00000000-0000-4000-8000-0000000000d1",
+        "revision": "2"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-verzija-0000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002000"
       }
     }
   },
