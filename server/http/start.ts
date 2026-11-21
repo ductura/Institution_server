@@ -12,6 +12,13 @@ import type { LogWriter } from "../log/index.ts";
 import { createServerErrorReporter } from "./error-catalog.ts";
 import { createRouter, type Route } from "./router.ts";
 import { answerInternal, applySecurityHeaders, refuse } from "./security-headers.ts";
+import {
+  enforceSecurityHeaders,
+  guardIdleSessions,
+  PRODUCTION_SECURITY,
+  type SecurityMode,
+} from "./security/index.ts";
+import { createIdleTracker, type IdleTracker } from "../identity/index.ts";
 import { createShutdownCoordinator, type Listener, type ShutdownCoordinator } from "./shutdown.ts";
 
 export type StartOptions = {
@@ -29,6 +36,16 @@ export type StartOptions = {
    * line server_error. Its writes are never awaited by a request (S-1K.3-b).
    */
   readonly log?: LogWriter;
+  /**
+   * SRV-1401 (M1.6): CSP, Permissions-Policy and HSTS are enforced on every
+   * answer, whatever a route sets; local sends no HSTS. Without it, HSTS is on.
+   */
+  readonly security?: SecurityMode;
+  /**
+   * SRV-1401: idle expiry on every route that needs a session (401
+   * session_idle_expired). Without it, a tracker with the default of 30 minutes.
+   */
+  readonly idle?: IdleTracker;
 };
 export type Running = Listener & { readonly port: number; close(): Promise<void> };
 
@@ -56,7 +73,9 @@ type Connection = {
 
 export async function startServer(options: StartOptions): Promise<Running> {
   const report = createServerErrorReporter(options.log);
-  const handle = createPipeline(options.layers, createRouter(options.routes, report), report);
+  const security = options.security ?? PRODUCTION_SECURITY;
+  const routes = guardIdleSessions(options.routes, options.idle ?? createIdleTracker());
+  const handle = createPipeline(options.layers, createRouter(routes, report), report);
   const shutdown = options.shutdown ?? createShutdownCoordinator();
   // Node's closeIdleConnections (also run by http.Server.close) counts a
   // connection idle as soon as its response ended, while the body may still be
@@ -160,6 +179,8 @@ export async function startServer(options: StartOptions): Promise<Running> {
   };
 
   const server = createServer((request, response) => {
+    // First, so that every answer below, a refusal while draining too, has them.
+    enforceSecurityHeaders(response, security);
     const ticket = shutdown.begin();
     if (ticket === null) return refuseWhileDraining(request, response);
     const socket = request.socket;

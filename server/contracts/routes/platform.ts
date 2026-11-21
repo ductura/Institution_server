@@ -166,11 +166,25 @@ export const TOO_MANY_REQUESTS = {
 } as const;
 
 /**
+ * The answer to a request of a session idle longer than its institution's
+ * limit, default 30 minutes (SRV-1401, DAN-296, plan M1.6): the problem body
+ * of `session_idle_expired`, before the route runs. Routes that need no
+ * session (access anyone or identity_provider) and sign-out never give it.
+ */
+export const SESSION_IDLE_EXPIRED = {
+  error: sharedError("session_idle_expired"),
+} as const;
+
+/**
  * Answers every route may give besides its own errors. A new status on an
  * existing route breaks v1 (breaking.ts), so openapi/v1.json publishes them
  * once, in info.description, not under each route (review on DAN-814 b).
  */
-export const SHARED_ERRORS = [INTERNAL.error, TOO_MANY_REQUESTS.error] as const;
+export const SHARED_ERRORS = [
+  INTERNAL.error,
+  TOO_MANY_REQUESTS.error,
+  SESSION_IDLE_EXPIRED.error,
+] as const;
 
 /** Headers a shared error carries, by "status code" (Retry-After on the 429). */
 export const SHARED_ERROR_HEADERS: Readonly<Record<string, readonly string[]>> = {

@@ -11,10 +11,12 @@
     { "status": 502, "code": "bad_gateway", "messageKey": "clientErrors.badGateway" },
     { "status": 503, "code": "unavailable", "messageKey": "errors.unavailable" },
     { "status": 504, "code": "gateway_timeout", "messageKey": "clientErrors.gatewayTimeout" },
-    { "status": 401, "code": "session_expired", "messageKey": "clientErrors.sessionExpired" }
+    { "status": 401, "code": "session_expired", "messageKey": "clientErrors.sessionExpired" },
+    { "status": 401, "code": "session_idle_expired", "messageKey": "errors.sessionIdleExpired" }
   ],
   "shared": [
     { "status": 500, "code": "internal", "messageKey": "errors.internal" },
-    { "status": 429, "code": "too_many_requests", "messageKey": "errors.tooManyRequests" }
+    { "status": 429, "code": "too_many_requests", "messageKey": "errors.tooManyRequests" },
+    { "status": 401, "code": "session_idle_expired", "messageKey": "errors.sessionIdleExpired" }
   ]
 }
