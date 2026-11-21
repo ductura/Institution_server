@@ -43,7 +43,18 @@ function mediaType(request: IncomingMessage): string | undefined {
   return types[0]?.split(";")[0]?.trim().toLowerCase();
 }
 
-const STATUS = { unauthorized: 401, not_found: 404, conflict: 409, invalid_input: 422 } as const;
+function statusOf(status: StatementRefusal["status"]): number {
+  switch (status) {
+    case "unauthorized":
+      return 401;
+    case "not_found":
+      return 404;
+    case "conflict":
+      return 409;
+    case "invalid_input":
+      return 422;
+  }
+}
 
 /**
  * The wire answer of an RPC refusal (declaration-v1 §7.3): a reason the
@@ -66,7 +77,7 @@ function sendRefusal(
   const spec =
     named && contract.errors.find((e) => e.status === named.status && e.code === named.code);
   if (spec) return sendProblemWith(response, spec, context);
-  return sendProblem(response, STATUS[status], status);
+  return sendProblem(response, statusOf(status), status);
 }
 
 export function createStatementRoutes(port: StatementPort): Route[] {
