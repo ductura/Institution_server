@@ -289,6 +289,7 @@ export {
   type WorkSourceSave,
   type WorkSources,
 } from "./work-sources/index.ts";
+export { createSourceNotebook, type SourceNoteFields } from "./source-notebook/index.ts";
 export {
   createSourceProofs,
   isSourceProofJpeg,
@@ -621,6 +622,7 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+export { SWEEP_DUE_MAX, sweepDue, type SweepDue } from "./assistant/index.ts";
 
 export {
   checkExternalAttachmentBytes,

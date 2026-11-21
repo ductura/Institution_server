@@ -50,6 +50,7 @@ import {
   createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
@@ -451,6 +452,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createSourceNotebookRoutesFor(databases.main)",
+    ids: [
+      "work.source-notes.get",
+      "work.source-notes.post",
+      "work.source-notes.patch",
+      "work.source-notes.delete",
+    ],
+    routes: () => createSourceNotebookRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createWorkVersionRouteFor(databases.main, evidenceDeps)",
     ids: ["work.version.get"],
     routes: () => [
@@ -704,6 +715,10 @@ describe("routes the entry point mounts itself", () => {
       "work.attachments.get",
       "work.milestones.get",
       "work.milestones.patch",
+      "work.source-notes.get",
+      "work.source-notes.post",
+      "work.source-notes.patch",
+      "work.source-notes.delete",
       "work.version.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
