@@ -1,16 +1,30 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import * as area from "./index.ts";
-import type { DeletionService } from "./index.ts";
+import type { DeletionService, ErasureCheckpointBuild } from "./index.ts";
 
 describe("server/deletion public interface", () => {
-  it("exports only the empty routes and schemas", () => {
-    expect(Object.keys(area).sort()).toEqual(["DELETION_ROUTES", "DELETION_SCHEMAS"]);
+  it("exports the empty routes and schemas, the checkpoint service and its verifier", () => {
+    expect(Object.keys(area).sort()).toEqual([
+      "DELETION_ROUTES",
+      "DELETION_SCHEMAS",
+      "ERASURE_CHAIN_GENESIS",
+      "ERASURE_CHECKPOINT_FORMAT",
+      "ERASURE_CHECKPOINT_OBJECT_GROUP",
+      "ERASURE_DATA_CLASSES",
+      "ERASURE_REASONS",
+      "MAX_ERASURE_CHECKPOINT_BYTES",
+      "MAX_ERASURE_CHECKPOINT_RECORDS",
+      "createDeletionService",
+      "verifyErasureCheckpoint",
+    ]);
     expect(area.DELETION_ROUTES).toEqual([]);
     expect(area.DELETION_SCHEMAS).toEqual({});
   });
 
-  it("has a service type without members", () => {
-    expectTypeOf<keyof DeletionService>().toEqualTypeOf<string>();
-    expectTypeOf<DeletionService[string]>().toEqualTypeOf<never>();
+  it("has a service with the checkpoint method only", () => {
+    expectTypeOf<keyof DeletionService>().toEqualTypeOf<"checkpointErasures">();
+    expectTypeOf<ReturnType<DeletionService["checkpointErasures"]>>().toEqualTypeOf<
+      Promise<ErasureCheckpointBuild>
+    >();
   });
 });
