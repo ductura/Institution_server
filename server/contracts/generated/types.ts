@@ -89,7 +89,7 @@ export type Operations = {
     params: undefined;
     query: undefined;
     body: { "documentId": string; "clientTransactionId": string; "baseRevision": number; "segments": (string)[]; "document": string };
-    success: { status: 200; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "signed"; "signedReceipt": { "payload": { "receiptSchema": "ductus-evidence-receipt-v2"; "receiptId": string; "evidencePackageId": string; "documentId": string; "sessionId": string; "segmentId": string; "segmentHash": string; "predecessorSegmentHash": string | null; "previousReceiptId": string | null; "evidenceSchema": "ductus-evidence-segment-v2" | "ductus-evidence-segment-v3"; "evidenceProfileId": string; "sequenceFrom": number; "sequenceTo": number; "eventCount": number; "payloadBytes": number; "acceptedAt": string; "revision": number; "clientTransactionId": string; "evidenceDomainId": string; "principalId": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } } }; headers: {  } } | { status: 202; body: { "status": "committed" | "duplicate"; "revision": number; "receipt": { "status": "pending_signature" } }; headers: { "retry-after"?: string } };
+    success: { status: 200; body: { "status": "committed" | "duplicate"; "duplicate"?: true; "revision": number; "receipt": { "status": "signed"; "signedReceipt": { "payload": { "receiptSchema": "ductus-evidence-receipt-v2"; "receiptId": string; "evidencePackageId": string; "documentId": string; "sessionId": string; "segmentId": string; "segmentHash": string; "predecessorSegmentHash": string | null; "previousReceiptId": string | null; "evidenceSchema": "ductus-evidence-segment-v2" | "ductus-evidence-segment-v3"; "evidenceProfileId": string; "sequenceFrom": number; "sequenceTo": number; "eventCount": number; "payloadBytes": number; "acceptedAt": string; "revision": number; "clientTransactionId": string; "evidenceDomainId": string; "principalId": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } } }; headers: {  } } | { status: 202; body: { "status": "committed" | "duplicate"; "duplicate"?: true; "revision": number; "receipt": { "status": "pending_signature" } }; headers: { "retry-after"?: string } };
     errorCode: "forbidden" | "upgrade_required" | "unsupported_media_type" | "unauthenticated" | "too_large" | "timeout" | "bad_request" | "invalid" | "not_found" | "not_accepting" | "stale_base" | "chain_conflict" | "not_continuous" | "txid_reused" | "document_mismatch" | "unavailable";
   };
   "evidence.open.post": {
@@ -735,6 +735,20 @@ export type Operations = {
     body: { "startsAt": string };
     success: { status: 201; body: { "id": string; "startsAt": string; "proposedAt": string; "state": "requested" | "countered" | "confirmed" }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "invalid_input";
+  };
+  "work.direct-edit.get": {
+    params: { "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "mode": "suggestions" | "direct"; "changedAt": string | null; "record": ({ "kind": "mode"; "source": "student"; "mode": "suggestions" | "direct"; "at": string } | { "kind": "teacher_edit"; "source": "teacher"; "bytes": number; "at": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "work.direct-edit.put": {
+    params: { "documentId": string };
+    query: undefined;
+    body: { "mode": "suggestions" | "direct" };
+    success: { status: 200; body: { "outcome": "applied" | "unchanged"; "mode": "suggestions" | "direct"; "changedAt": string | null }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "work.messages.get": {
     params: { "documentId": string };

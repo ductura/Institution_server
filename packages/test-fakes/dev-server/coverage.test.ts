@@ -625,6 +625,25 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     ],
     request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
   },
+  "work.direct-edit.get": {
+    before: [
+      {
+        method: "PUT",
+        path: `/api/v1/works/${IDS.document}/direct-edit`,
+        as: "student",
+        body: { mode: "direct" },
+      },
+    ],
+    request: { path: `/api/v1/works/${IDS.document}/direct-edit`, as: "nastavnik" },
+  },
+  "work.direct-edit.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/works/${IDS.document}/direct-edit`,
+      as: "student",
+      body: { mode: "direct" },
+    },
+  },
   "work.messages.post": {
     request: {
       path: `/api/v1/works/${IDS.document}/messages`,

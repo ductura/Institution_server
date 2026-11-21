@@ -30,6 +30,7 @@ import {
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
   createWorkMessagesRoutesFor,
+  createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
@@ -173,6 +174,19 @@ const SESSION_ROUTES = {
   "work.messages.post": {
     path: `/api/v1/works/${randomUUID()}/messages`,
     body: () => ({ text: "Izmišljena poruka." }),
+    live: 404,
+  },
+  // SRV-1702: a work it may not read is 404 for the setting and for setting it.
+  "work.direct-edit.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/direct-edit`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.direct-edit.put": {
+    method: "PUT",
+    path: `/api/v1/works/${randomUUID()}/direct-edit`,
+    body: () => ({ mode: "direct" }),
     live: 404,
   },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
@@ -769,6 +783,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
+  "createDirectEditRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
@@ -823,6 +838,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
+  ...createDirectEditRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),

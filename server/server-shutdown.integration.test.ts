@@ -162,8 +162,11 @@ describe("server/server.ts shutdown", () => {
       const stderr: string[] = [];
       child.stderr?.on("data", (chunk: Buffer) => stderr.push(String(chunk)));
       const code = await new Promise<number | null>((resolve) => child.on("exit", resolve));
-      expect(code).toBe(1);
-      expect(stderr.join("")).toContain("startup refused: SHUTDOWN_GRACE_MS is not a whole number");
+      // SRV-1812: EX_CONFIG and a structured line of server/log.
+      expect(code).toBe(78);
+      expect(stderr.join("")).toContain(
+        '"event":"startup.refused","fields":{"problem":"SHUTDOWN_GRACE_MS is not a whole number',
+      );
     },
     20_000,
   );
@@ -198,9 +201,10 @@ describe("server/server.ts metrics interval", () => {
       child.stdout?.on("data", (chunk: Buffer) => output.push(String(chunk)));
       child.stderr?.on("data", (chunk: Buffer) => output.push(String(chunk)));
       const code = await new Promise<number | null>((resolve) => child.on("exit", resolve));
-      expect(code).toBe(1);
-      expect(output.join("")).toBe(
-        "startup refused: METRICS_INTERVAL_MS is not a whole number from 5000 to 3600000\n",
+      // SRV-1812: EX_CONFIG and exactly one structured line of server/log.
+      expect(code).toBe(78);
+      expect(output.join("")).toMatch(
+        /^\{"time":"[^"]+","level":"error","event":"startup\.refused","fields":\{"problem":"METRICS_INTERVAL_MS is not a whole number from 5000 to 3600000"\}\}\n$/u,
       );
     },
     20_000,
