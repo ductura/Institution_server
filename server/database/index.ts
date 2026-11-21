@@ -407,6 +407,12 @@ export {
   type TeacherDeclaration,
   type TeacherDeclarationReader,
 } from "./teacher-declaration/index.ts";
+export {
+  createLegalHolds,
+  type LegalHold,
+  type LegalHolds,
+  type LegalHoldSubjectType,
+} from "./legal-hold/index.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
 export { createLiveStates } from "./live-state.ts";
 export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";
