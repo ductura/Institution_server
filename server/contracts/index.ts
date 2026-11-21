@@ -1,6 +1,7 @@
 import {
   attachmentRoutes,
   assistantRoutes,
+  statementRoutes,
   authRoutes,
   clientRoutes,
   collaborationRoutes,
@@ -37,6 +38,7 @@ import {
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workMessagesRoutes,
+  directEditRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -106,6 +108,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...collaborationRoutes,
   ...consultationSlotRoutes,
   ...assistantRoutes,
+  ...statementRoutes,
   ...liveRoutes,
   ...enrollmentRoutes,
   ...institutionRoutes,
@@ -117,6 +120,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...publicVerificationRoutes,
   ...versionsRoutes,
   ...workMessagesRoutes,
+  ...directEditRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

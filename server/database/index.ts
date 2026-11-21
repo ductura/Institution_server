@@ -144,6 +144,12 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+export {
+  createSchemaReadinessReader,
+  MIGRATION_LOCK_KEY,
+  type SchemaReadiness,
+  type SchemaReadinessReader,
+} from "./schema-readiness.ts";
 export { createInstitutionAssignments } from "./institution-assignments.ts";
 export { createInstitutionGroups } from "./institution-groups.ts";
 export { createAdminCourses } from "./admin-courses.ts";
@@ -578,3 +584,25 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+
+export {
+  checkExternalAttachmentBytes,
+  createStatementPort,
+  incompleteFields,
+  isExternalFormat,
+  parseDeclarationFormFile,
+  parseDeclarationPutBody,
+  type FormReader,
+  type StatementOperation,
+  type StatementPort,
+} from "./statement/index.ts";
+export {
+  createDirectEdits,
+  type DirectEditEntry,
+  type DirectEditMode,
+  type DirectEditRefusal,
+  type DirectEdits,
+  type DirectEditSet,
+  type DirectEditState,
+  type TeacherEditOutcome,
+} from "./direct-edit/index.ts";

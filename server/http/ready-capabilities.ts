@@ -1,103 +1,128 @@
-// The readiness probes of DAN-585, shared by /api/ready and the public status
-// (DAN-429), so both read the same capabilities. Each database probe is
-// single-flight within its module instance; if the bundler gives each route its
-// own instance (see shutdown.ts), a hanging database holds at most one probe per
-// route, and public traffic still adds none (the 15 s cache in public-status.ts).
+// The readiness probes of GET /api/v1/ready (SRV-1812, plan M11.3; the wiring
+// of S-1E-d DAN-839-3 over the Ductus probes of DAN-585): the main database
+// with its migrations, the evidence storage port and the signing port. Each
+// answer becomes a word of the ready contract in ready.ts; a failure carries
+// only a code of the limited shape, for the log, never a message.
+//
+// Only the database is required: without it, or before its migrations are
+// done, nothing can be served, so the route answers 503. Storage and signing
+// are reported, so one shared fault does not take every replica out of
+// traffic; the routes that need them answer 503 on their own (DAN-585).
+import { createSchemaReadinessReader, type SchemaReadinessReader } from "../database/index.ts";
+import type { SigningKeyProvider } from "../external/keys/index.ts";
+import { logEvent, type LogEvent } from "../log/index.ts";
 
-import { withActor } from "../database/index.ts";
-import { evidenceIngestDeps } from "@/server/evidence/ingest-deps";
-import { STORAGE_NOT_CONFIGURED } from "@/server/evidence/payload-reader";
+import type { Databases } from "./databases.ts";
+import { type EvidenceIngestDependencies, STORAGE_NOT_CONFIGURED } from "./evidence-deps.ts";
+import { type ReadyCapability, type ReadyReport, createReadyCheck } from "./ready.ts";
 import {
-  CAPABILITY_TIMEOUT_MS,
-  classifyQueue,
   classifyStorage,
+  type ReadyAnswer,
   signingOutcome,
   singleFlight,
-  type Capability,
-} from "@/server/ready";
+} from "./ready-outcomes.ts";
 
-// The database cancels a probe query at its limit, so a hanging probe hands
-// its connection back to the pool instead of holding it (DAN-585).
-const STATEMENT_LIMIT_SQL = "SELECT pg_catalog.set_config('statement_timeout', $1, true)";
+/** Each probe's own limit; together they stay inside READY_TIMEOUT_MS (3 s). */
+export const CAPABILITY_TIMEOUT_MS = Object.freeze({
+  database: 1_500,
+  storage: 2_000,
+  signing: 1_000,
+});
 
-// The worker queue (pg-boss) is reached only by ductus_worker; the web role
-// gets nothing in its schema (20261108110200_pgboss_access.sql). Readiness
-// therefore reads only the catalogue: no login that inherits ductus_worker is
-// "nije_konfigurirano", such a login connected to this database is "ok",
-// otherwise the worker is not there to take jobs. Of another role's session
-// the web role sees only fields like usename and datname, and a background
-// process shows both as NULL; such a row matches nothing here.
-const QUEUE_SQL = `SELECT CASE
-  WHEN NOT EXISTS (
-    SELECT 1 FROM pg_catalog.pg_roles r
-    WHERE r.rolcanlogin AND NOT r.rolsuper AND pg_catalog.pg_has_role(r.oid, 'ductus_worker', 'USAGE')
-  ) THEN 'nije_konfigurirano'
-  WHEN EXISTS (
-    SELECT 1 FROM pg_catalog.pg_stat_activity a JOIN pg_catalog.pg_roles r ON r.rolname = a.usename
-    WHERE a.datname = pg_catalog.current_database()
-      AND r.rolcanlogin AND NOT r.rolsuper AND pg_catalog.pg_has_role(r.oid, 'ductus_worker', 'USAGE')
-  ) THEN 'ok'
-  ELSE 'nedostupno' END AS queue`;
+/** The database is reachable but its migrations are not done: running, or never run. */
+export const MIGRATIONS_RUNNING = "MIGRATIONS_RUNNING";
+export const MIGRATIONS_MISSING = "MIGRATIONS_MISSING";
 
-function inDatabase<T>(timeoutMs: number, sql: string, read: (rows: unknown[]) => T): Promise<T> {
-  return withActor(null, async (tx) => {
-    await tx.query(STATEMENT_LIMIT_SQL, [`${timeoutMs}ms`]);
-    return read((await tx.query(sql)).rows);
-  });
+export type ReadinessDependencies = {
+  /** The migration state of the main database (server/database, catalogue only). */
+  readonly schema: SchemaReadinessReader;
+  /** The evidence storage of this process, as commit and replay use it. */
+  readonly payloads: EvidenceIngestDependencies["payloads"];
+  /** The signer of this process; only its public key is asked for. */
+  readonly signer: Pick<SigningKeyProvider, "publicVerificationKey">;
+};
+
+const coded = (code: string): Error => Object.assign(new Error("readiness"), { code });
+
+/** A Result of ready-outcomes as a probe answer: its AppError code is thrown, never a message. */
+function unwrap(
+  result: { ok: true; value: ReadyAnswer } | { ok: false; error: { code: string } },
+): ReadyAnswer {
+  if (result.ok) return result.value;
+  throw coded(result.error.code);
 }
 
-// withActor cannot be cancelled, so a probe past its limit can still hold a
-// pool connection until the pool's query limit ends it. Calls that arrive
-// meanwhile wait on that same probe under their own limit, so readiness never
-// holds more than one connection per database probe (DAN-585).
-const databaseProbe = singleFlight(() =>
-  inDatabase(CAPABILITY_TIMEOUT_MS.database, "SELECT 1", () => "ok" as const),
-);
-const queueProbe = singleFlight(() =>
-  inDatabase(CAPABILITY_TIMEOUT_MS.queue, QUEUE_SQL, (rows) => classifyQueue(rows[0])),
-);
-
-/**
- * Only the database is required: without it nothing can be served. Storage,
- * signing and the queue are reported, so one shared fault does not take every
- * web replica out of traffic; the routes that need them answer 503 on their own.
- */
-export function readinessCapabilities(): Capability[] {
+/** The three probes over `deps`; the database probe holds at most one connection (single flight). */
+export function readinessCapabilities(deps: ReadinessDependencies): ReadyCapability[] {
+  const database = singleFlight(async (): Promise<ReadyAnswer> => {
+    const state = await deps.schema();
+    if (state.migrated) return "ok";
+    throw coded(state.reason === "migrating" ? MIGRATIONS_RUNNING : MIGRATIONS_MISSING);
+  });
   return [
     {
       name: "database",
       required: true,
       timeoutMs: CAPABILITY_TIMEOUT_MS.database,
-      probe: databaseProbe,
+      probe: database,
     },
     {
       name: "storage",
       required: false,
       timeoutMs: CAPABILITY_TIMEOUT_MS.storage,
       probe: async () => {
-        const { payloads } = evidenceIngestDeps();
-        if (payloads === STORAGE_NOT_CONFIGURED) return classifyStorage("not_configured");
-        const verifyAll = (payloads as { verifyAll?: () => Promise<Record<string, string>> })
-          .verifyAll;
-        if (typeof verifyAll !== "function")
-          throw Object.assign(new Error("storage"), { code: "STORAGE_DOMAIN" });
-        return classifyStorage(await verifyAll.call(payloads));
+        const { payloads } = deps;
+        if (payloads === STORAGE_NOT_CONFIGURED) return unwrap(classifyStorage("not_configured"));
+        const verifyAll = (payloads as { verifyAll?: () => Promise<unknown> }).verifyAll;
+        if (typeof verifyAll !== "function") throw coded("STORAGE_DOMAIN");
+        return unwrap(classifyStorage(await verifyAll.call(payloads)));
       },
     },
     {
       name: "signing",
       required: false,
       timeoutMs: CAPABILITY_TIMEOUT_MS.signing,
-      probe: () => {
-        const { signer } = evidenceIngestDeps();
-        return signingOutcome(() => signer.publicVerificationKey());
-      },
-    },
-    {
-      name: "queue",
-      required: false,
-      timeoutMs: CAPABILITY_TIMEOUT_MS.queue,
-      probe: queueProbe,
+      probe: async () => unwrap(await signingOutcome(() => deps.signer.publicVerificationKey())),
     },
   ];
+}
+
+/**
+ * Wraps a readiness check so each change of its outcome is logged once, as
+ * `ready.changed` with `ready` and the closed codes of the failed
+ * capabilities: never a message, an address or a value. A steady state
+ * writes nothing, so a load balancer asking every second floods no log.
+ */
+export function loggedReadyCheck(
+  check: () => Promise<ReadyReport>,
+  log: LogEvent,
+): () => Promise<ReadyReport> {
+  let last: string | undefined;
+  return async () => {
+    const report = await check();
+    const codes: Record<string, string> = {};
+    for (const [name, code] of Object.entries(report.codes))
+      if (code !== undefined) codes[name] = code;
+    const key = JSON.stringify([report.ready, codes]);
+    if (key !== last) {
+      last = key;
+      log(report.ready ? "info" : "warn", "ready.changed", { ready: report.ready, codes });
+    }
+    return report;
+  };
+}
+
+/** The readiness check of the entry point: the main database, this process's storage and signer. */
+export function readinessCheckFor(
+  main: Databases["main"],
+  deps: Pick<ReadinessDependencies, "payloads" | "signer">,
+  log: LogEvent = logEvent,
+): () => Promise<ReadyReport> {
+  const schema = createSchemaReadinessReader(main.withActor, CAPABILITY_TIMEOUT_MS.database);
+  const capabilities = readinessCapabilities({
+    schema,
+    payloads: deps.payloads,
+    signer: deps.signer,
+  });
+  return loggedReadyCheck(createReadyCheck(capabilities), log);
 }
