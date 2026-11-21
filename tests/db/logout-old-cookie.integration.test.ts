@@ -54,6 +54,7 @@ import {
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
@@ -386,6 +387,12 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
+  "course.aggregate.get": {
+    method: "GET",
+    path: `/api/v1/courses/${COURSE}/aggregate`,
+    body: () => undefined,
+    live: 404,
+  },
   "teacher.working-criteria.get": {
     method: "GET",
     path: "/api/v1/teacher/works/izmisljeni-rad-0001/working-criteria",
@@ -874,6 +881,7 @@ const FACTORIES = [
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createCourseAggregateRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createMerlinRosterRoutesFor",
@@ -936,6 +944,7 @@ const MOUNTED = [
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  createCourseAggregateRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),

@@ -152,6 +152,23 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "course.aggregate.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "course.aggregate.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).every(key => [].includes(key))
+    )
+  }),
   "evidence.commit.post:body": (() => {
   const local0 = /^(?=.*\S)[^\u0000-\u001f\u007f-\u009f]+$/;
   const local1 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;

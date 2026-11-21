@@ -205,6 +205,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
   },
+  "app/api/courses/[id]/aggregate/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562264",
+  },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
   "app/api/institution/admin/courses/route.ts": {
