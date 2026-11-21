@@ -44,3 +44,17 @@ export {
   type DownloadsPackage,
   type DownloadsService,
 } from "./service.ts";
+// SRV-1312: the portable record of a submission and its offline check (scripts/evidence-verify).
+export {
+  buildPortableRecord,
+  PENDING_DAILY_ROOT,
+  PORTABLE_RECORD_FILENAME,
+  PORTABLE_RECORD_FILES,
+  verifyPortableRecord,
+  type DailyRootCheck,
+  type PortableDailyRootSource,
+  type PortableRecordBuild,
+  type PortableRecordProblem,
+  type PortableRecordSource,
+  type PortableRecordVerification,
+} from "./portable-record/index.ts";
