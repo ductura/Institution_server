@@ -82,7 +82,7 @@ export const workDirectEditPut = defineRoute({
   inventory: "app/api/works/[documentId]/direct-edit/route.ts",
   access: "student_owner",
   summary:
-    'The student owner sets the direct-edit mode of the work: {mode: "direct"} turns direct edits of its teachers on, {mode: "suggestions"} revokes them at once and without the other side. Sent as application/json, at most 1 KiB. The value is absolute: the same mode again answers unchanged and writes nothing. 200 {outcome, mode, changedAt}. A teacher, another\'s, an unknown, a malformed or a submitted work returns 404; another mode is 422.',
+    'The student owner sets the direct-edit mode of the work: {mode: "direct"} turns direct edits of its teachers on, {mode: "suggestions"} revokes them at once and without the other side. Sent as application/json, at most 1 KiB. The value is absolute: the same mode again answers unchanged and writes nothing. 200 {outcome, mode, changedAt}. While the mode is direct, a teacher of the work publishes an edit with live.document.put and `If-Match: \"<etag>\"`, the ETag of the state read (64 hex): the edit replaces exactly that state and is recorded as the teacher\'s; a teacher\'s 409 always carries a null token, and with suggestions the teacher\'s put is 404. A teacher, another\'s, an unknown, a malformed or a submitted work returns 404; another mode is 422.',
   request: {
     params,
     contentType: "application/json",

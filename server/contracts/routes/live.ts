@@ -10,6 +10,11 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // a route relies on are not in RequestSpec yet, so they are named in the
 // summary and the vectors, as ductus-protocol is for evidence (docs/vs1-rute.md).
 // Served by server/http/live.ts.
+// SRV-1702 (D-34, D-244): a teacher of the work also writes here, only while
+// its student has direct edits on (work.direct-edit.put), with `If-Match:
+// "<etag>"`, the ETag of the state read; the summary stays as it was, since a
+// changed summary is a breaking change (breaking.ts), so the teacher path is
+// described in work.direct-edit.put and in the vectors teacher-*.
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 /** isDocumentId: 1 to 256 code points, trimmed, no control character. */
@@ -65,7 +70,7 @@ export const liveDocumentPut = defineRoute({
   inventory: "app/api/live/[documentId]/route.ts",
   access: "student_owner",
   summary:
-    'Publishes the last state of a work (the student owner only). The body is the exact JCS bytes of a valid document snapshot, at most 2 MiB. The request carries exactly one precondition: `If-None-Match: *` for the first write or `If-Match: "<token>"` with the last token, else 428. A teacher of the work writes only while its student has direct edits on (work.direct-edit.put, D-34, D-244), with `If-Match: "<etag>"`, the ETag of the state read: the edit replaces exactly that state and is recorded as the teacher\'s; a teacher\'s 409 always carries a null token, and without direct edits on the answer is 404. 200 {outcome, token} when accepted or unchanged; 409 {outcome: "conflict", token} with the current token (null when nothing is published yet) when the token is stale. The session is checked before the first body byte.',
+    'Publishes the last state of a work (the student owner only). The body is the exact JCS bytes of a valid document snapshot, at most 2 MiB. The request carries exactly one precondition: `If-None-Match: *` for the first write or `If-Match: "<token>"` with the last token, else 428. 200 {outcome, token} when accepted or unchanged; 409 {outcome: "conflict", token} with the current token (null when nothing is published yet) when the token is stale. The session is checked before the first body byte.',
   request: {
     params,
     contentType: "application/json",
