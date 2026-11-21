@@ -44,6 +44,8 @@ export type ProvenanceRecordV1 = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const COMPUTED_AT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.\d{6}Z$/;
+// OC6-5 fixes this value for stored v1 records.
+const RECORD_V1_MIN_MATCH_CODE_POINTS = 60;
 
 /** Exactly these own keys, no more and no fewer. */
 function hasKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
@@ -118,7 +120,9 @@ export function isAiMatch(value: unknown): value is AiMatch {
     return false;
   }
   if (value.normalization !== MATCH_NORMALIZATION || value.notice !== SHARE_NOTICE) return false;
-  if (!isCount(value.minMatchCodePoints, 1) || !Array.isArray(value.spans)) return false;
+  if (value.minMatchCodePoints !== RECORD_V1_MIN_MATCH_CODE_POINTS || !Array.isArray(value.spans)) {
+    return false;
+  }
   const seen = new Set<string>();
   let previous: AiMatchSpan | null = null;
   for (const span of value.spans as unknown[]) {

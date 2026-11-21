@@ -733,6 +733,96 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "student.assistant-conversation.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['conversationId'] === 'string') &&
+      value['conversationId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.assistant-request.post:body": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local1 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  const local2 = /^[a-z][a-z0-9_]{0,63}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      (((typeof value['conversationId'] === 'string') && local1.test(value['conversationId'])) || ((value['conversationId'] === null))) &&
+      (typeof value['purposeCatalogVersion'] === 'number' && Number.isInteger(value['purposeCatalogVersion'])) &&
+      value['purposeCatalogVersion'] <= 2147483647 &&
+      value['purposeCatalogVersion'] >= 1 &&
+      (typeof value['purposeKey'] === 'string') &&
+      local2.test(value['purposeKey']) &&
+      (typeof value['paragraph'] === 'string') &&
+      value['paragraph'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 5
+    )
+  }
+  })(),
+  "student.declaration-attachments.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.declaration.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.declaration.put:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.declaration.put:body": (() => {
+  const local0 = /^[a-z0-9][a-z0-9-]{0,63}$/;
+  const local1 = /^[0-9a-f]{64}$/;
+  return function check(value: Record<string, unknown>): boolean {
+      const nestedForm = (typeof value === 'object' && value !== null ? value['form'] : undefined) as Record<string, unknown>;
+      const nestedOwnWork = (typeof value === 'object' && value !== null ? value['ownWork'] : undefined) as Record<string, unknown>;
+      const nestedHumanHelp = (typeof value === 'object' && value !== null ? value['humanHelp'] : undefined) as Record<string, unknown>;
+      const nestedAi = (typeof value === 'object' && value !== null ? value['ai'] : undefined) as Record<string, unknown>;
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['baseVersion'] === 'number' && Number.isInteger(value['baseVersion'])) &&
+      value['baseVersion'] <= 9007199254740991 &&
+      value['baseVersion'] >= 0 &&
+      (typeof value['revision'] === 'number' && Number.isInteger(value['revision'])) &&
+      value['revision'] <= 9007199254740991 &&
+      value['revision'] >= 1 &&
+      (typeof value['form'] === 'object' && value['form'] !== null && !Array.isArray(value['form'])) &&
+      (typeof nestedForm['formId'] === 'string') &&
+      local0.test(nestedForm['formId']) &&
+      (typeof nestedForm['formVersion'] === 'number' && Number.isInteger(nestedForm['formVersion'])) &&
+      nestedForm['formVersion'] <= 2147483647 &&
+      nestedForm['formVersion'] >= 1 &&
+      (typeof nestedForm['formSha256'] === 'string') &&
+      local1.test(nestedForm['formSha256']) &&
+      Object.getOwnPropertyNames(value['form']).length === 3 &&
+      (typeof value['ownWork'] === 'object' && value['ownWork'] !== null && !Array.isArray(value['ownWork'])) &&
+      (typeof nestedOwnWork['confirmed'] === 'boolean') &&
+      Object.getOwnPropertyNames(value['ownWork']).length === 1 &&
+      (typeof value['humanHelp'] === 'object' && value['humanHelp'] !== null && !Array.isArray(value['humanHelp'])) &&
+      (typeof nestedHumanHelp['received'] === 'boolean') &&
+      (typeof value['ai'] === 'object' && value['ai'] !== null && !Array.isArray(value['ai'])) &&
+      (((((nestedAi['use'] === 'used')) || ((nestedAi['use'] === 'not_used')))) || ((nestedAi['use'] === null))) &&
+      (typeof value['confirm'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 7
+    )
+  }
+  })(),
   "student.enrollments.post:body": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1296,6 +1386,35 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "work.direct-edit.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.direct-edit.put:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.direct-edit.put:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['mode'] === 'suggestions')) || ((value['mode'] === 'direct'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "work.messages.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {

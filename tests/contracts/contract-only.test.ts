@@ -31,6 +31,8 @@ import {
   createConsultationSlotRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
+  createAssistantRoutesFor,
+  createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -304,6 +306,21 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMerlinPackageRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    // SRV-1204: the AI assistant proxy; no provider in production (ai_disabled).
+    call: "...createAssistantRoutesFor(databases.main)",
+    ids: ["student.assistant-request.post", "student.assistant-conversation.get"],
+    routes: () => createAssistantRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createStatementRoutesFor(databases.main)",
+    ids: [
+      "student.declaration.get",
+      "student.declaration.put",
+      "student.declaration-attachments.post",
+    ],
+    routes: () => createStatementRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createTeacherMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_31,
     routes: () =>
@@ -562,6 +579,11 @@ describe("routes the entry point mounts itself", () => {
       "teacher.merlin-packages.post",
       "teacher.merlin-package.get",
       "teacher.merlin-package-download.get",
+      "student.assistant-request.post",
+      "student.assistant-conversation.get",
+      "student.declaration.get",
+      "student.declaration.put",
+      "student.declaration-attachments.post",
       ...SRV_31,
       "work.consultation-slots.get",
       "work.consultation-slots.post",

@@ -177,6 +177,56 @@ const SUBMIT: Step = {
 const SUBMIT_STEPS = [commit("izmisljena-transakcija-1", 0), SUBMIT];
 
 const SCENARIOS: Record<RouteId, Scenario> = {
+  "student.declaration.get": {
+    request: { path: `/api/v1/student/assignments/${IDS.assignment}/declaration`, as: "student" },
+  },
+  "student.declaration.put": {
+    before: [commit("c0000000-0000-4000-8000-000000000197", 0)],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: {
+        baseVersion: 0,
+        revision: 1,
+        form: { formId: "test-izjava", formVersion: 1, formSha256: "a".repeat(64) },
+        ownWork: { confirmed: false },
+        humanHelp: { received: false, entries: [] },
+        ai: { use: null, declaredTools: [], attachments: [], externalAttachmentIds: [] },
+        confirm: false,
+      },
+    },
+  },
+  "student.declaration-attachments.post": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-attachments`,
+      as: "student",
+      method: "POST",
+      headers: { ...ORIGIN, "content-type": "text/plain" },
+      raw: "Izmišljeni ispis",
+    },
+  },
+  "student.assistant-request.post": {
+    request: {
+      path: "/api/v1/student/assistant/requests",
+      as: "student",
+      headers: { ...ORIGIN, "idempotency-key": "5f0c3a9e-2b7d-4c1e-9a6f-0d8e7b4c2a11" },
+      body: {
+        assignmentId: IDS.assignment,
+        conversationId: null,
+        purposeCatalogVersion: 1,
+        purposeKey: "proofreading",
+        paragraph: "Izmišljeni odlomak o vodenim mlinovima.",
+      },
+    },
+  },
+  "student.assistant-conversation.get": {
+    request: {
+      path: "/api/v1/student/assistant/conversations/00000000-0000-4000-8000-0000000000c1",
+      as: "student",
+    },
+  },
   "work.consultation-slots.get": {
     before: [REQUEST_SLOT],
     request: { path: CONSULTATION_SLOTS, as: "nastavnik" },
@@ -574,6 +624,25 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     ],
     request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
+  },
+  "work.direct-edit.get": {
+    before: [
+      {
+        method: "PUT",
+        path: `/api/v1/works/${IDS.document}/direct-edit`,
+        as: "student",
+        body: { mode: "direct" },
+      },
+    ],
+    request: { path: `/api/v1/works/${IDS.document}/direct-edit`, as: "nastavnik" },
+  },
+  "work.direct-edit.put": {
+    request: {
+      method: "PUT",
+      path: `/api/v1/works/${IDS.document}/direct-edit`,
+      as: "student",
+      body: { mode: "direct" },
+    },
   },
   "work.messages.post": {
     request: {

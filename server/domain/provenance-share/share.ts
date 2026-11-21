@@ -1,4 +1,5 @@
 import {
+  EDIT_STEP_FORMAT_V2,
   parseEditSteps,
   validateVersionedDocument,
   type EditStepSliceV3,
@@ -235,13 +236,15 @@ export function computeProvenanceShare(input: ShareInput): ShareResult {
   }
   const runs = initialRuns(initial);
   if (runs === null) return { ok: false, reason: "invalid_document" };
-  const format = evidenceTransactionFormatOfWork(version);
+  // Submission reconstruction uses the v2 replayer for v2 documents. Its
+  // parser also reads the text-only steps supported by the v1 format.
+  const format = version === 2 ? EDIT_STEP_FORMAT_V2 : evidenceTransactionFormatOfWork(version);
 
   const document = new TokenDocument(runs);
   for (const event of input.events) {
     const category = categoryOfSource(event.source);
     if (category === null) return { ok: false, reason: "unknown_source" };
-    const parsed = parseEditSteps(format as unknown, event.steps);
+    const parsed = parseEditSteps(format, event.steps);
     if (!parsed.ok) {
       return {
         ok: false,
@@ -249,7 +252,7 @@ export function computeProvenanceShare(input: ShareInput): ShareResult {
       };
     }
     try {
-      for (const step of parsed.steps as EditStepV3[]) applyStep(document, step, category);
+      for (const step of parsed.steps) applyStep(document, step, category);
     } catch (error) {
       if (error instanceof ShareStepRefused) return { ok: false, reason: "step_failed" };
       throw error;

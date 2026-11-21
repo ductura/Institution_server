@@ -137,6 +137,8 @@ describe("closed keys at every level (§3)", () => {
       (r) => ((r.aiMatch as { normalization: string }).normalization = "nfc"),
     ],
     ["minMatchCodePoints 0", (r) => (r.aiMatch.minMatchCodePoints = 0)],
+    ["minMatchCodePoints 59", (r) => (r.aiMatch.minMatchCodePoints = 59)],
+    ["minMatchCodePoints 61", (r) => (r.aiMatch.minMatchCodePoints = 61)],
     ["an empty span", (r) => (r.aiMatch.spans[0]!.to = 46)],
     ["a span with to before from", (r) => (r.aiMatch.spans[0]!.to = 40)],
     ["a blockId that is no node id", (r) => (r.aiMatch.spans[0]!.blockId = "b1")],

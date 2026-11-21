@@ -21,7 +21,10 @@ export type CatalogError = {
 const entry = (status: number, code: string, messageKey: string): CatalogError =>
   Object.freeze({ status, code, messageKey });
 
-/** Every entry: ten statuses and session_expired (a 401 picked by code, not by status). */
+/**
+ * Every entry: ten statuses, and session_expired and session_idle_expired
+ * (SRV-1401), 401s picked by code, not by status.
+ */
 export const ERROR_CATALOG: readonly CatalogError[] = Object.freeze(
   ERROR_CATALOG_DATA.errors.map(({ status, code, messageKey }) => entry(status, code, messageKey)),
 );
@@ -60,9 +63,11 @@ export function route429Problems(errors: readonly { status: number; code: string
 
 /** The code that is looked up by name only; by status 401 stays unauthenticated. */
 export const SESSION_EXPIRED = "session_expired";
+/** Codes looked up by name only (SRV-1401 adds the idle expiry of a session). */
+const BY_CODE_ONLY: readonly string[] = [SESSION_EXPIRED, "session_idle_expired"];
 
 const BY_STATUS: ReadonlyMap<number, CatalogError> = new Map(
-  ERROR_CATALOG.filter((error) => error.code !== SESSION_EXPIRED).map((error) => [
+  ERROR_CATALOG.filter((error) => !BY_CODE_ONLY.includes(error.code)).map((error) => [
     error.status,
     error,
   ]),

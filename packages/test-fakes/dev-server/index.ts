@@ -5,6 +5,8 @@ import "../guard/index.ts";
 
 import type { Operations } from "../../contracts/index.ts";
 import { ACCOUNT_HANDLERS } from "./account-routes.ts";
+import { ASSISTANT_HANDLERS } from "./assistant-routes.ts";
+import { STATEMENT_HANDLERS } from "./statement-routes.ts";
 import { ATTACHMENT_HANDLERS } from "./attachment-routes.ts";
 import { COLLABORATION_HANDLERS } from "./collaboration-routes.ts";
 import { CONSULTATION_SLOT_HANDLERS } from "./consultation-slots.ts";
@@ -16,6 +18,7 @@ import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
 import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
+import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
@@ -65,8 +68,11 @@ export const DEV_HANDLERS: Handlers = {
   ...EVIDENCE_HANDLERS,
   ...COLLABORATION_HANDLERS,
   ...CONSULTATION_SLOT_HANDLERS,
+  ...ASSISTANT_HANDLERS,
+  ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,
   ...MESSAGES_HANDLERS,
+  ...DIRECT_EDIT_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
   "sources.lookup.post": ({ account, body }) => {

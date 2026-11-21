@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   revisionZeroDocument,
+  revisionZeroDocumentV2,
   revisionZeroDocumentV3,
   revisionZeroDocumentV4,
 } from "../document/index.ts";
@@ -113,6 +114,43 @@ describe("text moved, formatted, joined, cut and dropped (§1.3)", () => {
 });
 
 describe("inline atoms (§1.1)", () => {
+  it("replays a v2 source and citation without counting citation characters", () => {
+    const initialDocument = revisionZeroDocumentV2();
+    const source = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      authors: [{ kind: "person", family: "Primjer", given: "Nika" }],
+      year: 2020,
+      title: "Izmišljeni izvor",
+      type: "book",
+      place: "Zagreb",
+      publisher: "Izmišljeni nakladnik",
+    };
+    const citation = { type: "citation", sourceId: source.id, locator: "str. 12" };
+    const text = { type: "text", text: "Odlomak" };
+    const result = computeProvenanceShare({
+      initialDocument,
+      events: [
+        {
+          source: "editor",
+          steps: [{ stepType: "replace", from: 1, to: 1, slice: { content: [text] } }],
+        },
+        {
+          source: "citation-form",
+          steps: [
+            { stepType: "sourceSet", source },
+            { stepType: "replace", from: 8, to: 8, slice: { content: [citation] } },
+          ],
+        },
+      ],
+      submittedDocument: {
+        ...initialDocument,
+        nodes: [{ ...initialDocument.nodes[0], children: [{ ...text, marks: [] }, citation] }],
+        sources: [source],
+      },
+    });
+    expect(counts(result)).toEqual([7, 0, 0, 0, 0]);
+  });
+
   it("have no characters, and replacing one changes no count", () => {
     const initial = revisionZeroDocumentV3();
     expect(ATOMS.events.map((_, i) => counts(after(ATOMS, initial, i + 1)))).toEqual([

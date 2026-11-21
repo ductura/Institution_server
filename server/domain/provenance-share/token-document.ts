@@ -1,7 +1,7 @@
 import type { ShareCategory } from "./constants.ts";
 
 /**
- * A document of format `ductus-edit-steps-v1` or `-v3` as a flat run of
+ * A document of format `ductus-edit-steps-v1` through `-v3` as a flat run of
  * ProseMirror tokens, with the category of every character (§1.3).
  *
  * The documents of these formats are one level of text blocks, so the content
