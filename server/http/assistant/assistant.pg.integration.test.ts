@@ -199,19 +199,22 @@ it("runs begin, mark_sent, the port and the settlement on the real RPCs", async 
     );
     expect(port.calls).toHaveLength(5);
 
-    // What reached the port: five fields, no id of a person, an assignment or a request.
+    // What reached the port: six fields, no id of a person, an assignment or a request.
     const seen = JSON.stringify(port.calls);
     for (const secret of [await id("ana"), await id("fak_a"), z1, conversation, ANA, key(1)]) {
       expect(seen, secret).not.toContain(secret);
     }
     for (const call of port.calls) {
       expect(Object.keys(call).sort()).toEqual([
+        "data",
         "instructions",
-        "maxResponseCodePoints",
+        "maxResponseBytes",
         "modelId",
-        "paragraph",
         "purposeKey",
+        "tools",
       ]);
+      // The pilot's faculty setting permits no tool, so none is offered (S3-D2).
+      expect(call.tools).toEqual([]);
       expect(call.modelId).toBe("model-test-1");
     }
   } finally {

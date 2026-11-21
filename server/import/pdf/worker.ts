@@ -23,7 +23,11 @@ export async function readPdfInWorker(
     const bundled = new URL("./pdf-import-worker.js", import.meta.url);
     const source = new URL("./worker.ts", import.meta.url);
     const url = existsSync(bundled) ? bundled : source;
-    const data: PdfWorkerData = { ...input, kind: "ductura-pdf-import" };
+    const data: PdfWorkerData = {
+      ...input,
+      bytes: Uint8Array.from(input.bytes),
+      kind: "ductura-pdf-import",
+    };
     const worker = new Worker(url, {
       workerData: data,
       resourceLimits: PDF_WORKER_MEMORY,
