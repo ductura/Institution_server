@@ -75,6 +75,7 @@ import {
   createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
@@ -480,6 +481,13 @@ const SESSION_ROUTES = {
   "student.access-log.get": {
     method: "GET",
     path: `/api/v1/student/works/${randomUUID()}/access-log`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1706: the same log in days; a work that is not the caller's is 404.
+  "work.access.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/access`,
     body: () => undefined,
     live: 404,
   },
@@ -1175,6 +1183,7 @@ const FACTORIES = [
   "createTeacherDeclarationRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
+  "createWorkAccessRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
@@ -1266,6 +1275,7 @@ const MOUNTED = [
   createTeacherDeclarationRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
+  createWorkAccessRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
