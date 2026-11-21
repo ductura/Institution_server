@@ -258,6 +258,9 @@ export type State = {
   assignments: Assignment[];
   works: Work[];
   submissionNotes: SubmissionNote[];
+  deadlineExtensions: (Operations["teacher.deadline-extension.post"]["success"]["body"]["extension"] & {
+    assignmentId: string;
+  })[];
   workSources: WorkSource[];
   sourceProofs: SourceProof[];
   consultationSlots: {
@@ -463,6 +466,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
       },
     ],
     submissionNotes: [],
+    deadlineExtensions: [],
     workSources: [],
     sourceProofs: [],
     consultationSlots: [],

@@ -394,6 +394,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  "app/api/student/assignments/[assignmentId]/deadline-extensions/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052",
+  },
   // SRV-1109 (Val 11, N-18, C-16, D-286): the Merlin roster and its CSV; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/merlin/roster/route.ts": {
     methods: ["GET"],

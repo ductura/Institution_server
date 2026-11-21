@@ -17817,7 +17817,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.55.0",
+        "apiVersion": "1.56.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -17833,7 +17833,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.55.0",
+        "apiVersion": "1.56.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -22860,6 +22860,133 @@
         "messageKey": "errors.unauthorized",
         "status": 401,
         "requestId": "00000000-0000-4000-8000-00000000d112"
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "list",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "extensions": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000f1",
+            "scope": "one",
+            "previousDueAt": "2026-12-20T23:00:00.000Z",
+            "dueAt": "2026-12-27T23:00:00.000Z",
+            "reasonId": "justified",
+            "createdAt": "2026-11-21T09:15:00.000Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000f2",
+            "scope": "all",
+            "previousDueAt": "2026-12-20T23:00:00.000Z",
+            "dueAt": "2027-01-10T23:00:00.000Z",
+            "reasonId": "all",
+            "createdAt": "2026-11-21T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "extensions": []
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000000d100"
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "assignmentId": "nije-uuid"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000d101"
+      }
+    }
+  },
+  {
+    "route": "student.deadline-history.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "assignmentId": "00000000-0000-4000-8000-0000000000a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-00000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000000d102"
       }
     }
   },
