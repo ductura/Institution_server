@@ -289,6 +289,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
   },
+  // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run; no Ductus route.
+  "app/api/institution/retention/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069035579",
+  },
   // SRV-1906 (plan P-D6): the operator's pilot numbers; no Ductus route.
   "app/api/ops/pilot-metrics/route.ts": {
     methods: ["GET"],
