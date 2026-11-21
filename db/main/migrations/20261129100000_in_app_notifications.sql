@@ -1,6 +1,7 @@
 -- migrate:up
 SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA institution TO ductus_identity;
+GRANT CREATE ON SCHEMA app TO ductus_identity, ductus_evidence;
 SET LOCAL ROLE ductus_identity;
 
 -- Keep the existing metadata and grants. Reminder keys identify an assignment
@@ -97,11 +98,73 @@ $$;
 
 REVOKE ALL ON FUNCTION institution.list_notifications(uuid, integer), institution.read_notification(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION institution.list_notifications(uuid, integer), institution.read_notification(uuid) TO ductus_app;
+
+-- An immediate teacher comment or a published draft notifies the student.
+-- This migration precedes the addition of published_at by SRV-1703. An
+-- absent field is the original schema; a JSON null is a draft in the newer one.
+CREATE FUNCTION institution.notify_published_comment() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  IF to_jsonb(NEW)->'published_at' = 'null'::jsonb OR
+     (TG_OP = 'UPDATE' AND (to_jsonb(OLD)->'published_at') IS DISTINCT FROM 'null'::jsonb) THEN
+    RETURN NEW;
+  END IF;
+  INSERT INTO institution.notification (institution_id, recipient_id, kind, event_key, target_id)
+  SELECT t.institution_id, t.owner_id, 'comment_posted', 'comment_posted:' || NEW.id, t.assignment_id
+  FROM collaboration.comment_thread t
+  WHERE t.id = NEW.thread_id AND t.institution_id = NEW.institution_id
+    AND institution.work_relation(t.owner_id, t.assignment_id) = 'student'
+  ON CONFLICT (recipient_id, event_key) DO NOTHING;
+  RETURN NEW;
+END
+$$;
+REVOKE ALL ON FUNCTION institution.notify_published_comment() FROM PUBLIC;
+CREATE TRIGGER comment_publication_notify AFTER INSERT OR UPDATE ON collaboration.comment
+  FOR EACH ROW WHEN (NEW.author_role = 'teacher') EXECUTE FUNCTION institution.notify_published_comment();
+
+-- Evidence supplies the identifiers from the bound receipt and submission.
+-- The identity-owned notification store still has no evidence-role DML grant.
+CREATE FUNCTION app.notify_submission_owner(p_submission uuid, p_institution uuid, p_student uuid, p_assignment uuid)
+RETURNS void LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = ''
+AS $$
+  INSERT INTO institution.notification (institution_id, recipient_id, kind, event_key, target_id)
+  SELECT p_institution, p_student, 'submission_recorded', 'submission_recorded:' || p_submission, a.id
+  FROM institution.assignment a
+  WHERE a.id = p_assignment AND a.institution_id = p_institution
+    AND institution.work_relation(p_student, a.id) = 'student'
+  ON CONFLICT (recipient_id, event_key) DO NOTHING
+$$;
+REVOKE ALL ON FUNCTION app.notify_submission_owner(uuid, uuid, uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app.notify_submission_owner(uuid, uuid, uuid, uuid) TO ductus_evidence;
+
+SET LOCAL ROLE ductus_evidence;
+CREATE FUNCTION app.notify_bound_receipt() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  PERFORM app.notify_submission_owner(s.id, s.institution_id, s.principal_id, s.assignment_id)
+  FROM evidence.submission s
+  WHERE s.id = NEW.submission_id AND s.institution_id = NEW.institution_id AND s.principal_id = NEW.principal_id;
+  RETURN NEW;
+END
+$$;
+REVOKE ALL ON FUNCTION app.notify_bound_receipt() FROM PUBLIC;
+CREATE TRIGGER submission_receipt_notify AFTER INSERT ON evidence.submission_receipt
+  FOR EACH ROW EXECUTE FUNCTION app.notify_bound_receipt();
+
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
+REVOKE CREATE ON SCHEMA app FROM ductus_identity, ductus_evidence;
 
 -- migrate:down
+SET LOCAL ROLE ductus_evidence;
+DROP TRIGGER submission_receipt_notify ON evidence.submission_receipt;
+DROP FUNCTION app.notify_bound_receipt();
 SET LOCAL ROLE ductus_identity;
+DROP FUNCTION app.notify_submission_owner(uuid, uuid, uuid, uuid);
+DROP TRIGGER comment_publication_notify ON collaboration.comment;
+DROP FUNCTION institution.notify_published_comment();
 DROP FUNCTION institution.read_notification(uuid);
 DROP FUNCTION institution.list_notifications(uuid, integer);
 DELETE FROM institution.notification WHERE kind = 'deadline_reminder';

@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2456);
+SELECT plan(2457);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -239,6 +239,7 @@ SELECT bag_eq(
     'assignment_version_institution_fill()',
     'course_enrollment_code_institution_fill()',
     'notify_assignment_version() definer',
+      'notify_published_comment() definer',
     'require_course_teacher(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
     'is_confirmed_teacher(p_user_id uuid, p_course_id uuid)',
     'set_course_holder(p_course_id uuid, p_holder_id uuid) definer app',
@@ -361,6 +362,15 @@ SELECT is_empty(
      CROSS JOIN unnest(ARRAY['app.submission_state_of(uuid,uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-20: only its owner and the identity role execute app.submission_state_of, never ductus_app'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.notify_submission_owner(uuid,uuid,uuid,uuid)', 'app.notify_bound_receipt()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1701: application and worker cannot directly produce a receipt notification'
 );
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
