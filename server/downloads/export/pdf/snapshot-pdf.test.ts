@@ -67,7 +67,7 @@ describe("PDF/A labelling is bound to the exact PDF and its report", () => {
       outputSha256: sha(wrongHash ? PLAIN : pdf),
       xml,
     }));
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       pdf: PLAIN,
       format: "pdf",
       outputSha256: sha(PLAIN),

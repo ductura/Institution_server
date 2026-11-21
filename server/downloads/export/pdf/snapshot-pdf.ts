@@ -1,8 +1,14 @@
 import { createHash } from "node:crypto";
 
-import type { CanonicalDocumentV4, ExportSnapshot } from "../../../domain/index.ts";
+import {
+  freezeExportSnapshot,
+  verifyVersionedDocumentSnapshot,
+  type CanonicalDocumentV4,
+  type ExportCover,
+  type ExportSnapshot,
+} from "../../../domain/index.ts";
 
-import { buildExportModel, renderDocx, type ExportLabels } from "../index.ts";
+import { A4_PAGE, buildExportModel, renderDocx, type ExportLabels } from "../index.ts";
 
 export type ConvertDocx = (docx: Buffer, mode: "plain" | "archive") => Promise<Buffer>;
 export type VerifyPdfA = (pdf: Buffer) => Promise<{ outputSha256: string; xml: string }>;
@@ -12,6 +18,27 @@ const LEVEL_B = "<pdfaid:conformance>B</pdfaid:conformance>";
 const LEVEL_U = "<pdfaid:conformance>U</pdfaid:conformance>";
 
 const sha256 = (bytes: Buffer | string): string => createHash("sha256").update(bytes).digest("hex");
+
+export async function freezePdfSource(source: {
+  readonly body: string;
+  readonly hash: string;
+  readonly kind: "saved" | "submitted";
+  readonly cover: ExportCover;
+  readonly expiresAt: string;
+}): Promise<ExportSnapshot | null> {
+  const verified = await verifyVersionedDocumentSnapshot(Buffer.from(source.body, "utf8"));
+  if (!verified.ok || verified.sha256 !== source.hash) return null;
+  // Older work has the same exportable blocks (as in the Merlin writer).
+  const document = verified.document as CanonicalDocumentV4;
+  return freezeExportSnapshot({
+    document,
+    versionId: source.hash,
+    kind: source.kind,
+    cover: { ...source.cover, ...document.cover },
+    pageSetup: A4_PAGE,
+    expiresAt: source.expiresAt,
+  });
+}
 
 function reportPasses(xml: string): boolean {
   if (/<!|<\?[^x]/u.test(xml)) return false;
@@ -53,12 +80,18 @@ export async function createSnapshotPdf(
       const outputSha256 = sha256(pdf);
       const report = await verify(Buffer.from(pdf));
       if (report.outputSha256 === outputSha256 && reportPasses(report.xml)) {
-        return { pdf, format: "pdfa-2u", outputSha256, reportHash: sha256(report.xml) } as const;
+        return {
+          pdf,
+          docx,
+          format: "pdfa-2u",
+          outputSha256,
+          reportHash: sha256(report.xml),
+        } as const;
       }
     } catch {
       // The unverified candidate is discarded, including its XMP identification.
     }
   }
   const pdf = await convert(docx, "plain");
-  return { pdf, format: "pdf", outputSha256: sha256(pdf), reportHash: null } as const;
+  return { pdf, docx, format: "pdf", outputSha256: sha256(pdf), reportHash: null } as const;
 }
