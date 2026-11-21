@@ -1,0 +1,90 @@
+{
+  "route": "teacher.comment-bank.get",
+  "vectors": [
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "entries": []
+        }
+      }
+    },
+    {
+      "name": "bank",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "entries": [
+            {
+              "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c11",
+              "kind": "must",
+              "text": "Izmišljeno: navedite izvor.",
+              "createdAt": "2026-11-21T09:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-00000000c12a"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-00000000c12b"
+        }
+      }
+    }
+  ]
+}
