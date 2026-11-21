@@ -505,6 +505,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052",
   },
+  // SRV-1306 (plan M10.3): legal holds of the institution; Ductus has no such route.
+  "app/api/institution/legal-holds/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052",
+  },
+  "app/api/institution/legal-holds/[holdId]/release/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052",
+  },
   // SRV-1903 (P-D3): withdrawal of a submission and the history; Ductus has no such route.
   "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts": {
     methods: ["POST"],

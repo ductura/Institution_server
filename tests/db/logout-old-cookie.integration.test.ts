@@ -83,6 +83,7 @@ import {
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createLegalHoldRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createSubmissionWithdrawalRoutesFor,
   createAssignmentCopyRouteFor,
@@ -870,6 +871,27 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 200,
   },
+  // SRV-1306: a live session that is no administrator of the institution gets 403 (ZD403).
+  "institution.legal-holds.get": {
+    method: "GET",
+    path: "/api/v1/institution/legal-holds",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.legal-holds.post": {
+    path: "/api/v1/institution/legal-holds",
+    body: () => ({
+      subjectType: "work",
+      subjectId: randomUUID(),
+      caseReference: "IZMISLJENI-SLUCAJ-2026-01",
+    }),
+    live: 403,
+  },
+  "institution.legal-hold-release.post": {
+    path: `/api/v1/institution/legal-holds/${randomUUID()}/release`,
+    body: () => ({ reason: "Izmišljeni razlog." }),
+    live: 403,
+  },
   // SRV-1108: a live session that teaches no such assignment gets 404.
   "teacher.deadline-extensions.get": {
     method: "GET",
@@ -1263,6 +1285,7 @@ const FACTORIES = [
   "createWorkAccessRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
+  "createLegalHoldRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
   "createSubmissionWithdrawalRoutesFor",
   "createAssignmentCopyRouteFor",
@@ -1360,6 +1383,7 @@ const MOUNTED = [
   createWorkAccessRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
+  ...createLegalHoldRoutesFor(databases.main),
   ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
   createStudentDeadlineHistoryRouteFor(databases.main),
   createAssignmentCopyRouteFor(databases.main),

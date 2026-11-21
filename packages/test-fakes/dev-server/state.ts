@@ -268,6 +268,8 @@ export type State = {
   deadlineExtensions: (Operations["teacher.deadline-extension.post"]["success"]["body"]["extension"] & {
     assignmentId: string;
   })[];
+  /** SRV-1306: the institution's legal holds, oldest first. */
+  legalHolds: Operations["institution.legal-holds.get"]["success"]["body"]["holds"];
   /** SRV-1903: each withdrawn submission with its withdrawal receipt, oldest first. */
   submissionWithdrawals: {
     assignmentId: string;
@@ -488,6 +490,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     ],
     submissionNotes: [],
     deadlineExtensions: [],
+    legalHolds: [],
     submissionWithdrawals: [],
     withdrawalSettings: new Map(),
     workSources: [],

@@ -66,6 +66,7 @@ import {
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createLegalHoldRoutesFor,
   createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
@@ -342,6 +343,8 @@ async function main(): Promise<void> {
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
+      // SRV-1306 (plan M10.3): legal holds of the institution, for its administrators.
+      ...createLegalHoldRoutesFor(databases.main),
       createStudentDeadlineHistoryRouteFor(databases.main),
       // SRV-1903: withdrawal of a submission, the history and the teacher's switch,
       // signed with the same signer as the submission receipt.

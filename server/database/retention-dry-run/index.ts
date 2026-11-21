@@ -1,7 +1,7 @@
 import { type RetentionReportEntry, retentionReport } from "../../domain/index.ts";
 import type { WithActor } from "../index.ts";
 
-// One call of the definer RPC (db/main/migrations/20261209130400_retention_dry_run.sql).
+// One call of the definer RPC (db/main/migrations/20261210130400_retention_dry_run.sql).
 // It takes no institution: the session decides which one. It only reads; it answers
 // ZD401 without a live session and ZD403 to anyone but the administrator of
 // that institution. A count is capped at the integer range so it stays a JS
