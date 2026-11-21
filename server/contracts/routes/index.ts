@@ -58,6 +58,7 @@ export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./pilot-
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
+export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";
 export { teachingTeamRoutes } from "./teaching-team.ts";
 export {
   MentorNoteInput,

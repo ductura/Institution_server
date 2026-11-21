@@ -42,6 +42,7 @@ import {
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createLiveRoutesFor,
@@ -402,6 +403,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createKeyDatesRoutesFor(databases.main)",
+    ids: ["mentorship.key-dates.get"],
+    routes: () => createKeyDatesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createTeachingTeamRoutesFor(databases.main)",
     ids: SRV_1408,
     routes: () => createTeachingTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -700,6 +706,7 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
       ...SRV_1407,
+      "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,
       "live.document.get",

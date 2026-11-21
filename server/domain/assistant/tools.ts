@@ -9,11 +9,12 @@
  * the tools that are ready (search: a non-empty destination list). A name the
  * model asks for matches only byte for byte.
  *
- * The production institution switch is a constant with both flags off until
- * OC-1 decides where it lives, and the production destination list is empty
- * until OC-2, so in production no tool is ever offered. Nothing here changes
- * the switch; a test composition builds its own reader from a synthetic
- * source.
+ * The institution switch and the search destinations live in the versioned
+ * faculty setting `config/faculties/<faculty>.json` (owner decisions OC-1
+ * and OC-2 of 21. 11. 2026., `faculty-ai-config.ts`), read through the server
+ * layer; every flag is off and every destination list is empty, so in
+ * production no tool is ever offered. Nothing here changes the switch; a test
+ * composition builds its own reader from a synthetic source.
  */
 import { hasOnlyKeys, isPlainObject, ownProperty } from "../json/index.ts";
 
@@ -22,6 +23,48 @@ export type ToolName = (typeof CODE_TOOLS)[number];
 
 /** Longest `web_search` query, in code points after NFC (S3-N2). */
 export const QUERY_MAX = 256;
+
+/** A closed JSON Schema of a tool's arguments, as the port offers it (S3-D4). */
+export type ToolSchema = {
+  readonly type: "object";
+  readonly additionalProperties: false;
+  readonly required: readonly string[];
+  readonly properties: Readonly<
+    Record<
+      string,
+      { readonly type: "string"; readonly minLength: number; readonly maxLength: number }
+    >
+  >;
+};
+
+/** The schema of `web_search`; `validateToolArgs` enforces the same shape. */
+export const WEB_SEARCH_SCHEMA: ToolSchema = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  required: Object.freeze(["query"]),
+  properties: Object.freeze({
+    query: Object.freeze({ type: "string", minLength: 1, maxLength: QUERY_MAX }),
+  }),
+});
+
+/** The closed schema of a code tool. */
+export function toolSchema(name: ToolName): ToolSchema {
+  switch (name) {
+    case "web_search":
+      return WEB_SEARCH_SCHEMA;
+  }
+}
+
+/** The outcomes of a tool step row (contract, `assistant.tool_step`). */
+export const TOOL_STEP_OUTCOMES = Object.freeze([
+  "allowed",
+  "denied_not_in_set",
+  "denied_schema",
+  "denied_revoked",
+  "failed",
+  "done",
+] as const);
+export type ToolStepOutcome = (typeof TOOL_STEP_OUTCOMES)[number];
 
 /**
  * The code tool with exactly this name, or null. No case folding, trimming
@@ -90,17 +133,11 @@ export function makeAiSwitchReader(
   };
 }
 
-/** The production switch: both flags off until OC-1 (D-267 O10). */
-export function readInstitutionAiSwitch(institutionId: string): InstitutionAiSwitch {
-  void institutionId;
-  return SWITCH_OFF;
-}
-
-/** The production search destinations: empty until OC-2. */
-export const PRODUCTION_SEARCH_DESTINATIONS: readonly string[] = Object.freeze([]);
+/** Both flags off: the switch of every institution without a valid setting. */
+export const AI_SWITCH_OFF: InstitutionAiSwitch = SWITCH_OFF;
 
 /** The code tools ready to run: search needs at least one destination. */
-export function readyTools(searchDestinations: readonly string[]): readonly ToolName[] {
+export function readyTools(searchDestinations: readonly unknown[]): readonly ToolName[] {
   return searchDestinations.length > 0 ? ["web_search"] : [];
 }
 

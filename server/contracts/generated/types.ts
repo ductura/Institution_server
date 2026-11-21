@@ -288,6 +288,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
     errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
   };
+  "mentorship.key-dates.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "dates": ({ "kind": "deadline"; "id": string; "at": string } | { "kind": "milestone"; "id": string; "at": string; "title": string } | { "kind": "consultation"; "id": string; "at": string; "state": "requested" | "countered" | "confirmed" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "mentorship.notes.get": {
     params: { "id": string };
     query: undefined;

@@ -16349,6 +16349,135 @@
     }
   },
   {
+    "route": "mentorship.key-dates.get",
+    "name": "combined",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000017a5"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "dates": [
+          {
+            "kind": "milestone",
+            "id": "00000000-0000-4000-8000-0000000017a6",
+            "at": "2027-03-15T09:00:00.000Z",
+            "title": "Izmišljena etapa"
+          },
+          {
+            "kind": "consultation",
+            "id": "00000000-0000-4000-8000-0000000017a7",
+            "at": "2027-03-16T09:00:00.000Z",
+            "state": "confirmed"
+          },
+          {
+            "kind": "deadline",
+            "id": "00000000-0000-4000-8000-0000000017a8",
+            "at": "2027-04-15T09:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "mentorship.key-dates.get",
+    "name": "empty",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000017a5"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "dates": []
+      }
+    }
+  },
+  {
+    "route": "mentorship.key-dates.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000017a5"
+      },
+      "headers": {}
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "mentorship.key-dates.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000017a5"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
+    "route": "mentorship.key-dates.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "00000000-0000-4000-8000-0000000017a5"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  },
+  {
     "route": "mentorship.notes.get",
     "name": "listed",
     "request": {
@@ -19228,7 +19357,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.63.0",
+        "apiVersion": "1.64.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19244,7 +19373,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.63.0",
+        "apiVersion": "1.64.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }

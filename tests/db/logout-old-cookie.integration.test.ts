@@ -21,6 +21,7 @@ import {
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
@@ -347,6 +348,12 @@ const SESSION_ROUTES = {
     path: `/api/v1/works/${randomUUID()}/consultation-slots/${randomUUID()}`,
     body: () => ({ action: "confirm" }),
     live: 403,
+  },
+  "mentorship.key-dates.get": {
+    method: "GET",
+    path: `/api/v1/mentorships/${randomUUID()}/key-dates`,
+    body: () => undefined,
+    live: 404,
   },
   // SRV-1407: a request, or a teacher, the account has no relation to is 404.
   "mentorship.requests.post": {
@@ -1030,6 +1037,7 @@ const FACTORIES = [
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
+  "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
@@ -1111,6 +1119,7 @@ const MOUNTED = [
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
+  ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
