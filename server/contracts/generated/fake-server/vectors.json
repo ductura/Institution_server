@@ -19040,7 +19040,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.60.0",
+        "apiVersion": "1.61.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19056,7 +19056,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.60.0",
+        "apiVersion": "1.61.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -30995,6 +30995,405 @@
         "description": "Izmišljeni opis: gumb za spremanje ne reagira.",
         "route": "/zadaci",
         "syncState": "SYNCED"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000000032"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "recorded",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "reference": "PR-0A1B2C3D4E"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "origin-missing",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000010"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "origin-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000011"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000000012"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "unauthorized",
+    "request": {
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000000013"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"appVersion\":\"1.4.0\",\"browser\":{\"family\":\"firefox\",\"major\":140},\"category\":\"technical\",\"description\":\"Izmišljeni opis: gumb za spremanje ne reagira.\",\"route\":\"/zadaci\",\"syncState\":\"SYNCED\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-000000000014"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "body-too-large",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "32769"
+      },
+      "rawBody": "{\"appVersion\":\"1.4.0\",\"browser\":{\"family\":\"firefox\",\"major\":140},\"category\":\"technical\",\"description\":\"Izmišljeni opis: gumb za spremanje ne reagira.\",\"route\":\"/zadaci\",\"syncState\":\"SYNCED\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000000015"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "body-timeout",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "191"
+      },
+      "rawBody": "{\"appVersion\":\"1.4.0\",\"browser\":{\"family\":\"firefox\",\"major\":140},\"category\":\"technical\",\"descri"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000000016"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "content-length-invalid",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000017"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "241"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000018"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "body-stream-error",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "191"
+      },
+      "rawBody": "{\"app"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000019"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "invalid-json",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"category\":"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000000020"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "invalid-input",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "other",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000000030"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "too-many-reports",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
+      }
+    },
+    "response": {
+      "status": 429,
+      "contentType": "application/json",
+      "body": {
+        "error": "too_many_reports",
+        "code": "too_many_reports",
+        "messageKey": "errors.tooManyReports",
+        "status": 429,
+        "requestId": "00000000-0000-4000-8000-000000000031"
+      }
+    }
+  },
+  {
+    "route": "support.problem-reports.post",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-prijave-problema-000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "appVersion": "1.4.0",
+        "category": "technical",
+        "description": "Izmišljeni opis: gumb za spremanje ne reagira."
       }
     },
     "response": {

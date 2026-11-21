@@ -617,6 +617,13 @@ export type Operations = {
     success: { status: 201; body: { "reference": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "too_many_reports" | "unavailable";
   };
+  "support.problem-reports.post": {
+    params: undefined;
+    query: undefined;
+    body: { "category": "technical" | "account" | "course"; "description": string; "appVersion": string };
+    success: { status: 201; body: { "reference": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "too_many_reports" | "unavailable";
+  };
   "teacher.access.get": {
     params: undefined;
     query: undefined;
