@@ -4,6 +4,7 @@
 // the closed refusals. The database itself is db/main/tests/208-import-event.sql
 // and import.pg.integration.test.ts. All values are invented.
 import { strToU8, zipSync } from "fflate";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { ActorTransaction, WithActor } from "../../database/index.ts";
@@ -63,6 +64,68 @@ const post = (url: string, body: string, headers: Record<string, string> = {}) =
 const rows = (list: Record<string, unknown>[]) => ({ rows: list, rowCount: list.length });
 const upload = (fileBase64: string, fileName: string | null = "Seminar.docx") =>
   post(base(), JSON.stringify({ fileBase64, fileName }));
+
+async function pdf(variant: "text" | "empty" | "javascript"): Promise<string> {
+  const document = await PDFDocument.create();
+  const page = document.addPage();
+  if (variant !== "empty") {
+    const font = await document.embedFont(StandardFonts.Helvetica);
+    page.drawText("Izmisljeni PDF rad.", { font, x: 30, y: 70 });
+  }
+  if (variant === "javascript") document.addJavaScript("Izmisljena radnja", "");
+  return Buffer.from(await document.save()).toString("base64");
+}
+
+it("prepares and confirms a PDF through the same upload routes", async () => {
+  query
+    .mockResolvedValueOnce(rows([{ outcome: "allowed" }]))
+    .mockResolvedValueOnce(rows([{ outcome: "prepared", baseRevision: "4", preparedAt: AT }]))
+    .mockResolvedValueOnce(rows([{ outcome: "confirmed", eventId: EVENT_ID }]));
+  const response = await upload(await pdf("text"), "Izmisljeni rad.pdf");
+  expect(response.status).toBe(201);
+  const preview = (await response.json()) as { importId: string; manifestSha256: string };
+  expect(preview).toMatchObject({
+    source: "import",
+    evidenceKind: "imported",
+    fileFormat: "pdf",
+    traces: [],
+    content: { nodes: [{ children: [{ text: "Izmisljeni PDF rad." }] }] },
+  });
+  const [, , manifestText, hash] = query.mock.calls[1]![1]!;
+  const manifest = JSON.parse(String(manifestText)) as Record<string, unknown>;
+  expect(manifest).toMatchObject({ fileFormat: "pdf", importKind: "file-upload" });
+  expect(manifest).not.toHaveProperty("traces");
+  expect(hash).toBe(preview.manifestSha256);
+  const confirmed = await confirm(
+    { importId: preview.importId, manifestSha256: preview.manifestSha256 },
+    preview.importId,
+  );
+  expect(confirmed.status).toBe(200);
+  expect(await confirmed.json()).toEqual({ importId: preview.importId, eventId: EVENT_ID });
+}, 20_000);
+
+it.each([
+  ["empty", "pdf_no_text_layer"],
+  ["javascript", "invalid_document"],
+] as const)(
+  "refuses %s PDF before preparing it",
+  async (variant, code) => {
+    query.mockResolvedValueOnce(rows([{ outcome: "allowed" }]));
+    const response = await upload(await pdf(variant));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({ error: code });
+    expect(query).toHaveBeenCalledTimes(1);
+  },
+  20_000,
+);
+
+it("applies the student's import gate before reading a PDF", async () => {
+  query.mockResolvedValueOnce(rows([{ outcome: "not_allowed" }]));
+  const response = await upload(await pdf("empty"), "Izmisljeni.pdf");
+  expect(response.status).toBe(403);
+  expect(await response.json()).toMatchObject({ error: "import_not_allowed" });
+  expect(query).toHaveBeenCalledTimes(1);
+});
 
 it("answers a preview marked imported, after the gate and with the database's revision", async () => {
   query

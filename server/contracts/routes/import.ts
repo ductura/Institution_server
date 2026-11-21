@@ -15,7 +15,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 import { MUTATION_GUARD } from "./shared.ts";
 
 // SRV-1803 (M8.2 and M8.2b, DAN-396; D-282, D-290 to D-292; contract
-// docs/adr/import-contract.md, SRV-1801): a DOCX import into a work. The
+// docs/adr/import-contract.md, SRV-1801): a DOCX or PDF import into a work. The
 // student owner sends the file; the server reads it (limits, package rules,
 // no macro, embedded object or external resource), builds the manifest
 // ductus-import-manifest-v1 with its three hashes and answers a preview: the
@@ -92,7 +92,7 @@ export const workImportsPost = defineRoute({
   inventory: "app/api/works/[documentId]/imports/route.ts",
   access: "student_owner",
   summary:
-    "The student owner sends a DOCX of the work as standard Base64, at most 2 MiB (2 097 152 bytes), with the file name or null, as application/json. The server reads it within the limits of the import contract and refuses a macro, an embedded object or an external resource; nothing from the file is run or fetched. 201 is a preview, not yet part of the work: importId, manifestSha256 (SHA-256 of the canonical manifest ductus-import-manifest-v1 built from the received bytes), source import, evidenceKind imported, the content as document v2, the traces counted (comment, deletion, insertion; never an author or date), rawByteLength, the normalised file name (outside every hash, D-292) or null, baseRevision and expiresAt (60 minutes). Confirm it with work.imports.confirm.post. A file above the limit is 413 body_too_large, a file the reader refuses 422 invalid_document, an assignment without import allowed or a submitted work 403 import_not_allowed; a teacher, another's, an unknown or a malformed work is 404.",
+    "The student owner sends a DOCX or PDF as standard Base64, at most 2 MiB (2 097 152 bytes), with the file name or null, as application/json. The server reads the DOCX or the PDF text layer within the import limits. Active content is refused. 201 is a preview: importId, SHA-256 of the canonical manifest ductus-import-manifest-v1, source import, evidenceKind imported, fileFormat, content as document v2, DOCX traces (empty for PDF), rawByteLength, the normalised file name or null, baseRevision and expiresAt (60 minutes). Confirm it with work.imports.confirm.post. A file above the limit is 413 body_too_large, a PDF without text is 422 pdf_no_text_layer, other reader refusals are 422 invalid_document, and an assignment without import allowed or a submitted work is 403 import_not_allowed. A teacher, another's, an unknown or a malformed work is 404.",
   request: {
     params,
     contentType: "application/json",
@@ -111,7 +111,7 @@ export const workImportsPost = defineRoute({
         manifestSha256: Sha256,
         source: Type.Literal("import"),
         evidenceKind: Type.Literal("imported"),
-        fileFormat: Type.Literal("docx"),
+        fileFormat: Type.Union([Type.Literal("docx"), Type.Literal("pdf")]),
         content: Content,
         traces: Type.Array(ImportTraceV1, { maxItems: IMPORT_TRACE_KINDS_V1.length }),
         rawByteLength: Type.Integer({ minimum: 1, maximum: MAX_IMPORT_RAW_BYTES }),
@@ -128,6 +128,7 @@ export const workImportsPost = defineRoute({
     error(400, "invalid_json"),
     error(422, "invalid_input"),
     error(422, "invalid_document"),
+    error(422, "pdf_no_text_layer"),
     error(403, "import_not_allowed"),
     error(404, "not_found"),
     error(503, "unavailable"),

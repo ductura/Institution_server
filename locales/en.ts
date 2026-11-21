@@ -2032,6 +2032,7 @@ const en = {
     invalidAssignmentId: "The assignment is not specified correctly.",
     invalidCode: "The enrolment code does not exist. Check it with your teacher.",
     invalidDocument: "The text of the work is not in a valid form.",
+    pdfNoTextLayer: "This PDF has no text layer. Choose a PDF that contains text.",
     invalidInput: "The data sent is not valid.",
     invalidJson: "The body of the request is not valid JSON.",
     invalidLogoutToken: "The sign-out request is not valid.",

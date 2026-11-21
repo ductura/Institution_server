@@ -288,6 +288,13 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
     errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
   };
+  "mentorship.key-dates.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "dates": ({ "kind": "deadline"; "id": string; "at": string } | { "kind": "milestone"; "id": string; "at": string; "title": string } | { "kind": "consultation"; "id": string; "at": string; "state": "requested" | "countered" | "confirmed" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "mentorship.notes.get": {
     params: { "id": string };
     query: undefined;
@@ -950,8 +957,8 @@ export type Operations = {
     params: { "documentId": string };
     query: undefined;
     body: { "fileBase64": string; "fileName": string | null };
-    success: { status: 201; body: { "importId": string; "manifestSha256": string; "source": "import"; "evidenceKind": "imported"; "fileFormat": "docx"; "content": { "schemaVersion": 2; "nodes": ({ "type": "paragraph"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "heading"; "id": string; "level": 1 | 2 | 3; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "bulletItem"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "quote"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] })[]; "sources": ({  })[] }; "traces": ({ "traceKind": "comment" | "deletion" | "insertion"; "count": number })[]; "rawByteLength": number; "fileName": string | null; "baseRevision": number; "expiresAt": string }; headers: {  } };
-    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "invalid_document" | "import_not_allowed" | "not_found" | "unavailable";
+    success: { status: 201; body: { "importId": string; "manifestSha256": string; "source": "import"; "evidenceKind": "imported"; "fileFormat": "docx" | "pdf"; "content": { "schemaVersion": 2; "nodes": ({ "type": "paragraph"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "heading"; "id": string; "level": 1 | 2 | 3; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "bulletItem"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] } | { "type": "quote"; "id": string; "children": ({ "type": "text"; "text": string; "marks": ("bold" | "italic")[] })[] })[]; "sources": ({  })[] }; "traces": ({ "traceKind": "comment" | "deletion" | "insertion"; "count": number })[]; "rawByteLength": number; "fileName": string | null; "baseRevision": number; "expiresAt": string }; headers: {  } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "invalid_document" | "pdf_no_text_layer" | "import_not_allowed" | "not_found" | "unavailable";
   };
   "work.messages.get": {
     params: { "documentId": string };

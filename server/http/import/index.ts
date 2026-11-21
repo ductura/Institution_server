@@ -30,7 +30,7 @@ import {
   type Imports,
   type WithActor,
 } from "../../database/index.ts";
-import { prepareDocxImport } from "../../import/index.ts";
+import { hasPdfHeader, prepareDocxImport, preparePdfImport } from "../../import/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
 
 import {
@@ -104,17 +104,23 @@ export function createImportPostRoute(imports: Imports): Route {
         const gate = await imports.gate(token, documentId);
         if (gate.status === "not_allowed") return sendProblem(response, 403, "import_not_allowed");
         if (gate.status !== "allowed") return refusalOf(response, gate.status, "not_found");
-        const prepared = prepareDocxImport({
+        const input = {
           bytes: new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength),
           documentId,
           fileName,
           limits: IMPORT_READ_LIMITS,
-        });
+        };
+        const prepared = hasPdfHeader(input.bytes)
+          ? await preparePdfImport(input)
+          : prepareDocxImport(input);
         if (!prepared.ok) {
           if (prepared.code === "FILE_TOO_LARGE")
             return sendProblem(response, 413, "body_too_large");
           if (prepared.code === "MANIFEST_INVALID")
             return sendProblem(response, 422, "invalid_input");
+          if (prepared.code === "pdf_no_text_layer")
+            return sendProblem(response, 422, "pdf_no_text_layer");
+          if (prepared.code === "PDF_BUSY") return sendProblem(response, 503, "unavailable");
           return sendProblem(response, 422, "invalid_document");
         }
         const { preview } = prepared;
@@ -133,9 +139,9 @@ export function createImportPostRoute(imports: Imports): Route {
           manifestSha256: preview.manifestSha256,
           source: "import",
           evidenceKind: "imported",
-          fileFormat: "docx",
+          fileFormat: preview.manifest.fileFormat,
           content: preview.content,
-          traces: preview.traces,
+          traces: preview.manifest.fileFormat === "docx" ? preview.manifest.traces : [],
           rawByteLength: preview.rawByteLength,
           fileName: preview.fileName,
           baseRevision: stored.baseRevision,

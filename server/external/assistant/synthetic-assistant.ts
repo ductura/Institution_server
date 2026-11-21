@@ -5,8 +5,13 @@
  * It opens no network connection and needs no secret: it imports nothing but
  * the port types. It returns each branch of S2 deterministically, from a
  * script the caller hands in: success, provider error, timeout, abort after
- * sending, a late answer and a cost above the reservation. Tool branches wait
- * for #1664; the real adapter waits for M9.1 (OA-1, OA-8).
+ * sending, a late answer and a cost above the reservation, and the tool
+ * branches of #1664 S3-S1 (Ductus docs/contracts/ai-tools-v1.md, "Port i
+ * sintetički adapter"): tool requests over several steps and without end, a
+ * name outside the set or differing only in case, space or a look-alike
+ * character, arguments outside the schema or holding an address, a forged
+ * fence, an answer with HTML, an image and a link, and an answer above
+ * RESPONSE_MAX_BYTES. The real adapter waits for M9.1 (OA-1, OA-8).
  *
  * No amount lives here: every cost comes from the script (T8). Every call is
  * recorded exactly as the port received it, so a test can show what would
@@ -17,6 +22,8 @@ import {
   type AssistantPortInput,
   type AssistantPortOutcome,
   isAssistantPortInput,
+  type PortToolCall,
+  RESPONSE_MAX_BYTES,
 } from "../../domain/index.ts";
 
 export type SyntheticBranch =
@@ -32,7 +39,17 @@ export type SyntheticBranch =
       readonly reservedMicro: bigint;
       readonly overMicro: bigint;
       readonly text?: string;
-    };
+    }
+  /** The model asks for these tool calls (S3-S1); a script list makes several steps. */
+  | {
+      readonly branch: "tool_calls";
+      readonly calls: readonly PortToolCall[];
+      readonly actualMicro: bigint;
+    }
+  /** The model asks for `web_search` on every call, without end (S3-I2). */
+  | { readonly branch: "endless_tools"; readonly actualMicro: bigint }
+  /** An answer one byte above RESPONSE_MAX_BYTES after NFC (S3-I3). */
+  | { readonly branch: "oversized_response"; readonly actualMicro: bigint };
 
 export const SYNTHETIC_BRANCHES = Object.freeze([
   "success",
@@ -41,6 +58,9 @@ export const SYNTHETIC_BRANCHES = Object.freeze([
   "aborted_after_send",
   "late_answer",
   "over_reservation",
+  "tool_calls",
+  "endless_tools",
+  "oversized_response",
 ] as const satisfies readonly SyntheticBranch["branch"][]);
 
 export type SyntheticAssistant = AssistantPort & {
@@ -52,10 +72,9 @@ export type SyntheticAssistant = AssistantPort & {
   deliverLate(): AssistantPortOutcome | null;
 };
 
-/** The deterministic answer text, cut to the port's longest answer. */
+/** The deterministic answer text. */
 export function syntheticAnswer(input: AssistantPortInput, text?: string): string {
-  const full = text ?? `Synthetic answer for purpose ${input.purposeKey}.`;
-  return [...full].slice(0, input.maxResponseCodePoints).join("");
+  return text ?? `Synthetic answer for purpose ${input.purposeKey}.`;
 }
 
 function outcomeOf(branch: SyntheticBranch, input: AssistantPortInput): AssistantPortOutcome {
@@ -81,12 +100,34 @@ function outcomeOf(branch: SyntheticBranch, input: AssistantPortInput): Assistan
         text: syntheticAnswer(input, branch.text),
         actualMicro: branch.reservedMicro + branch.overMicro,
       };
+    case "tool_calls":
+      return {
+        kind: "tool_calls",
+        calls: branch.calls.map((call) => ({ name: call.name, args: call.args })),
+        actualMicro: branch.actualMicro,
+      };
+    case "endless_tools":
+      return {
+        kind: "tool_calls",
+        calls: [{ name: "web_search", args: { query: "invented query" } }],
+        actualMicro: branch.actualMicro,
+      };
+    case "oversized_response":
+      return {
+        kind: "success",
+        text: "a".repeat(RESPONSE_MAX_BYTES + 1),
+        actualMicro: branch.actualMicro,
+      };
   }
 }
 
 function checkBranch(branch: SyntheticBranch): void {
   const amounts =
-    branch.branch === "success" || branch.branch === "late_answer"
+    branch.branch === "success" ||
+    branch.branch === "late_answer" ||
+    branch.branch === "tool_calls" ||
+    branch.branch === "endless_tools" ||
+    branch.branch === "oversized_response"
       ? [branch.actualMicro]
       : branch.branch === "provider_error"
         ? branch.actualMicro === undefined
