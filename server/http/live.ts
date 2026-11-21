@@ -14,7 +14,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { isWorkId, ROUTES, workIdFromPath } from "../contracts/index.ts";
-import { type ActorReader, createLiveStates, type LiveStates } from "../database/index.ts";
+import {
+  type ActorReader,
+  createDirectEdits,
+  createLiveStates,
+  type DirectEdits,
+  type LiveStates,
+} from "../database/index.ts";
 // http may not import domain (docs/server-map.md §2): the evidence area
 // re-exports the protocol and the snapshot check, as for the commit route.
 import {
@@ -46,6 +52,11 @@ export type LiveRouteOptions = {
   readonly recordActivity: (token: string) => Promise<unknown>;
   /** For tests: a shorter body deadline. */
   readonly timeoutMs?: number;
+  /**
+   * SRV-1702 (D-34, D-244): a teacher's direct edit, `If-Match: "<etag>"`.
+   * Without it such a precondition is 428, as before.
+   */
+  readonly teacherEdits?: Pick<DirectEdits, "publishTeacherEdit">;
 };
 
 const contractOf = (id: string) => {
@@ -64,10 +75,14 @@ function single(request: IncomingMessage, name: string): string | null | undefin
 }
 
 /**
- * Exactly one precondition: `If-None-Match: *` for the first write, or
- * `If-Match: "<token>"` with the last token. Anything else is null (428).
+ * Exactly one precondition: `If-None-Match: *` for the first write,
+ * `If-Match: "<token>"` with the last token, or (SRV-1702) a teacher's
+ * `If-Match: "<etag>"` with the content hash of the state read. Anything else
+ * is null (428).
  */
-function expectedTokenOf(request: IncomingMessage): { token: string | null } | null {
+function expectedTokenOf(
+  request: IncomingMessage,
+): { token: string | null } | { hash: string } | null {
   const match = single(request, "if-match");
   const none = single(request, "if-none-match");
   if (match === null || none === null) return null;
@@ -75,7 +90,9 @@ function expectedTokenOf(request: IncomingMessage): { token: string | null } | n
   if (none !== undefined) return none.trim() === "*" ? { token: null } : null;
   if (match === undefined) return null;
   const quoted = /^"([^"]*)"$/.exec(match.trim());
-  return quoted && UUID.test(quoted[1]!) ? { token: quoted[1]! } : null;
+  if (quoted && UUID.test(quoted[1]!)) return { token: quoted[1]! };
+  const etag = ETAG.exec(match.trim());
+  return etag ? { hash: etag[1]! } : null;
 }
 
 /** The refusals of the port, as Ductus refusalFor answers them; anything else is 503. */
@@ -83,6 +100,8 @@ const REFUSAL: ReadonlyMap<string, readonly [number, string]> = new Map([
   ["unauthenticated", [401, "unauthorized"]],
   ["not_found", [404, "not_found"]],
   ["invalid_document", [422, "invalid_document"]],
+  // The direct-edit port's ZD422 (SRV-1702).
+  ["invalid", [422, "invalid_document"]],
 ]);
 const refuseOutcome = (response: ServerResponse, status: string) => {
   const [code, name] = REFUSAL.get(status) ?? [503, "unavailable"];
@@ -155,7 +174,9 @@ export function createLiveRoutes(options: LiveRouteOptions): Route[] {
       const cookieToken = liveSessionTokenFromCookie(request.headers.cookie);
       if (cookieToken === undefined) return refuse(response, 401, "unauthorized");
       const expected = expectedTokenOf(request);
-      if (expected === null) return refuse(response, 428, "precondition_required");
+      if (expected === null || ("hash" in expected && options.teacherEdits === undefined)) {
+        return refuse(response, 428, "precondition_required");
+      }
       // An id that cannot exist is answered like one that does not, before the database.
       const documentId = documentIdOf(params);
       if (!isWorkId(documentId)) return refuse(response, 404, "not_found");
@@ -187,12 +208,22 @@ export function createLiveRoutes(options: LiveRouteOptions): Route[] {
           : sendProblem(response, 422, "invalid_document");
       }
       try {
-        const outcome = await options.states.publish(
-          session.token,
-          documentId,
-          expected.token,
-          snapshot.text,
-        );
+        // A teacher's direct edit (SRV-1702): the database allows it only while
+        // the student has direct edits on, and records it as the teacher's.
+        const outcome =
+          "hash" in expected
+            ? await options.teacherEdits!.publishTeacherEdit(
+                session.token,
+                documentId,
+                expected.hash,
+                snapshot.text,
+              )
+            : await options.states.publish(
+                session.token,
+                documentId,
+                expected.token,
+                snapshot.text,
+              );
         if (outcome.status === "accepted" || outcome.status === "unchanged") {
           sendJson(response, 200, { outcome: outcome.status, token: outcome.token });
         } else if (outcome.status === "conflict") {
@@ -223,5 +254,6 @@ export function createLiveRoutesFor(
     states: createLiveStates(main.withActor),
     actors: main.actorReader,
     recordActivity: (token) => recordActivity(token, main.withActor),
+    teacherEdits: createDirectEdits(main.withActor),
   });
 }

@@ -122,15 +122,19 @@ SELECT bag_eq(
             ('collaboration.create_work_message(text,text)'),
             ('collaboration.list_work_messages(text)'),
             ('collaboration.list_working_criteria(text)'),
-            ('collaboration.save_working_criterion(text,text,smallint,text)') $$,
-  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165');
+            ('collaboration.save_working_criterion(text,text,smallint,text)'),
+            ('collaboration.set_direct_edit(text,text)'),
+            ('collaboration.read_direct_edit(text)'),
+            ('collaboration.list_direct_edit_record(text)'),
+            ('collaboration.publish_teacher_direct_edit(text,text,text)') $$,
+  'the web role executes exactly the comment RPCs, the three consultation RPCs of 163, the two live RPCs, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 the two working-criterion RPCs of 165 and the four direct-edit RPCs of 200');
 SELECT bag_eq(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p
       WHERE p.pronamespace = 'collaboration'::regnamespace AND has_function_privilege('ductus_retention', p.oid, 'EXECUTE') $$,
   $$ VALUES ('collaboration.delete_live_state(text,uuid)'), ('collaboration.delete_revision_requests(text,uuid)'),
             ('collaboration.delete_teacher_notes(text,uuid)'), ('collaboration.delete_work_messages(text,uuid)'),
-            ('collaboration.delete_working_criteria(text,uuid)') $$,
-  'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164 and the criteria delete of 165');
+            ('collaboration.delete_working_criteria(text,uuid)'), ('collaboration.delete_direct_edit(text,uuid)') $$,
+  'the retention role executes only delete_live_state, the revision-request delete of 110 the note delete of 158, the message delete of 164, the criteria delete of 165 and the direct-edit delete of 200');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_worker', 'ductus_auth', 'ductus_evidence']) AS r

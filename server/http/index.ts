@@ -265,6 +265,11 @@ export {
   createWorkMessagesRoutesFor,
 } from "./work-messages/index.ts";
 export {
+  createDirectEditGetRoute,
+  createDirectEditPutRoute,
+  createDirectEditRoutesFor,
+} from "./direct-edit/index.ts";
+export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,
 } from "./student-submission.ts";
