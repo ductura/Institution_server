@@ -630,10 +630,11 @@ describe("assistant idempotency: a late response after outcome_unknown (R7)", ()
       await rowsOf("SELECT role FROM assistant.message WHERE request_id = $1", [lost.requestId]),
     ).toEqual([{ role: "student_paragraph" }]);
     expect(
-      await rowsOf("SELECT state, actual_micro FROM assistant.cost_ledger WHERE request_id = $1", [
-        lost.requestId,
-      ]),
-    ).toEqual([{ state: "reserved", actual_micro: null }]);
+      await rowsOf(
+        'SELECT state, actual_micro AS "actualMicro" FROM assistant.cost_ledger WHERE request_id = $1',
+        [lost.requestId],
+      ),
+    ).toEqual([{ state: "reserved", actualMicro: null }]);
     expect(await drift()).toEqual([]);
   });
 
