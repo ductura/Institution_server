@@ -17,7 +17,11 @@ import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./te
 // a scenario here fails this file.
 
 type Step = Sent & { readonly path: string; readonly as?: AccountKey };
-type Scenario = { readonly before?: readonly Step[]; readonly request: Step };
+type Scenario = {
+  readonly before?: readonly Step[];
+  readonly prepare?: (state: State) => void;
+  readonly request: Step;
+};
 
 const ORIGIN = { origin: "http://127.0.0.1:4010", "sec-fetch-site": "same-origin" };
 const EVIDENCE = { ...ORIGIN, "ductus-protocol": "1" };
@@ -143,6 +147,20 @@ const SAVE_SOURCE: Step = {
   method: "PUT",
   headers: ORIGIN,
   body: { record: WORK_SOURCE },
+};
+const SOURCE_NOTES = `/api/v1/works/${IDS.document}/sources/${WORK_SOURCE.id}/notes`;
+const NOTE_ID = "00000000-0000-4000-8000-00000000b001";
+const ADD_NOTE: Step = {
+  path: SOURCE_NOTES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { note: "Izmišljena bilješka." },
+};
+const seedNote = (state: State) => {
+  state.sourceNotes.set(`${IDS.assignment}:${IDS.student}:${WORK_SOURCE.id}`, [
+    { id: NOTE_ID, quote: null, page: null, note: "Izmišljena bilješka." },
+  ]);
 };
 
 // SRV-1102: an invented JPEG excerpt in a multipart form.
@@ -658,6 +676,26 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.work-sources.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/sources`, as: "student" },
   },
+  "work.source-notes.get": {
+    before: [SAVE_SOURCE, ADD_NOTE],
+    request: { path: SOURCE_NOTES, as: "student", method: "GET" },
+  },
+  "work.source-notes.post": { before: [SAVE_SOURCE], request: ADD_NOTE },
+  "work.source-notes.patch": {
+    before: [SAVE_SOURCE],
+    prepare: seedNote,
+    request: { ...ADD_NOTE, method: "PATCH", body: { noteId: NOTE_ID, page: "12–14" } },
+  },
+  "work.source-notes.delete": {
+    before: [SAVE_SOURCE],
+    prepare: seedNote,
+    request: {
+      path: `${SOURCE_NOTES}?noteId=${NOTE_ID}`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
   "student.work-sources.put": { request: SAVE_SOURCE },
   "student.work-sources.delete": {
     before: [SAVE_SOURCE],
@@ -1053,6 +1091,7 @@ describe("dev fake server covers the whole contract", () => {
     const scenario = SCENARIOS[route];
     for (const step of scenario.before ?? [])
       expect((await run(state, step)).status).toBeLessThan(300);
+    scenario.prepare?.(state);
     const answer = await run(state, scenario.request);
     expect(answer.status, answer.body).not.toBe(501);
     expect(answer.status, answer.body).toBeLessThan(400);
