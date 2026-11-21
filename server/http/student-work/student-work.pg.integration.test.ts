@@ -101,7 +101,10 @@ it("starts a work once and lists only the student's own works", async () => {
       expect((await start(ids.z1, "E")).status).toBe(409);
       // Tomo's institution has no evidence domain.
       expect((await start(ids.z3, "J")).status).toBe(503);
-      const all = await db.query<{ n: string }>("SELECT count(*)::text AS n FROM evidence.project");
+      // Counted over the fixture's people only: the database may hold other tests' rows.
+      const all = await db.query<{ n: string }>(
+        "SELECT count(*)::text AS n FROM evidence.project p JOIN person ON person.id = p.principal_id",
+      );
       expect(all.rows[0]!.n).toBe("1");
 
       // (3) Ana's projection: her work only, and no field of a teacher.
