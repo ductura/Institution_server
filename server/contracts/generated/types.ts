@@ -932,6 +932,13 @@ export type Operations = {
     success: { status: 200; body: { "id": "topic" | "structure" | "sources" | "method" | "language" | "formatting"; "label": string; "assessment": 0 | 1 | 2 | null; "note": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable";
   };
+  "work.access.get": {
+    params: { "documentId": string };
+    query: { "beforeAt"?: string; "beforeId"?: string; [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "days": ({ "date": string; "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "declaration" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[] })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "work.attachments.get": {
     params: { "attachmentId": string };
     query: undefined;

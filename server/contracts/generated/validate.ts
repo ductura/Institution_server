@@ -1619,6 +1619,21 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 2
     )
   }),
+  "work.access.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      value['documentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "work.access.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['beforeAt'] !== undefined ? ((typeof value['beforeAt'] === 'string')) : true) &&
+      (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
+    )
+  }),
   "work.attachments.get:params": (() => {
   const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
