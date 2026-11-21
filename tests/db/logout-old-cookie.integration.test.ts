@@ -21,6 +21,7 @@ import {
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createTeachingTeamRoutesFor,
+  createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
@@ -33,6 +34,7 @@ import {
   createTeacherFastPathRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
+  createNotificationsRoutesFor,
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
@@ -183,6 +185,17 @@ const SESSION_ROUTES = {
   "work.messages.post": {
     path: `/api/v1/works/${randomUUID()}/messages`,
     body: () => ({ text: "Izmišljena poruka." }),
+    live: 404,
+  },
+  "notifications.list.get": {
+    method: "GET",
+    path: "/api/v1/notifications",
+    body: () => undefined,
+    live: 200,
+  },
+  "notifications.read.post": {
+    path: `/api/v1/notifications/${randomUUID()}/read`,
+    body: () => undefined,
     live: 404,
   },
   // SRV-1703: a work it may not teach, a draft or an entry that is not its own, and a student asking for a bank are all 404.
@@ -363,6 +376,17 @@ const SESSION_ROUTES = {
     path: `/api/v1/courses/${randomUUID()}/groups/${randomUUID()}/members`,
     body: () => ({ assistantIds: [], studentIds: [] }),
     live: 403,
+  },
+  "mentorship.notes.get": {
+    method: "GET",
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.notes.post": {
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => ({ body: "Izmisljena biljeska." }),
+    live: 404,
   },
   "student.assignment-work.get": {
     method: "GET",
@@ -923,6 +947,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
+  "createNotificationsRoutesFor",
   "createCommentRoutesFor",
   "createDirectEditRoutesFor",
   "createConsultationRecordRoutesFor",
@@ -938,6 +963,7 @@ const FACTORIES = [
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
   "createTeachingTeamRoutesFor",
+  "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
@@ -991,6 +1017,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
+  ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
@@ -1006,6 +1033,7 @@ const MOUNTED = [
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
+  ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
@@ -1256,6 +1284,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
+        id.startsWith("notifications.") ||
         id.startsWith("live.") ||
         id.startsWith("collaboration.") ||
         id.startsWith("projection.") ||

@@ -212,6 +212,7 @@ const BANK_STEP: Step = {
 };
 
 const MENTORSHIP_REQUESTS = "/api/v1/mentorship-requests";
+const MENTOR_NOTES = `/api/v1/mentorships/${IDS.mentorship}/notes`;
 const REQUEST_MENTORSHIP: Step = {
   path: MENTORSHIP_REQUESTS,
   as: "student",
@@ -222,6 +223,16 @@ const MENTORSHIP_REQUEST = `${MENTORSHIP_REQUESTS}/b1400000-0000-4000-8000-00000
 
 const SCENARIOS: Record<RouteId, Scenario> = {
   "mentorship.requests.post": { request: REQUEST_MENTORSHIP },
+  "mentorship.notes.get": { request: { path: MENTOR_NOTES, as: "nastavnik" } },
+  "mentorship.notes.post": {
+    request: {
+      path: MENTOR_NOTES,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { body: "Izmisljena privatna biljeska." },
+    },
+  },
   "mentorship.request-approve.post": {
     before: [REQUEST_MENTORSHIP],
     request: { path: `${MENTORSHIP_REQUEST}/approve`, as: "nastavnik", headers: ORIGIN },
@@ -713,6 +724,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     ],
     request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
+  },
+  "notifications.list.get": {
+    request: { path: "/api/v1/notifications", as: "student" },
+  },
+  "notifications.read.post": {
+    request: {
+      method: "POST",
+      path: "/api/v1/notifications/00000000-0000-4000-8000-000000001701/read",
+      as: "student",
+    },
   },
   "work.direct-edit.get": {
     before: [

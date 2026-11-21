@@ -8,6 +8,7 @@ export { createCollaborationCommentsRouteFor } from "./collaboration-comments/in
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
+export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -295,6 +296,7 @@ export {
   createWorkMessagesPostRoute,
   createWorkMessagesRoutesFor,
 } from "./work-messages/index.ts";
+export { createNotificationsRoutesFor } from "./notifications/index.ts";
 export {
   createDirectEditGetRoute,
   createDirectEditPutRoute,

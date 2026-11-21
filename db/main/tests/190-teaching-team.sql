@@ -61,7 +61,7 @@ SELECT w.id, pg_temp.id('fak_a'), 'project-' || w.id, pg_temp.id(w.owner), pg_te
 INSERT INTO evidence.document_revision (document_id, institution_id, revision, principal_id, content_hash)
 SELECT w.id, pg_temp.id('fak_a'), 0, pg_temp.id(w.owner), pg_temp.text_hash() FROM work w;
 INSERT INTO evidence.document_checkpoint (document_id, institution_id, revision, body, content_hash, created_at)
-SELECT w.id, pg_temp.id('fak_a'), 0, 'Izmišljeni odlomak.', pg_temp.text_hash(), now() FROM work w;
+SELECT w.id, pg_temp.id('fak_a'), 0, 'Prvi odlomak.', pg_temp.text_hash(), now() FROM work w;
 SET CONSTRAINTS ALL IMMEDIATE;
 RESET ROLE;
 

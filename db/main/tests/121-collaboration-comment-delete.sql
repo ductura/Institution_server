@@ -27,7 +27,8 @@ SET CONSTRAINTS ALL IMMEDIATE;
 RESET ROLE;
 
 -- Everything outside the collaboration schema that a write could touch:
--- evidence, submission and the audit trail, as one value (N19).
+-- evidence, submission and the audit trail, as one value (N19). The expected
+-- notification rows are compared separately below (SRV-1701).
 CREATE FUNCTION pg_temp.outside_print() RETURNS text
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -38,8 +39,9 @@ BEGIN
   FOR r IN SELECT n.nspname, c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE n.nspname IN ('evidence', 'institution', 'audit', 'app') AND c.relkind IN ('r', 'p')
             ORDER BY 1, 2 LOOP
-    EXECUTE format('SELECT md5(coalesce(string_agg(row_to_json(x)::text, ''|'' ORDER BY row_to_json(x)::text), '''')) FROM %I.%I x',
-                   r.nspname, r.relname) INTO v_rows;
+    EXECUTE format('SELECT md5(coalesce(string_agg(row_to_json(x)::text, ''|'' ORDER BY row_to_json(x)::text), '''')) FROM %I.%I x%s',
+                   r.nspname, r.relname, CASE WHEN (r.nspname, r.relname) = ('institution', 'notification')
+                     THEN ' WHERE x.kind <> ''comment_posted''' ELSE '' END) INTO v_rows;
     v_all := v_all || r.nspname || '.' || r.relname || '=' || v_rows || ';';
   END LOOP;
   RETURN md5(v_all);
@@ -251,9 +253,18 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT 'done' FROM collaboration.resolve_threa
 SELECT is(pg_temp.del('ana', '{cr2}'), 'done', 'N12: Ana deletes her reply in a resolved thread');
 SELECT is(pg_temp.state('tr'), 'resolved', 'N12: the resolved thread stays resolved');
 
--- 10. Nothing outside the collaboration schema changed (N19).
+-- 10. Published teacher comments have only the expected notification effects.
 SELECT is(pg_temp.outside_print(), (SELECT v FROM print_before),
-  'N19: opening, replying and deleting write nothing to evidence, submission, institution or audit tables');
+  'N19: evidence, submission, audit and institution records other than comment notifications stay unchanged');
+SELECT bag_eq(
+  $$ SELECT event_key, institution_id, recipient_id, target_id, read_at
+     FROM institution.notification WHERE kind = 'comment_posted' $$,
+  $$ SELECT 'comment_posted:' || c.id, t.institution_id, t.owner_id, t.assignment_id, NULL::timestamptz
+     FROM collaboration.comment c
+     JOIN collaboration.comment_thread t ON t.id = c.thread_id AND t.institution_id = c.institution_id
+     WHERE c.author_role = 'teacher' AND c.published_at IS NOT NULL $$,
+  'N19 and SRV-1701: published teacher comments add only the unread notice for the student of that work'
+);
 
 -- 11. The table holds the rule itself: text without a time of deletion, or a
 -- time without text gone, or a time before the comment, is refused.

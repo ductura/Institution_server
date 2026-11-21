@@ -39,9 +39,11 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
   createTeachingTeamRoutesFor,
+  createMentorNotesRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
   createWorkVersionRouteFor,
@@ -190,6 +192,7 @@ const SRV_1408 = [
   "institution.teaching-team.post",
   "institution.teaching-group-members.put",
 ];
+const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
@@ -378,6 +381,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeachingTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createMentorNotesRoutesFor(databases.main)",
+    ids: SRV_1413,
+    routes: () => createMentorNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // Ductus#2028 (w1119o): the live view over the main database.
     call: "createLiveRoutesFor(databases.main)",
     ids: ["live.document.get", "live.document.put"],
@@ -399,6 +407,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "work.consultation-additions.post",
     ],
     routes: () => createConsultationRecordRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createNotificationsRoutesFor(databases.main, reminderCooldown)",
+    ids: ["notifications.list.get", "notifications.read.post"],
+    routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createAttachmentRoutesFor(databases.main, process.env, process.cwd())",
@@ -642,12 +655,15 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.patch",
       ...SRV_1407,
       ...SRV_1408,
+      ...SRV_1413,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",
       "work.consultation-records.get",
       "work.consultation-records.post",
       "work.consultation-additions.post",
+      "notifications.list.get",
+      "notifications.read.post",
       "work.attachments.post",
       "work.attachments.get",
       "work.milestones.get",
