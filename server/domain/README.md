@@ -19,12 +19,13 @@ Područje iz [karte servera](../../docs/server-map.md).
 | [profile](profile/README.md)             | `src/domain/profile`              | Tijelo postavke jezika sučelja: skup i parser, na `51a062e` (DAN-851-1a)                |
 | [support](support/README.md)             | `src/domain/support`              | Prijava problema: zatvorene klase, parser i predložak rute, na `220b5db` (DAN-851-2a2)  |
 | [sync](sync/README.md)                   | dio `src/domain/sync/states.ts`   | Osam stanja sinkronizacije (`SYNC_STATES`), na `220b5db` (DAN-851-2a2)                  |
+| [assistant](assistant/README.md)         | `src/domain/assistant` i novo     | Katalog svrha (DAN-402); port, parser, politika i stanja AI zahtjeva (SRV-1201)         |
 
 `result.ts` drži zajedničke tipove `Result<T>` i `AppError` (`{ code, messageKey }`, [docs/CODE_STYLE.md](../../docs/CODE_STYLE.md) §8); samo tipove, bez I/O-a.
 
 ## Tko ga zove
 
-`database`, `external/storage`, `external/keys`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence`, `profile` i `support` (karta §1). Unakrsni testovi u `tests/contracts` i `tests/db` uvoze ga da dokažu slaganje s ugovorima i migracijama.
+`database`, `external/storage`, `external/keys`, `external/assistant`, `session`, `roles`, `legal`, `backup`, `deletion`, `downloads`, `evidence`, `profile` i `support` (karta §1). Unakrsni testovi u `tests/contracts` i `tests/db` uvoze ga da dokažu slaganje s ugovorima i migracijama.
 
 ## Koje podatke dira
 
