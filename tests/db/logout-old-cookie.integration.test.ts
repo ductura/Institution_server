@@ -1212,6 +1212,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
         id.startsWith("work.") ||
+        id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;
