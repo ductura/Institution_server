@@ -61,7 +61,6 @@
     "tests/unit/interface-locale-routes.test.ts",
     "server/http/public-status.test.ts",
     "server/http/public-status.ts",
-    "server/http/ready-capabilities.ts",
     "tests/unit/ready.test.ts",
     "tests/unit/shutdown-process.test.ts",
     "tests/unit/db-boundary-forms.test.ts",

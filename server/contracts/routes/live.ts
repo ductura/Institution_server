@@ -10,6 +10,11 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 // a route relies on are not in RequestSpec yet, so they are named in the
 // summary and the vectors, as ductus-protocol is for evidence (docs/vs1-rute.md).
 // Served by server/http/live.ts.
+// SRV-1702 (D-34, D-244): a teacher of the work also writes here, only while
+// its student has direct edits on (work.direct-edit.put), with `If-Match:
+// "<etag>"`, the ETag of the state read; the summary stays as it was, since a
+// changed summary is a breaking change (breaking.ts), so the teacher path is
+// described in work.direct-edit.put and in the vectors teacher-*.
 
 const CODE_POINT = "[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]";
 /** isDocumentId: 1 to 256 code points, trimmed, no control character. */
