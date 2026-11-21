@@ -45,6 +45,7 @@ import {
   createWorkExportRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
+  createTeacherSubmissionsBulkRoutesFor,
   createWorkPdfRouteFor,
   createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
@@ -361,6 +362,19 @@ const SESSION_ROUTES = {
   "student.submission-package.get": {
     method: "GET",
     path: `/api/v1/student/submissions/${randomUUID()}/package/package?token=1763800000000.${"A".repeat(43)}`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1902: a link that is not this session's, or an assignment the caller does not teach, is 404.
+  "teacher.submissions-bulk-link.post": {
+    method: "POST",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/submissions-bulk-link`,
+    body: () => ({ format: "pdf" }),
+    live: 404,
+  },
+  "teacher.submissions-bulk.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/submissions-bulk/pdf?token=1763800000000.${"A".repeat(43)}`,
     body: () => undefined,
     live: 404,
   },
@@ -1215,6 +1229,7 @@ const FACTORIES = [
   "createAssignmentCopyRouteFor",
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
+  "createTeacherSubmissionsBulkRoutesFor",
   "createAssistantRoutesFor",
   "createStatementRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
@@ -1309,6 +1324,7 @@ const MOUNTED = [
   createAssignmentCopyRouteFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createMerlinPackageRoutesFor(databases.main),
+  ...createTeacherSubmissionsBulkRoutesFor(databases.main, ORIGIN),
   ...createAssistantRoutesFor(databases.main),
   ...createStatementRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
