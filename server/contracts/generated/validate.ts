@@ -717,6 +717,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value))
     )
   }),
+  "mentorship.key-dates.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "mentorship.notes.get:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
