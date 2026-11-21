@@ -296,6 +296,9 @@ ALTER TABLE evidence.submission_note DISABLE TRIGGER submission_note_no_truncate
 ALTER TABLE institution.work_attachment DISABLE TRIGGER work_attachment_no_truncate;
 -- A deadline extension (SRV-1108) references the assignment and is append-only.
 ALTER TABLE institution.deadline_extension DISABLE TRIGGER deadline_extension_no_truncate;
+-- The Merlin package (SRV-1110) and the record of its downloads reference the assignment and refuse TRUNCATE.
+ALTER TABLE institution.merlin_package DISABLE TRIGGER merlin_package_no_truncate;
+ALTER TABLE institution.merlin_package_download DISABLE TRIGGER merlin_package_download_no_truncate;
 -- The assistant's conversations and requests (SRV-1202) reference the
 -- assignment, their messages and ledger rows the requests; none is truncated.
 ALTER TABLE assistant.conversation DISABLE TRIGGER conversation_no_truncate;

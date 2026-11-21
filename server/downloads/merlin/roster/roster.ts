@@ -46,6 +46,8 @@ export type MerlinFile = { readonly name: string; readonly bytes: Uint8Array };
 export type MerlinRoster = {
   readonly rows: readonly MerlinRosterRow[];
   readonly files: readonly MerlinFile[];
+  /** The ids of the students of the rows, in row order (SRV-1110: the scope of a package). */
+  readonly studentIds: readonly string[];
 };
 
 function byName(a: SubmittedWorkSource, b: SubmittedWorkSource): number {
@@ -85,6 +87,7 @@ export async function buildMerlinRoster(
   }
   const rows: MerlinRosterRow[] = [];
   const files: MerlinFile[] = [];
+  const studentIds: string[] = [];
   // A short name two students would share takes the whole id for both, so a
   // name in the roster always names one file (and the result does not depend
   // on which of the two comes first).
@@ -102,6 +105,7 @@ export async function buildMerlinRoster(
   for (const student of [...students].sort(byName)) {
     const submission = byStudent.get(student.studentId);
     if (submission === undefined) throw new Error("roster reads disagree");
+    studentIds.push(student.studentId);
     const names = { familyName: student.familyName, givenName: student.givenName };
     if (!submission.submitted || submission.revision === null) {
       rows.push({
@@ -132,5 +136,5 @@ export async function buildMerlinRoster(
       docxSha256: sha256Hex(docx.bytes),
     });
   }
-  return { rows, files };
+  return { rows, files, studentIds };
 }

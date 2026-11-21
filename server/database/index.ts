@@ -300,6 +300,16 @@ export {
   type SubmittedWorksReader,
 } from "./submitted-works/index.ts";
 export {
+  createMerlinPackages,
+  type MerlinPackageDownload,
+  type MerlinPackageRead,
+  type MerlinPackageRequest,
+  type MerlinPackages,
+  type MerlinPackageState,
+  type MerlinPackageStatus,
+  type MerlinPackageWrite,
+} from "./merlin-packages/index.ts";
+export {
   createWorkVersionsReader,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
