@@ -67,7 +67,7 @@ it("exports the student's saved work without the real note stored against its me
       host: "127.0.0.1",
       port: 0,
       databases: createDatabases(),
-      layers: createLayers(),
+      layers: createLayers({ expectedOrigin: "https://ductura.example.invalid" }),
       routes: [createWorkPdfRouteFor({ withActor }, `http://127.0.0.1:${address.port}`)],
     });
     try {

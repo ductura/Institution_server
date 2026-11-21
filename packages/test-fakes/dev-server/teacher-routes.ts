@@ -218,6 +218,35 @@ export const TEACHER_HANDLERS: Handlers = {
     status: 200,
     body: { submissions: submissions(state, account, taught(state, account, params.assignmentId)) },
   }),
+  "teacher.submission-detail.get": ({ state, account, params, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = taught(state, account, params.assignmentId);
+    const studentId = params.studentId.toLowerCase();
+    if (assignment === null || !studentsOf(state, account, assignment).includes(studentId)) {
+      return { error: "not_found" };
+    }
+    const work = state.works.find(
+      (item) => item.assignmentId === assignment.id && item.studentId === studentId,
+    );
+    if (work === undefined || work.submittedAt === null) return { error: "not_found" };
+    if (work.submittedDocument === null || work.submissionReceipt === null)
+      return { error: "unavailable" };
+    recordOpening(
+      state,
+      {
+        documentId: work.documentId,
+        readerId: account.id,
+        role: "teacher",
+        surface: "submitted_text",
+      },
+      now,
+    );
+    const { revision, afterDeadline } = work.submissionReceipt.payload;
+    return {
+      status: 200,
+      body: { studentId, revision, late: afterDeadline, document: work.submittedDocument },
+    };
+  },
   "teacher.assignment-submissions.post": ({ state, account, body }) => {
     const ids = [...new Set(body.assignmentIds.map((id) => id.toLowerCase()))];
     const assignments = ids.map((assignmentId) => ({
