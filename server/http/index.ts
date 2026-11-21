@@ -248,6 +248,11 @@ export {
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
 export {
+  createWorkMessagesGetRoute,
+  createWorkMessagesPostRoute,
+  createWorkMessagesRoutesFor,
+} from "./work-messages/index.ts";
+export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,
 } from "./student-submission.ts";
