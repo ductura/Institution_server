@@ -240,6 +240,9 @@ Oznake M, N, P, E i L preuzete su iz Ductus #1911; Z, X, K i D su nove. Svaki re
 | D2  | Šifriran PDF                                                         | `PDF_ENCRYPTED`                               |
 | D3  | JavaScript, `Launch`, `OpenAction` s akcijom, ugrađene datoteke, XFA | `PDF_ACTIVE_CONTENT`                          |
 | D4  | Neispravna struktura, beskonačne reference objekata                  | `PDF_INVALID`, unutar granice vremena workera |
+| D5  | Nema tekstnog sloja (skenirani PDF)                                  | `PDF_NO_TEXT_LAYER`                           |
+
+Čitač (SRV-1804, [`server/import/pdf/`](../../server/import/pdf/)) dopušta samo akcije `GoTo`, `URI` (cilj ostaje tekst, nikad se ne dohvaća) i `Named`; svaka druga akcija, akcija bez vrste i svaki okidač `/AA` daju `PDF_ACTIVE_CONTENT`. Imena se uspoređuju nakon dekodiranja `#xx`, a pregledavaju se i objekti unutar object streamova. Granica vremena workera iz D4 dolazi s rutom (SRV-1804B).
 
 ### Mutacije koje moraju srušiti barem jedan test
 

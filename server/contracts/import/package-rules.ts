@@ -37,6 +37,7 @@ export const IMPORT_READ_REJECT_CODES = Object.freeze([
   "PDF_ENCRYPTED",
   "PDF_ACTIVE_CONTENT",
   "PDF_TOO_MANY_PAGES",
+  "PDF_NO_TEXT_LAYER",
 ] as const);
 export type ImportReadRejectCode = (typeof IMPORT_READ_REJECT_CODES)[number];
 
