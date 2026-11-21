@@ -70,6 +70,7 @@ describe("server/domain imports nothing outside itself", () => {
       "declaration",
       "document",
       "evidence",
+      "export-snapshot",
       "forensics",
       "jobs",
       "json",
