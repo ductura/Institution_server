@@ -47,26 +47,26 @@ SELECT is(
   (SELECT string_agg(p.oid::regprocedure::text || ' ' || pg_get_userbyid(p.proowner) || ' '
                      || p.prosecdef || ' ' || ('search_path=""' = ANY (p.proconfig)), ', ' ORDER BY p.proname)
      FROM pg_proc p
-    WHERE p.oid IN ('app.bound_declaration_of(uuid,uuid,uuid)'::regprocedure,
+    WHERE p.oid IN ('app.bound_declaration_of(uuid,uuid)'::regprocedure,
                     'app.teacher_declaration(uuid,uuid)'::regprocedure)),
-  'app.bound_declaration_of(uuid,uuid,uuid) ductus_evidence true true, '
+  'app.bound_declaration_of(uuid,uuid) ductus_evidence true true, '
   || 'app.teacher_declaration(uuid,uuid) ductus_identity true true',
   'owners, SECURITY DEFINER and an empty search_path');
 SELECT bag_eq(
   $$ SELECT r || ' ' || f
        FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_identity', 'ductus_evidence',
                          'ductus_auth', 'ductus_test_stranger', 'public']) r
-      CROSS JOIN unnest(ARRAY['app.bound_declaration_of(uuid,uuid,uuid)', 'app.teacher_declaration(uuid,uuid)']) f
+      CROSS JOIN unnest(ARRAY['app.bound_declaration_of(uuid,uuid)', 'app.teacher_declaration(uuid,uuid)']) f
       WHERE has_function_privilege(r, f, 'EXECUTE')
-        AND NOT (r = 'ductus_evidence' AND f = 'app.bound_declaration_of(uuid,uuid,uuid)')
+        AND NOT (r = 'ductus_evidence' AND f = 'app.bound_declaration_of(uuid,uuid)')
         AND NOT (r = 'ductus_identity' AND f = 'app.teacher_declaration(uuid,uuid)') $$,
-  ARRAY['ductus_app app.teacher_declaration(uuid,uuid)', 'ductus_identity app.bound_declaration_of(uuid,uuid,uuid)'],
+  ARRAY['ductus_app app.teacher_declaration(uuid,uuid)', 'ductus_identity app.bound_declaration_of(uuid,uuid)'],
   'only the app reads through the teacher''s RPC; only identity calls the helper');
 SELECT is(pg_get_function_arguments('app.teacher_declaration(uuid,uuid)'::regprocedure),
   'p_assignment_id uuid, p_student_id uuid', 'the reader names no institution or reader');
 SELECT is((SELECT concat_ws(' ', convalidated, pg_get_constraintdef(oid) LIKE '%''submitted_text''%''declaration''%')
              FROM pg_constraint WHERE conname = 'access_log_surface_check'
-              AND conrelid = 'audit.access_log'::regclass), 'true true',
+              AND conrelid = 'audit.access_log'::regclass), 't t',
   'the surface list grows by declaration and stays validated');
 
 -- 2. Before a submission there is nothing to read and nothing is logged.
@@ -98,8 +98,10 @@ SELECT matches(pg_temp.read('vesna', '{dora}'), '^none', 'Dora submitted nothing
 SELECT matches(pg_temp.read('vesna', '{tomo}'), '^ZD403', 'a student outside the course is refused');
 SELECT matches(pg_temp.read('vesna', 'NULL'), '^ZD403', 'no student is refused');
 SELECT is(pg_temp.logged(), 'vesna:teacher:doc-a', 'the refusals wrote nothing');
-SELECT matches(pg_temp.ask('vesna', format('SELECT count(*)::text FROM app.bound_declaration_of(%L, {z1}, {ana})',
-  pg_temp.id('fak_a'))), '^42501', 'the session cannot call the helper itself');
+SELECT matches(pg_temp.ask('vesna', 'SELECT count(*)::text FROM app.bound_declaration_of({z1}, {ana})'),
+  '^42501', 'the session cannot call the helper itself');
+SELECT is(pg_get_function_arguments('app.bound_declaration_of(uuid,uuid)'::regprocedure),
+  'p_assignment_id uuid, p_student_id uuid', 'the helper takes the institution from the session, not from its caller');
 
 -- 5. Withdrawn: the declaration is no longer the teacher's.
 INSERT INTO ref SELECT 's1', id::text FROM evidence.submission;
