@@ -1,5 +1,5 @@
-# Čitanje nastavničkih predaja
+# Čitanje predane verzije
 
-`createTeacherSubmissions` čita postojeći popis nastavničkih predaja i povezuje potvrđene predaje s njihovim identifikatorima. Oznaka `late` dolazi iz pohranjene predaje koja koristi rok utvrđen pri zahtjevu. Ako potvrda još nije vezana, popis prikazuje predaju s `submissionId: null`.
+`createTeacherSubmissionReader` koristi postojeće nastavničke čitače za odnos sa zadatkom i provjeru predaje studenta. Oznaka `late` dolazi iz pohranjene predaje koja koristi rok utvrđen pri zahtjevu.
 
-Za detalj se koristi postojeće čitanje predanog sadržaja. Ono ponovno provjerava pristup i bilježi otvaranje. Sažetak sadržaja mora odgovarati sažetku u vezanoj potvrdi.
+Čitanje sadržaja ponovno provjerava pristup i bilježi otvaranje. Poslužuje samo spremljene bajtove predane revizije koji odgovaraju sažetku pohranjenom uz predaju.

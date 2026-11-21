@@ -5,7 +5,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 import { SignedSubmissionReceipt } from "./evidence.ts";
 import { Minute as SummaryMinute, ProcessSummaryV1 } from "./process-summary-shape.ts";
 import { MUTATION_GUARD } from "./shared.ts";
-import { teacherSubmissionDetailGet, TeacherSubmittedVersion } from "./teacher-submissions.ts";
+import { teacherSubmissionDetailGet } from "./teacher-submissions.ts";
 
 // Literal port of Ductus 078c780: src/server/institution/teacher-courses.ts
 // (DAN-230), src/server/evidence/assignment-submissions.ts (DAN-332 R1) and
@@ -124,15 +124,7 @@ export const teacherSubmissionsGet = defineRoute({
     {
       status: 200,
       description: "the submissions, possibly none",
-      body: closed({
-        submissions: Type.Array(Type.Union([NotSubmitted, Submitted])),
-        submittedVersions: Type.Optional(
-          Type.Array(TeacherSubmittedVersion, {
-            description:
-              "Recorded submissions with their pinned lateness and link to the submitted document when its receipt is bound.",
-          }),
-        ),
-      }),
+      body: closed({ submissions: Type.Array(Type.Union([NotSubmitted, Submitted])) }),
     },
   ],
   errors: [...READ_ERRORS, error(503, "unavailable")],

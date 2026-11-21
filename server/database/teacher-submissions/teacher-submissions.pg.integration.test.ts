@@ -1,16 +1,19 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { expect, it } from "vitest";
 
 import { createTestDatabase } from "../../../test-support/database/index.ts";
-import type { WithActor } from "../index.ts";
+import { createAssignmentSubmissionsReader, type WithActor } from "../index.ts";
 
-import { createTeacherSubmissions } from "./index.ts";
+import { createTeacherSubmissionReader } from "./index.ts";
 
 const FIXTURES = new URL("../../../db/main/tests/fixtures/", import.meta.url);
 const ASSIGNMENT = "00000000-0000-4000-8000-0000000000a1";
 const OTHER_ASSIGNMENT = "00000000-0000-4000-8000-0000000000a2";
+const STUDENT = "00000000-0000-4000-8000-000000000104";
 const DOCUMENT = '{"nodes":[],"schemaVersion":2}';
+const HASH = createHash("sha256").update(DOCUMENT).digest("hex");
 
 it.each([false, true])("reads the recorded submission with extension=%s", async (extended) => {
   const db = await createTestDatabase("main", { authority: true });
@@ -64,7 +67,7 @@ it.each([false, true])("reads the recorded submission with extension=%s", async 
     const submissionId = await ask(
       "ana",
       `SELECT submission_id::text FROM app.record_submission(
-      (SELECT id FROM evidence.submission_request), pg_temp.sha('${DOCUMENT}'))`,
+      (SELECT id FROM evidence.submission_request), '${HASH}')`,
     );
     expect(submissionId).toMatch(/^[0-9a-f-]{36}$/);
 
@@ -82,48 +85,22 @@ it.each([false, true])("reads the recorded submission with extension=%s", async 
         await db.exec("RESET ROLE");
       }
     };
-    const port = createTeacherSubmissions(withActor);
     const teacher = "A".repeat(43);
-    expect(await port.list(teacher, ASSIGNMENT)).toMatchObject({
-      status: "ok",
-      body: { submittedVersions: [{ submissionId: null, revision: 1, late: !extended }] },
-    });
+    const list = await createAssignmentSubmissionsReader(withActor)(teacher, [ASSIGNMENT]);
+    expect(list.status).toBe("ok");
+    if (list.status === "ok") {
+      expect(list.submissions.get(ASSIGNMENT)).toContainEqual(
+        expect.objectContaining({ studentId: STUDENT, revision: 1, afterDeadline: !extended }),
+      );
+    }
 
-    await db.exec(`
-      SET LOCAL ROLE ductus_evidence;
-      INSERT INTO evidence.signing_key (
-        key_id, key_version, evidence_domain_id, institution_id, purpose, algorithm, key_base64url, valid_from
-      ) VALUES ('demo-key', '1', '00000000-0000-4000-8000-0000000000d1', pg_temp.id('fak_a'),
-                'receipt', 'Ed25519', 'MCowBQYDK2VwAyEA' ||
-                translate(rtrim(encode(decode(repeat('11', 32), 'hex'), 'base64'), '='), '+/', '-_'),
-                now() - interval '1 day');
-      RESET ROLE;
-    `);
-    expect(
-      await ask(
-        "ana",
-        `SELECT attached.outcome
-      FROM app.prepare_submission_receipt('${submissionId}'::uuid, 'demo-key', '1') prepared
-      CROSS JOIN LATERAL app.attach_submission_receipt(prepared.issuance_id, prepared.payload_digest_sha256,
-        jsonb_build_object('algorithm','Ed25519','keyId','demo-key','keyVersion','1',
-          'signatureEncoding','raw','signatureBase64Url',repeat('A',86))) attached`,
-      ),
-    ).toBe("attached");
-
-    expect(await port.list(teacher, ASSIGNMENT)).toMatchObject({
+    const read = createTeacherSubmissionReader(withActor);
+    expect(await read(teacher, ASSIGNMENT, STUDENT)).toEqual({
       status: "ok",
-      body: { submittedVersions: [{ submissionId, revision: 1, late: !extended }] },
+      body: { studentId: STUDENT, revision: 1, late: !extended, document: DOCUMENT },
     });
-    expect(await port.detail(teacher, ASSIGNMENT, submissionId!)).toMatchObject({
-      status: "ok",
-      body: { submissionId, revision: 1, late: !extended, document: DOCUMENT },
-    });
-    expect(await port.detail("B".repeat(43), ASSIGNMENT, submissionId!)).toEqual({
-      status: "not_found",
-    });
-    expect(await port.detail(teacher, OTHER_ASSIGNMENT, submissionId!)).toEqual({
-      status: "not_found",
-    });
+    expect(await read("B".repeat(43), ASSIGNMENT, STUDENT)).toEqual({ status: "not_found" });
+    expect(await read(teacher, OTHER_ASSIGNMENT, STUDENT)).toEqual({ status: "not_found" });
   } finally {
     await db.close();
   }

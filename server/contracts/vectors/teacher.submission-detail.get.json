@@ -10,16 +10,17 @@
         },
         "params": {
           "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
-          "submissionId": "00000000-0000-4000-8000-0000000000c1"
+          "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01"
         }
       },
       "response": {
         "status": 200,
         "contentType": "application/json",
-        "headers": { "cache-control": "no-store" },
+        "headers": {
+          "cache-control": "no-store"
+        },
         "body": {
           "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01",
-          "submissionId": "00000000-0000-4000-8000-0000000000c1",
           "revision": 42,
           "late": false,
           "document": "{\"nodes\":[],\"schemaVersion\":2}"
@@ -36,7 +37,7 @@
         },
         "params": {
           "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
-          "submissionId": "00000000-0000-4000-8000-0000000000c2"
+          "studentId": "00000000-0000-4000-8000-0000000000c2"
         }
       },
       "response": {
@@ -58,7 +59,7 @@
       "request": {
         "params": {
           "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
-          "submissionId": "00000000-0000-4000-8000-0000000000c1"
+          "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01"
         }
       },
       "response": {
@@ -78,10 +79,12 @@
       "kind": "error",
       "code": "forbidden",
       "request": {
-        "headers": { "sec-fetch-site": "cross-site" },
+        "headers": {
+          "sec-fetch-site": "cross-site"
+        },
         "params": {
           "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
-          "submissionId": "00000000-0000-4000-8000-0000000000c1"
+          "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01"
         }
       },
       "response": {
@@ -106,7 +109,7 @@
         },
         "params": {
           "assignmentId": "3a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
-          "submissionId": "00000000-0000-4000-8000-0000000000c1"
+          "studentId": "5e4d3c2b-1a09-4f8e-8d7c-6b5a4f3e2d01"
         }
       },
       "response": {

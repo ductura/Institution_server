@@ -1,14 +1,14 @@
 import { ROUTES, workIdFromPath } from "../../contracts/index.ts";
 import {
-  createTeacherSubmissions,
-  type TeacherSubmissions,
+  createTeacherSubmissionReader,
+  type TeacherSubmissionReader,
   type WithActor,
 } from "../../database/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
 
 import { sendJson, sendProblem, type Route } from "../index.ts";
 
-export function createTeacherSubmissionDetailRoute(read: TeacherSubmissions["detail"]): Route {
+export function createTeacherSubmissionDetailRoute(read: TeacherSubmissionReader): Route {
   const contract = ROUTES.find((entry) => entry.id === "teacher.submission-detail.get");
   if (contract === undefined) throw new Error("Missing teacher submission detail contract");
   return {
@@ -21,8 +21,8 @@ export function createTeacherSubmissionDetailRoute(read: TeacherSubmissions["det
       const token = liveSessionTokenFromCookie(request.headers.cookie);
       if (token === undefined) return sendProblem(response, 401, "unauthorized");
       const assignmentId = workIdFromPath(params?.assignmentId ?? "") ?? "";
-      const submissionId = workIdFromPath(params?.submissionId ?? "") ?? "";
-      const result = await read(token, assignmentId, submissionId);
+      const studentId = workIdFromPath(params?.studentId ?? "") ?? "";
+      const result = await read(token, assignmentId, studentId);
       switch (result.status) {
         case "ok":
           return sendJson(response, 200, result.body);
@@ -38,5 +38,5 @@ export function createTeacherSubmissionDetailRoute(read: TeacherSubmissions["det
 }
 
 export function createTeacherSubmissionDetailRouteFor(main: { withActor: WithActor }): Route {
-  return createTeacherSubmissionDetailRoute(createTeacherSubmissions(main.withActor).detail);
+  return createTeacherSubmissionDetailRoute(createTeacherSubmissionReader(main.withActor));
 }

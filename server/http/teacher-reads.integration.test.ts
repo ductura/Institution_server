@@ -16,7 +16,6 @@ import type {
   MentoredWorksOutcome,
   TeacherAccessResult,
   TeacherCoursesResult,
-  TeacherSubmissions,
 } from "../database/index.ts";
 
 import { principalScope } from "../session/index.ts";
@@ -56,10 +55,6 @@ let access: () => Promise<TeacherAccessResult>;
 let works: MentoredWorksOutcome = { status: "unavailable" };
 let work: MentoredWorkOutcome = { status: "unavailable" };
 let submissions: AssignmentSubmissionsOutcome = { status: "unavailable", reason: "x" };
-let submittedVersions: Extract<
-  Awaited<ReturnType<TeacherSubmissions["list"]>>,
-  { status: "ok" }
->["body"]["submittedVersions"];
 
 async function start() {
   server = await startServer({
@@ -92,18 +87,6 @@ async function start() {
           calls.push(["submissions", token, ids]);
           return submissions;
         },
-        submissionList: async (token, id) => {
-          calls.push(["submissions", token, [id]]);
-          return submissions.status === "ok"
-            ? {
-                status: "ok",
-                body: {
-                  submissions: [...(submissions.submissions.get(id.toLowerCase()) ?? [])],
-                  ...(submittedVersions === undefined ? {} : { submittedVersions }),
-                },
-              }
-            : submissions;
-        },
         timeoutMs: 300,
       }),
     ],
@@ -111,7 +94,6 @@ async function start() {
 }
 afterEach(async () => {
   calls.length = 0;
-  submittedVersions = undefined;
   reads.length = 0;
   vi.restoreAllMocks();
   await server?.close();
@@ -217,7 +199,6 @@ const CASES: Case[] = [
     path: (v) => `/api/v1/teacher/assignments/${v.request.params!.assignmentId}/submissions`,
     arrange: (v) => {
       const id = v.request.params!.assignmentId!.toLowerCase();
-      submittedVersions = v.response.body.submittedVersions as typeof submittedVersions;
       submissions =
         v.response.status === 200
           ? { status: "ok", submissions: new Map([[id, v.response.body.submissions as never]]) }

@@ -17,11 +17,7 @@ import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./te
 // a scenario here fails this file.
 
 type Step = Sent & { readonly path: string; readonly as?: AccountKey };
-type Scenario = {
-  readonly before?: readonly Step[];
-  readonly request: Step;
-  readonly resolvePath?: (state: State) => string;
-};
+type Scenario = { readonly before?: readonly Step[]; readonly request: Step };
 
 const ORIGIN = { origin: "http://127.0.0.1:4010", "sec-fetch-site": "same-origin" };
 const EVIDENCE = { ...ORIGIN, "ductus-protocol": "1" };
@@ -781,15 +777,8 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "teacher.submission-detail.get": {
     before: SUBMIT_STEPS,
     request: {
-      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions/{submissionId}`,
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions/${IDS.student}`,
       as: "nastavnik",
-    },
-    resolvePath: (state) => {
-      const receipt = state.works.find(
-        (work) => work.documentId === IDS.document,
-      )?.submissionReceipt;
-      if (receipt == null) throw new Error("missing fake submission receipt");
-      return `/api/v1/teacher/assignments/${IDS.assignment}/submissions/${receipt.payload.submissionId}`;
     },
   },
   "teacher.receipt-pdf.get": {
@@ -963,10 +952,7 @@ describe("dev fake server covers the whole contract", () => {
     const scenario = SCENARIOS[route];
     for (const step of scenario.before ?? [])
       expect((await run(state, step)).status).toBeLessThan(300);
-    const answer = await run(state, {
-      ...scenario.request,
-      path: scenario.resolvePath?.(state) ?? scenario.request.path,
-    });
+    const answer = await run(state, scenario.request);
     expect(answer.status, answer.body).not.toBe(501);
     expect(answer.status, answer.body).toBeLessThan(400);
     expect(contractProblems(route, answer)).toEqual([]);

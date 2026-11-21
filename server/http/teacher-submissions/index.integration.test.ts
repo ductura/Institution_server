@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { afterEach, expect, it, vi } from "vitest";
 
-import type { TeacherSubmissions } from "../../database/index.ts";
+import type { TeacherSubmissionReader } from "../../database/index.ts";
 
 import { createDatabases, createLayers, startServer, type Running } from "../index.ts";
 import { createTeacherSubmissionDetailRoute } from "./index.ts";
@@ -12,7 +12,7 @@ type Vector = {
   name: string;
   request: {
     headers?: Record<string, string>;
-    params: { assignmentId: string; submissionId: string };
+    params: { assignmentId: string; studentId: string };
   };
   response: { status: number; body: Record<string, unknown> };
 };
@@ -33,12 +33,12 @@ it.each(vectors.map((vector) => [vector.name, vector] as const))(
   "vector %s",
   async (_name, vector) => {
     const { status, body } = vector.response;
-    const read = vi.fn<TeacherSubmissions["detail"]>().mockResolvedValue(
+    const read = vi.fn<TeacherSubmissionReader>().mockResolvedValue(
       status === 200
         ? {
             status: "ok",
             body: body as Extract<
-              Awaited<ReturnType<TeacherSubmissions["detail"]>>,
+              Awaited<ReturnType<TeacherSubmissionReader>>,
               { status: "ok" }
             >["body"],
           }
@@ -51,9 +51,9 @@ it.each(vectors.map((vector) => [vector.name, vector] as const))(
       layers: createLayers({ expectedOrigin: ORIGIN }),
       routes: [createTeacherSubmissionDetailRoute(read)],
     });
-    const { assignmentId, submissionId } = vector.request.params;
+    const { assignmentId, studentId } = vector.request.params;
     const response = await fetch(
-      `http://127.0.0.1:${running.port}/api/v1/teacher/assignments/${assignmentId}/submissions/${submissionId}`,
+      `http://127.0.0.1:${running.port}/api/v1/teacher/assignments/${assignmentId}/submissions/${studentId}`,
       { ...(vector.request.headers === undefined ? {} : { headers: vector.request.headers }) },
     );
     expect(response.status).toBe(status);
@@ -63,6 +63,6 @@ it.each(vectors.map((vector) => [vector.name, vector] as const))(
     );
     expect(read).toHaveBeenCalledTimes(status === 401 || status === 403 ? 0 : 1);
     if (status === 200)
-      expect(read).toHaveBeenCalledWith(expect.any(String), assignmentId, submissionId);
+      expect(read).toHaveBeenCalledWith(expect.any(String), assignmentId, studentId);
   },
 );

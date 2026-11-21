@@ -674,10 +674,10 @@ export type Operations = {
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "teacher.submission-detail.get": {
-    params: { "assignmentId": string; "submissionId": string };
+    params: { "assignmentId": string; "studentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "studentId": string; "revision": number; "late": boolean; "submissionId": string; "document": string }; headers: { "cache-control"?: string } };
+    success: { status: 200; body: { "studentId": string; "revision": number; "late": boolean; "document": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "teacher.submission-receipt.get": {
@@ -691,7 +691,7 @@ export type Operations = {
     params: { "assignmentId": string };
     query: undefined;
     body: undefined;
-    success: { status: 200; body: { "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[]; "submittedVersions"?: ({ "studentId": string; "revision": number; "late": boolean; "submissionId": string | null })[] }; headers: {  } };
+    success: { status: 200; body: { "submissions": ({ "studentId": string; "documentId": string | null; "submitted": false; "revision": null; "requestedMinute": null; "afterDeadline": null } | { "studentId": string; "documentId": string | null; "submitted": true; "revision": number; "requestedMinute": string; "afterDeadline": boolean })[] }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
   "teacher.working-criteria.get": {

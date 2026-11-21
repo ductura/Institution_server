@@ -48405,12 +48405,12 @@
         ]
       }
     },
-    "/api/v1/teacher/assignments/{assignmentId}/submissions/{submissionId}": {
+    "/api/v1/teacher/assignments/{assignmentId}/submissions/{studentId}": {
       "get": {
         "operationId": "teacher.submission-detail.get",
-        "summary": "The immutable submitted document identified by a bound submission receipt. The teacher must have access to the work in the named assignment. The opening is recorded in the access log.",
+        "summary": "The immutable submitted document of a student in the named assignment. The teacher must have access to the work. Missing or inaccessible submissions return 404. Opening the submitted document is recorded in the access log.",
         "x-access": "course_teacher",
-        "x-inventory": "app/api/teacher/assignments/[assignmentId]/submissions/[submissionId]/route.ts",
+        "x-inventory": "app/api/teacher/assignments/[assignmentId]/submissions/[studentId]/route.ts",
         "parameters": [
           {
             "name": "assignmentId",
@@ -48422,7 +48422,7 @@
             }
           },
           {
-            "name": "submissionId",
+            "name": "studentId",
             "in": "path",
             "required": true,
             "schema": {
@@ -48450,7 +48450,6 @@
                     "studentId",
                     "revision",
                     "late",
-                    "submissionId",
                     "document"
                   ],
                   "properties": {
@@ -48465,10 +48464,6 @@
                     },
                     "late": {
                       "type": "boolean"
-                    },
-                    "submissionId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                      "type": "string"
                     },
                     "document": {
                       "description": "The exact UTF-8 JSON text of the submitted document.",
@@ -49185,46 +49180,6 @@
                             }
                           }
                         ]
-                      }
-                    },
-                    "submittedVersions": {
-                      "description": "Recorded submissions with their pinned lateness and link to the submitted document when its receipt is bound.",
-                      "type": "array",
-                      "items": {
-                        "additionalProperties": false,
-                        "type": "object",
-                        "required": [
-                          "studentId",
-                          "revision",
-                          "late",
-                          "submissionId"
-                        ],
-                        "properties": {
-                          "studentId": {
-                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                            "type": "string"
-                          },
-                          "revision": {
-                            "minimum": 0,
-                            "maximum": 9007199254740991,
-                            "type": "integer"
-                          },
-                          "late": {
-                            "type": "boolean"
-                          },
-                          "submissionId": {
-                            "description": "The recorded submission ID, or null until the receipt is bound.",
-                            "anyOf": [
-                              {
-                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        }
                       }
                     }
                   }
