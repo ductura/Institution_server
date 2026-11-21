@@ -91,6 +91,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064828009",
   },
+  // SRV-1412 (Plan M2.1 to M2.3): the student starts the own work and reads the own works.
+  "app/api/assignments/[assignmentId]/start/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066995409",
+  },
+  "app/api/student/works/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066995409",
+  },
   // SRV-1414 (Plan M2, D-204): the student's side of mentorship.
   "app/api/student/mentorship-requests/route.ts": {
     methods: ["GET"],

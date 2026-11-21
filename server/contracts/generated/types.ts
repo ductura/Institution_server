@@ -470,6 +470,20 @@ export type Operations = {
     success: { status: 200; body: { "source": { "type": "book" | "chapter" | "article" | null; "title": string; "authors": ({ "name": string; "family"?: string; "given"?: string })[]; "year"?: number; "journal"?: string; "bookTitle"?: string; "publisher"?: string; "place"?: string; "volume"?: string; "issue"?: string; "pages"?: string } | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "forbidden" | "unsupported_media_type" | "invalid_input" | "unavailable" | "timeout";
   };
+  "student-work.start.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "workId": string; "rulesVersion": number | null; "language": "hr" | "en" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "student-work.works.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "works": ({ "workId": string; "assignmentId": string; "assignmentTitle": string; "courseId": string; "courseName": string; "academicYear": string; "dueAt": string; "state": "in_progress" | "submitted"; "revision": number; "submittedAt": string | null; "language": "hr" | "en" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "student.access-log.get": {
     params: { "documentId": string };
     query: { "beforeAt"?: string; "beforeId"?: string; [key: string]: unknown };
