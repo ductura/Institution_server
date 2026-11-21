@@ -43,6 +43,7 @@ import {
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
+  createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -259,6 +260,7 @@ async function main(): Promise<void> {
       ...createMerlinPackageRoutesFor(databases.main),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
       ...createAssistantRoutesFor(databases.main),
+      ...createStatementRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),
       // Provisioning of an institution instance by Aplication_server, server
       // to server (§2): 404 unless DUCTURA_PROVISIONING_TOKEN is set.

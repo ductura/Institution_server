@@ -340,3 +340,4 @@ export {
   type ShutdownCoordinator,
   type ShutdownHook,
 } from "./shutdown.ts";
+export { createStatementRoutesFor } from "./statement/index.ts";
