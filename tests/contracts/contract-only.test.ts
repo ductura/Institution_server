@@ -40,6 +40,7 @@ import {
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
+  createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
@@ -187,6 +188,11 @@ const SRV_1407 = [
   "mentorship.request-approve.post",
   "mentorship.request-decline.post",
   "mentorship.request-withdraw.post",
+];
+const SRV_1408 = [
+  "institution.teaching-team.get",
+  "institution.teaching-team.post",
+  "institution.teaching-group-members.put",
 ];
 const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
@@ -380,6 +386,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_1407,
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createTeachingTeamRoutesFor(databases.main)",
+    ids: SRV_1408,
+    routes: () => createTeachingTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createMentorNotesRoutesFor(databases.main)",
@@ -657,6 +668,7 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
       ...SRV_1407,
+      ...SRV_1408,
       ...SRV_1413,
       "live.document.get",
       "live.document.put",

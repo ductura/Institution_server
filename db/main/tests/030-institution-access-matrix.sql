@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2530);
+SELECT plan(2594);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -116,7 +116,7 @@ SELECT bag_eq(
      WHERE c.relnamespace = 'institution'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm', 'f') $$,
   ARRAY['institution_settings', 'institution_role', 'course', 'course_enrollment_code', 'course_member', 'enrollment_attempt',
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
-        'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
+        'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
@@ -207,6 +207,7 @@ SELECT bag_eq(
     'notification: notification_owner ALL to ductus_identity',
     'course_holder: course_holder_owner ALL to ductus_identity',
     'course_holder: course_holder_read SELECT to ductus_app',
+    'course_assistant: course_assistant_owner ALL to ductus_identity',
     'seminar_group: seminar_group_owner ALL to ductus_identity',
     'seminar_group: seminar_group_read SELECT to ductus_app',
     'seminar_group_teacher: seminar_group_teacher_owner ALL to ductus_identity',
@@ -339,6 +340,11 @@ SELECT bag_eq(
     'actor_group_access(p_course_id uuid)',
     'require_group_manager(p_course_id uuid, p_collaborator boolean, OUT user_id uuid, OUT institution_id uuid)',
     'course_groups(p_course_id uuid) definer app',
+    'read_teaching_team(p_course_id uuid) definer app',
+    'lock_teaching_team(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
+    'check_teaching_member_ids(p_ids uuid[])',
+    'replace_course_assistants(p_course_id uuid, p_assistant_ids uuid[]) definer app',
+    'replace_teaching_group_members(p_course_id uuid, p_group_id uuid, p_assistant_ids uuid[], p_student_ids uuid[]) definer app',
     'can(p_action text, p_document_id text) definer app',
     'actor_group_student(p_course_id uuid, p_student_id uuid)',
     'actor_group_work(p_assignment_id uuid, p_student_id uuid)',
@@ -943,7 +949,7 @@ FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_aut
 CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'course_enrollment_code',
                         'course_member', 'enrollment_attempt', 'assignment', 'assignment_version',
                         'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
-                        'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
+                        'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
@@ -953,7 +959,7 @@ CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

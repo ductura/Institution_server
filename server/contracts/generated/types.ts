@@ -239,6 +239,27 @@ export type Operations = {
     success: { status: 200; body: { "language": "hr" | "en" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "invalid_input" | "unsupported_media_type" | "invalid_json" | "forbidden" | "conflict" | "unavailable";
   };
+  "institution.teaching-group-members.put": {
+    params: { "id": string; "groupId": string };
+    query: undefined;
+    body: { "assistantIds": (string)[]; "studentIds": (string)[] };
+    success: { status: 200; body: { "updated": true }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type" | "conflict";
+  };
+  "institution.teaching-team.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "holderId": string | null; "assistantIds": (string)[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
+  "institution.teaching-team.post": {
+    params: { "id": string };
+    query: undefined;
+    body: { "assistantIds": (string)[] };
+    success: { status: 200; body: { "updated": true }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unsupported_media_type";
+  };
   "institution.work-language.post": {
     params: { "assignmentId": string };
     query: undefined;

@@ -7,6 +7,7 @@ import {
   collaborationRoutes,
   consultationSlotRoutes,
   mentorshipRoutes,
+  teachingTeamRoutes,
   mentorNotesGet,
   mentorNotesPost,
   courseAggregateGet,
@@ -59,6 +60,7 @@ export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 export {
   NotificationId,
@@ -134,6 +136,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...collaborationRoutes,
   ...consultationSlotRoutes,
   ...mentorshipRoutes,
+  ...teachingTeamRoutes,
   mentorNotesGet,
   mentorNotesPost,
   ...assistantRoutes,
