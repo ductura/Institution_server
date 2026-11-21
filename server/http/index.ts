@@ -7,6 +7,7 @@ export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
+export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -101,7 +102,9 @@ export { CHECK_DEADLINE_MS, createHealthRoute, type HealthState } from "./health
 export {
   createInstitutionCourseRoutes,
   createInstitutionCourseRoutesFor,
+  decodeOnce,
   INSTITUTION_BODY_TIMEOUT_MS,
+  readInstitutionJson,
   type InstitutionCourseRouteOptions,
 } from "./institution-courses.ts";
 export {

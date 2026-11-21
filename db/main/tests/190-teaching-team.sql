@@ -10,6 +10,12 @@ INSERT INTO ref VALUES
   ('other_group', pg_temp.ask('marko', $$ SELECT institution.create_seminar_group({k2}, 'Grupa 190 C') $$));
 SELECT is(pg_temp.ask('vesna', $$ SELECT 'ok' FROM institution.set_course_holder({k1}, {vesna}) $$),
   'ok', 'the confirmed course teacher is its holder');
+INSERT INTO institution.course_member (course_id, institution_id, user_id, role)
+VALUES (pg_temp.id('k1'), pg_temp.id('fak_a'), pg_temp.id('marko'), 'teacher');
+SELECT is(pg_temp.ask('marko', $$ SELECT 'ok' FROM institution.replace_course_assistants({k1}, '{}'::uuid[]) $$),
+  'ZD403: forbidden', 'even a full course teacher who is not its holder cannot change the team');
+UPDATE institution.course_member SET member_to = now()
+WHERE course_id = pg_temp.id('k1') AND user_id = pg_temp.id('marko') AND role = 'teacher';
 SELECT is(pg_temp.ask('vesna', $$ SELECT 'ok' FROM institution.replace_course_assistants({k1}, ARRAY[{marko}]::uuid[]) $$),
   'ok', 'the holder can add a confirmed assistant');
 SELECT is(pg_temp.ask('marko', $$ SELECT assistant_ids::text FROM institution.read_teaching_team({k1}) $$),
@@ -25,7 +31,7 @@ SELECT is(pg_temp.ask('iva', $$ SELECT 'ok' FROM institution.replace_course_assi
 SELECT is(pg_temp.ask('ana', $$ SELECT holder_id FROM institution.read_teaching_team({k1}) $$),
   'ZD403: forbidden', 'a student cannot read the roster');
 SELECT is(pg_temp.ask('anon', $$ SELECT holder_id FROM institution.read_teaching_team({k1}) $$),
-  'ZD401: unauthorized', 'the roster requires a live session');
+  'ZD401: not authenticated', 'the roster requires a live session');
 SELECT is(pg_temp.ask('vesna', $$ SELECT 'ok' FROM institution.replace_course_assistants({k1}, ARRAY[{petra}]::uuid[]) $$),
   'ZD422: invalid input', 'a teacher from another institution cannot join the team');
 SELECT is(pg_temp.ask('vesna', $$ SELECT 'ok' FROM institution.replace_course_assistants({k1}, ARRAY[{vesna}]::uuid[]) $$),
