@@ -257,6 +257,15 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT submitted::text FROM app.assignment_sub
 SELECT is(pg_temp.history('vesna', 'app.teacher_submission_history({z1}, {ana})'),
   'submission:1:1:true withdrawal:1:1:false', 'Vesna sees the submission and the withdrawal');
 
+-- While its receipt is not bound, no new attempt starts: the retry of the
+-- withdrawal must still reach and sign it (Codex review on #561).
+SELECT is(pg_temp.ask('ana', $$ SELECT outcome FROM app.request_submission('doc-a', 1) $$), 'withdrawal_unsigned',
+  'a new request waits for the withdrawal''s receipt');
+SELECT is((SELECT count(*)::integer FROM evidence.submission_request), 1, 'and writes nothing');
+SELECT is(pg_temp.ask('ana', $$ SELECT concat_ws(' ', outcome, withdrawal_id = {w1}, signature IS NULL)
+  FROM app.withdraw_submission({z1}::uuid, 'key-a', '1') $$), 'existing t t',
+  'the retry of the withdrawal still finds the unsigned one');
+
 -- 7. The withdrawal receipt is bound once, as a submission receipt.
 CREATE FUNCTION pg_temp.attach(p_actor text, p_signature jsonb, p_digest text DEFAULT NULL) RETURNS text
 LANGUAGE sql AS $$

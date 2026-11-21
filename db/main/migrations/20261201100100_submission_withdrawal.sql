@@ -552,7 +552,8 @@ $$;
 
 -- 4. A new attempt after a withdrawal. As 20261121107000 otherwise: the
 -- latest request of the caller is "existing" while it is live; once its
--- submission is withdrawn, the click makes the next attempt.
+-- submission is withdrawn and the withdrawal's receipt bound, the click makes
+-- the next attempt (withdrawal_unsigned until then).
 CREATE OR REPLACE FUNCTION app.request_submission(p_document_id text, p_revision bigint)
 RETURNS TABLE(outcome text, submission_request_id uuid, requested_at timestamptz, revision bigint,
               assignment_version integer)
@@ -620,6 +621,17 @@ BEGIN
   IF FOUND AND evidence.request_live(v_existing.id, v_existing.institution_id) THEN
     RETURN QUERY SELECT 'existing'::text, v_existing.id, v_existing.requested_at, v_existing.revision,
       v_existing.assignment_version;
+    RETURN;
+  END IF;
+  -- A withdrawal whose receipt is not bound yet keeps the next attempt closed:
+  -- withdraw_submission reaches only the latest attempt, so its retry must
+  -- still find that withdrawal and sign it. The web process answers 503.
+  IF FOUND AND EXISTS (
+       SELECT 1 FROM evidence.submission x
+         JOIN evidence.submission_withdrawal w ON w.submission_id = x.id
+        WHERE x.submission_request_id = v_existing.id AND x.institution_id = v_existing.institution_id
+          AND NOT EXISTS (SELECT 1 FROM evidence.submission_withdrawal_receipt b WHERE b.withdrawal_id = w.id)) THEN
+    RETURN QUERY SELECT 'withdrawal_unsigned'::text, NULL::uuid, NULL::timestamptz, NULL::bigint, NULL::integer;
     RETURN;
   END IF;
   v_attempt := coalesce(v_existing.attempt, 0) + 1;
