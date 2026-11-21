@@ -3187,8 +3187,8 @@
         "started": 10,
         "submitted": 5,
         "stages": {
-          "not_started": 5,
-          "in_progress": 5,
+          "notStarted": 5,
+          "inProgress": 5,
           "submitted": 5
         }
       }

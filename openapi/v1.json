@@ -5937,16 +5937,16 @@
                           "additionalProperties": false,
                           "type": "object",
                           "required": [
-                            "not_started",
-                            "in_progress",
+                            "notStarted",
+                            "inProgress",
                             "submitted"
                           ],
                           "properties": {
-                            "not_started": {
+                            "notStarted": {
                               "minimum": 0,
                               "type": "integer"
                             },
-                            "in_progress": {
+                            "inProgress": {
                               "minimum": 0,
                               "type": "integer"
                             },

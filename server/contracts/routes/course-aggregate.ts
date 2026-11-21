@@ -15,7 +15,7 @@ const CourseAggregate = Type.Union([
     status: Type.Literal("available"),
     started: Count,
     submitted: Count,
-    stages: closed({ not_started: Count, in_progress: Count, submitted: Count }),
+    stages: closed({ notStarted: Count, inProgress: Count, submitted: Count }),
   }),
 ]);
 export type CourseAggregate = Static<typeof CourseAggregate>;

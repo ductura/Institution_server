@@ -1,5 +1,3 @@
-import type { CourseAggregate } from "../../contracts/index.ts";
-
 import type { WithActor } from "../index.ts";
 
 // Use one snapshot for the actor, roster and work. The existing readers share
@@ -54,15 +52,16 @@ type Row = {
   inProgress: unknown;
   submitted: unknown;
 };
+type Result =
+  | { status: "unauthenticated" | "not_found" | "suppressed" }
+  | { status: "available"; notStarted: number; inProgress: number; submitted: number };
+
 const isCount = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 const MIN_STUDENTS = 5;
 
 export function createCourseAggregateReader(withActor: WithActor) {
-  return async (
-    token: string,
-    id: string,
-  ): Promise<CourseAggregate | { status: "unauthenticated" | "not_found" }> => {
+  return async (token: string, id: string): Promise<Result> => {
     const { rows } = await withActor(token, (tx) => tx.query<Row>(SQL, [id]));
     if (rows.length !== 1) throw new Error("course aggregate: expected one row");
     const { status, covered, notStarted, inProgress, submitted } = rows[0]!;
@@ -76,22 +75,16 @@ export function createCourseAggregateReader(withActor: WithActor) {
     ) {
       throw new Error("course aggregate: invalid row");
     }
-    const started = inProgress + submitted;
     const partition = [notStarted, inProgress, submitted];
     // Every nonempty difference between the published counts is a union of
     // whole stages. Hide the entire partition if even one stage is too small.
     if (
       !covered ||
-      notStarted + started < MIN_STUDENTS ||
+      notStarted + inProgress + submitted < MIN_STUDENTS ||
       partition.some((count) => count > 0 && count < MIN_STUDENTS)
     ) {
       return { status: "suppressed" };
     }
-    return {
-      status: "available",
-      started,
-      submitted,
-      stages: { not_started: notStarted, in_progress: inProgress, submitted },
-    };
+    return { status: "available", notStarted, inProgress, submitted };
   };
 }

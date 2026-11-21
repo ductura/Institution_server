@@ -82,7 +82,7 @@ export type Operations = {
     params: { "id": string };
     query: { [key: string]: unknown };
     body: undefined;
-    success: { status: 200; body: { "status": "suppressed" } | { "status": "available"; "started": number; "submitted": number; "stages": { "not_started": number; "in_progress": number; "submitted": number } }; headers: {  } };
+    success: { status: 200; body: { "status": "suppressed" } | { "status": "available"; "started": number; "submitted": number; "stages": { "notStarted": number; "inProgress": number; "submitted": number } }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "invalid_input" | "unavailable";
   };
   "downloads.manifest.get": {

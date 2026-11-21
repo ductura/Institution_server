@@ -4,6 +4,7 @@ import {
   CourseAggregateParams,
   courseAggregateGet,
   workIdFromPath,
+  type CourseAggregate,
 } from "../../contracts/index.ts";
 import { createCourseAggregateReader, type WithActor } from "../../database/index.ts";
 import { liveSessionTokenFromCookie } from "../../session/index.ts";
@@ -34,7 +35,20 @@ export function createCourseAggregateRouteFor({ withActor }: { withActor: WithAc
         const result = await read(token, input.id.toLowerCase());
         if (result.status === "unauthenticated") return sendProblem(response, 401, "unauthorized");
         if (result.status === "not_found") return sendProblem(response, 404, "not_found");
-        sendJson(response, 200, result);
+        const body: CourseAggregate =
+          result.status === "available"
+            ? {
+                status: "available",
+                started: result.inProgress + result.submitted,
+                submitted: result.submitted,
+                stages: {
+                  notStarted: result.notStarted,
+                  inProgress: result.inProgress,
+                  submitted: result.submitted,
+                },
+              }
+            : { status: "suppressed" };
+        sendJson(response, 200, body);
       } catch (error) {
         reportServerError("route", error, requestIdOf(response), courseAggregateGet.id);
         sendProblem(response, 503, "unavailable");

@@ -62,9 +62,9 @@ it("uses the active course roster and work scopes in Postgres", async () => {
     `);
     await expect(as("A")).resolves.toEqual({
       status: "available",
-      started: 0,
+      notStarted: 5,
+      inProgress: 0,
       submitted: 0,
-      stages: { not_started: 5, in_progress: 0, submitted: 0 },
     });
     await db.exec(`
       SELECT pg_temp.ask('vesna', $$ SELECT institution.set_course_holder({k1}, {vesna}) $$);

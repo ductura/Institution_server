@@ -72,7 +72,7 @@ it.each([
             status: "available",
             started: inProgress + submitted,
             submitted,
-            stages: { not_started: notStarted, in_progress: inProgress, submitted },
+            stages: { notStarted, inProgress, submitted },
           },
     );
     expect(query).toHaveBeenCalledExactlyOnceWith(TOKEN, expect.any(String), [ID]);

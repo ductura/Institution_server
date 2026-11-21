@@ -136,7 +136,7 @@ export const TEACHER_HANDLERS: Handlers = {
     const assignments = new Set(
       state.assignments.filter((a) => a.courseId === course.id).map((a) => a.id),
     );
-    const stages = { not_started: 0, in_progress: 0, submitted: 0 };
+    const stages = { notStarted: 0, inProgress: 0, submitted: 0 };
     for (const studentId of new Set(course.studentIds)) {
       const works = state.works.filter(
         (work) => work.studentId === studentId && assignments.has(work.assignmentId),
@@ -144,13 +144,13 @@ export const TEACHER_HANDLERS: Handlers = {
       const stage = works.some((work) => work.state === "submitted")
         ? "submitted"
         : works.length > 0
-          ? "in_progress"
-          : "not_started";
+          ? "inProgress"
+          : "notStarted";
       stages[stage]++;
     }
-    const started = stages.in_progress + stages.submitted;
+    const started = stages.inProgress + stages.submitted;
     if (
-      stages.not_started + started < 5 ||
+      stages.notStarted + started < 5 ||
       Object.values(stages).some((count) => count > 0 && count < 5)
     ) {
       return { status: 200, body: { status: "suppressed" } };
