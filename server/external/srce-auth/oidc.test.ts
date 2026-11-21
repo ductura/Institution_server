@@ -508,3 +508,30 @@ describe("endSessionUrl", () => {
     await refused(oidc.endSessionUrl(), true);
   });
 });
+
+// Direct tests of the two discovery-backed readers the logout verifier uses.
+describe("discoveredIssuer and jwks", () => {
+  const withJwks = (client: OidcClient) =>
+    client as OidcClient & {
+      discoveredIssuer(): Promise<string>;
+      jwks(): Promise<unknown[]>;
+    };
+
+  it("discoveredIssuer is the issuer string the provider published", async () => {
+    expect(await withJwks(oidc).discoveredIssuer()).toBe(ISSUER);
+  });
+
+  it("jwks returns the provider key set from the discovered jwks_uri", async () => {
+    const keys = await withJwks(oidc).jwks();
+    expect(Array.isArray(keys)).toBe(true);
+    expect(keys.length).toBeGreaterThan(0);
+    expect(idp.requests).toContain("/jwks");
+  });
+
+  it("jwks rejects when the provider is down", async () => {
+    const client = withJwks(oidc);
+    await client.discoveredIssuer();
+    idp.state.next = { down: true };
+    await expect(client.jwks()).rejects.toBeInstanceOf(Error);
+  });
+});

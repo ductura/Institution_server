@@ -1,6 +1,6 @@
 // SRV-1205 (Val 12 / M9.0-S2, Ductus#2052): the worker's listing of the
 // assistant requests due for the sweep, step 5 of Ductus
-// docs/contracts/ai-request-v1.md (migration 20261122120000). The worker reads
+// docs/contracts/ai-request-v1.md (migration 20261130120500). The worker reads
 // no request row directly; assistant.sweep_due gives it the ids, oldest first,
 // and nothing else, so a job can carry only the id (M10). Which rows are due
 // is the database's: the deadlines are its named constants

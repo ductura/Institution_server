@@ -121,6 +121,8 @@ SELECT bag_eq(
             ('app.student_workspace()'),
             -- SRV-9B (✓ C-6): the public check of a receipt, with or without a session.
             ('app.public_receipt_verification(uuid,text)'),
+            ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
+            ('declaration.upload_attachment(uuid,text,bytea)'),
             -- SRV-1503: the owning student's read of the own reconstruction checkpoint.
             ('app.read_own_reconstruction_checkpoint(text,bigint)') $$,
   'the web role executes exactly the expected evidence RPCs');

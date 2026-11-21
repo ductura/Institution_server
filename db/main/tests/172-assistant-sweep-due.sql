@@ -1,5 +1,5 @@
 -- SRV-1205 (Val 12 / M9.0-S2, Ductus#2052): the worker's listing of the
--- requests the sweep would change now (migration 20261122120000), step 5 of
+-- requests the sweep would change now (migration 20261130120500), step 5 of
 -- Ductus docs/contracts/ai-request-v1.md ("Stanja"; "Matrica pristupa": the
 -- worker reads the state and ids of a request, through an RPC, nothing else).
 --   1. the catalogue: a STABLE SECURITY DEFINER of the owner role with an empty
