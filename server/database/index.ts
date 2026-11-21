@@ -147,6 +147,15 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+// SRV-1403: the caller's own staff affiliation (identity.my_staff_affiliation).
+export {
+  createMyStaffAffiliationReader,
+  STAFF_AFFILIATION_MISSING_CODE,
+  STAFF_AFFILIATION_SOURCE_NAMES,
+  type MyStaffAffiliation,
+  type MyStaffAffiliationReader,
+  type MyStaffAffiliationResult,
+} from "./staff-affiliation.ts";
 export {
   createSchemaReadinessReader,
   MIGRATION_LOCK_KEY,
@@ -280,6 +289,7 @@ export {
   type WorkSourceSave,
   type WorkSources,
 } from "./work-sources/index.ts";
+export { createSourceNotebook, type SourceNoteFields } from "./source-notebook/index.ts";
 export {
   createSourceProofs,
   isSourceProofJpeg,
@@ -309,6 +319,12 @@ export {
   type DeadlineExtensionList,
   type DeadlineExtensions,
 } from "./deadline-extensions/index.ts";
+export {
+  createAssignmentCopy,
+  type AssignmentCopy,
+  type AssignmentCopyInput,
+  type AssignmentCopyResult,
+} from "./assignment-copy/index.ts";
 export {
   createSubmittedWorksReader,
   type SubmittedWorkSource,
@@ -596,6 +612,7 @@ export {
   ASSISTANT_REQUEST_STATES,
   createAssistantRequests,
   sweepAndSettle,
+  type AssistantFailReason,
   type AssistantMessage,
   type AssistantRefusal,
   type AssistantRejectReason,
@@ -606,6 +623,8 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+export * from "./assistant-tools/index.ts";
+export { SWEEP_DUE_MAX, sweepDue, type SweepDue } from "./assistant/index.ts";
 
 export {
   checkExternalAttachmentBytes,
@@ -628,5 +647,15 @@ export {
   type DirectEditState,
   type TeacherEditOutcome,
 } from "./direct-edit/index.ts";
+export {
+  createImports,
+  type ImportConfirmed,
+  type ImportConfirmRejection,
+  type ImportGate,
+  type ImportPrepared,
+  type ImportRefusal,
+  type Imports,
+  type PrepareImportInput,
+} from "./import/index.ts";
 export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";

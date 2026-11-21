@@ -27,6 +27,7 @@ import {
   createInstitutionCourseRoutesFor,
   createInternalInstitutionRoutes,
   createMeRouteFor,
+  createStaffAffiliationRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
@@ -38,12 +39,14 @@ import {
   createTeacherWorkingCriteriaRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
+  createSourceNotebookRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createSourceLookupRouteFor,
@@ -54,6 +57,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createAssignmentCopyRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -67,12 +71,14 @@ import {
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
+  createImportRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
@@ -91,6 +97,7 @@ import {
   createShutdownCoordinator,
   createHealthRoute,
   createReadyRoute,
+  createStatusRouteFor,
   installShutdown,
   logStartupFailed,
   logStartupRefused,
@@ -180,7 +187,9 @@ async function main(): Promise<void> {
   const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
   const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
+  const checkReadiness = readinessCheckFor(databases.main, evidenceDeps);
   const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
+  const draining = () => shutdown.state() !== "running";
   const options = {
     host,
     port,
@@ -193,10 +202,8 @@ async function main(): Promise<void> {
       // Readiness (SRV-1812, M11.3): 503 until the main database answers and
       // its migrations are done; storage and signing are reported. Draining
       // answers 503 too, so a balancer stops sending before the listener closes.
-      createReadyRoute({
-        check: readinessCheckFor(databases.main, evidenceDeps),
-        draining: () => shutdown.state() !== "running",
-      }),
+      createReadyRoute({ check: checkReadiness, draining }),
+      createStatusRouteFor(databases.main, checkReadiness, draining),
       // The preloader's environment (S-1M-b, D-300); no log writer is wired
       // into the process yet, so it is checked and answered, not recorded.
       createClientContextRoute(),
@@ -204,6 +211,7 @@ async function main(): Promise<void> {
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
+      ...createSourceNotebookRoutesFor(databases.main),
       ...createSourceProofRoutesFor(databases.main),
       createTextCheckConfigRoute(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
@@ -220,6 +228,7 @@ async function main(): Promise<void> {
       ...createInterfaceLocaleRoutesFor(databases.main),
       // The problem report (S-M-2, DAN-851): POST over the support service.
       createProblemReportRouteFor(databases.main),
+      createProblemReportsRouteFor(databases.main),
       // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
       ...createInstitutionCourseRoutesFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
@@ -241,6 +250,8 @@ async function main(): Promise<void> {
       ...createCommentRoutesFor(databases.main, evidenceDeps),
       // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
       ...createDirectEditRoutesFor(databases.main),
+      // SRV-1803: a DOCX import into a work and its idempotent confirmation.
+      ...createImportRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
@@ -265,6 +276,7 @@ async function main(): Promise<void> {
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
       ...createMentorshipRequestRoutesFor(databases.main),
+      ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
@@ -290,6 +302,8 @@ async function main(): Promise<void> {
       ...createStudentWriteRoutesFor(databases.main),
       // The signed-in account for the front of the institution (Ductus#2028 c.6993786629 §3.3).
       createMeRouteFor(databases.main),
+      // SRV-1403: the caller's own staff affiliation, or staff_affiliation_missing.
+      createStaffAffiliationRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
@@ -298,6 +312,8 @@ async function main(): Promise<void> {
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
       createStudentDeadlineHistoryRouteFor(databases.main),
+      // SRV-1904 (P-D4): the teacher copies an assignment into a course they teach.
+      createAssignmentCopyRouteFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
       ...createMerlinRosterRoutesFor(databases.main).map((route) =>
         excludePracticeAssignment(route, databases.main),

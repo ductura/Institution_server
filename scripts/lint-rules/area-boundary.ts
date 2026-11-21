@@ -25,6 +25,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   "external/keys": ["settings", "log", "metrics", "domain"],
   "external/email": ["settings", "log", "metrics"],
   "external/assistant": ["domain"],
+  "external/assistant-tools": ["domain"],
   traffic: ["settings", "log", "metrics"],
   session: ["settings", "log", "metrics", "domain", "database", "external/srce-auth"],
   roles: ["settings", "log", "metrics", "domain", "contracts", "database"],
@@ -44,8 +45,10 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   support: ["settings", "log", "metrics", "domain", "database"],
   "source-lookup": [],
   "public-verification": ["domain", "database"],
+  assistant: ["domain", "database"],
   worker: ["log", "database", "evidence", "external/storage"],
   identity: ["domain"],
+  import: ["domain", "contracts"],
   http: [
     ...["settings", "log", "metrics", "contracts", "traffic", "session", "roles", "legal"],
     ...[
@@ -62,7 +65,9 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
     ],
     ...["external/srce-auth", "external/storage", "external/keys", "external/email"],
     "external/assistant",
+    "external/assistant-tools",
     "identity",
+    "import",
   ],
   "test-server": ["http", "settings"],
   tests: ["domain", "downloads"],

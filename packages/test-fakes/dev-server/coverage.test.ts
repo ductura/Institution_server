@@ -1,4 +1,8 @@
+import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
+
+import { IMPORT_READ_LIMITS } from "../../../server/contracts/index.ts";
+import { prepareDocxImport } from "../../../server/import/index.ts";
 
 import { ROUTE_TABLE } from "../fake-server/index.ts";
 import { errorCodes, type RouteId } from "./contract.ts";
@@ -10,6 +14,7 @@ import {
   type AccountKey,
   type State,
 } from "./index.ts";
+import { fakeImportIds } from "./import-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
@@ -17,7 +22,11 @@ import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./te
 // a scenario here fails this file.
 
 type Step = Sent & { readonly path: string; readonly as?: AccountKey };
-type Scenario = { readonly before?: readonly Step[]; readonly request: Step };
+type Scenario = {
+  readonly before?: readonly Step[];
+  readonly prepare?: (state: State) => void;
+  readonly request: Step;
+};
 
 const ORIGIN = { origin: "http://127.0.0.1:4010", "sec-fetch-site": "same-origin" };
 const EVIDENCE = { ...ORIGIN, "ductus-protocol": "1" };
@@ -104,6 +113,41 @@ const VERSION = {
   wordMax: 2500,
 };
 const A = `/api/v1/institution/assignments/${IDS.assignment}`;
+// SRV-1803: an invented DOCX, its import into the demo work and the preview's hash.
+const DOCX_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+const DOCX_BASE64 = Buffer.from(
+  zipSync({
+    "[Content_Types].xml": strToU8(
+      `${DOCX_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`,
+    ),
+    "_rels/.rels": strToU8(
+      `${DOCX_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`,
+    ),
+    "word/document.xml": strToU8(
+      `${DOCX_HEAD}<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Izmišljeni uvezeni odlomak.</w:t></w:r></w:p></w:body></w:document>`,
+    ),
+  }),
+).toString("base64");
+const IMPORTS = `/api/v1/works/${IDS.document}/imports`;
+const POST_IMPORT: Step = {
+  path: IMPORTS,
+  as: "student",
+  headers: ORIGIN,
+  body: { fileBase64: DOCX_BASE64, fileName: "Seminar.docx" },
+};
+const FIRST_IMPORT = (() => {
+  const ids = fakeImportIds(1);
+  const prepared = prepareDocxImport({
+    bytes: new Uint8Array(Buffer.from(DOCX_BASE64, "base64")),
+    documentId: IDS.document,
+    fileName: "Seminar.docx",
+    limits: IMPORT_READ_LIMITS,
+    importId: ids.importId,
+    uuid: ids.uuid,
+  });
+  if (!prepared.ok) throw new Error("the invented DOCX must read");
+  return { importId: ids.importId, manifestSha256: prepared.preview.manifestSha256 };
+})();
 const C = `/api/v1/institution/courses/${IDS.course}`;
 const TEAM = `/api/v1/courses/${IDS.course}/team`;
 const SET_TEAM: Step = {
@@ -143,6 +187,20 @@ const SAVE_SOURCE: Step = {
   method: "PUT",
   headers: ORIGIN,
   body: { record: WORK_SOURCE },
+};
+const SOURCE_NOTES = `/api/v1/works/${IDS.document}/sources/${WORK_SOURCE.id}/notes`;
+const NOTE_ID = "00000000-0000-4000-8000-00000000b001";
+const ADD_NOTE: Step = {
+  path: SOURCE_NOTES,
+  as: "student",
+  method: "POST",
+  headers: ORIGIN,
+  body: { note: "Izmišljena bilješka." },
+};
+const seedNote = (state: State) => {
+  state.sourceNotes.set(`${IDS.assignment}:${IDS.student}:${WORK_SOURCE.id}`, [
+    { id: NOTE_ID, quote: null, page: null, note: "Izmišljena bilješka." },
+  ]);
 };
 
 // SRV-1102: an invented JPEG excerpt in a multipart form.
@@ -223,6 +281,9 @@ const MENTORSHIP_REQUEST = `${MENTORSHIP_REQUESTS}/b1400000-0000-4000-8000-00000
 
 const SCENARIOS: Record<RouteId, Scenario> = {
   "mentorship.requests.post": { request: REQUEST_MENTORSHIP },
+  "mentorship.key-dates.get": {
+    request: { path: `/api/v1/mentorships/${IDS.mentorship}/key-dates`, as: "student" },
+  },
   "mentorship.notes.get": { request: { path: MENTOR_NOTES, as: "nastavnik" } },
   "mentorship.notes.post": {
     request: {
@@ -558,6 +619,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: { path: "/api/v1/profile/interface-locale", as: "student", body: { locale: "en" } },
   },
   "profile.me.get": { request: { path: "/api/v1/me", as: "administrator" } },
+  "profile.staff-affiliation.get": {
+    request: { path: "/api/v1/me/staff-affiliation", as: "nastavnik" },
+  },
   "projection.process-summary.post": {
     request: {
       path: "/api/v1/process-summary",
@@ -652,6 +716,26 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "student.work-sources.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/sources`, as: "student" },
   },
+  "work.source-notes.get": {
+    before: [SAVE_SOURCE, ADD_NOTE],
+    request: { path: SOURCE_NOTES, as: "student", method: "GET" },
+  },
+  "work.source-notes.post": { before: [SAVE_SOURCE], request: ADD_NOTE },
+  "work.source-notes.patch": {
+    before: [SAVE_SOURCE],
+    prepare: seedNote,
+    request: { ...ADD_NOTE, method: "PATCH", body: { noteId: NOTE_ID, page: "12–14" } },
+  },
+  "work.source-notes.delete": {
+    before: [SAVE_SOURCE],
+    prepare: seedNote,
+    request: {
+      path: `${SOURCE_NOTES}?noteId=${NOTE_ID}`,
+      as: "student",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
   "student.work-sources.put": { request: SAVE_SOURCE },
   "student.work-sources.delete": {
     before: [SAVE_SOURCE],
@@ -668,6 +752,17 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "support.problem-report.post": {
     request: { path: "/api/v1/support/problem-report", as: "student", body: REPORT },
+  },
+  "support.problem-reports.post": {
+    request: {
+      path: "/api/v1/problem-reports",
+      as: "student",
+      body: {
+        appVersion: REPORT.appVersion,
+        category: REPORT.category,
+        description: REPORT.description,
+      },
+    },
   },
   "teacher.access.get": { request: { path: "/api/v1/teacher/access", as: "nastavnik" } },
   "work.milestones.get": {
@@ -755,6 +850,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/works/${IDS.document}/direct-edit`,
       as: "student",
       body: { mode: "direct" },
+    },
+  },
+  "work.imports.post": { request: POST_IMPORT },
+  "work.imports.confirm.post": {
+    before: [POST_IMPORT],
+    request: {
+      path: `${IMPORTS}/${FIRST_IMPORT.importId}/confirm`,
+      as: "student",
+      headers: ORIGIN,
+      body: FIRST_IMPORT,
     },
   },
   "work.messages.post": {
@@ -910,6 +1015,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       body: { scope: "all", dueAt: "2030-01-01T12:00:00.000Z", reasonId: "all" },
     },
   },
+  "teacher.assignment-copy.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/copy`,
+      as: "nastavnik",
+      body: { requestKey: "00000000-0000-4000-8000-000000190401", courseId: IDS.course },
+    },
+  },
   "teacher.merlin-roster.get": {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/roster`,
@@ -1036,6 +1148,7 @@ describe("dev fake server covers the whole contract", () => {
     const scenario = SCENARIOS[route];
     for (const step of scenario.before ?? [])
       expect((await run(state, step)).status).toBeLessThan(300);
+    scenario.prepare?.(state);
     const answer = await run(state, scenario.request);
     expect(answer.status, answer.body).not.toBe(501);
     expect(answer.status, answer.body).toBeLessThan(400);

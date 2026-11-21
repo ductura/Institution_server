@@ -6,7 +6,34 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2593);
+SELECT plan(2723);
+
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
+    AND has_table_privilege('ductus_app', c.oid, 'SELECT')
+    AND has_table_privilege('ductus_problem_report_reader', c.oid, 'SELECT')
+    AND NOT has_database_privilege('ductus_problem_report_reader', current_database(), 'CONNECT')
+    AND NOT has_table_privilege('public', c.oid, 'SELECT')
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin
+        AND r.rolname NOT IN ('ductus_identity', 'ductus_app', 'ductus_problem_report_reader')
+        AND has_any_column_privilege(r.oid, c.oid, 'SELECT'))
+    AND NOT has_table_privilege('ductus_app', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE')
+    AND NOT has_table_privilege('ductus_problem_report_reader', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE'),
+  'problem reports have forced RLS and only app and operations read grants outside the owner')
+  FROM pg_class c WHERE c.oid = 'identity.problem_report'::regclass;
+
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole,
+  'maintenance_window has forced RLS and the operations owner')
+  FROM pg_class c WHERE c.oid = 'identity.maintenance_window'::regclass;
+SELECT results_eq($$ SELECT policyname::text COLLATE "default", cmd::text, roles = ARRAY['ductus_identity'::name]
+  FROM pg_policies WHERE schemaname = 'identity' AND tablename = 'maintenance_window' ORDER BY policyname $$,
+  $$ VALUES ('maintenance_read'::text, 'SELECT'::text, true), ('maintenance_record', 'INSERT', true) $$,
+  'maintenance_window lets the operator read and append');
+SELECT bag_eq($$ SELECT r.rolname::text FROM pg_roles r
+  WHERE r.rolname LIKE 'ductus\_%' AND NOT r.rolcanlogin
+    AND has_function_privilege(r.oid, 'identity.public_maintenance_windows()', 'EXECUTE')
+  UNION ALL SELECT 'public' WHERE has_function_privilege('public', 'identity.public_maintenance_windows()', 'EXECUTE') $$,
+  ARRAY['ductus_identity', 'ductus_app'], 'only the app and owner execute the maintenance projection');
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -33,6 +60,45 @@ SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   f.signature || ': private to the evidence owner')
   FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
                ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)')) f(signature)
+  LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+-- SRV-1207, ai-tools-v1 "Matrica pristupa": the tool setting, the steps, the
+-- loop reservation and the setting trail are reached only by their owner; the
+-- application only through the definer RPCs, the worker and PUBLIC not at all.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+    AND NOT has_table_privilege('ductus_worker', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+    AND NOT has_table_privilege('public', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+    AND ARRAY(SELECT p.policyname::text FROM pg_policies p
+      WHERE p.schemaname = t.nsp AND p.tablename = c.relname
+        AND p.roles = ARRAY['ductus_identity'::name] AND p.cmd = 'ALL') = ARRAY[t.policy]
+    AND (SELECT count(*) FROM pg_policies p WHERE p.schemaname = t.nsp AND p.tablename = c.relname) = 1,
+  t.nsp || '.' || t.rel || ': forced RLS and only the identity owner has access')
+  FROM (VALUES ('assistant', 'assignment_tool_setting', 'assignment_tool_setting_owner'),
+               ('assistant', 'tool_step', 'tool_step_owner'),
+               ('assistant', 'tool_loop_reservation', 'tool_loop_reservation_owner'),
+               ('audit', 'assistant_tool_setting_event', 'assistant_tool_setting_event_owner')) t(nsp, rel, policy)
+  LEFT JOIN pg_class c ON c.oid = to_regclass(t.nsp || '.' || t.rel);
+SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig) AND p.proowner = 'ductus_identity'::regrole
+    AND has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
+  f.signature || ': definer RPC with an empty path, only for the application')
+  FROM (VALUES ('assistant.begin_request(uuid,uuid,uuid,integer,text,text,text,text,text,text[])'),
+               ('assistant.set_assignment_tools(uuid,integer,text[])'),
+               ('assistant.read_assignment_tools(uuid)'),
+               ('assistant.begin_tool_step(uuid,integer,text,text,text,boolean,text[])'),
+               ('assistant.finish_tool_step(uuid,integer,text,text,integer,boolean)')) f(signature)
+  LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+SELECT ok('search_path=""' = ANY(p.proconfig)
+    AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
+  f.signature || ': private to the identity owner')
+  FROM (VALUES ('assistant.code_tools()'), ('assistant.tool_step_max()'), ('assistant.is_tool_list(text[])'),
+               ('assistant.intersect_tools(text[],text[])'), ('assistant.latest_tools(uuid)'),
+               ('assistant.allowed_tools_now(assistant.request,text[])'),
+               ('assistant.guard_tool_step_change()'), ('assistant.guard_tool_setting_version()'),
+               ('assistant.check_tool_setting_event()'), ('assistant.check_tool_setting_has_event()')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
@@ -105,7 +171,7 @@ SELECT bag_eq(
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
         'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
-        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
+        'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
         'work_milestone_deadline', 'mentor_note'],
   'the institution schema holds exactly the tables of this matrix'
@@ -218,6 +284,7 @@ SELECT bag_eq(
     'notice_read: notice_read_owner ALL to ductus_identity',
     'notice_read: notice_read_read SELECT to ductus_app',
     'work_source: work_source_owner ALL to ductus_identity',
+    'source_note: source_note_owner ALL to ductus_identity',
     'work_attachment: work_attachment_owner ALL to ductus_identity',
     'source_proof: source_proof_owner ALL to ductus_identity',
     'deadline_extension: deadline_extension_owner ALL to ductus_identity',
@@ -385,6 +452,7 @@ SELECT bag_eq(
     'student_assignments() definer app',
     'admin_create_course(p_name text, p_academic_year text, p_ai_policy text, p_holder_id uuid) definer app',
     'work_source_record_valid(p_id uuid, p_record jsonb)',
+    'source_notes(p_document_id text, p_source_id uuid, p_method text, p_note_id uuid, p_fields jsonb) definer app',
     'work_source_access(p_assignment_id uuid, p_student_id uuid)',
     'save_work_source(p_assignment_id uuid, p_record jsonb, p_doi text, p_isbn text, p_undated boolean) definer app',
     'delete_work_source(p_assignment_id uuid, p_source_id uuid) definer app',
@@ -404,6 +472,7 @@ SELECT bag_eq(
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
     'deadline_extensions(p_assignment_id uuid) definer app',
     'student_deadline_history(p_assignment_id uuid) definer app',
+    'copy_assignment(p_assignment_id uuid, p_course_id uuid, p_request_id uuid, p_opens_at timestamp with time zone, p_due_at timestamp with time zone) definer app',
       'list_notifications(p_before uuid, p_reminder_seconds integer) definer app',
       'read_notification(p_id uuid) definer app',
     'guard_merlin_package()',
@@ -896,6 +965,20 @@ FROM (VALUES
   ('anon', 'ZD401:')
 ) AS c (actor, result);
 
+-- 1k. SRV-1904 (P-D4): copying an assignment only through
+-- institution.copy_assignment, which needs the caller to teach the source and
+-- the target course. One cell per actor copying Z1 into K1; Vesna's opening
+-- after the deadline passes the relation check and stops at the input, so the
+-- matrix writes no assignment. The copy itself is in 206-assignment-copy.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT institution.copy_assignment({z1}, {k1}, gen_random_uuid(), now() + interval '2 days', now() + interval '1 day') $$), 1, 5),
+  c.result, format('SRV-1904: %s copies Z1 into K1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'ZD422'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('boris', 'ZD403'), ('nina', 'ZD403'), ('tomo', 'ZD403'), ('lea', 'ZD403'), ('petra', 'ZD403'),
+  ('anon', 'ZD401')
+) AS c (actor, result);
+
 -- SRV-1103: actor-level cases are in 161-work-milestone-access.sql.
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
@@ -945,14 +1028,14 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
-                        'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
+                        'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
                         'work_milestone_deadline', 'mentor_note']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

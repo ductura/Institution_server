@@ -67,6 +67,10 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  "app/api/problem-reports/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064518328",
+  },
   "app/api/teacher/assignments/[assignmentId]/grade/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064534090",
@@ -82,6 +86,10 @@ export const SERVER_SOURCES: Readonly<
   "app/api/mentorships/[id]/notes/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064009405",
+  },
+  "app/api/mentorships/[id]/key-dates/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064828009",
   },
   // SRV-1407 (Plan M2, D-204): the moves of one mentorship request.
   "app/api/mentorship-requests/route.ts": {
@@ -99,6 +107,10 @@ export const SERVER_SOURCES: Readonly<
   "app/api/mentorship-requests/[requestId]/withdraw/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/works/[id]/sources/[sourceId]/notes/route.ts": {
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063426191",
   },
   "app/api/notifications/route.ts": {
     methods: ["GET"],
@@ -195,6 +207,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/me/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-6993786629",
+  },
+  // SRV-1403 (M1.3, DAN-304): the caller's own staff affiliation; Ductus has no such route.
+  "app/api/me/staff-affiliation/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062876936",
   },
   // SRV-02 (Ductus#2028 c.7008147932, A-2): the outcomes of enrolment told apart.
   "app/api/student/enrollments/route.ts": {
@@ -355,6 +372,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
   },
+  // SRV-1803 (M8.2, DAN-396; D-282, D-290 to D-292; Ductus#2052 c.7062877544): a DOCX import and its confirmation; Ductus has no such route.
+  "app/api/works/[documentId]/imports/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
+  },
+  "app/api/works/[documentId]/imports/[importId]/confirm/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
+  },
   "app/api/student/assignments/[assignmentId]/attachments/route.ts": {
     methods: ["POST"],
     source: "ductura/Institution_server#471",
@@ -409,6 +435,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/deadline-extensions/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052",
+  },
+  // SRV-1904 (P-D4): copying an assignment; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/copy/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064495167",
   },
   // SRV-1109 (Val 11, N-18, C-16, D-286): the Merlin roster and its CSV; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/merlin/roster/route.ts": {

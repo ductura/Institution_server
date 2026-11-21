@@ -136,6 +136,8 @@ describe("login against an AAI@EduHr-shaped provider", () => {
       givenName: ACCOUNT.givenName,
       familyName: ACCOUNT.familyName,
       teacherEligible: true,
+      // SRV-1403: the attribute the fact rests on, never its value.
+      staffAffiliation: { source: "hrEduPersonAffiliation" },
       tokenHash: hashSessionToken(token),
     });
     expect(JSON.stringify(deps.openSession.mock.calls)).not.toMatch(/djelatnik|student/);

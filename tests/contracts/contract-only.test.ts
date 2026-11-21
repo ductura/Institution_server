@@ -21,6 +21,7 @@ import {
   createDownloadsManifestRoute,
   createWorkPdfRouteFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
   createAssignmentCurrentVersionRouteFor,
@@ -33,6 +34,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createAssignmentCopyRouteFor,
   createConsultationSlotRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
@@ -40,6 +42,7 @@ import {
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createLiveRoutesFor,
@@ -48,6 +51,7 @@ import {
   createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
@@ -55,6 +59,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStaffAffiliationRouteFor,
   createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
@@ -271,6 +276,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createProblemReportRouteFor(NO_ACTOR).contract.id],
   },
   {
+    call: "createProblemReportsRouteFor(databases.main)",
+    ids: ["support.problem-reports.post"],
+    routes: () => [createProblemReportsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // DAN-852-5a: the three course routes over the main database.
     call: "createInstitutionCourseRoutesFor(databases.main)",
     ids: [...INSTITUTION_COURSE_ROUTES],
@@ -341,6 +351,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createStudentDeadlineHistoryRouteFor(NO_ACTOR).contract.id],
   },
   {
+    // SRV-1904 (P-D4): copying an assignment over the main database.
+    call: "createAssignmentCopyRouteFor(databases.main)",
+    ids: ["teacher.assignment-copy.post"],
+    routes: () => [createAssignmentCopyRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     // SRV-1109: the Merlin roster of an assignment and its CSV over the main database.
     call: "...createMerlinRosterRoutesFor(databases.main)",
     ids: ["teacher.merlin-roster.get", "teacher.merlin-roster-csv.get"],
@@ -392,6 +408,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createKeyDatesRoutesFor(databases.main)",
+    ids: ["mentorship.key-dates.get"],
+    routes: () => createKeyDatesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "...createTeachingTeamRoutesFor(databases.main)",
     ids: SRV_1408,
     routes: () => createTeachingTeamRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -441,6 +462,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createSourceNotebookRoutesFor(databases.main)",
+    ids: [
+      "work.source-notes.get",
+      "work.source-notes.post",
+      "work.source-notes.patch",
+      "work.source-notes.delete",
+    ],
+    routes: () => createSourceNotebookRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createWorkVersionRouteFor(databases.main, evidenceDeps)",
     ids: ["work.version.get"],
     routes: () => [
@@ -486,6 +517,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createStudentNoticeRouteFor(databases.main)",
     ids: ["student.notice.get"],
     routes: () => [createStudentNoticeRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // SRV-1403: the caller's own staff affiliation over the main database.
+    call: "createStaffAffiliationRouteFor(databases.main)",
+    ids: ["profile.staff-affiliation.get"],
+    routes: () => [createStaffAffiliationRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-9B: the public check of a receipt over the main database.
@@ -669,6 +706,7 @@ describe("routes the entry point mounts itself", () => {
       "profile.interface-locale.post",
       "downloads.manifest.get",
       "support.problem-report.post",
+      "support.problem-reports.post",
       ...INSTITUTION_COURSE_ROUTES,
       "institution.course-assignments.post",
       "institution.assignment-versions.post",
@@ -685,6 +723,7 @@ describe("routes the entry point mounts itself", () => {
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       "student.deadline-history.get",
+      "teacher.assignment-copy.post",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",
       "teacher.merlin-packages.post",
@@ -700,6 +739,7 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
       ...SRV_1407,
+      "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,
       "live.document.get",
@@ -714,6 +754,10 @@ describe("routes the entry point mounts itself", () => {
       "work.attachments.get",
       "work.milestones.get",
       "work.milestones.patch",
+      "work.source-notes.get",
+      "work.source-notes.post",
+      "work.source-notes.patch",
+      "work.source-notes.delete",
       "work.version.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
@@ -722,6 +766,7 @@ describe("routes the entry point mounts itself", () => {
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
       "student.notice.get",
+      "profile.staff-affiliation.get",
       "public.verification.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
