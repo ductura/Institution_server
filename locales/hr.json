@@ -144,5 +144,13 @@
   "logAnalysis": {
     "analysis_threshold_invalid": "Prag analize zapisa nije ispravan: prozor i najmanji broj zapisa moraju biti cijeli brojevi veći od nule, a prozor najviše 24 sata.",
     "analysis_entries_invalid": "Zapisi za analizu nisu ispravan popis ili ih je previše, pa analiza nije pokrenuta."
+  },
+  "workingCriteria": {
+    "topic": "Tema, cilj i istraživačko pitanje",
+    "structure": "Struktura i logika izlaganja",
+    "sources": "Izvori i citiranje",
+    "method": "Metoda i analiza",
+    "language": "Jezik i stil",
+    "formatting": "Tehnička obrada"
   }
 }

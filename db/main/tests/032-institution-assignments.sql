@@ -299,6 +299,12 @@ ALTER TABLE institution.deadline_extension DISABLE TRIGGER deadline_extension_no
 -- The Merlin package (SRV-1110) and the record of its downloads reference the assignment and refuse TRUNCATE.
 ALTER TABLE institution.merlin_package DISABLE TRIGGER merlin_package_no_truncate;
 ALTER TABLE institution.merlin_package_download DISABLE TRIGGER merlin_package_download_no_truncate;
+-- The assistant's conversations and requests (SRV-1202) reference the
+-- assignment, their messages and ledger rows the requests; none is truncated.
+ALTER TABLE assistant.conversation DISABLE TRIGGER conversation_no_truncate;
+ALTER TABLE assistant.request DISABLE TRIGGER request_no_truncate;
+ALTER TABLE assistant.message DISABLE TRIGGER message_no_truncate;
+ALTER TABLE assistant.cost_ledger DISABLE TRIGGER cost_ledger_no_truncate;
 SELECT is(
   pg_temp.try_rolled_back('TRUNCATE institution.assignment_version, institution.assignment CASCADE'),
   'ZT001: went through',
@@ -307,6 +313,10 @@ SELECT is(
 ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
+ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;
+ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;
+ALTER TABLE assistant.request ENABLE TRIGGER request_no_truncate;
+ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;
 ALTER TABLE audit.access_log ENABLE TRIGGER access_log_no_truncate;
 ALTER TABLE evidence.submission_receipt ENABLE TRIGGER submission_receipt_no_truncate;
 ALTER TABLE evidence.submission_receipt_issuance ENABLE TRIGGER submission_receipt_issuance_no_truncate;
