@@ -337,6 +337,20 @@ export type Operations = {
     success: { status: 201; body: { "requestId": string; "state": "requested" }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
   };
+  "mentorship.student-mentor-candidates.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "candidates": ({ "teacherId": string; "name": { "givenName": string; "familyName": string } | null; "department": string | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
+  "mentorship.student-requests.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "requests": ({ "requestId": string; "teacherId": string; "teacherName": { "givenName": string; "familyName": string } | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "requestedAt": string; "state": "requested"; "endedAt": null; "mentorshipId": null } | { "requestId": string; "teacherId": string; "teacherName": { "givenName": string; "familyName": string } | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "requestedAt": string; "state": "approved"; "endedAt": string; "mentorshipId": string } | { "requestId": string; "teacherId": string; "teacherName": { "givenName": string; "familyName": string } | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "requestedAt": string; "state": "declined"; "endedAt": string; "mentorshipId": null } | { "requestId": string; "teacherId": string; "teacherName": { "givenName": string; "familyName": string } | null; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "requestedAt": string; "state": "withdrawn"; "endedAt": string; "mentorshipId": null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "notifications.list.get": {
     params: undefined;
     query: { "before"?: string };
