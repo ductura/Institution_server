@@ -992,6 +992,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "teacher.courses.get": { request: { path: "/api/v1/teacher/courses", as: "nastavnik-2" } },
+  "institution.config.get": {
+    request: { path: "/api/v1/institution/config", as: "administrator" },
+  },
+  "institution.config-versions.post": {
+    request: {
+      path: "/api/v1/institution/config/versions",
+      as: "administrator",
+      body: {
+        expectedVersion: 0,
+        citationStyle: "fpzg",
+        workLanguages: ["hr", "en"],
+        defaultWorkLanguage: "hr",
+      },
+    },
+  },
   "ops.pilot-metrics.get": { request: { path: "/api/v1/ops/pilot-metrics", as: "administrator" } },
   "course.aggregate.get": {
     request: { path: `/api/v1/courses/${IDS.course}/aggregate`, as: "nastavnik" },

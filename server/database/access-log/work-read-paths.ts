@@ -111,8 +111,8 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     returns: "content",
     surfaces: ["declaration"],
     proof: "db/main/tests/210-teacher-declaration-read.sql",
-    // SRV-1213 (#575): the RPC exists; its route is a later step.
-    callers: [],
+    // SRV-1213 (#580): the teacher's declaration read route reaches it through this adapter.
+    callers: ["server/database/teacher-declaration/index.ts"],
   },
 ];
 

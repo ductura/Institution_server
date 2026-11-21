@@ -9,7 +9,7 @@ BEGIN;
 \ir fixtures/institution.inc
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(47);
+SELECT plan(54);
 
 -- Rules as the server sends them after its schema check (ductura-faculty-rules-v1).
 INSERT INTO ref VALUES
@@ -166,6 +166,38 @@ SELECT is(pg_temp.ask('boris', $$ SELECT count(*)::text FROM app.assignment_inst
   'ZD403: forbidden', 'a student outside the course reads no version of A1');
 SELECT is(pg_temp.ask('ana', $$ SELECT count(*)::text FROM app.assignment_institution_config({nobody}) $$),
   'ZD403: forbidden', 'an assignment that does not exist reads as forbidden');
+
+-- 7. Criterion 4 of SRV-1406: every version leaves a row in the audit trail,
+-- written by the publishing function and by nothing else.
+SELECT is((SELECT count(*)::integer FROM audit.institution_config_event),
+  (SELECT count(*)::integer FROM app.institution_config), 'every version has exactly one audit row');
+SELECT row_eq(
+  $$ SELECT e.kind, e.actor_id, e.occurred_at = c.created_at
+     FROM audit.institution_config_event e JOIN app.institution_config c USING (institution_id, version)
+     WHERE e.institution_id = pg_temp.id('fak_a') AND e.version = 1 $$,
+  ROW('published'::text, pg_temp.id('iva'), true),
+  'the audit row of version 1 names the administrator and the moment of the version');
+SELECT is(pg_temp.ask('iva', $$ SELECT count(*)::text FROM audit.institution_config_event $$),
+  '42501: permission denied for schema audit', 'an administrator does not read the trail through the application');
+SELECT is_empty(
+  $$ SELECT r || ' ' || p FROM unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) AS p
+     CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
+                             'ductus_migrator', 'public']) AS r
+     WHERE has_table_privilege(r, 'audit.institution_config_event', p) $$,
+  'the access matrix of institution_config_event: no application role, not the migrator and not public reads, writes or empties it');
+SELECT bag_eq(
+  $$ SELECT c.relowner::regrole::text || ' ' || c.relrowsecurity || ' ' || c.relforcerowsecurity || ' ' || p.polname || ' ' || p.polroles::regrole[]::text
+     FROM pg_class c JOIN pg_policy p ON p.polrelid = c.oid WHERE c.oid = 'audit.institution_config_event'::regclass $$,
+  ARRAY['ductus_identity true true institution_config_event_owner {ductus_identity}'],
+  'institution_config_event: identity owner, forced RLS and the owner policy only');
+SELECT bag_eq(
+  $$ SELECT tgname::text FROM pg_trigger WHERE tgrelid = 'audit.institution_config_event'::regclass AND NOT tgisinternal $$,
+  $$ VALUES ('institution_config_event_append_only'), ('institution_config_event_no_truncate') $$,
+  'institution_config_event is append-only');
+SELECT ok(EXISTS (SELECT 1 FROM pg_trigger t WHERE t.tgrelid = 'app.institution_config'::regclass
+    AND t.tgname = 'institution_config_has_event' AND t.tgenabled = 'O' AND t.tgdeferrable AND t.tginitdeferred
+    AND t.tgfoid = 'app.check_institution_config_event()'::regprocedure),
+  'a deferred check refuses to commit a version without its audit row');
 
 SELECT * FROM finish();
 ROLLBACK;
