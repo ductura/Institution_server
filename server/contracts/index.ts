@@ -38,6 +38,7 @@ import {
   versionsRoutes,
   workMessagesRoutes,
   directEditRoutes,
+  importRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -121,6 +122,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...versionsRoutes,
   ...workMessagesRoutes,
   ...directEditRoutes,
+  ...importRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

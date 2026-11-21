@@ -8,7 +8,8 @@
 // count are the ones really inflated. ZIP64, multi-disk archives, methods
 // other than stored and deflate, overlapping entries and a bad CRC-32 are
 // refused. A refusal is a code only, never a name or a byte of the input.
-import { Inflate } from "fflate";
+// The browser build: plain JS, no worker threads and no createRequire in the bundle.
+import { Inflate } from "fflate/browser";
 
 import type { ImportReadLimitsV1, ImportReadRejectCode } from "../../contracts/index.ts";
 import { decodeStrictUtf8 } from "../../domain/index.ts";

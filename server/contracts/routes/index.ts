@@ -23,6 +23,7 @@ export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export { directEditRoutes } from "./direct-edit.ts";
+export { importRoutes } from "./import.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";

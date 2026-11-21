@@ -14990,7 +14990,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.46.0",
+        "apiVersion": "1.47.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -15006,7 +15006,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.46.0",
+        "apiVersion": "1.47.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -34375,6 +34375,1204 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-0000000000bd"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "confirmed",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "eventId": "1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "confirmed-again",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "eventId": "1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000d0"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000d1"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000d2"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1025"
+      },
+      "rawBody": "{\"importId\":\"0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c\",\"manifestSha256\":\"cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000000d3"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "135"
+      },
+      "rawBody": "{\"importId"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000000d4"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000d5"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "219"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000d6"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "135"
+      },
+      "rawBody": "{\"im"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000d7"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"importId\":\"0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c\",\"manifestSha256\":\"cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000d8"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"importId\":\"0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c\",\"manifestSha256\":\"cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-0000000000d9"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000000da"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "invalid-input-hash",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "ABC"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000db"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "import-not-found",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "import_not_found",
+        "code": "import_not_found",
+        "messageKey": "errors.importNotFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000000dc"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "import-manifest-mismatch",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "import_manifest_mismatch",
+        "code": "import_manifest_mismatch",
+        "messageKey": "errors.importManifestMismatch",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-0000000000dd"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "import-expired",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 410,
+      "contentType": "application/json",
+      "body": {
+        "error": "import_expired",
+        "code": "import_expired",
+        "messageKey": "errors.importExpired",
+        "status": 410,
+        "requestId": "00000000-0000-4000-8000-0000000000de"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "import-not-allowed",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "import_not_allowed",
+        "code": "import_not_allowed",
+        "messageKey": "errors.importNotAllowed",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000df"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "import-revision-changed",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": "import_revision_changed",
+        "code": "import_revision_changed",
+        "messageKey": "errors.importRevisionChanged",
+        "status": 409,
+        "requestId": "00000000-0000-4000-8000-0000000000e0"
+      }
+    }
+  },
+  {
+    "route": "work.imports.confirm.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001",
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000000e1"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "preview",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4",
+        "source": "import",
+        "evidenceKind": "imported",
+        "fileFormat": "docx",
+        "content": {
+          "schemaVersion": 2,
+          "nodes": [
+            {
+              "type": "heading",
+              "id": "00000000-0000-4000-8000-000000000001",
+              "level": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Izmišljeni seminar",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "id": "00000000-0000-4000-8000-000000000002",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Prvi odlomak izmišljenog rada.",
+                  "marks": []
+                }
+              ]
+            }
+          ],
+          "sources": []
+        },
+        "traces": [],
+        "rawByteLength": 967,
+        "fileName": "Seminar.docx",
+        "baseRevision": 3,
+        "expiresAt": "2026-11-21T10:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "preview-without-name",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": null
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "body": {
+        "importId": "0b5c2a7e-3f1d-4c8e-9a6b-1d2e3f4a5b6c",
+        "manifestSha256": "cbbb415f740ef3befd0581ae5b096a4401ef504d1f63be2a609dd270140ef0f4",
+        "source": "import",
+        "evidenceKind": "imported",
+        "fileFormat": "docx",
+        "content": {
+          "schemaVersion": 2,
+          "nodes": [
+            {
+              "type": "heading",
+              "id": "00000000-0000-4000-8000-000000000001",
+              "level": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Izmišljeni seminar",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "id": "00000000-0000-4000-8000-000000000002",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Prvi odlomak izmišljenog rada.",
+                  "marks": []
+                }
+              ]
+            }
+          ],
+          "sources": []
+        },
+        "traces": [],
+        "rawByteLength": 967,
+        "fileName": null,
+        "baseRevision": 3,
+        "expiresAt": "2026-11-21T10:00:00.000Z"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000c0"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000c1"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000c2"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "2802413"
+      },
+      "rawBody": "{\"fileBase64\":\"UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==\",\"fileName\":\"Seminar.docx\"}"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-0000000000c3"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1335"
+      },
+      "rawBody": "{\"fileBase"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-0000000000c4"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000c5"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1419"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000c6"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1335"
+      },
+      "rawBody": "{\"fi"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000c7"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"fileBase64\":\"UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==\",\"fileName\":\"Seminar.docx\""
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-0000000000c8"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{\"fileBase64\":\"UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==\",\"fileName\":\"Seminar.docx\"}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-0000000000c9"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-0000000000ca"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "invalid-input-base64",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "nije base64!",
+        "fileName": null
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000cb"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "invalid-document",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "aXptaXNsamVuaSB0ZWtzdCwgbmlqZSBkb2N4",
+        "fileName": null
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_document",
+        "code": "invalid_document",
+        "messageKey": "errors.invalidDocument",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-0000000000cc"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "import-not-allowed",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "import_not_allowed",
+        "code": "import_not_allowed",
+        "messageKey": "errors.importNotAllowed",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-0000000000cd"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-0000000000ce"
+      }
+    }
+  },
+  {
+    "route": "work.imports.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-uvoz-00000000000000000000001",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "fileBase64": "UEsDBBQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QS07DMBC9iuUtShxYIITidMFnCSzKAUb2JLHwTx63tLdn0pYuUOly5n31+tUueLHFQi5FLW/bTgqMJlkXJy0/16/NgxRUIVrwKaKWeyS5Gvr1PiMJ1kbScq41PypFZsYA1KaMkZExlQCVzzKpDOYLJlR3XXevTIoVY23q4iGH/hlH2PgqXnb8PvYo6EmKpyNxydIScvbOQGVcbaP9k9KcElpWHjg0u0w3TJDqYsKC/B9w0r3zMMVZFB9Q6hsEZqnvVKyyyWwCK9vrNhd6pnF0Bs/6xS2XZJCIFw++PSMBXPztrw5zDz9QSwMEFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc4XPSwrCMBAG4KuE2du0LkSkaTcidCv1ACGZtsHmQSY+enuzcGFFcDmv72fq9mlndsdIxjsBVVECQ6e8Nm4UcOlPmz0wStJpOXuHAhYkaJv6jLNM+YQmE4hlw5GAKaVw4JzUhFZS4QO6PBl8tDLlMo48SHWVI/JtWe54/DRgbbJOC4idroD1S8i5/20/DEbh0aubRZd+RHxtZFnGEZOAh4+a63e7yCzwpuarF5sXUEsDBBQAAAAIAABIdV0SXnfF2gAAAEcBAAARAAAAd29yZC9kb2N1bWVudC54bWxtkEFOxDAMRa8SeU/TYYFQ1XZ2CHYjAQcwjekEErtKQku5DYfhXiQFumLzbcv/P1luj+/eqZlCtMIdHKoaFPEgxvLYwePDzcU1qJiQDTph6mClCMe+XRojw5snTioDODZLB+eUpkbrOJzJY6xkIs67ZwkeUx7DqBcJZgoyUIyZ752+rOsr7dEyFOSTmLXUaZNT2Mp9Wh2ppZnRdXBLWC47gO5bvXs2Sf3dh7dfn+6F2KpI3jKGYkqbNXtKYMf/Zk5htkqME4+vyu4AGVVAg9U/+aw/d+bm7wf9N1BLAQIUABQAAAAIAABIdV15bjPX6AAAAK0BAAATAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAAAAgAAEh1XZv9N+qtAAAAKQEAAAsAAAAAAAAAAAAAAAAAGQEAAF9yZWxzLy5yZWxzUEsBAhQAFAAAAAgAAEh1XRJed8XaAAAARwEAABEAAAAAAAAAAAAAAAAA7wEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPgCAAAAAA==",
+        "fileName": "Seminar.docx"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-0000000000cf"
       }
     }
   },

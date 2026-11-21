@@ -31,6 +31,7 @@ import {
   createTeacherFastPathRouteFor,
   createWorkMessagesRoutesFor,
   createDirectEditRoutesFor,
+  createImportRoutesFor,
   createWorkVersionsRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
@@ -129,6 +130,7 @@ const WORK_SOURCE = {
   publisher: "Izmišljena naklada",
 };
 
+const IMPORT_ID = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -186,6 +188,17 @@ const SESSION_ROUTES = {
     method: "PUT",
     path: `/api/v1/works/${randomUUID()}/direct-edit`,
     body: () => ({ mode: "direct" }),
+    live: 404,
+  },
+  // SRV-1803: a work it may not import into is 404; an import of it is not found.
+  "work.imports.post": {
+    path: `/api/v1/works/${randomUUID()}/imports`,
+    body: () => ({ fileBase64: "UEsDBA==", fileName: null }),
+    live: 404,
+  },
+  "work.imports.confirm.post": {
+    path: `/api/v1/works/${randomUUID()}/imports/${IMPORT_ID}/confirm`,
+    body: () => ({ importId: IMPORT_ID, manifestSha256: "0".repeat(64) }),
     live: 404,
   },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
@@ -766,6 +779,7 @@ const FACTORIES = [
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
   "createDirectEditRoutesFor",
+  "createImportRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
@@ -820,6 +834,7 @@ const MOUNTED = [
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
   ...createDirectEditRoutesFor(databases.main),
+  ...createImportRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),

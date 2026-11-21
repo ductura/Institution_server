@@ -41,8 +41,10 @@ const PREDEFINED: Readonly<Record<string, string>> = {
 
 /** Thrown inside the reader; turned into a refusal at its edge. */
 class Refusal extends Error {
-  constructor(readonly code: ImportReadRejectCode) {
+  readonly code: ImportReadRejectCode;
+  constructor(code: ImportReadRejectCode) {
     super(code);
+    this.code = code;
   }
 }
 
