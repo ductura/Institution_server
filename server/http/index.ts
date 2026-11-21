@@ -29,6 +29,10 @@ export {
 } from "./deadline-extensions/index.ts";
 export { createStudentDeadlineHistoryRouteFor } from "./student-deadline-history.ts";
 export {
+  createSubmissionWithdrawalRoutes,
+  createSubmissionWithdrawalRoutesFor,
+} from "./submissions/index.ts";
+export {
   createAssignmentCopyRoute,
   createAssignmentCopyRouteFor,
 } from "./assignment-copy/index.ts";

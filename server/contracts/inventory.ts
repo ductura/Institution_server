@@ -459,6 +459,23 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052",
   },
+  // SRV-1903 (P-D3): withdrawal of a submission and the history; Ductus has no such route.
+  "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
+  },
+  "app/api/student/assignments/[assignmentId]/submission/history/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-history/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
+  },
+  "app/api/teacher/assignments/[assignmentId]/submission-withdrawal/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
+  },
   // SRV-1904 (P-D4): copying an assignment; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/copy/route.ts": {
     methods: ["POST"],

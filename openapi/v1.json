@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ductura API",
-    "version": "1.68.0",
+    "version": "1.69.0",
     "x-inventory-source": "danielrisavi77-create/Ductus@d52a92c:docs/backend/server-route-inventory.md",
     "description": "Shared errors: any route may answer these besides the errors listed under it.\n- 500 internal: problem body {error, code, messageKey: \"errors.internal\", status, requestId}.\n- 429 too_many_requests: problem body {error, code, messageKey: \"errors.tooManyRequests\", status, requestId}; header retry-after in whole seconds.\n- 401 session_idle_expired: problem body {error, code, messageKey: \"errors.sessionIdleExpired\", status, requestId}."
   },
@@ -42733,6 +42733,553 @@
         ]
       }
     },
+    "/api/v1/student/assignments/{assignmentId}/submission/history": {
+      "get": {
+        "operationId": "student.submission-history.get",
+        "summary": "The caller's submissions and withdrawals of the assignment, oldest first, each with its signed receipt (null while not bound), and whether withdrawal is allowed with the deadline in force. A withdrawal is possible when withdrawalAllowed is true, the deadline has not passed and the last event is a confirmed submission. An inaccessible, unknown or malformed assignment id returns 404.",
+        "x-access": "student_enrolled",
+        "x-inventory": "app/api/student/assignments/[assignmentId]/submission/history/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the history, possibly empty",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "withdrawalAllowed",
+                    "dueAt",
+                    "events"
+                  ],
+                  "properties": {
+                    "withdrawalAllowed": {
+                      "type": "boolean"
+                    },
+                    "dueAt": {
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                      "type": "string"
+                    },
+                    "events": {
+                      "maxItems": 2000,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "id",
+                              "attempt",
+                              "submissionId",
+                              "revision",
+                              "at",
+                              "afterDeadline",
+                              "receipt"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "const": "submission",
+                                "type": "string"
+                              },
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "attempt": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "submissionId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "revision": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "at": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                "type": "string"
+                              },
+                              "afterDeadline": {
+                                "type": "boolean"
+                              },
+                              "receipt": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "payload",
+                                      "payloadDigestSha256",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "payload": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "receiptSchema",
+                                          "submissionId",
+                                          "evidenceDomainId",
+                                          "principalId",
+                                          "assignmentId",
+                                          "assignmentVersion",
+                                          "documentId",
+                                          "evidencePackageId",
+                                          "revision",
+                                          "artifactSha256",
+                                          "evidenceHeadSegmentHash",
+                                          "evidenceRecord",
+                                          "requestedAt",
+                                          "dueAt",
+                                          "afterDeadline",
+                                          "signedAt"
+                                        ],
+                                        "properties": {
+                                          "receiptSchema": {
+                                            "const": "ductus-submission-receipt-v2",
+                                            "type": "string"
+                                          },
+                                          "submissionId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceDomainId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "principalId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "assignmentId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "assignmentVersion": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "documentId": {
+                                            "minLength": 1,
+                                            "maxLength": 256,
+                                            "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF])+(?<!\\s)$",
+                                            "type": "string"
+                                          },
+                                          "evidencePackageId": {
+                                            "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "artifactSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceHeadSegmentHash": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceRecord": {
+                                            "anyOf": [
+                                              {
+                                                "const": "continuous",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "with_gaps",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "requestedAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "dueAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "afterDeadline": {
+                                            "type": "boolean"
+                                          },
+                                          "signedAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "payloadDigestSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      },
+                                      "signature": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "algorithm",
+                                          "keyId",
+                                          "keyVersion",
+                                          "signatureEncoding",
+                                          "signatureBase64Url"
+                                        ],
+                                        "properties": {
+                                          "algorithm": {
+                                            "const": "Ed25519",
+                                            "type": "string"
+                                          },
+                                          "keyId": {
+                                            "minLength": 1,
+                                            "maxLength": 2048,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "keyVersion": {
+                                            "minLength": 1,
+                                            "maxLength": 256,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "signatureEncoding": {
+                                            "const": "raw",
+                                            "type": "string"
+                                          },
+                                          "signatureBase64Url": {
+                                            "pattern": "^[A-Za-z0-9_-]{86}$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "id",
+                              "attempt",
+                              "submissionId",
+                              "revision",
+                              "at",
+                              "receipt"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "const": "withdrawal",
+                                "type": "string"
+                              },
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "attempt": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "submissionId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "revision": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "at": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                "type": "string"
+                              },
+                              "receipt": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "payload",
+                                      "payloadDigestSha256",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "payload": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "receiptSchema",
+                                          "withdrawalId",
+                                          "submissionId",
+                                          "submissionReceiptSha256",
+                                          "evidenceDomainId",
+                                          "principalId",
+                                          "assignmentId",
+                                          "withdrawnAt",
+                                          "dueAt",
+                                          "signedAt"
+                                        ],
+                                        "properties": {
+                                          "receiptSchema": {
+                                            "const": "ductus-submission-withdrawal-receipt-v1",
+                                            "type": "string"
+                                          },
+                                          "withdrawalId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "submissionId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "submissionReceiptSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceDomainId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "principalId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "assignmentId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "withdrawnAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "dueAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "signedAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "payloadDigestSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      },
+                                      "signature": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "algorithm",
+                                          "keyId",
+                                          "keyVersion",
+                                          "signatureEncoding",
+                                          "signatureBase64Url"
+                                        ],
+                                        "properties": {
+                                          "algorithm": {
+                                            "const": "Ed25519",
+                                            "type": "string"
+                                          },
+                                          "keyId": {
+                                            "minLength": 1,
+                                            "maxLength": 2048,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "keyVersion": {
+                                            "minLength": 1,
+                                            "maxLength": 256,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "signatureEncoding": {
+                                            "const": "raw",
+                                            "type": "string"
+                                          },
+                                          "signatureBase64Url": {
+                                            "pattern": "^[A-Za-z0-9_-]{86}$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/student/assignments/{assignmentId}/submission-notes": {
       "get": {
         "operationId": "student.submission-notes.get",
@@ -43532,6 +44079,745 @@
             "status": 422,
             "code": "invalid_input",
             "key": "errors.invalid_input"
+          }
+        ]
+      }
+    },
+    "/api/v1/student/assignments/{assignmentId}/submission/withdrawal": {
+      "post": {
+        "operationId": "student.submission-withdrawal.post",
+        "summary": "The student withdraws the own confirmed submission of the assignment and gets the signed receipt of the withdrawal; nothing is deleted, and the work can be submitted again (submission.submit.post). No body. A retry returns the same withdrawal. 409 not_allowed: the teacher switched withdrawal off; 409 refused: the deadline in force has passed (an extension counts); 409 not_started: no recorded submission to withdraw; 409 conflict: the submission's receipt is not bound yet or a newer submission is in progress. An inaccessible, unknown or malformed assignment id returns 404. 503 when the receipt cannot be signed; a retry signs the same frozen receipt.",
+        "x-access": "student_enrolled",
+        "x-inventory": "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "withdrawn, with the signed receipt",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "receipt"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "withdrawn",
+                      "type": "string"
+                    },
+                    "receipt": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "payload",
+                        "payloadDigestSha256",
+                        "signature"
+                      ],
+                      "properties": {
+                        "payload": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "receiptSchema",
+                            "withdrawalId",
+                            "submissionId",
+                            "submissionReceiptSha256",
+                            "evidenceDomainId",
+                            "principalId",
+                            "assignmentId",
+                            "withdrawnAt",
+                            "dueAt",
+                            "signedAt"
+                          ],
+                          "properties": {
+                            "receiptSchema": {
+                              "const": "ductus-submission-withdrawal-receipt-v1",
+                              "type": "string"
+                            },
+                            "withdrawalId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "submissionId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "submissionReceiptSha256": {
+                              "pattern": "^[0-9a-f]{64}$",
+                              "type": "string"
+                            },
+                            "evidenceDomainId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "principalId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "assignmentId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                              "type": "string"
+                            },
+                            "withdrawnAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                              "type": "string"
+                            },
+                            "dueAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                              "type": "string"
+                            },
+                            "signedAt": {
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "payloadDigestSha256": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        "signature": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "algorithm",
+                            "keyId",
+                            "keyVersion",
+                            "signatureEncoding",
+                            "signatureBase64Url"
+                          ],
+                          "properties": {
+                            "algorithm": {
+                              "const": "Ed25519",
+                              "type": "string"
+                            },
+                            "keyId": {
+                              "minLength": 1,
+                              "maxLength": 2048,
+                              "pattern": "\\S",
+                              "type": "string"
+                            },
+                            "keyVersion": {
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "pattern": "\\S",
+                              "type": "string"
+                            },
+                            "signatureEncoding": {
+                              "const": "raw",
+                              "type": "string"
+                            },
+                            "signatureBase64Url": {
+                              "pattern": "^[A-Za-z0-9_-]{86}$",
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "content_length_invalid, content_length_mismatch, body_stream_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthInvalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.bodyStreamError",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "origin_missing, origin_mismatch, cross_site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.crossSite",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "body_timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTimeout",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 408,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "not_allowed, refused, not_started, conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "not_allowed",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "not_allowed",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.notAllowed",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "refused",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "refused",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.refused",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "not_started",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "not_started",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.notStarted",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.conflict",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body_too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTooLarge",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "origin_missing",
+            "key": "errors.origin_missing"
+          },
+          {
+            "status": 403,
+            "code": "origin_mismatch",
+            "key": "errors.origin_mismatch"
+          },
+          {
+            "status": 403,
+            "code": "cross_site",
+            "key": "errors.cross_site"
+          },
+          {
+            "status": 413,
+            "code": "body_too_large",
+            "key": "errors.body_too_large"
+          },
+          {
+            "status": 408,
+            "code": "body_timeout",
+            "key": "errors.body_timeout"
+          },
+          {
+            "status": 400,
+            "code": "content_length_invalid",
+            "key": "errors.content_length_invalid"
+          },
+          {
+            "status": 400,
+            "code": "content_length_mismatch",
+            "key": "errors.content_length_mismatch"
+          },
+          {
+            "status": 400,
+            "code": "body_stream_error",
+            "key": "errors.body_stream_error"
+          },
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 409,
+            "code": "not_allowed",
+            "key": "errors.not_allowed"
+          },
+          {
+            "status": 409,
+            "code": "refused",
+            "key": "errors.refused"
+          },
+          {
+            "status": 409,
+            "code": "not_started",
+            "key": "errors.not_started"
+          },
+          {
+            "status": 409,
+            "code": "conflict",
+            "key": "errors.conflict"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
           }
         ]
       }
@@ -58600,6 +59886,553 @@
         ]
       }
     },
+    "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/submission-history": {
+      "get": {
+        "operationId": "teacher.submission-history.get",
+        "summary": "One student's submissions and withdrawals of the assignment, oldest first, each with its signed receipt (null while not bound), for a reader of the work (as teacher.submission-detail.get). The last valid submission is the last submission event not followed by a withdrawal. An inaccessible, unknown or malformed id returns 404.",
+        "x-access": "course_teacher",
+        "x-inventory": "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-history/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the history, possibly empty",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "events"
+                  ],
+                  "properties": {
+                    "events": {
+                      "maxItems": 2000,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "id",
+                              "attempt",
+                              "submissionId",
+                              "revision",
+                              "at",
+                              "afterDeadline",
+                              "receipt"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "const": "submission",
+                                "type": "string"
+                              },
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "attempt": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "submissionId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "revision": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "at": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                "type": "string"
+                              },
+                              "afterDeadline": {
+                                "type": "boolean"
+                              },
+                              "receipt": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "payload",
+                                      "payloadDigestSha256",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "payload": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "receiptSchema",
+                                          "submissionId",
+                                          "evidenceDomainId",
+                                          "principalId",
+                                          "assignmentId",
+                                          "assignmentVersion",
+                                          "documentId",
+                                          "evidencePackageId",
+                                          "revision",
+                                          "artifactSha256",
+                                          "evidenceHeadSegmentHash",
+                                          "evidenceRecord",
+                                          "requestedAt",
+                                          "dueAt",
+                                          "afterDeadline",
+                                          "signedAt"
+                                        ],
+                                        "properties": {
+                                          "receiptSchema": {
+                                            "const": "ductus-submission-receipt-v2",
+                                            "type": "string"
+                                          },
+                                          "submissionId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceDomainId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "principalId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "assignmentId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "assignmentVersion": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "documentId": {
+                                            "minLength": 1,
+                                            "maxLength": 256,
+                                            "pattern": "^(?!\\s)(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF])+(?<!\\s)$",
+                                            "type": "string"
+                                          },
+                                          "evidencePackageId": {
+                                            "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991,
+                                            "type": "integer"
+                                          },
+                                          "artifactSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceHeadSegmentHash": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceRecord": {
+                                            "anyOf": [
+                                              {
+                                                "const": "continuous",
+                                                "type": "string"
+                                              },
+                                              {
+                                                "const": "with_gaps",
+                                                "type": "string"
+                                              }
+                                            ]
+                                          },
+                                          "requestedAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "dueAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "afterDeadline": {
+                                            "type": "boolean"
+                                          },
+                                          "signedAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "payloadDigestSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      },
+                                      "signature": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "algorithm",
+                                          "keyId",
+                                          "keyVersion",
+                                          "signatureEncoding",
+                                          "signatureBase64Url"
+                                        ],
+                                        "properties": {
+                                          "algorithm": {
+                                            "const": "Ed25519",
+                                            "type": "string"
+                                          },
+                                          "keyId": {
+                                            "minLength": 1,
+                                            "maxLength": 2048,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "keyVersion": {
+                                            "minLength": 1,
+                                            "maxLength": 256,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "signatureEncoding": {
+                                            "const": "raw",
+                                            "type": "string"
+                                          },
+                                          "signatureBase64Url": {
+                                            "pattern": "^[A-Za-z0-9_-]{86}$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "id",
+                              "attempt",
+                              "submissionId",
+                              "revision",
+                              "at",
+                              "receipt"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "const": "withdrawal",
+                                "type": "string"
+                              },
+                              "id": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "attempt": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "submissionId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                "type": "string"
+                              },
+                              "revision": {
+                                "minimum": 1,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "at": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                                "type": "string"
+                              },
+                              "receipt": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "payload",
+                                      "payloadDigestSha256",
+                                      "signature"
+                                    ],
+                                    "properties": {
+                                      "payload": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "receiptSchema",
+                                          "withdrawalId",
+                                          "submissionId",
+                                          "submissionReceiptSha256",
+                                          "evidenceDomainId",
+                                          "principalId",
+                                          "assignmentId",
+                                          "withdrawnAt",
+                                          "dueAt",
+                                          "signedAt"
+                                        ],
+                                        "properties": {
+                                          "receiptSchema": {
+                                            "const": "ductus-submission-withdrawal-receipt-v1",
+                                            "type": "string"
+                                          },
+                                          "withdrawalId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "submissionId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "submissionReceiptSha256": {
+                                            "pattern": "^[0-9a-f]{64}$",
+                                            "type": "string"
+                                          },
+                                          "evidenceDomainId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "principalId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "assignmentId": {
+                                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                                            "type": "string"
+                                          },
+                                          "withdrawnAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "dueAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          },
+                                          "signedAt": {
+                                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "payloadDigestSha256": {
+                                        "pattern": "^[0-9a-f]{64}$",
+                                        "type": "string"
+                                      },
+                                      "signature": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "algorithm",
+                                          "keyId",
+                                          "keyVersion",
+                                          "signatureEncoding",
+                                          "signatureBase64Url"
+                                        ],
+                                        "properties": {
+                                          "algorithm": {
+                                            "const": "Ed25519",
+                                            "type": "string"
+                                          },
+                                          "keyId": {
+                                            "minLength": 1,
+                                            "maxLength": 2048,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "keyVersion": {
+                                            "minLength": 1,
+                                            "maxLength": 256,
+                                            "pattern": "\\S",
+                                            "type": "string"
+                                          },
+                                          "signatureEncoding": {
+                                            "const": "raw",
+                                            "type": "string"
+                                          },
+                                          "signatureBase64Url": {
+                                            "pattern": "^[A-Za-z0-9_-]{86}$",
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/teacher/assignments/{assignmentId}/students/{studentId}/submission": {
       "get": {
         "operationId": "teacher.submission-receipt.get",
@@ -59012,6 +60845,816 @@
             "status": 404,
             "code": "not_found",
             "key": "errors.not_found"
+          }
+        ]
+      }
+    },
+    "/api/v1/teacher/assignments/{assignmentId}/submission-withdrawal": {
+      "get": {
+        "operationId": "teacher.submission-withdrawal.get",
+        "summary": "Whether students may withdraw their submissions of the assignment (allowed by default), for its teacher. An inaccessible, unknown or malformed assignment id returns 404.",
+        "x-access": "course_teacher",
+        "x-inventory": "app/api/teacher/assignments/[assignmentId]/submission-withdrawal/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the switch",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "allowed",
+                    "changedAt"
+                  ],
+                  "properties": {
+                    "allowed": {
+                      "type": "boolean"
+                    },
+                    "changedAt": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "teacher.submission-withdrawal.post",
+        "summary": "The teacher of the assignment switches withdrawal off or on. Setting the value in force changes nothing and returns it. A withdrawal already recorded stays. An inaccessible, unknown or malformed assignment id returns 404.",
+        "x-access": "course_teacher",
+        "x-inventory": "app/api/teacher/assignments/[assignmentId]/submission-withdrawal/route.ts",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-max-body-bytes": 256,
+        "responses": {
+          "200": {
+            "description": "the switch in force",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "allowed",
+                    "changedAt"
+                  ],
+                  "properties": {
+                    "allowed": {
+                      "type": "boolean"
+                    },
+                    "changedAt": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "content_length_invalid, content_length_mismatch, body_stream_error, invalid_json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_invalid",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthInvalid",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "content_length_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.contentLengthMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "body_stream_error",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.bodyStreamError",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_json",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidJson",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 400,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "origin_missing, origin_mismatch, cross_site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "origin_mismatch",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.originMismatch",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "cross_site",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.crossSite",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 403,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "body_timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_timeout",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTimeout",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 408,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body_too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "body_too_large",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.bodyTooLarge",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupportedMediaType",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 415,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "invalid_input",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.invalidInput",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 422,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 403,
+            "code": "origin_missing",
+            "key": "errors.origin_missing"
+          },
+          {
+            "status": 403,
+            "code": "origin_mismatch",
+            "key": "errors.origin_mismatch"
+          },
+          {
+            "status": 403,
+            "code": "cross_site",
+            "key": "errors.cross_site"
+          },
+          {
+            "status": 413,
+            "code": "body_too_large",
+            "key": "errors.body_too_large"
+          },
+          {
+            "status": 408,
+            "code": "body_timeout",
+            "key": "errors.body_timeout"
+          },
+          {
+            "status": 400,
+            "code": "content_length_invalid",
+            "key": "errors.content_length_invalid"
+          },
+          {
+            "status": 400,
+            "code": "content_length_mismatch",
+            "key": "errors.content_length_mismatch"
+          },
+          {
+            "status": 400,
+            "code": "body_stream_error",
+            "key": "errors.body_stream_error"
+          },
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 415,
+            "code": "unsupported_media_type",
+            "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 400,
+            "code": "invalid_json",
+            "key": "errors.invalid_json"
+          },
+          {
+            "status": 422,
+            "code": "invalid_input",
+            "key": "errors.invalid_input"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
           }
         ]
       }

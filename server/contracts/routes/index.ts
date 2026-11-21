@@ -57,6 +57,11 @@ export {
 } from "./course-aggregate.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./pilot-metrics.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export {
+  SignedWithdrawalReceipt,
+  submissionsRoutes,
+  WITHDRAWAL_RECEIPT_SCHEMA,
+} from "./submissions.ts";
 export { AssignmentCopyInput, assignmentCopyRoutes } from "./assignment-copy.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
