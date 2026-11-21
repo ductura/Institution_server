@@ -33,6 +33,7 @@ import {
   teacherWorkingCriteriaRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
+  workMessagesRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -108,6 +109,7 @@ export const ROUTES: readonly RouteContract[] = [
   sourceLookupPost,
   ...publicVerificationRoutes,
   ...versionsRoutes,
+  ...workMessagesRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

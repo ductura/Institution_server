@@ -1,5 +1,5 @@
 // SRV-1107 (Ductus#2051, B-9): the database port of the teacher's private
-// working criteria (20261121140000). Each call is one withActor transaction
+// working criteria (20261121150000). Each call is one withActor transaction
 // over one RPC of schema collaboration; the RPCs decide who may (a teacher of
 // the work, and only the author reads the rows). The answer is a closed
 // status, never a database message or SQLSTATE: ZD401 is unauthenticated,
