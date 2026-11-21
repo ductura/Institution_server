@@ -8,8 +8,13 @@
 import { afterEach, expect, it } from "vitest";
 
 import type { ActorReader, LiveStates, TeacherEditOutcome } from "../../database/index.ts";
-import { createDatabases, createLayers, startServer, type Running } from "../index.ts";
-import { createLiveRoutes } from "../live.ts";
+import {
+  createDatabases,
+  createLayers,
+  createLiveRoutes,
+  startServer,
+  type Running,
+} from "../index.ts";
 
 const ORIGIN = "https://ductura.example.invalid";
 const TOKEN = "A".repeat(43);
