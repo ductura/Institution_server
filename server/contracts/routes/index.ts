@@ -67,3 +67,4 @@ export { merlinRosterRoutes } from "./merlin-roster.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";
 export { statementRoutes } from "./statement.ts";
+export { STAFF_AFFILIATION_SOURCES, staffAffiliationRoutes } from "./staff-affiliation.ts";
