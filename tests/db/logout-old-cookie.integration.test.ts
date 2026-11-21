@@ -45,6 +45,9 @@ import {
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStudentAssignmentsRouteFor,
+  createStudentAccessLogRouteFor,
+  createStudentWriteRoutesFor,
   createHealthRoute,
   createReadyRoute,
   createInstitutionAssignmentRoutesFor,
@@ -405,6 +408,31 @@ const SESSION_ROUTES = {
   "student.submission-notes.post": {
     path: "/api/v1/student/submission-notes",
     body: () => ({ assignmentId: ASSIGNMENT, text: "Izmišljena napomena o radu." }),
+    live: 404,
+  },
+  // Faza 3: the student's assignment list, own access log of a work that is not
+  // theirs (404), an unknown enrolment code (422 invalid_code) and the notice of
+  // an assignment the session cannot see (404).
+  "student.assignments.get": {
+    method: "GET",
+    path: "/api/v1/student/assignments",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.access-log.get": {
+    method: "GET",
+    path: `/api/v1/student/works/${randomUUID()}/access-log`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.enrollments.post": {
+    path: "/api/v1/student/enrollments",
+    body: () => ({ code: "IZMISLJENI-KOD-1" }),
+    live: 422,
+  },
+  "student.notice-read.post": {
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/notice-read`,
+    body: () => ({ versionNo: 1 }),
     live: 404,
   },
   // SRV-1101: the same for the text check configuration.
@@ -986,6 +1014,9 @@ const FACTORIES = [
   "createTeacherFastPathRouteFor",
   "createStudentSubmissionRoutesFor",
   "createStudentNoticeRouteFor",
+  "createStudentAssignmentsRouteFor",
+  "createStudentAccessLogRouteFor",
+  "createStudentWriteRoutesFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
@@ -1058,6 +1089,9 @@ const MOUNTED = [
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
   ...createStudentSubmissionRoutesFor(databases.main),
   createStudentNoticeRouteFor(databases.main),
+  createStudentAssignmentsRouteFor(databases.main),
+  createStudentAccessLogRouteFor(databases.main),
+  ...createStudentWriteRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
