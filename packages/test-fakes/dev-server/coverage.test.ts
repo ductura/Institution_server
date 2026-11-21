@@ -1009,6 +1009,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "ops.pilot-metrics.get": { request: { path: "/api/v1/ops/pilot-metrics", as: "administrator" } },
+  "institution.retention.get": {
+    request: { path: "/api/v1/institution/retention", as: "administrator" },
+  },
   "course.aggregate.get": {
     request: { path: `/api/v1/courses/${IDS.course}/aggregate`, as: "nastavnik" },
   },

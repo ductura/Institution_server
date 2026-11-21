@@ -28,6 +28,7 @@ export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
+export { createRetentionRouteFor } from "./retention/index.ts";
 export { createInstitutionConfigRoutesFor } from "./institution-config/index.ts";
 export { createWorkAccessRoute, createWorkAccessRouteFor } from "./access-log/index.ts";
 export {
