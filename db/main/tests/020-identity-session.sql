@@ -158,6 +158,7 @@ RESET ROLE;
 -- missing USAGE on the schema, so they would survive a table grant; here no
 -- role except the owner may hold any privilege on any identity table, and a
 -- policy for another role is a failure even before a grant makes it usable.
+-- SRV-1814 permits only the two SELECT policies and grants on problem_report.
 SELECT is_empty(
   $$ SELECT r.rolname || ': ' || p.privilege || ' on ' || c.relname
      FROM (SELECT rolname::text FROM pg_roles WHERE rolname LIKE 'ductus\_%' AND rolname <> 'ductus_identity'
@@ -167,13 +168,19 @@ SELECT is_empty(
      WHERE c.relnamespace = 'identity'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm')
        AND (has_table_privilege(r.rolname, c.oid, p.privilege)
             OR (p.privilege IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
-                AND has_any_column_privilege(r.rolname, c.oid, p.privilege))) $$,
-  'no role but ductus_identity, nor PUBLIC, holds a table or column privilege on any identity table'
+                AND has_any_column_privilege(r.rolname, c.oid, p.privilege)))
+       AND NOT (c.relname = 'problem_report' AND p.privilege = 'SELECT'
+                AND r.rolname IN ('ductus_app', 'ductus_app_local', 'ductus_problem_report_reader')) $$,
+  'identity table grants stay within the owner and problem report readers'
 );
 SELECT is_empty(
   $$ SELECT tablename || '.' || policyname FROM pg_policies
-     WHERE schemaname = 'identity' AND roles <> ARRAY['ductus_identity']::name[] $$,
-  'every policy on an identity table is for ductus_identity alone'
+     WHERE schemaname = 'identity' AND roles <> ARRAY['ductus_identity']::name[]
+       AND NOT (tablename = 'problem_report' AND cmd = 'SELECT'
+                AND ((policyname = 'problem_report_own_read' AND roles = ARRAY['ductus_app']::name[])
+                     OR (policyname = 'problem_report_operator_read'
+                         AND roles = ARRAY['ductus_problem_report_reader']::name[]))) $$,
+  'identity table policies stay within the owner and problem report readers'
 );
 -- The session functions (DAN-296): only the web role may close, touch or
 -- sign out everywhere, and only the retention role may purge. open_session

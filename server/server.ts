@@ -65,6 +65,7 @@ import {
   createAdminCourseRouteFor,
   createInterfaceLocaleRoutesFor,
   createProblemReportRouteFor,
+  createProblemReportsRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createCommentRoutesFor,
@@ -219,6 +220,7 @@ async function main(): Promise<void> {
       ...createInterfaceLocaleRoutesFor(databases.main),
       // The problem report (S-M-2, DAN-851): POST over the support service.
       createProblemReportRouteFor(databases.main),
+      createProblemReportsRouteFor(databases.main),
       // Courses of an institution, the enrolment code and its revocation (S-M-2a, DAN-852).
       ...createInstitutionCourseRoutesFor(databases.main),
       // A course's new assignment and an assignment's next version (SRV-14, Ductus#2028).
