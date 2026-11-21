@@ -20,13 +20,13 @@ export type SweepDue =
   | { readonly status: "ok"; readonly requestIds: readonly string[] }
   | { readonly status: "invalid" | "unavailable" };
 
-/** Up to `limit` ids of requests the sweep would change now, oldest request first. */
-export async function sweepDue(query: WorkerQuery, limit: number): Promise<SweepDue> {
-  if (!Number.isInteger(limit) || limit < 1 || limit > SWEEP_DUE_MAX) return { status: "invalid" };
+/** Up to `batch` ids of requests the sweep would change now, oldest request first. */
+export async function sweepDue(query: WorkerQuery, batch: number): Promise<SweepDue> {
+  if (!Number.isInteger(batch) || batch < 1 || batch > SWEEP_DUE_MAX) return { status: "invalid" };
   let rows: Record<string, unknown>[];
   try {
     rows = (
-      await query("SELECT request_id FROM assistant.sweep_due($1) AS d (request_id)", [limit])
+      await query("SELECT request_id FROM assistant.sweep_due($1) AS d (request_id)", [batch])
     ).rows;
   } catch (thrown) {
     return { status: codeOf(thrown) === "ZD422" ? "invalid" : "unavailable" };
@@ -37,7 +37,7 @@ export async function sweepDue(query: WorkerQuery, limit: number): Promise<Sweep
     if (typeof id !== "string" || !UUID.test(id)) return { status: "unavailable" };
     ids.push(id);
   }
-  if (ids.length > limit || new Set(ids).size !== ids.length) return { status: "unavailable" };
+  if (ids.length > batch || new Set(ids).size !== ids.length) return { status: "unavailable" };
   return { status: "ok", requestIds: Object.freeze(ids) };
 }
 
