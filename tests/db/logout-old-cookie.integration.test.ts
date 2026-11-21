@@ -19,6 +19,7 @@ import {
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
+  createMentorshipRequestRoutesFor,
   createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
@@ -326,6 +327,27 @@ const SESSION_ROUTES = {
     path: `/api/v1/works/${randomUUID()}/consultation-slots/${randomUUID()}`,
     body: () => ({ action: "confirm" }),
     live: 403,
+  },
+  // SRV-1407: a request, or a teacher, the account has no relation to is 404.
+  "mentorship.requests.post": {
+    path: "/api/v1/mentorship-requests",
+    body: () => ({ teacherId: randomUUID(), workType: "master_thesis" }),
+    live: 404,
+  },
+  "mentorship.request-approve.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/approve`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.request-decline.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/decline`,
+    body: () => ({}),
+    live: 404,
+  },
+  "mentorship.request-withdraw.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/withdraw`,
+    body: () => undefined,
+    live: 404,
   },
   "student.assignment-work.get": {
     method: "GET",
@@ -893,6 +915,7 @@ const FACTORIES = [
   "createWorkPdfRouteFor",
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
+  "createMentorshipRequestRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
@@ -958,6 +981,7 @@ const MOUNTED = [
   createWorkPdfRouteFor(databases.main, undefined),
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
+  ...createMentorshipRequestRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
@@ -1213,6 +1237,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
         id.startsWith("work.") ||
+        id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;

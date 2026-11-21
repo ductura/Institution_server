@@ -39,6 +39,7 @@ import {
   createWorkVersionsRouteFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
+  createMentorshipRequestRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
@@ -246,6 +247,8 @@ async function main(): Promise<void> {
       createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
+      // SRV-1407: the moves of one mentorship request (D-204).
+      ...createMentorshipRequestRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.

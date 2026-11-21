@@ -75,6 +75,23 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562265",
   },
+  // SRV-1407 (Plan M2, D-204): the moves of one mentorship request.
+  "app/api/mentorship-requests/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/mentorship-requests/[requestId]/approve/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/mentorship-requests/[requestId]/decline/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/mentorship-requests/[requestId]/withdraw/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
   "app/api/assignments/[assignmentId]/works/[documentId]/export/pdf/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063084126",
