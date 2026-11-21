@@ -100,7 +100,11 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     returns: "content",
     surfaces: ["replay"],
     proof: "db/main/tests/153-work-export.sql",
-    callers: ["server/database/work-export/work-export.ts"],
+    // SRV-1312: the portable record reads the owner's own submitted text; no teacher, no log row.
+    callers: [
+      "server/database/portable-record/portable-record.ts",
+      "server/database/work-export/work-export.ts",
+    ],
   },
   {
     fn: "app.teacher_declaration",
