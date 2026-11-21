@@ -45,6 +45,7 @@ import {
   createWorkExportRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
+  createTeacherSubmissionsBulkRoutesFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
@@ -347,6 +348,10 @@ async function main(): Promise<void> {
       ),
       // SRV-1110: the Merlin package of an assignment and its download, for its teacher.
       ...createMerlinPackageRoutesFor(databases.main),
+      // SRV-1902 (P-D2): the 24 hour link to the ZIP of all submissions of an assignment, for its teacher.
+      ...createTeacherSubmissionsBulkRoutesFor(databases.main, APP_ORIGIN).map((route) =>
+        excludePracticeAssignment(route, databases.main),
+      ),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
       ...createAssistantRoutesFor(databases.main),
       ...createStatementRoutesFor(databases.main),
