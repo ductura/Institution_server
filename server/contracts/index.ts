@@ -36,6 +36,7 @@ import {
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
+  submissionsRoutes,
   merlinRosterRoutes,
   merlinPackageRoutes,
   supportRoutes,
@@ -62,6 +63,7 @@ export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
 export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
 export {
   NotificationId,
   NotificationsPage,
@@ -128,6 +130,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherWorkingCriteriaRoutes,
   courseAggregateGet,
   ...deadlineExtensionRoutes,
+  ...submissionsRoutes,
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,
   ...supportRoutes,

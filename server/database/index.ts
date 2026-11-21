@@ -310,6 +310,12 @@ export {
   type DeadlineExtensions,
 } from "./deadline-extensions/index.ts";
 export {
+  createSubmissionWithdrawals,
+  type StoredWithdrawalReceipt,
+  type SubmissionHistoryEvent,
+  type SubmissionWithdrawals,
+} from "./submission-withdrawal/index.ts";
+export {
   createSubmittedWorksReader,
   type SubmittedWorkSource,
   type SubmittedWorksOutcome,

@@ -25,6 +25,7 @@ import { NOTIFICATION_HANDLERS } from "./notification-routes.ts";
 import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
+import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
@@ -87,6 +88,7 @@ export const DEV_HANDLERS: Handlers = {
   ...DIRECT_EDIT_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
+  ...SUBMISSION_WITHDRAWAL_HANDLERS,
   "work.export-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const work = state.works.find(

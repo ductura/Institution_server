@@ -68,6 +68,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createSubmissionWithdrawalRoutesFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -706,6 +707,35 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1903: a live session that is not a student or teacher of such an assignment gets 404.
+  "student.submission-withdrawal.post": {
+    path: `/api/v1/student/assignments/${randomUUID()}/submission/withdrawal`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.submission-history.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/submission/history`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submission-history.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission-history`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submission-withdrawal.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/submission-withdrawal`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submission-withdrawal.post": {
+    path: `/api/v1/teacher/assignments/${randomUUID()}/submission-withdrawal`,
+    body: () => ({ allowed: false }),
+    live: 404,
+  },
   // SRV-1109: a live session that teaches no such assignment gets 404.
   "teacher.merlin-roster.get": {
     method: "GET",
@@ -1006,6 +1036,7 @@ const FACTORIES = [
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
+  "createSubmissionWithdrawalRoutesFor",
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
   "createAssistantRoutesFor",
@@ -1083,6 +1114,7 @@ const MOUNTED = [
   createCourseAggregateRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
+  ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
   createStudentDeadlineHistoryRouteFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createMerlinPackageRoutesFor(databases.main),
