@@ -696,6 +696,27 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       method: "GET",
     },
   },
+  "teacher.merlin-packages.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/packages`,
+      as: "nastavnik",
+      body: { requestKey: "4b1e2c3d-0000-4000-8000-00000000aaa1" },
+    },
+  },
+  "teacher.merlin-package.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/packages/00000000-0000-4000-8000-0000000000b1`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
+  "teacher.merlin-package-download.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/packages/00000000-0000-4000-8000-0000000000b1/download`,
+      as: "nastavnik",
+      method: "GET",
+    },
+  },
 };
 
 async function run(state: State, step: Step) {

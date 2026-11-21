@@ -40,6 +40,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
+  createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createInstitutionAssignmentRoutesFor,
@@ -228,6 +229,8 @@ async function main(): Promise<void> {
       ...createDeadlineExtensionRoutesFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.
       ...createMerlinRosterRoutesFor(databases.main),
+      // SRV-1110: the Merlin package of an assignment and its download, for its teacher.
+      ...createMerlinPackageRoutesFor(databases.main),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
       ...createAssistantRoutesFor(databases.main),
       ...createTeacherMentorshipRequestRoutesFor(databases.main),

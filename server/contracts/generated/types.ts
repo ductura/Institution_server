@@ -589,6 +589,27 @@ export type Operations = {
     success: { status: 200; body: { "works": ({ "mentorshipId": string; "assignmentId": string; "documentId": null; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "not_started" } | { "mentorshipId": string; "assignmentId": string; "documentId": string; "student": { "givenName": string; "familyName": string } | null; "title": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "workState": "in_progress" | "submitted" })[] }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "unavailable";
   };
+  "teacher.merlin-package-download.get": {
+    params: { "assignmentId": string; "packageId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable" | "conflict" | "not_allowed";
+  };
+  "teacher.merlin-package.get": {
+    params: { "assignmentId": string; "packageId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "id": string; "state": "queued" | "failed" } | { "id": string; "state": "ready"; "downloadPath": string; "expiresAt": string; "sha256": string } | { "id": string; "state": "expired"; "expiresAt": string; "sha256": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "teacher.merlin-packages.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "requestKey": string };
+    success: { status: 202; body: { "id": string; "state": "queued" | "ready" | "failed" | "expired" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
   "teacher.merlin-roster-csv.get": {
     params: { "assignmentId": string };
     query: undefined;

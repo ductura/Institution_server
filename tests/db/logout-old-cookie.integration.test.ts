@@ -53,6 +53,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
+  createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createWebAuthnRoutesFor,
@@ -521,6 +522,24 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1110: a live session that teaches no such assignment gets 404.
+  "teacher.merlin-packages.post": {
+    path: `/api/v1/teacher/assignments/${randomUUID()}/merlin/packages`,
+    body: () => ({ requestKey: randomUUID() }),
+    live: 404,
+  },
+  "teacher.merlin-package.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/merlin/packages/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.merlin-package-download.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/merlin/packages/${randomUUID()}/download`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1204: no provider in production, so a live session reads ai_disabled
   // (200) and a conversation nobody owns 404.
   "student.assistant-request.post": {
@@ -752,6 +771,7 @@ const FACTORIES = [
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createMerlinRosterRoutesFor",
+  "createMerlinPackageRoutesFor",
   "createAssistantRoutesFor",
   "createTeacherMentorshipRequestRoutesFor",
   "createInternalInstitutionRoutes",
@@ -804,6 +824,7 @@ const MOUNTED = [
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
+  ...createMerlinPackageRoutesFor(databases.main),
   ...createAssistantRoutesFor(databases.main),
   ...createTeacherMentorshipRequestRoutesFor(databases.main),
   ...createInternalInstitutionRoutes({ env: ENV }),

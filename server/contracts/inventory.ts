@@ -319,6 +319,19 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048729191",
   },
+  // SRV-1110 (Val 11, N-18, C-16, D4): the Merlin package and its download; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/merlin/packages/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7049370945",
+  },
+  "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7049370945",
+  },
+  "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051:issuecomment-7049370945",
+  },
 };
 
 /**

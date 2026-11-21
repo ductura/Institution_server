@@ -1050,6 +1050,45 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "teacher.merlin-package-download.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['packageId'] === 'string') &&
+      value['packageId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "teacher.merlin-package.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['packageId'] === 'string') &&
+      value['packageId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "teacher.merlin-packages.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.merlin-packages.post:body": (() => {
+  const local0 = /^[A-Za-z0-9_-]{8,128}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['requestKey'] === 'string') &&
+      local0.test(value['requestKey']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "teacher.merlin-roster-csv.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
