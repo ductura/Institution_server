@@ -277,6 +277,7 @@ export type State = {
     Operations["teacher.submission-withdrawal.get"]["success"]["body"]
   >;
   workSources: WorkSource[];
+  sourceNotes: Map<string, Operations["work.source-notes.post"]["success"]["body"][]>;
   sourceProofs: SourceProof[];
   consultationSlots: {
     documentId: string;
@@ -485,6 +486,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     submissionWithdrawals: [],
     withdrawalSettings: new Map(),
     workSources: [],
+    sourceNotes: new Map(),
     sourceProofs: [],
     consultationSlots: [],
     attachments: [],

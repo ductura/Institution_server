@@ -56,6 +56,7 @@ import {
   createLiveRoutesFor,
   createLayers,
   createMeRouteFor,
+  createStaffAffiliationRouteFor,
   createProblemReportRouteFor,
   createProblemReportsRouteFor,
   createSettingsReadRoutes,
@@ -77,6 +78,7 @@ import {
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
+  createSourceNotebookRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkingCriteriaRoutesFor,
   evidenceIngestDependencies,
@@ -145,6 +147,8 @@ const WORK_SOURCE = {
   place: "Izmišljeni grad",
   publisher: "Izmišljena naklada",
 };
+const SOURCE_NOTES = `/api/v1/works/doc-izmisljeni-rad/sources/${WORK_SOURCE.id}/notes`;
+const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 
 const SESSION_ROUTES = {
   "evidence.open.post": {
@@ -509,6 +513,25 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  "work.source-notes.get": { method: "GET", path: SOURCE_NOTES, body: () => undefined, live: 404 },
+  "work.source-notes.post": {
+    method: "POST",
+    path: SOURCE_NOTES,
+    body: () => ({ note: "Izmišljena bilješka." }),
+    live: 404,
+  },
+  "work.source-notes.patch": {
+    method: "PATCH",
+    path: SOURCE_NOTES,
+    body: () => ({ noteId: SOURCE_NOTE_ID, page: "12–14" }),
+    live: 404,
+  },
+  "work.source-notes.delete": {
+    method: "DELETE",
+    path: `${SOURCE_NOTES}?noteId=${SOURCE_NOTE_ID}`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-22: a live session naming an assignment it is no student of gets 404.
   "student.submission.get": {
     method: "GET",
@@ -581,6 +604,13 @@ const SESSION_ROUTES = {
   "profile.me.get": {
     method: "GET",
     path: "/api/v1/me",
+    body: () => undefined,
+    live: 200,
+  },
+  // SRV-1403: the caller's own staff affiliation; it only reads.
+  "profile.staff-affiliation.get": {
+    method: "GET",
+    path: "/api/v1/me/staff-affiliation",
     body: () => undefined,
     live: 200,
   },
@@ -985,6 +1015,7 @@ const FACTORIES = [
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
   "createWorkSourceRoutesFor",
+  "createSourceNotebookRoutesFor",
   "createSourceProofRoutesFor",
   "createTextCheckConfigRoute",
   "createTeacherWorkingCriteriaRoutesFor",
@@ -1030,6 +1061,7 @@ const FACTORIES = [
   "createStudentSubmissionRoutesFor",
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
+  "createStaffAffiliationRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createCourseAggregateRouteFor",
@@ -1064,6 +1096,7 @@ const MOUNTED = [
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
   ...createWorkSourceRoutesFor(databases.main),
+  ...createSourceNotebookRoutesFor(databases.main),
   ...createSourceProofRoutesFor(databases.main),
   createTextCheckConfigRoute(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),
@@ -1109,6 +1142,7 @@ const MOUNTED = [
   ...createStudentSubmissionRoutesFor(databases.main),
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
+  createStaffAffiliationRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),

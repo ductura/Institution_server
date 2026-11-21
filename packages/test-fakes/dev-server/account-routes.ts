@@ -98,6 +98,21 @@ export const ACCOUNT_HANDLERS: Handlers = {
             sessionTag: fakeSessionTag(token),
           },
         },
+  // SRV-1403: a fake teacher is affiliated by an unscoped hrEdu value; every
+  // other account stays a student with the closed code.
+  "profile.staff-affiliation.get": ({ account, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    return account.roles.includes("teacher")
+      ? {
+          status: 200,
+          body: {
+            confirmed: true,
+            source: "hrEduPersonAffiliation",
+            confirmedAt: now.toISOString(),
+          },
+        }
+      : { status: 200, body: { confirmed: false, code: "staff_affiliation_missing" } };
+  },
   "profile.interface-locale.get": ({ account }) =>
     account === null
       ? { error: "unauthorized" }

@@ -50,6 +50,7 @@ import {
   createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createSourceNotebookRoutesFor,
   createWorkVersionRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
@@ -57,6 +58,7 @@ import {
   createStudentAssignmentWorkRouteFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStaffAffiliationRouteFor,
   createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
@@ -459,6 +461,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createSourceNotebookRoutesFor(databases.main)",
+    ids: [
+      "work.source-notes.get",
+      "work.source-notes.post",
+      "work.source-notes.patch",
+      "work.source-notes.delete",
+    ],
+    routes: () => createSourceNotebookRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     call: "createWorkVersionRouteFor(databases.main, evidenceDeps)",
     ids: ["work.version.get"],
     routes: () => [
@@ -504,6 +516,12 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createStudentNoticeRouteFor(databases.main)",
     ids: ["student.notice.get"],
     routes: () => [createStudentNoticeRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // SRV-1403: the caller's own staff affiliation over the main database.
+    call: "createStaffAffiliationRouteFor(databases.main)",
+    ids: ["profile.staff-affiliation.get"],
+    routes: () => [createStaffAffiliationRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-9B: the public check of a receipt over the main database.
@@ -710,6 +728,10 @@ describe("routes the entry point mounts itself", () => {
       "work.attachments.get",
       "work.milestones.get",
       "work.milestones.patch",
+      "work.source-notes.get",
+      "work.source-notes.post",
+      "work.source-notes.patch",
+      "work.source-notes.delete",
       "work.version.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
@@ -718,6 +740,7 @@ describe("routes the entry point mounts itself", () => {
       "student.assignment-requirements.get",
       "teacher.submission-receipt.get",
       "student.notice.get",
+      "profile.staff-affiliation.get",
       "public.verification.post",
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",

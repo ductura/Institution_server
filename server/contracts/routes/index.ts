@@ -19,6 +19,7 @@ export {
 export { profileRoutes } from "./profile.ts";
 export { StudentSubmissionState, studentRoutes } from "./student.ts";
 export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
+export { sourceNotebookRoutes } from "./source-notebook.ts";
 export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
@@ -72,3 +73,4 @@ export { merlinRosterRoutes } from "./merlin-roster.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";
 export { statementRoutes } from "./statement.ts";
+export { STAFF_AFFILIATION_SOURCES, staffAffiliationRoutes } from "./staff-affiliation.ts";
