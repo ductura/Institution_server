@@ -44,31 +44,34 @@ const SURFACES = "live_view|process_summary|fast_path|replay|submitted_text|decl
 
 // One row per function the web role may execute: whether it reaches a content
 // table and the writer, and the surfaces named by the functions on the way
-// that call the writer.
+// that call the writer. A call is a schema-qualified name followed by "(": the
+// functions of these schemas run with an empty search_path, so every call
+// names its schema. Each body is scanned once, so the walk is linear.
 const CATALOGUE = `
 WITH RECURSIVE fns AS (
-  SELECT p.oid, n.nspname || '.' || p.proname AS name, p.prosrc
+  SELECT p.oid, n.nspname || '.' || p.proname AS name, p.prosrc,
+         p.prosrc ~ ('(' || $2 || ')\\M') AS content,
+         p.prosrc ~ 'audit\\.record_work_opening\\(' AS logs
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = ANY ($1::text[])
 ), edges AS (
-  SELECT a.oid AS caller, b.oid AS callee
-  FROM fns a JOIN fns b ON a.oid <> b.oid AND a.prosrc ~ ('\\m' || replace(b.name, '.', '\\.') || '\\(')
+  SELECT DISTINCT a.oid AS caller, b.oid AS callee
+  FROM fns a
+  CROSS JOIN LATERAL regexp_matches(a.prosrc, '\\m([a-z_]+\\.[a-z_0-9]+)\\s*\\(', 'g') AS m (ref)
+  JOIN fns b ON b.name = m.ref[1] AND b.oid <> a.oid
 ), reach (oid, root) AS (
-  SELECT oid, oid FROM fns
+  SELECT oid, oid FROM fns WHERE has_function_privilege('ductus_app', oid, 'EXECUTE')
   UNION
   SELECT e.callee, r.root FROM reach r JOIN edges e ON e.caller = r.oid
 )
 SELECT f.name,
-       bool_or(g.prosrc ~ ('(' || $2 || ')\\M')) AS content,
-       bool_or(g.prosrc ~ 'audit\\.record_work_opening\\(') AS logs,
+       bool_or(g.content) AS content,
+       bool_or(g.logs) AS logs,
        array_remove(array_agg(DISTINCT s.m[1]), NULL) AS surfaces
-FROM fns f
-JOIN reach r ON r.root = f.oid
+FROM reach r
+JOIN fns f ON f.oid = r.root
 JOIN fns g ON g.oid = r.oid
-LEFT JOIN LATERAL (
-  SELECT regexp_matches(g.prosrc, $3, 'g') AS m WHERE g.prosrc ~ 'audit\\.record_work_opening\\('
-) s ON true
-WHERE has_function_privilege('ductus_app', f.oid, 'EXECUTE')
+LEFT JOIN LATERAL (SELECT regexp_matches(g.prosrc, $3, 'g') AS m WHERE g.logs) s ON true
 GROUP BY f.name
 `;
 
@@ -81,7 +84,7 @@ beforeAll(async () => {
   db = await createTestDatabase("main", { authority: true });
   const { rows } = await db.query<Catalogued>(CATALOGUE, [SCHEMAS, CONTENT, `'(${SURFACES})'`]);
   catalogue = new Map(rows.map((r) => [r.name, r]));
-});
+}, 60_000);
 
 afterAll(async () => {
   await db?.close();
