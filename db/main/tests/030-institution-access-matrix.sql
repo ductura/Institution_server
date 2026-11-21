@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2473);
+SELECT plan(2601);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -103,11 +103,12 @@ SELECT bag_eq(
      WHERE c.relnamespace = 'institution'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm', 'f') $$,
   ARRAY['institution_settings', 'institution_role', 'course', 'course_enrollment_code', 'course_member', 'enrollment_attempt',
         'assignment', 'assignment_version', 'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
-        'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
+        'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
-        'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline'],
-  'the institution schema holds exactly the thirty-three tables of this matrix'
+        'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
+        'work_milestone_deadline', 'mentor_note'],
+  'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -141,6 +142,7 @@ SELECT bag_eq(
     'ductus_app SELECT assignment_version',
     'ductus_app SELECT notice_acknowledgment',
     'ductus_app SELECT mentorship',
+    'ductus_app SELECT mentor_note',
     'ductus_app SELECT course_holder',
     'ductus_app SELECT seminar_group',
     'ductus_app SELECT seminar_group_teacher',
@@ -187,9 +189,12 @@ SELECT bag_eq(
     'faculty_work_rule: faculty_work_rule_owner ALL to ductus_identity',
     'mentorship: mentorship_owner ALL to ductus_identity',
     'mentorship: mentorship_read SELECT to ductus_app',
+    'mentor_note: mentor_note_owner ALL to ductus_identity',
+    'mentor_note: mentor_note_read SELECT to ductus_app',
     'notification: notification_owner ALL to ductus_identity',
     'course_holder: course_holder_owner ALL to ductus_identity',
     'course_holder: course_holder_read SELECT to ductus_app',
+    'course_assistant: course_assistant_owner ALL to ductus_identity',
     'seminar_group: seminar_group_owner ALL to ductus_identity',
     'seminar_group: seminar_group_read SELECT to ductus_app',
     'seminar_group_teacher: seminar_group_teacher_owner ALL to ductus_identity',
@@ -232,7 +237,8 @@ SELECT bag_eq(
   $$ SELECT c.relname || ': ' || t.tgname || ' ' || t.tgtype::text || ' ' || t.tgenabled::text
      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
      WHERE c.relnamespace = 'institution'::regnamespace AND NOT t.tgisinternal $$,
-  ARRAY['assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
+  ARRAY['assignment: assignment_practice_immutable 19 O',
+        'assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
         'assignment_version: assignment_version_mentorship_rule 7 O', 'assignment_version: assignment_version_notify 5 O',
         'assignment_version: assignment_version_institution_fill 7 O',
         'assignment_version: assignment_version_work_language 7 O',
@@ -250,6 +256,7 @@ SELECT bag_eq(
         'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O',
         'deadline_extension: deadline_extension_immutable 27 O', 'deadline_extension: deadline_extension_no_truncate 34 O',
         'merlin_package: merlin_package_guard 27 O', 'merlin_package: merlin_package_no_truncate 34 O',
+        'merlin_package: merlin_package_practice 7 O',
         'merlin_package_download: merlin_package_download_immutable 27 O',
         'merlin_package_download: merlin_package_download_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
@@ -297,6 +304,10 @@ SELECT bag_eq(
     'create_assignment(p_course_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer) definer app',
+    'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean) definer app',
+    'assignment_grade_state(p_assignment_id uuid) app',
+    'refuse_assignment_practice_change()',
+    'refuse_practice_merlin_package()',
     'publish_assignment_version(p_assignment_id uuid, p_expected_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'acknowledge_notice(p_assignment_id uuid, p_version_no integer, p_template_version integer) definer app',
     'notice_fingerprint(p_template_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_word_min integer, p_word_max integer)',
@@ -305,10 +316,12 @@ SELECT bag_eq(
     'has_acknowledged_current(p_assignment_id uuid) definer app',
     'list_teacher_courses() app',
     'actor_mentorship_role(p_mentorship_id uuid) definer app',
+    'create_mentor_note(p_mentorship_id uuid, p_body text) definer app',
     'check_mentorship_version() definer',
     'assignment_version_institution_fill()',
     'course_enrollment_code_institution_fill()',
     'notify_assignment_version() definer',
+      'notify_published_comment() definer',
     'require_course_teacher(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
     'is_confirmed_teacher(p_user_id uuid, p_course_id uuid)',
     'set_course_holder(p_course_id uuid, p_holder_id uuid) definer app',
@@ -320,6 +333,11 @@ SELECT bag_eq(
     'actor_group_access(p_course_id uuid)',
     'require_group_manager(p_course_id uuid, p_collaborator boolean, OUT user_id uuid, OUT institution_id uuid)',
     'course_groups(p_course_id uuid) definer app',
+    'read_teaching_team(p_course_id uuid) definer app',
+    'lock_teaching_team(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
+    'check_teaching_member_ids(p_ids uuid[])',
+    'replace_course_assistants(p_course_id uuid, p_assistant_ids uuid[]) definer app',
+    'replace_teaching_group_members(p_course_id uuid, p_group_id uuid, p_assistant_ids uuid[], p_student_ids uuid[]) definer app',
     'can(p_action text, p_document_id text) definer app',
     'actor_group_student(p_course_id uuid, p_student_id uuid)',
     'actor_group_work(p_assignment_id uuid, p_student_id uuid)',
@@ -385,6 +403,9 @@ SELECT bag_eq(
     'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
     'deadline_extensions(p_assignment_id uuid) definer app',
+    'student_deadline_history(p_assignment_id uuid) definer app',
+      'list_notifications(p_before uuid, p_reminder_seconds integer) definer app',
+      'read_notification(p_id uuid) definer app',
     'guard_merlin_package()',
     'refuse_merlin_package_download_change()',
     'merlin_package_visible(p_assignment_id uuid, p_student_ids uuid[])',
@@ -429,6 +450,15 @@ SELECT is_empty(
      CROSS JOIN unnest(ARRAY['app.submission_state_of(uuid,uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-20: only its owner and the identity role execute app.submission_state_of, never ductus_app'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.notify_submission_owner(uuid,uuid,uuid)', 'app.notify_bound_receipt()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1701: application and worker cannot directly produce a receipt notification'
 );
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
@@ -693,6 +723,36 @@ FROM (VALUES
   ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
 ) AS c (actor, outcome);
 
+-- 1f2. SRV-1310: the source of the DOCX export of a work only through
+-- app.read_work_export; its reader of the evidence rows is never the web
+-- role's. The owner, the teacher, the version and the access log are in
+-- 153-work-export.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_work_export(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.work_export_rows(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1310: only ductus_app and the owner execute the read; only the identity role and the owner the helper'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_export('doc-nema') $$), 1, 9),
+  c.outcome, format('SRV-1310: %s reads the export source of a missing work: %s', c.actor, c.outcome)
+)
+FROM (VALUES
+  ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),
+  ('iva', 'not_found'), ('boris', 'not_found'), ('nina', 'not_found'), ('tomo', 'not_found'),
+  ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
+) AS c (actor, outcome);
+
 -- 1g. SRV-10B: the attachments of a work (institution.work_attachment) only
 -- through its three RPCs; the web role has no privilege or policy on the
 -- table. One cell per actor on Z1 of K1 and Z3 of fak-b; the rest (shape,
@@ -813,6 +873,15 @@ FROM (VALUES
   ('boris', 'null'), ('nina', 'null'), ('tomo', 'null'), ('lea', 'null'), ('petra', 'null'), ('anon', 'null')
 ) AS c (actor, result);
 
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*) FROM institution.student_deadline_history({z1})'), c.result,
+  format('SRV-1509: %s reads only the own history of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('ana', '1'), ('dora', '0'), ('vesna', 'ZD403: forbidden'), ('marko', 'ZD403: forbidden'),
+  ('iva', 'ZD403: forbidden'), ('boris', 'ZD403: forbidden'), ('nina', 'ZD403: forbidden'),
+  ('tomo', 'ZD403: forbidden'), ('lea', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'),
+  ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
+
 -- 1j. SRV-1110: the Merlin package (institution.merlin_package and the record
 -- of its downloads, institution.merlin_package_download) only through their
 -- RPCs; the web role has no privilege or policy on either table. One cell per
@@ -873,16 +942,17 @@ FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_aut
 CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'course_enrollment_code',
                         'course_member', 'enrollment_attempt', 'assignment', 'assignment_version',
                         'notice_acknowledgment', 'faculty_work_rule', 'mentorship', 'notification',
-                        'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
+                        'course_holder', 'course_assistant', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
-                        'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline']) WITH ORDINALITY AS t (tbl, n)
+                        'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
+                        'work_milestone_deadline', 'mentor_note']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
