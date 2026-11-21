@@ -280,6 +280,7 @@ export {
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
+export { createWorkExportRoute, createWorkExportRouteFor } from "./work-export/index.ts";
 export { createWorkVersionRouteFor } from "./time-machine/index.ts";
 export {
   createCommentBankRoutes,
@@ -292,6 +293,7 @@ export {
   createWorkMessagesPostRoute,
   createWorkMessagesRoutesFor,
 } from "./work-messages/index.ts";
+export { createNotificationsRoutesFor } from "./notifications/index.ts";
 export {
   createDirectEditGetRoute,
   createDirectEditPutRoute,

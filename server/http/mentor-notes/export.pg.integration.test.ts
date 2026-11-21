@@ -7,7 +7,13 @@ import { expect, it } from "vitest";
 import { createTestDatabase } from "../../../test-support/database/index.ts";
 import { createLiveStates, createMentorNotesStore, type WithActor } from "../../database/index.ts";
 
-import { createDatabases, createLayers, createWorkPdfRouteFor, startServer } from "../index.ts";
+import {
+  createDatabases,
+  createLayers,
+  createWorkExportRouteFor,
+  createWorkPdfRouteFor,
+  startServer,
+} from "../index.ts";
 
 const FIXTURES = new URL("../../../db/main/tests/fixtures/", import.meta.url);
 const ASSIGNMENT = "00000000-0000-4000-8000-0000000000a1";
@@ -53,6 +59,12 @@ it("exports the student's saved work without the real note stored against its me
     expect(await createLiveStates(withActor).publish(OWNER, DOC, null, BODY)).toMatchObject({
       status: "accepted",
     });
+    const revision = await db.query<{ outcome: string }>(
+      `SELECT pg_temp.call('ana', 'pkg-a', 'demo-export', pg_temp.descriptor(),
+                           0, repeat('a', 64), $1, repeat('b', 64)) AS outcome`,
+      [BODY],
+    );
+    expect(revision.rows[0]?.outcome).toBe("reserved");
     await db.exec(`SET LOCAL ROLE ductus_identity;
       INSERT INTO institution.mentorship (id, institution_id, mentor_id, student_id, work_type)
       VALUES ('${MENTORSHIP}', pg_temp.id('fak_a'), pg_temp.id('marko'), pg_temp.id('ana'), 'bachelor_thesis');
@@ -68,27 +80,36 @@ it("exports the student's saved work without the real note stored against its me
       port: 0,
       databases: createDatabases(),
       layers: createLayers({ expectedOrigin: "https://ductura.example.invalid" }),
-      routes: [createWorkPdfRouteFor({ withActor }, `http://127.0.0.1:${address.port}`)],
+      routes: [
+        createWorkPdfRouteFor({ withActor }, `http://127.0.0.1:${address.port}`),
+        createWorkExportRouteFor({ withActor }),
+      ],
     });
     try {
-      const exportWork = async () => {
-        const path = `/api/v1/assignments/${ASSIGNMENT}/works/${DOC}/export/pdf`;
+      const exportWork = async (path: string) => {
         const response = await fetch(`http://127.0.0.1:${running.port}${path}`, {
           headers: { cookie: `__Host-ductus_session=${OWNER}` },
         });
         expect(response.status).toBe(200);
-        return (await response.json()) as { docxBase64: string };
+        return Buffer.from(await response.arrayBuffer());
       };
-      const before = await exportWork();
+      const pdfPath = `/api/v1/assignments/${ASSIGNMENT}/works/${DOC}/export/pdf`;
+      const docxPath = `/api/v1/works/${DOC}/export?format=docx`;
+      const pdfBefore = await exportWork(pdfPath);
+      const docxBefore = await exportWork(docxPath);
       const store = createMentorNotesStore(withActor);
       const note = await store.create(MENTOR, MENTORSHIP, PRIVATE_NOTE);
       expect(await store.read(MENTOR, MENTORSHIP)).toEqual({ status: "found", notes: [note] });
       expect(await store.read(OWNER, MENTORSHIP)).toEqual({ status: "not_found" });
-      const after = await exportWork();
-      expect(after).toEqual(before);
-      const docx = Buffer.from(after.docxBase64, "base64").toString("utf8");
-      expect(docx).toContain(WORK_TEXT);
-      expect(docx).not.toContain(PRIVATE_NOTE);
+      const pdfAfter = await exportWork(pdfPath);
+      const docxAfter = await exportWork(docxPath);
+      expect(pdfAfter.equals(pdfBefore)).toBe(true);
+      expect(docxAfter.equals(docxBefore)).toBe(true);
+      const pdfExport = JSON.parse(pdfAfter.toString("utf8")) as { docxBase64: string };
+      for (const docx of [docxAfter, Buffer.from(pdfExport.docxBase64, "base64")]) {
+        expect(docx.toString("utf8")).toContain(WORK_TEXT);
+        expect(docx.toString("utf8")).not.toContain(PRIVATE_NOTE);
+      }
     } finally {
       await running.close();
     }
