@@ -176,6 +176,7 @@ export {
   sendHtmlProblem,
   sendDeclaredResponse,
   sendProblem,
+  sendProblemWith,
   sendRouteRefusal,
   type Problem,
 } from "./problem.ts";

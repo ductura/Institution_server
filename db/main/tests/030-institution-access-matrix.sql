@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2829);
+SELECT plan(2830);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -59,7 +59,8 @@ SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
   f.signature || ': private to the evidence owner')
   FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
-               ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)')) f(signature)
+               ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'),
+               ('declaration.is_fresh(declaration.statement,text,bigint,integer)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1207, ai-tools-v1 "Matrica pristupa": the tool setting, the steps, the
 -- loop reservation and the setting trail are reached only by their owner; the
@@ -119,7 +120,8 @@ SELECT bag_eq(
         'declaration.payload_conversations(text)', 'declaration.check_conversation_attachment()',
         'declaration.check_statement_attachments()',
         'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
-        'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'],
+        'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)',
+        'declaration.is_fresh(declaration.statement,text,bigint,integer)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(

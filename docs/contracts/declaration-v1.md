@@ -304,6 +304,13 @@ Izjava nije u `artifactSha256`, `content_hash` ni u bajtovima dokumenta (D-228).
 - Opoziv prije zahtjeva: `student.declaration.put` i predaja daju isti ishod kao za nepostojeći zadatak.
 - Produljenje roka nakon zahtjeva ne mijenja vezanu izjavu (Q07).
 
+### 6.6 Izvedba koraka 5 (SRV-1214)
+
+- **Vezanje i svježina.** Migracija `20261204100000_submission_declaration_freshness.sql` dodaje `declaration.is_fresh`, jednu provjeru iz 6.2 (revizija i verzija zadatka, obvezni razgovori, `attachment_stale`). Okidač `declaration.pin_request` na `evidence.submission_request` njome bira zadnju potvrđenu verziju u istoj transakciji i pod istim zaključavanjem kao `app.request_submission`; stanje `confirmed` odnosno `stale` u `declaration.view_statement` računa ista funkcija. Expand stupce `declaration_version_id` i `declaration_sha256` dodao je SRV-1510; stari zahtjevi ostaju s NULL.
+- **Bez blokade (6.3, OD-6).** Nesvježa verzija se ne veže, a predaja se zapisuje bez izjave. Tehnička greška pri čitanju izjave također daje predaju bez izjave. Razlozi `declaration_unconfirmed` i `attachment_stale` u `blocked` ne postoje dok ne postoji postavka zadatka.
+- **Potvrda v3 (OD-2, A).** Format `ductus-submission-receipt-v3` i njegov verifikator su u `server/domain/forensics/submission-receipt-v3.ts` i `submission-receipt-verifier-v3.ts`, s neovisno izračunatim vektorom: 16 polja v2 uz `receiptSchema` v3 i obvezni `declarationSha256` (64 heks ili `null`), prefiks domene `ductus-submission-receipt-v3`, ulaz potpisa 61 bajt. Vektor v2 ostaje bajt-jednak.
+- **Otvoreno.** Izdavatelj, rute predaje i `/provjera` i dalje izdaju i čitaju v2. Prijelaz na v3 mijenja tip potvrde u odgovorima postojećih ruta, što `contracts:breaking` odbija unutar `/api/v1`; traži glavno izdanje ugovora (6.4) i odluku vlasnika.
+
 ## 7. Rute
 
 Oblik ruta prati `server/contracts/routes/` (zatvorena tijela, odgovor greške `{status: <kod>}`, `MUTATION_GUARD`, isti 404 za tuđe, nepoznato i neispravno). Rute su prijedlog; dodaju se tek nakon odobrenja.

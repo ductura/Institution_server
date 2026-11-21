@@ -5,6 +5,7 @@ import {
   checkExternalAttachmentBytes,
   declarationSha256,
   incompleteFields,
+  isExternalFormat,
   parseDeclarationPutBody,
 } from "../../../server/domain/declaration/index.ts";
 import type { Context, Handlers } from "./server.ts";
@@ -83,15 +84,16 @@ export const STATEMENT_HANDLERS: Handlers = {
     const parsed = parseDeclarationPutBody(ctx.body);
     if (!parsed.ok || parsed.body.ai.attachments.length !== 0) return { error: "invalid_input" };
     const body = parsed.body;
+    if (previous.submitted) return { error: "already_submitted" };
+    if (body.confirm && incompleteFields(body).length > 0) return { error: "incomplete" };
     if (
-      previous.submitted ||
-      body.revision !== work.revision ||
-      body.baseVersion !== previous.version ||
       body.form.formSha256 !== FORM.formSha256 ||
       body.form.formVersion !== FORM.formVersion ||
-      body.form.formId !== FORM.formId ||
-      (body.confirm && incompleteFields(body).length > 0)
+      body.form.formId !== FORM.formId
     ) {
+      return { error: "form_outdated" };
+    }
+    if (body.revision !== work.revision || body.baseVersion !== previous.version) {
       return { error: "conflict" };
     }
     const uploads = previous.uploads.filter((upload) =>
@@ -144,8 +146,9 @@ export const STATEMENT_HANDLERS: Handlers = {
   "student.declaration-attachments.post": (ctx) => {
     const work = workOf(ctx);
     if (work === undefined) return { error: "not_found" };
-    if (work.state === "submitted") return { error: "conflict" };
+    if (work.state === "submitted") return { error: "already_submitted" };
     const format = ctx.header("content-type")?.split(";")[0]?.trim().toLowerCase();
+    if (!isExternalFormat(format ?? "")) return { error: "unsupported_media_type" };
     if (ctx.rawBody.byteLength > 2097152) return { error: "body_too_large" };
     const checked = checkExternalAttachmentBytes(format ?? "", ctx.rawBody);
     if (!checked.ok) return { error: "invalid_input" };

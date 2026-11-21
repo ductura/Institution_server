@@ -924,7 +924,8 @@ const SESSION_ROUTES = {
   "student.declaration-attachments.post": {
     path: `/api/v1/student/assignments/${randomUUID()}/declaration-attachments`,
     body: () => ({}),
-    live: 422,
+    // A JSON body is not PDF or plain text (declaration-v1 §7.3, SRV-1213).
+    live: 415,
   },
   "teacher.assignment-submissions.post": {
     path: "/api/v1/teacher/assignment-submissions",

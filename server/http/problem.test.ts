@@ -28,6 +28,7 @@ import {
   sendBareRefusal,
   sendDeclaredResponse,
   sendProblem,
+  sendProblemWith,
 } from "./problem.ts";
 import { requestIdOf } from "./request-id.ts";
 
@@ -85,6 +86,15 @@ const CODE_IN_STATUS = new Set([
   "evidence.replay.post",
 ]);
 
+// Problem bodies that also name what the client must reload or attach
+// (declaration-v1 §7.3), with sample values for the extra fields. A closed list.
+const WITH_FIELDS: Record<string, Record<string, unknown>> = {
+  "student.declaration.put declaration_conflict": { currentVersion: 3 },
+  "student.declaration.put stale_revision": { currentRevision: 2 },
+  "student.declaration.put mandatory_attachment_missing": { conversationIds: [ID] },
+  "student.declaration.put attachment_stale": { conversationIds: [ID] },
+};
+
 function properties(schema: TSchema): Record<string, TSchema> {
   return (schema as TObject).properties;
 }
@@ -109,7 +119,9 @@ describe("every route in the inventory", () => {
     expect(props["status"]).toMatchObject({ const: status });
     expect(props["requestId"]).toMatchObject({ type: "string", pattern: REQUEST_ID_PATTERN });
     // The answer problem.ts gives is valid against the route's own schema.
-    expect(Value.Check(spec.body as TSchema, problemOf(status, code, ID))).toBe(true);
+    const fields = WITH_FIELDS[`${id} ${code}`] ?? {};
+    const answer = { ...problemOf(status, code, ID), ...fields };
+    expect(Value.Check(spec.body as TSchema, answer)).toBe(true);
   });
 
   it("the shared errors, the fallback and 405 have the default problem body", () => {
@@ -224,6 +236,42 @@ describe("problemOf and sendProblem", () => {
   it("an unknown pair is answered as 500, not with the caller's status", () => {
     const { response, answer } = fakeResponse();
     sendProblem(response, 404, "made_up_code");
+    expect(answer.status).toBe(INTERNAL.error.status);
+  });
+});
+
+describe("sendProblemWith", () => {
+  const found = SERVER_ERRORS.find(
+    (spec) => spec.code === "declaration_conflict" && typeof spec.body === "object",
+  );
+  if (found === undefined) throw new Error("declaration_conflict is not a server error");
+  const stale: ErrorSpec = found;
+
+  it("adds the fields the route's own spec declares", () => {
+    const { response, answer } = fakeResponse();
+    sendProblemWith(response, stale, { currentVersion: 3 });
+    expect(answer.status).toBe(409);
+    expect(JSON.parse(answer.body ?? "")).toMatchObject({
+      error: "declaration_conflict",
+      code: "declaration_conflict",
+      currentVersion: 3,
+    });
+  });
+
+  it.each([
+    ["a field the spec does not declare", { currentVersion: 3, extra: "x" }],
+    ["a field of the wrong type", { currentVersion: "3" }],
+    ["a missing field", {}],
+  ])("answers 500 without the fields for %s", (_, fields) => {
+    const { response, answer } = fakeResponse();
+    sendProblemWith(response, stale, fields);
+    expect(answer.status).toBe(INTERNAL.error.status);
+    expect(answer.body).not.toContain("currentVersion");
+  });
+
+  it("answers 500 for a spec that is not a server error", () => {
+    const { response, answer } = fakeResponse();
+    sendProblemWith(response, { ...stale }, { currentVersion: 3 });
     expect(answer.status).toBe(INTERNAL.error.status);
   });
 });

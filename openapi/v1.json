@@ -36819,7 +36819,7 @@
     "/api/v1/student/assignments/{assignmentId}/declaration-attachments": {
       "post": {
         "operationId": "student.declaration-attachments.post",
-        "summary": "Send raw PDF or UTF-8 plain-text bytes with Content-Type application/pdf or text/plain. Other media types yield 422. Uploading returns a reference for a later declaration PUT.",
+        "summary": "Send raw PDF or UTF-8 plain-text bytes with Content-Type application/pdf or text/plain. Other media types yield 415; bytes that do not match the type yield 422. Uploading returns a reference for a later declaration PUT.",
         "x-access": "student_enrolled",
         "x-inventory": "app/api/student/assignments/[assignmentId]/declaration-attachments/route.ts",
         "parameters": [
@@ -37190,37 +37190,128 @@
             }
           },
           "409": {
-            "description": "conflict",
+            "description": "conflict, already_submitted, too_many_attachments, attachments_too_large",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "conflict",
-                      "type": "string"
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.conflict",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "code": {
-                      "const": "conflict",
-                      "type": "string"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "already_submitted",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "already_submitted",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.alreadySubmitted",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "messageKey": {
-                      "const": "errors.conflict",
-                      "type": "string"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "too_many_attachments",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "too_many_attachments",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.tooManyAttachments",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "status": {
-                      "const": 409,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "attachments_too_large",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "attachments_too_large",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.attachmentsTooLarge",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -37250,6 +37341,42 @@
                     },
                     "status": {
                       "const": 413,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unsupported_media_type",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unsupportedMediaType",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 415,
                       "type": "number"
                     },
                     "requestId": {
@@ -37399,6 +37526,26 @@
             "status": 503,
             "code": "unavailable",
             "key": "errors.unavailable"
+          },
+          {
+            "status": 415,
+            "code": "unsupported_media_type",
+            "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 409,
+            "code": "already_submitted",
+            "key": "errors.already_submitted"
+          },
+          {
+            "status": 409,
+            "code": "too_many_attachments",
+            "key": "errors.too_many_attachments"
+          },
+          {
+            "status": 409,
+            "code": "attachments_too_large",
+            "key": "errors.attachments_too_large"
           }
         ]
       }
@@ -39456,37 +39603,276 @@
             }
           },
           "409": {
-            "description": "conflict",
+            "description": "conflict, already_submitted, form_outdated, incomplete, declaration_conflict, stale_revision, mandatory_attachment_missing, attachment_stale",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "conflict",
-                      "type": "string"
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "conflict",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.conflict",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "code": {
-                      "const": "conflict",
-                      "type": "string"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "already_submitted",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "already_submitted",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.alreadySubmitted",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "messageKey": {
-                      "const": "errors.conflict",
-                      "type": "string"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "form_outdated",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "form_outdated",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.formOutdated",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "status": {
-                      "const": 409,
-                      "type": "number"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "incomplete",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "incomplete",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.incomplete",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "currentVersion"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "declaration_conflict",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "declaration_conflict",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.declarationConflict",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "currentVersion": {
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "currentRevision"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "stale_revision",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "stale_revision",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.staleRevision",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "currentRevision": {
+                          "minimum": 1,
+                          "maximum": 9007199254740991,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "conversationIds"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "mandatory_attachment_missing",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "mandatory_attachment_missing",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.mandatoryAttachmentMissing",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "conversationIds": {
+                          "minItems": 1,
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "conversationIds"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "attachment_stale",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "attachment_stale",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.attachmentStale",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 409,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        },
+                        "conversationIds": {
+                          "minItems": 1,
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -39564,37 +39950,70 @@
             }
           },
           "422": {
-            "description": "invalid_input",
+            "description": "invalid_input, invalid_attachment",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "invalid_input",
-                      "type": "string"
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_input",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_input",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidInput",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 422,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     },
-                    "code": {
-                      "const": "invalid_input",
-                      "type": "string"
-                    },
-                    "messageKey": {
-                      "const": "errors.invalidInput",
-                      "type": "string"
-                    },
-                    "status": {
-                      "const": 422,
-                      "type": "number"
-                    },
-                    "requestId": {
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-                      "type": "string"
+                    {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_attachment",
+                          "type": "string"
+                        },
+                        "code": {
+                          "const": "invalid_attachment",
+                          "type": "string"
+                        },
+                        "messageKey": {
+                          "const": "errors.invalidAttachment",
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": 422,
+                          "type": "number"
+                        },
+                        "requestId": {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                          "type": "string"
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -39711,6 +40130,46 @@
             "status": 415,
             "code": "unsupported_media_type",
             "key": "errors.unsupported_media_type"
+          },
+          {
+            "status": 422,
+            "code": "invalid_attachment",
+            "key": "errors.invalid_attachment"
+          },
+          {
+            "status": 409,
+            "code": "already_submitted",
+            "key": "errors.already_submitted"
+          },
+          {
+            "status": 409,
+            "code": "form_outdated",
+            "key": "errors.form_outdated"
+          },
+          {
+            "status": 409,
+            "code": "incomplete",
+            "key": "errors.incomplete"
+          },
+          {
+            "status": 409,
+            "code": "declaration_conflict",
+            "key": "errors.declaration_conflict"
+          },
+          {
+            "status": 409,
+            "code": "stale_revision",
+            "key": "errors.stale_revision"
+          },
+          {
+            "status": 409,
+            "code": "mandatory_attachment_missing",
+            "key": "errors.mandatory_attachment_missing"
+          },
+          {
+            "status": 409,
+            "code": "attachment_stale",
+            "key": "errors.attachment_stale"
           }
         ]
       }

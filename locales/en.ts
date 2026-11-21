@@ -2072,6 +2072,17 @@ const en = {
     versionConflict:
       "The assignment has changed in the meantime. Load the latest version and try again.",
     practiceAssignment: "Practice assignments are ungraded.",
+    alreadySubmitted:
+      "The work has already been submitted, so the declaration can no longer be changed.",
+    attachmentStale: "An attached conversation has changed in the meantime. Attach it again.",
+    attachmentsTooLarge: "The declaration attachments are too large in total.",
+    declarationConflict: "The declaration has changed in the meantime. Load it again.",
+    formOutdated: "The declaration form has changed in the meantime. Load the new form.",
+    incomplete: "The declaration is not complete. Fill in all required fields.",
+    invalidAttachment: "The attachment was not found or does not belong to this work.",
+    mandatoryAttachmentMissing:
+      "A required conversation attachment is missing. Attach it and try again.",
+    tooManyAttachments: "The declaration already has the maximum number of attachments.",
   },
   // Texts of the error catalogue the server's contract does not answer (S-1M-c, DAN-802); added after the port.
   clientErrors: {

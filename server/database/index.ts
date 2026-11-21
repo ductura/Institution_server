@@ -656,6 +656,7 @@ export {
   type FormReader,
   type StatementOperation,
   type StatementPort,
+  type StatementRefusal,
 } from "./statement/index.ts";
 export {
   createDirectEdits,
