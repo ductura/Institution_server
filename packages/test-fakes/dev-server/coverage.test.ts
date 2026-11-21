@@ -543,6 +543,23 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
   },
+  "work.messages.get": {
+    before: [
+      {
+        path: `/api/v1/works/${IDS.document}/messages`,
+        as: "student",
+        body: { text: "Izmišljena poruka." },
+      },
+    ],
+    request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
+  },
+  "work.messages.post": {
+    request: {
+      path: `/api/v1/works/${IDS.document}/messages`,
+      as: "student",
+      body: { text: "Izmišljena poruka." },
+    },
+  },
   "teacher.assignment-submissions.post": {
     request: {
       path: "/api/v1/teacher/assignment-submissions",

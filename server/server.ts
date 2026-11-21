@@ -48,6 +48,7 @@ import {
   createProblemReportRouteFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
+  createWorkMessagesRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
@@ -181,6 +182,8 @@ async function main(): Promise<void> {
       // with PUT, every reader gets the same bytes and ETag with GET.
       ...createLiveRoutesFor(databases.main),
       createCollaborationCommentsRouteFor(databases.main),
+      // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
+      ...createWorkMessagesRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
