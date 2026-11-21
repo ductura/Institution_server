@@ -19040,7 +19040,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.61.0",
+        "apiVersion": "1.62.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -19056,7 +19056,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.61.0",
+        "apiVersion": "1.62.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -44738,6 +44738,1408 @@
         "messageKey": "errors.unavailable",
         "status": 503,
         "requestId": "00000000-0000-4000-8000-00000000c151"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "removed",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 204,
+      "headers": {
+        "cache-control": "no-store"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002014"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002015"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002016"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "65537"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002017"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "15"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002018"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002019"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000000201a"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "15"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000000201b"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "origin": "https://ductura.example.invalid"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000000201c"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000201d"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "query": {
+        "noteId": "00000000-0000-4000-8000-00000000b001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000000201e"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.delete",
+    "name": "missing-note-id",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002010"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.get",
+    "name": "notes",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "notes": [
+          {
+            "id": "00000000-0000-4000-8000-00000000b001",
+            "quote": "Kisni vrt zadrzava vodu.",
+            "page": "12-14",
+            "note": "Usporediti vrste tla."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000002000"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.get",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000002001"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000002002"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "updated",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000b001",
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002003"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002004"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002005"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "65537"
+      },
+      "rawBody": "{\"record\":"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002006"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "15"
+      },
+      "rawBody": "{\"record\":"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002007"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002008"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002009"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "15"
+      },
+      "rawBody": "{\"rec"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000000200a"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000000200b"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000200c"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000000200d"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-00000000200e"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"record\":"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000000200f"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.patch",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "noteId": "00000000-0000-4000-8000-00000000b001",
+        "page": "12-14",
+        "studentId": "izmisljeni-drugi-student"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002010"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "created",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 201,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-00000000b001",
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "origin-missing",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_missing",
+        "code": "origin_missing",
+        "messageKey": "errors.originMissing",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002003"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "origin-mismatch",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://drugo.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "origin_mismatch",
+        "code": "origin_mismatch",
+        "messageKey": "errors.originMismatch",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002004"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "cross-site",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "cross-site",
+        "content-type": "application/json"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "cross_site",
+        "code": "cross_site",
+        "messageKey": "errors.crossSite",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000002005"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "body-too-large",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "65537"
+      },
+      "rawBody": "{\"record\":"
+    },
+    "response": {
+      "status": 413,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_too_large",
+        "code": "body_too_large",
+        "messageKey": "errors.bodyTooLarge",
+        "status": 413,
+        "requestId": "00000000-0000-4000-8000-000000002006"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "body-timeout",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "15"
+      },
+      "rawBody": "{\"record\":"
+    },
+    "response": {
+      "status": 408,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_timeout",
+        "code": "body_timeout",
+        "messageKey": "errors.bodyTimeout",
+        "status": 408,
+        "requestId": "00000000-0000-4000-8000-000000002007"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "content-length-invalid",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "-1"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_invalid",
+        "code": "content_length_invalid",
+        "messageKey": "errors.contentLengthInvalid",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002008"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "content-length-mismatch",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "1"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "content_length_mismatch",
+        "code": "content_length_mismatch",
+        "messageKey": "errors.contentLengthMismatch",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-000000002009"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "body-stream-error",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json",
+        "content-length": "15"
+      },
+      "rawBody": "{\"rec"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "body_stream_error",
+        "code": "body_stream_error",
+        "messageKey": "errors.bodyStreamError",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000000200a"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "content-type": "application/json",
+        "origin": "https://ductura.example.invalid"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-00000000200b"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "not-found",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-00000000200c"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla."
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-00000000200d"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "unsupported-media-type",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "text/plain"
+      },
+      "rawBody": "{}"
+    },
+    "response": {
+      "status": 415,
+      "contentType": "application/json",
+      "body": {
+        "error": "unsupported_media_type",
+        "code": "unsupported_media_type",
+        "messageKey": "errors.unsupportedMediaType",
+        "status": 415,
+        "requestId": "00000000-0000-4000-8000-00000000200e"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "invalid-json",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "rawBody": "{\"record\":"
+    },
+    "response": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_json",
+        "code": "invalid_json",
+        "messageKey": "errors.invalidJson",
+        "status": 400,
+        "requestId": "00000000-0000-4000-8000-00000000200f"
+      }
+    }
+  },
+  {
+    "route": "work.source-notes.post",
+    "name": "unknown-field",
+    "request": {
+      "params": {
+        "id": "doc-izmisljeni-kisni-vrt",
+        "sourceId": "00000000-0000-4000-8000-00000000c0a1"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-predaje-000000000000000000",
+        "origin": "https://ductura.example.invalid",
+        "sec-fetch-site": "same-origin",
+        "content-type": "application/json"
+      },
+      "body": {
+        "quote": "Kisni vrt zadrzava vodu.",
+        "page": "12-14",
+        "note": "Usporediti vrste tla.",
+        "studentId": "izmisljeni-drugi-student"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000002010"
       }
     }
   },

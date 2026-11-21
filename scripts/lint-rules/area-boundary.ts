@@ -45,6 +45,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   support: ["settings", "log", "metrics", "domain", "database"],
   "source-lookup": [],
   "public-verification": ["domain", "database"],
+  assistant: ["domain", "database"],
   worker: ["log", "database", "evidence", "external/storage"],
   identity: ["domain"],
   http: [
