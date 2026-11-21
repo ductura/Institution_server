@@ -182,6 +182,8 @@ export const DECODER_ALLOWED: Readonly<Record<string, readonly string[]>> = {
   "server/institution/teacher-courses.ts": ["Intl"],
   "server/institution/teacher-roles.ts": ["Intl"],
   "server/domain/collaboration/revision-input.ts": ["fromCodePoint"],
+  // Character references of an imported DOCX part, decoded once (SRV-1803, attack X1).
+  "server/import/docx/xml.ts": ["fromCodePoint"],
   // The contract fake server reads request bodies and paths (test code, U8).
   "server/contracts/generated/fake-server/index.ts": ["TextDecoder", "decodeURIComponent"],
 };

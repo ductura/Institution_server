@@ -36,12 +36,14 @@ import {
   createTeacherWorkingCriteriaRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
+  createSourceNotebookRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createSourceLookupRouteFor,
@@ -72,6 +74,7 @@ import {
   createWorkMessagesRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
+  createImportRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
@@ -204,6 +207,7 @@ async function main(): Promise<void> {
       createStudentAssignmentWorkRouteFor(databases.main),
       ...createStudentNotesRoutesFor(databases.main),
       ...createWorkSourceRoutesFor(databases.main),
+      ...createSourceNotebookRoutesFor(databases.main),
       ...createSourceProofRoutesFor(databases.main),
       createTextCheckConfigRoute(databases.main),
       // The teacher's private working criteria of a work (SRV-1107, B-9).
@@ -242,6 +246,8 @@ async function main(): Promise<void> {
       ...createCommentRoutesFor(databases.main, evidenceDeps),
       // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
       ...createDirectEditRoutesFor(databases.main),
+      // SRV-1803: a DOCX import into a work and its idempotent confirmation.
+      ...createImportRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
@@ -266,6 +272,7 @@ async function main(): Promise<void> {
       ...createConsultationSlotRoutesFor(databases.main),
       // SRV-1407: the moves of one mentorship request (D-204).
       ...createMentorshipRequestRoutesFor(databases.main),
+      ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),

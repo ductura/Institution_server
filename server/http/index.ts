@@ -3,10 +3,12 @@
 export { createAuthRoutes } from "./auth.ts";
 export { createStudentNotesRoutesFor } from "./student-notes.ts";
 export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
+export { createSourceNotebookRoutesFor } from "./source-notebook/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
+export { createKeyDatesRoutesFor } from "./key-dates/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export {
@@ -311,6 +313,11 @@ export {
   createDirectEditPutRoute,
   createDirectEditRoutesFor,
 } from "./direct-edit/index.ts";
+export {
+  createImportConfirmRoute,
+  createImportPostRoute,
+  createImportRoutesFor,
+} from "./import/index.ts";
 export {
   createStudentSubmissionRoutes,
   createStudentSubmissionRoutesFor,

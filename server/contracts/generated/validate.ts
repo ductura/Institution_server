@@ -717,6 +717,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value === 'object' && value !== null && !Array.isArray(value))
     )
   }),
+  "mentorship.key-dates.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "mentorship.notes.get:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1767,6 +1778,59 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "work.imports.confirm.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      (typeof value['importId'] === 'string') &&
+      local1.test(value['importId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.imports.confirm.post:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  const local1 = /^[0-9a-f]{64}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['importId'] === 'string') &&
+      local0.test(value['importId']) &&
+      (typeof value['manifestSha256'] === 'string') &&
+      local1.test(value['manifestSha256']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.imports.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.imports.post:body": (() => {
+  const local0 = /^[A-Za-z0-9+/]+={0,2}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['fileBase64'] === 'string') &&
+      value['fileBase64'].length <= 2796204 &&
+      value['fileBase64'].length >= 4 &&
+      local0.test(value['fileBase64']) &&
+      (((typeof value['fileName'] === 'string') && value['fileName'].length <= 1024) || ((value['fileName'] === null))) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
   "work.messages.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1844,6 +1908,104 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['documentId'] === 'string') &&
       local0.test(value['documentId']) &&
       Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.source-notes.delete:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      (typeof value['sourceId'] === 'string') &&
+      local1.test(value['sourceId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.source-notes.delete:query": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['noteId'] === 'string') &&
+      local0.test(value['noteId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "work.source-notes.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      (typeof value['sourceId'] === 'string') &&
+      local1.test(value['sourceId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.source-notes.patch:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      (typeof value['sourceId'] === 'string') &&
+      local1.test(value['sourceId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.source-notes.patch:body": (() => {
+  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,4000}(?![\s\S])/;
+  const local2 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,80}(?![\s\S])/;
+  const local3 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,4000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['noteId'] === 'string') &&
+      local0.test(value['noteId']) &&
+      (value['quote'] !== undefined ? ((((typeof value['quote'] === 'string') && local1.test(value['quote'])) || ((value['quote'] === null)))) : true) &&
+      (value['page'] !== undefined ? ((((typeof value['page'] === 'string') && local2.test(value['page'])) || ((value['page'] === null)))) : true) &&
+      (value['note'] !== undefined ? ((((typeof value['note'] === 'string') && local3.test(value['note'])) || ((value['note'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['noteId', 'quote', 'page', 'note'].includes(key))
+    )
+  }
+  })(),
+  "work.source-notes.post:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['id'] === 'string') &&
+      local0.test(value['id']) &&
+      (typeof value['sourceId'] === 'string') &&
+      local1.test(value['sourceId']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.source-notes.post:body": (() => {
+  const local0 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,4000}(?![\s\S])/;
+  const local1 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,80}(?![\s\S])/;
+  const local2 = /^(?=[\s\S]*[^ \t\r\n])(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000\uD800-\uDFFF]){1,4000}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['quote'] !== undefined ? ((((typeof value['quote'] === 'string') && local0.test(value['quote'])) || ((value['quote'] === null)))) : true) &&
+      (value['page'] !== undefined ? ((((typeof value['page'] === 'string') && local1.test(value['page'])) || ((value['page'] === null)))) : true) &&
+      (value['note'] !== undefined ? ((((typeof value['note'] === 'string') && local2.test(value['note'])) || ((value['note'] === null)))) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['quote', 'page', 'note'].includes(key))
     )
   }
   })(),

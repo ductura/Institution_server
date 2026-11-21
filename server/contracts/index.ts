@@ -7,6 +7,7 @@ import {
   collaborationRoutes,
   consultationSlotRoutes,
   mentorshipRoutes,
+  keyDatesGet,
   teachingTeamRoutes,
   mentorNotesGet,
   mentorNotesPost,
@@ -34,6 +35,7 @@ import {
   sourceLookupPost,
   studentRoutes,
   studentSourcesRoutes,
+  sourceNotebookRoutes,
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
@@ -51,6 +53,7 @@ import {
   notificationsRoutes,
   commentsRoutes,
   directEditRoutes,
+  importRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -61,6 +64,8 @@ export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
+export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 export {
@@ -113,6 +118,8 @@ export {
   type VectorFile,
 } from "./vectors.ts";
 export { isWorkId, WORK_ID_MAX, workIdFromPath } from "./work-id.ts";
+// SRV-1803: the import contract (SRV-1801) for its first caller, the DOCX import.
+export * from "./import/index.ts";
 
 /** Every route of /api/v1 with a contract. */
 export const ROUTES: readonly RouteContract[] = [
@@ -125,6 +132,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
+  ...sourceNotebookRoutes,
   ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
@@ -139,6 +147,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...collaborationRoutes,
   ...consultationSlotRoutes,
   ...mentorshipRoutes,
+  keyDatesGet,
   ...teachingTeamRoutes,
   mentorNotesGet,
   mentorNotesPost,
@@ -161,6 +170,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...notificationsRoutes,
   ...commentsRoutes,
   ...directEditRoutes,
+  ...importRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

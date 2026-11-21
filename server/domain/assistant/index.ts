@@ -7,3 +7,5 @@ export * from "./request-states.ts";
 export * from "./provider-rules.ts";
 export * from "./instructions.ts";
 export * from "./tools.ts";
+export * from "./faculty-ai-config.ts";
+export * from "./tool-step.ts";

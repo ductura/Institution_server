@@ -120,8 +120,10 @@ SELECT is(pg_get_userbyid((SELECT nspowner FROM pg_namespace WHERE nspname = 'as
   'the migrator owns the schema assistant');
 SELECT bag_eq(
   $$ SELECT relname::text FROM pg_class WHERE relnamespace = 'assistant'::regnamespace AND relkind IN ('r', 'p', 'v', 'm', 'f') $$,
-  $$ VALUES ('conversation'), ('message'), ('request'), ('cost_ledger'), ('budget_counter'), ('cost_config_version') $$,
-  'the schema holds exactly the six tables of the contract: no table of provider keys (OA-1, M8)');
+  $$ VALUES ('conversation'), ('message'), ('request'), ('cost_ledger'), ('budget_counter'), ('cost_config_version'),
+            -- SRV-1207 (ai-tools-v1): the three tables of the tools; 173 tests them.
+            ('assignment_tool_setting'), ('tool_step'), ('tool_loop_reservation') $$,
+  'the schema holds exactly the six tables of ai-request-v1 and the three of ai-tools-v1: no table of provider keys (OA-1, M8)');
 SELECT is_empty(
   $$ SELECT relname FROM pg_class WHERE relnamespace = 'assistant'::regnamespace AND relkind = 'r'
       AND NOT (relrowsecurity AND relforcerowsecurity AND relowner = 'ductus_identity'::regrole) $$,
@@ -142,7 +144,10 @@ SELECT bag_eq(
             ('cost_config_version cost_config_version_owner {ductus_identity} ALL'),
             ('conversation conversation_student_read {ductus_app} SELECT'),
             ('message message_student_read {ductus_app} SELECT'),
-            ('request request_student_read {ductus_app} SELECT') $$,
+            ('request request_student_read {ductus_app} SELECT'),
+            ('assignment_tool_setting assignment_tool_setting_owner {ductus_identity} ALL'),
+            ('tool_step tool_step_owner {ductus_identity} ALL'),
+            ('tool_loop_reservation tool_loop_reservation_owner {ductus_identity} ALL') $$,
   'the owner policy on every table and reading for the student on three; no policy for another role');
 -- Every privilege of every runtime role and PUBLIC, table or column level.
 SELECT bag_eq(
@@ -189,20 +194,42 @@ SELECT bag_eq(
             ('write_config_version ductus_identity false search_path=""'),
             ('latest_config ductus_identity false search_path=""'),
             ('publish_cost_config ductus_identity true search_path=""'),
-            ('publish_cost_cap ductus_identity false search_path=""') $$,
-  'the schema has four trigger functions and, since SRV-1203, the RPCs and their helpers');
+            ('publish_cost_cap ductus_identity false search_path=""'),
+            -- SRV-1207: the tools' RPCs, helpers and triggers; 173 tests them.
+            ('code_tools ductus_identity false search_path=""'),
+            ('tool_step_max ductus_identity false search_path=""'),
+            ('is_tool_list ductus_identity false search_path=""'),
+            ('intersect_tools ductus_identity false search_path=""'),
+            ('guard_tool_step_change ductus_identity false search_path=""'),
+            ('guard_tool_setting_version ductus_identity false search_path=""'),
+            ('check_tool_setting_event ductus_identity false search_path=""'),
+            ('check_tool_setting_has_event ductus_identity true search_path=""'),
+            ('latest_tools ductus_identity false search_path=""'),
+            ('allowed_tools_now ductus_identity false search_path=""'),
+            ('set_assignment_tools ductus_identity true search_path=""'),
+            ('read_assignment_tools ductus_identity true search_path=""'),
+            ('begin_tool_step ductus_identity true search_path=""'),
+            ('finish_tool_step ductus_identity true search_path=""'),
+            -- SRV-1205: the worker's listing of due requests; 172 tests it.
+            ('sweep_due ductus_identity true search_path=""') $$,
+  'the schema has four trigger functions and, since SRV-1203, SRV-1205 and SRV-1207, the RPCs and their helpers');
 SELECT bag_eq(
   $$ SELECT r || ' ' || p.oid::regprocedure FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
                               'ductus_test_stranger', 'public']) AS r
       WHERE p.pronamespace = 'assistant'::regnamespace AND has_function_privilege(r, p.oid, 'EXECUTE') $$,
-  $$ VALUES ('ductus_app assistant.begin_request(uuid,uuid,uuid,integer,text,text,text,text,text)'),
+  $$ VALUES ('ductus_app assistant.begin_request(uuid,uuid,uuid,integer,text,text,text,text,text,text[])'),
+            -- SRV-1207: the teacher's setting, its reading and the steps of the AI route.
+            ('ductus_app assistant.set_assignment_tools(uuid,integer,text[])'),
+            ('ductus_app assistant.read_assignment_tools(uuid)'),
+            ('ductus_app assistant.begin_tool_step(uuid,integer,text,text,text,boolean,text[])'),
+            ('ductus_app assistant.finish_tool_step(uuid,integer,text,text,integer,boolean)'),
             ('ductus_app assistant.mark_sent(uuid)'), ('ductus_app assistant.complete_request(uuid,text,bigint)'),
             ('ductus_app assistant.fail_request(uuid,text,bigint)'), ('ductus_app assistant.mark_outcome_unknown(uuid)'),
             ('ductus_app assistant.read_conversation(uuid)'),
             ('ductus_app assistant.publish_cost_config(integer,bigint,bigint,bigint)'),
-            ('ductus_worker assistant.sweep_and_settle(uuid)') $$,
-  'a runtime role executes only the RPCs of SRV-1203 meant for it: the web role seven, the worker one');
+            ('ductus_worker assistant.sweep_and_settle(uuid)'), ('ductus_worker assistant.sweep_due(integer)') $$,
+  'a runtime role executes only the RPCs meant for it: the web role seven and, since SRV-1207, four more, the worker the sweep and its listing (SRV-1205)');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'assistant', 'CREATE'),
   'after the migration the identity role keeps no CREATE on the schema');
 SELECT bag_eq(
@@ -242,7 +269,20 @@ SELECT bag_eq(
     ('cost_config_version.version_no integer not null'), ('cost_config_version.cap_micro bigint'),
     ('cost_config_version.cap_period text not null'), ('cost_config_version.student_day_micro bigint'),
     ('cost_config_version.student_assignment_day_micro bigint'), ('cost_config_version.reserve_micro bigint'),
-    ('cost_config_version.published_by uuid'), ('cost_config_version.published_at timestamp with time zone not null') $$,
+    ('cost_config_version.published_by uuid'), ('cost_config_version.published_at timestamp with time zone not null'),
+    ('assignment_tool_setting.assignment_id uuid not null'), ('assignment_tool_setting.institution_id uuid not null'),
+    ('assignment_tool_setting.version_no integer not null'), ('assignment_tool_setting.tools text[] not null'),
+    ('assignment_tool_setting.set_by uuid not null'),
+    ('assignment_tool_setting.set_at timestamp with time zone not null'),
+    ('tool_step.request_id uuid not null'), ('tool_step.institution_id uuid not null'),
+    ('tool_step.step_no integer not null'), ('tool_step.tool_name text'),
+    ('tool_step.requested_name_sha256 text not null'), ('tool_step.outcome text not null'),
+    ('tool_step.args_sha256 text not null'), ('tool_step.result_sha256 text'), ('tool_step.result_bytes integer'),
+    ('tool_step.truncated boolean'), ('tool_step.created_at timestamp with time zone not null'),
+    ('tool_step.finished_at timestamp with time zone'),
+    ('tool_loop_reservation.request_id uuid not null'), ('tool_loop_reservation.institution_id uuid not null'),
+    ('tool_loop_reservation.steps_reserved integer not null'), ('tool_loop_reservation.tools_reserved text[] not null'),
+    ('tool_loop_reservation.reserved_at timestamp with time zone not null') $$,
   'the columns and types of the contract, with institution_id on every table; every amount is bigint micro-euros');
 SELECT is_empty(
   $$ SELECT c.relname || '.' || a.attname FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid
@@ -267,7 +307,13 @@ SELECT bag_eq(
     ('assistant.budget_counter PRIMARY KEY (scope, scope_key, period_start)'),
     ('assistant.cost_config_version PRIMARY KEY (id)'),
     ('assistant.cost_config_version UNIQUE NULLS NOT DISTINCT (institution_id, version_no)'),
-    ('assistant.cost_config_version UNIQUE (id, institution_id)') $$,
+    ('assistant.cost_config_version UNIQUE (id, institution_id)'),
+    -- SRV-1207: versions per assignment, steps per request, one loop per request.
+    ('assistant.request UNIQUE (id, institution_id)'),
+    ('assistant.assignment_tool_setting PRIMARY KEY (assignment_id, version_no)'),
+    ('assistant.assignment_tool_setting UNIQUE (assignment_id, version_no, institution_id)'),
+    ('assistant.tool_step PRIMARY KEY (request_id, step_no)'),
+    ('assistant.tool_loop_reservation PRIMARY KEY (request_id)') $$,
   'the keys: one seq per conversation, one idempotency key per student, one ledger row per request');
 
 -- 2. Checks. Each refused row writes nothing.

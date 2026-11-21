@@ -21,6 +21,7 @@ import {
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
@@ -37,6 +38,7 @@ import {
   createWorkMessagesRoutesFor,
   createNotificationsRoutesFor,
   createDirectEditRoutesFor,
+  createImportRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
   createWorkPdfRouteFor,
@@ -77,6 +79,7 @@ import {
   createWebAuthnRoutesFor,
   createSourceProofRoutesFor,
   createWorkSourceRoutesFor,
+  createSourceNotebookRoutesFor,
   createTextCheckConfigRoute,
   createTeacherWorkingCriteriaRoutesFor,
   evidenceIngestDependencies,
@@ -145,7 +148,10 @@ const WORK_SOURCE = {
   place: "Izmišljeni grad",
   publisher: "Izmišljena naklada",
 };
+const SOURCE_NOTES = `/api/v1/works/doc-izmisljeni-rad/sources/${WORK_SOURCE.id}/notes`;
+const SOURCE_NOTE_ID = "00000000-0000-4000-8000-00000000b001";
 
+const IMPORT_ID = randomUUID();
 const SESSION_ROUTES = {
   "evidence.open.post": {
     path: "/api/v1/evidence/open",
@@ -277,6 +283,17 @@ const SESSION_ROUTES = {
     body: () => ({ mode: "direct" }),
     live: 404,
   },
+  // SRV-1803: a work it may not import into is 404; an import of it is not found.
+  "work.imports.post": {
+    path: `/api/v1/works/${randomUUID()}/imports`,
+    body: () => ({ fileBase64: "UEsDBA==", fileName: null }),
+    live: 404,
+  },
+  "work.imports.confirm.post": {
+    path: `/api/v1/works/${randomUUID()}/imports/${IMPORT_ID}/confirm`,
+    body: () => ({ importId: IMPORT_ID, manifestSha256: "0".repeat(64) }),
+    live: 404,
+  },
   // SRV-18: a live session naming a work it does not own gets 404 and submits nothing.
   "submission.submit.post": {
     path: "/api/v1/submission",
@@ -343,6 +360,12 @@ const SESSION_ROUTES = {
     path: `/api/v1/works/${randomUUID()}/consultation-slots/${randomUUID()}`,
     body: () => ({ action: "confirm" }),
     live: 403,
+  },
+  "mentorship.key-dates.get": {
+    method: "GET",
+    path: `/api/v1/mentorships/${randomUUID()}/key-dates`,
+    body: () => undefined,
+    live: 404,
   },
   // SRV-1407: a request, or a teacher, the account has no relation to is 404.
   "mentorship.requests.post": {
@@ -506,6 +529,25 @@ const SESSION_ROUTES = {
   "student.work-sources.delete": {
     method: "DELETE",
     path: `/api/v1/student/assignments/${ASSIGNMENT}/sources/${WORK_SOURCE.id}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.source-notes.get": { method: "GET", path: SOURCE_NOTES, body: () => undefined, live: 404 },
+  "work.source-notes.post": {
+    method: "POST",
+    path: SOURCE_NOTES,
+    body: () => ({ note: "Izmišljena bilješka." }),
+    live: 404,
+  },
+  "work.source-notes.patch": {
+    method: "PATCH",
+    path: SOURCE_NOTES,
+    body: () => ({ noteId: SOURCE_NOTE_ID, page: "12–14" }),
+    live: 404,
+  },
+  "work.source-notes.delete": {
+    method: "DELETE",
+    path: `${SOURCE_NOTES}?noteId=${SOURCE_NOTE_ID}`,
     body: () => undefined,
     live: 404,
   },
@@ -963,6 +1005,7 @@ const FACTORIES = [
   "createStudentAssignmentWorkRouteFor",
   "createStudentNotesRoutesFor",
   "createWorkSourceRoutesFor",
+  "createSourceNotebookRoutesFor",
   "createSourceProofRoutesFor",
   "createTextCheckConfigRoute",
   "createTeacherWorkingCriteriaRoutesFor",
@@ -986,6 +1029,7 @@ const FACTORIES = [
   "createNotificationsRoutesFor",
   "createCommentRoutesFor",
   "createDirectEditRoutesFor",
+  "createImportRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
   "createAcknowledgmentRouteFor",
@@ -998,6 +1042,7 @@ const FACTORIES = [
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
+  "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
@@ -1042,6 +1087,7 @@ const MOUNTED = [
   createStudentAssignmentWorkRouteFor(databases.main),
   ...createStudentNotesRoutesFor(databases.main),
   ...createWorkSourceRoutesFor(databases.main),
+  ...createSourceNotebookRoutesFor(databases.main),
   ...createSourceProofRoutesFor(databases.main),
   createTextCheckConfigRoute(databases.main),
   ...createTeacherWorkingCriteriaRoutesFor(databases.main),
@@ -1065,6 +1111,7 @@ const MOUNTED = [
   ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
+  ...createImportRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
   createAcknowledgmentRouteFor(databases.main),
@@ -1077,6 +1124,7 @@ const MOUNTED = [
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
+  ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),

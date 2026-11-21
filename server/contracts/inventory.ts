@@ -87,6 +87,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064009405",
   },
+  "app/api/mentorships/[id]/key-dates/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064828009",
+  },
   // SRV-1407 (Plan M2, D-204): the moves of one mentorship request.
   "app/api/mentorship-requests/route.ts": {
     methods: ["POST"],
@@ -103,6 +107,10 @@ export const SERVER_SOURCES: Readonly<
   "app/api/mentorship-requests/[requestId]/withdraw/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/works/[id]/sources/[sourceId]/notes/route.ts": {
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063426191",
   },
   "app/api/notifications/route.ts": {
     methods: ["GET"],
@@ -363,6 +371,15 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/direct-edit/route.ts": {
     methods: ["GET", "PUT"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
+  },
+  // SRV-1803 (M8.2, DAN-396; D-282, D-290 to D-292; Ductus#2052 c.7062877544): a DOCX import and its confirmation; Ductus has no such route.
+  "app/api/works/[documentId]/imports/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
+  },
+  "app/api/works/[documentId]/imports/[importId]/confirm/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062877544",
   },
   "app/api/student/assignments/[assignmentId]/attachments/route.ts": {
     methods: ["POST"],

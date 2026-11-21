@@ -19,6 +19,7 @@ export {
 export { profileRoutes } from "./profile.ts";
 export { StudentSubmissionState, studentRoutes } from "./student.ts";
 export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
+export { sourceNotebookRoutes } from "./source-notebook.ts";
 export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
@@ -33,6 +34,7 @@ export {
 } from "./notifications.ts";
 export { commentsRoutes } from "./comments.ts";
 export { directEditRoutes } from "./direct-edit.ts";
+export { importRoutes } from "./import.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
@@ -56,6 +58,7 @@ export {
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
+export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";
 export { teachingTeamRoutes } from "./teaching-team.ts";
 export {
   MentorNoteInput,
