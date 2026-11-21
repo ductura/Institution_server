@@ -643,6 +643,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
   },
+  "work.export.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/export?format=docx`, as: "nastavnik" },
+  },
   "work.export-pdf.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: {
@@ -663,6 +667,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     ],
     request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
+  },
+  "notifications.list.get": {
+    request: { path: "/api/v1/notifications", as: "student" },
+  },
+  "notifications.read.post": {
+    request: {
+      method: "POST",
+      path: "/api/v1/notifications/00000000-0000-4000-8000-000000001701/read",
+      as: "student",
+    },
   },
   "work.direct-edit.get": {
     before: [
