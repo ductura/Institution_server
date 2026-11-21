@@ -150,24 +150,30 @@ SELECT is(pg_temp.op('h2', 'Zahtjev 7/2026', 'Sud je ukinuo mjeru.'), 'true', 't
 SELECT is(pg_temp.op('h2', 'Zahtjev 7/2026', 'Opet.'), 'ZD409: already released', 'and only once');
 SELECT is(pg_temp.ask_as('ductus_retention', 'anon', $$ SELECT app.is_on_legal_hold('work', 'doc-a')::text $$),
   'false', 'with both holds on doc-a released, doc-a is no longer held');
-SET LOCAL ROLE ductus_evidence;
+-- pgTAP is not open to ductus_evidence, so the assertions run as the test's
+-- own role and only the statements run as the table's owner (pg_temp.ask_as).
 SELECT is((SELECT concat_ws(' ', released_by IS NULL, release_request_ref, release_reason)
              FROM evidence.legal_hold WHERE id = (SELECT val::uuid FROM ref WHERE name = 'h2')),
   'true Zahtjev 7/2026 Sud je ukinuo mjeru.', 'the operator''s release keeps the request reference, not a user');
 
--- 7. A row is never deleted, and only its release ever changes, once.
-SELECT throws_ok($$ DELETE FROM evidence.legal_hold $$, 'ZD403', 'append-only row', 'no hold is deleted');
-SELECT throws_ok($$ DELETE FROM evidence.legal_hold WHERE false $$, 'ZD403', 'append-only row',
-  'not even a delete that matches nothing');
-SELECT throws_ok($$ TRUNCATE evidence.legal_hold $$, 'ZD403', 'append-only row', 'nor truncated');
-SELECT throws_ok(format($$ UPDATE evidence.legal_hold SET case_reference = 'Drugi' WHERE id = %L $$,
-  (SELECT val FROM ref WHERE name = 'h3')), 'ZD403', 'append-only row', 'the case reference of an open hold stays');
-SELECT throws_ok(format($$ UPDATE evidence.legal_hold SET release_reason = 'Drugi razlog.' WHERE id = %L $$,
-  (SELECT val FROM ref WHERE name = 'h1')), 'ZD403', 'append-only row', 'a release is not rewritten');
-SELECT throws_ok(format($$ UPDATE evidence.legal_hold SET released_by = placed_by, release_reason = 'Sam.', released_at = now()
-                           WHERE id = %L $$, (SELECT val FROM ref WHERE name = 'h3')),
-  '23514', NULL, 'the table itself refuses a release by the one who placed it');
-RESET ROLE;
+-- 7. A row is never deleted, and only its release ever changes, once. Even its
+-- owner, ductus_evidence, is refused.
+SELECT is(pg_temp.ask_as('ductus_evidence', 'anon', $$ DELETE FROM evidence.legal_hold $$),
+  'ZD403: append-only row', 'no hold is deleted');
+SELECT is(pg_temp.ask_as('ductus_evidence', 'anon', $$ DELETE FROM evidence.legal_hold WHERE false $$),
+  'ZD403: append-only row', 'not even a delete that matches nothing');
+SELECT is(pg_temp.ask_as('ductus_evidence', 'anon', $$ TRUNCATE evidence.legal_hold $$),
+  'ZD403: append-only row', 'nor truncated');
+SELECT is(pg_temp.ask_as('ductus_evidence', 'anon',
+  $$ UPDATE evidence.legal_hold SET case_reference = 'Drugi' WHERE id = {h3} $$),
+  'ZD403: append-only row', 'the case reference of an open hold stays');
+SELECT is(pg_temp.ask_as('ductus_evidence', 'anon',
+  $$ UPDATE evidence.legal_hold SET release_reason = 'Drugi razlog.' WHERE id = {h1} $$),
+  'ZD403: append-only row', 'a release is not rewritten');
+SELECT is(left(pg_temp.ask_as('ductus_evidence', 'anon',
+  $$ UPDATE evidence.legal_hold SET released_by = placed_by, release_reason = 'Sam.', released_at = now()
+      WHERE id = {h3} $$), 6),
+  '23514:', 'the table itself refuses a release by the one who placed it');
 
 -- 8. The table is closed to every role but its owner.
 SELECT is(pg_temp.ask_as(c.role, 'iva', 'SELECT count(*)::text FROM evidence.legal_hold'), c.result,
