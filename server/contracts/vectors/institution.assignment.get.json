@@ -29,7 +29,41 @@
           "evidenceProfile": "basic",
           "importAllowed": false,
           "wordMin": 1500,
-          "wordMax": 2500
+          "wordMax": 2500,
+          "isPractice": false
+        }
+      }
+    },
+    {
+      "name": "current-practice",
+      "kind": "success",
+      "request": {
+        "params": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-nositelja-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "assignmentId": "a04d5e6f-7081-4c93-9da4-e5f607182904",
+          "courseId": "7e1a2b3c-4d5e-4f60-8a71-b2c3d4e5f601",
+          "versionNo": 2,
+          "title": "Seminarski rad: kućno kompostiranje",
+          "instructions": "Izmišljene upute za izmišljeni zadatak.",
+          "workType": "seminar_paper",
+          "opensAt": "2026-10-01T06:00:00.000Z",
+          "dueAt": "2027-01-31T22:59:00.000Z",
+          "aiPolicy": "partially_allowed",
+          "aiPurposes": ["proofreading", "literature_search"],
+          "evidenceProfile": "basic",
+          "importAllowed": false,
+          "wordMin": 1500,
+          "wordMax": 2500,
+          "isPractice": true
         }
       }
     },

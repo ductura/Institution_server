@@ -2047,6 +2047,7 @@ export const hr = {
     upgradeRequired: "Potrebna je novija verzija aplikacije. Osvježite stranicu.",
     versionConflict:
       "Zadatak je u međuvremenu promijenjen. Učitajte zadnju verziju pa pokušajte ponovno.",
+    practiceAssignment: "Probni zadatak nema ocjenu.",
   },
   // Texts of the error catalogue that the server's contract does not answer
   // (server/http/error-catalog.ts, S-1M-c, DAN-802); added after the port.

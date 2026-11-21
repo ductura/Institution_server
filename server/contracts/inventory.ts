@@ -71,6 +71,18 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST", "PATCH", "DELETE"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063426191",
   },
+  "app/api/teacher/assignments/[assignmentId]/grade/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064534090",
+  },
+  "app/api/courses/[id]/team/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",
+  },
+  "app/api/courses/[id]/groups/[groupId]/members/route.ts": {
+    methods: ["PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063989130",
+  },
   "app/api/mentorships/[id]/notes/route.ts": {
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064009405",

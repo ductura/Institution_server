@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 
 import { closed, defineRoute, error, type ErrorSpec, messageKeyOf } from "../schema/index.ts";
 import catalog from "./error-catalog.json" with { type: "json" };
+import { status } from "./status.ts";
 
 const CapabilityStatus = Type.Union([
   Type.Literal("ok"),
@@ -17,11 +18,6 @@ const Capabilities = closed({
 });
 const SemVer = (description: string) =>
   Type.String({ pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$", description });
-const ComponentState = Type.Union([
-  Type.Literal("radi"),
-  Type.Literal("ne_radi"),
-  Type.Literal("nije_ukljuceno"),
-]);
 
 export const health = defineRoute({
   id: "platform.health.get",
@@ -82,31 +78,6 @@ export const ready = defineRoute({
     ),
     error(503, "draining", closed({ status: Type.Literal("draining") })),
   ],
-});
-
-export const status = defineRoute({
-  id: "platform.status.get",
-  method: "GET",
-  path: "/api/v1/status",
-  inventory: "app/api/status/route.ts",
-  access: "anyone",
-  summary: "Public status in three parts, closed words, nothing about a person.",
-  request: {},
-  responses: [
-    {
-      status: 200,
-      description: "status",
-      body: closed({
-        checkedAt: Type.String({ format: "date-time", maxLength: 24 }),
-        components: closed({
-          writing: ComponentState,
-          submission: ComponentState,
-          mentorView: ComponentState,
-        }),
-      }),
-    },
-  ],
-  errors: [error(503, "unavailable", "none")],
 });
 
 /**
