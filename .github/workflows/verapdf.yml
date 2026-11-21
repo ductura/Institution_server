@@ -34,3 +34,10 @@ jobs:
         env:
           PDF_EXPORT_CI: "1"
         run: pnpm test:equality
+      - name: Provjera vlasnika i mentora u PostgreSQL-u
+        env:
+          DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
+        run: |
+          docker compose up -d --build --wait postgres-main
+          pnpm db:migrate:main
+          pnpm test:integration:pg server/http/export/work-pdf.pg.integration.test.ts
