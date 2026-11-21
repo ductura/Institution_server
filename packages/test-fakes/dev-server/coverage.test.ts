@@ -222,7 +222,45 @@ const BANK_STEP: Step = {
   body: { text: "Izmišljeno: navedite izvor.", kind: "must" },
 };
 
+const MENTORSHIP_REQUESTS = "/api/v1/mentorship-requests";
+const MENTOR_NOTES = `/api/v1/mentorships/${IDS.mentorship}/notes`;
+const REQUEST_MENTORSHIP: Step = {
+  path: MENTORSHIP_REQUESTS,
+  as: "student",
+  headers: ORIGIN,
+  body: { teacherId: IDS.teacher, workType: "master_thesis" },
+};
+const MENTORSHIP_REQUEST = `${MENTORSHIP_REQUESTS}/b1400000-0000-4000-8000-000000000001`;
+
 const SCENARIOS: Record<RouteId, Scenario> = {
+  "mentorship.requests.post": { request: REQUEST_MENTORSHIP },
+  "mentorship.notes.get": { request: { path: MENTOR_NOTES, as: "nastavnik" } },
+  "mentorship.notes.post": {
+    request: {
+      path: MENTOR_NOTES,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { body: "Izmisljena privatna biljeska." },
+    },
+  },
+  "mentorship.request-approve.post": {
+    before: [REQUEST_MENTORSHIP],
+    request: { path: `${MENTORSHIP_REQUEST}/approve`, as: "nastavnik", headers: ORIGIN },
+  },
+  "mentorship.request-decline.post": {
+    before: [REQUEST_MENTORSHIP],
+    request: {
+      path: `${MENTORSHIP_REQUEST}/decline`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { reason: "Izmišljeni razlog." },
+    },
+  },
+  "mentorship.request-withdraw.post": {
+    before: [REQUEST_MENTORSHIP],
+    request: { path: `${MENTORSHIP_REQUEST}/withdraw`, as: "student", headers: ORIGIN },
+  },
   "student.declaration.get": {
     request: { path: `/api/v1/student/assignments/${IDS.assignment}/declaration`, as: "student" },
   },
