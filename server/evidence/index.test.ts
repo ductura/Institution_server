@@ -8,6 +8,7 @@ describe("server/evidence public interface", () => {
       "DUCTUS_ASYNC_COMMIT_PROTOCOL",
       "DUCTUS_PROTOCOL_VERSION",
       "MAX_COMMIT_REQUEST_BYTES",
+      "MAX_COMPARE_BLOCKS",
       "MAX_DOCUMENT_SNAPSHOT_BYTES",
       "MAX_RECONCILE_BATCH",
       "MAX_RECONCILE_DOMAINS",
@@ -17,6 +18,7 @@ describe("server/evidence public interface", () => {
       "MAX_SIGNATURE_RETRY_DELAY_MS",
       "REPLAY_FORMAT",
       "answerWorkVersions",
+      "blocksOf",
       "compareWorkVersions",
       "createCheckPendingReceiptObject",
       "createEvidenceService",
@@ -24,12 +26,15 @@ describe("server/evidence public interface", () => {
       "createSignPendingReceipt",
       "createSignPendingReceiptWithRetry",
       "decideSignatureRetry",
+      "diffBlocks",
       "isReplayDocumentId",
       "parseClosedJsonObject",
       "readReplayPage",
       "signatureRetryDelayMs",
       "submitWork",
+      "verifyCanonicalEvidencePayloadV2",
       "verifyDocumentSnapshot",
+      "verifyVersionedDocumentSnapshot",
     ]);
   });
 

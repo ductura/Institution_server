@@ -1,0 +1,44 @@
+name: PDF/A-2u i jednakost izvoza
+on:
+  pull_request:
+  push:
+    branches: [main, migracija/kopija-ductus-backend]
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  verapdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Pinani pretvornik i validator
+        run: |
+          docker pull gotenberg/gotenberg@sha256:53073e798c8ef39ea2187e44cb67bab77894ea2509100b94c4fe3b461f7b2996 # 8.40.0
+          docker pull verapdf/cli@sha256:c2ac9448973a56acd833c81441e38d2dca58ea26a2ce1621e9a32e85d3d2728f # 1.30.4
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y poppler-utils
+      - name: veraPDF samo u CI-ju
+        run: node -e 'if (/verapdf/i.test(require("node:fs").readFileSync("package.json", "utf8"))) process.exit(1)'
+      - name: Provjera profila 2u i PDF teksta
+        env:
+          PDF_EXPORT_CI: "1"
+        run: pnpm test:equality
+      - name: Provjera vlasnika i mentora u PostgreSQL-u
+        env:
+          DATABASE_URL: postgres://ductus:ductus-local-only@127.0.0.1:54329/ductus
+        run: |
+          docker compose up -d --build --wait postgres-main
+          pnpm db:provision
+          node scripts/db/migrate-locked.ts --url "$DATABASE_URL?sslmode=disable&role=ductus_migrator"
+          pnpm test:integration:pg server/http/export/work-pdf.pg.integration.test.ts

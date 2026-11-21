@@ -29,14 +29,18 @@ import {
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
+  createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkPdfRouteFor,
+  createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
   createHealthRoute,
+  createReadyRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -176,6 +180,67 @@ const SESSION_ROUTES = {
     body: () => ({ text: "Izmišljena poruka." }),
     live: 404,
   },
+  // SRV-1703: a work it may not teach, a draft or an entry that is not its own, and a student asking for a bank are all 404.
+  "work.comment-drafts.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/comment-drafts`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.comment-drafts.post": {
+    path: `/api/v1/works/${randomUUID()}/comment-drafts`,
+    body: () => ({
+      text: "Izmišljena napomena.",
+      anchor: {
+        nodeId: randomUUID(),
+        quote: "odlomak",
+        prefix: "",
+        suffix: "",
+        startHint: 0,
+        endHint: 7,
+      },
+    }),
+    live: 404,
+  },
+  "work.comment-draft.delete": {
+    method: "DELETE",
+    path: `/api/v1/comment-drafts/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.comments.publish.post": {
+    path: `/api/v1/works/${randomUUID()}/comments/publish`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.comment-bank.get": {
+    method: "GET",
+    path: "/api/v1/teacher/comment-bank",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.comment-bank.post": {
+    path: "/api/v1/teacher/comment-bank",
+    body: () => ({ text: "Izmišljeno: navedite izvor.", kind: "must" }),
+    live: 404,
+  },
+  "teacher.comment-bank.delete": {
+    method: "DELETE",
+    path: `/api/v1/teacher/comment-bank/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.review.post": {
+    path: `/api/v1/works/${randomUUID()}/review`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.changes-since-review.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/changes-since-review`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1702: a work it may not read is 404 for the setting and for setting it.
   "work.direct-edit.get": {
     method: "GET",
@@ -217,6 +282,18 @@ const SESSION_ROUTES = {
   "work.versions.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/versions`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.export-pdf.get": {
+    method: "GET",
+    path: `/api/v1/assignments/${randomUUID()}/works/${randomUUID()}/export/pdf`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.version.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/versions/1`,
     body: () => undefined,
     live: 404,
   },
@@ -760,6 +837,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 /** The route factories server/server.ts calls in its `routes` list, in order. */
 const FACTORIES = [
   "createHealthRoute",
+  "createReadyRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -783,6 +861,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
+  "createCommentRoutesFor",
   "createDirectEditRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
@@ -791,6 +870,8 @@ const FACTORIES = [
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
+  "createWorkPdfRouteFor",
+  "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
@@ -815,6 +896,11 @@ const FACTORIES = [
 const evidenceDeps = evidenceIngestDependencies(ENV, ROOT);
 const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
+  // Public readiness; no session, so no 401 in its contract.
+  createReadyRoute({
+    check: async () => ({ ready: true, capabilities: {}, codes: {} }),
+    draining: () => false,
+  }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
@@ -838,6 +924,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
+  ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
@@ -846,6 +933,8 @@ const MOUNTED = [
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createWorkVersionsRouteFor(databases.main),
+  createWorkPdfRouteFor(databases.main, undefined),
+  createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),

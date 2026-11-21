@@ -443,7 +443,7 @@ describe("createReceiptSigningWorker: lifecycle and configuration", () => {
     const gate = deferred();
     const db = database(port, () => gate.promise);
     const timers = { setTimeout: vi.fn(), clearTimeout: vi.fn() };
-    const { worker: w } = worker(db, port, { timers });
+    const { worker: w, lines } = worker(db, port, { timers });
     const running = w.runPass();
     let stopped = false;
     const stopping = w.stop().then(() => {
@@ -451,11 +451,14 @@ describe("createReceiptSigningWorker: lifecycle and configuration", () => {
     });
     await Promise.resolve();
     expect(stopped).toBe(false);
+    expect(w.runPass()).toBe(running);
     gate.release();
     await stopping;
     await running;
     w.start();
     expect(timers.setTimeout).not.toHaveBeenCalled();
+    await expect(w.runPass()).resolves.toBeNull();
+    expect(lines).toHaveLength(1);
   });
 
   it.each([

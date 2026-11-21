@@ -324,6 +324,7 @@ export {
 } from "./merlin-packages/index.ts";
 export {
   createWorkVersionsReader,
+  pageOf as workVersionsPageOf,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
   type WorkVersionsPage,
@@ -562,6 +563,14 @@ export function databaseHealth(): Promise<HealthReport> {
 export async function closePools(): Promise<void> {
   await registry.close();
 }
+export {
+  createCommentDelay,
+  type CommentDelay,
+  type CommentDelayRefusal,
+  type CommentDelayResult,
+  type CommentDraft,
+  type WorkReviewState,
+} from "./comment-delay/index.ts";
 export {
   createWorkMessages,
   type WorkMessage,
