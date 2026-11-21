@@ -1508,6 +1508,20 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "work.export-pdf.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      (typeof value['documentId'] === 'string') &&
+      value['documentId'].length <= 512 &&
+      value['documentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
   "work.messages.get:params": (() => {
   const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1589,15 +1603,15 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   }
   })(),
   "work.source-notes.delete:params": (() => {
-  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['id'] === 'string') &&
-      value['id'].length <= 256 &&
-      value['id'].length >= 1 &&
+      local0.test(value['id']) &&
       (typeof value['sourceId'] === 'string') &&
-      local0.test(value['sourceId']) &&
+      local1.test(value['sourceId']) &&
       Object.getOwnPropertyNames(value).length === 2
     )
   }
@@ -1614,29 +1628,29 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   }
   })(),
   "work.source-notes.get:params": (() => {
-  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['id'] === 'string') &&
-      value['id'].length <= 256 &&
-      value['id'].length >= 1 &&
+      local0.test(value['id']) &&
       (typeof value['sourceId'] === 'string') &&
-      local0.test(value['sourceId']) &&
+      local1.test(value['sourceId']) &&
       Object.getOwnPropertyNames(value).length === 2
     )
   }
   })(),
   "work.source-notes.patch:params": (() => {
-  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['id'] === 'string') &&
-      value['id'].length <= 256 &&
-      value['id'].length >= 1 &&
+      local0.test(value['id']) &&
       (typeof value['sourceId'] === 'string') &&
-      local0.test(value['sourceId']) &&
+      local1.test(value['sourceId']) &&
       Object.getOwnPropertyNames(value).length === 2
     )
   }
@@ -1659,15 +1673,15 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
   }
   })(),
   "work.source-notes.post:params": (() => {
-  const local0 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![\s\S])/;
   return function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
       (typeof value['id'] === 'string') &&
-      value['id'].length <= 256 &&
-      value['id'].length >= 1 &&
+      local0.test(value['id']) &&
       (typeof value['sourceId'] === 'string') &&
-      local0.test(value['sourceId']) &&
+      local1.test(value['sourceId']) &&
       Object.getOwnPropertyNames(value).length === 2
     )
   }
@@ -1683,6 +1697,30 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (value['page'] !== undefined ? ((((typeof value['page'] === 'string') && local1.test(value['page'])) || ((value['page'] === null)))) : true) &&
       (value['note'] !== undefined ? ((((typeof value['note'] === 'string') && local2.test(value['note'])) || ((value['note'] === null)))) : true) &&
       Object.getOwnPropertyNames(value).every(key => ['quote', 'page', 'note'].includes(key))
+    )
+  }
+  })(),
+  "work.version.get:params": (() => {
+  const local0 = /^(?!\s)(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\u0000-\u001f\u007f-\u009f\uD800-\uDFFF]){1,256}(?<!\s)(?![\s\S])/;
+  const local1 = /^[1-9][0-9]{0,15}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      local0.test(value['documentId']) &&
+      (typeof value['revision'] === 'string') &&
+      local1.test(value['revision']) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "work.version.get:query": (() => {
+  const local0 = /^[1-9][0-9]{0,15}(?![\s\S])/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['compareFrom'] !== undefined ? ((typeof value['compareFrom'] === 'string') && local0.test(value['compareFrom'])) : true) &&
+      Object.getOwnPropertyNames(value).every(key => ['compareFrom'].includes(key))
     )
   }
   })(),

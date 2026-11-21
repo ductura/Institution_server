@@ -1,6 +1,7 @@
 export { messagesHr, type MessageKey, type Messages } from "./hr.ts";
 export { receiptPdfHr } from "./receipt-pdf.ts";
 export { merlinHr } from "./merlin.ts";
+export { workExportHr } from "./work-export.ts";
 export { textOf } from "./text-of.ts";
 export { messagesEn } from "./en.ts";
 export {

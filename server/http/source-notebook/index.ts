@@ -83,12 +83,13 @@ export function createSourceNotebookRoutesFor({ withActor }: { withActor: WithAc
       }
 
       const success = contract.responses[0]!;
+      const responseSchema = "body" in success ? success.body : undefined;
       const responseOf = (result: unknown) => (method === "GET" ? { notes: result } : result);
       try {
         const outcome = await notebook(token, id, sourceId, method, noteId, fields, (result) =>
-          success.body === undefined
+          responseSchema === undefined
             ? result === null
-            : Value.Check(success.body, responseOf(result)),
+            : Value.Check(responseSchema, responseOf(result)),
         );
         if (outcome.status !== 200) return sendProblem(response, outcome.status, outcome.code);
         if (method === "DELETE") {

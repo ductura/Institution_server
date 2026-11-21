@@ -24,7 +24,10 @@ const optionalFields = {
 export const SourceNote = closed({ id: NoteId, ...fields });
 export const SourceNotes = closed({ notes: Type.Array(SourceNote, { maxItems: 100 }) });
 
-const params = closed({ id: Type.String({ minLength: 1, maxLength: 256 }), sourceId: NoteId });
+const WorkId = Type.String({
+  pattern: `^(?!\\s)(?:${CODE_POINT}|[^\\u0000-\\u001f\\u007f-\\u009f\\uD800-\\uDFFF]){1,256}(?<!\\s)${END}`,
+});
+const params = closed({ id: WorkId, sourceId: NoteId });
 const base = {
   path: "/api/v1/works/{id}/sources/{sourceId}/notes",
   inventory: "app/api/works/[id]/sources/[sourceId]/notes/route.ts",
