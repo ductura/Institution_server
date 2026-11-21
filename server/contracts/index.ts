@@ -6,6 +6,7 @@ import {
   clientRoutes,
   collaborationRoutes,
   consultationSlotRoutes,
+  courseAggregateGet,
   downloadsRoutes,
   enrollmentRoutes,
   ERROR_CATALOG_DATA,
@@ -49,6 +50,7 @@ import {
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
+export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
@@ -103,6 +105,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
   ...teacherWorkingCriteriaRoutes,
+  courseAggregateGet,
   ...deadlineExtensionRoutes,
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,

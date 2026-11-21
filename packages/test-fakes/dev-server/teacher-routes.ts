@@ -125,6 +125,41 @@ function criterionKey(state: State, account: Account, documentId: string, id: st
 }
 
 export const TEACHER_HANDLERS: Handlers = {
+  "course.aggregate.get": ({ state, account, params, header }) => {
+    const site = header("sec-fetch-site");
+    if (site !== undefined && site !== "same-origin") return { error: "forbidden" };
+    if (account === null) return { error: "unauthorized" };
+    const course = state.courses.find((c) => c.id === params.id.toLowerCase());
+    if (course?.holderId !== account.id || !teachesCourse(course, account)) {
+      return { error: "not_found" };
+    }
+    const assignments = new Set(
+      state.assignments.filter((a) => a.courseId === course.id).map((a) => a.id),
+    );
+    const stages = { notStarted: 0, inProgress: 0, submitted: 0 };
+    for (const studentId of new Set(course.studentIds)) {
+      const works = state.works.filter(
+        (work) => work.studentId === studentId && assignments.has(work.assignmentId),
+      );
+      const stage = works.some((work) => work.state === "submitted")
+        ? "submitted"
+        : works.length > 0
+          ? "inProgress"
+          : "notStarted";
+      stages[stage]++;
+    }
+    const started = stages.inProgress + stages.submitted;
+    if (
+      stages.notStarted + started < 5 ||
+      Object.values(stages).some((count) => count > 0 && count < 5)
+    ) {
+      return { status: 200, body: { status: "suppressed" } };
+    }
+    return {
+      status: 200,
+      body: { status: "available", started, submitted: stages.submitted, stages },
+    };
+  },
   "teacher.receipt-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const assignment = taught(state, account, params.assignmentId);
