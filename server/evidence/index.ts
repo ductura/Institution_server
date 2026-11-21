@@ -6,6 +6,8 @@ export {
   type EvidenceCommitRequestOutcome,
   type EvidenceService,
 } from "./service.ts";
+// The closed JSON object of an evidence body, a repeated key refused (M3.1, N-19).
+export { parseClosedJsonObject } from "./ingest/index.ts";
 export {
   isReplayDocumentId,
   MAX_REPLAY_PAGE_SEGMENTS,
