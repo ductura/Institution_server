@@ -5,18 +5,6 @@ SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA declaration TO ductus_evidence;
 SET LOCAL ROLE ductus_evidence;
 
--- The deferred check can run at commit after the definer RPC has returned.
-ALTER FUNCTION declaration.check_statement_attachments() SECURITY DEFINER;
-ALTER TABLE declaration.statement DROP CONSTRAINT statement_payload_matches_row,
-  ADD CONSTRAINT statement_payload_matches_row CHECK (payload_jcs IS NULL OR (
-    payload_jcs = declaration.canonical_payload(payload_jcs::jsonb)
-    AND payload_jcs::jsonb ->> 'declarationSchema' = 'ductura-declaration-v1'
-    AND payload_jcs::jsonb ->> 'principalId' = principal_id::text
-    AND payload_jcs::jsonb ->> 'assignmentId' = assignment_id::text
-    AND payload_jcs::jsonb -> 'assignmentVersion' = to_jsonb(assignment_version)
-    AND payload_jcs::jsonb ->> 'documentId' = document_id
-    AND payload_jcs::jsonb -> 'revision' = to_jsonb(revision)) IS TRUE);
-
 -- M9.5 replaces this private source (declaration-v1 §2.5). One row per
 -- eligible conversation in this scope. Reason and required_through_seq are
 -- derived from evidence through the named immutable document revision.
@@ -77,6 +65,8 @@ DECLARE
   max_external_attachments constant integer := 10;
   v_count integer;
   v_version bigint;
+  v_requested_revision bigint;
+  v_changed_conversations jsonb;
   v_previous jsonb;
   v_id uuid := gen_random_uuid();
   v_payload text;
@@ -99,6 +89,27 @@ BEGIN
     RETURN jsonb_build_object('status','conflict','reason','declaration_conflict','currentVersion',v_version);
   END IF;
   IF v_document.current_revision = 0 OR (p_body->'revision') IS DISTINCT FROM to_jsonb(v_document.current_revision) THEN
+    -- Reasons are fixed by evidence at each revision. Compare the two scoped
+    -- snapshots when a confirmation still refers to an older preview.
+    IF v_confirm AND jsonb_typeof(p_body->'revision') = 'number'
+       AND p_body->>'revision' ~ '^[1-9][0-9]{0,15}$' THEN
+      v_requested_revision := (p_body->>'revision')::bigint;
+      IF v_requested_revision < v_document.current_revision AND EXISTS (
+        SELECT 1 FROM evidence.document_revision r
+          WHERE (r.document_id,r.institution_id,r.revision)
+            = (v_document.id,v_actor.institution_id,v_requested_revision)
+      ) THEN
+        SELECT jsonb_agg(c.conversation_id ORDER BY c.conversation_id) INTO v_changed_conversations
+          FROM declaration.conversation_snapshot(v_actor.institution_id,p_assignment,v_actor.user_id,
+            v_document.id,v_document.current_revision) c
+          LEFT JOIN declaration.conversation_snapshot(v_actor.institution_id,p_assignment,v_actor.user_id,
+            v_document.id,v_requested_revision) previous USING (conversation_id)
+          WHERE c.reason <> 'student_added' AND c.reason IS DISTINCT FROM previous.reason;
+        IF v_changed_conversations IS NOT NULL THEN
+          RETURN jsonb_build_object('status','conflict','reason','attachment_stale','conversationIds',v_changed_conversations);
+        END IF;
+      END IF;
+    END IF;
     RETURN jsonb_build_object('status','conflict','reason','stale_revision','currentRevision',v_document.current_revision);
   END IF;
 
@@ -433,14 +444,3 @@ END $$;
 
 DROP FUNCTION declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb);
 DROP FUNCTION declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint);
-
-ALTER FUNCTION declaration.check_statement_attachments() SECURITY INVOKER;
-ALTER TABLE declaration.statement DROP CONSTRAINT statement_payload_matches_row,
-  ADD CONSTRAINT statement_payload_matches_row CHECK (payload_jcs IS NULL OR (
-    payload_jcs = declaration.canonical_payload(payload_jcs::jsonb)
-    AND payload_jcs::jsonb ->> 'declarationSchema' = 'ductura-declaration-v1'
-    AND payload_jcs::jsonb ->> 'principalId' = principal_id::text
-    AND payload_jcs::jsonb ->> 'assignmentId' = assignment_id::text
-    AND payload_jcs::jsonb -> 'assignmentVersion' = to_jsonb(assignment_version)
-    AND payload_jcs::jsonb ->> 'documentId' = document_id
-    AND payload_jcs::jsonb -> 'revision' = to_jsonb(revision)));

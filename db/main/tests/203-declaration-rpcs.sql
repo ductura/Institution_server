@@ -19,9 +19,12 @@ CREATE OR REPLACE FUNCTION declaration.conversation_snapshot(
   p_institution uuid, p_assignment uuid, p_student uuid, p_document text, p_revision bigint
 ) RETURNS TABLE (conversation_id uuid, reason text, required_through_seq integer, message_hashes text[])
 LANGUAGE sql STABLE SET search_path = '' AS $$
-  SELECT c.conversation_id,c.reason,c.required_through_seq,c.message_hashes FROM pg_temp.demo_conversation c
+  SELECT c.conversation_id,
+    CASE WHEN p_revision = 2 AND c.conversation_id = pg_temp.id('optional') THEN 'pasted_known' ELSE c.reason END,
+    CASE WHEN p_revision = 2 AND c.conversation_id = pg_temp.id('optional') THEN 1 ELSE c.required_through_seq END,
+    c.message_hashes FROM pg_temp.demo_conversation c
     WHERE c.student_id = p_student AND p_institution = pg_temp.id('fak_a')
-      AND p_assignment = pg_temp.id('z1') AND p_document = 'doc-a' AND p_revision = 1
+      AND p_assignment = pg_temp.id('z1') AND p_document = 'doc-a' AND p_revision IN (1,2)
 $$;
 
 INSERT INTO ref VALUES
@@ -92,10 +95,6 @@ UPDATE demo_conversation SET message_hashes = message_hashes || repeat('d',64), 
 SELECT is(pg_temp.save(1,true,jsonb_build_array(pg_temp.demo_ref('required')))->'conversationIds',
   jsonb_build_array(pg_temp.id('required')),'evidence using a message after the preview makes the preview stale');
 UPDATE demo_conversation SET required_through_seq = 1 WHERE conversation_id = pg_temp.id('required');
-UPDATE demo_conversation SET reason = 'pasted_known', required_through_seq = 1 WHERE conversation_id = pg_temp.id('optional');
-SELECT is(pg_temp.save(1,true,jsonb_build_array(pg_temp.demo_ref('required')))->'conversationIds',
-  jsonb_build_array(pg_temp.id('optional')),'a newly required conversation must be explicitly selected');
-UPDATE demo_conversation SET reason = 'student_added', required_through_seq = 0 WHERE conversation_id = pg_temp.id('optional');
 SELECT is((SELECT count(*) FROM declaration.statement WHERE payload_jcs IS NOT NULL),0::bigint,
   'rejected confirmations left no confirmed version');
 
@@ -132,8 +131,8 @@ SELECT is((SELECT val::jsonb #> '{statement,payload,ai,attachments}' FROM ref WH
 SELECT is((SELECT count(*) FROM declaration.conversation_attachment),2::bigint,
   'the two confirmed conversations have immutable rows');
 
--- Three more full-sized files and a fourth one produce an exact aggregate
--- boundary when combined with the initial TXT and PDF and one final file.
+-- Four full-sized files plus the initial TXT, PDF and a final file reach
+-- the exact combined limit.
 SELECT is(pg_temp.upload('ana','z1','text/plain','convert_to(repeat(''x'',2097153),''UTF8'')')->>'status',
   'invalid_input','one byte over the per-file limit is rejected');
 SELECT is(pg_temp.upload('ana','z1','text/plain',format('convert_to(repeat(%L,2097152),''UTF8'')',chr(n)))
@@ -150,6 +149,20 @@ SELECT is(pg_temp.upload('tomo','z3','text/plain',$$convert_to('demo-11','UTF8')
   'too_many_attachments','the eleventh distinct upload is rejected');
 SELECT is(pg_temp.upload('tomo','z3','text/plain',$$convert_to('demo-10','UTF8')$$)->>'status',
   'ok','an exact retry still works at the count limit');
+SELECT is(pg_temp.save(2,true,jsonb_build_array(pg_temp.demo_ref('required')),
+  jsonb_build_array((SELECT id FROM declaration.external_attachment WHERE principal_id = pg_temp.id('tomo') ORDER BY id LIMIT 1)))
+  ->>'reason','invalid_attachment','the caller cannot attach another student’s upload');
+
+SELECT is(pg_temp.call('ana','pkg-a','req-declaration-rpcs-2',
+  pg_temp.descriptor(p_segment=>'segment-a-2',p_sequence_from=>2,p_sequence_to=>2,p_hash=>repeat('c',64),p_predecessor=>repeat('b',64)),
+  1,repeat('d',64),repeat('e',64),repeat('c',64)), 'reserved', 'fixture commits revision 2');
+SELECT is(pg_temp.save(2,true,jsonb_build_array(pg_temp.demo_ref('required'),pg_temp.demo_ref('optional'))),
+  jsonb_build_object('status','conflict','reason','attachment_stale','conversationIds',jsonb_build_array(pg_temp.id('optional'))),
+  'a conversation that became required makes the old preview stale even if its message hash is unchanged');
+SELECT is(pg_temp.save(2,true,jsonb_build_array(pg_temp.demo_ref('required')),'[]',2),
+  jsonb_build_object('status','conflict','reason','mandatory_attachment_missing',
+    'conversationIds',jsonb_build_array(pg_temp.id('optional'))),
+  'confirmation of the current revision still requires explicit selection of the newly required conversation');
 
 SELECT * FROM finish();
 ROLLBACK;
