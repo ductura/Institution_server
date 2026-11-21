@@ -401,6 +401,7 @@ SELECT bag_eq(
     'notify_assignment_version() definer',
       'notify_published_comment() definer',
     'require_course_teacher(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
+    'require_legal_hold_admin(OUT user_id uuid, OUT institution_id uuid)',
     'is_confirmed_teacher(p_user_id uuid, p_course_id uuid)',
     'set_course_holder(p_course_id uuid, p_holder_id uuid) definer app',
     'hand_over_course(p_course_id uuid, p_holder_id uuid) definer app',
