@@ -86,6 +86,15 @@ const CODE_IN_STATUS = new Set([
   "evidence.replay.post",
 ]);
 
+// Problem bodies that also name what the client must reload or attach
+// (declaration-v1 §7.3), with sample values for the extra fields. A closed list.
+const WITH_FIELDS: Record<string, Record<string, unknown>> = {
+  "student.declaration.put declaration_conflict": { currentVersion: 3 },
+  "student.declaration.put stale_revision": { currentRevision: 2 },
+  "student.declaration.put mandatory_attachment_missing": { conversationIds: [ID] },
+  "student.declaration.put attachment_stale": { conversationIds: [ID] },
+};
+
 function properties(schema: TSchema): Record<string, TSchema> {
   return (schema as TObject).properties;
 }
@@ -110,7 +119,9 @@ describe("every route in the inventory", () => {
     expect(props["status"]).toMatchObject({ const: status });
     expect(props["requestId"]).toMatchObject({ type: "string", pattern: REQUEST_ID_PATTERN });
     // The answer problem.ts gives is valid against the route's own schema.
-    expect(Value.Check(spec.body as TSchema, problemOf(status, code, ID))).toBe(true);
+    const fields = WITH_FIELDS[`${id} ${code}`] ?? {};
+    const answer = { ...problemOf(status, code, ID), ...fields };
+    expect(Value.Check(spec.body as TSchema, answer)).toBe(true);
   });
 
   it("the shared errors, the fallback and 405 have the default problem body", () => {
