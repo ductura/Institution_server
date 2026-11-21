@@ -428,7 +428,7 @@ SELECT is_empty(
      FROM (SELECT rolname::text FROM pg_roles
            WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
            UNION ALL SELECT 'public') AS r
-     CROSS JOIN unnest(ARRAY['app.notify_submission_owner(uuid,uuid,uuid,uuid)', 'app.notify_bound_receipt()']) f
+     CROSS JOIN unnest(ARRAY['app.notify_submission_owner(uuid,uuid,uuid)', 'app.notify_bound_receipt()']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-1701: application and worker cannot directly produce a receipt notification'
 );
