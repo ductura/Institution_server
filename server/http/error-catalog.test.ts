@@ -32,10 +32,14 @@ const CANARY = "made-up-canary-5d21";
 const STATUSES = [400, 401, 403, 404, 408, 429, 500, 502, 503, 504];
 
 describe("ERROR_CATALOG", () => {
-  it("has the ten statuses and session_expired, one code and one key each", () => {
-    const byStatus = ERROR_CATALOG.filter((error) => error.code !== SESSION_EXPIRED);
+  it("has the ten statuses, session_expired and session_idle_expired, one code and one key each", () => {
+    const byCodeOnly = [SESSION_EXPIRED, "session_idle_expired"];
+    const byStatus = ERROR_CATALOG.filter((error) => !byCodeOnly.includes(error.code));
     expect(byStatus.map((error) => error.status)).toEqual(STATUSES);
     expect(catalogErrorOf(SESSION_EXPIRED)).toMatchObject({ status: 401 });
+    // SRV-1401: picked by code; by status 401 stays unauthenticated.
+    expect(catalogErrorOf("session_idle_expired")).toMatchObject({ status: 401 });
+    expect(catalogErrorFor(401)).toMatchObject({ code: "unauthenticated" });
     expect(new Set(ERROR_CATALOG.map((error) => error.code)).size).toBe(ERROR_CATALOG.length);
     expect(new Set(ERROR_CATALOG.map((error) => error.messageKey)).size).toBe(ERROR_CATALOG.length);
   });

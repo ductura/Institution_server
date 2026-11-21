@@ -2029,6 +2029,7 @@ export const hr = {
     preconditionRequired: "Zahtjev ne navodi koju verziju rada mijenja. Učitajte rad ponovno.",
     recordChanged: "Zapis rada se u međuvremenu promijenio. Učitajte ga ponovno.",
     refused: "Kod ne postoji ili je istekao. Provjerite ga s nastavnikom.",
+    sessionIdleExpired: "Prijava je istekla zbog neaktivnosti. Prijavite se ponovno.",
     staleBase: "Rad je u međuvremenu promijenjen. Učitajte zadnju verziju.",
     staleRevision: "Na poslužitelju je novija verzija teksta. Učitajte je ponovno prije predaje.",
     timeout: "Zahtjev je trajao predugo. Pokušajte ponovno.",

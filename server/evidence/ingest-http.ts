@@ -12,6 +12,8 @@ import {
 } from "../http/fetch-mutation-request.ts";
 import { codesLog } from "../log/index.ts";
 
+import { parseClosedJsonObject } from "./ingest/index.ts";
+
 /**
  * What both evidence routes do before and while reading a body (BACKEND 4.13
  * t. 1): every check from the headers comes before a single body byte is
@@ -106,21 +108,7 @@ export async function readGuardedBody(
 }
 
 /**
- * A JSON object with exactly the given keys, from strict UTF-8: a byte order
- * mark stays a character and fails the parse. Anything else is null.
+ * A JSON object with exactly the given keys, each written once, from strict
+ * UTF-8 (M3.1, N-19: a repeated key is null, as an unknown one is).
  */
-export function parseClosedObject(
-  bytes: Uint8Array,
-  keys: readonly string[],
-): Record<string, unknown> | null {
-  let value: unknown;
-  try {
-    value = JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
-  } catch {
-    return null;
-  }
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
-  const own = Object.keys(value);
-  if (own.length !== keys.length || !keys.every((key) => own.includes(key))) return null;
-  return value as Record<string, unknown>;
-}
+export const parseClosedObject = parseClosedJsonObject;

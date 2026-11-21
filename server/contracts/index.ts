@@ -37,6 +37,7 @@ import {
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workMessagesRoutes,
+  directEditRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -57,6 +58,7 @@ export {
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
 };
+export { SESSION_IDLE_EXPIRED } from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
@@ -116,6 +118,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...publicVerificationRoutes,
   ...versionsRoutes,
   ...workMessagesRoutes,
+  ...directEditRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

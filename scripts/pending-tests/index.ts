@@ -35,10 +35,9 @@ export const PENDING_TESTS: readonly string[] = [
   "tests/unit/ready-route.test.ts",
   "tests/unit/ready-route-alarms.test.ts",
   "tests/unit/interface-locale-routes.test.ts",
-  // do DAN-839-3 (the copied probes and status still use the Ductus readiness names; server/http/ready.ts is the Ductura port)
+  // do DAN-839-3 (the copied status and its test still use the Ductus readiness names; the probes are server/http/ready-capabilities.ts since SRV-1812)
   "server/http/public-status.test.ts",
   "server/http/public-status.ts",
-  "server/http/ready-capabilities.ts",
   "tests/unit/ready.test.ts",
   // Ductus layout (src/, app/, docs/backend, db/migrations, tests/integration do not exist here); replacement with SRV-10/12 and the database lane
   "tests/unit/shutdown-process.test.ts",

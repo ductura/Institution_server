@@ -105,6 +105,8 @@ export const ROUTE_TABLE = {
   "work.consultation-slots.get": { method: "GET", path: "/api/v1/works/{documentId}/consultation-slots", body: null, headers: [], errors: {"401":["unauthorized"],"403":["forbidden"],"404":["not_found"],"503":["unavailable"]} },
   "work.consultation-slots.patch": { method: "PATCH", path: "/api/v1/works/{documentId}/consultation-slots/{slotId}", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["forbidden","origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"409":["conflict"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.consultation-slots.post": { method: "POST", path: "/api/v1/works/{documentId}/consultation-slots", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["forbidden","origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
+  "work.direct-edit.get": { method: "GET", path: "/api/v1/works/{documentId}/direct-edit", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
+  "work.direct-edit.put": { method: "PUT", path: "/api/v1/works/{documentId}/direct-edit", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.messages.get": { method: "GET", path: "/api/v1/works/{documentId}/messages", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
   "work.messages.post": { method: "POST", path: "/api/v1/works/{documentId}/messages", body: "application/json", headers: [], errors: {"400":["content_length_invalid","content_length_mismatch","body_stream_error","invalid_json"],"401":["unauthorized"],"403":["origin_missing","origin_mismatch","cross_site"],"404":["not_found"],"408":["body_timeout"],"413":["body_too_large"],"415":["unsupported_media_type"],"422":["invalid_input"],"503":["unavailable"]} },
   "work.milestones.get": { method: "GET", path: "/api/v1/works/{documentId}/milestones", body: null, headers: [], errors: {"401":["unauthorized"],"404":["not_found"],"503":["unavailable"]} },
@@ -118,7 +120,7 @@ export const ANSWER_STATUSES: Readonly<Record<string, readonly number[]>> = {
   "live.document.put": [200,409],
 };
 
-export const SHARED_ERRORS = {"429":["too_many_requests"],"500":["internal"]} as const;
+export const SHARED_ERRORS = {"401":["session_idle_expired"],"429":["too_many_requests"],"500":["internal"]} as const;
 
 type Input<Id extends OperationId> = Pick<Operations[Id], "params" | "query" | "body">;
 export type Result<Id extends OperationId> =

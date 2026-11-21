@@ -8,6 +8,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { RouteContract } from "../contracts/index.ts";
 import type { ActorReader } from "../database/index.ts";
+import { parseClosedJsonObject } from "../evidence/index.ts";
 
 import { evidenceSession } from "./evidence-session.ts";
 import { readBodyWithLimit } from "./mutation-request.ts";
@@ -103,21 +104,8 @@ export function sendEvidenceAnswer(
 }
 
 /**
- * A JSON object with exactly the given keys, from strict UTF-8: a byte order
- * mark stays a character and fails the parse. Anything else is null.
+ * A JSON object with exactly the given keys, each written once, from strict
+ * UTF-8 (M3.1, N-19): the evidence area's parser, so every evidence route
+ * refuses a repeated key as it refuses an unknown one. Anything else is null.
  */
-export function parseClosedObject(
-  bytes: Uint8Array,
-  keys: readonly string[],
-): Record<string, unknown> | null {
-  let value: unknown;
-  try {
-    value = JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
-  } catch {
-    return null;
-  }
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
-  const own = Object.keys(value);
-  if (own.length !== keys.length || !keys.every((key) => own.includes(key))) return null;
-  return value as Record<string, unknown>;
-}
+export const parseClosedObject = parseClosedJsonObject;

@@ -101,9 +101,11 @@ SELECT bag_eq(
   $$ VALUES ('app.worker_pending_receipts(uuid,integer,uuid)'), ('app.worker_receipt_keys(uuid)'),
             ('app.worker_attach_receipt_signature(uuid,text,jsonb)'), ('app.worker_pending_backlog()'),
             ('app.worker_receipt_object(uuid,uuid)'), ('app.worker_package_checkpoints(uuid,text,text[])'),
+            ('app.worker_record_reconstruction_checkpoint(uuid,text,bigint,text,text)'),
+            ('app.worker_reconstruction_checkpoint(uuid,text,bigint)'),
             ('pgboss.job_now()'), ('pgboss.create_queue(text,jsonb)'),
             ('assistant.sweep_and_settle(uuid)') $$,
-  'the worker role executes exactly the three worker RPCs, the backlog (107-worker-pending-backlog.sql), the receipt object locator (115-worker-receipt-object.sql), the checkpoint read (123-worker-package-checkpoints.sql), the two pg-boss functions of its queue (DAN-517) and the assistant sweep (171-assistant-rpcs.sql)');
+  'the worker role executes exactly the three worker RPCs, the backlog (107-worker-pending-backlog.sql), the receipt object locator (115-worker-receipt-object.sql), the checkpoint read (123-worker-package-checkpoints.sql), the reconstruction checkpoint write and read (195-reconstruction-checkpoint.sql), the two pg-boss functions of its queue (DAN-517) and the assistant sweep (171-assistant-rpcs.sql)');
 SELECT is_empty(
   $$ SELECT r || ' ' || p.oid::regprocedure::text FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_retention', 'ductus_auth', 'ductus_identity', 'ductus_test_stranger']) AS r
