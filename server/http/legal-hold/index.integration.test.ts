@@ -91,14 +91,14 @@ async function expectAnswer(got: Response, v: Vector) {
 }
 
 /** What the database says for the error a vector expects. */
-const refusalFor = (v: Vector): string =>
-  ({
-    unauthorized: "unauthenticated",
-    forbidden: "forbidden",
-    not_found: "not_found",
-    conflict: "conflict",
-    invalid_input: "invalid",
-  })[v.code ?? ""] ?? "unavailable";
+const REFUSALS: ReadonlyMap<string, string> = new Map([
+  ["unauthorized", "unauthenticated"],
+  ["forbidden", "forbidden"],
+  ["not_found", "not_found"],
+  ["conflict", "conflict"],
+  ["invalid_input", "invalid"],
+]);
+const refusalFor = (v: Vector): string => REFUSALS.get(v.code ?? "") ?? "unavailable";
 
 describe("institution.legal-holds.get", () => {
   it.each(LIST.map((v) => [v.name, v] as const))("vector %s", async (_name, v) => {

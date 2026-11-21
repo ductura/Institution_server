@@ -10,9 +10,7 @@ import { expect, it } from "vitest";
 import { createTestDatabase } from "../../../test-support/database/index.ts";
 import type { WithActor } from "../../database/index.ts";
 
-import { createDatabases } from "../databases.ts";
-import { createLayers } from "../pipeline.ts";
-import { startServer } from "../start.ts";
+import { createDatabases, createLayers, startServer } from "../index.ts";
 import { createLegalHoldRoutesFor } from "./index.ts";
 
 const institution = readFileSync(

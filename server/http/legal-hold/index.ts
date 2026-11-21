@@ -14,11 +14,15 @@ import { ROUTES } from "../../contracts/index.ts";
 import { createLegalHolds, type LegalHolds, type WithActor } from "../../database/index.ts";
 import { liveSessionTokenFromCookie, recordActivity } from "../../session/index.ts";
 
-import { reportServerError } from "../error-catalog.ts";
-import { INSTITUTION_BODY_TIMEOUT_MS, readInstitutionJson } from "../institution-courses.ts";
-import { sendProblem } from "../problem.ts";
-import { requestIdOf } from "../request-id.ts";
-import { type Route, sendJson } from "../router.ts";
+import {
+  INSTITUTION_BODY_TIMEOUT_MS,
+  readInstitutionJson,
+  reportServerError,
+  requestIdOf,
+  sendJson,
+  sendProblem,
+  type Route,
+} from "../index.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
