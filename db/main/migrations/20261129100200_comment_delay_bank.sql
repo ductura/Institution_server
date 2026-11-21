@@ -164,6 +164,7 @@ AS $$
 DECLARE
   actor record;
   t record;
+  v_doc record;
   v_last integer;
   v_comment uuid;
 BEGIN
@@ -172,11 +173,27 @@ BEGIN
   IF t.role IS DISTINCT FROM 'teacher' THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
+  -- A draft reply goes only to a thread the student can already see, or to the
+  -- caller's own draft thread: never into another teacher's unpublished one.
+  SELECT c.document_id, c.institution_id, c.created_by INTO v_doc
+    FROM collaboration.comment_thread c WHERE c.id = t.thread_id;
+  IF v_doc.created_by <> actor.user_id AND NOT EXISTS (
+       SELECT 1 FROM collaboration.comment x WHERE x.thread_id = t.thread_id AND x.published_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
   IF NOT coalesce(collaboration.is_comment_body(p_body), false) THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
   IF t.state = 'resolved' THEN
     RAISE EXCEPTION 'conflict' USING ERRCODE = 'ZD409';
+  END IF;
+  -- The same bound and lock as a new draft: 500 drafts of one author on one work.
+  PERFORM pg_advisory_xact_lock(hashtextextended('comment_draft:' || v_doc.document_id || actor.user_id, 0));
+  IF (SELECT count(*) >= 500 FROM collaboration.comment c
+       WHERE c.author_id = actor.user_id AND c.published_at IS NULL
+         AND c.thread_id IN (SELECT x.id FROM collaboration.comment_thread x
+                              WHERE x.document_id = v_doc.document_id AND x.institution_id = v_doc.institution_id)) THEN
+    RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
   SELECT max(c.position) INTO v_last FROM collaboration.comment c WHERE c.thread_id = t.thread_id;
   IF v_last >= 10000 THEN
@@ -217,27 +234,42 @@ BEGIN
 END
 $$;
 
--- The author removes a draft. A thread left with no published comment goes
--- with its last draft, so a student never meets a thread with no opening.
+-- The author removes a draft, under the lock publish_comments takes, so a
+-- comment published meanwhile is never deleted (404 instead). Only the draft
+-- goes; but the opening draft of an unpublished thread takes the thread's
+-- other drafts with it (all the author's own: reply_comment_draft allows no
+-- one else), so a student never meets a thread with no opening.
 CREATE FUNCTION collaboration.discard_comment_draft(p_comment_id uuid) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE
   actor record;
-  v_thread uuid;
+  c record;
+  t record;
+  v_gone uuid;
 BEGIN
   SELECT * INTO actor FROM institution.require_actor();
-  SELECT x.thread_id INTO v_thread FROM collaboration.comment x
+  SELECT x.thread_id, x.position INTO c FROM collaboration.comment x
    WHERE x.id = p_comment_id AND x.institution_id = actor.institution_id
      AND x.author_id = actor.user_id AND x.published_at IS NULL;
-  IF v_thread IS NULL THEN
+  IF c.thread_id IS NULL THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
-  PERFORM 1 FROM collaboration.comment_thread t WHERE t.id = v_thread FOR UPDATE;
-  DELETE FROM collaboration.comment x WHERE x.id = p_comment_id;
-  IF NOT EXISTS (SELECT 1 FROM collaboration.comment x WHERE x.thread_id = v_thread AND x.published_at IS NOT NULL) THEN
-    DELETE FROM collaboration.comment x WHERE x.thread_id = v_thread;
-    DELETE FROM collaboration.comment_thread t WHERE t.id = v_thread;
+  SELECT th.document_id INTO t FROM collaboration.comment_thread th WHERE th.id = c.thread_id;
+  -- The lock first, as publish_comments takes it, then the thread row.
+  PERFORM pg_advisory_xact_lock(hashtextextended('comment_draft:' || t.document_id || actor.user_id, 0));
+  PERFORM 1 FROM collaboration.comment_thread th WHERE th.id = c.thread_id FOR UPDATE;
+  -- Checked again under the lock: it may have been published meanwhile.
+  DELETE FROM collaboration.comment x
+   WHERE x.id = p_comment_id AND x.author_id = actor.user_id AND x.published_at IS NULL
+  RETURNING x.id INTO v_gone;
+  IF v_gone IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
+  END IF;
+  IF c.position = 1 AND NOT EXISTS (
+       SELECT 1 FROM collaboration.comment x WHERE x.thread_id = c.thread_id AND x.published_at IS NOT NULL) THEN
+    DELETE FROM collaboration.comment x WHERE x.thread_id = c.thread_id AND x.published_at IS NULL;
+    DELETE FROM collaboration.comment_thread th WHERE th.id = c.thread_id;
   END IF;
 END
 $$;

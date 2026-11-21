@@ -146,6 +146,34 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({xc
 SELECT is((SELECT count(*) FROM collaboration.comment_thread WHERE id = (SELECT val::uuid FROM ref WHERE name = 'x1')), 0::bigint,
   'the thread that had only that draft goes with it');
 
+-- Draft replies: not into another teacher's unpublished thread; discarding a
+-- reply keeps the opening; the bound of 500 holds for replies too.
+INSERT INTO ref SELECT 'y1', pg_temp.ask('vesna',
+  format($$ SELECT collaboration.create_comment_draft('doc-a', 'Nova nit.', %L::jsonb) $$, (SELECT a FROM anchor_json)));
+SELECT is(pg_temp.ask('marko', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Tuđa nit.') $$), 'ZD403: forbidden',
+  'another teacher cannot draft a reply into an unpublished thread of Vesna''s');
+INSERT INTO ref SELECT 'yr', pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Vlastiti nastavak.') $$);
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({yr}::uuid) $$), '',
+  'Vesna discards only her draft reply');
+SELECT is((SELECT count(*) FROM collaboration.comment WHERE thread_id = (SELECT val::uuid FROM ref WHERE name = 'y1')), 1::bigint,
+  'the opening draft of the thread is still there');
+SET LOCAL ROLE ductus_identity;
+INSERT INTO collaboration.comment (thread_id, institution_id, position, author_id, author_role, body, published_at)
+SELECT (SELECT val::uuid FROM ref WHERE name = 'y1'), pg_temp.id('fak_a'), 1 + g, pg_temp.id('vesna'), 'teacher', 'Nacrt ' || g, NULL
+FROM generate_series(1, 498) g;
+RESET ROLE;
+-- Vesna now holds 499 drafts on the work (the opening and 498 more... plus none else): one more fits, the next does not.
+SELECT matches(pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Petstoti.') $$), '^[0-9a-f-]{36}$',
+  'the 500th draft of an author on a work is accepted');
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.reply_comment_draft({y1}::uuid, 'Šeststoti.') $$), 'ZD422: invalid input',
+  'the 501st is refused, replies included');
+INSERT INTO ref SELECT 'yo', (SELECT c.id::text FROM collaboration.comment c WHERE c.thread_id = (SELECT val::uuid FROM ref WHERE name = 'y1') AND c.position = 1);
+SELECT is(pg_temp.ask('vesna', $$ SELECT collaboration.discard_comment_draft({yo}::uuid) $$), '',
+  'discarding the opening draft of an unpublished thread');
+SELECT is((SELECT count(*) FROM collaboration.comment WHERE thread_id = (SELECT val::uuid FROM ref WHERE name = 'y1')), 0::bigint,
+  'takes the thread''s other drafts and the thread with it');
+SELECT is(pg_temp.ask('vesna', $$ SELECT count(*) FROM collaboration.list_comment_drafts('doc-a') $$), '0', 'no draft is left');
+
 -- 5. The comment bank (N-03) is private to its teacher.
 INSERT INTO ref SELECT 'b1', pg_temp.ask('vesna', $$ SELECT template_id FROM collaboration.create_comment_template('Navedite izvor.', 'must') $$);
 SELECT matches((SELECT val FROM ref WHERE name = 'b1'), '^[0-9a-f-]{36}$', 'Vesna saves a comment in her bank');
