@@ -54,6 +54,13 @@ export {
 } from "./course-aggregate.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
+export { mentorshipRoutes } from "./mentorship.ts";
+export {
+  MentorNoteInput,
+  MentorshipNoteParams,
+  mentorNotesGet,
+  mentorNotesPost,
+} from "./mentor-notes.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";

@@ -6,6 +6,8 @@ export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
+export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
+export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,

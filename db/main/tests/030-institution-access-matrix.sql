@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2489);
+SELECT plan(2529);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -106,8 +106,9 @@ SELECT bag_eq(
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
-        'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline'],
-  'the institution schema holds exactly the thirty-three tables of this matrix'
+        'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
+        'work_milestone_deadline', 'mentor_note'],
+  'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -141,6 +142,7 @@ SELECT bag_eq(
     'ductus_app SELECT assignment_version',
     'ductus_app SELECT notice_acknowledgment',
     'ductus_app SELECT mentorship',
+    'ductus_app SELECT mentor_note',
     'ductus_app SELECT course_holder',
     'ductus_app SELECT seminar_group',
     'ductus_app SELECT seminar_group_teacher',
@@ -187,6 +189,8 @@ SELECT bag_eq(
     'faculty_work_rule: faculty_work_rule_owner ALL to ductus_identity',
     'mentorship: mentorship_owner ALL to ductus_identity',
     'mentorship: mentorship_read SELECT to ductus_app',
+    'mentor_note: mentor_note_owner ALL to ductus_identity',
+    'mentor_note: mentor_note_read SELECT to ductus_app',
     'notification: notification_owner ALL to ductus_identity',
     'course_holder: course_holder_owner ALL to ductus_identity',
     'course_holder: course_holder_read SELECT to ductus_app',
@@ -305,6 +309,7 @@ SELECT bag_eq(
     'has_acknowledged_current(p_assignment_id uuid) definer app',
     'list_teacher_courses() app',
     'actor_mentorship_role(p_mentorship_id uuid) definer app',
+    'create_mentor_note(p_mentorship_id uuid, p_body text) definer app',
     'check_mentorship_version() definer',
     'assignment_version_institution_fill()',
     'course_enrollment_code_institution_fill()',
@@ -588,6 +593,23 @@ FROM (VALUES ('vesna', '1'), ('marko', '0'), ('ana', '0'), ('iva', '0'), ('petra
 SELECT is(
   left(pg_temp.ask(c.actor, $$ SELECT app.approve_mentorship_request_with_work({rq}) $$), 5),
   c.code, 'SRV-31: approval refused for ' || c.actor
+)
+FROM (VALUES ('marko', 'ZD403'), ('ana', 'ZD403'), ('iva', 'ZD403'), ('petra', 'ZD403'),
+             ('tomo', 'ZD403'), ('anon', 'ZD401')) AS c (actor, code);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.approve_mentorship_request_once(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1407: only the application role and the owner execute the idempotent approval'
+);
+SELECT ok(has_function_privilege('ductus_app', 'app.approve_mentorship_request_once(uuid)', 'EXECUTE'),
+  'SRV-1407: the application role can call the idempotent approval');
+SELECT is(
+  left(pg_temp.ask(c.actor, $$ SELECT app.approve_mentorship_request_once({rq}) $$), 5),
+  c.code, 'SRV-1407: idempotent approval refused for ' || c.actor
 )
 FROM (VALUES ('marko', 'ZD403'), ('ana', 'ZD403'), ('iva', 'ZD403'), ('petra', 'ZD403'),
              ('tomo', 'ZD403'), ('anon', 'ZD401')) AS c (actor, code);
@@ -912,7 +934,8 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
-                        'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline']) WITH ORDINALITY AS t (tbl, n)
+                        'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
+                        'work_milestone_deadline', 'mentor_note']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(

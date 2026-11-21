@@ -6,6 +6,9 @@ import {
   clientRoutes,
   collaborationRoutes,
   consultationSlotRoutes,
+  mentorshipRoutes,
+  mentorNotesGet,
+  mentorNotesPost,
   courseAggregateGet,
   downloadsRoutes,
   enrollmentRoutes,
@@ -73,6 +76,12 @@ export {
   TOO_MANY_REQUESTS,
 };
 export { SESSION_IDLE_EXPIRED } from "./routes/index.ts";
+export {
+  MentorNoteInput,
+  MentorshipNoteParams,
+  mentorNotesGet,
+  mentorNotesPost,
+} from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
@@ -121,6 +130,9 @@ export const ROUTES: readonly RouteContract[] = [
   ...projectionRoutes,
   ...collaborationRoutes,
   ...consultationSlotRoutes,
+  ...mentorshipRoutes,
+  mentorNotesGet,
+  mentorNotesPost,
   ...assistantRoutes,
   ...statementRoutes,
   ...liveRoutes,
