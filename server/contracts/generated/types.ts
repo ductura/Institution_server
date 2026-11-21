@@ -932,6 +932,20 @@ export type Operations = {
     success: { status: 200; body: { "allowed": boolean; "changedAt": string | null }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "teacher.submissions-bulk-link.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "format": "pdf" | "docx" };
+    success: { status: 201; body: { "format": "pdf" | "docx"; "downloadPath": string; "expiresAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "teacher.submissions-bulk.get": {
+    params: { "assignmentId": string; "format": "pdf" | "docx" };
+    query: { "token": string };
+    body: undefined;
+    success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "not_allowed" | "unavailable";
+  };
   "teacher.submissions.get": {
     params: { "assignmentId": string };
     query: undefined;

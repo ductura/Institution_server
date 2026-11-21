@@ -56,6 +56,11 @@ export {
 } from "./client-context.ts";
 export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
 export {
+  createTeacherSubmissionsBulkRoutes,
+  createTeacherSubmissionsBulkRoutesFor,
+  type TeacherSubmissionsBulkDeps,
+} from "./teacher-submissions-bulk/index.ts";
+export {
   createSubmissionPackageRoutes,
   createSubmissionPackageRoutesFor,
   createWorkPdfRouteFor,

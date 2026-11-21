@@ -371,6 +371,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7069763588",
   },
+  // SRV-1902 (plan P-D2, Ductus#2052 c.7069957833): the link to the ZIP of all submissions of an assignment and its download; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/submissions-bulk-link/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069957833",
+  },
+  "app/api/teacher/assignments/[assignmentId]/submissions-bulk/[format]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069957833",
+  },
   "app/api/works/[documentId]/versions/[revision]/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7062949322",

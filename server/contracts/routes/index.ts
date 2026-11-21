@@ -26,6 +26,7 @@ export { versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
 export { portableRecordRoutes } from "./portable-record.ts";
 export { submissionPackageRoutes } from "./submission-package.ts";
+export { teacherSubmissionsBulkRoutes } from "./teacher-submissions-bulk.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export {

@@ -17,6 +17,7 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
@@ -1179,6 +1180,22 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/csv`,
       as: "nastavnik",
       method: "GET",
+    },
+  },
+  // SRV-1902: the teacher of the assignment asks for the link, then follows a far-future one.
+  "teacher.submissions-bulk-link.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions-bulk-link`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { format: "pdf" },
+    },
+  },
+  "teacher.submissions-bulk.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions-bulk/docx?token=${bulkTokenFor(IDS.assignment, "docx", PACKAGE_EXPIRES)}`,
+      as: "nastavnik",
     },
   },
   "teacher.merlin-packages.post": {

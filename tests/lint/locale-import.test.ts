@@ -22,6 +22,7 @@ const MERLIN = "server/http/merlin-roster/index.ts";
 const WORK_EXPORT = "server/http/work-export/index.ts";
 const PORTABLE_RECORD = "server/http/portable-record/index.ts";
 const SUBMISSION_PACKAGE = "server/http/export/submission-package.ts";
+const SUBMISSIONS_BULK = "server/http/teacher-submissions-bulk/index.ts";
 const RULES = ["local/area-boundary", "local/no-dynamic-load"];
 
 async function ruleIds(file: string, code: string): Promise<string[]> {
@@ -43,6 +44,7 @@ describe("the locales imports of the login page and receipt PDF", () => {
       [WORK_EXPORT]: { specifier: "../../../locales/index.ts", name: "merlinHr" },
       [PORTABLE_RECORD]: { specifier: "../../../locales/index.ts", name: "receiptPdfHr" },
       [SUBMISSION_PACKAGE]: { specifier: "../../../locales/index.ts", name: "receiptPdfHr" },
+      [SUBMISSIONS_BULK]: { specifier: "../../../locales/index.ts", name: "receiptPdfHr" },
     });
     expect(Object.isFrozen(LOCALE_IMPORT_ALLOWED)).toBe(true);
   });
@@ -64,6 +66,13 @@ describe("the locales imports of the login page and receipt PDF", () => {
     expect(await ruleIds(SUBMISSION_PACKAGE, code)).toEqual([]);
     const other = 'import { messagesHr as m } from "../../../locales/index.ts";' + use;
     expect(await ruleIds(SUBMISSION_PACKAGE, other)).not.toEqual([]);
+  });
+
+  it("allows the receipt PDF labels in the bulk submissions adapter, and nothing else there", async () => {
+    const code = 'import { receiptPdfHr as m } from "../../../locales/index.ts";' + use;
+    expect(await ruleIds(SUBMISSIONS_BULK, code)).toEqual([]);
+    const other = 'import { messagesHr as m } from "../../../locales/index.ts";' + use;
+    expect(await ruleIds(SUBMISSIONS_BULK, other)).not.toEqual([]);
   });
 
   it("allows the Croatian roster labels in the Merlin roster adapter", async () => {
