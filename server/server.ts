@@ -37,6 +37,7 @@ import {
   createWorkSourceRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkExportRouteFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
@@ -243,6 +244,8 @@ async function main(): Promise<void> {
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // SRV-9A: the versions of a work, the same page for its owner and its teacher.
       createWorkVersionsRouteFor(databases.main),
+      // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
+      createWorkExportRouteFor(databases.main),
       createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
