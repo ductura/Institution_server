@@ -804,6 +804,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 /** The route factories server/server.ts calls in its `routes` list, in order. */
 const FACTORIES = [
   "createHealthRoute",
+  "createReadyRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
