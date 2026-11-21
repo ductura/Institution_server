@@ -97,6 +97,33 @@ function groupName(state: State, courseId: string, studentId: string): string | 
   return course?.groups.find((g) => g.studentIds.includes(studentId))?.name ?? null;
 }
 
+// SRV-1107: the teacher's private working criteria (B-9), kept per fake state,
+// author and work. Only a teacher of the work reads or writes them; the student's
+// routes never see them.
+const CRITERIA = [
+  ["topic", "workingCriteria.topic"],
+  ["structure", "workingCriteria.structure"],
+  ["sources", "workingCriteria.sources"],
+  ["method", "workingCriteria.method"],
+  ["language", "workingCriteria.language"],
+  ["formatting", "workingCriteria.formatting"],
+] as const;
+type CriterionValue = { assessment: 0 | 1 | 2 | null; note: string | null };
+const WORKING_CRITERIA = new WeakMap<State, Map<string, CriterionValue>>();
+
+function taughtWork(state: State, account: Account | null, documentId: string): boolean {
+  const work = state.works.find((w) => w.documentId === documentId);
+  if (work === undefined || account === null) return false;
+  const assignment = taught(state, account, work.assignmentId);
+  const course = state.courses.find((c) => c.id === assignment?.courseId);
+  // A teacher of one group reaches only the works of that group's students (C-7).
+  return course !== undefined && visibleStudents(course, account).includes(work.studentId);
+}
+function criterionKey(state: State, account: Account, documentId: string, id: string): string {
+  if (!WORKING_CRITERIA.has(state)) WORKING_CRITERIA.set(state, new Map());
+  return `${account.id}:${documentId}:${id}`;
+}
+
 export const TEACHER_HANDLERS: Handlers = {
   "teacher.receipt-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
@@ -214,6 +241,37 @@ export const TEACHER_HANDLERS: Handlers = {
         .map((m) => mentorshipWork(state, m)),
     },
   }),
+  "teacher.working-criteria.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    if (!taughtWork(state, account, params.documentId)) return { error: "not_found" };
+    const stored = WORKING_CRITERIA.get(state);
+    return {
+      status: 200,
+      body: {
+        criteria: CRITERIA.map(([id, label]) => ({
+          id,
+          label,
+          assessment:
+            stored?.get(criterionKey(state, account, params.documentId, id))?.assessment ?? null,
+          note: stored?.get(criterionKey(state, account, params.documentId, id))?.note ?? null,
+        })),
+      },
+    };
+  },
+  "teacher.working-criterion.put": ({ state, account, params, body }) => {
+    if (account === null) return { error: "unauthorized" };
+    const known = CRITERIA.find(([id]) => id === params.criterionId);
+    if (known === undefined || !taughtWork(state, account, params.documentId)) {
+      return { error: "not_found" };
+    }
+    const key = criterionKey(state, account, params.documentId, known[0]);
+    if (body.assessment === null && body.note === null) WORKING_CRITERIA.get(state)!.delete(key);
+    else WORKING_CRITERIA.get(state)!.set(key, { assessment: body.assessment, note: body.note });
+    return {
+      status: 200,
+      body: { id: known[0], label: known[1], assessment: body.assessment, note: body.note },
+    };
+  },
   "teacher.mentorship.get": ({ state, account, params }) => {
     const m = state.mentorships.find(
       (x) => x.id === params.mentorshipId && x.mentorId === account?.id,

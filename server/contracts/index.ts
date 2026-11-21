@@ -30,6 +30,7 @@ import {
   merlinRosterRoutes,
   supportRoutes,
   teacherRoutes,
+  teacherWorkingCriteriaRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workMessagesRoutes,
@@ -42,7 +43,7 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 export { breakingChanges } from "./breaking.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
-export { SourceProof, WorkSourceRecord } from "./routes/index.ts";
+export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 
 export {
   ERROR_CATALOG_DATA,
@@ -92,6 +93,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
+  ...teacherWorkingCriteriaRoutes,
   ...deadlineExtensionRoutes,
   ...merlinRosterRoutes,
   ...supportRoutes,
