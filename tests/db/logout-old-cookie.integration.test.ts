@@ -74,6 +74,7 @@ import {
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createRetentionRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
@@ -1094,6 +1095,13 @@ const SESSION_ROUTES = {
     }),
     live: 403,
   },
+  // SRV-1304: the administrator's retention dry run; not an administrator, so 403.
+  "institution.retention.get": {
+    method: "GET",
+    path: "/api/v1/institution/retention",
+    body: () => undefined,
+    live: 403,
+  },
 } as const;
 type SessionRouteId = keyof typeof SESSION_ROUTES;
 const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
@@ -1166,6 +1174,7 @@ const FACTORIES = [
   "createTeacherSubmissionDetailRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
+  "createRetentionRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
@@ -1256,6 +1265,7 @@ const MOUNTED = [
   createTeacherSubmissionDetailRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
+  createRetentionRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),

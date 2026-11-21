@@ -681,3 +681,7 @@ export {
 export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";
 export { createPilotMetricsReader, type PilotMetricsResult } from "./pilot-metrics/index.ts";
+export {
+  createRetentionDryRunReader,
+  type RetentionDryRunResult,
+} from "./retention-dry-run/index.ts";

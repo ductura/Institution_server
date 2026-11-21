@@ -15,6 +15,7 @@ import {
   mentorNotesPost,
   courseAggregateGet,
   pilotMetricsGet,
+  retentionGet,
   downloadsRoutes,
   enrollmentRoutes,
   ERROR_CATALOG_DATA,
@@ -68,6 +69,7 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes/index.ts";
+export { RetentionClassReport, RetentionReport, retentionGet } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
@@ -146,6 +148,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...teacherWorkingCriteriaRoutes,
   courseAggregateGet,
   pilotMetricsGet,
+  retentionGet,
   ...deadlineExtensionRoutes,
   ...submissionsRoutes,
   ...assignmentCopyRoutes,
