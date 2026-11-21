@@ -55,7 +55,12 @@ export {
   type ClientContextOptions,
 } from "./client-context.ts";
 export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
-export { createWorkPdfRouteFor } from "./export/index.ts";
+export {
+  createSubmissionPackageRoutes,
+  createSubmissionPackageRoutesFor,
+  createWorkPdfRouteFor,
+  type SubmissionPackageRouteDeps,
+} from "./export/index.ts";
 export {
   finishLogin,
   LOGIN_COOKIE_NAME,

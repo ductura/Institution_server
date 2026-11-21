@@ -45396,7 +45396,7 @@
     "/api/v1/student/submissions/{submissionId}/package/{kind}": {
       "get": {
         "operationId": "student.submission-package.get",
-        "summary": "Download through a link from student.submission-package-link.post, within its 24 hours and with the session that asked for it. Kind package is application/zip (prenosivi-zapis.zip, the portable record: manifest.json is the single D-173 manifest); kind referada is application/pdf (potvrda-za-referadu.pdf, the receipt PDF without the text of the work). The same submission gives the same bytes; X-Content-SHA256 is the SHA-256 of the body. A link of another submission, kind or session is 404, an expired link 410, a cross-site read 403.",
+        "summary": "Download through a link from student.submission-package-link.post, within its 24 hours and with the session that asked for it. Kind package is application/zip (prenosivi-zapis.zip, the portable record: manifest.json is the single D-173 manifest); kind referada is application/pdf (the receipt PDF without the text of the work, as an attachment). The same submission gives the same bytes; X-Content-SHA256 is the SHA-256 of the body. A link of another submission, kind or session is 404, an expired link 410, a cross-site read 403.",
         "x-access": "student_owner",
         "x-inventory": "app/api/student/submissions/[submissionId]/package/[kind]/route.ts",
         "parameters": [

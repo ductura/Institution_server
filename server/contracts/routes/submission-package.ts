@@ -72,7 +72,7 @@ export const studentSubmissionPackageGet = defineRoute({
   inventory: `${INVENTORY}/package/[kind]/route.ts`,
   access: "student_owner",
   summary:
-    "Download through a link from student.submission-package-link.post, within its 24 hours and with the session that asked for it. Kind package is application/zip (prenosivi-zapis.zip, the portable record: manifest.json is the single D-173 manifest); kind referada is application/pdf (potvrda-za-referadu.pdf, the receipt PDF without the text of the work). The same submission gives the same bytes; X-Content-SHA256 is the SHA-256 of the body. A link of another submission, kind or session is 404, an expired link 410, a cross-site read 403.",
+    "Download through a link from student.submission-package-link.post, within its 24 hours and with the session that asked for it. Kind package is application/zip (prenosivi-zapis.zip, the portable record: manifest.json is the single D-173 manifest); kind referada is application/pdf (the receipt PDF without the text of the work, as an attachment). The same submission gives the same bytes; X-Content-SHA256 is the SHA-256 of the body. A link of another submission, kind or session is 404, an expired link 410, a cross-site read 403.",
   request: {
     params: closed({ submissionId: SubmissionId, kind: Kind }),
     query: closed({ token: Type.String({ pattern: "^\\d{1,15}\\.[A-Za-z0-9_-]{43}$" }) }),
