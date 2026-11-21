@@ -79,6 +79,28 @@ CREATE TRIGGER assignment_version_work_language_offered BEFORE INSERT ON institu
 CREATE TRIGGER work_language_override_offered BEFORE INSERT OR UPDATE ON institution.work_language_override
   FOR EACH ROW EXECUTE FUNCTION institution.work_language_offered_check();
 
+-- The first version of an assignment that names no language takes the default
+-- of its pinned config (defaultWorkLanguage), not a fixed hr; without a config
+-- version the existing trigger still fills hr. By name this fires before
+-- assignment_version_work_language, which fills only what is still null.
+CREATE FUNCTION institution.assignment_version_config_language() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  IF NEW.work_language IS NULL AND NEW.version_no = 1 THEN
+    NEW.work_language := (
+      SELECT c.rules ->> 'defaultWorkLanguage'
+        FROM institution.assignment a
+        JOIN app.institution_config c ON c.institution_id = a.institution_id AND c.version = a.config_version
+       WHERE a.id = NEW.assignment_id);
+  END IF;
+  RETURN NEW;
+END
+$$;
+REVOKE ALL ON FUNCTION institution.assignment_version_config_language() FROM PUBLIC;
+CREATE TRIGGER assignment_version_default_language BEFORE INSERT ON institution.assignment_version
+  FOR EACH ROW EXECUTE FUNCTION institution.assignment_version_config_language();
+
 RESET ROLE;
 SET LOCAL ROLE ductus_migrator;
 REVOKE CREATE ON SCHEMA institution FROM ductus_identity;
@@ -89,6 +111,8 @@ SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA institution TO ductus_identity;
 SET LOCAL ROLE ductus_identity;
 
+DROP TRIGGER assignment_version_default_language ON institution.assignment_version;
+DROP FUNCTION institution.assignment_version_config_language();
 DROP TRIGGER work_language_override_offered ON institution.work_language_override;
 DROP TRIGGER assignment_version_work_language_offered ON institution.assignment_version;
 DROP FUNCTION institution.work_language_offered_check();

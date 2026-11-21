@@ -74,5 +74,14 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT institution.set_work_language({z_cfg}, 
 SELECT is(pg_temp.ask('vesna', $$ SELECT institution.set_work_language({z1}, {dora}, 'en') $$), 'en',
   '2: an assignment from before any config version keeps hr and en');
 
+-- A config that offers only en: a new assignment can still be created, and its
+-- first version takes en from the config, not a fixed hr.
+INSERT INTO ref VALUES ('rules_en', '{"citationStyle": "fpzg", "workLanguages": ["en"], "defaultWorkLanguage": "en"}');
+SELECT is(pg_temp.ask('iva', $$ SELECT app.publish_institution_config(1, {rules_en}::jsonb)::text $$), '2', '2: the admin publishes en only');
+INSERT INTO ref VALUES ('z_en', pg_temp.ask('vesna', $$ SELECT institution.create_assignment({k1}, 'Izmišljeni zadatak na engleskom', 'Upute.', 'essay', now(),
+  now() + interval '30 days', 'prohibited', '{}'::text[], 'basic', false, NULL, NULL)::text $$));
+SELECT is(pg_temp.ask('vesna', $$ SELECT v.work_language FROM institution.assignment_version v WHERE v.assignment_id = {z_en}::uuid AND v.version_no = 1 $$), 'en',
+  '2: the first version takes the default language of the config');
+
 SELECT * FROM finish();
 ROLLBACK;
