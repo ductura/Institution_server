@@ -1,0 +1,72 @@
+{
+  "_comment": [
+    "Golden vectors for ductus-ai-transfer-v1 and the event text hash (SRV-1809, Ductus docs/contracts/evidence-segment-v4.md). Generated outside the code under test with Python json (sort_keys, compact, ensure_ascii False, equal to JCS for flat string and integer objects) and hashlib. All data is invented."
+  ],
+  "aiTransferValid": [
+    {
+      "name": "proofreading-nfc-text",
+      "record": {
+        "transferSchema": "ductus-ai-transfer-v1",
+        "transferId": "00000000-0000-4000-8000-0000000000a1",
+        "documentId": "doc-lorem-1",
+        "conversationId": "00000000-0000-4000-8000-0000000000c1",
+        "responseId": "00000000-0000-4000-8000-0000000000d1",
+        "providerId": "provider-test-a",
+        "modelId": "model-test-1",
+        "purposeCatalogVersion": 2,
+        "purposeId": "proofreading",
+        "phaseId": "final_editing",
+        "textSha256": "e9ee3032c2882b8f53689f270ec63bdec47f9eba37099ca96e72378838031999",
+        "transferredAt": "2026-11-02T10:40:00.000Z"
+      },
+      "canonical": "{\"conversationId\":\"00000000-0000-4000-8000-0000000000c1\",\"documentId\":\"doc-lorem-1\",\"modelId\":\"model-test-1\",\"phaseId\":\"final_editing\",\"providerId\":\"provider-test-a\",\"purposeCatalogVersion\":2,\"purposeId\":\"proofreading\",\"responseId\":\"00000000-0000-4000-8000-0000000000d1\",\"textSha256\":\"e9ee3032c2882b8f53689f270ec63bdec47f9eba37099ca96e72378838031999\",\"transferId\":\"00000000-0000-4000-8000-0000000000a1\",\"transferSchema\":\"ductus-ai-transfer-v1\",\"transferredAt\":\"2026-11-02T10:40:00.000Z\"}",
+      "sha256": "26cef97f801fca721568196eb3d923533b32776f13f4e0be2f84daa643b4461f"
+    },
+    {
+      "name": "explanation-nfd-text-max-catalog",
+      "record": {
+        "transferSchema": "ductus-ai-transfer-v1",
+        "transferId": "00000000-0000-4000-8000-0000000000a2",
+        "documentId": "dokument-č-2",
+        "conversationId": "00000000-0000-4000-8000-0000000000c1",
+        "responseId": "00000000-0000-4000-8000-0000000000d1",
+        "providerId": "provider-test-a",
+        "modelId": "model-test-1",
+        "purposeCatalogVersion": 2147483647,
+        "purposeId": "explanation",
+        "phaseId": "drafting",
+        "textSha256": "ac0584a4e02fac7a3e9e55b471008147421209bbb2576c6ed8482e7618bb35c2",
+        "transferredAt": "2026-11-02T10:40:00.000Z"
+      },
+      "canonical": "{\"conversationId\":\"00000000-0000-4000-8000-0000000000c1\",\"documentId\":\"dokument-č-2\",\"modelId\":\"model-test-1\",\"phaseId\":\"drafting\",\"providerId\":\"provider-test-a\",\"purposeCatalogVersion\":2147483647,\"purposeId\":\"explanation\",\"responseId\":\"00000000-0000-4000-8000-0000000000d1\",\"textSha256\":\"ac0584a4e02fac7a3e9e55b471008147421209bbb2576c6ed8482e7618bb35c2\",\"transferId\":\"00000000-0000-4000-8000-0000000000a2\",\"transferSchema\":\"ductus-ai-transfer-v1\",\"transferredAt\":\"2026-11-02T10:40:00.000Z\"}",
+      "sha256": "a1901143453977580a1fdda7df3b565b086636af5edc5cd48cba7a108c1e3ba0"
+    }
+  ],
+  "eventText": [
+    {
+      "ranges": ["Lorem ", "odlomak 1"],
+      "text": "Lorem odlomak 1",
+      "sha256": "1d1556bb4f8376985897be6d10f5759f80685494b2f9d16983df56a658cfc522"
+    },
+    {
+      "ranges": ["Prvi red", "\n", "drugi red"],
+      "text": "Prvi red\ndrugi red",
+      "sha256": "98f9a2b69d377ec4a153a91f1ef52cc92cf3e49fd2a11b7ba46cacbdb9166553"
+    },
+    {
+      "ranges": ["Lorem odlomak 1 o gradskom vijeću."],
+      "text": "Lorem odlomak 1 o gradskom vijeću.",
+      "sha256": "e9ee3032c2882b8f53689f270ec63bdec47f9eba37099ca96e72378838031999"
+    },
+    {
+      "ranges": ["Lorem odlomak 1 o gradskom vijeću."],
+      "text": "Lorem odlomak 1 o gradskom vijeću.",
+      "sha256": "ac0584a4e02fac7a3e9e55b471008147421209bbb2576c6ed8482e7618bb35c2"
+    },
+    {
+      "ranges": [],
+      "text": "",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}
