@@ -132,6 +132,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus@4eaa776:src/server/evidence/assignment-submissions.ts",
   },
+  "app/api/teacher/assignments/[assignmentId]/submissions/[studentId]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063450904",
+  },
   // DAN-903-2: Ductus reads it in its teacher pages, not in a route.
   "app/api/teacher/access/route.ts": {
     methods: ["GET"],
