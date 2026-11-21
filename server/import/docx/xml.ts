@@ -78,6 +78,8 @@ type Pending = {
   readonly prefix: string;
   readonly local: string;
   readonly raw: { name: string; value: string }[];
+  /** The names in `raw`, so a duplicate is found in constant time, not by a scan (X3). */
+  readonly names: Set<string>;
 };
 
 /** Reads one part. `bytes` must be UTF-8; a leading BOM is allowed. */
@@ -108,7 +110,7 @@ function parse(text: string, limits: XmlLimits): XmlElement {
   // A DOCTYPE or an entity declaration anywhere is refused before anything else (X1).
   if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Refusal("XML_DTD");
 
-  const stack: { element: XmlElement; scope: Map<string, string> }[] = [];
+  const stack: { element: XmlElement; scope: ReadonlyMap<string, string> }[] = [];
   let root: XmlElement | null = null;
   const rootScope = new Map<string, string>([
     ["xml", XML_NS],
@@ -185,7 +187,7 @@ function parse(text: string, limits: XmlLimits): XmlElement {
     at += 1;
     const name = readName();
     const [prefix, local] = splitName(name);
-    const pending: Pending = { prefix, local, raw: [] };
+    const pending: Pending = { prefix, local, raw: [], names: new Set() };
     let selfClosing = false;
     for (;;) {
       const before = at;
@@ -213,9 +215,8 @@ function parse(text: string, limits: XmlLimits): XmlElement {
       const rawValue = text.slice(at + 1, end);
       if (rawValue.includes("<")) throw new Refusal("XML_INVALID");
       at = end + 1;
-      if (pending.raw.some((attribute) => attribute.name === attributeName)) {
-        throw new Refusal("XML_INVALID");
-      }
+      if (pending.names.has(attributeName)) throw new Refusal("XML_INVALID");
+      pending.names.add(attributeName);
       pending.raw.push({ name: attributeName, value: decodeReferences(rawValue) });
     }
 
@@ -249,18 +250,22 @@ function resolve(scope: ReadonlyMap<string, string>, prefix: string): string {
 function build(
   pending: Pending,
   parentScope: ReadonlyMap<string, string>,
-): { element: XmlElement; scope: Map<string, string> } {
+): { element: XmlElement; scope: ReadonlyMap<string, string> } {
   let scope: Map<string, string> | null = null;
   for (const { name, value } of pending.raw) {
     if (name === "xmlns" || name.startsWith("xmlns:")) {
       scope ??= new Map(parentScope);
       const prefix = name === "xmlns" ? "" : name.slice(6);
-      if (prefix === "xml" || prefix === "xmlns") throw new Refusal("XML_INVALID");
+      // xml may be declared, but only with its own name (XML Namespaces §3); xmlns never.
+      if (prefix === "xmlns" || (prefix === "xml") !== (value === XML_NS)) {
+        throw new Refusal("XML_INVALID");
+      }
       if (prefix !== "" && value === "") throw new Refusal("XML_INVALID");
       scope.set(prefix, value);
     }
   }
-  const own = scope ?? new Map(parentScope);
+  // An element without declarations shares its parent's scope: no copy per element.
+  const own = scope ?? parentScope;
   const attributes: XmlAttribute[] = [];
   const seen = new Set<string>();
   for (const { name, value } of pending.raw) {
