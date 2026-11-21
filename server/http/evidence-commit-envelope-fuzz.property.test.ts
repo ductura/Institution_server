@@ -17,9 +17,8 @@ import { parseCommitEnvelope } from "./evidence-commit.ts";
  * key set, strict base64 and the form checks of BACKEND 4.13 t. 3.1, which
  * run before any state is read. Generated content only.
  *
- * Excluded on purpose: N-19 (a duplicate key in the envelope is accepted by
- * JSON.parse, last value wins). It is tracked in issue #1507 and stays out of
- * the generators until that issue decides the expected behaviour.
+ * N-19 (issue #1507, DAN-707): a duplicate key, which JSON.parse would take
+ * with the last value, is refused since M3.1 (the property below).
  */
 
 const enc = (text: string) => new TextEncoder().encode(text);
@@ -96,6 +95,15 @@ describe("P4 parseCommitEnvelope fuzz", () => {
         if (kind === "case") value[key.toUpperCase()] = kept;
       }
       expect(parse(value)).toBeNull();
+    },
+  );
+
+  test.prop([envelope, fc.constantFrom(...KEYS)])(
+    "N-19: a key written twice is refused, whatever its two values",
+    (e, key) => {
+      const text = JSON.stringify(body(e));
+      const repeated = `{${JSON.stringify(key)}:${JSON.stringify(body(e)[key])},${text.slice(1)}`;
+      expect(parse(repeated)).toBeNull();
     },
   );
 

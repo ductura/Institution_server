@@ -219,9 +219,10 @@ describe("dist/server.js", () => {
     "does not start with %s and names the variable, never the value",
     async (_, env, problem) => {
       const started = run({ PORT: "0", APP_DATABASE_URL: DATABASE_URL, ...env });
-      expect(await started.exit).toBe(1);
+      // SRV-1812: EX_CONFIG and one structured line of server/log per problem.
+      expect(await started.exit).toBe(78);
       const stderr = started.stderr.join("");
-      expect(stderr).toContain(`startup refused: ${problem}`);
+      expect(stderr).toContain(`"event":"startup.refused","fields":{"problem":"${problem}"}`);
       expect(stderr + started.stdout.join("")).not.toContain(CANARY);
       expect(started.stdout.join("")).not.toContain("server.listening");
     },
@@ -235,7 +236,7 @@ describe("dist/server.js", () => {
     expect((await fetch(url(port, "/api/v1/health"))).status).toBe(200);
     server.child.kill("SIGTERM");
     await server.exit;
-    expect(server.stderr.join("")).not.toContain("startup refused");
+    expect(server.stderr.join("")).not.toContain("startup.refused");
   }, 20_000);
 
   // S-1E-a (DAN-808), D-09: the entry point mounts the login routes over its
@@ -278,11 +279,39 @@ describe("dist/server.js", () => {
     20_000,
   );
 
+  // SRV-1812 (M11.3): readiness is mounted. With the main database out of
+  // reach (db.invalid) it is 503 with the contract's body, health stays 200,
+  // and the one log line names a code, never the URL or its password.
+  it("answers /api/v1/ready 503 while the main database is out of reach", async () => {
+    const [server, port] = await start();
+    const ready = await fetch(url(port, "/api/v1/ready"));
+    const body = (await ready.json()) as { status: string; capabilities: Record<string, string> };
+    expect([ready.status, ready.headers.get("retry-after")]).toEqual([503, "5"]);
+    expect(body.status).toBe("unavailable");
+    expect(body.capabilities.database).toBe("nedostupno");
+    expect((await fetch(url(port, "/api/v1/health"))).status).toBe(200);
+    server.child.kill("SIGTERM");
+    await server.exit;
+    const output = server.stdout.join("") + server.stderr.join("");
+    expect(output).not.toContain(CANARY);
+    expect(output).not.toContain("db.invalid");
+    const line = server.stderr
+      .join("")
+      .split("\n")
+      .find((l) => l.includes('"event":"ready.changed"'));
+    expect(JSON.parse(line ?? "{}")).toMatchObject({
+      level: "warn",
+      fields: { ready: false, codes: { database: expect.stringMatching(/^[A-Za-z0-9_]{1,32}$/u) } },
+    });
+  }, 20_000);
+
   it("a second process on a taken port exits 1 and the first keeps answering", async () => {
     const [first, port] = await start();
     const second = run({ PORT: String(port), APP_DATABASE_URL: DATABASE_URL });
     expect(await second.exit).toBe(1);
-    expect(second.stderr.join("")).toBe("listen failed: EADDRINUSE\n");
+    expect(second.stderr.join("")).toMatch(
+      /^\{"time":"[^"]+","level":"error","event":"startup\.failed","fields":\{"code":"EADDRINUSE"\}\}\n$/u,
+    );
     expect((await fetch(url(port, "/api/v1/health"))).status).toBe(200);
     first.child.kill("SIGTERM");
     await first.exit;

@@ -259,6 +259,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423523",
   },
+  // SRV-1702 (M6.4, DAN-420; D-21, D-34, D-244; Ductus#2052 c.7060411190): the direct-edit setting of a work; Ductus has no such route.
+  "app/api/works/[documentId]/direct-edit/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
+  },
   "app/api/student/assignments/[assignmentId]/attachments/route.ts": {
     methods: ["POST"],
     source: "ductura/Institution_server#471",
@@ -327,6 +332,14 @@ export const SERVER_SOURCES: Readonly<
   "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7049370945",
+  },
+  "app/api/student/assignments/[assignmentId]/declaration/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060488877",
+  },
+  "app/api/student/assignments/[assignmentId]/declaration-attachments/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060488877",
   },
   "app/api/teacher/assignments/[assignmentId]/merlin/packages/[packageId]/download/route.ts": {
     methods: ["GET"],

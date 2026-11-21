@@ -9,6 +9,27 @@ export {
   type SyntheticAssistant,
   type SyntheticBranch,
 } from "./synthetic-assistant.ts";
+// The gated provider port and the institution setting (SRV-1809, M9.0-S2,
+// M9.0-S3): ai_disabled unless the setting is on, the cost configuration is
+// complete and an adapter is composed.
+export {
+  AI_DISABLED_RULES,
+  COST_LIMIT_KEYS,
+  createAssistantProviderPort,
+  createProductionAssistantProviderPort,
+  isCostConfigured,
+  type AiDisabledRule,
+  type AssistantProviderOutcome,
+  type AssistantProviderPort,
+  type AssistantProviderPortDeps,
+} from "./provider-port.ts";
+export {
+  ASSISTANT_SETTING_OFF,
+  institutionAiSwitchOf,
+  PRODUCTION_ASSISTANT_SETTING,
+  readAssistantSetting,
+  type AssistantInstitutionSetting,
+} from "./institution-setting.ts";
 // What the AI proxy route (server/http/assistant, SRV-1204) needs from the
 // domain to drive the port: http may not import domain (docs/server-map.md
 // §2), so it reads them here, next to the port they serve.
