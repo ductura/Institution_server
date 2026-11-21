@@ -113,3 +113,4 @@ export function createMentorshipRequestRoutesFor({ withActor }: { withActor: Wit
     };
   });
 }
+export { createMentorshipStudentRoutesFor } from "./student.ts";

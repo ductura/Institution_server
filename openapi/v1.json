@@ -27143,6 +27143,720 @@
         ]
       }
     },
+    "/api/v1/student/mentor-candidates": {
+      "get": {
+        "operationId": "mentorship.student-mentor-candidates.get",
+        "summary": "The confirmed, unrevoked teachers of the caller's own institution, other than the caller: exactly the teachers mentorship.requests.post accepts. Only the account, the name pair and the department; never an address or another personal datum. Ordered by family name, given name and id. A caller with a confirmed teacher role is 403.",
+        "x-access": "student",
+        "x-inventory": "app/api/student/mentor-candidates/route.ts",
+        "responses": {
+          "200": {
+            "description": "teachers the caller may ask, possibly none",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "candidates"
+                  ],
+                  "properties": {
+                    "candidates": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "teacherId",
+                          "name",
+                          "department"
+                        ],
+                        "properties": {
+                          "teacherId": {
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                            "type": "string"
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "givenName",
+                                  "familyName"
+                                ],
+                                "properties": {
+                                  "givenName": {
+                                    "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                    "type": "string"
+                                  },
+                                  "familyName": {
+                                    "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "department": {
+                            "anyOf": [
+                              {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
+    "/api/v1/student/mentorship-requests": {
+      "get": {
+        "operationId": "mentorship.student-requests.get",
+        "summary": "The caller's own mentorship requests in every state, newest first, each with the teacher asked, the kind of work and the instants. The decline reason stays in the audit record (P-6). A caller with a confirmed teacher role is 403.",
+        "x-access": "student",
+        "x-inventory": "app/api/student/mentorship-requests/route.ts",
+        "responses": {
+          "200": {
+            "description": "own requests, possibly none",
+            "headers": {
+              "cache-control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "requests"
+                  ],
+                  "properties": {
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "requestId",
+                              "teacherId",
+                              "teacherName",
+                              "workType",
+                              "requestedAt",
+                              "state",
+                              "endedAt",
+                              "mentorshipId"
+                            ],
+                            "properties": {
+                              "requestId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherName": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "givenName",
+                                      "familyName"
+                                    ],
+                                    "properties": {
+                                      "givenName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      },
+                                      "familyName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "workType": {
+                                "anyOf": [
+                                  {
+                                    "const": "bachelor_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "master_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "specialist_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "doctoral_thesis",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "requestedAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "state": {
+                                "const": "requested",
+                                "type": "string"
+                              },
+                              "endedAt": {
+                                "type": "null"
+                              },
+                              "mentorshipId": {
+                                "type": "null"
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "requestId",
+                              "teacherId",
+                              "teacherName",
+                              "workType",
+                              "requestedAt",
+                              "state",
+                              "endedAt",
+                              "mentorshipId"
+                            ],
+                            "properties": {
+                              "requestId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherName": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "givenName",
+                                      "familyName"
+                                    ],
+                                    "properties": {
+                                      "givenName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      },
+                                      "familyName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "workType": {
+                                "anyOf": [
+                                  {
+                                    "const": "bachelor_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "master_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "specialist_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "doctoral_thesis",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "requestedAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "state": {
+                                "const": "approved",
+                                "type": "string"
+                              },
+                              "endedAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "mentorshipId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "requestId",
+                              "teacherId",
+                              "teacherName",
+                              "workType",
+                              "requestedAt",
+                              "state",
+                              "endedAt",
+                              "mentorshipId"
+                            ],
+                            "properties": {
+                              "requestId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherName": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "givenName",
+                                      "familyName"
+                                    ],
+                                    "properties": {
+                                      "givenName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      },
+                                      "familyName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "workType": {
+                                "anyOf": [
+                                  {
+                                    "const": "bachelor_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "master_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "specialist_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "doctoral_thesis",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "requestedAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "state": {
+                                "const": "declined",
+                                "type": "string"
+                              },
+                              "endedAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "mentorshipId": {
+                                "type": "null"
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "requestId",
+                              "teacherId",
+                              "teacherName",
+                              "workType",
+                              "requestedAt",
+                              "state",
+                              "endedAt",
+                              "mentorshipId"
+                            ],
+                            "properties": {
+                              "requestId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherId": {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "teacherName": {
+                                "anyOf": [
+                                  {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "givenName",
+                                      "familyName"
+                                    ],
+                                    "properties": {
+                                      "givenName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      },
+                                      "familyName": {
+                                        "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "workType": {
+                                "anyOf": [
+                                  {
+                                    "const": "bachelor_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "master_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "specialist_thesis",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "const": "doctoral_thesis",
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "requestedAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "state": {
+                                "const": "withdrawn",
+                                "type": "string"
+                              },
+                              "endedAt": {
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              "mentorshipId": {
+                                "type": "null"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/notifications": {
       "get": {
         "operationId": "notifications.list.get",

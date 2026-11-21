@@ -242,8 +242,8 @@ INSERT INTO step VALUES
   (1503, 'grant', 'vesna', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {zm1} $$, '0');
 SELECT * FROM pg_temp.run(1300, 1599);
 
--- 12. A teacher of the student's seminar group reads the mark like a course
--- teacher, and loses it with the group place. Marko teaches K2 only and is no
+-- 12. A teacher of the student's seminar group (an assistant) does not read the mark (SRV-1410):
+-- only the holder of the work does. Marko teaches K2 only and is no
 -- member of K1; Vesna opens G1 on K1 and puts him and Ana into it.
 INSERT INTO step VALUES
   (1601, '12', 'ana', $$ SELECT institution.set_work_accommodation({z1}, true)::text $$, 'true'),
@@ -255,13 +255,13 @@ INSERT INTO step VALUES
   (1610, '12', 'vesna', $$ SELECT 'ok' FROM institution.assign_group_teacher({g1}, {marko}) $$, 'ok'),
   (1611, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
   (1612, '12', 'vesna', $$ SELECT 'ok' FROM institution.assign_group_student({g1}, {ana}) $$, 'ok'),
-  (1613, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'true'),
-  (1614, '12', 'marko', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {z1} $$, '1'),
+  (1613, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
+  (1614, '12', 'marko', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {z1} $$, '0'),
   -- Not of his group: Dora's row on Z1 stays hidden, and he writes nothing.
   (1615, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {dora})::text, 'null') $$, 'null'),
   (1616, '12', 'marko', $$ SELECT institution.set_work_accommodation({z1}, true)::text $$, 'ZD403: forbidden'),
   (1617, '12', 'ana', $$ SELECT institution.set_work_accommodation({z1}, false)::text $$, 'false'),
-  (1618, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'false'),
+  (1618, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
   (1619, '12', 'ana', $$ SELECT institution.set_work_accommodation({z1}, true)::text $$, 'true'),
   -- Vesna ends Marko's place in G1: the mark is again none of his business.
   (1620, '12', 'vesna', $$ SELECT 'ok' FROM institution.end_group_assignment({g1}, {marko}) $$, 'ok'),
@@ -280,12 +280,12 @@ INSERT INTO step VALUES
   (1703, '12', 'marko', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {z1} $$, '0'),
   (1704, '12', 'vesna', $$ SELECT 'ok' FROM institution.end_group_assignment({g1}, {ana}) $$, 'ok'),
   (1705, '12', 'vesna', $$ SELECT 'ok' FROM institution.assign_group_student({g2}, {ana}) $$, 'ok'),
-  (1706, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'true'),
+  (1706, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
   (1707, '12', 'vesna', $$ SELECT 'ok' FROM institution.end_group_assignment({g2}, {ana}) $$, 'ok'),
   (1708, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
   (1709, '12', 'marko', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {z1} $$, '0'),
   (1710, '12', 'vesna', $$ SELECT 'ok' FROM institution.assign_group_student({g2}, {ana}) $$, 'ok'),
-  (1711, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'true'),
+  (1711, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
   (1712, '12', 'iva', $$ SELECT institution.revoke_teacher_role({marko})::text $$, 'true'),
   (1713, '12', 'marko', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
   (1714, '12', 'marko', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {z1} $$, '0'),
@@ -306,13 +306,13 @@ INSERT INTO step VALUES
   (1805, '13', 'vesna', $$ SELECT 'ok' FROM institution.assign_group_student({g1}, {ana}) $$, 'ok'),
   (1806, '13', 'nina', $$ SELECT (e::text = '(enrolled,' || {k1} || ')')::text FROM institution.enroll_with_code('KOD-K1-TEST') e $$, 'true'),
   (1807, '13', 'vesna', $$ SELECT 'ok' FROM institution.assign_group_student({g1}, {nina}) $$, 'ok'),
-  -- Nina is a student of K1, so Ana's mark reaches her only as the group's
-  -- teacher; Dora is of no group of hers.
-  (1808, '13', 'nina', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'true'),
+  -- Nina is a student of K1; as the group's teacher she reads no mark of Ana's (SRV-1410);
+  -- Dora is of no group of hers.
+  (1808, '13', 'nina', $$ SELECT coalesce(institution.work_accommodation({z1}, {ana})::text, 'null') $$, 'null'),
   (1809, '13', 'nina', $$ SELECT coalesce(institution.work_accommodation({z1}, {dora})::text, 'null') $$, 'null'),
   (1810, '13', 'nina', $$ SELECT institution.set_work_accommodation({z1}, true)::text $$, 'true'),
   (1811, '13', 'nina', $$ SELECT coalesce(institution.work_accommodation({z1}, {nina})::text, 'null') $$, 'true'),
-  (1812, '13', 'nina', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {z1} $$, '2');
+  (1812, '13', 'nina', $$ SELECT count(*)::text FROM institution.work_accommodation WHERE assignment_id = {z1} $$, '1');
 SELECT * FROM pg_temp.run(1800, 1819);
 -- Her own value above is the student's answer. The group branch, asked as the
 -- reader asks it (as its owner role, with her session), gives her Ana's work

@@ -23,8 +23,10 @@ SELECT is(
   ' | is_work_language(p_language text) boolean i'
   ' | set_assignment_work_language(p_assignment_id uuid, p_expected_version integer, p_work_language text) integer v definer app'
   ' | set_work_language(p_assignment_id uuid, p_student_id uuid, p_work_language text) text v definer app'
-  ' | work_language(p_assignment_id uuid, p_student_id uuid) text s definer app',
-  'three calls for ductus_app; the set and the trigger are not callable by it'
+  ' | work_language(p_assignment_id uuid, p_student_id uuid) text s definer app'
+  ' | work_language_offered(p_assignment_id uuid, p_language text) boolean s definer'
+  ' | work_language_offered_check() trigger v definer',
+  'three calls for ductus_app; the set, the triggers and the list check are not callable by it'
 );
 SELECT is(
   (SELECT p.proowner::regrole::text || ' ' || p.prosecdef::text || ' ' || p.provolatile::text
