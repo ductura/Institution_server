@@ -43,6 +43,8 @@ import {
   createImportRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createPortableRecordRouteFor,
+  createSubmissionPackageRoutesFor,
   createWorkPdfRouteFor,
   createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
@@ -340,6 +342,26 @@ const SESSION_ROUTES = {
   "work.export.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/export?format=docx`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1312: the portable record of a submission that is not the caller's is 404, as a missing one.
+  "student.portable-record.get": {
+    method: "GET",
+    path: `/api/v1/student/submissions/${randomUUID()}/portable-record`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1807: a link that is not this session's, or a submission that is not the caller's, is 404.
+  "student.submission-package-link.post": {
+    method: "POST",
+    path: `/api/v1/student/submissions/${randomUUID()}/package-link`,
+    body: () => ({ kind: "package" }),
+    live: 404,
+  },
+  "student.submission-package.get": {
+    method: "GET",
+    path: `/api/v1/student/submissions/${randomUUID()}/package/package?token=1763800000000.${"A".repeat(43)}`,
     body: () => undefined,
     live: 404,
   },
@@ -1165,6 +1187,8 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
   "createWorkExportRouteFor",
+  "createPortableRecordRouteFor",
+  "createSubmissionPackageRoutesFor",
   "createWorkPdfRouteFor",
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
@@ -1258,6 +1282,8 @@ const MOUNTED = [
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createWorkVersionsRouteFor(databases.main),
   createWorkExportRouteFor(databases.main),
+  createPortableRecordRouteFor(databases.main, ORIGIN),
+  ...createSubmissionPackageRoutesFor(databases.main, ORIGIN),
   createWorkPdfRouteFor(databases.main, undefined),
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),

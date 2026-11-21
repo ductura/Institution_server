@@ -401,6 +401,7 @@ SELECT bag_eq(
     'notify_assignment_version() definer',
       'notify_published_comment() definer',
     'require_course_teacher(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
+    'require_legal_hold_admin(OUT user_id uuid, OUT institution_id uuid)',
     'is_confirmed_teacher(p_user_id uuid, p_course_id uuid)',
     'set_course_holder(p_course_id uuid, p_holder_id uuid) definer app',
     'hand_over_course(p_course_id uuid, p_holder_id uuid) definer app',
@@ -768,6 +769,37 @@ FROM (VALUES
   ('ductus_worker', '42501: permission denied for function purge_ended_sessions'),
   ('ductus_auth', '42501: permission denied for schema app'),
   ('ductus_retention', '0')
+) AS c (role, result);
+-- SRV-1305 (M10.3): legal hold. The holds have forced RLS and only their
+-- owner reaches them; the web role runs the three administrator RPCs, the
+-- retention role only asks whether a subject is held, and no application role
+-- runs the operator's release. The rest is in 212-legal-hold.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND NOT EXISTS (SELECT 1 FROM aclexplode(c.relacl) a WHERE a.grantee <> c.relowner),
+  'SRV-1305: legal_hold has forced RLS and no privilege outside its owner')
+  FROM pg_class c WHERE c.oid = 'evidence.legal_hold'::regclass;
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['evidence.operator_release_legal_hold(uuid,text,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1305: only the owner executes the operator''s release'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.legal_holds()'), c.result,
+  format('SRV-1305: %s lists the legal holds: %s', c.actor, c.result))
+FROM (VALUES
+  ('iva', '0'), ('lea', '0'), ('vesna', 'ZD403: forbidden'), ('ana', 'ZD403: forbidden'),
+  ('tomo', 'ZD403: forbidden'), ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
+SELECT is(pg_temp.ask_as(c.role, 'iva', $$ SELECT app.is_on_legal_hold('work', 'doc-a')::text $$), c.result,
+  format('SRV-1305: %s asks whether a work is held: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', '42501: permission denied for function is_on_legal_hold'),
+  ('ductus_worker', '42501: permission denied for function is_on_legal_hold'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_retention', 'false')
 ) AS c (role, result);
 INSERT INTO ref VALUES ('rq',pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
