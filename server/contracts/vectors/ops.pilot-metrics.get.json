@@ -1,0 +1,197 @@
+{
+  "route": "ops.pilot-metrics.get",
+  "vectors": [
+    {
+      "name": "pilot-metrics",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "asOf": "2026-11-20T23:00:00.000Z",
+          "minimumGroup": 5,
+          "submissions": {
+            "recorded": 10,
+            "notRecorded": 5
+          },
+          "receipts": {
+            "issued": 5,
+            "pending": 5
+          },
+          "helpRequests": {
+            "total": 10,
+            "saveProblems": 5
+          },
+          "receiptTime": {
+            "p50Ms": 3000,
+            "p95Ms": 4800
+          }
+        }
+      }
+    },
+    {
+      "name": "small-groups-hidden",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "asOf": "2026-11-20T23:00:00.000Z",
+          "minimumGroup": 5,
+          "submissions": {
+            "recorded": 6,
+            "notRecorded": null
+          },
+          "receipts": {
+            "issued": null,
+            "pending": null
+          },
+          "helpRequests": {
+            "total": 6,
+            "saveProblems": null
+          },
+          "receiptTime": {
+            "p50Ms": null,
+            "p95Ms": null
+          }
+        }
+      }
+    },
+    {
+      "name": "no-data",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "asOf": "2026-11-20T23:00:00.000Z",
+          "minimumGroup": 5,
+          "submissions": {
+            "recorded": 0,
+            "notRecorded": 0
+          },
+          "receipts": {
+            "issued": 0,
+            "pending": 0
+          },
+          "helpRequests": {
+            "total": 0,
+            "saveProblems": 0
+          },
+          "receiptTime": {
+            "p50Ms": null,
+            "p95Ms": null
+          }
+        }
+      }
+    },
+    {
+      "name": "unauthenticated",
+      "kind": "error",
+      "code": "unauthenticated",
+      "request": {},
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthenticated",
+          "code": "unauthenticated",
+          "messageKey": "errors.unauthenticated",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000190601"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001",
+          "sec-fetch-site": "cross-site"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000190602"
+        }
+      }
+    },
+    {
+      "name": "invalid-input",
+      "kind": "error",
+      "code": "invalid_input",
+      "request": {
+        "query": {
+          "institution": "demo"
+        },
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": "invalid_input",
+          "code": "invalid_input",
+          "messageKey": "errors.invalidInput",
+          "status": 422,
+          "requestId": "00000000-0000-4000-8000-000000190603"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-operatera-0000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000190604"
+        }
+      }
+    }
+  ]
+}

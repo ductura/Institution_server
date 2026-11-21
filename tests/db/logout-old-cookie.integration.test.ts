@@ -62,6 +62,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
+  createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
@@ -473,6 +474,14 @@ const SESSION_ROUTES = {
     path: `/api/v1/courses/${COURSE}/aggregate`,
     body: () => undefined,
     live: 404,
+  },
+  // SRV-1906: every account is an operator in this file (step 8 below), so a
+  // live session reads the numbers and the old cookie reaches the database.
+  "ops.pilot-metrics.get": {
+    method: "GET",
+    path: "/api/v1/ops/pilot-metrics",
+    body: () => undefined,
+    live: 200,
   },
   "teacher.working-criteria.get": {
     method: "GET",
@@ -982,6 +991,7 @@ const FACTORIES = [
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createCourseAggregateRouteFor",
+  "createPilotMetricsRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
@@ -1053,6 +1063,7 @@ const MOUNTED = [
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
+  createPilotMetricsRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   createStudentDeadlineHistoryRouteFor(databases.main),
@@ -1203,7 +1214,13 @@ beforeAll(async () => {
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
-    layers: createLayers({ expectedOrigin: ORIGIN }),
+    // Step 8 lists every account with a confirmed second factor: the operator
+    // list itself is tested in server/http (operator-policy-layer, SRV-1906).
+    layers: createLayers({
+      expectedOrigin: ORIGIN,
+      operators: async () => "listed",
+      secondFactor: async () => "confirmed",
+    }),
     databases,
     routes: MOUNTED,
   });
@@ -1302,7 +1319,9 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
-          : EVIDENCE_401;
+          : id.startsWith("ops.")
+            ? expect.objectContaining({ code: "unauthenticated" })
+            : EVIDENCE_401;
       expect([id, answer.status, body]).toEqual([id, 401, old]);
       const spec = MOUNTED.find((r) => r.contract.id === id)?.contract.errors.find(
         (e) => e.status === 401,

@@ -250,6 +250,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
   },
+  // SRV-1906 (plan P-D6): the operator's pilot numbers; no Ductus route.
+  "app/api/ops/pilot-metrics/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064713035",
+  },
   "app/api/courses/[id]/aggregate/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562264",

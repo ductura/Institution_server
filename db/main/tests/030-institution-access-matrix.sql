@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2593);
+SELECT plan(2600);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -577,6 +577,25 @@ FROM (VALUES
   ('nina', '{k1}', '0'), ('petra', '{k1}', '0'), ('vesna', '{nobody}', '0'),
   ('closed', '{k1}', 'ZD401: not authenticated')
 ) AS c (actor, course, result);
+-- SRV-1906 (plan P-D6): the operator's pilot numbers. Only the web role
+-- executes the RPC (the operator list and the second factor are the server's,
+-- step 8); every live session gets one row of counts, none without a session.
+-- The rest (suppression, cutoff, columns) is in 204-pilot-metrics.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.pilot_metrics()', 'app.pilot_metrics_at(timestamptz)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1906: only ductus_app and the owner execute the pilot numbers'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.pilot_metrics()'), c.result,
+  format('SRV-1906: %s reads the pilot numbers: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
+  ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
 INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
 SELECT is_empty(
