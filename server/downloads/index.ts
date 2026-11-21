@@ -10,6 +10,8 @@ export {
   renderWorkDocx,
   type ExportLabels,
 } from "./export/index.ts";
+// SRV-1902: the ZIP of all submissions of an assignment uses the same deterministic writer.
+export { writeZip, type ZipEntry } from "./export/index.ts";
 export {
   createSnapshotPdf,
   freezePdfSource,

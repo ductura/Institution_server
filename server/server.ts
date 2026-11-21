@@ -45,6 +45,7 @@ import {
   createWorkExportRouteFor,
   createPortableRecordRouteFor,
   createSubmissionPackageRoutesFor,
+  createTeacherSubmissionsBulkRoutesFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
@@ -60,9 +61,12 @@ import {
   createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createRetentionRouteFor,
+  createInstitutionConfigRoutesFor,
   createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createLegalHoldRoutesFor,
   createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
@@ -330,11 +334,17 @@ async function main(): Promise<void> {
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),
+      // SRV-1304 (plan M10.2, M10.7): the administrator's retention dry run.
+      createRetentionRouteFor(databases.main),
+      // SRV-1406: the versioned rules of the institution, for its administrator.
+      ...createInstitutionConfigRoutesFor(databases.main),
       // SRV-1706 (plan M10.4): who opened the student's own work, in days.
       createWorkAccessRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
+      // SRV-1306 (plan M10.3): legal holds of the institution, for its administrators.
+      ...createLegalHoldRoutesFor(databases.main),
       createStudentDeadlineHistoryRouteFor(databases.main),
       // SRV-1903: withdrawal of a submission, the history and the teacher's switch,
       // signed with the same signer as the submission receipt.
@@ -347,6 +357,10 @@ async function main(): Promise<void> {
       ),
       // SRV-1110: the Merlin package of an assignment and its download, for its teacher.
       ...createMerlinPackageRoutesFor(databases.main),
+      // SRV-1902 (P-D2): the 24 hour link to the ZIP of all submissions of an assignment, for its teacher.
+      ...createTeacherSubmissionsBulkRoutesFor(databases.main, APP_ORIGIN).map((route) =>
+        excludePracticeAssignment(route, databases.main),
+      ),
       // SRV-1204: the AI assistant proxy; no provider in production, so ai_disabled.
       ...createAssistantRoutesFor(databases.main),
       ...createStatementRoutesFor(databases.main),

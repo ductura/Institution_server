@@ -17,6 +17,7 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
@@ -991,7 +992,25 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "teacher.courses.get": { request: { path: "/api/v1/teacher/courses", as: "nastavnik-2" } },
+  "institution.config.get": {
+    request: { path: "/api/v1/institution/config", as: "administrator" },
+  },
+  "institution.config-versions.post": {
+    request: {
+      path: "/api/v1/institution/config/versions",
+      as: "administrator",
+      body: {
+        expectedVersion: 0,
+        citationStyle: "fpzg",
+        workLanguages: ["hr", "en"],
+        defaultWorkLanguage: "hr",
+      },
+    },
+  },
   "ops.pilot-metrics.get": { request: { path: "/api/v1/ops/pilot-metrics", as: "administrator" } },
+  "institution.retention.get": {
+    request: { path: "/api/v1/institution/retention", as: "administrator" },
+  },
   "course.aggregate.get": {
     request: { path: `/api/v1/courses/${IDS.course}/aggregate`, as: "nastavnik" },
   },
@@ -1048,6 +1067,40 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     request: {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/students/${IDS.student}/submission`,
       as: "nastavnik",
+    },
+  },
+  "institution.legal-holds.get": {
+    request: { path: "/api/v1/institution/legal-holds", as: "administrator" },
+  },
+  "institution.legal-holds.post": {
+    request: {
+      path: "/api/v1/institution/legal-holds",
+      as: "administrator",
+      body: {
+        subjectType: "assignment",
+        subjectId: IDS.assignment,
+        caseReference: "IZMISLJENI-SLUCAJ-2026-01",
+      },
+    },
+  },
+  "institution.legal-hold-release.post": {
+    // A hold another administrator placed: the one who placed it may not release it.
+    prepare: (state) => {
+      state.legalHolds.push({
+        holdId: "00000000-0000-4000-8000-0000000000b1",
+        subjectType: "assignment",
+        subjectId: IDS.assignment,
+        caseReference: "IZMISLJENI-SLUCAJ-2026-01",
+        placedBy: "00000000-0000-4000-8000-0000000000a2",
+        placedAt: "2026-11-20T08:00:00.000Z",
+        releasedBy: null,
+        releasedAt: null,
+      });
+    },
+    request: {
+      path: "/api/v1/institution/legal-holds/00000000-0000-4000-8000-0000000000b1/release",
+      as: "administrator",
+      body: { reason: "Izmišljeni razlog: slučaj je zaključen." },
     },
   },
   "teacher.declaration.get": {
@@ -1145,6 +1198,22 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/csv`,
       as: "nastavnik",
       method: "GET",
+    },
+  },
+  // SRV-1902: the teacher of the assignment asks for the link, then follows a far-future one.
+  "teacher.submissions-bulk-link.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions-bulk-link`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { format: "pdf" },
+    },
+  },
+  "teacher.submissions-bulk.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions-bulk/docx?token=${bulkTokenFor(IDS.assignment, "docx", PACKAGE_EXPIRES)}`,
+      as: "nastavnik",
     },
   },
   "teacher.merlin-packages.post": {

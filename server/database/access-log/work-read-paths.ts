@@ -111,8 +111,8 @@ export const WORK_READ_PATHS: readonly WorkReadPath[] = [
     returns: "content",
     surfaces: ["declaration"],
     proof: "db/main/tests/210-teacher-declaration-read.sql",
-    // SRV-1213 (#575): the RPC exists; its route is a later step.
-    callers: [],
+    // SRV-1213 (#580): the teacher's declaration read route reaches it through this adapter.
+    callers: ["server/database/teacher-declaration/index.ts"],
   },
 ];
 
@@ -188,5 +188,11 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     why: "no_content",
     note: "the state of a revision request (outcome, sequence, version, state)",
     callers: ["server/collaboration/revision-requests.ts"],
+  },
+  {
+    fn: "app.retention_candidates",
+    why: "no_content",
+    note: "the administrator's retention dry run (SRV-1304): one count per data class, never a text, an id or a time",
+    callers: ["server/database/retention-dry-run/index.ts"],
   },
 ];

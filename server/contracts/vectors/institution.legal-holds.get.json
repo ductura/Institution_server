@@ -1,0 +1,125 @@
+{
+  "route": "institution.legal-holds.get",
+  "vectors": [
+    {
+      "name": "list",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "holds": [
+            {
+              "holdId": "00000000-0000-4000-8000-0000000000b1",
+              "subjectType": "work",
+              "subjectId": "00000000-0000-4000-8000-0000000000d1",
+              "caseReference": "IZMISLJENI-SLUCAJ-2026-01",
+              "placedBy": "00000000-0000-4000-8000-0000000000a1",
+              "placedAt": "2026-11-21T09:15:00.000Z",
+              "releasedBy": null,
+              "releasedAt": null
+            },
+            {
+              "holdId": "00000000-0000-4000-8000-0000000000b2",
+              "subjectType": "student",
+              "subjectId": "00000000-0000-4000-8000-0000000000e1",
+              "caseReference": "IZMISLJENI-SLUCAJ-2026-02",
+              "placedBy": "00000000-0000-4000-8000-0000000000a1",
+              "placedAt": "2026-11-20T08:00:00.000Z",
+              "releasedBy": "00000000-0000-4000-8000-0000000000a2",
+              "releasedAt": "2026-11-21T10:30:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "holds": []
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {}
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-000000001301"
+        }
+      }
+    },
+    {
+      "name": "forbidden",
+      "kind": "error",
+      "code": "forbidden",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json",
+        "body": {
+          "error": "forbidden",
+          "code": "forbidden",
+          "messageKey": "errors.forbidden",
+          "status": 403,
+          "requestId": "00000000-0000-4000-8000-000000001302"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-admina-0000000000000000001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-000000001303"
+        }
+      }
+    }
+  ]
+}

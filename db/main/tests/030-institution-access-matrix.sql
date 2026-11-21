@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2856);
+SELECT plan(2909);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -690,6 +690,29 @@ FROM (VALUES
   ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
   ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
 ) AS c (actor, result);
+-- SRV-1304 (plan M10.2, M10.7): the dry run of the data classes. Only the web
+-- role executes it, with no institution from the caller; only the administrator
+-- of the session's institution gets
+-- the five counted classes, everyone else ZD403 or, without a session, ZD401.
+-- The counts and the read-only proof are in 182-retention-dry-run.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin
+             AND rolname NOT IN ('ductus_app', 'ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.retention_candidates()', 'app.retention_evidence_candidates()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1304: only ductus_app and the owners execute the dry run'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.retention_candidates()'), c.result,
+  format('SRV-1304: %s runs the dry run: %s', c.actor, c.result))
+FROM (VALUES
+  ('iva', '5'), ('lea', '5'), ('vesna', 'ZD403: forbidden'), ('marko', 'ZD403: forbidden'),
+  ('ana', 'ZD403: forbidden'), ('nina', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'),
+  ('tomo', 'ZD403: forbidden'), ('closed', 'ZD401: not authenticated'),
+  ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
 -- SRV-1301 (M10.0-S1): the erasure contract. The tombstones have forced RLS
 -- and only their owner reaches them; only the retention role executes the
 -- two erasure RPCs, and the private steps belong to the two table owners.
@@ -777,6 +800,61 @@ FROM (VALUES
   ('ductus_worker', '42501: permission denied for function is_on_legal_hold'),
   ('ductus_auth', '42501: permission denied for schema app'),
   ('ductus_retention', 'false')
+) AS c (role, result);
+-- SRV-1307 (M10.5): the export of a student's own data. Both tables have
+-- forced RLS and only their owner reaches them; no application role runs the
+-- operator's clerk procedures; the fixture has no clerk, so nobody requests,
+-- and only an administrator of the institution gets as far as the request.
+-- The worker alone runs its steps, the web role alone the link. The rest is in
+-- 184-student-data-export.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_identity'::regrole
+    AND NOT EXISTS (SELECT 1 FROM aclexplode(c.relacl) a WHERE a.grantee <> c.relowner),
+  format('SRV-1307: %s has forced RLS and no privilege outside its owner', c.relname))
+  FROM pg_class c WHERE c.oid IN ('app.registry_clerk'::regclass, 'app.student_data_export'::regclass);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.appoint_registry_clerk(uuid,text)', 'app.revoke_registry_clerk(uuid,text)',
+                             'app.student_data_export_actor()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1307: only the owner executes the clerk procedures and the private actor step'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.student_data_exports()'), c.result,
+  format('SRV-1307: %s lists the data exports: %s', c.actor, c.result))
+FROM (VALUES
+  ('iva', '0'), ('lea', '0'), ('vesna', '0'), ('ana', '0'), ('tomo', '0'),
+  ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
+SELECT is(pg_temp.ask(c.actor, $$ SELECT app.request_student_data_export({ana}, true, 'Provjera 1/2026')::text $$),
+  c.result, format('SRV-1307: %s requests a data export: %s', c.actor, c.result))
+FROM (VALUES
+  ('iva', 'ZD403: forbidden'), ('vesna', 'ZD403: forbidden'), ('dora', 'ZD403: forbidden'),
+  ('tomo', 'ZD403: forbidden'), ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
+SELECT is(pg_temp.ask(c.actor, $$ SELECT app.approve_student_data_export({nobody}, 'Posao 1/2026')::text $$),
+  c.result, format('SRV-1307: %s approves a data export: %s', c.actor, c.result))
+FROM (VALUES
+  ('iva', 'ZD404: not found'), ('lea', 'ZD404: not found'), ('vesna', 'ZD403: forbidden'),
+  ('ana', 'ZD403: forbidden'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
+SELECT is(pg_temp.ask_as(c.role, 'anon', 'SELECT app.worker_expire_student_data_exports()::text'), c.result,
+  format('SRV-1307: %s expires the export links: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', '42501: permission denied for function worker_expire_student_data_exports'),
+  ('ductus_retention', '42501: permission denied for function worker_expire_student_data_exports'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_worker', '0')
+) AS c (role, result);
+SELECT is(pg_temp.ask_as(c.role, 'anon',
+    $$ SELECT export_id::text FROM app.consume_student_data_export(sha256('izmisljeni-token'::bytea)) $$),
+  c.result, format('SRV-1307: %s uses an export link: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', 'ZD410: gone'),
+  ('ductus_retention', '42501: permission denied for function consume_student_data_export'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_worker', '42501: permission denied for function consume_student_data_export')
 ) AS c (role, result);
 INSERT INTO ref VALUES ('rq',pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');

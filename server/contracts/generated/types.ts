@@ -141,6 +141,20 @@ export type Operations = {
     success: { status: 200; body: { "assignmentId": string; "courseId": string; "versionNo": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "importAllowed": boolean; "wordMin": number | null; "wordMax": number | null; "groupIds"?: (string)[]; "externalToolsAllowed"?: boolean; "aiSummaryOnly"?: boolean; "isPractice"?: boolean }; headers: {  } };
     errorCode: "unauthorized" | "forbidden" | "invalid_input" | "not_found" | "unavailable";
   };
+  "institution.config-versions.post": {
+    params: undefined;
+    query: undefined;
+    body: { "expectedVersion": number; "citationStyle": "fpzg"; "workLanguages": ("hr" | "en")[]; "defaultWorkLanguage": "hr" | "en" };
+    success: { status: 201; body: { "version": number; "effectiveFrom": string; "rules": { "citationStyle": "fpzg"; "workLanguages": ("hr" | "en")[]; "defaultWorkLanguage": "hr" | "en" } }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "forbidden" | "invalid_input" | "conflict" | "unavailable";
+  };
+  "institution.config.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "current": { "version": number; "effectiveFrom": string; "rules": { "citationStyle": "fpzg"; "workLanguages": ("hr" | "en")[]; "defaultWorkLanguage": "hr" | "en" } } | null; "versions": ({ "version": number; "effectiveFrom": string; "rules": { "citationStyle": "fpzg"; "workLanguages": ("hr" | "en")[]; "defaultWorkLanguage": "hr" | "en" } })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.course-assignments.post": {
     params: { "courseId": string };
     query: undefined;
@@ -203,6 +217,34 @@ export type Operations = {
     body: { "code": string };
     success: { status: 200; body: { "courseId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "refused" | "too_many_attempts" | "forbidden" | "unavailable";
+  };
+  "institution.legal-hold-release.post": {
+    params: { "holdId": string };
+    query: undefined;
+    body: { "reason": string };
+    success: { status: 200; body: { "holdId": string; "releasedAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "conflict" | "unavailable";
+  };
+  "institution.legal-holds.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "holds": ({ "holdId": string; "subjectType": "work" | "student" | "assignment"; "subjectId": string; "caseReference": string; "placedBy": string; "placedAt": string; "releasedBy": string | null; "releasedAt": string | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
+  "institution.legal-holds.post": {
+    params: undefined;
+    query: undefined;
+    body: { "subjectType": "work" | "student" | "assignment"; "subjectId": string; "caseReference": string };
+    success: { status: 201; body: { "holdId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "unavailable";
+  };
+  "institution.retention.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "classes": ({ "key": "sessions" | "live-state" | "versions" | "change-times" | "access-log" | "receipts"; "label": string; "retentionDays": number | null; "mode": "execute" | "dry-run"; "candidates": number | null; "lastRunAt": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
   };
   "institution.role-confirmation.post": {
     params: { "teacherId": string };
@@ -910,6 +952,20 @@ export type Operations = {
     body: { "allowed": boolean };
     success: { status: 200; body: { "allowed": boolean; "changedAt": string | null }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "teacher.submissions-bulk-link.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "format": "pdf" | "docx" };
+    success: { status: 201; body: { "format": "pdf" | "docx"; "downloadPath": string; "expiresAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "teacher.submissions-bulk.get": {
+    params: { "assignmentId": string; "format": "pdf" | "docx" };
+    query: { "token": string };
+    body: undefined;
+    success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "not_allowed" | "unavailable";
   };
   "teacher.submissions.get": {
     params: { "assignmentId": string };

@@ -23,6 +23,8 @@ export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
+export { createRetentionRouteFor } from "./retention/index.ts";
+export { createInstitutionConfigRoutesFor } from "./institution-config/index.ts";
 export { createWorkAccessRoute, createWorkAccessRouteFor } from "./access-log/index.ts";
 export {
   createDeadlineExtensionRoutes,
@@ -55,6 +57,11 @@ export {
   type ClientContextOptions,
 } from "./client-context.ts";
 export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
+export {
+  createTeacherSubmissionsBulkRoutes,
+  createTeacherSubmissionsBulkRoutesFor,
+  type TeacherSubmissionsBulkDeps,
+} from "./teacher-submissions-bulk/index.ts";
 export {
   createSubmissionPackageRoutes,
   createSubmissionPackageRoutesFor,
@@ -279,6 +286,7 @@ export {
 } from "./staff-affiliation.ts";
 export { createStudentAssignmentWorkRouteFor } from "./student-assignment-work.ts";
 export { createAdminCourseRoute, createAdminCourseRouteFor } from "./admin-courses.ts";
+export { createLegalHoldRoutes, createLegalHoldRoutesFor } from "./legal-hold/index.ts";
 export {
   createInstitutionGroupRoutes,
   createInstitutionGroupRoutesFor,

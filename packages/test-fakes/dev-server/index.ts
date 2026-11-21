@@ -32,12 +32,16 @@ import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
+import { RETENTION_HANDLERS } from "./retention-routes.ts";
+import { LEGAL_HOLD_HANDLERS } from "./legal-hold-routes.ts";
+import { INSTITUTION_CONFIG_HANDLERS } from "./institution-config-routes.ts";
 import { ACCESS_LOG_HANDLERS } from "./access-log-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
 import { PORTABLE_RECORD_HANDLERS } from "./portable-record-routes.ts";
 import { SUBMISSION_PACKAGE_HANDLERS } from "./submission-package-routes.ts";
+import { SUBMISSIONS_BULK_HANDLERS } from "./submissions-bulk-routes.ts";
 import type { Handlers } from "./server.ts";
 
 type SourceLookupBody = Operations["sources.lookup.post"]["success"]["body"];
@@ -96,6 +100,7 @@ export const DEV_HANDLERS: Handlers = {
   ...WORK_EXPORT_HANDLERS,
   ...PORTABLE_RECORD_HANDLERS,
   ...SUBMISSION_PACKAGE_HANDLERS,
+  ...SUBMISSIONS_BULK_HANDLERS,
   ...MESSAGES_HANDLERS,
   ...NOTIFICATION_HANDLERS,
   ...COMMENTS_HANDLERS,
@@ -106,6 +111,9 @@ export const DEV_HANDLERS: Handlers = {
   ...MILESTONE_HANDLERS,
   ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...OPS_HANDLERS,
+  ...RETENTION_HANDLERS,
+  ...LEGAL_HOLD_HANDLERS,
+  ...INSTITUTION_CONFIG_HANDLERS,
   ...ACCESS_LOG_HANDLERS,
   "work.export-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
