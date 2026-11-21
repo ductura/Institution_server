@@ -6,7 +6,7 @@
 // content bound of a segment (L2). A PDF without text (a scan) is refused
 // with PDF_NO_TEXT_LAYER (D5), never guessed at. Any failure inside PDF.js is
 // PDF_INVALID (D4) and its message never leaves this function.
-import { getDocument } from "pdfjs-dist";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 import {
   canonicalizeJcs,

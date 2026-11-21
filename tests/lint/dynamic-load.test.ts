@@ -231,6 +231,15 @@ const failing: Case[] = [
     "node:fs/../module",
     "pg/../tsx",
     "pg/./lib",
+    // A JavaScript extension only once and only on the last segment.
+    "pg/lib.mjs/index",
+    "pg/lib/index.json",
+    "pg/lib/index.ts",
+    "pg/lib/index.mjs.js",
+    "pg/.mjs",
+    "pg/..mjs",
+    "pg/lib/.js",
+    "pg.mjs",
     "@sinclair/typebox-x",
     "../../node_modules/tsx/dist/esm/api/index.ts",
     "../../scripts/index.ts",
@@ -455,6 +464,7 @@ const passing: Case[] = [
     'import { readFile } from "node:fs/promises";\nexport const r = readFile;\n',
     'import { Value } from "@sinclair/typebox/value";\nexport const v = Value;\n',
     'import { Type } from "@sinclair/typebox";\nexport const t = Type;\n',
+    'import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";\nexport const g = getDocument;\n',
     // The key of a class constructor, with and without TS parameter
     // properties, overloads and a superclass; ordinary names.
     "export class X {\n  constructor() {}\n}\n",

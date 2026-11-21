@@ -163,8 +163,10 @@ function own<T>(table: Readonly<Record<string, T>> | undefined, key: string): T 
   return table !== undefined && Object.hasOwn(table, key) ? table[key] : undefined;
 }
 
-// A package subpath: plain segments, no ".", ".." or empty segment.
-const SUBPATH_RE = /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)*$/u;
+// A package subpath: plain segments, no ".", ".." or empty segment. Only the
+// last segment may end in one JavaScript extension, for a package with no
+// "exports" whose build is reached by its file (pdfjs-dist/legacy/build/pdf.mjs).
+const SUBPATH_RE = /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)*(?:\.[cm]?js)?$/u;
 
 const dependencyCache = new Map<string, readonly string[]>();
 /** The `dependencies` of the package.json in `root` (not devDependencies). */
