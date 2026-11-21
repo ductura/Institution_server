@@ -21,6 +21,7 @@ import {
   createAuthRoutes,
   createClientContextRoute,
   createDownloadsManifestRoute,
+  createWorkPdfRouteFor,
   createDatabases,
   createEvidenceCommitRouteFor,
   createInstitutionCourseRoutesFor,
@@ -240,6 +241,7 @@ async function main(): Promise<void> {
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // SRV-9A: the versions of a work, the same page for its owner and its teacher.
       createWorkVersionsRouteFor(databases.main),
+      createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),

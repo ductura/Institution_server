@@ -79,6 +79,28 @@ export const DEV_HANDLERS: Handlers = {
   ...DIRECT_EDIT_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
+  "work.export-pdf.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find(
+      (item) => item.assignmentId === params.assignmentId && item.documentId === params.documentId,
+    );
+    if (work === undefined) return { error: "not_found" };
+    const mentorsWork =
+      account.roles.includes("teacher") &&
+      state.mentorships.some(
+        (item) =>
+          item.assignmentId === work.assignmentId &&
+          item.documentId === work.documentId &&
+          item.mentorId === account.id,
+      );
+    if (work.studentId !== account.id && !mentorsWork) return { error: "not_found" };
+    return {
+      status: 200,
+      body: successBody(
+        "work.export-pdf.get",
+      ) as Operations["work.export-pdf.get"]["success"]["body"],
+    };
+  },
   "sources.lookup.post": ({ account, body }) => {
     if (!account?.roles.includes("student")) return { error: "forbidden" };
     const match =

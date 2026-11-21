@@ -19,6 +19,7 @@ import {
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
+  createWorkPdfRouteFor,
   createProblemReportRouteFor,
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
@@ -201,6 +202,11 @@ const NO_ACTOR = { withActor: () => Promise.reject(new Error("no database")) };
 const NO_READER = {} as ActorReader;
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
+  {
+    call: "createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN)",
+    ids: ["work.export-pdf.get"],
+    routes: () => [createWorkPdfRouteFor(NO_ACTOR, undefined).contract.id],
+  },
   {
     call: "createStudentAssignmentWorkRouteFor(databases.main)",
     ids: ["student.assignment-work.get"],
@@ -566,6 +572,7 @@ describe("CONTRACT_ONLY", () => {
 describe("routes the entry point mounts itself", () => {
   it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
+      "work.export-pdf.get",
       "student.assignment-work.get",
       "student.submission-notes.get",
       "student.submission-notes.post",
