@@ -255,3 +255,5 @@ export function createStudentDataExportRoutesFor(
     recordActivity: (token) => recordActivity(token, main.withActor),
   });
 }
+
+export { studentDataExportStorage } from "./storage.ts";

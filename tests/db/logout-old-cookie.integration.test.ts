@@ -83,6 +83,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createLegalHoldRoutesFor,
+  createStudentDataExportRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createSubmissionWithdrawalRoutesFor,
   createAssignmentCopyRouteFor,
@@ -891,6 +892,28 @@ const SESSION_ROUTES = {
     body: () => ({ reason: "Izmišljeni razlog." }),
     live: 403,
   },
+  // SRV-1308: a live session that is no clerk of the registry office lists only its own
+  // exports (200, none) and may neither request (403) nor approve (403, ZD403 before the lookup).
+  "institution.student-data-exports.get": {
+    method: "GET",
+    path: "/api/v1/institution/student-data-exports",
+    body: () => undefined,
+    live: 200,
+  },
+  "institution.student-data-exports.post": {
+    path: "/api/v1/institution/student-data-exports",
+    body: () => ({
+      studentId: randomUUID(),
+      identityCheckedBy: "identity_card",
+      note: "Provjera 1/2026",
+    }),
+    live: 403,
+  },
+  "institution.student-data-exports-approve.post": {
+    path: `/api/v1/institution/student-data-exports/${randomUUID()}/approve`,
+    body: () => ({ reference: "Posao 1/2026" }),
+    live: 403,
+  },
   // SRV-1108: a live session that teaches no such assignment gets 404.
   "teacher.deadline-extensions.get": {
     method: "GET",
@@ -1277,6 +1300,7 @@ const FACTORIES = [
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createLegalHoldRoutesFor",
+  "createStudentDataExportRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
   "createSubmissionWithdrawalRoutesFor",
   "createAssignmentCopyRouteFor",
@@ -1374,6 +1398,7 @@ const MOUNTED = [
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createLegalHoldRoutesFor(databases.main),
+  ...createStudentDataExportRoutesFor(databases.main, ENV, ROOT),
   ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
   createStudentDeadlineHistoryRouteFor(databases.main),
   createAssignmentCopyRouteFor(databases.main),
