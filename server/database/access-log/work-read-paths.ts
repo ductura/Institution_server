@@ -185,4 +185,10 @@ export const NOT_A_PERSON_READ: readonly NotAPersonRead[] = [
     note: "the state of a revision request (outcome, sequence, version, state)",
     callers: ["server/collaboration/revision-requests.ts"],
   },
+  {
+    fn: "app.retention_candidates",
+    why: "no_content",
+    note: "the administrator's retention dry run (SRV-1304): one count per data class, never a text, an id or a time",
+    callers: ["server/database/retention-dry-run/index.ts"],
+  },
 ];
