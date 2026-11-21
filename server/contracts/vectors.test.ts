@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
   INTERNAL,
   ROUTES,
+  SESSION_IDLE_EXPIRED,
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
   closed,
@@ -58,7 +59,18 @@ describe("contract vectors", () => {
       key: "errors.internal",
       body: errorBody("internal", 500),
     });
-    expect(SHARED_ERRORS).toEqual([INTERNAL.error, TOO_MANY_REQUESTS.error]);
+    expect(SHARED_ERRORS).toEqual([
+      INTERNAL.error,
+      TOO_MANY_REQUESTS.error,
+      SESSION_IDLE_EXPIRED.error,
+    ]);
+    // The idle expiry of a session (SRV-1401): the same closed problem body.
+    expect(SESSION_IDLE_EXPIRED.error).toEqual({
+      status: 401,
+      code: "session_idle_expired",
+      key: "errors.sessionIdleExpired",
+      body: errorBody("session_idle_expired", 401),
+    });
     // The rate limit's 429 (DAN-814): the same closed problem body.
     expect(TOO_MANY_REQUESTS.error).toEqual({
       status: 429,

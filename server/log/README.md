@@ -11,6 +11,6 @@ Područje zapisa (karta: [docs/server-map.md](../../docs/server-map.md)). Jedan 
 - `events/`: zatvoren katalog događaja i provjera zapisa (S-1K.1, DAN-796); opis je u [events/README.md](events/README.md).
 - `index.ts`: javno sučelje mape.
 
-Preneseno iz Ductusa `src/server/log/` (`d52a92c3`, S-0.17, DAN-730) bez promjene logike. Testovi: `redact.test.ts`, `canary.test.ts` i `redact.property.test.ts` (Ductus `tests/property/log-redact.property.test.ts`). Tri slučaja Ductus `canary.test.ts` čekaju kod kroz koji pišu: dokaze (`server/evidence`, S-M-\*) i ulaznu točku (S-1B-a); popis je u komentaru testa.
+Preneseno iz Ductusa `src/server/log/` (`d52a92c3`, S-0.17, DAN-730) bez promjene logike. Testovi: `redact.test.ts`, `canary.test.ts` i `redact.property.test.ts` (Ductus `tests/property/log-redact.property.test.ts`). Tri slučaja Ductus `canary.test.ts` čekaju kod kroz koji pišu: dokaze (`server/evidence`, S-M-\*) i ulaznu točku (S-1B-a); popis je u komentaru testa. Retke ulazne točke (`startup.refused`, `startup.failed`) i spremnosti (`ready.changed`) od SRV-1812 piše ovaj logger (`server/http/startup-log.ts`, `server/http/ready-capabilities.ts`); njihove testove bez e-pošte i teksta rada drže `server/http/startup-log.test.ts` i `ready-capabilities.test.ts`.
 
 Mapa ne uvozi ništa iz drugih područja.

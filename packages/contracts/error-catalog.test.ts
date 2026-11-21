@@ -122,8 +122,8 @@ describe("error catalogue reader (negative cases)", () => {
     expect(readCatalog(raw)).toMatch(/^shared: .* not in errors$/u);
   });
 
-  it("allows two entries with one status (401 unauthenticated and session_expired)", () => {
-    expect(RAW.errors.filter((e) => e.status === 401)).toHaveLength(2);
+  it("allows several entries with one status (401 unauthenticated, session_expired and session_idle_expired)", () => {
+    expect(RAW.errors.filter((e) => e.status === 401)).toHaveLength(3);
   });
 });
 

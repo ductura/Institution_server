@@ -1,6 +1,6 @@
 # Udio predanog teksta i oznaka podudaranja s AI odgovorom v1
 
-**Status: PRIJEDLOG.** Čeka odobrenje vlasnika. Prije odobrenja nema koda, migracije, rute ni teksta sučelja iz ovog ugovora. Otvorena pitanja su označena [OC6-n] i skupljena u odjeljku „Otvorena pitanja”.
+**Status: ODOBREN.** [Vlasnička odluka od 21. 11. 2026.](https://github.com/danielrisavi77-create/Ductus/issues/2052#issuecomment-7056641810) prihvaća preporuke OC6-1 do OC6-9 iz ovog ugovora. Odluka ima prednost pred ranijim prijedlozima i oznakama otvorenih pitanja u tekstu.
 
 SRV-1220 `udio-i-oznaka-ugovor`, `Risk: critical`. Ugovor bez koda, po obliku `docs/contracts/declaration-v1.md`. Određuje:
 

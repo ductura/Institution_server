@@ -286,6 +286,8 @@ ALTER TABLE evidence.submission DISABLE TRIGGER evidence_submission_no_truncate;
 ALTER TABLE evidence.submission_receipt_issuance DISABLE TRIGGER submission_receipt_issuance_no_truncate;
 ALTER TABLE evidence.submission_receipt DISABLE TRIGGER submission_receipt_no_truncate;
 ALTER TABLE evidence.document_checkpoint DISABLE TRIGGER evidence_checkpoint_no_truncate;
+-- A reconstruction checkpoint (SRV-1503) references the package and is append-only.
+ALTER TABLE evidence.reconstruction_checkpoint DISABLE TRIGGER reconstruction_checkpoint_no_truncate;
 -- The access log (080) references the assignment too and is append-only.
 ALTER TABLE audit.access_log DISABLE TRIGGER access_log_no_truncate;
 -- The notice read mark (SRV-06) references the assignment and is append-only.
@@ -320,6 +322,7 @@ ALTER TABLE assistant.conversation ENABLE TRIGGER conversation_no_truncate;
 ALTER TABLE audit.access_log ENABLE TRIGGER access_log_no_truncate;
 ALTER TABLE evidence.submission_receipt ENABLE TRIGGER submission_receipt_no_truncate;
 ALTER TABLE evidence.submission_receipt_issuance ENABLE TRIGGER submission_receipt_issuance_no_truncate;
+ALTER TABLE evidence.reconstruction_checkpoint ENABLE TRIGGER reconstruction_checkpoint_no_truncate;
 ALTER TABLE evidence.document_checkpoint ENABLE TRIGGER evidence_checkpoint_no_truncate;
 ALTER TABLE evidence.submission ENABLE TRIGGER evidence_submission_no_truncate;
 ALTER TABLE evidence.submission_request ENABLE TRIGGER evidence_submission_request_no_truncate;

@@ -104,7 +104,11 @@ SELECT bag_eq(
             ('collaboration.discard_comment_draft(uuid)'),
             ('collaboration.publish_comments(text)'),
             ('collaboration.mark_work_reviewed(text)'),
-            ('collaboration.get_work_review(text)') $$,
+            ('collaboration.get_work_review(text)'),
+            ('collaboration.set_direct_edit(text,text)'),
+            ('collaboration.read_direct_edit(text)'),
+            ('collaboration.list_direct_edit_record(text)'),
+            ('collaboration.publish_teacher_direct_edit(text,text,text)') $$,
   'the web role executes exactly the six comment RPCs, the three consultation RPCs of 163 (delete_comment from DAN-215), the two live RPCs of 051, the seven revision-request RPCs of 110, 112 and 119 and the six note and template RPCs of 158, the two message RPCs of 164 and the two working-criterion RPCs of 165 and the seven RPCs of 201 (draft comments, publishing and review marks)');
 SELECT is_empty(
   $$ SELECT p.oid::regprocedure::text FROM pg_proc p

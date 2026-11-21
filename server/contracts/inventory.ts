@@ -288,6 +288,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
   },
+  // SRV-1702 (M6.4, DAN-420; D-21, D-34, D-244; Ductus#2052 c.7060411190): the direct-edit setting of a work; Ductus has no such route.
+  "app/api/works/[documentId]/direct-edit/route.ts": {
+    methods: ["GET", "PUT"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060411190",
+  },
   "app/api/student/assignments/[assignmentId]/attachments/route.ts": {
     methods: ["POST"],
     source: "ductura/Institution_server#471",

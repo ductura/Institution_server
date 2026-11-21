@@ -10,6 +10,7 @@ export {
   INTERNAL,
   METHOD_NOT_ALLOWED,
   platformRoutes,
+  SESSION_IDLE_EXPIRED,
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   TOO_MANY_REQUESTS,
@@ -22,6 +23,7 @@ export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export { commentsRoutes } from "./comments.ts";
+export { directEditRoutes } from "./direct-edit.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./work-milestones.ts";
 export { settingsRoutes } from "./settings.ts";
 export { supportRoutes } from "./support.ts";
