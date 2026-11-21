@@ -276,6 +276,12 @@ export {
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
 export {
+  createCommentBankRoutes,
+  createCommentDraftRoutes,
+  createCommentRoutesFor,
+  createWorkReviewRoutes,
+} from "./comments/index.ts";
+export {
   createWorkMessagesGetRoute,
   createWorkMessagesPostRoute,
   createWorkMessagesRoutesFor,

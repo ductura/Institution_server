@@ -259,6 +259,35 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET", "POST"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423523",
   },
+  // SRV-1703 (M6.7, Ductus#2052 c.7060877557; D-51, N-03, N-05): delayed comments, the comment bank and the changes since the last review; Ductus has no such routes.
+  "app/api/works/[documentId]/comment-drafts/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
+  },
+  "app/api/comment-drafts/[commentId]/route.ts": {
+    methods: ["DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
+  },
+  "app/api/works/[documentId]/comments/publish/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
+  },
+  "app/api/teacher/comment-bank/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
+  },
+  "app/api/teacher/comment-bank/[entryId]/route.ts": {
+    methods: ["DELETE"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
+  },
+  "app/api/works/[documentId]/review/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
+  },
+  "app/api/works/[documentId]/changes-since-review/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7060877557",
+  },
   // SRV-1702 (M6.4, DAN-420; D-21, D-34, D-244; Ductus#2052 c.7060411190): the direct-edit setting of a work; Ductus has no such route.
   "app/api/works/[documentId]/direct-edit/route.ts": {
     methods: ["GET", "PUT"],
