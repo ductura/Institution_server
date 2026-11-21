@@ -21,6 +21,7 @@ import {
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
+  createMentorshipStudentRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
@@ -47,6 +48,9 @@ import {
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
+  createStudentAssignmentsRouteFor,
+  createStudentAccessLogRouteFor,
+  createStudentWriteRoutesFor,
   createHealthRoute,
   createReadyRoute,
   createStatusRouteFor,
@@ -68,6 +72,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
+  createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
@@ -369,6 +374,19 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1414: the student's own requests and candidates; the live account holds no teacher role.
+  "mentorship.student-requests.get": {
+    method: "GET",
+    path: "/api/v1/student/mentorship-requests",
+    body: () => undefined,
+    live: 200,
+  },
+  "mentorship.student-mentor-candidates.get": {
+    method: "GET",
+    path: "/api/v1/student/mentor-candidates",
+    body: () => undefined,
+    live: 200,
+  },
   // SRV-1407: a request, or a teacher, the account has no relation to is 404.
   "mentorship.requests.post": {
     path: "/api/v1/mentorship-requests",
@@ -433,6 +451,32 @@ const SESSION_ROUTES = {
   "student.submission-notes.post": {
     path: "/api/v1/student/submission-notes",
     body: () => ({ assignmentId: ASSIGNMENT, text: "Izmišljena napomena o radu." }),
+    live: 404,
+  },
+  // Faza 3: the student's assignment list, own access log of a work that is not
+  // theirs (404), enrolment by code (503: this institution is inserted without
+  // provisioning, so it has no institution_settings row and the RPC raises ZD503)
+  // and the notice of an assignment the session cannot see (404).
+  "student.assignments.get": {
+    method: "GET",
+    path: "/api/v1/student/assignments",
+    body: () => undefined,
+    live: 200,
+  },
+  "student.access-log.get": {
+    method: "GET",
+    path: `/api/v1/student/works/${randomUUID()}/access-log`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.enrollments.post": {
+    path: "/api/v1/student/enrollments",
+    body: () => ({ code: "IZMISLJENI-KOD-1" }),
+    live: 503,
+  },
+  "student.notice-read.post": {
+    path: `/api/v1/student/assignments/${ASSIGNMENT}/notice-read`,
+    body: () => ({ versionNo: 1 }),
     live: 404,
   },
   // SRV-1101: the same for the text check configuration.
@@ -502,6 +546,14 @@ const SESSION_ROUTES = {
     path: `/api/v1/courses/${COURSE}/aggregate`,
     body: () => undefined,
     live: 404,
+  },
+  // SRV-1906: every account is an operator in this file (step 8 below), so a
+  // live session reads the numbers and the old cookie reaches the database.
+  "ops.pilot-metrics.get": {
+    method: "GET",
+    path: "/api/v1/ops/pilot-metrics",
+    body: () => undefined,
+    live: 200,
   },
   "teacher.working-criteria.get": {
     method: "GET",
@@ -1079,6 +1131,7 @@ const FACTORIES = [
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
+  "createMentorshipStudentRoutesFor",
   "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
@@ -1089,11 +1142,15 @@ const FACTORIES = [
   "createTeacherFastPathRouteFor",
   "createStudentSubmissionRoutesFor",
   "createStudentNoticeRouteFor",
+  "createStudentAssignmentsRouteFor",
+  "createStudentAccessLogRouteFor",
+  "createStudentWriteRoutesFor",
   "createMeRouteFor",
   "createStaffAffiliationRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
   "createCourseAggregateRouteFor",
+  "createPilotMetricsRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
@@ -1163,6 +1220,7 @@ const MOUNTED = [
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
+  ...createMentorshipStudentRoutesFor(databases.main),
   ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
@@ -1173,11 +1231,15 @@ const MOUNTED = [
   createTeacherFastPathRouteFor(databases.main, evidenceDeps, ENV),
   ...createStudentSubmissionRoutesFor(databases.main),
   createStudentNoticeRouteFor(databases.main),
+  createStudentAssignmentsRouteFor(databases.main),
+  createStudentAccessLogRouteFor(databases.main),
+  ...createStudentWriteRoutesFor(databases.main),
   createMeRouteFor(databases.main),
   createStaffAffiliationRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
+  createPilotMetricsRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
@@ -1330,7 +1392,13 @@ beforeAll(async () => {
   server = await startServer({
     host: "127.0.0.1",
     port: 0,
-    layers: createLayers({ expectedOrigin: ORIGIN }),
+    // Step 8 lists every account with a confirmed second factor: the operator
+    // list itself is tested in server/http (operator-policy-layer, SRV-1906).
+    layers: createLayers({
+      expectedOrigin: ORIGIN,
+      operators: async () => "listed",
+      secondFactor: async () => "confirmed",
+    }),
     databases,
     routes: MOUNTED,
   });
@@ -1430,7 +1498,9 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
-          : EVIDENCE_401;
+          : id.startsWith("ops.")
+            ? expect.objectContaining({ code: "unauthenticated" })
+            : EVIDENCE_401;
       expect([id, answer.status, body]).toEqual([id, 401, old]);
       const spec = MOUNTED.find((r) => r.contract.id === id)?.contract.errors.find(
         (e) => e.status === 401,

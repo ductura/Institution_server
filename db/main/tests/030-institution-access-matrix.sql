@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2803);
+SELECT plan(2829);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -305,11 +305,13 @@ SELECT bag_eq(
   $$ SELECT c.relname || ': ' || t.tgname || ' ' || t.tgtype::text || ' ' || t.tgenabled::text
      FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
      WHERE c.relnamespace = 'institution'::regnamespace AND NOT t.tgisinternal $$,
-  ARRAY['assignment: assignment_practice_immutable 19 O',
+  ARRAY['assignment: assignment_practice_immutable 19 O', 'assignment: assignment_config_pin 23 O',
         'assignment_version: assignment_version_immutable 27 O', 'assignment_version: assignment_version_no_truncate 34 O',
         'assignment_version: assignment_version_mentorship_rule 7 O', 'assignment_version: assignment_version_notify 5 O',
         'assignment_version: assignment_version_institution_fill 7 O',
         'assignment_version: assignment_version_work_language 7 O',
+        'assignment_version: assignment_version_work_language_offered 7 O',
+        'assignment_version: assignment_version_default_language 7 O',
         'assignment_version: assignment_version_purpose_catalog 7 O',
         'course_enrollment_code: course_enrollment_code_institution_fill 7 O',
         'faculty_rule_version: faculty_rule_version_immutable 27 O', 'faculty_rule_version: faculty_rule_version_no_truncate 34 O',
@@ -320,6 +322,7 @@ SELECT bag_eq(
         'notice_acknowledgment: notice_acknowledgment_binding_fill 7 O',
         'notice_acknowledgment: notice_acknowledgment_binding_immutable 19 O',
         'work_grant: work_grant_binding_fill 23 O',
+        'work_language_override: work_language_override_offered 23 O',
         'notice_read: notice_read_immutable 27 O', 'notice_read: notice_read_no_truncate 34 O',
         'work_attachment: work_attachment_immutable 27 O', 'work_attachment: work_attachment_no_truncate 34 O',
         'deadline_extension: deadline_extension_immutable 27 O', 'deadline_extension: deadline_extension_no_truncate 34 O',
@@ -377,6 +380,7 @@ SELECT bag_eq(
     'create_assignment(p_course_id uuid, p_request_id uuid, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer, p_purpose_catalog_version integer, p_is_practice boolean) definer app',
     'assignment_grade_state(p_assignment_id uuid) app',
     'refuse_assignment_practice_change()',
+    'pin_assignment_config() definer',
     'refuse_practice_merlin_package()',
     'publish_assignment_version(p_assignment_id uuid, p_expected_version integer, p_title text, p_instructions text, p_work_type text, p_opens_at timestamp with time zone, p_due_at timestamp with time zone, p_ai_policy text, p_ai_purposes text[], p_evidence_profile text, p_import_allowed boolean, p_word_min integer, p_word_max integer) definer app',
     'acknowledge_notice(p_assignment_id uuid, p_version_no integer, p_template_version integer) definer app',
@@ -440,6 +444,9 @@ SELECT bag_eq(
     'check_last_admin() definer',
     'is_work_language(p_language text)',
     'assignment_version_work_language() definer',
+    'work_language_offered(p_assignment_id uuid, p_language text) definer',
+    'work_language_offered_check() definer',
+    'assignment_version_config_language() definer',
     'assignment_version_purpose_catalog() definer',
     'lock_assignment_teacher(p_assignment_id uuid)',
     'lock_assignment_student(p_assignment_id uuid, p_student_id uuid)',
@@ -659,6 +666,25 @@ FROM (VALUES
   ('nina', '{k1}', '0'), ('petra', '{k1}', '0'), ('vesna', '{nobody}', '0'),
   ('closed', '{k1}', 'ZD401: not authenticated')
 ) AS c (actor, course, result);
+-- SRV-1906 (plan P-D6): the operator's pilot numbers. Only the web role
+-- executes the RPC (the operator list and the second factor are the server's,
+-- step 8); every live session gets one row of counts, none without a session.
+-- The rest (suppression, cutoff, columns) is in 208-pilot-metrics.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.pilot_metrics()', 'app.pilot_metrics_at(timestamptz)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1906: only ductus_app and the owner execute the pilot numbers'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.pilot_metrics()'), c.result,
+  format('SRV-1906: %s reads the pilot numbers: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
+  ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
 INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
 SELECT is_empty(
@@ -708,6 +734,35 @@ SELECT is(
 FROM (VALUES (1, 'marko', 'ZD403'), (2, 'ana', 'ZD403'), (3, 'iva', 'ZD403'), (4, 'petra', 'ZD403'),
              (5, 'tomo', 'ZD403'), (6, 'vesna', 'true')) AS c (n, actor, outcome)
 ORDER BY c.n;
+-- SRV-1414: the student's own requests and the teachers a student may ask.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.student_mentorship_requests()', 'app.student_mentor_candidates()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1414: only the application role and the owner execute the student mentorship reads'
+);
+SELECT ok(has_function_privilege('ductus_app', 'app.student_mentorship_requests()', 'EXECUTE')
+       AND has_function_privilege('ductus_app', 'app.student_mentor_candidates()', 'EXECUTE'),
+  'SRV-1414: the application role can call both student mentorship reads');
+SELECT is(
+  pg_temp.ask(c.actor, $$ SELECT coalesce(string_agg(state, ','), '') FROM app.student_mentorship_requests()
+                          WHERE request_id = {rq} $$),
+  c.result, format('SRV-1414: %s reads Ana''s request among the own: %s', c.actor, c.result)
+)
+FROM (VALUES ('ana', 'declined'), ('dora', ''), ('boris', ''), ('iva', ''), ('nina', ''), ('tomo', ''),
+             ('vesna', 'ZD403: forbidden'), ('marko', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'),
+             ('anon', 'ZD401: not authenticated')) AS c (actor, result);
+SELECT is(
+  pg_temp.ask(c.actor, $$ SELECT coalesce(string_agg(p.name, ',' ORDER BY p.name), '')
+                          FROM app.student_mentor_candidates() m JOIN person p ON p.id = m.teacher_id $$),
+  c.result, format('SRV-1414: %s may ask: %s', c.actor, c.result)
+)
+FROM (VALUES ('ana', 'marko,vesna'), ('boris', 'marko,vesna'), ('nina', 'marko,vesna'), ('tomo', 'petra'),
+             ('vesna', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'),
+             ('anon', 'ZD401: not authenticated')) AS c (actor, result);
 
 -- 1e. SRV-7B: the sources of a work (institution.work_source) only through
 -- its three RPCs; the web role has no privilege or policy on the table. One

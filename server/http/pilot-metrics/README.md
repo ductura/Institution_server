@@ -1,0 +1,5 @@
+# HTTP za mjerila pilota
+
+`GET /api/v1/ops/pilot-metrics` (SRV-1906, plan P-D6) daje operateru zbirne tehničke brojeve pilota za cijeli poslužitelj: zabilježene predaje i zahtjeve bez predaje, potpisane potvrde i predaje još bez potvrde, zahtjeve za pomoć i one koji prijavljuju problem sa spremanjem te medijan i 95. percentil vremena od zahtjeva za predaju do potpisane potvrde.
+
+Putanja je operaterska (`/api/v1/ops`), pa je korak 8 cjevovoda pušta samo računu s popisa operatera s potvrđenim drugim faktorom. Odgovor nema identifikator, tekst, raščlambu ni filtar; broj od 1 do 4 i broj koji bi se iz objavljenih dobio oduzimanjem je `null`, prikazani broj zaokružuje se nadolje na višekratnik 5, pa se zbrojevi dvaju dana ne razlikuju za mali točan broj, a ugovor shemom odbija svaki drugi broj. Trajanja se skrivaju zajedno s brojevima potvrda i ograničena su na 2147483647 ms. Brojevi završavaju na početku tekućeg dana (Zagreb), pa ponovljeno čitanje ne otkriva pojedini događaj. Odgovor nosi `Cache-Control: no-store`.

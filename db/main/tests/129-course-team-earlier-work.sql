@@ -130,7 +130,7 @@ INSERT INTO expect VALUES
   ('late', 2, 'K5 earlier, through G1', 'marko', 'boris-z1', 'teacher'),
   ('late', 3, 'K1, K4, K5', 'marko', NULL, 'ana,boris,dora|boris,dora|doc-boris-z1'),
   ('late', 4, 'K1 accommodation', 'marko', 'mark:ana', 'null'),
-  ('late', 5, 'K5 accommodation', 'marko', 'mark:boris', 'false'),
+  ('late', 5, 'K5 accommodation', 'marko', 'mark:boris', 'null'),
   ('late', 6, 'K4 accommodation', 'marko', 'mark:dora', 'false'),
   ('late', 7, 'K7 mentorship', 'marko', 'ana-zm1', 'teacher'),
   ('late', 8, 'K7 owner', 'ana', 'ana-z1', 'owner'),

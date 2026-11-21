@@ -235,6 +235,9 @@ export type MentorshipRequest = {
   readonly workType: Mentorship["workType"];
   state: "requested" | "approved" | "declined" | "withdrawn";
   mentorshipId: string | null;
+  /** SRV-1414: when it was made and when it ended, for the student's list. */
+  readonly requestedAt: string;
+  endedAt: string | null;
 };
 
 export type AccessEntry = {

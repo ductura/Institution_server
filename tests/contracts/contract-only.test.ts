@@ -31,6 +31,7 @@ import {
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
+  createPilotMetricsRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createSubmissionWithdrawalRoutesFor,
@@ -43,6 +44,7 @@ import {
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
+  createMentorshipStudentRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
@@ -64,6 +66,10 @@ import {
   createStudentNotesRoutesFor,
   createSubmissionRouteFor,
   createProcessSummaryRouteFor,
+  createStudentAccessLogRouteFor,
+  createStudentAssignmentsRouteFor,
+  createStudentWriteRoutesFor,
+  createTeacherFastPathRouteFor,
   createWebAuthnRoutesFor,
   REFUSING_SIGNER,
   routesOf,
@@ -189,6 +195,7 @@ const SRV_19 = [
 const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
 const SRV_31 = ["teacher.mentorship-requests.get", "teacher.mentorship-request-decision.post"];
+const SRV_1414 = ["mentorship.student-requests.get", "mentorship.student-mentor-candidates.get"];
 const SRV_1407 = [
   "mentorship.requests.post",
   "mentorship.request-approve.post",
@@ -327,6 +334,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createCourseAggregateRouteFor(NO_ACTOR).contract.id],
   },
   {
+    call: "createPilotMetricsRouteFor(databases.main)",
+    ids: ["ops.pilot-metrics.get"],
+    routes: () => [createPilotMetricsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "createTeacherRosterRoutesFor(databases.main)",
     ids: TEACHER_ROSTER_ROUTES,
     routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -418,6 +430,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createMentorshipRequestRoutesFor(databases.main)",
     ids: SRV_1407,
     routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createMentorshipStudentRoutesFor(databases.main)",
+    ids: SRV_1414,
+    routes: () => createMentorshipStudentRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createKeyDatesRoutesFor(databases.main)",
@@ -552,6 +569,32 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     ],
     routes: () => createWebAuthnRoutesFor(NO_WEBAUTHN, null).map((route) => route.contract.id),
   },
+  {
+    // SRV-8E: the teacher's fast path, mounted with SRV-8E and left on the list.
+    call: "createTeacherFastPathRouteFor(databases.main, evidenceDeps, process.env)",
+    ids: ["teacher.fast-path.post"],
+    routes: () => [
+      createTeacherFastPathRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }, {}).contract.id,
+    ],
+  },
+  {
+    // Faza 3 readiness: the student's assignment list over the main database (DAN-803).
+    call: "createStudentAssignmentsRouteFor(databases.main)",
+    ids: ["student.assignments.get"],
+    routes: () => [createStudentAssignmentsRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // Faza 3 readiness: the student's own access log over the main database (DAN-904).
+    call: "createStudentAccessLogRouteFor(databases.main)",
+    ids: ["student.access-log.get"],
+    routes: () => [createStudentAccessLogRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // Faza 3 readiness: enrolment by code and the notice read (SRV-02).
+    call: "...createStudentWriteRoutesFor(databases.main)",
+    ids: [...SRV_02],
+    routes: () => createStudentWriteRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
 ];
 const ENTRY_TEXT = readFileSync(new URL("../../server/server.ts", import.meta.url), "utf8");
 
@@ -661,6 +704,8 @@ describe("CONTRACT_ONLY", () => {
         "collaboration.comments.post",
         "institution.acknowledgment.post",
         "public.verification.post",
+        ...["teacher.fast-path.post", "student.assignments.get", "student.access-log.get"],
+        ...SRV_02,
       ]
         .map((id) => `${id}: contract without a handler, not in CONTRACT_ONLY`)
         .sort(),
@@ -702,6 +747,7 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
       "course.aggregate.get",
+      "ops.pilot-metrics.get",
       ...TEACHER_ROSTER_ROUTES,
       "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
@@ -728,6 +774,7 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
       ...SRV_1407,
+      ...SRV_1414,
       "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,
@@ -760,6 +807,10 @@ describe("routes the entry point mounts itself", () => {
       "auth.webauthn-challenge.post",
       "auth.webauthn-registration.post",
       "auth.webauthn-assertion.post",
+      "teacher.fast-path.post",
+      "student.assignments.get",
+      "student.access-log.get",
+      ...SRV_02,
     ]);
     expect(mounted()).toContain("settings.values.put");
     expect(mounted()).toContain("profile.interface-locale.get");

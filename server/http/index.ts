@@ -8,6 +8,7 @@ export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
+export { createMentorshipStudentRoutesFor } from "./mentorship/index.ts";
 export { createKeyDatesRoutesFor } from "./key-dates/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
@@ -20,6 +21,7 @@ export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
+export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
@@ -246,6 +248,7 @@ export {
   type SecondFactor,
 } from "./operator-policy-layer.ts";
 export { clientIpOf, parseTrustedProxies, type TrustedProxies } from "../traffic/index.ts";
+export { facultyRulesProblems } from "../database/index.ts";
 export {
   createSettingsValuesPutRoute,
   SETTINGS_PUT_MAX_BYTES,

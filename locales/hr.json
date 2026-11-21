@@ -152,5 +152,12 @@
     "method": "Metoda i analiza",
     "language": "Jezik i stil",
     "formatting": "Tehnička obrada"
+  },
+  "facultyRules": {
+    "faculty_rules_unreadable": "Datoteka pravila fakulteta ne može se pročitati kao obična datoteka.",
+    "faculty_rules_too_large": "Datoteka pravila fakulteta veća je od dopuštenih 16 KiB.",
+    "faculty_rules_not_json": "Datoteka pravila fakulteta nije ispravan JSON.",
+    "faculty_rules_schema": "Datoteka pravila fakulteta ne odgovara shemi ductura-faculty-rules-v1.",
+    "faculty_rules_faculty_mismatch": "Datoteka pravila navodi drugi fakultet od onoga u čijoj je mapi."
   }
 }

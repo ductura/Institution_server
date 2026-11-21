@@ -91,6 +91,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064828009",
   },
+  // SRV-1414 (Plan M2, D-204): the student's side of mentorship.
+  "app/api/student/mentorship-requests/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066242474",
+  },
+  "app/api/student/mentor-candidates/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066242474",
+  },
   // SRV-1407 (Plan M2, D-204): the moves of one mentorship request.
   "app/api/mentorship-requests/route.ts": {
     methods: ["POST"],
@@ -270,6 +279,11 @@ export const SERVER_SOURCES: Readonly<
   "app/api/teacher/works/[documentId]/working-criteria/[criterionId]/route.ts": {
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
+  },
+  // SRV-1906 (plan P-D6): the operator's pilot numbers; no Ductus route.
+  "app/api/ops/pilot-metrics/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064713035",
   },
   "app/api/courses/[id]/aggregate/route.ts": {
     methods: ["GET"],
@@ -497,15 +511,10 @@ export const SERVER_SOURCES: Readonly<
  * mounted (tests/contracts/contract-only.test.ts).
  */
 export const CONTRACT_ONLY: readonly string[] = [
-  "student.assignments.get",
   "institution.enrollments.post",
   "institution.role-confirmation.post",
   "institution.role-revocation.post",
   "collaboration.revision-requests.post",
-  "teacher.fast-path.post",
-  "student.access-log.get",
-  "student.notice-read.post",
-  "student.enrollments.post",
   "institution.enrollment-code-state.get",
   "student.receipt-pdf.get",
   "teacher.receipt-pdf.get",
