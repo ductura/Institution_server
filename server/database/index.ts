@@ -616,6 +616,7 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+export { SWEEP_DUE_MAX, sweepDue, type SweepDue } from "./assistant/index.ts";
 
 export {
   checkExternalAttachmentBytes,
