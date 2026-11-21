@@ -248,6 +248,10 @@ export type State = {
   submissionNotes: SubmissionNote[];
   workSources: WorkSource[];
   sourceProofs: SourceProof[];
+  consultationSlots: {
+    documentId: string;
+    slot: Operations["work.consultation-slots.post"]["success"]["body"];
+  }[];
   attachments: Attachment[];
   /** Proofs attached so far, removed ones included: the next proof id never repeats. */
   sourceProofCount: number;
@@ -439,6 +443,7 @@ export function createState(receiptSigner = createReceiptSigner()): State {
     submissionNotes: [],
     workSources: [],
     sourceProofs: [],
+    consultationSlots: [],
     attachments: [],
     sourceProofCount: 0,
     enrollmentGuesses: new Map(),

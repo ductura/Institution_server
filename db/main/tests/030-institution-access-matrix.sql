@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2387);
+SELECT plan(2451);
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -18,8 +18,8 @@ SELECT bag_eq(
         'course_holder', 'seminar_group', 'seminar_group_teacher', 'seminar_group_member',
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'work_attachment', 'source_proof',
-        'deadline_extension', 'merlin_package', 'merlin_package_download', 'work_milestone', 'work_milestone_deadline'],
-  'the institution schema holds exactly the thirty-two tables of this matrix'
+        'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline'],
+  'the institution schema holds exactly the thirty-three tables of this matrix'
 );
 SELECT is_empty(
   $$ SELECT c.relname FROM pg_class c
@@ -130,6 +130,7 @@ SELECT bag_eq(
     'deadline_extension: deadline_extension_owner ALL to ductus_identity',
     'merlin_package: merlin_package_owner ALL to ductus_identity',
     'merlin_package_download: merlin_package_download_owner ALL to ductus_identity',
+    'consultation_slot: consultation_slot_owner ALL to ductus_identity',
     'work_milestone: work_milestone_owner ALL to ductus_identity',
     'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity'
   ],
@@ -305,7 +306,10 @@ SELECT bag_eq(
     'complete_merlin_package(p_assignment_id uuid, p_package_id uuid, p_content bytea, p_student_ids uuid[]) definer app',
     'fail_merlin_package(p_assignment_id uuid, p_package_id uuid, p_code text) definer app',
     'merlin_package_status(p_assignment_id uuid, p_package_id uuid) definer app',
-    'download_merlin_package(p_assignment_id uuid, p_package_id uuid) definer app'
+    'download_merlin_package(p_assignment_id uuid, p_package_id uuid) definer app',
+    'consultation_slots(p_document_id text) definer app',
+    'request_consultation_slot(p_document_id text, p_starts_at timestamp with time zone) definer app',
+    'act_on_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_starts_at timestamp with time zone) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -768,12 +772,12 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request',
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension',
-                        'merlin_package', 'merlin_package_download', 'work_milestone', 'work_milestone_deadline']) WITH ORDINALITY AS t (tbl, n)
+                        'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline']) WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'work_milestone', 'work_milestone_deadline') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)
