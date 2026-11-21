@@ -1,6 +1,6 @@
 # Izjava v1: shema, prilozi razgovora, veza s predajom i rute
 
-**Status: PRIJEDLOG — čeka odobrenje vlasnika (Daniel).** Dok vlasnik ne odobri ovaj ugovor i ne zatvori otvorena pitanja koja blokiraju kod (odjeljak „Otvorena pitanja”), ne počinje nijedan implementacijski korak: nema migracije, rukovatelja ni rute.
+**Status: ODOBREN (Daniel, 21. 11. 2026., „Odobravam”).** Odobrenje vrijedi za ugovor kakav jest; otvorena pitanja [OD-n] nisu time zatvorena. Implementacijski korak koji treba pitanje označeno „blokira kod” (OD-1, OD-2, OD-3, OD-4, OD-11) ne počinje dok vlasnik to pitanje ne zatvori.
 
 SRV-M75U `ugovor-izjave-m75`, M7.5 (DAN-383), `Risk: critical`. Ugovor bez koda, po obliku Ductusovih ugovora `ai-request-v1.md`, `ai-tools-v1.md`, `submission-receipt-v2.md` i `submission-worker-m7-v1.md` (Ductus `docs/contracts/`). Određuje:
 
