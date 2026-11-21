@@ -34,6 +34,7 @@ import {
   sourceLookupPost,
   studentRoutes,
   studentSourcesRoutes,
+  sourceNotebookRoutes,
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
@@ -61,6 +62,7 @@ export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
 export {
@@ -125,6 +127,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...evidenceRoutes,
   ...studentRoutes,
   ...studentSourcesRoutes,
+  ...sourceNotebookRoutes,
   ...attachmentRoutes,
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,

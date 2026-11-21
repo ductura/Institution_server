@@ -18,6 +18,7 @@ import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
 import { INSTITUTION_HANDLERS } from "./institution-routes.ts";
 import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
+import { SOURCE_NOTE_HANDLERS } from "./source-notebook-routes.ts";
 import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import { COMMENTS_HANDLERS } from "./comments-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
@@ -69,6 +70,7 @@ export const DEV_HANDLERS: Handlers = {
   ...INSTITUTION_HANDLERS,
   ...COURSE_SETUP_HANDLERS,
   ...STUDENT_HANDLERS,
+  ...SOURCE_NOTE_HANDLERS,
   ...TEACHER_HANDLERS,
   ...SETTINGS_HANDLERS,
   ...EVIDENCE_HANDLERS,
