@@ -35,6 +35,7 @@ import {
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createConsultationSlotRoutesFor,
+  createMentorshipRequestRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
@@ -231,6 +232,8 @@ async function main(): Promise<void> {
       // SRV-9A: the versions of a work, the same page for its owner and its teacher.
       createWorkVersionsRouteFor(databases.main),
       ...createConsultationSlotRoutesFor(databases.main),
+      // SRV-1407: the moves of one mentorship request (D-204).
+      ...createMentorshipRequestRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.

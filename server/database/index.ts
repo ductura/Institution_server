@@ -14,6 +14,7 @@ import { createRegistry, type HealthReport, type Registry } from "./registry.ts"
 import { createWithActor, type WithActor } from "./with-actor.ts";
 
 export { createConsultationSlotStore } from "./consultation-slots/index.ts";
+export { createMentorshipRequestStore } from "./mentorship/index.ts";
 export type {
   BackchannelLogout,
   BackchannelLogoutInput,
