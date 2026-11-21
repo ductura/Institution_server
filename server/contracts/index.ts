@@ -37,6 +37,7 @@ import {
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workMessagesRoutes,
+  directEditRoutes,
   workMilestonesRoutes,
   consultationRecordsRoutes,
   webauthnRoutes,
@@ -117,6 +118,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...publicVerificationRoutes,
   ...versionsRoutes,
   ...workMessagesRoutes,
+  ...directEditRoutes,
   ...consultationRecordsRoutes,
   ...workMilestonesRoutes,
 ];

@@ -53,6 +53,7 @@ import {
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createWorkMessagesRoutesFor,
+  createDirectEditRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
@@ -209,6 +210,8 @@ async function main(): Promise<void> {
       createCollaborationCommentsRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
+      // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
+      ...createDirectEditRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
