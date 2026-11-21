@@ -20313,7 +20313,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.67.0",
+        "apiVersion": "1.68.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -20329,7 +20329,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.67.0",
+        "apiVersion": "1.68.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
