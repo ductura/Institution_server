@@ -154,7 +154,7 @@ SELECT is(pg_temp.ask_as('ductus_retention', 'anon', $$ SELECT app.is_on_legal_h
 -- own role and only the statements run as the table's owner (pg_temp.ask_as).
 SELECT is((SELECT concat_ws(' ', released_by IS NULL, release_request_ref, release_reason)
              FROM evidence.legal_hold WHERE id = (SELECT val::uuid FROM ref WHERE name = 'h2')),
-  'true Zahtjev 7/2026 Sud je ukinuo mjeru.', 'the operator''s release keeps the request reference, not a user');
+  't Zahtjev 7/2026 Sud je ukinuo mjeru.', 'the operator''s release keeps the request reference, not a user');
 
 -- 7. A row is never deleted, and only its release ever changes, once. Even its
 -- owner, ductus_evidence, is refused.
