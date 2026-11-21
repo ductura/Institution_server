@@ -180,6 +180,12 @@ export { logStartupFailed, logStartupRefused } from "./startup-log.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { parseJson } from "./request-json.ts";
 export { refuse } from "./security-headers.ts";
+export { createRateLimitLog } from "./rate-limit-layer.ts";
+export {
+  createAccountRateLimiter,
+  createAddressRateLimiter,
+  readRateLimitConfig,
+} from "./rate-limit/index.ts";
 export {
   enforceSecurityHeaders,
   guardIdleSessions,
@@ -273,6 +279,7 @@ export {
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
+export { createWorkVersionRouteFor } from "./time-machine/index.ts";
 export {
   createCommentBankRoutes,
   createCommentDraftRoutes,
