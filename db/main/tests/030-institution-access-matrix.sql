@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2465);
+SELECT plan(2476);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -385,6 +385,7 @@ SELECT bag_eq(
     'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
     'deadline_extensions(p_assignment_id uuid) definer app',
+    'student_deadline_history(p_assignment_id uuid) definer app',
     'guard_merlin_package()',
     'refuse_merlin_package_download_change()',
     'merlin_package_visible(p_assignment_id uuid, p_student_ids uuid[])',
@@ -794,6 +795,15 @@ SELECT is(
 FROM (VALUES
   ('ana', '400 days'), ('dora', '30 days'), ('vesna', 'null'), ('marko', 'null'), ('iva', 'null'),
   ('boris', 'null'), ('nina', 'null'), ('tomo', 'null'), ('lea', 'null'), ('petra', 'null'), ('anon', 'null')
+) AS c (actor, result);
+
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*) FROM institution.student_deadline_history({z1})'), c.result,
+  format('SRV-1509: %s reads only the own history of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('ana', '1'), ('dora', '0'), ('vesna', 'ZD403: forbidden'), ('marko', 'ZD403: forbidden'),
+  ('iva', 'ZD403: forbidden'), ('boris', 'ZD403: forbidden'), ('nina', 'ZD403: forbidden'),
+  ('tomo', 'ZD403: forbidden'), ('lea', 'ZD403: forbidden'), ('petra', 'ZD403: forbidden'),
+  ('anon', 'ZD401: not authenticated')
 ) AS c (actor, result);
 
 -- 1j. SRV-1110: the Merlin package (institution.merlin_package and the record
