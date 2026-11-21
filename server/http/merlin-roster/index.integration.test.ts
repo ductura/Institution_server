@@ -68,7 +68,7 @@ function readFor(v: Vector, body = v.response.body): () => Promise<MerlinRosterR
   if (v.response.status !== 200) return async () => ({ status: "not_found" });
   return async () => ({
     status: "read",
-    roster: { rows: body!.rows, files: [] },
+    roster: { rows: body!.rows, files: [], studentIds: [] },
     extensionReasons: body!.extensionReasons,
   });
 }
@@ -106,7 +106,11 @@ describe("teacher.merlin-roster.get", () => {
   it("a row outside the contract is 503, never a partial roster", async () => {
     read = async () => ({
       status: "read",
-      roster: { rows: [{ ...ROSTER.rows[0]!, pdfSha256: "nije-otisak" }], files: [] },
+      roster: {
+        rows: [{ ...ROSTER.rows[0]!, pdfSha256: "nije-otisak" }],
+        files: [],
+        studentIds: [],
+      },
       extensionReasons: [],
     });
     const base = await start();
@@ -146,7 +150,11 @@ describe("teacher.merlin-roster-csv.get", () => {
   it("a row outside the contract is 503 here too", async () => {
     read = async () => ({
       status: "read",
-      roster: { rows: [{ ...ROSTER.rows[0]!, docxName: "../izlaz.docx" }], files: [] },
+      roster: {
+        rows: [{ ...ROSTER.rows[0]!, docxName: "../izlaz.docx" }],
+        files: [],
+        studentIds: [],
+      },
       extensionReasons: [],
     });
     const base = await start();

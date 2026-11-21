@@ -7,3 +7,4 @@ export {
   type ExportModel,
   type ExportRun,
 } from "./model.ts";
+export { writeZip, type ZipEntry } from "./zip.ts";
