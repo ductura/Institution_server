@@ -276,6 +276,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064713035",
   },
+  // SRV-1406: the versioned rules of the institution; no Ductus route.
+  "app/api/institution/config/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066464126",
+  },
+  "app/api/institution/config/versions/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066464126",
+  },
   "app/api/courses/[id]/aggregate/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562264",

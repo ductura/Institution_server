@@ -85,8 +85,22 @@ describe("publish", () => {
 describe("versions", () => {
   it("returns the chain of the own institution", async () => {
     const rows = [
-      { authenticated: true, version: 1, rules: V1, createdBy: ADMIN, createdAt: AT },
-      { authenticated: true, version: 2, rules: V2, createdBy: ADMIN, createdAt: AT },
+      {
+        authenticated: true,
+        administrator: true,
+        version: 1,
+        rules: V1,
+        createdBy: ADMIN,
+        createdAt: AT,
+      },
+      {
+        authenticated: true,
+        administrator: true,
+        version: 2,
+        rules: V2,
+        createdBy: ADMIN,
+        createdAt: AT,
+      },
     ];
     expect(await store(rows).store.versions(TOKEN)).toEqual({
       status: "ok",
@@ -99,22 +113,43 @@ describe("versions", () => {
 
   it("tells an empty list from a caller without a session", async () => {
     const none = { version: null, rules: null, createdBy: null, createdAt: null };
-    expect(await store([{ authenticated: true, ...none }]).store.versions(TOKEN)).toEqual({
+    expect(
+      await store([{ authenticated: true, administrator: true, ...none }]).store.versions(TOKEN),
+    ).toEqual({
       status: "ok",
       versions: [],
     });
-    expect(await store([{ authenticated: false, ...none }]).store.versions(TOKEN)).toEqual({
-      status: "unauthorized",
-    });
+    expect(
+      await store([{ authenticated: false, administrator: null, ...none }]).store.versions(TOKEN),
+    ).toEqual({ status: "unauthorized" });
+    expect(
+      await store([{ authenticated: true, administrator: false, ...none }]).store.versions(TOKEN),
+    ).toEqual({ status: "forbidden" });
   });
 
   it("refuses a chain with a gap or a stored row outside the schema", async () => {
-    const gap = [{ authenticated: true, version: 2, rules: V1, createdBy: ADMIN, createdAt: AT }];
+    const gap = [
+      {
+        authenticated: true,
+        administrator: true,
+        version: 2,
+        rules: V1,
+        createdBy: ADMIN,
+        createdAt: AT,
+      },
+    ];
     await expect(store(gap).store.versions(TOKEN)).rejects.toThrow(
       "invalid institution config chain",
     );
     const bad = [
-      { authenticated: true, version: 1, rules: { x: 1 }, createdBy: ADMIN, createdAt: AT },
+      {
+        authenticated: true,
+        administrator: true,
+        version: 1,
+        rules: { x: 1 },
+        createdBy: ADMIN,
+        createdAt: AT,
+      },
     ];
     await expect(store(bad).store.versions(TOKEN)).rejects.toThrow(
       "invalid stored institution config",

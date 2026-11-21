@@ -72,6 +72,7 @@ import {
   createTeacherSubmissionDetailRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
+  createInstitutionConfigRoutesFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
@@ -1024,6 +1025,23 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 403,
   },
+  // SRV-1406: the rules of the institution; not an administrator, so 403.
+  "institution.config.get": {
+    method: "GET",
+    path: "/api/v1/institution/config",
+    body: () => undefined,
+    live: 403,
+  },
+  "institution.config-versions.post": {
+    path: "/api/v1/institution/config/versions",
+    body: () => ({
+      expectedVersion: 0,
+      citationStyle: "fpzg",
+      workLanguages: ["hr"],
+      defaultWorkLanguage: "hr",
+    }),
+    live: 403,
+  },
   // SRV-12: the administrator's course; not an administrator, so 403.
   "institution.admin-courses.post": {
     path: "/api/v1/institution/admin/courses",
@@ -1106,6 +1124,7 @@ const FACTORIES = [
   "createTeacherSubmissionDetailRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
+  "createInstitutionConfigRoutesFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
@@ -1193,6 +1212,7 @@ const MOUNTED = [
   createTeacherSubmissionDetailRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
+  ...createInstitutionConfigRoutesFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   createStudentDeadlineHistoryRouteFor(databases.main),
