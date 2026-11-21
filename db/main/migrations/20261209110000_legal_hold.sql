@@ -43,11 +43,6 @@ SET LOCAL ROLE ductus_migrator;
 GRANT CREATE ON SCHEMA institution TO ductus_identity;
 GRANT CREATE ON SCHEMA app TO ductus_identity, ductus_evidence;
 GRANT CREATE ON SCHEMA evidence TO ductus_evidence;
-GRANT USAGE ON SCHEMA institution, identity TO ductus_evidence;
-SET LOCAL ROLE ductus_identity;
-GRANT REFERENCES ON identity.user_account TO ductus_evidence;
-RESET ROLE;
-SET LOCAL ROLE ductus_migrator;
 
 SET LOCAL ROLE ductus_evidence;
 
@@ -55,6 +50,9 @@ SET LOCAL ROLE ductus_evidence;
 -- or trailing blanks; the release reason is 1 to 600 characters with at least
 -- one that is not blank. The release is either an administrator's
 -- (released_by) or the operator's (release_request_ref), never both.
+-- placed_by and released_by carry no foreign key: identity stays closed to
+-- ductus_evidence, and only identity's RPCs below append or release, with the
+-- actor taken from the session.
 CREATE TABLE evidence.legal_hold (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   institution_id uuid NOT NULL,
@@ -75,9 +73,7 @@ CREATE TABLE evidence.legal_hold (
   CHECK ((released_at IS NULL AND released_by IS NULL AND release_request_ref IS NULL AND release_reason IS NULL)
          OR (released_at IS NOT NULL AND release_reason IS NOT NULL
              AND num_nonnulls(released_by, release_request_ref) = 1)),
-  CHECK (released_by IS DISTINCT FROM placed_by),
-  FOREIGN KEY (placed_by, institution_id) REFERENCES identity.user_account (id, institution_id),
-  FOREIGN KEY (released_by, institution_id) REFERENCES identity.user_account (id, institution_id)
+  CHECK (released_by IS DISTINCT FROM placed_by)
 );
 CREATE INDEX legal_hold_subject_idx ON evidence.legal_hold (subject_type, subject_id) WHERE released_at IS NULL;
 CREATE INDEX legal_hold_institution_idx ON evidence.legal_hold (institution_id, placed_at, id);
@@ -195,7 +191,7 @@ DECLARE
   v_at timestamptz := now();
 BEGIN
   IF p_request_ref IS NULL OR p_request_ref <> pg_catalog.btrim(p_request_ref)
-     OR NOT coalesce(institution.is_plain_label(p_request_ref), false)
+     OR pg_catalog.char_length(p_request_ref) NOT BETWEEN 1 AND 200 OR p_request_ref ~ '[[:cntrl:]]'
      OR p_reason IS NULL OR pg_catalog.char_length(p_reason) NOT BETWEEN 1 AND 600 OR p_reason !~ '[^[:space:]]' THEN
     RAISE EXCEPTION 'invalid input' USING ERRCODE = 'ZD422';
   END IF;
@@ -227,7 +223,7 @@ SET LOCAL ROLE ductus_identity;
 -- the actor of the session must hold a confirmed, unrevoked admin role in
 -- their institution. Returns the actor.
 CREATE FUNCTION institution.require_legal_hold_admin(OUT user_id uuid, OUT institution_id uuid)
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path = ''
 AS $$
 BEGIN
   SELECT a.user_id, a.institution_id INTO user_id, institution_id FROM institution.require_actor() a;

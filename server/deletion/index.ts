@@ -8,6 +8,7 @@ export {
   ERASURE_REASONS,
   MAX_ERASURE_CHECKPOINT_BYTES,
   MAX_ERASURE_CHECKPOINT_RECORDS,
+  readErasureTombstones,
   verifyErasureCheckpoint,
   type ErasureCheckpointPayload,
   type ErasureCheckpointProblem,
@@ -26,3 +27,11 @@ export {
   type ErasureCheckpointSigner,
   type StoredErasureCheckpoint,
 } from "./service.ts";
+export {
+  MAX_DRILL_COPY_ITEMS,
+  runRestoreDrill,
+  SYNTHETIC_INSTITUTION_PATTERN,
+  type DrillCopyItem,
+  type RestoreDrillProblem,
+  type RestoreDrillResult,
+} from "./restore-drill/index.ts";

@@ -38,17 +38,17 @@ export type LegalHolds = {
   ): Promise<{ status: "ok"; holdId: string; releasedAt: string } | Refusal>;
 };
 
-const REFUSALS: Record<string, Refusal["status"]> = {
-  ZD401: "unauthenticated",
-  ZD403: "forbidden",
-  ZD404: "not_found",
-  ZD409: "conflict",
-  ZD422: "invalid",
-};
+const REFUSALS = new Map<unknown, Refusal["status"]>([
+  ["ZD401", "unauthenticated"],
+  ["ZD403", "forbidden"],
+  ["ZD404", "not_found"],
+  ["ZD409", "conflict"],
+  ["ZD422", "invalid"],
+]);
 
 function refusal(error: unknown): Refusal {
   const code = error instanceof Error && "code" in error ? error.code : undefined;
-  return { status: (typeof code === "string" && REFUSALS[code]) || "unavailable" };
+  return { status: REFUSALS.get(code) ?? "unavailable" };
 }
 
 function instant(value: unknown): string | undefined {
@@ -56,15 +56,15 @@ function instant(value: unknown): string | undefined {
 }
 
 function holdOf(row: Record<string, unknown>): LegalHold | undefined {
-  const placedAt = instant(row.placed_at);
-  const releasedAt = row.released_at === null ? null : instant(row.released_at);
-  const releasedBy = row.released_by;
+  const placedAt = instant(row.placedAt);
+  const releasedAt = row.releasedAt === null ? null : instant(row.releasedAt);
+  const releasedBy = row.releasedBy;
   if (
-    typeof row.hold_id !== "string" ||
-    !SUBJECT_TYPES.includes(row.subject_type as LegalHoldSubjectType) ||
-    typeof row.subject_id !== "string" ||
-    typeof row.case_reference !== "string" ||
-    typeof row.placed_by !== "string" ||
+    typeof row.holdId !== "string" ||
+    !SUBJECT_TYPES.includes(row.subjectType as LegalHoldSubjectType) ||
+    typeof row.subjectId !== "string" ||
+    typeof row.caseReference !== "string" ||
+    typeof row.placedBy !== "string" ||
     placedAt === undefined ||
     releasedAt === undefined ||
     !(releasedBy === null || typeof releasedBy === "string") ||
@@ -73,11 +73,11 @@ function holdOf(row: Record<string, unknown>): LegalHold | undefined {
     return undefined;
   }
   return {
-    holdId: row.hold_id,
-    subjectType: row.subject_type as LegalHoldSubjectType,
-    subjectId: row.subject_id,
-    caseReference: row.case_reference,
-    placedBy: row.placed_by,
+    holdId: row.holdId,
+    subjectType: row.subjectType as LegalHoldSubjectType,
+    subjectId: row.subjectId,
+    caseReference: row.caseReference,
+    placedBy: row.placedBy,
     placedAt,
     releasedBy,
     releasedAt,
@@ -95,8 +95,9 @@ export function createLegalHolds(withActor: WithActor): LegalHolds {
       try {
         rows = await ask(
           token,
-          `SELECT hold_id, subject_type, subject_id, case_reference, placed_by, placed_at,
-                  released_by, released_at
+          `SELECT hold_id AS "holdId", subject_type AS "subjectType", subject_id AS "subjectId",
+                  case_reference AS "caseReference", placed_by AS "placedBy",
+                  placed_at AS "placedAt", released_by AS "releasedBy", released_at AS "releasedAt"
              FROM app.legal_holds()`,
           [],
         );
@@ -115,7 +116,7 @@ export function createLegalHolds(withActor: WithActor): LegalHolds {
     async place(token, { subjectType, subjectId, caseReference }) {
       let rows: Record<string, unknown>[];
       try {
-        rows = await ask(token, "SELECT app.place_legal_hold($1, $2, $3) AS hold_id", [
+        rows = await ask(token, 'SELECT app.place_legal_hold($1, $2, $3) AS "holdId"', [
           subjectType,
           subjectId,
           caseReference,
@@ -123,7 +124,7 @@ export function createLegalHolds(withActor: WithActor): LegalHolds {
       } catch (error) {
         return refusal(error);
       }
-      const holdId = rows.length === 1 ? rows[0]!.hold_id : undefined;
+      const holdId = rows.length === 1 ? rows[0]!.holdId : undefined;
       if (typeof holdId !== "string" || !UUID.test(holdId)) return { status: "unavailable" };
       return { status: "ok", holdId };
     },
@@ -133,14 +134,14 @@ export function createLegalHolds(withActor: WithActor): LegalHolds {
       if (!UUID.test(holdId)) return { status: "not_found" };
       let rows: Record<string, unknown>[];
       try {
-        rows = await ask(token, "SELECT app.release_legal_hold($1::uuid, $2) AS released_at", [
+        rows = await ask(token, 'SELECT app.release_legal_hold($1::uuid, $2) AS "releasedAt"', [
           holdId,
           reason,
         ]);
       } catch (error) {
         return refusal(error);
       }
-      const releasedAt = rows.length === 1 ? instant(rows[0]!.released_at) : undefined;
+      const releasedAt = rows.length === 1 ? instant(rows[0]!.releasedAt) : undefined;
       if (releasedAt === undefined) return { status: "unavailable" };
       return { status: "ok", holdId, releasedAt };
     },

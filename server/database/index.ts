@@ -375,6 +375,12 @@ export {
   type WorkExportSource,
 } from "./work-export/index.ts";
 export {
+  createPortableRecordReader,
+  type PortableRecordRead,
+  type PortableRecordReader,
+  type PortableRecordRows,
+} from "./portable-record/index.ts";
+export {
   createConsultationRecords,
   isCalendarDate,
   recordsOf,

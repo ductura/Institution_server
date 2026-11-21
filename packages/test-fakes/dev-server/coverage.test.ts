@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 
@@ -240,6 +242,16 @@ const SUBMIT: Step = {
   body: { documentId: IDS.document, revision: 1 },
 };
 const SUBMIT_STEPS = [commit("izmisljena-transakcija-1", 0), SUBMIT];
+const PORTABLE_SUBMISSION = "c1312000-0000-4000-8000-000000000001";
+const pinPortableSubmission = (state: State) => {
+  const receipt = state.works.find((work) => work.submissionReceipt !== null)?.submissionReceipt;
+  if (receipt) Object.assign(receipt.payload, { submissionId: PORTABLE_SUBMISSION });
+};
+// The fake's own token of that submission and kind, valid far past any test clock.
+const PACKAGE_EXPIRES = 4_102_444_800_000;
+const PACKAGE_TOKEN = `${PACKAGE_EXPIRES}.${createHash("sha256")
+  .update(`${PORTABLE_SUBMISSION}\npackage\n${PACKAGE_EXPIRES}`)
+  .digest("base64url")}`;
 
 // SRV-1703: an invented draft and an invented bank entry. The fake numbers
 // what it stores in order (comments-routes.ts nextId): the first draft is
@@ -702,6 +714,40 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   },
   "student.submission.get": {
     request: { path: `${STUDENT_ASSIGNMENT}/submission`, as: "student" },
+  },
+  // SRV-1312: the fake draws the submission id at random; the scenario pins it.
+  "student.portable-record.get": {
+    before: SUBMIT_STEPS,
+    prepare: (state) => {
+      const receipt = state.works.find(
+        (work) => work.submissionReceipt !== null,
+      )?.submissionReceipt;
+      if (receipt) Object.assign(receipt.payload, { submissionId: PORTABLE_SUBMISSION });
+    },
+    request: {
+      path: `/api/v1/student/submissions/${PORTABLE_SUBMISSION}/portable-record`,
+      as: "student",
+    },
+  },
+  // SRV-1807: the same pinned submission id; the link is asked for, then followed.
+  "student.submission-package-link.post": {
+    before: SUBMIT_STEPS,
+    prepare: pinPortableSubmission,
+    request: {
+      path: `/api/v1/student/submissions/${PORTABLE_SUBMISSION}/package-link`,
+      as: "student",
+      method: "POST",
+      headers: ORIGIN,
+      body: { kind: "referada" },
+    },
+  },
+  "student.submission-package.get": {
+    before: SUBMIT_STEPS,
+    prepare: pinPortableSubmission,
+    request: {
+      path: `/api/v1/student/submissions/${PORTABLE_SUBMISSION}/package/package?token=${PACKAGE_TOKEN}`,
+      as: "student",
+    },
   },
   "student.receipt-pdf.get": {
     before: SUBMIT_STEPS,
