@@ -218,6 +218,27 @@ export type Operations = {
     success: { status: 200; body: { "courseId": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "refused" | "too_many_attempts" | "forbidden" | "unavailable";
   };
+  "institution.legal-hold-release.post": {
+    params: { "holdId": string };
+    query: undefined;
+    body: { "reason": string };
+    success: { status: 200; body: { "holdId": string; "releasedAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "conflict" | "unavailable";
+  };
+  "institution.legal-holds.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "holds": ({ "holdId": string; "subjectType": "work" | "student" | "assignment"; "subjectId": string; "caseReference": string; "placedBy": string; "placedAt": string; "releasedBy": string | null; "releasedAt": string | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
+  "institution.legal-holds.post": {
+    params: undefined;
+    query: undefined;
+    body: { "subjectType": "work" | "student" | "assignment"; "subjectId": string; "caseReference": string };
+    success: { status: 201; body: { "holdId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "unavailable";
+  };
   "institution.role-confirmation.post": {
     params: { "teacherId": string };
     query: undefined;

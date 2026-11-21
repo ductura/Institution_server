@@ -60,6 +60,7 @@ export {
 } from "./course-aggregate.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./pilot-metrics.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export { legalHoldRoutes } from "./legal-hold.ts";
 export {
   SignedWithdrawalReceipt,
   submissionsRoutes,
