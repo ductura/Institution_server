@@ -12,6 +12,9 @@
 //   node scripts/db/migrations-ledger.ts            check every ledger
 //   node scripts/db/migrations-ledger.ts --base SHA also check SHA
 //   node scripts/db/migrations-ledger.ts --write    rewrite every ledger
+//
+// DAN-1907: two migrations of one database with the same version fail every
+// mode, --write included (it writes no ledger while a duplicate exists).
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -73,6 +76,27 @@ export function checkLedger(
       errors.push(`${name} is in ${ledger} but there is no such migration`);
   }
   if (ledgerText == null) errors.push(`${ledger} is missing`);
+  return errors;
+}
+
+/**
+ * Errors for two migrations of one database with the same 14-digit version.
+ * dbmate keys schema_migrations by the version, so the second one is skipped
+ * silently; each error names both files.
+ */
+export function checkVersions(migrations: Map<string, Buffer>, dir: string = DIR): string[] {
+  const seen = new Map<string, string>();
+  const errors: string[] = [];
+  for (const name of [...migrations.keys()].sort()) {
+    const version = /^(\d{14})_/.exec(name)?.[1];
+    if (version === undefined) continue;
+    const first = seen.get(version);
+    if (first === undefined) seen.set(version, name);
+    else
+      errors.push(
+        `${dir}: ${first} and ${name} have the same version ${version}; dbmate would skip one`,
+      );
+  }
   return errors;
 }
 
@@ -138,12 +162,17 @@ function main(argv: string[]): number {
   for (const { migrationsDir, ledger } of DATABASES) {
     // A listed database without its directory is an error, never "nothing to check".
     const migrations = readMigrations(migrationsDir);
+    const duplicates = checkVersions(migrations, migrationsDir);
     if (write) {
+      if (duplicates.length > 0) {
+        errors.push(...duplicates, `${ledger} was not written`);
+        continue;
+      }
       writeFileSync(ledger, renderLedger(migrations));
       console.log(`${ledger}: ${migrations.size} migrations`);
       continue;
     }
-    errors.push(...checkLedger(migrations, readLedger(ledger), ledger));
+    errors.push(...duplicates, ...checkLedger(migrations, readLedger(ledger), ledger));
     if (argv[0] === "--base") {
       errors.push(...checkBase(readBase(argv[1] as string, migrationsDir), migrations));
     }
