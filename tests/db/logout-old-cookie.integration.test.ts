@@ -37,6 +37,7 @@ import {
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
   createHealthRoute,
+  createReadyRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -742,6 +743,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 /** The route factories server/server.ts calls in its `routes` list, in order. */
 const FACTORIES = [
   "createHealthRoute",
+  "createReadyRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -796,6 +798,11 @@ const FACTORIES = [
 const evidenceDeps = evidenceIngestDependencies(ENV, ROOT);
 const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
+  // Public readiness; no session, so no 401 in its contract.
+  createReadyRoute({
+    check: async () => ({ ready: true, capabilities: {}, codes: {} }),
+    draining: () => false,
+  }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
