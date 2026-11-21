@@ -239,6 +239,13 @@ export type Operations = {
     success: { status: 201; body: { "holdId": string }; headers: { "cache-control"?: string } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_found" | "unavailable";
   };
+  "institution.retention.get": {
+    params: undefined;
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "classes": ({ "key": "sessions" | "live-state" | "versions" | "change-times" | "access-log" | "receipts"; "label": string; "retentionDays": number | null; "mode": "execute" | "dry-run"; "candidates": number | null; "lastRunAt": string | null })[] }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "invalid_input" | "unavailable";
+  };
   "institution.role-confirmation.post": {
     params: { "teacherId": string };
     query: undefined;

@@ -12867,6 +12867,262 @@
     }
   },
   {
+    "route": "institution.retention.get",
+    "name": "dry-run",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "classes": [
+          {
+            "key": "sessions",
+            "label": "retention.sessions",
+            "retentionDays": 30,
+            "mode": "execute",
+            "candidates": 2,
+            "lastRunAt": null
+          },
+          {
+            "key": "live-state",
+            "label": "retention.liveState",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": 1,
+            "lastRunAt": null
+          },
+          {
+            "key": "versions",
+            "label": "retention.versions",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": 3,
+            "lastRunAt": null
+          },
+          {
+            "key": "change-times",
+            "label": "retention.changeTimes",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": null,
+            "lastRunAt": null
+          },
+          {
+            "key": "access-log",
+            "label": "retention.accessLog",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": 3,
+            "lastRunAt": null
+          },
+          {
+            "key": "receipts",
+            "label": "retention.receipts",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": null,
+            "lastRunAt": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.retention.get",
+    "name": "no-candidates",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "cache-control": "no-store"
+      },
+      "body": {
+        "classes": [
+          {
+            "key": "sessions",
+            "label": "retention.sessions",
+            "retentionDays": 30,
+            "mode": "execute",
+            "candidates": 0,
+            "lastRunAt": null
+          },
+          {
+            "key": "live-state",
+            "label": "retention.liveState",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": 0,
+            "lastRunAt": null
+          },
+          {
+            "key": "versions",
+            "label": "retention.versions",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": 0,
+            "lastRunAt": null
+          },
+          {
+            "key": "change-times",
+            "label": "retention.changeTimes",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": null,
+            "lastRunAt": null
+          },
+          {
+            "key": "access-log",
+            "label": "retention.accessLog",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": 0,
+            "lastRunAt": null
+          },
+          {
+            "key": "receipts",
+            "label": "retention.receipts",
+            "retentionDays": null,
+            "mode": "dry-run",
+            "candidates": null,
+            "lastRunAt": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "route": "institution.retention.get",
+    "name": "unauthenticated",
+    "request": {},
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000130401"
+      }
+    }
+  },
+  {
+    "route": "institution.retention.get",
+    "name": "teacher-forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-nastavnika-00000000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000130402"
+      }
+    }
+  },
+  {
+    "route": "institution.retention.get",
+    "name": "student-forbidden",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-000000000000001"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000130403"
+      }
+    }
+  },
+  {
+    "route": "institution.retention.get",
+    "name": "cross-site",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000130404"
+      }
+    }
+  },
+  {
+    "route": "institution.retention.get",
+    "name": "invalid-input",
+    "request": {
+      "query": {
+        "institution": "demo"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+      }
+    },
+    "response": {
+      "status": 422,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_input",
+        "code": "invalid_input",
+        "messageKey": "errors.invalidInput",
+        "status": 422,
+        "requestId": "00000000-0000-4000-8000-000000130405"
+      }
+    }
+  },
+  {
+    "route": "institution.retention.get",
+    "name": "unavailable",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-administratora-000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000130406"
+      }
+    }
+  },
+  {
     "route": "institution.role-confirmation.post",
     "name": "confirmed",
     "request": {
@@ -21466,7 +21722,7 @@
       "body": {
         "status": "ok",
         "state": "ok",
-        "apiVersion": "1.74.0",
+        "apiVersion": "1.75.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
@@ -21482,7 +21738,7 @@
       "body": {
         "status": "ok",
         "state": "degraded",
-        "apiVersion": "1.74.0",
+        "apiVersion": "1.75.0",
         "serverVersion": "0.1.0",
         "minClientVersion": "1.0.0"
       }
