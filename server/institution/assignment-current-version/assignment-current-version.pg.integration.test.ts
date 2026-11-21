@@ -41,6 +41,7 @@ it("reads the current version only as a teacher of the assignment under PostgreS
         assignmentId: ASSIGNMENT_ID,
         courseId: "00000000-0000-4000-8000-0000000000c1",
         versionNo: 2,
+        isPractice: false,
         title: "Z1",
         instructions: "Upute za izmišljeni zadatak.",
         workType: "essay",

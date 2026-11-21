@@ -1,7 +1,7 @@
 // POST /api/v1/works/{documentId}/imports and .../imports/{importId}/confirm
 // (SRV-1803) on a real server with the real pipeline over a scripted
 // transaction: the answers, the order of the checks before the database and
-// the closed refusals. The database itself is db/main/tests/202-import-event.sql
+// the closed refusals. The database itself is db/main/tests/208-import-event.sql
 // and import.pg.integration.test.ts. All values are invented.
 import { strToU8, zipSync } from "fflate";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";

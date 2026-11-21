@@ -19,6 +19,7 @@ const eslint = new ESLint({
 const FLOW = "server/http/auth-flow.ts";
 const RECEIPT = "server/http/receipt-pdf.ts";
 const MERLIN = "server/http/merlin-roster/index.ts";
+const WORK_EXPORT = "server/http/work-export/index.ts";
 const RULES = ["local/area-boundary", "local/no-dynamic-load"];
 
 async function ruleIds(file: string, code: string): Promise<string[]> {
@@ -37,6 +38,7 @@ describe("the locales imports of the login page and receipt PDF", () => {
       [FLOW]: { specifier: "../../locales/index.ts", name: "messagesHr" },
       [RECEIPT]: { specifier: "../../locales/index.ts", name: "receiptPdfHr" },
       [MERLIN]: { specifier: "../../../locales/index.ts", name: "merlinHr" },
+      [WORK_EXPORT]: { specifier: "../../../locales/index.ts", name: "merlinHr" },
     });
     expect(Object.isFrozen(LOCALE_IMPORT_ALLOWED)).toBe(true);
   });

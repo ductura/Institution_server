@@ -170,7 +170,24 @@ describe("the arguments of the port", () => {
     const course = v.request.params.courseId!;
     const path = `/api/v1/institution/courses/${course.toUpperCase()}/assignments`;
     expect((await send(path, upper)).status).toBe(201);
-    expect(calls).toEqual([["create", tokenOf(v), course, requestKey, content]]);
+    expect(calls).toEqual([["create", tokenOf(v), course, requestKey, content, false]]);
+  });
+
+  it.each([
+    [true, 201],
+    [false, 201],
+    [null, 422],
+    ["true", 422],
+    [1, 422],
+    [{}, 422],
+  ])("create: isPractice=%j returns %i", async (isPractice, status) => {
+    const v = CREATE.find((x) => x.kind === "success")!;
+    createAnswer = () => ({ status: "created", id: v.response.body.id as string });
+    await start(v.request.headers.origin!);
+    const body = { ...(v.request.body as Record<string, unknown>), isPractice };
+    const path = `/api/v1/institution/courses/${v.request.params.courseId}/assignments`;
+    expect((await send(path, { ...v, request: { ...v.request, body } })).status).toBe(status);
+    expect(calls.map((args) => args.at(-1))).toEqual(status === 201 ? [isPractice] : []);
   });
 
   it("create: no key, or a key that is not a UUID, is 422 before the port", async () => {

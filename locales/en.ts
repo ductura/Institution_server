@@ -2070,6 +2070,7 @@ const en = {
     upgradeRequired: "A newer version of the app is needed. Refresh the page.",
     versionConflict:
       "The assignment has changed in the meantime. Load the latest version and try again.",
+    practiceAssignment: "Practice assignments are ungraded.",
   },
   // Texts of the error catalogue the server's contract does not answer (S-1M-c, DAN-802); added after the port.
   clientErrors: {

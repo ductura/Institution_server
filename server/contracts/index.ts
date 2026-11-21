@@ -6,6 +6,10 @@ import {
   clientRoutes,
   collaborationRoutes,
   consultationSlotRoutes,
+  mentorshipRoutes,
+  teachingTeamRoutes,
+  mentorNotesGet,
+  mentorNotesPost,
   courseAggregateGet,
   downloadsRoutes,
   enrollmentRoutes,
@@ -39,8 +43,10 @@ import {
   teacherWorkingCriteriaRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
+  workExportDocxRoutes,
   workVersionGet,
   workMessagesRoutes,
+  notificationsRoutes,
   commentsRoutes,
   directEditRoutes,
   importRoutes,
@@ -54,7 +60,14 @@ export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
+export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export {
+  NotificationId,
+  NotificationsPage,
+  NOTIFICATIONS_PAGE_SIZE,
+  notificationsRoutes,
+} from "./routes/index.ts";
 
 export {
   ERROR_CATALOG_DATA,
@@ -66,6 +79,12 @@ export {
   TOO_MANY_REQUESTS,
 };
 export { SESSION_IDLE_EXPIRED } from "./routes/index.ts";
+export {
+  MentorNoteInput,
+  MentorshipNoteParams,
+  mentorNotesGet,
+  mentorNotesPost,
+} from "./routes/index.ts";
 export { SIGN_IN_FAILURE, type SignInFailureCode } from "./routes/index.ts";
 export { publicVerificationPost, sourceLookupPost };
 export { workAttachmentGet, workAttachmentPost } from "./routes/index.ts";
@@ -116,6 +135,10 @@ export const ROUTES: readonly RouteContract[] = [
   ...projectionRoutes,
   ...collaborationRoutes,
   ...consultationSlotRoutes,
+  ...mentorshipRoutes,
+  ...teachingTeamRoutes,
+  mentorNotesGet,
+  mentorNotesPost,
   ...assistantRoutes,
   ...statementRoutes,
   ...liveRoutes,
@@ -129,8 +152,10 @@ export const ROUTES: readonly RouteContract[] = [
   sourceLookupPost,
   ...publicVerificationRoutes,
   ...versionsRoutes,
+  ...workExportDocxRoutes,
   workVersionGet,
   ...workMessagesRoutes,
+  ...notificationsRoutes,
   ...commentsRoutes,
   ...directEditRoutes,
   ...importRoutes,

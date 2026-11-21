@@ -3,7 +3,7 @@
 // above the contract limit answers 413; (4) the imported text is marked
 // evidenceKind imported and source import; plus the idempotent confirmation
 // with one event and the refusals of another student. (1), append only, is
-// db/main/tests/202-import-event.sql. Every person, document and text is
+// db/main/tests/208-import-event.sql. Every person, document and text is
 // invented; the documents are those of the shared pgTAP fixture.
 import { readFileSync } from "node:fs";
 

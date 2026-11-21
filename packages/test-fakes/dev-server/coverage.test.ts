@@ -145,6 +145,13 @@ const FIRST_IMPORT = (() => {
   return { importId: ids.importId, manifestSha256: prepared.preview.manifestSha256 };
 })();
 const C = `/api/v1/institution/courses/${IDS.course}`;
+const TEAM = `/api/v1/courses/${IDS.course}/team`;
+const SET_TEAM: Step = {
+  path: TEAM,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: { assistantIds: [IDS.teacher2] },
+};
 const STUDENT_ASSIGNMENT = `/api/v1/student/assignments/${IDS.assignment}`;
 const CONSULTATION_SLOTS = `/api/v1/works/${IDS.document}/consultation-slots`;
 const REQUEST_SLOT: Step = {
@@ -244,7 +251,45 @@ const BANK_STEP: Step = {
   body: { text: "Izmišljeno: navedite izvor.", kind: "must" },
 };
 
+const MENTORSHIP_REQUESTS = "/api/v1/mentorship-requests";
+const MENTOR_NOTES = `/api/v1/mentorships/${IDS.mentorship}/notes`;
+const REQUEST_MENTORSHIP: Step = {
+  path: MENTORSHIP_REQUESTS,
+  as: "student",
+  headers: ORIGIN,
+  body: { teacherId: IDS.teacher, workType: "master_thesis" },
+};
+const MENTORSHIP_REQUEST = `${MENTORSHIP_REQUESTS}/b1400000-0000-4000-8000-000000000001`;
+
 const SCENARIOS: Record<RouteId, Scenario> = {
+  "mentorship.requests.post": { request: REQUEST_MENTORSHIP },
+  "mentorship.notes.get": { request: { path: MENTOR_NOTES, as: "nastavnik" } },
+  "mentorship.notes.post": {
+    request: {
+      path: MENTOR_NOTES,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { body: "Izmisljena privatna biljeska." },
+    },
+  },
+  "mentorship.request-approve.post": {
+    before: [REQUEST_MENTORSHIP],
+    request: { path: `${MENTORSHIP_REQUEST}/approve`, as: "nastavnik", headers: ORIGIN },
+  },
+  "mentorship.request-decline.post": {
+    before: [REQUEST_MENTORSHIP],
+    request: {
+      path: `${MENTORSHIP_REQUEST}/decline`,
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { reason: "Izmišljeni razlog." },
+    },
+  },
+  "mentorship.request-withdraw.post": {
+    before: [REQUEST_MENTORSHIP],
+    request: { path: `${MENTORSHIP_REQUEST}/withdraw`, as: "student", headers: ORIGIN },
+  },
   "student.declaration.get": {
     request: { path: `/api/v1/student/assignments/${IDS.assignment}/declaration`, as: "student" },
   },
@@ -404,6 +449,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.assignment.get": { request: { path: A, as: "nastavnik" } },
+  "teacher.assignment-grade.get": {
+    request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/grade`, as: "nastavnik" },
+  },
   "institution.enrollment-code-state.get": {
     request: {
       path: `${C}/enrollment-code/state`,
@@ -451,6 +499,18 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "institution.course-groups.get": { request: { path: `${C}/groups`, as: "nastavnik" } },
+  "institution.teaching-team.get": { request: { path: TEAM, as: "nastavnik" } },
+  "institution.teaching-team.post": { request: SET_TEAM },
+  "institution.teaching-group-members.put": {
+    before: [SET_TEAM],
+    request: {
+      path: `/api/v1/courses/${IDS.course}/groups/${IDS.groupA}/members`,
+      method: "PUT",
+      as: "nastavnik",
+      headers: ORIGIN,
+      body: { assistantIds: [IDS.teacher2], studentIds: [IDS.student] },
+    },
+  },
   "institution.course-groups.post": {
     request: { path: `${C}/groups`, as: "nastavnik", body: { name: "Grupa C" } },
   },
@@ -683,6 +743,10 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
   },
+  "work.export.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/export?format=docx`, as: "nastavnik" },
+  },
   "work.export-pdf.get": {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: {
@@ -703,6 +767,16 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       },
     ],
     request: { path: `/api/v1/works/${IDS.document}/messages`, as: "nastavnik" },
+  },
+  "notifications.list.get": {
+    request: { path: "/api/v1/notifications", as: "student" },
+  },
+  "notifications.read.post": {
+    request: {
+      method: "POST",
+      path: "/api/v1/notifications/00000000-0000-4000-8000-000000001701/read",
+      as: "student",
+    },
   },
   "work.direct-edit.get": {
     before: [
@@ -827,6 +901,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: SUBMIT_STEPS,
     request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions`, as: "nastavnik" },
   },
+  "teacher.submission-detail.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions/${IDS.student}`,
+      as: "nastavnik",
+    },
+  },
   "teacher.receipt-pdf.get": {
     before: SUBMIT_STEPS,
     request: {
@@ -856,6 +937,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: "/api/v1/teacher/mentorship-requests/decision",
       as: "nastavnik",
       body: { requestId: IDS.mentorship, decision: "approve" },
+    },
+  },
+  "student.deadline-history.get": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/deadline-extensions`,
+      as: "student",
+      method: "GET",
     },
   },
   "teacher.deadline-extensions.get": {

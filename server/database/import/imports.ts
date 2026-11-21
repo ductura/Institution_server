@@ -1,5 +1,5 @@
 // SRV-1803 (M8.2 and M8.2b, DAN-396; contract docs/adr/import-contract.md):
-// the database port of an import (20261130100000). Each call is one withActor
+// the database port of an import (20261202100000). Each call is one withActor
 // transaction over one RPC of schema collaboration; the RPCs decide who may:
 // only the student owner of the work, only while its assignment allows import
 // (D-282) and the work is not submitted. The base revision and every time come

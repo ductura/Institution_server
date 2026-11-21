@@ -1,5 +1,5 @@
 -- SRV-1803 (M8.2 and M8.2b, DAN-396; D-282, D-290 to D-292; contract
--- docs/adr/import-contract.md): the record of an import (20261130100000).
+-- docs/adr/import-contract.md): the record of an import (20261202100000).
 -- Acceptance: (1) import_event and its confirmation are append only; (2) a
 -- work whose assignment does not allow import is refused (the route's 403).
 -- Plus the access matrix: only the student owner of the work prepares and

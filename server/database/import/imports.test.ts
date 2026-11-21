@@ -1,7 +1,7 @@
 // The port of an import (SRV-1803) over a scripted transaction: the SQL and
 // parameters each call sends, the mapping of rows, and the closed statuses for
 // database errors and rows of an unexpected shape. The database itself is
-// db/main/tests/202-import-event.sql.
+// db/main/tests/208-import-event.sql.
 import { describe, expect, it } from "vitest";
 
 import type { WithActor } from "../index.ts";

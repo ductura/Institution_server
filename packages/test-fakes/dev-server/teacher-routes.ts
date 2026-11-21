@@ -2,7 +2,7 @@
 // path and mentorships. An assignment the caller does not teach reads as an
 // empty list, as the contract says; the role alone opens no work (C-23).
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import type { Operations } from "../../contracts/index.ts";
 import { successBody } from "./contract.ts";
@@ -218,6 +218,35 @@ export const TEACHER_HANDLERS: Handlers = {
     status: 200,
     body: { submissions: submissions(state, account, taught(state, account, params.assignmentId)) },
   }),
+  "teacher.submission-detail.get": ({ state, account, params, now }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = taught(state, account, params.assignmentId);
+    const studentId = params.studentId.toLowerCase();
+    if (assignment === null || !studentsOf(state, account, assignment).includes(studentId)) {
+      return { error: "not_found" };
+    }
+    const work = state.works.find(
+      (item) => item.assignmentId === assignment.id && item.studentId === studentId,
+    );
+    if (work === undefined || work.submittedAt === null) return { error: "not_found" };
+    if (work.submittedDocument === null || work.submissionReceipt === null)
+      return { error: "unavailable" };
+    recordOpening(
+      state,
+      {
+        documentId: work.documentId,
+        readerId: account.id,
+        role: "teacher",
+        surface: "submitted_text",
+      },
+      now,
+    );
+    const { revision, afterDeadline } = work.submissionReceipt.payload;
+    return {
+      status: 200,
+      body: { studentId, revision, late: afterDeadline, document: work.submittedDocument },
+    };
+  },
   "teacher.assignment-submissions.post": ({ state, account, body }) => {
     const ids = [...new Set(body.assignmentIds.map((id) => id.toLowerCase()))];
     const assignments = ids.map((assignmentId) => ({
@@ -408,33 +437,43 @@ export const TEACHER_HANDLERS: Handlers = {
         }
       : { status: 200, body: { decision: "decline" } };
   },
-  // SRV-1108: the fake keeps no extensions; it answers a record from the request.
-  "teacher.deadline-extensions.get": ({ state, account, params }) =>
-    taught(state, account, params.assignmentId) === null
-      ? { error: "not_found" }
-      : { status: 200, body: { extensions: [] } },
+  "teacher.deadline-extensions.get": ({ state, account, params }) => {
+    const assignment = taught(state, account, params.assignmentId);
+    if (assignment === null) return { error: "not_found" };
+    const extensions = state.deadlineExtensions
+      .filter((extension) => extension.assignmentId === assignment.id)
+      .map(({ assignmentId: _, ...extension }) => ({
+        ...extension,
+        reasonId: extension.createdBy === account?.id ? extension.reasonId : null,
+      }));
+    return { status: 200, body: { extensions } };
+  },
   "teacher.deadline-extension.post": ({ state, account, params, body, now }) => {
     const assignment = taught(state, account, params.assignmentId);
     if (assignment === null || account === null) return { error: "not_found" };
     const studentId = body.scope === "one" ? body.studentId.toLowerCase() : null;
     if (studentId !== null && !studentsOf(state, account, assignment).includes(studentId))
       return { error: "not_found" };
-    if (body.dueAt <= assignment.content.dueAt) return { error: "invalid_input" };
+    const previousDueAt = state.deadlineExtensions.reduce((dueAt, extension) => {
+      if (extension.assignmentId !== assignment.id) return dueAt;
+      if (extension.studentId !== null && extension.studentId !== studentId) return dueAt;
+      return extension.dueAt > dueAt ? extension.dueAt : dueAt;
+    }, new Date(assignment.content.dueAt).toISOString());
+    if (body.dueAt <= previousDueAt) return { error: "invalid_input" };
+    const extension = {
+      id: randomUUID(),
+      scope: body.scope,
+      studentId,
+      previousDueAt,
+      dueAt: body.dueAt,
+      reasonId: body.reasonId,
+      createdBy: account.id,
+      createdAt: now.toISOString(),
+    };
+    state.deadlineExtensions.push({ assignmentId: assignment.id, ...extension });
     return {
       status: 201,
-      body: {
-        extension: {
-          id: "de000000-0000-4000-8000-000000000001",
-          scope: body.scope,
-          studentId,
-          previousDueAt: new Date(assignment.content.dueAt).toISOString(),
-          dueAt: body.dueAt,
-          reasonId: body.reasonId,
-          createdBy: account.id,
-          createdAt: now.toISOString(),
-        },
-        existingSubmissionsUnchanged: false,
-      },
+      body: { extension, existingSubmissionsUnchanged: false },
     };
   },
   // SRV-1109: the Merlin roster from the fake submissions; a fingerprint is of

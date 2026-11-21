@@ -4,7 +4,7 @@
 // gives; only the student owner imports, only while the assignment allows it
 // and the work is not submitted. The confirmation follows the order of the
 // contract and gives one event per import. The real record, its locks and the
-// time are the RPCs of 20261130100000; this fake keeps imports in memory.
+// time are the RPCs of 20261202100000; this fake keeps imports in memory.
 import { randomUUID } from "node:crypto";
 
 import {
