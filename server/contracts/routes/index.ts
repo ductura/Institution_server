@@ -24,6 +24,8 @@ export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
 export { workExportDocxRoutes } from "./work-export-docx.ts";
+export { portableRecordRoutes } from "./portable-record.ts";
+export { submissionPackageRoutes } from "./submission-package.ts";
 export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export {
@@ -57,6 +59,11 @@ export {
 } from "./course-aggregate.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./pilot-metrics.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
+export {
+  SignedWithdrawalReceipt,
+  submissionsRoutes,
+  WITHDRAWAL_RECEIPT_SCHEMA,
+} from "./submissions.ts";
 export { AssignmentCopyInput, assignmentCopyRoutes } from "./assignment-copy.ts";
 export {
   InstitutionConfigInput,
@@ -67,6 +74,7 @@ export {
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { mentorshipRoutes } from "./mentorship.ts";
 export { mentorshipStudentRoutes } from "./mentorship-student.ts";
+export { StudentWork, studentWorkRoutes } from "./student-work.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./key-dates.ts";
 export { teachingTeamRoutes } from "./teaching-team.ts";
 export {
@@ -80,3 +88,9 @@ export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts
 export { assistantRoutes } from "./assistant.ts";
 export { statementRoutes } from "./statement.ts";
 export { STAFF_AFFILIATION_SOURCES, staffAffiliationRoutes } from "./staff-affiliation.ts";
+export {
+  accessLogRoutes,
+  WORK_ACCESS_ROLES,
+  WORK_ACCESS_SURFACES,
+  workAccessGet,
+} from "./access-log.ts";

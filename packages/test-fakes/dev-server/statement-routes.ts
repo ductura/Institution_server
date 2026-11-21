@@ -5,10 +5,11 @@ import {
   checkExternalAttachmentBytes,
   declarationSha256,
   incompleteFields,
+  isExternalFormat,
   parseDeclarationPutBody,
 } from "../../../server/domain/declaration/index.ts";
 import type { Context, Handlers } from "./server.ts";
-import type { State } from "./state.ts";
+import { teachesCourse, visibleStudents, type State } from "./state.ts";
 
 type Statement = Operations["student.declaration.get"]["success"]["body"];
 type Upload = Operations["student.declaration-attachments.post"]["success"]["body"];
@@ -70,6 +71,30 @@ function answerOf(state: State, work: NonNullable<ReturnType<typeof workOf>>): S
 }
 
 export const STATEMENT_HANDLERS: Handlers = {
+  // SRV-1213. P-5: the access-log surface stays closed, so the fake records no opening.
+  "teacher.declaration.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const assignment = state.assignments.find((a) => a.id === params.assignmentId.toLowerCase());
+    const course = state.courses.find((c) => c.id === assignment?.courseId);
+    const studentId = params.studentId.toLowerCase();
+    if (
+      assignment === undefined ||
+      course === undefined ||
+      !teachesCourse(course, account) ||
+      !visibleStudents(course, account).includes(studentId)
+    )
+      return { error: "not_found" };
+    const work = state.works.find(
+      (item) => item.assignmentId === assignment.id && item.studentId === studentId,
+    );
+    const bound = work === undefined ? undefined : answerOf(state, work);
+    if (bound?.state !== "bound" || bound.payload === null || bound.declarationSha256 === null)
+      return { status: 200, body: { state: "none", payload: null, declarationSha256: null } };
+    return {
+      status: 200,
+      body: { state: "bound", payload: bound.payload, declarationSha256: bound.declarationSha256 },
+    };
+  },
   "student.declaration.get": (ctx) => {
     const work = workOf(ctx);
     return work === undefined
@@ -83,15 +108,16 @@ export const STATEMENT_HANDLERS: Handlers = {
     const parsed = parseDeclarationPutBody(ctx.body);
     if (!parsed.ok || parsed.body.ai.attachments.length !== 0) return { error: "invalid_input" };
     const body = parsed.body;
+    if (previous.submitted) return { error: "already_submitted" };
+    if (body.confirm && incompleteFields(body).length > 0) return { error: "incomplete" };
     if (
-      previous.submitted ||
-      body.revision !== work.revision ||
-      body.baseVersion !== previous.version ||
       body.form.formSha256 !== FORM.formSha256 ||
       body.form.formVersion !== FORM.formVersion ||
-      body.form.formId !== FORM.formId ||
-      (body.confirm && incompleteFields(body).length > 0)
+      body.form.formId !== FORM.formId
     ) {
+      return { error: "form_outdated" };
+    }
+    if (body.revision !== work.revision || body.baseVersion !== previous.version) {
       return { error: "conflict" };
     }
     const uploads = previous.uploads.filter((upload) =>
@@ -144,8 +170,9 @@ export const STATEMENT_HANDLERS: Handlers = {
   "student.declaration-attachments.post": (ctx) => {
     const work = workOf(ctx);
     if (work === undefined) return { error: "not_found" };
-    if (work.state === "submitted") return { error: "conflict" };
+    if (work.state === "submitted") return { error: "already_submitted" };
     const format = ctx.header("content-type")?.split(";")[0]?.trim().toLowerCase();
+    if (!isExternalFormat(format ?? "")) return { error: "unsupported_media_type" };
     if (ctx.rawBody.byteLength > 2097152) return { error: "body_too_large" };
     const checked = checkExternalAttachmentBytes(format ?? "", ctx.rawBody);
     if (!checked.ok) return { error: "invalid_input" };

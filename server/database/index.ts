@@ -16,6 +16,11 @@ import { createWithActor, type WithActor } from "./with-actor.ts";
 export { createConsultationSlotStore } from "./consultation-slots/index.ts";
 export { createMentorshipRequestStore } from "./mentorship/index.ts";
 export { createStudentMentorshipReader } from "./mentorship/index.ts";
+export {
+  createStudentWorkStarter,
+  createStudentWorksReader,
+  type StartWorkOutcome,
+} from "./student-work/index.ts";
 export { createTeachingTeam } from "./teaching-team/index.ts";
 export { createMentorNotesStore } from "./mentor-notes/index.ts";
 export {
@@ -330,6 +335,12 @@ export {
   type DeadlineExtensions,
 } from "./deadline-extensions/index.ts";
 export {
+  createSubmissionWithdrawals,
+  type StoredWithdrawalReceipt,
+  type SubmissionHistoryEvent,
+  type SubmissionWithdrawals,
+} from "./submission-withdrawal/index.ts";
+export {
   createAssignmentCopy,
   type AssignmentCopy,
   type AssignmentCopyInput,
@@ -365,6 +376,12 @@ export {
   type WorkExportSource,
 } from "./work-export/index.ts";
 export {
+  createPortableRecordReader,
+  type PortableRecordRead,
+  type PortableRecordReader,
+  type PortableRecordRows,
+} from "./portable-record/index.ts";
+export {
   createConsultationRecords,
   isCalendarDate,
   recordsOf,
@@ -386,6 +403,17 @@ export {
   createTeacherSubmissionReader,
   type TeacherSubmissionReader,
 } from "./teacher-submissions/index.ts";
+export {
+  createTeacherDeclarationReader,
+  type TeacherDeclaration,
+  type TeacherDeclarationReader,
+} from "./teacher-declaration/index.ts";
+export {
+  createLegalHolds,
+  type LegalHold,
+  type LegalHolds,
+  type LegalHoldSubjectType,
+} from "./legal-hold/index.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
 export { createLiveStates } from "./live-state.ts";
 export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";
@@ -646,6 +674,7 @@ export {
   type FormReader,
   type StatementOperation,
   type StatementPort,
+  type StatementRefusal,
 } from "./statement/index.ts";
 export {
   createDirectEdits,
@@ -670,3 +699,10 @@ export {
 export { createCourseAggregateReader } from "./course-aggregate/index.ts";
 export { createStudentDeadlineHistoryReader } from "./student-deadline-history.ts";
 export { createPilotMetricsReader, type PilotMetricsResult } from "./pilot-metrics/index.ts";
+export {
+  createWorkAccessReader,
+  NOT_A_PERSON_READ,
+  WORK_READ_PATHS,
+  type WorkAccessPage,
+  type WorkAccessReader,
+} from "./access-log/index.ts";

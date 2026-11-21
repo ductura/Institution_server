@@ -8,6 +8,7 @@ import {
   consultationSlotRoutes,
   mentorshipRoutes,
   mentorshipStudentRoutes,
+  studentWorkRoutes,
   keyDatesGet,
   teachingTeamRoutes,
   mentorNotesGet,
@@ -15,6 +16,7 @@ import {
   courseAggregateGet,
   institutionConfigRoutes,
   pilotMetricsGet,
+  accessLogRoutes,
   downloadsRoutes,
   enrollmentRoutes,
   ERROR_CATALOG_DATA,
@@ -42,6 +44,7 @@ import {
   sourceProofsRoutes,
   textCheckConfigRoutes,
   deadlineExtensionRoutes,
+  submissionsRoutes,
   assignmentCopyRoutes,
   merlinRosterRoutes,
   merlinPackageRoutes,
@@ -52,6 +55,8 @@ import {
   TOO_MANY_REQUESTS,
   versionsRoutes,
   workExportDocxRoutes,
+  portableRecordRoutes,
+  submissionPackageRoutes,
   workVersionGet,
   workMessagesRoutes,
   notificationsRoutes,
@@ -67,12 +72,14 @@ import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 export { breakingChanges } from "./breaking.ts";
 export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { PILOT_METRICS_MIN_GROUP, PilotMetrics, pilotMetricsGet } from "./routes/index.ts";
+export { WORK_ACCESS_ROLES, WORK_ACCESS_SURFACES, workAccessGet } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
 export { KeyDatesBody, KeyDatesParams, keyDatesGet } from "./routes/index.ts";
 export { sourceNotebookRoutes };
 export { teachingTeamRoutes };
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
+export { SignedWithdrawalReceipt, WITHDRAWAL_RECEIPT_SCHEMA } from "./routes/index.ts";
 export {
   NotificationId,
   NotificationsPage,
@@ -145,7 +152,9 @@ export const ROUTES: readonly RouteContract[] = [
   courseAggregateGet,
   pilotMetricsGet,
   ...institutionConfigRoutes,
+  ...accessLogRoutes,
   ...deadlineExtensionRoutes,
+  ...submissionsRoutes,
   ...assignmentCopyRoutes,
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,
@@ -156,6 +165,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...consultationSlotRoutes,
   ...mentorshipRoutes,
   ...mentorshipStudentRoutes,
+  ...studentWorkRoutes,
   keyDatesGet,
   ...teachingTeamRoutes,
   mentorNotesGet,
@@ -174,6 +184,8 @@ export const ROUTES: readonly RouteContract[] = [
   ...publicVerificationRoutes,
   ...versionsRoutes,
   ...workExportDocxRoutes,
+  ...portableRecordRoutes,
+  ...submissionPackageRoutes,
   workVersionGet,
   ...workMessagesRoutes,
   ...notificationsRoutes,

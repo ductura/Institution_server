@@ -33,8 +33,10 @@ import {
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createInstitutionConfigRoutesFor,
+  createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
   createConsultationSlotRoutesFor,
@@ -45,6 +47,7 @@ import {
   createTeacherMentorshipRequestRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
@@ -196,6 +199,7 @@ const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
 const SRV_31 = ["teacher.mentorship-requests.get", "teacher.mentorship-request-decision.post"];
 const SRV_1414 = ["mentorship.student-requests.get", "mentorship.student-mentor-candidates.get"];
+const SRV_1412 = ["student-work.start.post", "student-work.works.get"];
 const SRV_1407 = [
   "mentorship.requests.post",
   "mentorship.request-approve.post",
@@ -344,6 +348,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => [createPilotMetricsRouteFor(NO_ACTOR).contract.id],
   },
   {
+    call: "createWorkAccessRouteFor(databases.main)",
+    ids: ["work.access.get"],
+    routes: () => [createWorkAccessRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "createTeacherRosterRoutesFor(databases.main)",
     ids: TEACHER_ROSTER_ROUTES,
     routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
@@ -363,6 +372,21 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "createStudentDeadlineHistoryRouteFor(databases.main)",
     ids: ["student.deadline-history.get"],
     routes: () => [createStudentDeadlineHistoryRouteFor(NO_ACTOR).contract.id],
+  },
+  {
+    // SRV-1903: withdrawal, the histories and the teacher's switch, with the submission's signer.
+    call: "...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps)",
+    ids: [
+      "student.submission-withdrawal.post",
+      "student.submission-history.get",
+      "teacher.submission-history.get",
+      "teacher.submission-withdrawal.get",
+      "teacher.submission-withdrawal.post",
+    ],
+    routes: () =>
+      createSubmissionWithdrawalRoutesFor(NO_ACTOR, { signer: REFUSING_SIGNER }).map(
+        (route) => route.contract.id,
+      ),
   },
   {
     // SRV-1904 (P-D4): copying an assignment over the main database.
@@ -425,6 +449,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createMentorshipStudentRoutesFor(databases.main)",
     ids: SRV_1414,
     routes: () => createMentorshipStudentRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createStudentWorkRoutesFor(databases.main)",
+    ids: SRV_1412,
+    routes: () => createStudentWorkRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createKeyDatesRoutesFor(databases.main)",
@@ -740,11 +769,17 @@ describe("routes the entry point mounts itself", () => {
       "institution.config.get",
       "institution.config-versions.post",
       "ops.pilot-metrics.get",
+      "work.access.get",
       ...TEACHER_ROSTER_ROUTES,
       "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       "student.deadline-history.get",
+      "student.submission-withdrawal.post",
+      "student.submission-history.get",
+      "teacher.submission-history.get",
+      "teacher.submission-withdrawal.get",
+      "teacher.submission-withdrawal.post",
       "teacher.assignment-copy.post",
       "teacher.merlin-roster.get",
       "teacher.merlin-roster-csv.get",
@@ -762,6 +797,7 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.patch",
       ...SRV_1407,
       ...SRV_1414,
+      ...SRV_1412,
       "mentorship.key-dates.get",
       ...SRV_1408,
       ...SRV_1413,

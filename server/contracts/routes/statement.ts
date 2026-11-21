@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-import { closed, defineRoute, error, REQUEST_ID_PATTERN } from "../schema/index.ts";
+import { closed, defineRoute, error, problemFields, REQUEST_ID_PATTERN } from "../schema/index.ts";
 import { MUTATION_GUARD } from "./shared.ts";
 
 const SHA256 = Type.String({ pattern: "^[0-9a-f]{64}$" });
@@ -153,6 +153,36 @@ const WRITE_ERRORS = [
   error(422, "invalid_input"),
   error(503, "unavailable"),
 ];
+/** A 409 whose problem body also names what the client must reload or attach. */
+function conflictWith(code: string, fields: Parameters<typeof closed>[0]) {
+  return error(
+    409,
+    code,
+    closed({ error: Type.Literal(code), ...problemFields(code, 409), ...fields }),
+  );
+}
+const ConversationIds = Type.Array(ID, { minItems: 1, maxItems: 20 });
+// declaration-v1 §7.3: the reasons the save RPC gives for refusing a declaration.
+const SAVE_ERRORS = [
+  ...WRITE_ERRORS,
+  error(400, "invalid_json"),
+  error(415, "unsupported_media_type"),
+  error(422, "invalid_attachment"),
+  error(409, "already_submitted"),
+  error(409, "form_outdated"),
+  error(409, "incomplete"),
+  conflictWith("declaration_conflict", { currentVersion: DraftVersion }),
+  conflictWith("stale_revision", { currentRevision: Version }),
+  conflictWith("mandatory_attachment_missing", { conversationIds: ConversationIds }),
+  conflictWith("attachment_stale", { conversationIds: ConversationIds }),
+];
+const UPLOAD_ERRORS = [
+  ...WRITE_ERRORS,
+  error(415, "unsupported_media_type"),
+  error(409, "already_submitted"),
+  error(409, "too_many_attachments"),
+  error(409, "attachments_too_large"),
+];
 const INVENTORY = "app/api/student/assignments/[assignmentId]";
 const URL = "/api/v1/student/assignments/{assignmentId}";
 export const STATEMENT_MAX_BODY_BYTES = (20 * 2000 + 20 * 3 * 200) * 12 + 16 * 1024;
@@ -186,7 +216,7 @@ export const studentDeclarationPut = defineRoute({
     body: PutRequest,
   },
   responses: studentDeclarationGet.responses,
-  errors: [...WRITE_ERRORS, error(400, "invalid_json"), error(415, "unsupported_media_type")],
+  errors: SAVE_ERRORS,
 });
 export const studentDeclarationAttachmentsPost = defineRoute({
   id: "student.declaration-attachments.post",
@@ -195,7 +225,7 @@ export const studentDeclarationAttachmentsPost = defineRoute({
   inventory: `${INVENTORY}/declaration-attachments/route.ts`,
   access: "student_enrolled",
   summary:
-    "Send raw PDF or UTF-8 plain-text bytes with Content-Type application/pdf or text/plain. Other media types yield 422. Uploading returns a reference for a later declaration PUT.",
+    "Send raw PDF or UTF-8 plain-text bytes with Content-Type application/pdf or text/plain. Other media types yield 415; bytes that do not match the type yield 422. Uploading returns a reference for a later declaration PUT.",
   request: { params: Params, maxBodyBytes: 2097152 },
   responses: [
     {
@@ -205,10 +235,13 @@ export const studentDeclarationAttachmentsPost = defineRoute({
       headers: ["cache-control"],
     },
   ],
-  errors: WRITE_ERRORS,
+  errors: UPLOAD_ERRORS,
 });
 export const statementRoutes = [
   studentDeclarationGet,
   studentDeclarationPut,
   studentDeclarationAttachmentsPost,
 ] as const;
+
+// The confirmed declaration payload, shared with the teacher's read (SRV-1213).
+export { Payload as DeclarationPayload, SHA256 as DeclarationSha256 };

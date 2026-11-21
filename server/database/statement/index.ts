@@ -11,9 +11,26 @@ export {
 export type ConfiguredForm = { file: string; form: DeclarationForm & { text: string } };
 export type FormReader = (slug: string) => Promise<ConfiguredForm | null>;
 
-type Outcome =
-  | { status: "unauthorized" | "not_found" | "conflict" | "invalid_input" }
-  | { status: "ok"; body: unknown };
+/**
+ * A refusal keeps the RPC's reason and the context the client needs to
+ * recover (declaration-v1 §7.3); nothing else of the RPC answer leaves.
+ */
+export type StatementRefusal = {
+  status: "unauthorized" | "not_found" | "conflict" | "invalid_input";
+  reason?: string;
+  currentVersion?: unknown;
+  currentRevision?: unknown;
+  conversationIds?: unknown;
+};
+type Outcome = StatementRefusal | { status: "ok"; body: unknown };
+const CONTEXT = ["currentVersion", "currentRevision", "conversationIds"] as const;
+
+function refusalOf(status: StatementRefusal["status"], data: Record<string, unknown>) {
+  const refusal: StatementRefusal = { status };
+  if (typeof data.reason === "string") refusal.reason = data.reason;
+  for (const key of CONTEXT) if (data[key] !== undefined) refusal[key] = data[key];
+  return refusal;
+}
 export type StatementOperation =
   | { type: "read" }
   | { type: "save"; body: DeclarationPutBody }
@@ -50,13 +67,13 @@ export function createStatementPort(withActor: WithActor, readForm: FormReader):
         if (typeof result !== "object" || result === null || !("status" in result)) {
           throw new Error("Invalid declaration database response");
         }
-        const { status, ...data } = result;
+        const { status, ...data } = result as Record<string, unknown>;
         switch (status) {
           case "unauthorized":
           case "not_found":
           case "conflict":
           case "invalid_input":
-            return { status };
+            return refusalOf(status, data);
           case "ok":
             if (op.type === "upload") return { status, body: data };
             if (

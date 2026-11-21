@@ -5,6 +5,7 @@ import { closed, defineRoute, error } from "../schema/index.ts";
 import { SignedSubmissionReceipt } from "./evidence.ts";
 import { Minute as SummaryMinute, ProcessSummaryV1 } from "./process-summary-shape.ts";
 import { MUTATION_GUARD } from "./shared.ts";
+import { teacherDeclarationGet } from "./teacher-declaration.ts";
 import { teacherSubmissionDetailGet } from "./teacher-submissions.ts";
 
 // Literal port of Ductus 078c780: src/server/institution/teacher-courses.ts
@@ -536,6 +537,7 @@ export const teacherRoutes = [
   teacherCoursesGet,
   teacherSubmissionsGet,
   teacherSubmissionDetailGet,
+  teacherDeclarationGet,
   teacherMentorshipsGet,
   teacherMentorshipGet,
   teacherFastPathPost,

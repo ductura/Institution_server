@@ -43,10 +43,13 @@ import {
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createPortableRecordRouteFor,
+  createSubmissionPackageRoutesFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
@@ -54,11 +57,14 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
+  createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createInstitutionConfigRoutesFor,
+  createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
+  createSubmissionWithdrawalRoutesFor,
   createStudentDeadlineHistoryRouteFor,
   createAssignmentCopyRouteFor,
   createMerlinRosterRoutesFor,
@@ -274,6 +280,10 @@ async function main(): Promise<void> {
       createWorkVersionsRouteFor(databases.main),
       // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
       createWorkExportRouteFor(databases.main),
+      // SRV-1312: the portable record of the student's own submission, a checked deterministic ZIP.
+      createPortableRecordRouteFor(databases.main, APP_ORIGIN),
+      // SRV-1807: the 24 hour link to the export package and the confirmation for the registrar.
+      ...createSubmissionPackageRoutesFor(databases.main, APP_ORIGIN),
       excludePracticeAssignment(
         createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
         databases.main,
@@ -284,6 +294,8 @@ async function main(): Promise<void> {
       ...createMentorshipRequestRoutesFor(databases.main),
       // SRV-1414: the student's own requests and the teachers they may ask.
       ...createMentorshipStudentRoutesFor(databases.main),
+      // SRV-1412: the student starts the own work and reads the own works.
+      ...createStudentWorkRoutesFor(databases.main),
       ...createKeyDatesRoutesFor(databases.main),
       ...createTeachingTeamRoutesFor(databases.main),
       ...createMentorNotesRoutesFor(databases.main),
@@ -315,15 +327,21 @@ async function main(): Promise<void> {
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
       createTeacherSubmissionDetailRouteFor(databases.main),
+      createTeacherDeclarationRouteFor(databases.main),
       createCourseAggregateRouteFor(databases.main),
       // SRV-1906 (plan P-D6): the operator's pilot numbers, behind step 8.
       createPilotMetricsRouteFor(databases.main),
       // SRV-1406: the versioned rules of the institution, for its administrator.
       ...createInstitutionConfigRoutesFor(databases.main),
+      // SRV-1706 (plan M10.4): who opened the student's own work, in days.
+      createWorkAccessRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
       createStudentDeadlineHistoryRouteFor(databases.main),
+      // SRV-1903: withdrawal of a submission, the history and the teacher's switch,
+      // signed with the same signer as the submission receipt.
+      ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
       // SRV-1904 (P-D4): the teacher copies an assignment into a course they teach.
       createAssignmentCopyRouteFor(databases.main),
       // SRV-1109: the Merlin roster of an assignment and its CSV, for its teacher.

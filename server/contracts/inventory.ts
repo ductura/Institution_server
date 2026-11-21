@@ -91,6 +91,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064828009",
   },
+  // SRV-1412 (Plan M2.1 to M2.3): the student starts the own work and reads the own works.
+  "app/api/assignments/[assignmentId]/start/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066995409",
+  },
+  "app/api/student/works/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066995409",
+  },
   // SRV-1414 (Plan M2, D-204): the student's side of mentorship.
   "app/api/student/mentorship-requests/route.ts": {
     methods: ["GET"],
@@ -294,6 +303,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7066464126",
   },
+  // SRV-1706 (plan M10.4): the student's access log in days; no Ductus route.
+  "app/api/works/[documentId]/access/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069036189",
+  },
   "app/api/courses/[id]/aggregate/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562264",
@@ -351,6 +365,20 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/export/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063253708",
+  },
+  // SRV-1312 (plan M7.10, Ductus#2052 c.7069253604): the portable record of a submission; Ductus has no such route.
+  "app/api/student/submissions/[submissionId]/portable-record/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069253604",
+  },
+  // SRV-1807 (plan M8.6, Ductus#2052 c.7069763588): the 24 hour link to the export package and the confirmation for the registrar; Ductus has no such route.
+  "app/api/student/submissions/[submissionId]/package-link/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069763588",
+  },
+  "app/api/student/submissions/[submissionId]/package/[kind]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069763588",
   },
   "app/api/works/[documentId]/versions/[revision]/route.ts": {
     methods: ["GET"],
@@ -442,6 +470,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
   },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/declaration/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2051",
+  },
   "app/api/teacher/mentorship-requests/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7009405737",
@@ -458,6 +490,23 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/assignments/[assignmentId]/deadline-extensions/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052",
+  },
+  // SRV-1903 (P-D3): withdrawal of a submission and the history; Ductus has no such route.
+  "app/api/student/assignments/[assignmentId]/submission/withdrawal/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
+  },
+  "app/api/student/assignments/[assignmentId]/submission/history/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
+  },
+  "app/api/teacher/assignments/[assignmentId]/students/[studentId]/submission-history/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
+  },
+  "app/api/teacher/assignments/[assignmentId]/submission-withdrawal/route.ts": {
+    methods: ["GET", "POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7064494920",
   },
   // SRV-1904 (P-D4): copying an assignment; Ductus has no such route.
   "app/api/teacher/assignments/[assignmentId]/copy/route.ts": {

@@ -484,6 +484,20 @@ export type Operations = {
     success: { status: 200; body: { "source": { "type": "book" | "chapter" | "article" | null; "title": string; "authors": ({ "name": string; "family"?: string; "given"?: string })[]; "year"?: number; "journal"?: string; "bookTitle"?: string; "publisher"?: string; "place"?: string; "volume"?: string; "issue"?: string; "pages"?: string } | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "invalid_json" | "unauthorized" | "forbidden" | "unsupported_media_type" | "invalid_input" | "unavailable" | "timeout";
   };
+  "student-work.start.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "workId": string; "rulesVersion": number | null; "language": "hr" | "en" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "student-work.works.get": {
+    params: undefined;
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "works": ({ "workId": string; "assignmentId": string; "assignmentTitle": string; "courseId": string; "courseName": string; "academicYear": string; "dueAt": string; "state": "in_progress" | "submitted"; "revision": number; "submittedAt": string | null; "language": "hr" | "en" })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "unavailable";
+  };
   "student.access-log.get": {
     params: { "documentId": string };
     query: { "beforeAt"?: string; "beforeId"?: string; [key: string]: unknown };
@@ -538,7 +552,7 @@ export type Operations = {
     query: undefined;
     body: undefined;
     success: { status: 200; body: { "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string }; headers: { "cache-control"?: string } };
-    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable";
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable" | "unsupported_media_type" | "already_submitted" | "too_many_attachments" | "attachments_too_large";
   };
   "student.declaration.get": {
     params: { "assignmentId": string };
@@ -552,7 +566,7 @@ export type Operations = {
     query: undefined;
     body: { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; [key: string]: unknown }; "ai": { "use": "used" | "not_used" | null; [key: string]: unknown }; "confirm": boolean };
     success: { status: 200; body: { "state": "none" | "draft" | "confirmed" | "stale" | "bound"; "submitted": boolean; "currentRevision": number | null; "version": number; "formText": string | null; "currentForm": { "formId": string; "formVersion": number; "formSha256": string; "text": string } | null; "draft": { "baseVersion": number; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": boolean }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used" | null; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "attachments": ({ "conversationId": string; "throughSeq": number; "messagesSha256": string })[]; "externalAttachmentIds": (string)[] }; "confirm": boolean } | null; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string } | null; "declarationSha256": string | null; "uploads": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string })[] }; headers: { "cache-control"?: string } };
-    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable" | "invalid_json" | "unsupported_media_type";
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "invalid_input" | "unavailable" | "invalid_json" | "unsupported_media_type" | "invalid_attachment" | "already_submitted" | "form_outdated" | "incomplete" | "declaration_conflict" | "stale_revision" | "mandatory_attachment_missing" | "attachment_stale";
   };
   "student.enrollments.post": {
     params: undefined;
@@ -573,6 +587,13 @@ export type Operations = {
     query: undefined;
     body: undefined;
     success: { status: 200; body: { "assignmentId": string; "versionNo": number; "templateVersion": number; "title": string; "instructions": string; "workType": "short_paper" | "essay" | "seminar_paper" | "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis"; "opensAt": string; "dueAt": string; "aiPolicy": "prohibited" | "partially_allowed" | "encouraged"; "aiPurposes": ("formatting" | "proofreading" | "literature_search" | "transcription" | "translation")[]; "evidenceProfile": "basic" | "extended"; "wordMin": number | null; "wordMax": number | null; "readAt": string | null; "acknowledgedAt": string | null }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "student.portable-record.get": {
+    params: { "submissionId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "student.receipt-pdf.get": {
@@ -603,6 +624,13 @@ export type Operations = {
     success: { status: 201; body: { "id": string; "page": string; "note": string | null; "imagePath": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_input";
   };
+  "student.submission-history.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "withdrawalAllowed": boolean; "dueAt": string; "events": ({ "kind": "submission"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "afterDeadline": boolean; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null } | { "kind": "withdrawal"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "receipt": { "payload": { "receiptSchema": "ductus-submission-withdrawal-receipt-v1"; "withdrawalId": string; "submissionId": string; "submissionReceiptSha256": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "withdrawnAt": string; "dueAt": string; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "student.submission-notes.get": {
     params: { "assignmentId": string };
     query: undefined;
@@ -616,6 +644,27 @@ export type Operations = {
     body: { "assignmentId": string; "text": string };
     success: { status: 201; body: { "id": string; "text": string; "createdAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "student.submission-package-link.post": {
+    params: { "submissionId": string };
+    query: undefined;
+    body: { "kind": "package" | "referada" };
+    success: { status: 201; body: { "kind": "package" | "referada"; "downloadPath": string; "expiresAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
+  };
+  "student.submission-package.get": {
+    params: { "submissionId": string; "kind": "package" | "referada" };
+    query: { "token": string };
+    body: undefined;
+    success: { status: 200; body: undefined; headers: { "content-disposition"?: string; "cache-control"?: string; "x-content-sha256"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "not_allowed" | "unavailable";
+  };
+  "student.submission-withdrawal.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "status": "withdrawn"; "receipt": { "payload": { "receiptSchema": "ductus-submission-withdrawal-receipt-v1"; "withdrawalId": string; "submissionId": string; "submissionReceiptSha256": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "withdrawnAt": string; "dueAt": string; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "not_allowed" | "refused" | "not_started" | "conflict" | "unavailable";
   };
   "student.submission.get": {
     params: { "assignmentId": string };
@@ -757,6 +806,13 @@ export type Operations = {
     success: { status: 200; body: { "extensions": ({ "id": string; "scope": "one" | "all"; "studentId": string | null; "previousDueAt": string; "dueAt": string; "reasonId": "justified" | "technical" | "agreement" | "all" | null; "createdBy": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "not_found" | "unavailable";
   };
+  "teacher.declaration.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "state": "none"; "payload": null; "declarationSha256": null } | { "state": "bound"; "payload": { "declarationSchema": "ductura-declaration-v1"; "declarationId": string; "declarationVersion": number; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "revision": number; "form": { "formId": string; "formVersion": number; "formSha256": string }; "ownWork": { "confirmed": true }; "humanHelp": { "received": boolean; "entries": ({ "kind": "language" | "structure" | "sources" | "content" | "technical" | "other"; "text": string })[] }; "ai": { "use": "used" | "not_used"; "declaredTools": ({ "toolLabel": string; "purposeText": string; "phaseText": string })[]; "recorded": ({ "aiTransferId": string; "aiTransferSha256": string })[]; "attachments": ({ "externalAttachmentId": string; "format": "application/pdf" | "text/plain"; "byteLength": number; "contentSha256": string; "reason": "external_upload" })[] }; "confirmedAt": string }; "declarationSha256": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.fast-path.post": {
     params: undefined;
     query: undefined;
@@ -841,12 +897,33 @@ export type Operations = {
     success: { status: 200; body: { "studentId": string; "revision": number; "late": boolean; "document": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.submission-history.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "events": ({ "kind": "submission"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "afterDeadline": boolean; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null } | { "kind": "withdrawal"; "id": string; "attempt": number; "submissionId": string; "revision": number; "at": string; "receipt": { "payload": { "receiptSchema": "ductus-submission-withdrawal-receipt-v1"; "withdrawalId": string; "submissionId": string; "submissionReceiptSha256": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "withdrawnAt": string; "dueAt": string; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } | null })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
   "teacher.submission-receipt.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;
     body: undefined;
     success: { status: 200; body: { "state": "none" } | { "state": "ceka"; "revision": number; "requestedAt": string } | { "state": "potvrdeno"; "receipt": { "payload": { "receiptSchema": "ductus-submission-receipt-v2"; "submissionId": string; "evidenceDomainId": string; "principalId": string; "assignmentId": string; "assignmentVersion": number; "documentId": string; "evidencePackageId": string; "revision": number; "artifactSha256": string; "evidenceHeadSegmentHash": string; "evidenceRecord": "continuous" | "with_gaps"; "requestedAt": string; "dueAt": string; "afterDeadline": boolean; "signedAt": string }; "payloadDigestSha256": string; "signature": { "algorithm": "Ed25519"; "keyId": string; "keyVersion": string; "signatureEncoding": "raw"; "signatureBase64Url": string } } }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "unavailable" | "not_found";
+  };
+  "teacher.submission-withdrawal.get": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "allowed": boolean; "changedAt": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable";
+  };
+  "teacher.submission-withdrawal.post": {
+    params: { "assignmentId": string };
+    query: undefined;
+    body: { "allowed": boolean };
+    success: { status: 200; body: { "allowed": boolean; "changedAt": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
   "teacher.submissions.get": {
     params: { "assignmentId": string };
@@ -868,6 +945,13 @@ export type Operations = {
     body: { "assessment": 0 | 1 | 2 | null; "note": string | null };
     success: { status: 200; body: { "id": "topic" | "structure" | "sources" | "method" | "language" | "formatting"; "label": string; "assessment": 0 | 1 | 2 | null; "note": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "unavailable";
+  };
+  "work.access.get": {
+    params: { "documentId": string };
+    query: { "beforeAt"?: string; "beforeId"?: string; [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "days": ({ "date": string; "entries": ({ "id": string; "at": string; "role": "teacher" | "mentor" | "seminar_teacher" | "unknown"; "surface": "live_view" | "process_summary" | "fast_path" | "replay" | "submitted_text" | "declaration" | "unknown"; "reader": { "givenName": string; "familyName": string } | null })[] })[]; "next": { "beforeAt": string; "beforeId": string } | null; "continued": boolean }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
   "work.attachments.get": {
     params: { "attachmentId": string };

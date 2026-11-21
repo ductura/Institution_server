@@ -70,6 +70,15 @@ export const ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   ["upgrade_required", "errors.upgradeRequired"],
   ["version_conflict", "errors.versionConflict"],
   ["practice_assignment", "errors.practiceAssignment"],
+  ["already_submitted", "errors.alreadySubmitted"],
+  ["attachment_stale", "errors.attachmentStale"],
+  ["attachments_too_large", "errors.attachmentsTooLarge"],
+  ["declaration_conflict", "errors.declarationConflict"],
+  ["form_outdated", "errors.formOutdated"],
+  ["incomplete", "errors.incomplete"],
+  ["invalid_attachment", "errors.invalidAttachment"],
+  ["mandatory_attachment_missing", "errors.mandatoryAttachmentMissing"],
+  ["too_many_attachments", "errors.tooManyAttachments"],
 ]);
 
 /** The message key of a code; throws for a code the table does not have. */

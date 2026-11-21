@@ -930,6 +930,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 2
     )
   }),
+  "student-work.start.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.access-log.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1084,6 +1092,17 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "student.portable-record.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['submissionId'] === 'string') &&
+      local0.test(value['submissionId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "student.receipt-pdf.get:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1142,6 +1161,14 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.submission-history.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.submission-notes.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1164,6 +1191,55 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
     )
   }
   })(),
+  "student.submission-package-link.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['submissionId'] === 'string') &&
+      local0.test(value['submissionId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.submission-package-link.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['kind'] === 'package')) || ((value['kind'] === 'referada'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "student.submission-package.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['submissionId'] === 'string') &&
+      local0.test(value['submissionId']) &&
+      (((value['kind'] === 'package')) || ((value['kind'] === 'referada'))) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "student.submission-package.get:query": (() => {
+  const local0 = /^\d{1,15}\.[A-Za-z0-9_-]{43}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['token'] === 'string') &&
+      local0.test(value['token']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "student.submission-withdrawal.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
   "student.submission.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1382,6 +1458,16 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "teacher.declaration.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['studentId'] === 'string') &&
+      value['studentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
   "teacher.fast-path.post:body": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1490,6 +1576,16 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 2
     )
   }),
+  "teacher.submission-history.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      (typeof value['studentId'] === 'string') &&
+      value['studentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
   "teacher.submission-receipt.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
@@ -1498,6 +1594,29 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (typeof value['studentId'] === 'string') &&
       value['studentId'].length >= 1 &&
       Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "teacher.submission-withdrawal.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.submission-withdrawal.post:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      value['assignmentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.submission-withdrawal.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['allowed'] === 'boolean') &&
+      Object.getOwnPropertyNames(value).length === 1
     )
   }),
   "teacher.submissions.get:params": (function check(value: Record<string, unknown>): boolean {
@@ -1538,6 +1657,21 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       (((value['assessment'] === 0)) || ((value['assessment'] === 1)) || ((value['assessment'] === 2)) || ((value['assessment'] === null))) &&
       (((typeof value['note'] === 'string') && value['note'].length <= 2000 && value['note'].length >= 1) || ((value['note'] === null))) &&
       Object.getOwnPropertyNames(value).length === 2
+    )
+  }),
+  "work.access.get:params": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['documentId'] === 'string') &&
+      value['documentId'].length >= 1 &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "work.access.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (value['beforeAt'] !== undefined ? ((typeof value['beforeAt'] === 'string')) : true) &&
+      (value['beforeId'] !== undefined ? ((typeof value['beforeId'] === 'string')) : true)
     )
   }),
   "work.attachments.get:params": (() => {

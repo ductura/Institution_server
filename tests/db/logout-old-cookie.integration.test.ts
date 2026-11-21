@@ -22,6 +22,7 @@ import {
   createConsultationSlotRoutesFor,
   createMentorshipRequestRoutesFor,
   createMentorshipStudentRoutesFor,
+  createStudentWorkRoutesFor,
   createKeyDatesRoutesFor,
   createTeachingTeamRoutesFor,
   createMentorNotesRoutesFor,
@@ -42,6 +43,8 @@ import {
   createImportRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createPortableRecordRouteFor,
+  createSubmissionPackageRoutesFor,
   createWorkPdfRouteFor,
   createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
@@ -71,12 +74,15 @@ import {
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
   createTeacherSubmissionDetailRouteFor,
+  createTeacherDeclarationRouteFor,
   createCourseAggregateRouteFor,
   createPilotMetricsRouteFor,
   createInstitutionConfigRoutesFor,
+  createWorkAccessRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createSubmissionWithdrawalRoutesFor,
   createAssignmentCopyRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
@@ -339,6 +345,26 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1312: the portable record of a submission that is not the caller's is 404, as a missing one.
+  "student.portable-record.get": {
+    method: "GET",
+    path: `/api/v1/student/submissions/${randomUUID()}/portable-record`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1807: a link that is not this session's, or a submission that is not the caller's, is 404.
+  "student.submission-package-link.post": {
+    method: "POST",
+    path: `/api/v1/student/submissions/${randomUUID()}/package-link`,
+    body: () => ({ kind: "package" }),
+    live: 404,
+  },
+  "student.submission-package.get": {
+    method: "GET",
+    path: `/api/v1/student/submissions/${randomUUID()}/package/package?token=1763800000000.${"A".repeat(43)}`,
+    body: () => undefined,
+    live: 404,
+  },
   "work.export-pdf.get": {
     method: "GET",
     path: `/api/v1/assignments/${randomUUID()}/works/${randomUUID()}/export/pdf`,
@@ -384,6 +410,18 @@ const SESSION_ROUTES = {
   "mentorship.student-mentor-candidates.get": {
     method: "GET",
     path: "/api/v1/student/mentor-candidates",
+    body: () => undefined,
+    live: 200,
+  },
+  // SRV-1412: an assignment of no course of the account is 404; its own works are none.
+  "student-work.start.post": {
+    path: `/api/v1/assignments/${randomUUID()}/start`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student-work.works.get": {
+    method: "GET",
+    path: "/api/v1/student/works",
     body: () => undefined,
     live: 200,
   },
@@ -466,6 +504,13 @@ const SESSION_ROUTES = {
   "student.access-log.get": {
     method: "GET",
     path: `/api/v1/student/works/${randomUUID()}/access-log`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1706: the same log in days; a work that is not the caller's is 404.
+  "work.access.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/access`,
     body: () => undefined,
     live: 404,
   },
@@ -616,6 +661,13 @@ const SESSION_ROUTES = {
   "teacher.submission-receipt.get": {
     method: "GET",
     path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission`,
+    body: () => undefined,
+    live: 404,
+  },
+  // SRV-1213: a live session that may not read that declaration gets 404 (ZD403).
+  "teacher.declaration.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/declaration`,
     body: () => undefined,
     live: 404,
   },
@@ -810,6 +862,35 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1903: a live session that is not a student or teacher of such an assignment gets 404.
+  "student.submission-withdrawal.post": {
+    path: `/api/v1/student/assignments/${randomUUID()}/submission/withdrawal`,
+    body: () => undefined,
+    live: 404,
+  },
+  "student.submission-history.get": {
+    method: "GET",
+    path: `/api/v1/student/assignments/${randomUUID()}/submission/history`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submission-history.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/students/${randomUUID()}/submission-history`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submission-withdrawal.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${randomUUID()}/submission-withdrawal`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.submission-withdrawal.post": {
+    path: `/api/v1/teacher/assignments/${randomUUID()}/submission-withdrawal`,
+    body: () => ({ allowed: false }),
+    live: 404,
+  },
   // SRV-1904: a live session that teaches no such assignment gets 404.
   "teacher.assignment-copy.post": {
     path: `/api/v1/teacher/assignments/${randomUUID()}/copy`,
@@ -882,7 +963,8 @@ const SESSION_ROUTES = {
   "student.declaration-attachments.post": {
     path: `/api/v1/student/assignments/${randomUUID()}/declaration-attachments`,
     body: () => ({}),
-    live: 422,
+    // A JSON body is not PDF or plain text (declaration-v1 §7.3, SRV-1213).
+    live: 415,
   },
   "teacher.assignment-submissions.post": {
     path: "/api/v1/teacher/assignment-submissions",
@@ -1115,11 +1197,14 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
   "createWorkExportRouteFor",
+  "createPortableRecordRouteFor",
+  "createSubmissionPackageRoutesFor",
   "createWorkPdfRouteFor",
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createMentorshipRequestRoutesFor",
   "createMentorshipStudentRoutesFor",
+  "createStudentWorkRoutesFor",
   "createKeyDatesRoutesFor",
   "createTeachingTeamRoutesFor",
   "createMentorNotesRoutesFor",
@@ -1137,12 +1222,15 @@ const FACTORIES = [
   "createStaffAffiliationRouteFor",
   "createTeacherReadRoutesFor",
   "createTeacherSubmissionDetailRouteFor",
+  "createTeacherDeclarationRouteFor",
   "createCourseAggregateRouteFor",
   "createPilotMetricsRouteFor",
   "createInstitutionConfigRoutesFor",
+  "createWorkAccessRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
+  "createSubmissionWithdrawalRoutesFor",
   "createAssignmentCopyRouteFor",
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
@@ -1204,11 +1292,14 @@ const MOUNTED = [
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createWorkVersionsRouteFor(databases.main),
   createWorkExportRouteFor(databases.main),
+  createPortableRecordRouteFor(databases.main, ORIGIN),
+  ...createSubmissionPackageRoutesFor(databases.main, ORIGIN),
   createWorkPdfRouteFor(databases.main, undefined),
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createMentorshipRequestRoutesFor(databases.main),
   ...createMentorshipStudentRoutesFor(databases.main),
+  ...createStudentWorkRoutesFor(databases.main),
   ...createKeyDatesRoutesFor(databases.main),
   ...createTeachingTeamRoutesFor(databases.main),
   ...createMentorNotesRoutesFor(databases.main),
@@ -1226,11 +1317,14 @@ const MOUNTED = [
   createStaffAffiliationRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
   createTeacherSubmissionDetailRouteFor(databases.main),
+  createTeacherDeclarationRouteFor(databases.main),
   createCourseAggregateRouteFor(databases.main),
   createPilotMetricsRouteFor(databases.main),
   ...createInstitutionConfigRoutesFor(databases.main),
+  createWorkAccessRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
+  ...createSubmissionWithdrawalRoutesFor(databases.main, evidenceDeps),
   createStudentDeadlineHistoryRouteFor(databases.main),
   createAssignmentCopyRouteFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
@@ -1482,6 +1576,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("collaboration.") ||
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
+        id.startsWith("student-work.") ||
         id.startsWith("work.") ||
         id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")

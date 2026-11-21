@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2749);
+SELECT plan(2843);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -59,7 +59,8 @@ SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
   f.signature || ': private to the evidence owner')
   FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
-               ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)')) f(signature)
+               ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'),
+               ('declaration.is_fresh(declaration.statement,text,bigint,integer)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1207, ai-tools-v1 "Matrica pristupa": the tool setting, the steps, the
 -- loop reservation and the setting trail are reached only by their owner; the
@@ -119,7 +120,9 @@ SELECT bag_eq(
         'declaration.payload_conversations(text)', 'declaration.check_conversation_attachment()',
         'declaration.check_statement_attachments()',
         'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
-        'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'],
+        'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)',
+        'declaration.is_fresh(declaration.statement,text,bigint,integer)',
+        'declaration.bound_declaration_of(uuid,uuid,uuid)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -130,8 +133,9 @@ SELECT bag_eq(
      WHERE p.pronamespace = 'declaration'::regnamespace AND p.proowner <> to_regrole(r.rolname)
        AND has_function_privilege(r.rolname, p.oid, 'EXECUTE') $$,
   ARRAY['ductus_app declaration.read_statement(uuid)', 'ductus_app declaration.save_statement(uuid,jsonb,text)',
-        'ductus_app declaration.upload_attachment(uuid,text,bytea)'],
-  'only the web role executes a declaration function, and only the three student RPCs'
+        'ductus_app declaration.upload_attachment(uuid,text,bytea)',
+        'ductus_identity declaration.bound_declaration_of(uuid,uuid,uuid)'],
+  'the web role executes only the three student RPCs, and identity only the teacher''s bound-declaration helper'
 );
 SELECT is_empty(
   $$ SELECT r.rolname, p.privilege, c.relname
@@ -173,7 +177,7 @@ SELECT bag_eq(
         'course_editor', 'team_substitution', 'work_grant', 'mentorship_request', 'faculty_rule_version',
         'work_language_override', 'work_accommodation', 'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof',
         'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-        'work_milestone_deadline', 'mentor_note'],
+        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting'],
   'the institution schema holds exactly the tables of this matrix'
 );
 SELECT is_empty(
@@ -292,7 +296,8 @@ SELECT bag_eq(
     'merlin_package_download: merlin_package_download_owner ALL to ductus_identity',
     'consultation_slot: consultation_slot_owner ALL to ductus_identity',
     'work_milestone: work_milestone_owner ALL to ductus_identity',
-    'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity'
+    'work_milestone_deadline: work_milestone_deadline_owner ALL to ductus_identity',
+    'submission_withdrawal_setting: submission_withdrawal_setting_owner ALL to ductus_identity'
   ],
   'policies: the owner on every table and ductus_app for SELECT on its readable tables'
 );
@@ -328,7 +333,9 @@ SELECT bag_eq(
         'merlin_package: merlin_package_guard 27 O', 'merlin_package: merlin_package_no_truncate 34 O',
         'merlin_package: merlin_package_practice 7 O',
         'merlin_package_download: merlin_package_download_immutable 27 O',
-        'merlin_package_download: merlin_package_download_no_truncate 34 O'],
+        'merlin_package_download: merlin_package_download_no_truncate 34 O',
+        'submission_withdrawal_setting: submission_withdrawal_setting_immutable 27 O',
+        'submission_withdrawal_setting: submission_withdrawal_setting_no_truncate 34 O'],
   'triggers: immutable versions, fingerprints and bindings, the bindings derived on insert, mentorship validation, the inherited purpose catalogue, transactional notification, the institution of the parent and the operator''s administrators, all enabled'
 );
 SELECT bag_eq(
@@ -394,6 +401,7 @@ SELECT bag_eq(
     'notify_assignment_version() definer',
       'notify_published_comment() definer',
     'require_course_teacher(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
+    'require_legal_hold_admin(OUT user_id uuid, OUT institution_id uuid)',
     'is_confirmed_teacher(p_user_id uuid, p_course_id uuid)',
     'set_course_holder(p_course_id uuid, p_holder_id uuid) definer app',
     'hand_over_course(p_course_id uuid, p_holder_id uuid) definer app',
@@ -494,7 +502,11 @@ SELECT bag_eq(
     'download_merlin_package(p_assignment_id uuid, p_package_id uuid) definer app',
     'consultation_slots(p_document_id text) definer app',
     'request_consultation_slot(p_document_id text, p_starts_at timestamp with time zone) definer app',
-    'act_on_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_starts_at timestamp with time zone) definer app'
+    'act_on_consultation_slot(p_document_id text, p_slot_id uuid, p_action text, p_starts_at timestamp with time zone) definer app',
+    'refuse_withdrawal_setting_change()',
+    'withdrawal_setting_of(p_assignment_id uuid)',
+    'submission_withdrawal_setting(p_assignment_id uuid) definer app',
+    'set_submission_withdrawal(p_assignment_id uuid, p_allowed boolean) definer app'
   ],
   'functions: exact signatures, which are SECURITY DEFINER and which ductus_app may call'
 );
@@ -678,7 +690,95 @@ FROM (VALUES
   ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
   ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
 ) AS c (actor, result);
-INSERT INTO ref VALUES ('rq', pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
+-- SRV-1301 (M10.0-S1): the erasure contract. The tombstones have forced RLS
+-- and only their owner reaches them; only the retention role executes the
+-- two erasure RPCs, and the private steps belong to the two table owners.
+-- The rest (append-only, the access log guard, the tombstone) is in
+-- 180-erasure-tombstone.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND NOT EXISTS (SELECT 1 FROM aclexplode(c.relacl) a WHERE a.grantee <> c.relowner),
+  'SRV-1301: erasure has forced RLS and no privilege outside its owner')
+  FROM pg_class c WHERE c.oid = 'evidence.erasure'::regclass;
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_retention', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.erasure_append(text,text,text,uuid)', 'app.erasure_of(text,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1301: only the retention role and the owner execute the erasure RPCs'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.erasure_recorded(text,text)', 'app.access_log_hash(uuid)', 'app.access_log_erase(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1301: the private erasure steps are only for the two table owners'
+);
+SELECT is(pg_temp.ask_as(c.role, 'anon', $$ SELECT count(*)::text FROM app.erasure_of('access_log', {nobody}) $$), c.result,
+  format('SRV-1301: %s reads a tombstone: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', '42501: permission denied for function erasure_of'),
+  ('ductus_identity', '42501: permission denied for function erasure_of'),
+  ('ductus_worker', '42501: permission denied for function erasure_of'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_retention', '0')
+) AS c (role, result);
+-- SRV-1303 (M10.0-S2): the scheduled purge of ended sessions. Only the
+-- retention role and the owner of identity.session execute it; the web role
+-- does not. The cut here is a century back, so the call deletes nothing of
+-- this file's fixtures. The rest is in 181-purge-ended-sessions.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_retention', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.purge_ended_sessions(timestamptz)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1303: only the retention role and the owner execute the session purge'
+);
+SELECT is(pg_temp.ask_as(c.role, 'anon', $$ SELECT app.purge_ended_sessions(now() - interval '100 years')::text $$), c.result,
+  format('SRV-1303: %s purges ended sessions: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', '42501: permission denied for function purge_ended_sessions'),
+  ('ductus_worker', '42501: permission denied for function purge_ended_sessions'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_retention', '0')
+) AS c (role, result);
+-- SRV-1305 (M10.3): legal hold. The holds have forced RLS and only their
+-- owner reaches them; the web role runs the three administrator RPCs, the
+-- retention role only asks whether a subject is held, and no application role
+-- runs the operator's release. The rest is in 212-legal-hold.sql.
+SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
+    AND NOT EXISTS (SELECT 1 FROM aclexplode(c.relacl) a WHERE a.grantee <> c.relowner),
+  'SRV-1305: legal_hold has forced RLS and no privilege outside its owner')
+  FROM pg_class c WHERE c.oid = 'evidence.legal_hold'::regclass;
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['evidence.operator_release_legal_hold(uuid,text,text)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1305: only the owner executes the operator''s release'
+);
+SELECT is(pg_temp.ask(c.actor, 'SELECT count(*)::text FROM app.legal_holds()'), c.result,
+  format('SRV-1305: %s lists the legal holds: %s', c.actor, c.result))
+FROM (VALUES
+  ('iva', '0'), ('lea', '0'), ('vesna', 'ZD403: forbidden'), ('ana', 'ZD403: forbidden'),
+  ('tomo', 'ZD403: forbidden'), ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
+) AS c (actor, result);
+SELECT is(pg_temp.ask_as(c.role, 'iva', $$ SELECT app.is_on_legal_hold('work', 'doc-a')::text $$), c.result,
+  format('SRV-1305: %s asks whether a work is held: %s', c.role, c.result))
+FROM (VALUES
+  ('ductus_app', '42501: permission denied for function is_on_legal_hold'),
+  ('ductus_worker', '42501: permission denied for function is_on_legal_hold'),
+  ('ductus_auth', '42501: permission denied for schema app'),
+  ('ductus_retention', 'false')
+) AS c (role, result);
+INSERT INTO ref VALUES ('rq',pg_temp.ask('ana', $$ SELECT institution.request_mentorship({vesna}, 'bachelor_thesis') $$));
 SELECT matches((SELECT val FROM ref WHERE name = 'rq'), '^[0-9a-f-]{36}$', 'SRV-28: Ana asks Vesna to mentor a thesis');
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
@@ -997,6 +1097,24 @@ FROM (VALUES
   ('boris', 'null'), ('nina', 'null'), ('tomo', 'null'), ('lea', 'null'), ('petra', 'null'), ('anon', 'null')
 ) AS c (actor, result);
 
+-- 1i. SRV-1903: the withdrawal switch of an assignment
+-- (institution.submission_withdrawal_setting) only through its RPCs, only for
+-- the teacher of the assignment. The rest is in 205-submission-withdrawal.sql.
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT allowed::text FROM institution.submission_withdrawal_setting({z1})'), 1, 5),
+  c.result, format('SRV-1903: %s reads the withdrawal switch of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+SELECT is(
+  substr(pg_temp.ask(c.actor, 'SELECT allowed::text FROM institution.set_submission_withdrawal({z1}, true)'), 1, 5),
+  c.result, format('SRV-1903: %s sets the withdrawal switch of Z1: %s', c.actor, c.result))
+FROM (VALUES
+  ('vesna', 'true'), ('marko', 'ZD403'), ('iva', 'ZD403'), ('ana', 'ZD403'), ('dora', 'ZD403'),
+  ('tomo', 'ZD403'), ('petra', 'ZD403'), ('anon', 'ZD401')
+) AS c (actor, result);
+
 SELECT is(pg_temp.ask(c.actor, 'SELECT count(*) FROM institution.student_deadline_history({z1})'), c.result,
   format('SRV-1509: %s reads only the own history of Z1: %s', c.actor, c.result))
 FROM (VALUES
@@ -1085,12 +1203,13 @@ CROSS JOIN unnest(ARRAY['institution_settings', 'institution_role', 'course', 'c
                         'faculty_rule_version', 'work_language_override', 'work_accommodation',
                         'notice_read', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension',
                         'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone',
-                        'work_milestone_deadline', 'mentor_note']) WITH ORDINALITY AS t (tbl, n)
+                        'work_milestone_deadline', 'mentor_note', 'submission_withdrawal_setting'])
+                        WITH ORDINALITY AS t (tbl, n)
 CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) WITH ORDINALITY AS o (op, n);
 
 SELECT is(
   pg_temp.probe(role, 'anon', tbl, op),
-  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant') THEN 'rows=0'
+  CASE WHEN role = 'ductus_app' AND op = 'SELECT' AND tbl NOT IN ('enrollment_attempt', 'faculty_work_rule', 'notification', 'work_source', 'source_note', 'work_attachment', 'source_proof', 'deadline_extension', 'merlin_package', 'merlin_package_download', 'consultation_slot', 'work_milestone', 'work_milestone_deadline', 'course_assistant', 'submission_withdrawal_setting') THEN 'rows=0'
        WHEN role IN ('ductus_app', 'ductus_migrator') THEN 'no table privilege'
        ELSE 'no schema privilege' END,
   format('%s: %s on %s', role, op, tbl)

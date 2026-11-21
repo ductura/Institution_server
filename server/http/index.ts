@@ -9,6 +9,7 @@ export { createCollaborationCommentsRouteFor } from "./collaboration-comments/in
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
 export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
 export { createMentorshipStudentRoutesFor } from "./mentorship/index.ts";
+export { createStudentWorkRoutesFor } from "./student-work/index.ts";
 export { createKeyDatesRoutesFor } from "./key-dates/index.ts";
 export { createTeachingTeamRoutesFor } from "./teaching-team/index.ts";
 export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
@@ -23,16 +24,22 @@ export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteri
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
 export { createInstitutionConfigRoutesFor } from "./institution-config/index.ts";
+export { createWorkAccessRoute, createWorkAccessRouteFor } from "./access-log/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
 export { createStudentDeadlineHistoryRouteFor } from "./student-deadline-history.ts";
 export {
+  createSubmissionWithdrawalRoutes,
+  createSubmissionWithdrawalRoutesFor,
+} from "./submissions/index.ts";
+export {
   createAssignmentCopyRoute,
   createAssignmentCopyRouteFor,
 } from "./assignment-copy/index.ts";
 export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
+export { createTeacherDeclarationRouteFor } from "./teacher-declaration/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,
@@ -49,7 +56,12 @@ export {
   type ClientContextOptions,
 } from "./client-context.ts";
 export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
-export { createWorkPdfRouteFor } from "./export/index.ts";
+export {
+  createSubmissionPackageRoutes,
+  createSubmissionPackageRoutesFor,
+  createWorkPdfRouteFor,
+  type SubmissionPackageRouteDeps,
+} from "./export/index.ts";
 export {
   finishLogin,
   LOGIN_COOKIE_NAME,
@@ -172,6 +184,7 @@ export {
   sendHtmlProblem,
   sendDeclaredResponse,
   sendProblem,
+  sendProblemWith,
   sendRouteRefusal,
   type Problem,
 } from "./problem.ts";
@@ -303,6 +316,10 @@ export {
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
 export { createWorkExportRoute, createWorkExportRouteFor } from "./work-export/index.ts";
+export {
+  createPortableRecordRoute,
+  createPortableRecordRouteFor,
+} from "./portable-record/index.ts";
 export { createWorkVersionRouteFor } from "./time-machine/index.ts";
 export {
   createCommentBankRoutes,

@@ -19,6 +19,7 @@ import { COURSE_SETUP_HANDLERS } from "./course-setup-routes.ts";
 import { INSTITUTION_HANDLERS } from "./institution-routes.ts";
 import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
+import { STUDENT_WORK_HANDLERS } from "./student-work-routes.ts";
 import { SOURCE_NOTE_HANDLERS } from "./source-notebook-routes.ts";
 import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import { COMMENTS_HANDLERS } from "./comments-routes.ts";
@@ -29,11 +30,15 @@ import { IMPORT_HANDLERS } from "./import-routes.ts";
 import { ASSIGNMENT_COPY_HANDLERS } from "./assignment-copy-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
+import { SUBMISSION_WITHDRAWAL_HANDLERS } from "./submission-withdrawal-routes.ts";
 import { OPS_HANDLERS } from "./ops-routes.ts";
 import { INSTITUTION_CONFIG_HANDLERS } from "./institution-config-routes.ts";
+import { ACCESS_LOG_HANDLERS } from "./access-log-routes.ts";
 import { MENTOR_NOTES_HANDLERS } from "./mentor-notes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
 import { WORK_EXPORT_HANDLERS } from "./work-export-routes.ts";
+import { PORTABLE_RECORD_HANDLERS } from "./portable-record-routes.ts";
+import { SUBMISSION_PACKAGE_HANDLERS } from "./submission-package-routes.ts";
 import type { Handlers } from "./server.ts";
 
 type SourceLookupBody = Operations["sources.lookup.post"]["success"]["body"];
@@ -75,6 +80,7 @@ export const DEV_HANDLERS: Handlers = {
   ...INSTITUTION_HANDLERS,
   ...COURSE_SETUP_HANDLERS,
   ...STUDENT_HANDLERS,
+  ...STUDENT_WORK_HANDLERS,
   ...SOURCE_NOTE_HANDLERS,
   ...TEACHER_HANDLERS,
   ...SETTINGS_HANDLERS,
@@ -89,6 +95,8 @@ export const DEV_HANDLERS: Handlers = {
   ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,
   ...WORK_EXPORT_HANDLERS,
+  ...PORTABLE_RECORD_HANDLERS,
+  ...SUBMISSION_PACKAGE_HANDLERS,
   ...MESSAGES_HANDLERS,
   ...NOTIFICATION_HANDLERS,
   ...COMMENTS_HANDLERS,
@@ -97,8 +105,10 @@ export const DEV_HANDLERS: Handlers = {
   ...ASSIGNMENT_COPY_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
+  ...SUBMISSION_WITHDRAWAL_HANDLERS,
   ...OPS_HANDLERS,
   ...INSTITUTION_CONFIG_HANDLERS,
+  ...ACCESS_LOG_HANDLERS,
   "work.export-pdf.get": ({ state, account, params }) => {
     if (account === null) return { error: "unauthorized" };
     const work = state.works.find(

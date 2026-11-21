@@ -81,6 +81,39 @@ export function sendProblem(
   headers: { readonly allow?: string } = {},
 ): void {
   const spec = knownError(status, code) ?? INTERNAL.error;
+  const extra: Record<string, string> = headers.allow === undefined ? {} : { allow: headers.allow };
+  answerProblem(response, spec, {}, extra);
+}
+
+const SERVER_SPECS: ReadonlySet<ErrorSpec> = new Set(SERVER_ERRORS);
+
+/**
+ * Answers a contract error whose body names more than the problem fields
+ * (declaration-v1 §7.3: currentVersion, currentRevision, conversationIds).
+ * The spec comes from the route's own contract, because one status and code
+ * can have different bodies on different routes. The whole body is checked
+ * against the spec; a body outside it, or a spec the server does not answer,
+ * becomes 500 internal, so a field never leaves unchecked.
+ */
+export function sendProblemWith(
+  response: ServerResponse,
+  spec: ErrorSpec,
+  fields: Readonly<Record<string, unknown>>,
+): void {
+  const schema = spec.body;
+  const known =
+    SERVER_SPECS.has(spec) &&
+    typeof schema === "object" &&
+    Value.Check(schema, { ...fields, ...problemOfSpec(spec, requestIdOf(response)) });
+  answerProblem(response, known ? spec : INTERNAL.error, known ? fields : {}, {});
+}
+
+function answerProblem(
+  response: ServerResponse,
+  spec: ErrorSpec,
+  fields: Readonly<Record<string, unknown>>,
+  extra: Record<string, string>,
+): void {
   if (!response.headersSent) {
     for (const name of response.getHeaderNames()) if (!KEPT.has(name)) response.removeHeader(name);
     // Trailers are kept apart from the headers; adding none clears them.
@@ -89,8 +122,7 @@ export function sendProblem(
   }
   answering.add(response);
   const requestId = requestIdOf(response);
-  const body = problemOfSpec(spec, requestId);
-  const extra: Record<string, string> = headers.allow === undefined ? {} : { allow: headers.allow };
+  const body = { ...fields, ...problemOfSpec(spec, requestId) };
   writeJson(response, spec.status, body, extra);
 }
 

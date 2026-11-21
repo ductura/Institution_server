@@ -84,3 +84,10 @@ export function createWorkPdfRouteFor(
 ): Route {
   return createWorkPdfRoute(readPdfSource(main.withActor), localPdfConverter(rendererOrigin));
 }
+
+// SRV-1807: the 24 hour link to the export package and the confirmation for the registrar.
+export {
+  createSubmissionPackageRoutes,
+  createSubmissionPackageRoutesFor,
+  type SubmissionPackageRouteDeps,
+} from "./submission-package.ts";
