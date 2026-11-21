@@ -67,6 +67,23 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  // SRV-1407 (Plan M2, D-204): the moves of one mentorship request.
+  "app/api/mentorship-requests/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/mentorship-requests/[requestId]/approve/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/mentorship-requests/[requestId]/decline/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
+  "app/api/mentorship-requests/[requestId]/withdraw/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063357354",
+  },
   "app/api/student/assistant/requests/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7056107180",
