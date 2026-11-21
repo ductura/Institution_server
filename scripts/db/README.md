@@ -14,3 +14,9 @@ Docker put: `pnpm db:up` diže samo servis `postgres-main` iz `compose.yaml` i p
 Testovi: `migrations-ledger.test.ts` (uključuje provjeru da svježe izračunata knjiga bajt-za-bajt odgovara `db/main/migrations.sum`), `migrate-locked.test.ts` (lažni klijent i lažni dbmate, pravi dbmate samo za provjeru signala), `tests/db/migration-versions.test.ts` (nijedna verzija dvaput), `native-db.test.ts` i `provision-*.test.ts` (bez baze), `local-stack.test.ts` (skripte u `package.json` i `compose.yaml`) i `local-files.test.ts` (LF). Na pravom PostgreSQL-u (vitest projekt `database`, posao `database` u CI-ju): `tests/db/migrate-lock.integration.test.ts` (zaključavanje), 11 `tests/db/*-migration.integration.test.ts`, preneseni iz Ductusa `tests/integration` na `d52a92c3` s istim tvrdnjama, i `tests/db/local-roles.integration.test.ts` (uloge nakon `pnpm db:up:native` na vlastitom klasteru).
 
 Dolazi kasnije: pgTAP (S-0.15).
+
+## SRV-1409 / DAN-379 (M2.8)
+
+Migracija [20261126100400_co_mentor_committee.sql](../../db/main/migrations/20261126100400_co_mentor_committee.sql) koristi postojeće vremenski ograničene dodjele po radu i radnji iz `institution.work_grant`. Mentor čita kroz mentorski odnos, a sumentor čita prije i poslije predaje kad mu je dodijeljena radnja `read_text`. Predaju rada upisuje student. Dodjela povjerenstvu na mentorstvu otvara pristup predanom dokumentu nakon upisa predaje.
+
+Korisničko sučelje za sumentora i povjerenstvo dolazi u M6.12 nakon odluke U-1 o prikazu sadržaja. Lokalni `dbmate down` vraća prethodnu odluku o pristupu.
