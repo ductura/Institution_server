@@ -13,8 +13,11 @@ import type { AttachmentStorage } from "./storage.ts";
 
 type AddRefusal = Exclude<WorkAttachmentAdd, { status: "added" }>;
 class Refused extends Error {
-  constructor(readonly result: AddRefusal) {
+  readonly result: AddRefusal;
+
+  constructor(result: AddRefusal) {
     super(result.status);
+    this.result = result;
   }
 }
 
