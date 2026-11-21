@@ -324,6 +324,7 @@ export {
 } from "./merlin-packages/index.ts";
 export {
   createWorkVersionsReader,
+  pageOf as workVersionsPageOf,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
   type WorkVersionsPage,
@@ -563,6 +564,14 @@ export async function closePools(): Promise<void> {
   await registry.close();
 }
 export {
+  createCommentDelay,
+  type CommentDelay,
+  type CommentDelayRefusal,
+  type CommentDelayResult,
+  type CommentDraft,
+  type WorkReviewState,
+} from "./comment-delay/index.ts";
+export {
   createWorkMessages,
   type WorkMessage,
   type WorkMessageCreated,
@@ -584,6 +593,18 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+
+export {
+  checkExternalAttachmentBytes,
+  createStatementPort,
+  incompleteFields,
+  isExternalFormat,
+  parseDeclarationFormFile,
+  parseDeclarationPutBody,
+  type FormReader,
+  type StatementOperation,
+  type StatementPort,
+} from "./statement/index.ts";
 export {
   createDirectEdits,
   type DirectEditEntry,

@@ -307,6 +307,10 @@ ALTER TABLE assistant.conversation DISABLE TRIGGER conversation_no_truncate;
 ALTER TABLE assistant.request DISABLE TRIGGER request_no_truncate;
 ALTER TABLE assistant.message DISABLE TRIGGER message_no_truncate;
 ALTER TABLE assistant.cost_ledger DISABLE TRIGGER cost_ledger_no_truncate;
+-- Declarations, their uploads and conversation attachments reference evidence projects of the assignment.
+ALTER TABLE declaration.statement DISABLE TRIGGER statement_no_truncate;
+ALTER TABLE declaration.external_attachment DISABLE TRIGGER attachment_no_truncate;
+ALTER TABLE declaration.conversation_attachment DISABLE TRIGGER conversation_attachment_no_truncate;
 -- The record of an import (SRV-1803) references the assignment; it is append only.
 ALTER TABLE collaboration.import_event DISABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation DISABLE TRIGGER import_confirmation_no_truncate;
@@ -319,6 +323,9 @@ ALTER TABLE evidence.submission_note ENABLE TRIGGER submission_note_no_truncate;
 ALTER TABLE institution.work_attachment ENABLE TRIGGER work_attachment_no_truncate;
 ALTER TABLE institution.deadline_extension ENABLE TRIGGER deadline_extension_no_truncate;
 ALTER TABLE assistant.cost_ledger ENABLE TRIGGER cost_ledger_no_truncate;
+ALTER TABLE declaration.statement ENABLE TRIGGER statement_no_truncate;
+ALTER TABLE declaration.external_attachment ENABLE TRIGGER attachment_no_truncate;
+ALTER TABLE declaration.conversation_attachment ENABLE TRIGGER conversation_attachment_no_truncate;
 ALTER TABLE collaboration.import_event ENABLE TRIGGER import_event_no_truncate;
 ALTER TABLE collaboration.import_confirmation ENABLE TRIGGER import_confirmation_no_truncate;
 ALTER TABLE assistant.message ENABLE TRIGGER message_no_truncate;

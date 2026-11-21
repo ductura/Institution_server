@@ -67,6 +67,7 @@ export const AREA_IMPORTS: Readonly<Record<string, readonly string[]>> = {
     "import",
   ],
   "test-server": ["http", "settings"],
+  tests: ["domain", "downloads"],
 };
 /** The entry point: files directly in server/ (server.ts; today index.ts and app.ts). */
 export const ENTRY = "(entry)";

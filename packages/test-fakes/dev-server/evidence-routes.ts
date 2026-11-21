@@ -87,6 +87,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
         submittedAt: null,
         submissionReceipt: null,
         document: EMPTY_DOCUMENT,
+        versionSnapshots: new Map(),
         segments: [],
         lastSequenceTo: 0,
         transactions: new Map(),
@@ -176,6 +177,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
     work.segments.push(bytes.toString("utf8"));
     work.revision = revision;
     work.document = body.document;
+    work.versionSnapshots.set(revision, body.document);
     work.lastSequenceTo = segment.sequenceTo;
     work.lastChangeAt = now.toISOString();
     work.transactions.set(body.clientTransactionId, { receipt: signedReceipt, documentHash });

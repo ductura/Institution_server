@@ -6,6 +6,7 @@ import "../guard/index.ts";
 import type { Operations } from "../../contracts/index.ts";
 import { ACCOUNT_HANDLERS } from "./account-routes.ts";
 import { ASSISTANT_HANDLERS } from "./assistant-routes.ts";
+import { STATEMENT_HANDLERS } from "./statement-routes.ts";
 import { ATTACHMENT_HANDLERS } from "./attachment-routes.ts";
 import { COLLABORATION_HANDLERS } from "./collaboration-routes.ts";
 import { CONSULTATION_SLOT_HANDLERS } from "./consultation-slots.ts";
@@ -16,6 +17,7 @@ import { INSTITUTION_HANDLERS } from "./institution-routes.ts";
 import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
 import { TEACHER_HANDLERS } from "./teacher-routes.ts";
+import { COMMENTS_HANDLERS } from "./comments-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
 import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { IMPORT_HANDLERS } from "./import-routes.ts";
@@ -69,12 +71,36 @@ export const DEV_HANDLERS: Handlers = {
   ...COLLABORATION_HANDLERS,
   ...CONSULTATION_SLOT_HANDLERS,
   ...ASSISTANT_HANDLERS,
+  ...STATEMENT_HANDLERS,
   ...VERSIONS_HANDLERS,
   ...MESSAGES_HANDLERS,
+  ...COMMENTS_HANDLERS,
   ...DIRECT_EDIT_HANDLERS,
   ...IMPORT_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
+  "work.export-pdf.get": ({ state, account, params }) => {
+    if (account === null) return { error: "unauthorized" };
+    const work = state.works.find(
+      (item) => item.assignmentId === params.assignmentId && item.documentId === params.documentId,
+    );
+    if (work === undefined) return { error: "not_found" };
+    const mentorsWork =
+      account.roles.includes("teacher") &&
+      state.mentorships.some(
+        (item) =>
+          item.assignmentId === work.assignmentId &&
+          item.documentId === work.documentId &&
+          item.mentorId === account.id,
+      );
+    if (work.studentId !== account.id && !mentorsWork) return { error: "not_found" };
+    return {
+      status: 200,
+      body: successBody(
+        "work.export-pdf.get",
+      ) as Operations["work.export-pdf.get"]["success"]["body"],
+    };
+  },
   "sources.lookup.post": ({ account, body }) => {
     if (!account?.roles.includes("student")) return { error: "forbidden" };
     const match =

@@ -216,7 +216,65 @@ const SUBMIT: Step = {
 };
 const SUBMIT_STEPS = [commit("izmisljena-transakcija-1", 0), SUBMIT];
 
+// SRV-1703: an invented draft and an invented bank entry. The fake numbers
+// what it stores in order (comments-routes.ts nextId): the first draft is
+// thread 1 and comment 2, the first bank entry id 1.
+const DRAFT_COMMENT_ID = "c1700000-0000-4000-8000-000000000002";
+const BANK_ENTRY_ID = "c1700000-0000-4000-8000-000000000001";
+const DRAFT_STEP: Step = {
+  path: `/api/v1/works/${IDS.document}/comment-drafts`,
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: {
+    text: "Izmišljena napomena o izvoru.",
+    anchor: {
+      nodeId: "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c02",
+      quote: "izmišljeni odlomak",
+      prefix: "",
+      suffix: "",
+      startHint: 0,
+      endHint: 18,
+    },
+  },
+};
+const BANK_STEP: Step = {
+  path: "/api/v1/teacher/comment-bank",
+  as: "nastavnik",
+  headers: ORIGIN,
+  body: { text: "Izmišljeno: navedite izvor.", kind: "must" },
+};
+
 const SCENARIOS: Record<RouteId, Scenario> = {
+  "student.declaration.get": {
+    request: { path: `/api/v1/student/assignments/${IDS.assignment}/declaration`, as: "student" },
+  },
+  "student.declaration.put": {
+    before: [commit("c0000000-0000-4000-8000-000000000197", 0)],
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration`,
+      as: "student",
+      method: "PUT",
+      headers: ORIGIN,
+      body: {
+        baseVersion: 0,
+        revision: 1,
+        form: { formId: "test-izjava", formVersion: 1, formSha256: "a".repeat(64) },
+        ownWork: { confirmed: false },
+        humanHelp: { received: false, entries: [] },
+        ai: { use: null, declaredTools: [], attachments: [], externalAttachmentIds: [] },
+        confirm: false,
+      },
+    },
+  },
+  "student.declaration-attachments.post": {
+    request: {
+      path: `/api/v1/student/assignments/${IDS.assignment}/declaration-attachments`,
+      as: "student",
+      method: "POST",
+      headers: { ...ORIGIN, "content-type": "text/plain" },
+      raw: "Izmišljeni ispis",
+    },
+  },
   "student.assistant-request.post": {
     request: {
       path: "/api/v1/student/assistant/requests",
@@ -625,6 +683,17 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
   },
+  "work.export-pdf.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: {
+      path: `/api/v1/assignments/${IDS.assignment}/works/${IDS.document}/export/pdf`,
+      as: "student",
+    },
+  },
+  "work.version.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/versions/1`, as: "student" },
+  },
   "work.messages.get": {
     before: [
       {
@@ -670,6 +739,55 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       as: "student",
       body: { text: "Izmišljena poruka." },
     },
+  },
+  // SRV-1703 (D-51, N-03, N-05): delayed comments, the comment bank and the review mark.
+  "work.comment-drafts.get": {
+    before: [DRAFT_STEP],
+    request: { path: `/api/v1/works/${IDS.document}/comment-drafts`, as: "nastavnik" },
+  },
+  "work.comment-drafts.post": { request: DRAFT_STEP },
+  "work.comment-draft.delete": {
+    before: [DRAFT_STEP],
+    request: {
+      path: `/api/v1/comment-drafts/${DRAFT_COMMENT_ID}`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "work.comments.publish.post": {
+    before: [DRAFT_STEP],
+    request: {
+      path: `/api/v1/works/${IDS.document}/comments/publish`,
+      as: "nastavnik",
+      headers: ORIGIN,
+    },
+  },
+  "teacher.comment-bank.get": {
+    before: [BANK_STEP],
+    request: { path: "/api/v1/teacher/comment-bank", as: "nastavnik" },
+  },
+  "teacher.comment-bank.post": { request: BANK_STEP },
+  "teacher.comment-bank.delete": {
+    before: [BANK_STEP],
+    request: {
+      path: `/api/v1/teacher/comment-bank/${BANK_ENTRY_ID}`,
+      as: "nastavnik",
+      method: "DELETE",
+      headers: ORIGIN,
+    },
+  },
+  "work.review.post": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: {
+      path: `/api/v1/works/${IDS.document}/review`,
+      as: "nastavnik",
+      headers: ORIGIN,
+    },
+  },
+  "work.changes-since-review.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/changes-since-review`, as: "nastavnik" },
   },
   "teacher.assignment-submissions.post": {
     request: {

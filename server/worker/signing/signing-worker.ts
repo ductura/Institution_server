@@ -97,7 +97,7 @@ export type ReceiptSigningPass = {
 };
 
 export type ReceiptSigningWorker = {
-  /** One pass now; a pass already running is joined, never run twice at once. */
+  /** Join a running pass or start one now. Returns null when stopped and idle. */
   runPass(): Promise<ReceiptSigningPass | null>;
   /** The recovery pass now, then a pass every `intervalMs` until `stop`. */
   start(): void;
@@ -261,6 +261,7 @@ export function createReceiptSigningWorker(deps: ReceiptSigningWorkerDeps): Rece
 
   function runPass(): Promise<ReceiptSigningPass | null> {
     if (running === null) {
+      if (stopped) return Promise.resolve(null);
       running = pass().finally(() => {
         running = null;
       });

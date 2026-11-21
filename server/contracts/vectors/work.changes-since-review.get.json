@@ -1,0 +1,167 @@
+{
+  "route": "work.changes-since-review.get",
+  "vectors": [
+    {
+      "name": "no-baseline",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        },
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reviewedRevision": null,
+          "currentRevision": 4,
+          "changed": false,
+          "blocks": []
+        }
+      }
+    },
+    {
+      "name": "nothing-changed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        },
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reviewedRevision": 4,
+          "currentRevision": 4,
+          "changed": false,
+          "blocks": []
+        }
+      }
+    },
+    {
+      "name": "changed",
+      "kind": "success",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        },
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "body": {
+          "reviewedRevision": 2,
+          "currentRevision": 4,
+          "changed": true,
+          "blocks": [
+            {
+              "kind": "heading",
+              "level": 1,
+              "text": "Izmišljeni naslov",
+              "change": "unchanged"
+            },
+            {
+              "kind": "paragraph",
+              "text": "Izmišljeni stari odlomak.",
+              "change": "removed"
+            },
+            {
+              "kind": "paragraph",
+              "text": "Izmišljeni novi odlomak.",
+              "change": "added"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unauthorized",
+      "kind": "error",
+      "code": "unauthorized",
+      "request": {
+        "headers": {},
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json",
+        "body": {
+          "error": "unauthorized",
+          "code": "unauthorized",
+          "messageKey": "errors.unauthorized",
+          "status": 401,
+          "requestId": "00000000-0000-4000-8000-00000000c152"
+        }
+      }
+    },
+    {
+      "name": "not-found",
+      "kind": "error",
+      "code": "not_found",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        },
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "not_found",
+          "code": "not_found",
+          "messageKey": "errors.notFound",
+          "status": 404,
+          "requestId": "00000000-0000-4000-8000-00000000c153"
+        }
+      }
+    },
+    {
+      "name": "unavailable",
+      "kind": "error",
+      "code": "unavailable",
+      "request": {
+        "headers": {
+          "cookie": "__Host-ductus_session=izmisljeni-token-poruka-00000000000000000001"
+        },
+        "params": {
+          "documentId": "izmisljeni-rad-0001"
+        }
+      },
+      "response": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": "unavailable",
+          "code": "unavailable",
+          "messageKey": "errors.unavailable",
+          "status": 503,
+          "requestId": "00000000-0000-4000-8000-00000000c154"
+        }
+      }
+    }
+  ]
+}
