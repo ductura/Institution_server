@@ -411,8 +411,9 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // Faza 3: the student's assignment list, own access log of a work that is not
-  // theirs (404), an unknown enrolment code (422 invalid_code) and the notice of
-  // an assignment the session cannot see (404).
+  // theirs (404), enrolment by code (503: this institution is inserted without
+  // provisioning, so it has no institution_settings row and the RPC raises ZD503)
+  // and the notice of an assignment the session cannot see (404).
   "student.assignments.get": {
     method: "GET",
     path: "/api/v1/student/assignments",
@@ -428,7 +429,7 @@ const SESSION_ROUTES = {
   "student.enrollments.post": {
     path: "/api/v1/student/enrollments",
     body: () => ({ code: "IZMISLJENI-KOD-1" }),
-    live: 422,
+    live: 503,
   },
   "student.notice-read.post": {
     path: `/api/v1/student/assignments/${ASSIGNMENT}/notice-read`,
