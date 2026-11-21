@@ -16,9 +16,21 @@ import {
   type CanonicalDocumentV2,
   type DocumentNodeV2,
 } from "../../domain/index.ts";
-import { cleanText } from "../docx/convert.ts";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { WorkerMessageHandler as workerMessageHandler } from "pdfjs-dist/legacy/build/pdf.worker.mjs";
+
+import { cleanText } from "../docx/index.ts";
 
 import { scanRawPdf } from "./active-content.ts";
+
+// PDF.js in node runs its own worker code in this thread and finds it by an
+// import() of ./pdf.worker.mjs next to pdf.mjs, which a bundle does not have
+// (dist/pdf-import-worker.js). Handing it the handler it would load makes the
+// bundle work like the sources, with no file read at run time.
+declare global {
+  var pdfjsWorker: unknown;
+}
+globalThis.pdfjsWorker = Object.fromEntries([["WorkerMessageHandler", workerMessageHandler]]);
 
 export type PdfRead =
   | {
@@ -54,8 +66,10 @@ const isTextItem = (item: unknown): item is TextItem =>
   Array.isArray((item as TextItem).transform);
 
 class Refused extends Error {
-  constructor(readonly code: ImportReadRejectCode) {
+  readonly code: ImportReadRejectCode;
+  constructor(code: ImportReadRejectCode) {
     super(code);
+    this.code = code;
   }
 }
 
@@ -98,7 +112,6 @@ function paragraphsOf(items: unknown[]): string[] {
 }
 
 async function extract(bytes: Uint8Array, limits: ImportReadLimitsV1): Promise<string[]> {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const task = pdfjs.getDocument({
     // A copy: PDF.js takes ownership of the buffer it is given.
     data: new Uint8Array(bytes),

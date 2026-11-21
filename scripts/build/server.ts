@@ -2,13 +2,18 @@
 // (S-1B-a, DAN-775). Dependencies are bundled, so the file runs with node and
 // nothing else; pg-native stays out because pg loads it only on request.
 import { realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { build, type Plugin } from "esbuild";
+import { build, type BuildOptions, type Plugin } from "esbuild";
 
 export const ENTRY = "server/server.ts";
 export const OUTFILE = "dist/server.js";
+// The PDF reader's thread (SRV-1804B, import-contract D4): a second, static
+// entry built next to the server file, where server/import/pdf/worker.ts looks
+// for it (`new URL("./pdf-import-worker.js", import.meta.url)`).
+export const PDF_WORKER_ENTRY = "server/import/pdf/worker-thread.ts";
+export const PDF_WORKER_FILE = "pdf-import-worker.js";
 
 /**
  * Bundles the entry into `outfile`; the root is the repository. `plugins` is
@@ -20,10 +25,8 @@ export async function buildServer(
   outfile: string = OUTFILE,
   plugins: readonly Plugin[] = [],
 ): Promise<void> {
-  await build({
+  const shared: BuildOptions = {
     absWorkingDir: root,
-    entryPoints: [ENTRY],
-    outfile,
     bundle: true,
     platform: "node",
     format: "esm",
@@ -35,6 +38,12 @@ export async function buildServer(
     },
     logLevel: "warning",
     plugins: [...plugins],
+  };
+  await build({ ...shared, entryPoints: [ENTRY], outfile });
+  await build({
+    ...shared,
+    entryPoints: [PDF_WORKER_ENTRY],
+    outfile: join(dirname(resolve(root, outfile)), PDF_WORKER_FILE),
   });
 }
 

@@ -87,8 +87,17 @@ function runtimeProblems(body: Instruction[]): string[] {
     ?.args.split(":")[0];
   if (user === undefined || user === "root" || /^0+$/.test(user)) out.push("root");
   const copies = body.filter((i) => i.op === "COPY" || i.op === "ADD");
-  const onlyBundle = /^--from=build\s+\S+\/dist\/server\.js\s+dist\/server\.js$/;
-  if (copies.length !== 1 || !copies.every((i) => i.op === "COPY" && onlyBundle.test(i.args))) {
+  // The bundle and the PDF reader's thread, each one exact COPY (SRV-1804B): no
+  // wildcard, no whole dist/.
+  const bundle = /^--from=build\s+\S+\/dist\/server\.js\s+dist\/server\.js$/;
+  const thread = /^--from=build\s+\S+\/dist\/pdf-import-worker\.js\s+dist\/pdf-import-worker\.js$/;
+  if (
+    copies.length !== 2 ||
+    copies[0]?.op !== "COPY" ||
+    copies[1]?.op !== "COPY" ||
+    !bundle.test(copies[0].args) ||
+    !thread.test(copies[1].args)
+  ) {
     out.push("final copies more than the bundle");
   }
   if (body.some((i) => i.op === "RUN")) out.push("final runs a command");
@@ -178,6 +187,32 @@ describe("infra/web/Dockerfile", () => {
     [
       "a copy from another stage",
       replace("COPY --from=build /src/dist", "COPY --from=test-server /src/dist"),
+      "final copies more than the bundle",
+    ],
+    [
+      "a wildcard copy of dist",
+      replace(
+        "COPY --from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js",
+        "COPY --from=build /src/dist/*.js dist/",
+      ),
+      "final copies more than the bundle",
+    ],
+    [
+      "the whole dist",
+      replace(
+        "COPY --from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js",
+        "COPY --from=build /src/dist dist",
+      ),
+      "final copies more than the bundle",
+    ],
+    [
+      "another file next to the thread",
+      replace("dist/pdf-import-worker.js dist/pdf-import-worker.js", "dist/other.js dist/other.js"),
+      "final copies more than the bundle",
+    ],
+    [
+      "no thread",
+      replace("COPY --from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js\n", ""),
       "final copies more than the bundle",
     ],
     ["an install", before("RUN npm install --omit=dev"), "final runs a command"],

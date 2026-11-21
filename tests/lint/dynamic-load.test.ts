@@ -422,7 +422,111 @@ const failing: Case[] = [
   ]),
 ];
 
+// SRV-1804B (Ductus#2052 c.7065146539 and c.7065267371): the PDF reader's host
+// and thread files, the exact paths that may import Worker, parentPort and
+// workerData, export only the async readPdfInWorker and use import.meta.url
+// only for the two listed URLs.
+const PDF_HOST = "server/import/pdf/worker.ts";
+const PDF_THREAD = "server/import/pdf/worker-thread.ts";
+const PDF_HOST_CODE = readFileSync(path.join(ROOT, PDF_HOST), "utf8");
+const PDF_THREAD_CODE = readFileSync(path.join(ROOT, PDF_THREAD), "utf8");
+const hostWith = (tail: string): string => `import { Worker } from "${WT}";\n${tail}`;
+const pdfFailing: Case[] = [
+  // The same code under any other name or path.
+  ...[
+    "server/import/pdf/worker2.ts",
+    "server/import/pdf/Worker.ts",
+    "server/import/pdf/worker.ts-extra.ts",
+    "server/import/worker.ts",
+    "server/import/pdf/sub/worker.ts",
+    "server/import/pdf/other.ts",
+  ].flatMap((file) => at(file, "module", [PDF_HOST_CODE])),
+  ...[
+    "server/import/pdf/worker-thread2.ts",
+    "server/import/pdf/Worker-thread.ts",
+    "server/import/pdf/other-thread.ts",
+  ].flatMap((file) => at(file, "module", [PDF_THREAD_CODE])),
+  // The thread file does not take Worker, the host does not take the port.
+  ...at(PDF_THREAD, "module", [`import { Worker } from "${WT}";\nvoid Worker;\n`]),
+  ...at(PDF_HOST, "module", [
+    `import { parentPort } from "${WT}";\nvoid parentPort;\n`,
+    `import { workerData } from "${WT}";\nvoid workerData;\n`,
+    `import { Worker as W } from "${WT}";\nvoid W;\n`,
+    `import * as wt from "${WT}";\nvoid wt;\n`,
+    `import { isMainThread } from "${WT}";\nvoid isMainThread;\n`,
+  ]),
+  // Exports of the host: only `export async function readPdfInWorker`.
+  ...at(PDF_HOST, "nodeExport", [
+    hostWith("export { Worker };\n"),
+    hostWith("export const W = Worker;\n"),
+    hostWith("void Worker;\nexport const readPdfInWorker = async (): Promise<void> => {};\n"),
+    hostWith("void Worker;\nexport function readPdfInWorker(): void {}\n"),
+    hostWith("void Worker;\nexport async function other(): Promise<void> {}\n"),
+    hostWith("void Worker;\nexport async function* readPdfInWorker(): AsyncGenerator<void> {}\n"),
+    hostWith(
+      "void Worker;\nexport async function readPdfInWorker(): Promise<void> {}\nexport const x = 1;\n",
+    ),
+    hostWith("void Worker;\nexport type T = number;\n"),
+    hostWith('void Worker;\nexport { readPdfInWorker } from "./y.ts";\n'),
+    hostWith("void Worker;\nexport default 1;\n"),
+  ]),
+  ...at(PDF_THREAD, "nodeExport", [
+    `import { parentPort } from "${WT}";\nvoid parentPort;\nexport const p = 1;\n`,
+    `import { parentPort } from "${WT}";\nexport { parentPort };\n`,
+    `import { parentPort } from "${WT}";\nvoid parentPort;\nexport async function readPdfInWorker(): Promise<void> {}\n`,
+  ]),
+  // Worker only as `new Worker(...)`.
+  ...at(PDF_HOST, "workerUse", [
+    hostWith("export const w = [Worker];\n"),
+    hostWith("const w = Worker;\nvoid w;\n"),
+    hostWith("void Worker.name;\n"),
+    hostWith("void Worker();\n"),
+  ]),
+  // import.meta.url only in the two listed URLs.
+  ...at(PDF_HOST, "metaUrl", [
+    'export const u = new URL("./other.js", import.meta.url);\n',
+    'export const u = new URL("./worker-thread.ts ", import.meta.url);\n',
+    'export const u = new URL("../worker-thread.ts", import.meta.url);\n',
+    "export const u = import.meta.url;\n",
+    "export const u = new URL(`./worker-thread.ts`, import.meta.url);\n",
+    'const n = "./worker-thread.ts";\nexport const u = new URL(n, import.meta.url);\n',
+    'export const u = new URL("./worker-thread.ts", import.meta.url, 1);\n',
+    'export const u = new URL("./worker-thread.ts", String(import.meta.url));\n',
+    'export const u = new URL(import.meta.url, "./worker-thread.ts");\n',
+    'export const u = new Foo("./worker-thread.ts", import.meta.url);\n',
+  ]),
+  ...at(PDF_HOST, "global", [
+    'export const r = import.meta.resolve("./worker-thread.ts");\n',
+    "export const e = process.env;\n",
+  ]),
+  ...at(PDF_HOST, "dynamicImport", ['export const m = await import("node:fs");\n']),
+  // import.meta.url for the thread URLs elsewhere fails.
+  ...at("server/import/pdf/other.ts", "global", [
+    'export const u = new URL("./worker-thread.ts", import.meta.url);\n',
+  ]),
+  // The PDF.js subpath is read-pdf.ts's alone.
+  ...["server/import/pdf/other.ts", "server/import/pdf/read-pdf2.ts", "server/log/x.ts"].flatMap(
+    (file) =>
+      at(file, "module", [
+        'import * as p from "pdfjs-dist/legacy/build/pdf.mjs";\nexport const x = p;\n',
+      ]),
+  ),
+  ...at("server/import/pdf/read-pdf.ts", "module", [
+    'import * as p from "pdfjs-dist/legacy/build/pdf.js";\nexport const x = p;\n',
+    'import * as p from "pdfjs-dist/legacy/build/../pdf.mjs";\nexport const x = p;\n',
+  ]),
+];
+const pdfPassing: Case[] = [
+  ...at(PDF_HOST, "", [PDF_HOST_CODE]),
+  ...at(PDF_THREAD, "", [PDF_THREAD_CODE]),
+  ...at("server/import/pdf/read-pdf.ts", "", [
+    'import * as p from "pdfjs-dist/legacy/build/pdf.mjs";\nexport const x = p;\n',
+  ]),
+];
+failing.push(...pdfFailing);
+
 const passing: Case[] = [
+  ...pdfPassing,
   ...at(WATCH, "", [WATCH_CODE]),
   ...at(ENV, "", [
     "export function f(env = process.env): unknown {\n  return env;\n}\n",

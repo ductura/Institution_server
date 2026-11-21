@@ -29,7 +29,7 @@ export function scanRawPdf(bytes: Uint8Array): ImportReadRejectCode | null {
   let active = false;
   for (const match of text.matchAll(NAME)) {
     const name = match[1]!.replace(HEX_ESCAPE, (_, hex: string) =>
-      String.fromCharCode(Number.parseInt(hex, 16)),
+      Buffer.from([Number.parseInt(hex, 16)]).toString("latin1"),
     );
     if (name === "Encrypt") encrypted = true;
     else if (ACTIVE_NAMES.has(name)) active = true;

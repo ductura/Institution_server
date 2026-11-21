@@ -27,6 +27,8 @@ RUN pnpm build
 FROM mirror.gcr.io/library/node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0 AS test-server
 WORKDIR /app
 COPY --from=build /src/dist/server.js dist/server.js
+# The PDF reader's thread (SRV-1804B): started by URL next to server.js.
+COPY --from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js
 ENV HOST=0.0.0.0 PORT=4000 NODE_ENV=test DUCTURA_MODE=test
 EXPOSE 4000
 USER node
@@ -38,6 +40,8 @@ CMD ["node", "--disallow-code-generation-from-strings", "dist/server.js"]
 FROM mirror.gcr.io/library/node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0
 WORKDIR /app
 COPY --from=build /src/dist/server.js dist/server.js
+# The PDF reader's thread (SRV-1804B): started by URL next to server.js.
+COPY --from=build /src/dist/pdf-import-worker.js dist/pdf-import-worker.js
 # Listen on every interface: the default HOST is the loopback
 # (server/config/environment.ts), unreachable from outside a container.
 ENV HOST=0.0.0.0 PORT=4000

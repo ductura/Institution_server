@@ -111,7 +111,6 @@ describe("preparePdfImport", () => {
     fileName,
     limits: LIMITS,
     importId: "c4d5e6f7-a8b9-4c0d-a1e2-f3a4b5c6d7e8",
-    uuid,
   });
 
   it("builds the manifest with the three hashes and no traces key (M9)", async () => {

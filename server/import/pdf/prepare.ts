@@ -17,7 +17,7 @@ import {
 } from "../../contracts/index.ts";
 import type { CanonicalDocumentV2 } from "../../domain/index.ts";
 
-import { readPdf } from "./read-pdf.ts";
+import { readPdfInWorker } from "./worker.ts";
 
 export type PdfImportPreview = {
   readonly importId: string;
@@ -44,9 +44,8 @@ export async function preparePdfImport(input: {
   readonly fileName: string | null;
   readonly limits: ImportReadLimitsV1;
   readonly importId?: string;
-  readonly uuid?: () => string;
 }): Promise<PdfImportPrepared> {
-  const read = await readPdf(input.bytes, input.limits, input.uuid);
+  const read = await readPdfInWorker(input.bytes, input.limits);
   if (!read.ok) return read;
   const importId = input.importId ?? randomUUID();
   const recomputed = {

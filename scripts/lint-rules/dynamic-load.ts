@@ -115,6 +115,11 @@ export const DYNAMIC_LOAD_ALLOWED: Readonly<
   "server/domain/forensics/submission-receipt-v2.ts": { globalThis: ["crypto"] },
   "server/domain/forensics/submission-receipt-verifier-v2.ts": { globalThis: ["crypto"] },
   "server/domain/forensics/golden-vectors/load.ts": { [IMPORT_META]: ["url"] },
+  // The PDF reader's thread is started by URL: `import.meta.url` only in the
+  // two `new URL` of IMPORT_META_URLS (SRV-1804B, Ductus#2052 c.7065146539).
+  "server/import/pdf/worker.ts": { [IMPORT_META]: ["url"] },
+  // The handler PDF.js's fake worker looks for before it imports a file (SRV-1804B).
+  "server/import/pdf/read-pdf.ts": { globalThis: ["pdfjsWorker"] },
   "server/contracts/generated/fake-server/index.ts": { [IMPORT_META]: ["url"] },
 };
 
@@ -156,6 +161,38 @@ export const NODE_IMPORTS_ALLOWED: Readonly<
 > = {
   // The watch thread of the attempt fence takes its shared cell (DAN-822-4).
   "server/database/queue/attempt-fence-watch.ts": { "node:worker_threads": ["workerData"] },
+  // The PDF reader (SRV-1804B, import-contract D4, Ductus#2052 c.7065146539 and
+  // c.7065267371): the host starts the thread, the thread file talks to it.
+  "server/import/pdf/worker.ts": { "node:worker_threads": ["Worker"] },
+  "server/import/pdf/worker-thread.ts": { "node:worker_threads": ["parentPort", "workerData"] },
+};
+
+/**
+ * The one export a file with a listed node: import may have: an exported
+ * `async function <name>`, nothing else (no Worker, port or other symbol).
+ * Exact repository path.
+ */
+export const EXPORT_ALLOWED: Readonly<Record<string, string>> = {
+  "server/import/pdf/worker.ts": "readPdfInWorker",
+};
+
+/**
+ * The only `new URL(<literal>, import.meta.url)` a file with `import.meta.url`
+ * under IMPORT_META_URLS may have: the TypeScript source and the built file.
+ */
+export const IMPORT_META_URLS: Readonly<Record<string, readonly string[]>> = {
+  "server/import/pdf/worker.ts": ["./worker-thread.ts", "./pdf-import-worker.js"],
+};
+
+/**
+ * Package subpaths with a dot (SUBPATH_RE refuses them) that one exact file
+ * may import, as the whole specifier (SRV-1804, the PDF.js legacy build).
+ */
+export const DEPENDENCY_SPECS_ALLOWED: Readonly<Record<string, readonly string[]>> = {
+  "server/import/pdf/read-pdf.ts": [
+    "pdfjs-dist/legacy/build/pdf.mjs",
+    "pdfjs-dist/legacy/build/pdf.worker.mjs",
+  ],
 };
 
 // An own property only, so a key of Object.prototype is never an entry.
@@ -220,6 +257,9 @@ export const noDynamicLoad: Rule.RuleModule = {
       importRequire: "`import x = require()` is not allowed in server code (DAN-770).",
       module:
         "'{{spec}}' is not on the allow-list: a relative file in server/, an allowed node: module or a package from dependencies (DAN-770).",
+      metaUrl:
+        "import.meta.url may stand only as the second argument of new URL(<listed literal>, import.meta.url) (SRV-1804B).",
+      workerUse: "'Worker' may be used only as the callee of `new Worker(...)` (SRV-1804B).",
       nodeExport: "A file that imports under NODE_IMPORTS_ALLOWED exports nothing (DAN-822-4).",
       key: "'{{key}}' reaches a loader (the Function constructor or a native engine) (DAN-770).",
     },
@@ -246,6 +286,7 @@ export const noDynamicLoad: Rule.RuleModule = {
         return target.startsWith("server/") && !target.split("/").includes("node_modules");
       }
       if (spec.startsWith("node:")) return NODE_MODULES.includes(spec.slice("node:".length));
+      if (own(DEPENDENCY_SPECS_ALLOWED, file)?.includes(spec) === true) return true;
       return dependencies.some(
         (name) =>
           spec === name ||
@@ -373,8 +414,29 @@ export const noDynamicLoad: Rule.RuleModule = {
       },
       MetaProperty(node) {
         const meta = node as unknown as Loose;
-        if (meta.meta?.name === "import" && meta.property?.name === "meta")
+        if (meta.meta?.name === "import" && meta.property?.name === "meta") {
           reportGlobal(meta, IMPORT_META);
+          const literals = own(IMPORT_META_URLS, file);
+          if (literals !== undefined) {
+            const member = meta.parent;
+            const created = member?.parent;
+            const first = created?.arguments?.[0] as Loose | undefined;
+            const ok =
+              member?.type === "MemberExpression" &&
+              member.object === (meta as unknown) &&
+              !member.computed &&
+              member.property?.name === "url" &&
+              created?.type === "NewExpression" &&
+              created.callee?.type === "Identifier" &&
+              created.callee.name === "URL" &&
+              created.arguments?.length === 2 &&
+              created.arguments[1] === (member as unknown) &&
+              first?.type === "Literal" &&
+              typeof first.value === "string" &&
+              literals.includes(first.value);
+            if (!ok) context.report({ node: node as Node, messageId: "metaUrl" });
+          }
+        }
       },
       ImportExpression: (node) => context.report({ node, messageId: "dynamicImport" }),
       TSImportEqualsDeclaration(node: Node) {
@@ -388,7 +450,21 @@ export const noDynamicLoad: Rule.RuleModule = {
         checkSource(node, node.source as Loose, (node as Loose).importKind),
       ExportNamedDeclaration: (node) => {
         checkSource(node, node.source as Loose | null, (node as Loose).exportKind);
-        exportNodes.push(node);
+        // The one export of EXPORT_ALLOWED: `export async function <name>`.
+        const exported = EXPORT_ALLOWED[file];
+        const declaration = (
+          node as unknown as { declaration?: Loose & { async?: boolean; generator?: boolean } }
+        ).declaration;
+        const allowedExport =
+          exported !== undefined &&
+          Object.hasOwn(EXPORT_ALLOWED, file) &&
+          (node as Loose).source == null &&
+          (node as Loose).exportKind !== "type" &&
+          declaration?.type === "FunctionDeclaration" &&
+          declaration.async === true &&
+          declaration.generator !== true &&
+          declaration.id?.name === exported;
+        if (!allowedExport) exportNodes.push(node);
       },
       ExportDefaultDeclaration: (node) => void exportNodes.push(node),
       ExportAllDeclaration: (node) => {
@@ -397,7 +473,20 @@ export const noDynamicLoad: Rule.RuleModule = {
       },
       TSExportAssignment: (node: Node) => void exportNodes.push(node),
       // Every name, wherever it stands (DAN-773).
-      "Identifier, PrivateIdentifier, JSXIdentifier": checkName,
+      "Identifier, PrivateIdentifier, JSXIdentifier": (node: Node) => {
+        checkName(node);
+        // `Worker` from a listed import: only `new Worker(...)`.
+        const id = node as unknown as Loose;
+        const parent = id.parent;
+        if (
+          id.type === "Identifier" &&
+          id.name === "Worker" &&
+          parent?.type !== "ImportSpecifier" &&
+          !(parent?.type === "NewExpression" && parent.callee === (id as unknown)) &&
+          own(own(NODE_IMPORTS_ALLOWED, file), "node:worker_threads")?.includes("Worker") === true
+        )
+          context.report({ node, messageId: "workerUse" });
+      },
       Literal(node) {
         const literal = node as unknown as Loose;
         if (typeof literal.value === "string")
