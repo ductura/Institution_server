@@ -4,6 +4,8 @@
 
 `GET /api/v1/assignments/{assignmentId}/works/{documentId}/export/pdf` iz predane ili zadnje objavljene revizije sastavlja privatni izvoz, s otiskom PDF-a. Obični PDF uključuje pripadni DOCX i ključ hrvatske obavijesti o formatu.
 
+`POST /api/v1/student/submissions/{submissionId}/package-link` i `GET .../package/{kind}` (`submission-package.ts`, SRV-1807): vlasnik predaje traži poveznicu od 24 sata na izvozni paket (`package`) ili na potvrdu za referadu (`referada`, PDF bez teksta rada) i preuzima kroz nju. Poveznica je vezana uz sesiju koja ju je tražila; tuđa predaja, nepoznata, kriva vrsta ili kriva poveznica daju isti 404, istekla 410.
+
 ## Tko ga zove
 
 Vlasnik rada ili aktivni mentor rada. U istoj naredbi postojeći RPC-i utvrđuju pripadnost dokumenta zadatku i ovlast, zatim čitaju predanu ili zadnju objavljenu reviziju. Mentorovo čitanje koristi postojeći zapis pristupa.
@@ -14,7 +16,7 @@ U memoriji drži reviziju dokumenta, podatke naslovnice i datoteke izvoza. Naslo
 
 ## Što izvozi
 
-`createWorkPdfRouteFor`. `DUCTURA_PDF_RENDERER_ORIGIN` određuje lokalni, izolirani pretvornik. U njegovoj odsutnosti ovlašten zahtjev dobiva 503. D-253 ograničava veraPDF na CI, pa izravan HTTP izvoz vraća obični PDF.
+`createWorkPdfRouteFor`, `createSubmissionPackageRoutes`, `createSubmissionPackageRoutesFor`. `DUCTURA_PDF_RENDERER_ORIGIN` određuje lokalni, izolirani pretvornik. U njegovoj odsutnosti ovlašten zahtjev dobiva 503. D-253 ograničava veraPDF na CI, pa izravan HTTP izvoz vraća obični PDF.
 
 ## Što ne smije uvoziti
 
