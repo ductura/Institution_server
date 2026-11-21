@@ -27,6 +27,8 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createConsultationSlotRoutesFor,
@@ -35,9 +37,12 @@ import {
   createAssistantRoutesFor,
   createStatementRoutesFor,
   createTeacherMentorshipRequestRoutesFor,
+  createMentorshipRequestRoutesFor,
+  createMentorNotesRoutesFor,
   createLiveRoutesFor,
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
+  createNotificationsRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
   createWorkVersionRouteFor,
@@ -175,6 +180,13 @@ const SRV_19 = [
 const SRV_9B = ["public.verification.post"];
 const SRV_9C = ["student.receipt-pdf.get", "teacher.receipt-pdf.get"] as const;
 const SRV_31 = ["teacher.mentorship-requests.get", "teacher.mentorship-request-decision.post"];
+const SRV_1407 = [
+  "mentorship.requests.post",
+  "mentorship.request-approve.post",
+  "mentorship.request-decline.post",
+  "mentorship.request-withdraw.post",
+];
+const SRV_1413 = ["mentorship.notes.get", "mentorship.notes.post"];
 // The teacher contracts of SRV-27 (Ductus#2028 c.7009405737): contract now,
 // handlers in SRV-29, SRV-30 and SRV-31.
 const SRV_27 = [
@@ -286,9 +298,19 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createCourseAggregateRouteFor(databases.main)",
+    ids: ["course.aggregate.get"],
+    routes: () => [createCourseAggregateRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "createTeacherRosterRoutesFor(databases.main)",
     ids: TEACHER_ROSTER_ROUTES,
     routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createTeacherSubmissionDetailRouteFor(databases.main)",
+    ids: ["teacher.submission-detail.get"],
+    routes: () => [createTeacherSubmissionDetailRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-1108: the deadline extensions of an assignment over the main database.
@@ -343,6 +365,16 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createConsultationSlotRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "...createMentorshipRequestRoutesFor(databases.main)",
+    ids: SRV_1407,
+    routes: () => createMentorshipRequestRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createMentorNotesRoutesFor(databases.main)",
+    ids: SRV_1413,
+    routes: () => createMentorNotesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
     // Ductus#2028 (w1119o): the live view over the main database.
     call: "createLiveRoutesFor(databases.main)",
     ids: ["live.document.get", "live.document.put"],
@@ -364,6 +396,11 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
       "work.consultation-additions.post",
     ],
     routes: () => createConsultationRecordRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "...createNotificationsRoutesFor(databases.main, reminderCooldown)",
+    ids: ["notifications.list.get", "notifications.read.post"],
+    routes: () => createNotificationsRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
     call: "...createAttachmentRoutesFor(databases.main, process.env, process.cwd())",
@@ -586,7 +623,9 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      "course.aggregate.get",
       ...TEACHER_ROSTER_ROUTES,
+      "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       "teacher.merlin-roster.get",
@@ -603,12 +642,16 @@ describe("routes the entry point mounts itself", () => {
       "work.consultation-slots.get",
       "work.consultation-slots.post",
       "work.consultation-slots.patch",
+      ...SRV_1407,
+      ...SRV_1413,
       "live.document.get",
       "live.document.put",
       "collaboration.comments.post",
       "work.consultation-records.get",
       "work.consultation-records.post",
       "work.consultation-additions.post",
+      "notifications.list.get",
+      "notifications.read.post",
       "work.attachments.post",
       "work.attachments.get",
       "work.milestones.get",

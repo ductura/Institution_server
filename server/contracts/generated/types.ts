@@ -78,6 +78,13 @@ export type Operations = {
     success: { status: 200; body: { "request_id": string; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" } | { "outcome": "applied"; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" } | { "requests": ({ "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": "accepted"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": number; "accepted_range_hash": string | null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": "reopened" | "withdrawn"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": null; "closed_is_own": null; "closed_window": null; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": "accepted"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": number; "accepted_range_hash": string | null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": "reopened" | "withdrawn"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": null; "closed_is_own": null; "closed_window": null; "accepted_revision": null; "accepted_range_hash": null })[] }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_allowed" | "not_found" | "unavailable";
   };
+  "course.aggregate.get": {
+    params: { "id": string };
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "status": "suppressed" } | { "status": "available"; "started": number; "submitted": number; "stages": { "notStarted": number; "inProgress": number; "submitted": number } }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "invalid_input" | "unavailable";
+  };
   "downloads.manifest.get": {
     params: undefined;
     query: undefined;
@@ -259,6 +266,62 @@ export type Operations = {
     body: { [key: string]: unknown };
     success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
     errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
+  };
+  "mentorship.notes.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "notes": ({ "id": string; "body": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable" | "forbidden";
+  };
+  "mentorship.notes.post": {
+    params: { "id": string };
+    query: undefined;
+    body: { "body": string };
+    success: { status: 201; body: { "id": string; "body": string; "createdAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "mentorship.request-approve.post": {
+    params: { "requestId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "requestId": string; "state": "approved"; "mentorshipId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "mentorship.request-decline.post": {
+    params: { "requestId": string };
+    query: undefined;
+    body: { "reason"?: string };
+    success: { status: 200; body: { "requestId": string; "state": "declined" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "mentorship.request-withdraw.post": {
+    params: { "requestId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "requestId": string; "state": "withdrawn" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "mentorship.requests.post": {
+    params: undefined;
+    query: undefined;
+    body: { "teacherId": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis" };
+    success: { status: 201; body: { "requestId": string; "state": "requested" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "notifications.list.get": {
+    params: undefined;
+    query: { "before"?: string };
+    body: undefined;
+    success: { status: 200; body: { "notifications": ({ "id": string; "kind": "assignment_version" | "course_handover" | "comment_posted" | "submission_recorded" | "deadline_reminder"; "targetId": string; "createdAt": string; "readAt": string | null })[]; "nextBefore": string | null }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
+  "notifications.read.post": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 204; body: undefined; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "unavailable" | "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error";
   };
   "platform.health.get": {
     params: undefined;
@@ -673,6 +736,13 @@ export type Operations = {
     success: { status: 200; body: { "filename": "potvrda-predaje.pdf"; "pdfBase64": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.submission-detail.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "studentId": string; "revision": number; "late": boolean; "document": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.submission-receipt.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;
@@ -812,6 +882,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdf"; "reportHash": null; "docxBase64": string; "noticeKey": "workExport.plainPdf" } | { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdfa-2u"; "reportHash": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "work.export.get": {
+    params: { "documentId": string };
+    query: { "format": "docx" | "pdf"; "versionId"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "x-export-snapshot-sha256"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "work.messages.get": {
     params: { "documentId": string };

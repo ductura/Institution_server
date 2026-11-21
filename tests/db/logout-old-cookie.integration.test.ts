@@ -19,6 +19,8 @@ import {
   createCollaborationCommentsRouteFor,
   createConsultationRecordRoutesFor,
   createConsultationSlotRoutesFor,
+  createMentorshipRequestRoutesFor,
+  createMentorNotesRoutesFor,
   createWorkMilestonesRoutesFor,
   createDatabases,
   createDownloadsManifestRoute,
@@ -31,8 +33,10 @@ import {
   createTeacherFastPathRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
+  createNotificationsRoutesFor,
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkExportRouteFor,
   createWorkPdfRouteFor,
   createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
@@ -55,6 +59,8 @@ import {
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
@@ -180,6 +186,17 @@ const SESSION_ROUTES = {
     body: () => ({ text: "Izmišljena poruka." }),
     live: 404,
   },
+  "notifications.list.get": {
+    method: "GET",
+    path: "/api/v1/notifications",
+    body: () => undefined,
+    live: 200,
+  },
+  "notifications.read.post": {
+    path: `/api/v1/notifications/${randomUUID()}/read`,
+    body: () => undefined,
+    live: 404,
+  },
   // SRV-1703: a work it may not teach, a draft or an entry that is not its own, and a student asking for a bank are all 404.
   "work.comment-drafts.get": {
     method: "GET",
@@ -285,6 +302,13 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1310: the export of a work it may not read is 404, as a missing work.
+  "work.export.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export?format=docx`,
+    body: () => undefined,
+    live: 404,
+  },
   "work.export-pdf.get": {
     method: "GET",
     path: `/api/v1/assignments/${randomUUID()}/works/${randomUUID()}/export/pdf`,
@@ -313,6 +337,38 @@ const SESSION_ROUTES = {
     path: `/api/v1/works/${randomUUID()}/consultation-slots/${randomUUID()}`,
     body: () => ({ action: "confirm" }),
     live: 403,
+  },
+  // SRV-1407: a request, or a teacher, the account has no relation to is 404.
+  "mentorship.requests.post": {
+    path: "/api/v1/mentorship-requests",
+    body: () => ({ teacherId: randomUUID(), workType: "master_thesis" }),
+    live: 404,
+  },
+  "mentorship.request-approve.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/approve`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.request-decline.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/decline`,
+    body: () => ({}),
+    live: 404,
+  },
+  "mentorship.request-withdraw.post": {
+    path: `/api/v1/mentorship-requests/${randomUUID()}/withdraw`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.notes.get": {
+    method: "GET",
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "mentorship.notes.post": {
+    path: `/api/v1/mentorships/${randomUUID()}/notes`,
+    body: () => ({ body: "Izmisljena biljeska." }),
+    live: 404,
   },
   "student.assignment-work.get": {
     method: "GET",
@@ -393,6 +449,12 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
+  "course.aggregate.get": {
+    method: "GET",
+    path: `/api/v1/courses/${COURSE}/aggregate`,
+    body: () => undefined,
+    live: 404,
+  },
   "teacher.working-criteria.get": {
     method: "GET",
     path: "/api/v1/teacher/works/izmisljeni-rad-0001/working-criteria",
@@ -576,6 +638,12 @@ const SESSION_ROUTES = {
     path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions`,
     body: () => undefined,
     live: 200,
+  },
+  "teacher.submission-detail.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
   },
   "teacher.course-students.get": {
     method: "GET",
@@ -861,6 +929,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
+  "createNotificationsRoutesFor",
   "createCommentRoutesFor",
   "createDirectEditRoutesFor",
   "createConsultationRecordRoutesFor",
@@ -870,9 +939,12 @@ const FACTORIES = [
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
+  "createWorkExportRouteFor",
   "createWorkPdfRouteFor",
   "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
+  "createMentorshipRequestRoutesFor",
+  "createMentorNotesRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
   "createProcessSummaryRouteFor",
@@ -882,6 +954,8 @@ const FACTORIES = [
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createTeacherSubmissionDetailRouteFor",
+  "createCourseAggregateRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createMerlinRosterRoutesFor",
@@ -924,6 +998,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
+  ...createNotificationsRoutesFor(databases.main),
   ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
@@ -933,9 +1008,12 @@ const MOUNTED = [
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createWorkVersionsRouteFor(databases.main),
+  createWorkExportRouteFor(databases.main),
   createWorkPdfRouteFor(databases.main, undefined),
   createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
+  ...createMentorshipRequestRoutesFor(databases.main),
+  ...createMentorNotesRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
   createProcessSummaryRouteFor(databases.main, evidenceDeps, ENV),
@@ -945,6 +1023,8 @@ const MOUNTED = [
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  createTeacherSubmissionDetailRouteFor(databases.main),
+  createCourseAggregateRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
@@ -1181,13 +1261,16 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id === "sources.lookup.post" ||
+        id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
+        id.startsWith("notifications.") ||
         id.startsWith("live.") ||
         id.startsWith("collaboration.") ||
         id.startsWith("projection.") ||
         id.startsWith("student.") ||
         id.startsWith("work.") ||
+        id.startsWith("mentorship.") ||
         id.startsWith("auth.webauthn-")
           ? expect.objectContaining({ code: "unauthorized" })
           : EVIDENCE_401;

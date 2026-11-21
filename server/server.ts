@@ -37,11 +37,16 @@ import {
   createWorkSourceRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkExportRouteFor,
   createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
+  createMentorshipRequestRoutesFor,
+  createMentorNotesRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
@@ -59,6 +64,7 @@ import {
   createCollaborationCommentsRouteFor,
   createCommentRoutesFor,
   createWorkMessagesRoutesFor,
+  createNotificationsRoutesFor,
   createDirectEditRoutesFor,
   createConsultationRecordRoutesFor,
   createWorkMilestonesRoutesFor,
@@ -163,6 +169,7 @@ async function main(): Promise<void> {
   }
   const { host, port } = listenAddress(process.env);
   const databases = createDatabases();
+  const reminderCooldown = process.env.DUCTURA_NOTIFICATION_REMINDER_INTERVAL_SECONDS;
   const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
   const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
@@ -221,6 +228,7 @@ async function main(): Promise<void> {
       createCollaborationCommentsRouteFor(databases.main),
       // SRV-1106: the short messages next to a work, one conversation for its student and teachers.
       ...createWorkMessagesRoutesFor(databases.main),
+      ...createNotificationsRoutesFor(databases.main, reminderCooldown),
       // SRV-1703: delayed comments (D-51), the comment bank (N-03) and the changes since the last review (N-05).
       ...createCommentRoutesFor(databases.main, evidenceDeps),
       // SRV-1702: the direct-edit setting of a work; the teacher's edit goes through the live put.
@@ -239,9 +247,14 @@ async function main(): Promise<void> {
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // SRV-9A: the versions of a work, the same page for its owner and its teacher.
       createWorkVersionsRouteFor(databases.main),
+      // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
+      createWorkExportRouteFor(databases.main),
       createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
       createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
+      // SRV-1407: the moves of one mentorship request (D-204).
+      ...createMentorshipRequestRoutesFor(databases.main),
+      ...createMentorNotesRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
       // storage as commit; the time is the database's, never the client's.
@@ -262,6 +275,8 @@ async function main(): Promise<void> {
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
+      createTeacherSubmissionDetailRouteFor(databases.main),
+      createCourseAggregateRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),

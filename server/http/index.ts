@@ -6,6 +6,8 @@ export { createWorkSourceRoutesFor } from "./work-sources/index.ts";
 export { createSourceProofRoutesFor } from "./source-proofs/index.ts";
 export { createCollaborationCommentsRouteFor } from "./collaboration-comments/index.ts";
 export { createConsultationSlotRoutesFor } from "./consultation-slots/index.ts";
+export { createMentorshipRequestRoutesFor } from "./mentorship/index.ts";
+export { createMentorNotesRoutesFor } from "./mentor-notes/index.ts";
 export {
   createConsultationRecordRoutes,
   createConsultationRecordRoutesFor,
@@ -14,10 +16,12 @@ export { createAttachmentRoutesFor } from "./attachments/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
+export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
+export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,
@@ -276,6 +280,7 @@ export {
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
+export { createWorkExportRoute, createWorkExportRouteFor } from "./work-export/index.ts";
 export { createWorkVersionRouteFor } from "./time-machine/index.ts";
 export {
   createCommentBankRoutes,
@@ -288,6 +293,7 @@ export {
   createWorkMessagesPostRoute,
   createWorkMessagesRoutesFor,
 } from "./work-messages/index.ts";
+export { createNotificationsRoutesFor } from "./notifications/index.ts";
 export {
   createDirectEditGetRoute,
   createDirectEditPutRoute,
