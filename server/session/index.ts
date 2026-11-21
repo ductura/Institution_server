@@ -86,3 +86,8 @@ export {
   sessionCookieOptions,
   type SessionCookieOptions,
 } from "./session-token.ts";
+export {
+  purgeEndedSessionsJob,
+  PURGE_ENDED_SESSIONS_JOB,
+  registerPurgeEndedSessions,
+} from "./purge-ended/index.ts";
