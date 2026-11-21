@@ -74,6 +74,24 @@ it("requires an explicit send for each revision before reading comparison snapsh
   expect(query.mock.calls[2]?.[0]).toContain("response_kind = 'done'");
 });
 
+it("reads both authorized owner snapshots in revision order", async () => {
+  const earlier = { body: "Izmišljena verzija za pregled.", hash: "a".repeat(64) };
+  const later = { body: "Izmišljena predaja.", hash: "b".repeat(64) };
+  const { store, query } = storeWith(
+    [{ viewer: "owner" }],
+    [SUBMISSION, CHECKPOINT],
+    [{ sent: true }],
+    [earlier],
+    [later],
+    [{ viewer: "owner" }],
+  );
+  expect(await store.read("synthetic-owner", "doc-demo", [1, 2])).toStrictEqual({
+    status: "found",
+    snapshots: [earlier, later],
+  });
+  expect(query.mock.calls[3]?.[0]).toContain("app.read_own_reconstruction_checkpoint");
+});
+
 it("rechecks active mentorship after reading a submitted snapshot", async () => {
   const { store, query } = storeWith(
     [{ viewer: "mentor" }],

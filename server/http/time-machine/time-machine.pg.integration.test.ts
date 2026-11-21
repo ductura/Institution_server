@@ -80,6 +80,8 @@ it("reads an exact checkpoint for the owner and only a submitted revision for th
   try {
     await setup(db);
     const store = createTimeMachineStore(actingIn(db), STORAGE_NOT_CONFIGURED);
+    expect(await store.list("anon", "doc-m1", null)).toEqual({ status: "unauthenticated" });
+    expect(await store.read("anon", "doc-m1", [1])).toEqual({ status: "unauthenticated" });
     expect(await store.read("ana", "doc-m1", [1])).toMatchObject({
       status: "found",
       snapshots: [{ body: document }],

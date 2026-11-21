@@ -43,3 +43,4 @@ export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";
 export { MERLIN_PACKAGE_STATES, merlinPackageRoutes } from "./merlin-packages.ts";
 export { assistantRoutes } from "./assistant.ts";
+export { statementRoutes } from "./statement.ts";
