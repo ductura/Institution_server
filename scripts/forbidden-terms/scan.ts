@@ -20,6 +20,7 @@ export const CATALOGUES: Readonly<Record<string, Catalogue>> = {
   "hr.json": { lang: "hr" },
   "receipt-pdf.ts": { lang: "hr", table: "receiptPdfHr" },
   "merlin.ts": { lang: "hr", table: "merlinHr" },
+  "work-export.ts": { lang: "hr", table: "workExportHr" },
 };
 
 /** Files under locales/ that are not interface text, with the reason. `*.test.ts` are tests. */
