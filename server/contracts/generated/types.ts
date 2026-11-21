@@ -267,6 +267,48 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "accepted" | "unchanged"; "token": string }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "token": string | null }; headers: {  } };
     errorCode: "forbidden" | "unsupported_media_type" | "unauthorized" | "precondition_required" | "not_found" | "too_large" | "timeout" | "bad_request" | "invalid_document" | "unavailable";
   };
+  "mentorship.notes.get": {
+    params: { "id": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "notes": ({ "id": string; "body": string; "createdAt": string })[] }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "not_found" | "unavailable" | "forbidden";
+  };
+  "mentorship.notes.post": {
+    params: { "id": string };
+    query: undefined;
+    body: { "body": string };
+    success: { status: 201; body: { "id": string; "body": string; "createdAt": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "mentorship.request-approve.post": {
+    params: { "requestId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "requestId": string; "state": "approved"; "mentorshipId": string }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "mentorship.request-decline.post": {
+    params: { "requestId": string };
+    query: undefined;
+    body: { "reason"?: string };
+    success: { status: 200; body: { "requestId": string; "state": "declined" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
+  "mentorship.request-withdraw.post": {
+    params: { "requestId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "requestId": string; "state": "withdrawn" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "mentorship.requests.post": {
+    params: undefined;
+    query: undefined;
+    body: { "teacherId": string; "workType": "bachelor_thesis" | "master_thesis" | "specialist_thesis" | "doctoral_thesis" };
+    success: { status: 201; body: { "requestId": string; "state": "requested" }; headers: { "cache-control"?: string } };
+    errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable" | "unsupported_media_type" | "invalid_json" | "invalid_input";
+  };
   "notifications.list.get": {
     params: undefined;
     query: { "before"?: string };
