@@ -204,6 +204,18 @@ const SESSION_ROUTES = {
     body: () => ({ text: "Dopuna." }),
     live: 404,
   },
+  // SRV-1315: a work it may not read is 404 for the list and for the write.
+  "work.event-disputes.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/event-disputes`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.event-disputes.post": {
+    path: `/api/v1/works/${randomUUID()}/event-disputes`,
+    body: () => ({ kind: "dispute", eventId: "pastes/0", text: "Opis." }),
+    live: 404,
+  },
   // SRV-1106: a work it may not read is 404 for the conversation and for a message.
   "work.messages.get": {
     method: "GET",

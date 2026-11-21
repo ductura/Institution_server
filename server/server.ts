@@ -91,6 +91,7 @@ import {
   createDirectEditRoutesFor,
   createImportRoutesFor,
   createConsultationRecordRoutesFor,
+  createEventDisputeRoutesFor,
   createWorkMilestonesRoutesFor,
   createAcknowledgmentRouteFor,
   createWebAuthnRoutesFor,
@@ -267,6 +268,8 @@ async function main(): Promise<void> {
       // SRV-1803: a DOCX import into a work and its idempotent confirmation.
       ...createImportRoutesFor(databases.main),
       ...createConsultationRecordRoutesFor(databases.main),
+      // SRV-1315: amendments and disputes of process summary events of a work.
+      ...createEventDisputeRoutesFor(databases.main),
       ...createWorkMilestonesRoutesFor(databases.main),
       // The student acknowledges the assignment notice shown by the browser (DAN-306).
       createAcknowledgmentRouteFor(databases.main),
