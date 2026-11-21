@@ -26,14 +26,14 @@ function setup(answer: object[] | Error) {
 const row = (overrides: Record<string, unknown> = {}) =>
   Object.fromEntries(
     Object.entries({
-      hold_id: HOLD,
-      subject_type: "work",
-      subject_id: "rad-izmisljeni-1",
-      case_reference: "KLASA-2026-17",
-      placed_by: ADMIN_A,
-      placed_at: PLACED,
-      released_by: null,
-      released_at: null,
+      holdId: HOLD,
+      subjectType: "work",
+      subjectId: "rad-izmisljeni-1",
+      caseReference: "KLASA-2026-17",
+      placedBy: ADMIN_A,
+      placedAt: PLACED,
+      releasedBy: null,
+      releasedAt: null,
       ...overrides,
     }),
   );
@@ -43,8 +43,8 @@ const coded = (code: string) => Object.assign(new Error("refused"), { code });
 it("lists the holds of the institution", async () => {
   const { holds } = setup([
     row(),
-    row({ hold_id: ADMIN_B, released_by: ADMIN_B, released_at: RELEASED }),
-    row({ subject_type: "student", released_at: RELEASED }),
+    row({ holdId: ADMIN_B, releasedBy: ADMIN_B, releasedAt: RELEASED }),
+    row({ subjectType: "student", releasedAt: RELEASED }),
   ]);
   expect(await holds.list("session")).toEqual({
     status: "ok",
@@ -66,17 +66,17 @@ it("lists the holds of the institution", async () => {
 });
 
 it.each([
-  ["an unknown subject type", row({ subject_type: "course" })],
-  ["a placement time that is text", row({ placed_at: "2026-11-02" })],
-  ["a releaser without a release time", row({ released_by: ADMIN_B })],
-  ["a missing case reference", row({ case_reference: null })],
+  ["an unknown subject type", row({ subjectType: "course" })],
+  ["a placement time that is text", row({ placedAt: "2026-11-02" })],
+  ["a releaser without a release time", row({ releasedBy: ADMIN_B })],
+  ["a missing case reference", row({ caseReference: null })],
 ])("is unavailable when a listed row has %s", async (_name, bad) => {
   const { holds } = setup([row(), bad]);
   expect(await holds.list("session")).toEqual({ status: "unavailable" });
 });
 
 it("places a hold with the values as given and returns its id", async () => {
-  const { holds, calls } = setup([{ hold_id: HOLD }]);
+  const { holds, calls } = setup([{ holdId: HOLD }]);
   expect(
     await holds.place("session", {
       subjectType: "assignment",
@@ -88,7 +88,7 @@ it("places a hold with the values as given and returns its id", async () => {
 });
 
 it("releases a hold and returns the release time", async () => {
-  const { holds, calls } = setup([{ released_at: RELEASED }]);
+  const { holds, calls } = setup([{ releasedAt: RELEASED }]);
   expect(await holds.release("session", HOLD.toUpperCase(), "Postupak je zatvoren.")).toEqual({
     status: "ok",
     holdId: HOLD,
@@ -121,7 +121,7 @@ it.each([
 
 it.each([
   ["no row", []],
-  ["an id that is not a uuid", [{ hold_id: "h1" }]],
+  ["an id that is not a uuid", [{ holdId: "h1" }]],
 ])("is unavailable when placing returns %s", async (_name, rows) => {
   const { holds } = setup(rows);
   expect(
@@ -130,6 +130,6 @@ it.each([
 });
 
 it("is unavailable when releasing returns no time", async () => {
-  const { holds } = setup([{ released_at: null }]);
+  const { holds } = setup([{ releasedAt: null }]);
   expect(await holds.release("session", HOLD, "razlog")).toEqual({ status: "unavailable" });
 });
