@@ -29,6 +29,7 @@ import {
   createProcessSummaryRouteFor,
   createProcessSummaryDetailsRouteFor,
   createTeacherFastPathRouteFor,
+  createCommentRoutesFor,
   createWorkMessagesRoutesFor,
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
@@ -174,6 +175,67 @@ const SESSION_ROUTES = {
   "work.messages.post": {
     path: `/api/v1/works/${randomUUID()}/messages`,
     body: () => ({ text: "Izmišljena poruka." }),
+    live: 404,
+  },
+  // SRV-1703: a work it may not teach, a draft or an entry that is not its own, and a student asking for a bank are all 404.
+  "work.comment-drafts.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/comment-drafts`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.comment-drafts.post": {
+    path: `/api/v1/works/${randomUUID()}/comment-drafts`,
+    body: () => ({
+      text: "Izmišljena napomena.",
+      anchor: {
+        nodeId: randomUUID(),
+        quote: "odlomak",
+        prefix: "",
+        suffix: "",
+        startHint: 0,
+        endHint: 7,
+      },
+    }),
+    live: 404,
+  },
+  "work.comment-draft.delete": {
+    method: "DELETE",
+    path: `/api/v1/comment-drafts/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.comments.publish.post": {
+    path: `/api/v1/works/${randomUUID()}/comments/publish`,
+    body: () => undefined,
+    live: 404,
+  },
+  "teacher.comment-bank.get": {
+    method: "GET",
+    path: "/api/v1/teacher/comment-bank",
+    body: () => undefined,
+    live: 200,
+  },
+  "teacher.comment-bank.post": {
+    path: "/api/v1/teacher/comment-bank",
+    body: () => ({ text: "Izmišljeno: navedite izvor.", kind: "must" }),
+    live: 404,
+  },
+  "teacher.comment-bank.delete": {
+    method: "DELETE",
+    path: `/api/v1/teacher/comment-bank/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.review.post": {
+    path: `/api/v1/works/${randomUUID()}/review`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.changes-since-review.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/changes-since-review`,
+    body: () => undefined,
     live: 404,
   },
   // SRV-1702: a work it may not read is 404 for the setting and for setting it.
@@ -760,6 +822,7 @@ const SESSION_IDS = Object.keys(SESSION_ROUTES) as SessionRouteId[];
 /** The route factories server/server.ts calls in its `routes` list, in order. */
 const FACTORIES = [
   "createHealthRoute",
+  "createReadyRoute",
   "createClientContextRoute",
   "createEvidenceOpenRoute",
   "createStudentAssignmentWorkRouteFor",
@@ -783,6 +846,7 @@ const FACTORIES = [
   "createLiveRoutesFor",
   "createCollaborationCommentsRouteFor",
   "createWorkMessagesRoutesFor",
+  "createCommentRoutesFor",
   "createDirectEditRoutesFor",
   "createConsultationRecordRoutesFor",
   "createWorkMilestonesRoutesFor",
@@ -838,6 +902,7 @@ const MOUNTED = [
   ...createLiveRoutesFor(databases.main),
   createCollaborationCommentsRouteFor(databases.main),
   ...createWorkMessagesRoutesFor(databases.main),
+  ...createCommentRoutesFor(databases.main, evidenceDeps),
   ...createDirectEditRoutesFor(databases.main),
   ...createConsultationRecordRoutesFor(databases.main),
   ...createWorkMilestonesRoutesFor(databases.main),
