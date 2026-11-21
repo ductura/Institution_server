@@ -144,6 +144,12 @@ export { createActorReader } from "./current-actor.ts";
 export { createOpenSession } from "./open-session.ts";
 export { createInstitutionProvisioning } from "./institution-provisioning.ts";
 export { createMyAccountReader, MY_ACCOUNT_ROLES } from "./my-account.ts";
+export {
+  createSchemaReadinessReader,
+  MIGRATION_LOCK_KEY,
+  type SchemaReadiness,
+  type SchemaReadinessReader,
+} from "./schema-readiness.ts";
 export { createInstitutionAssignments } from "./institution-assignments.ts";
 export { createInstitutionGroups } from "./institution-groups.ts";
 export { createAdminCourses } from "./admin-courses.ts";
@@ -244,6 +250,13 @@ export { readReceiptKeys } from "./receipt-keys.ts";
 // The worker's receipt store: the key read and the attach of a signature
 // (820b-2b-2), same login and owner.
 export { createPendingReceiptStore } from "./pending-receipt-store.ts";
+// The worker's read of the segment object a pending receipt names (SRV-1502).
+export {
+  createPendingReceiptObjectSource,
+  type PendingReceiptObject,
+  type PendingReceiptObjectRead,
+  type PendingReceiptObjectSource,
+} from "./receipts/index.ts";
 export { createReplaySource } from "./replay-source.ts";
 export { createSettingsWriter } from "./settings-writer.ts";
 export {
@@ -571,3 +584,13 @@ export {
   type CostConfigInput,
   type WorkerQuery,
 } from "./assistant/index.ts";
+export {
+  createDirectEdits,
+  type DirectEditEntry,
+  type DirectEditMode,
+  type DirectEditRefusal,
+  type DirectEdits,
+  type DirectEditSet,
+  type DirectEditState,
+  type TeacherEditOutcome,
+} from "./direct-edit/index.ts";
