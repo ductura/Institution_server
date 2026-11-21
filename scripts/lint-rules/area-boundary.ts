@@ -119,6 +119,10 @@ export const LOCALE_IMPORT_ALLOWED: Readonly<
     specifier: "../../../locales/index.ts",
     name: "merlinHr",
   }),
+  "server/http/work-export/index.ts": Object.freeze({
+    specifier: "../../../locales/index.ts",
+    name: "merlinHr",
+  }),
 });
 
 type ImportShape = {

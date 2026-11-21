@@ -6,6 +6,7 @@ import {
   clientRoutes,
   collaborationRoutes,
   consultationSlotRoutes,
+  courseAggregateGet,
   downloadsRoutes,
   enrollmentRoutes,
   ERROR_CATALOG_DATA,
@@ -21,6 +22,7 @@ import {
   publicVerificationPost,
   publicVerificationRoutes,
   receiptPdfRoutes,
+  workExportRoutes,
   SHARED_ERROR_HEADERS,
   SHARED_ERRORS,
   settingsRoutes,
@@ -37,6 +39,8 @@ import {
   teacherWorkingCriteriaRoutes,
   TOO_MANY_REQUESTS,
   versionsRoutes,
+  workExportDocxRoutes,
+  workVersionGet,
   workMessagesRoutes,
   commentsRoutes,
   directEditRoutes,
@@ -47,6 +51,7 @@ import {
 import type { ErrorSpec, RouteContract } from "./schema/index.ts";
 
 export { breakingChanges } from "./breaking.ts";
+export { courseAggregateGet, CourseAggregateParams, type CourseAggregate } from "./routes/index.ts";
 export { API_VERSION, MIN_CLIENT_VERSION } from "./version.ts";
 export { WorkMilestoneDueInput, WorkMilestoneId, workMilestonesRoutes } from "./routes/index.ts";
 export { SourceProof, WORKING_CRITERION_IDS, WorkSourceRecord } from "./routes/index.ts";
@@ -101,6 +106,7 @@ export const ROUTES: readonly RouteContract[] = [
   ...sourceProofsRoutes,
   ...textCheckConfigRoutes,
   ...teacherWorkingCriteriaRoutes,
+  courseAggregateGet,
   ...deadlineExtensionRoutes,
   ...merlinRosterRoutes,
   ...merlinPackageRoutes,
@@ -117,9 +123,12 @@ export const ROUTES: readonly RouteContract[] = [
   ...settingsRoutes,
   ...downloadsRoutes,
   ...receiptPdfRoutes,
+  ...workExportRoutes,
   sourceLookupPost,
   ...publicVerificationRoutes,
   ...versionsRoutes,
+  ...workExportDocxRoutes,
+  workVersionGet,
   ...workMessagesRoutes,
   ...commentsRoutes,
   ...directEditRoutes,

@@ -14,10 +14,12 @@ export { createAttachmentRoutesFor } from "./attachments/index.ts";
 export { createWorkMilestonesRoutesFor } from "./work-milestones/index.ts";
 export { createTextCheckConfigRoute } from "./text-check-config/index.ts";
 export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteria/index.ts";
+export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,
 } from "./deadline-extensions/index.ts";
+export { createTeacherSubmissionDetailRouteFor } from "./teacher-submissions/index.ts";
 export { createMerlinRosterRoutes, createMerlinRosterRoutesFor } from "./merlin-roster/index.ts";
 export {
   createMerlinPackageRoutes,
@@ -34,6 +36,7 @@ export {
   type ClientContextOptions,
 } from "./client-context.ts";
 export { createDownloadsManifestRoute } from "./downloads-manifest.ts";
+export { createWorkPdfRouteFor } from "./export/index.ts";
 export {
   finishLogin,
   LOGIN_COOKIE_NAME,
@@ -180,6 +183,12 @@ export { logStartupFailed, logStartupRefused } from "./startup-log.ts";
 export { REQUEST_ID_HEADER, requestIdOf } from "./request-id.ts";
 export { parseJson } from "./request-json.ts";
 export { refuse } from "./security-headers.ts";
+export { createRateLimitLog } from "./rate-limit-layer.ts";
+export {
+  createAccountRateLimiter,
+  createAddressRateLimiter,
+  readRateLimitConfig,
+} from "./rate-limit/index.ts";
 export {
   enforceSecurityHeaders,
   guardIdleSessions,
@@ -269,6 +278,8 @@ export {
   createStudentAccessLogRouteFor,
 } from "./student-access-log.ts";
 export { createWorkVersionsRoute, createWorkVersionsRouteFor } from "./work-versions.ts";
+export { createWorkExportRoute, createWorkExportRouteFor } from "./work-export/index.ts";
+export { createWorkVersionRouteFor } from "./time-machine/index.ts";
 export {
   createCommentBankRoutes,
   createCommentDraftRoutes,

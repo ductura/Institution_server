@@ -78,6 +78,13 @@ export type Operations = {
     success: { status: 200; body: { "request_id": string; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" } | { "outcome": "applied"; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" } | { "requests": ({ "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": "accepted"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": number; "accepted_range_hash": string | null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": "reopened" | "withdrawn"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": "done" | "declined"; "response_explanation": string; "response_revision": number; "response_is_own": boolean; "response_window": string; "closed_as": null; "closed_is_own": null; "closed_window": null; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": "accepted"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": number; "accepted_range_hash": string | null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": "reopened" | "withdrawn"; "closed_is_own": boolean; "closed_window": string; "accepted_revision": null; "accepted_range_hash": null } | { "request_id": string; "request_state": "open" | "responded" | "accepted" | "reopened" | "withdrawn"; "request_version": number; "request_row_seq": number; "anchor": { [key: string]: unknown } | null; "version": number; "instruction": string; "requested_revision": number; "opened_is_own": boolean; "opened_window": string; "response_kind": null; "response_explanation": null; "response_revision": null; "response_is_own": null; "response_window": null; "closed_as": null; "closed_is_own": null; "closed_window": null; "accepted_revision": null; "accepted_range_hash": null })[] }; headers: {  } } | { status: 409; body: { "outcome": "conflict"; "row_seq": number; "version": number; "state": "open" | "responded" | "accepted" | "reopened" | "withdrawn" }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "forbidden" | "not_allowed" | "not_found" | "unavailable";
   };
+  "course.aggregate.get": {
+    params: { "id": string };
+    query: { [key: string]: unknown };
+    body: undefined;
+    success: { status: 200; body: { "status": "suppressed" } | { "status": "available"; "started": number; "submitted": number; "stages": { "notStarted": number; "inProgress": number; "submitted": number } }; headers: {  } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "invalid_input" | "unavailable";
+  };
   "downloads.manifest.get": {
     params: undefined;
     query: undefined;
@@ -673,6 +680,13 @@ export type Operations = {
     success: { status: 200; body: { "filename": "potvrda-predaje.pdf"; "pdfBase64": string }; headers: { "cache-control"?: string } };
     errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
   };
+  "teacher.submission-detail.get": {
+    params: { "assignmentId": string; "studentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "studentId": string; "revision": number; "late": boolean; "document": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
   "teacher.submission-receipt.get": {
     params: { "assignmentId": string; "studentId": string };
     query: undefined;
@@ -806,6 +820,20 @@ export type Operations = {
     success: { status: 200; body: { "outcome": "applied" | "unchanged"; "mode": "suggestions" | "direct"; "changedAt": string | null }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "unsupported_media_type" | "invalid_json" | "invalid_input" | "not_found" | "unavailable";
   };
+  "work.export-pdf.get": {
+    params: { "assignmentId": string; "documentId": string };
+    query: undefined;
+    body: undefined;
+    success: { status: 200; body: { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdf"; "reportHash": null; "docxBase64": string; "noticeKey": "workExport.plainPdf" } | { "filename": "rad.pdf"; "pdfBase64": string; "outputSha256": string; "format": "pdfa-2u"; "reportHash": string }; headers: { "cache-control"?: string } };
+    errorCode: "unauthorized" | "forbidden" | "not_found" | "unavailable";
+  };
+  "work.export.get": {
+    params: { "documentId": string };
+    query: { "format": "docx" | "pdf"; "versionId"?: string };
+    body: undefined;
+    success: { status: 200; body: Blob; headers: { "x-export-snapshot-sha256"?: string } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
+  };
   "work.messages.get": {
     params: { "documentId": string };
     query: undefined;
@@ -840,6 +868,13 @@ export type Operations = {
     body: undefined;
     success: { status: 200; body: { "reviewedRevision": number; "reviewedAt": string }; headers: {  } };
     errorCode: "origin_missing" | "origin_mismatch" | "cross_site" | "body_too_large" | "body_timeout" | "content_length_invalid" | "content_length_mismatch" | "body_stream_error" | "unauthorized" | "not_found" | "conflict" | "unavailable";
+  };
+  "work.version.get": {
+    params: { "documentId": string; "revision": string };
+    query: { "compareFrom"?: string };
+    body: undefined;
+    success: { status: 200; body: { "revision": number; "document": string } | { "from": number; "to": number; "blocks": ({ "kind": "paragraph" | "bulletItem" | "quote"; "change": "unchanged" | "removed" | "added"; "text": string } | { "kind": "heading"; "level": number; "change": "unchanged" | "removed" | "added"; "text": string })[] }; headers: {  } };
+    errorCode: "unauthorized" | "not_found" | "invalid_input" | "unavailable";
   };
   "work.versions.get": {
     params: { "documentId": string };

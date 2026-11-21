@@ -19,6 +19,7 @@ import {
   createInstitutionCourseRoutesFor,
   createInterfaceLocaleRoutesFor,
   createDownloadsManifestRoute,
+  createWorkPdfRouteFor,
   createProblemReportRouteFor,
   createPublicVerificationRouteFor,
   createInstitutionAssignmentRoutesFor,
@@ -26,6 +27,8 @@ import {
   createInstitutionGroupRoutesFor,
   createAdminCourseRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createConsultationSlotRoutesFor,
@@ -39,6 +42,7 @@ import {
   createConsultationRecordRoutesFor,
   createAttachmentRoutesFor,
   createWorkMilestonesRoutesFor,
+  createWorkVersionRouteFor,
   createAcknowledgmentRouteFor,
   createSettingsReadRoutes,
   createSettingsValuesPutRoute,
@@ -200,6 +204,11 @@ const NO_READER = {} as ActorReader;
 const NO_WEBAUTHN = { ...NO_ACTOR, webauthnCredentials: {} as WebAuthnCredentials };
 const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => string[] }[] = [
   {
+    call: "createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN)",
+    ids: ["work.export-pdf.get"],
+    routes: () => [createWorkPdfRouteFor(NO_ACTOR, undefined).contract.id],
+  },
+  {
     call: "createStudentAssignmentWorkRouteFor(databases.main)",
     ids: ["student.assignment-work.get"],
     routes: () => [createStudentAssignmentWorkRouteFor(NO_ACTOR).contract.id],
@@ -279,9 +288,19 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     routes: () => createTeacherReadRoutesFor(NO_ACTOR).map((route) => route.contract.id),
   },
   {
+    call: "createCourseAggregateRouteFor(databases.main)",
+    ids: ["course.aggregate.get"],
+    routes: () => [createCourseAggregateRouteFor(NO_ACTOR).contract.id],
+  },
+  {
     call: "createTeacherRosterRoutesFor(databases.main)",
     ids: TEACHER_ROSTER_ROUTES,
     routes: () => createTeacherRosterRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createTeacherSubmissionDetailRouteFor(databases.main)",
+    ids: ["teacher.submission-detail.get"],
+    routes: () => [createTeacherSubmissionDetailRouteFor(NO_ACTOR).contract.id],
   },
   {
     // SRV-1108: the deadline extensions of an assignment over the main database.
@@ -368,6 +387,13 @@ const ENTRY_MOUNTED: readonly { call: string; ids: string[]; routes: () => strin
     call: "...createWorkMilestonesRoutesFor(databases.main)",
     ids: ["work.milestones.get", "work.milestones.patch"],
     routes: () => createWorkMilestonesRoutesFor(NO_ACTOR).map((route) => route.contract.id),
+  },
+  {
+    call: "createWorkVersionRouteFor(databases.main, evidenceDeps)",
+    ids: ["work.version.get"],
+    routes: () => [
+      createWorkVersionRouteFor(NO_ACTOR, { payloads: STORAGE_NOT_CONFIGURED }).contract.id,
+    ],
   },
   {
     call: "createAcknowledgmentRouteFor(databases.main)",
@@ -552,6 +578,7 @@ describe("CONTRACT_ONLY", () => {
 describe("routes the entry point mounts itself", () => {
   it("server.ts mounts the settings PUT, the interface language and WebAuthn over the main database", () => {
     expect(entryMounted(ENTRY_TEXT)).toEqual([
+      "work.export-pdf.get",
       "student.assignment-work.get",
       "student.submission-notes.get",
       "student.submission-notes.post",
@@ -571,7 +598,9 @@ describe("routes the entry point mounts itself", () => {
       "institution.course-groups.post",
       "institution.course-group-teachers.post",
       ...TEACHER_READ_ROUTES,
+      "course.aggregate.get",
       ...TEACHER_ROSTER_ROUTES,
+      "teacher.submission-detail.get",
       "teacher.deadline-extensions.get",
       "teacher.deadline-extension.post",
       "teacher.merlin-roster.get",
@@ -598,6 +627,7 @@ describe("routes the entry point mounts itself", () => {
       "work.attachments.get",
       "work.milestones.get",
       "work.milestones.patch",
+      "work.version.get",
       "institution.acknowledgment.post",
       "submission.submit.post",
       "projection.process-summary.post",

@@ -643,6 +643,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     before: [commit("izmisljena-transakcija-1", 0)],
     request: { path: `/api/v1/works/${IDS.document}/versions`, as: "nastavnik" },
   },
+  "work.export.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/export?format=docx`, as: "nastavnik" },
+  },
+  "work.export-pdf.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: {
+      path: `/api/v1/assignments/${IDS.assignment}/works/${IDS.document}/export/pdf`,
+      as: "student",
+    },
+  },
+  "work.version.get": {
+    before: [commit("izmisljena-transakcija-1", 0)],
+    request: { path: `/api/v1/works/${IDS.document}/versions/1`, as: "student" },
+  },
   "work.messages.get": {
     before: [
       {
@@ -736,6 +751,9 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "teacher.courses.get": { request: { path: "/api/v1/teacher/courses", as: "nastavnik-2" } },
+  "course.aggregate.get": {
+    request: { path: `/api/v1/courses/${IDS.course}/aggregate`, as: "nastavnik" },
+  },
   "teacher.fast-path.post": {
     request: {
       path: "/api/v1/teacher/fast-path",
@@ -762,6 +780,13 @@ const SCENARIOS: Record<RouteId, Scenario> = {
   "teacher.submissions.get": {
     before: SUBMIT_STEPS,
     request: { path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions`, as: "nastavnik" },
+  },
+  "teacher.submission-detail.get": {
+    before: SUBMIT_STEPS,
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions/${IDS.student}`,
+      as: "nastavnik",
+    },
   },
   "teacher.receipt-pdf.get": {
     before: SUBMIT_STEPS,

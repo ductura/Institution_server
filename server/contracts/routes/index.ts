@@ -2,6 +2,7 @@ export { authRoutes, readSignInFailure, SIGN_IN_FAILURE, type SignInFailureCode 
 export { attachmentRoutes, workAttachmentGet, workAttachmentPost } from "./attachments.ts";
 export { downloadsRoutes } from "./downloads.ts";
 export { receiptPdfRoutes } from "./receipt-pdf.ts";
+export { workExportRoutes } from "./work-export.ts";
 export { CLIENT_APP_VERSION_PATTERN, CLIENT_CONTEXT_VALUES, clientRoutes } from "./client.ts";
 export { evidenceRoutes, MAX_COMMIT_BODY_BYTES } from "./evidence.ts";
 export {
@@ -21,6 +22,8 @@ export { studentSourcesRoutes, WorkSourceRecord } from "./student-sources.ts";
 export { SourceProof, sourceProofsRoutes } from "./source-proofs.ts";
 export { teacherRoutes } from "./teacher.ts";
 export { versionsRoutes } from "./versions.ts";
+export { workExportDocxRoutes } from "./work-export-docx.ts";
+export { workVersionGet } from "./time-machine.ts";
 export { workMessagesRoutes } from "./work-messages.ts";
 export { commentsRoutes } from "./comments.ts";
 export { directEditRoutes } from "./direct-edit.ts";
@@ -38,6 +41,11 @@ export { webauthnRoutes } from "./webauthn.ts";
 export { textCheckConfigRoutes } from "./text-check-config.ts";
 export { consultationRecordsRoutes } from "./consultation-records.ts";
 export { teacherWorkingCriteriaRoutes, WORKING_CRITERION_IDS } from "./teacher-working-criteria.ts";
+export {
+  courseAggregateGet,
+  CourseAggregateParams,
+  type CourseAggregate,
+} from "./course-aggregate.ts";
 export { DEADLINE_EXTENSION_REASONS, deadlineExtensionRoutes } from "./deadline-extensions.ts";
 export { consultationSlotRoutes } from "./consultation-slots.ts";
 export { merlinRosterRoutes } from "./merlin-roster.ts";

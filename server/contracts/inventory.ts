@@ -67,6 +67,10 @@ const STUDENT_SUBMISSION_SOURCE = "danielrisavi77-create/Ductus#2028:issuecommen
 export const SERVER_SOURCES: Readonly<
   Record<string, { readonly methods: readonly Method[]; readonly source: string }>
 > = {
+  "app/api/assignments/[assignmentId]/works/[documentId]/export/pdf/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063084126",
+  },
   "app/api/student/assistant/requests/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7056107180",
@@ -110,6 +114,10 @@ export const SERVER_SOURCES: Readonly<
   "app/api/teacher/assignment-submissions/route.ts": {
     methods: ["POST"],
     source: "danielrisavi77-create/Ductus@4eaa776:src/server/evidence/assignment-submissions.ts",
+  },
+  "app/api/teacher/assignments/[assignmentId]/submissions/[studentId]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063450904",
   },
   // DAN-903-2: Ductus reads it in its teacher pages, not in a route.
   "app/api/teacher/access/route.ts": {
@@ -205,6 +213,10 @@ export const SERVER_SOURCES: Readonly<
     methods: ["PUT"],
     source: "danielrisavi77-create/Ductus#2051:issuecomment-7048423903",
   },
+  "app/api/courses/[id]/aggregate/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562264",
+  },
   // SRV-03 (Ductus#2028 c.7008147932, wave 4): Ductus has no administrator's
   // course and no group routes; the shapes are the plan's (A-7, C-7).
   "app/api/institution/admin/courses/route.ts": {
@@ -253,6 +265,15 @@ export const SERVER_SOURCES: Readonly<
   "app/api/works/[documentId]/versions/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2028:issuecomment-7041078855",
+  },
+  // SRV-1310 (plan M8.4, Ductus#2052 c.7063253708): the DOCX of a saved version of a work; Ductus has no such route.
+  "app/api/works/[documentId]/export/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7063253708",
+  },
+  "app/api/works/[documentId]/versions/[revision]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7062949322",
   },
   // SRV-1106 (Val 11, Ductus#2051 c.7048423523; E§3.5 mentor2, PO-22): the messages of a work; Ductus has no such route.
   "app/api/works/[documentId]/messages/route.ts": {

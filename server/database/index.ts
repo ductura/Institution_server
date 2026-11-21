@@ -324,11 +324,17 @@ export {
 } from "./merlin-packages/index.ts";
 export {
   createWorkVersionsReader,
+  pageOf as workVersionsPageOf,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
   type WorkVersionsPage,
   type WorkVersionsReader,
 } from "./work-versions/index.ts";
+export {
+  createWorkExportReader,
+  type WorkExportReader,
+  type WorkExportSource,
+} from "./work-export/index.ts";
 export {
   createConsultationRecords,
   isCalendarDate,
@@ -346,7 +352,11 @@ export { createWebAuthnCredentials } from "./webauthn-credentials.ts";
 export { createInstitutionCourses } from "./institution-courses.ts";
 export { createInstitutionMembers } from "./institution-members.ts";
 export { createWorkLanguages } from "./work-language.ts";
-export { createAssignmentSubmissionsReader } from "./assignment-submissions.ts";
+export { createAssignmentSubmissionsReader, submissionOf } from "./assignment-submissions.ts";
+export {
+  createTeacherSubmissionReader,
+  type TeacherSubmissionReader,
+} from "./teacher-submissions/index.ts";
 export { createMentoredWorksReader } from "./mentored-works.ts";
 export { createLiveStates } from "./live-state.ts";
 export { createNoticeAcknowledgments } from "./notice-acknowledgment.ts";
@@ -615,3 +625,4 @@ export {
   type DirectEditState,
   type TeacherEditOutcome,
 } from "./direct-edit/index.ts";
+export { createCourseAggregateReader } from "./course-aggregate/index.ts";

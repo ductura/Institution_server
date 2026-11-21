@@ -107,8 +107,10 @@ export type Work = {
   /** When the submission was asked for, or null. */
   submittedAt: string | null;
   submissionReceipt: Operations["submission.submit.post"]["success"]["body"]["receipt"] | null;
+  submittedDocument: string | null;
   /** The document of `revision`: standard base64 of its JSON bytes. */
   document: string;
+  versionSnapshots: Map<number, string>;
   /** Segment texts in chain order (decoded from the commits). */
   segments: string[];
   lastSequenceTo: number;
@@ -433,7 +435,9 @@ export function createState(receiptSigner = createReceiptSigner()): State {
         lastChangeAt: "2026-11-09T19:55:00.000Z",
         submittedAt: null,
         submissionReceipt: null,
+        submittedDocument: null,
         document: EMPTY_DOCUMENT,
+        versionSnapshots: new Map(),
         segments: [],
         lastSequenceTo: 0,
         transactions: new Map(),

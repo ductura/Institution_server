@@ -16,9 +16,12 @@ import {
 } from "./config/index.ts";
 import {
   type AreaWithRoutes,
+  createAccountRateLimiter,
+  createAddressRateLimiter,
   createAuthRoutes,
   createClientContextRoute,
   createDownloadsManifestRoute,
+  createWorkPdfRouteFor,
   createDatabases,
   createEvidenceCommitRouteFor,
   createInstitutionCourseRoutesFor,
@@ -34,10 +37,14 @@ import {
   createWorkSourceRoutesFor,
   createAttachmentRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkExportRouteFor,
+  createWorkVersionRouteFor,
   createConsultationSlotRoutesFor,
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
@@ -78,6 +85,7 @@ import {
   logStartupFailed,
   logStartupRefused,
   parseTrustedProxies,
+  readRateLimitConfig,
   readinessCheckFor,
   routesOf,
   serverShutdownHooks,
@@ -97,6 +105,7 @@ import {
 //    institutions file built into the server must pass its schema (DAN-911).
 //    DUCTURA_MODE=test never starts in production (S-1H.7, DAN-938-1).
 const TRUSTED_PROXIES = parseTrustedProxies(process.env.TRUSTED_PROXIES);
+const rateLimitConfig = readRateLimitConfig(process.env);
 const problems = [
   ...environmentProblems(process.env),
   ...listenProblems(process.env),
@@ -105,6 +114,7 @@ const problems = [
   ...metricsIntervalProblems(process.env),
   ...institutionsProblems(),
   ...testModeProblems(process.env),
+  ...rateLimitConfig.problems,
   ...(TRUSTED_PROXIES === null
     ? ["TRUSTED_PROXIES is not a list of addresses and CIDR ranges"]
     : []),
@@ -125,6 +135,7 @@ const APP_ORIGIN = appOrigin(process.env);
 const LAYERS = createLayers({
   expectedOrigin: APP_ORIGIN,
   trustedProxies: TRUSTED_PROXIES ?? [],
+  rateLimiter: createAddressRateLimiter(rateLimitConfig.limits),
 });
 
 // SRV-1401 (M1.6): CSP, Permissions-Policy and HSTS on every answer, HSTS
@@ -155,10 +166,11 @@ async function main(): Promise<void> {
   }
   const { host, port } = listenAddress(process.env);
   const databases = createDatabases();
+  const limitAccount = createAccountRateLimiter(rateLimitConfig.limits, databases.main.actorReader);
   // One signer and one storage per process, shared by commit and replay.
   const evidenceDeps = evidenceIngestDependencies(process.env, process.cwd());
   const shutdown = createShutdownCoordinator({ graceMs: shutdownGraceMs(process.env) });
-  const running = await startServer({
+  const options = {
     host,
     port,
     databases,
@@ -230,6 +242,10 @@ async function main(): Promise<void> {
       createEvidenceReplayRouteFor(databases.main, evidenceDeps),
       // SRV-9A: the versions of a work, the same page for its owner and its teacher.
       createWorkVersionsRouteFor(databases.main),
+      // SRV-1310: the DOCX of a saved version of a work, rendered from its export snapshot.
+      createWorkExportRouteFor(databases.main),
+      createWorkPdfRouteFor(databases.main, process.env.DUCTURA_PDF_RENDERER_ORIGIN),
+      createWorkVersionRouteFor(databases.main, evidenceDeps),
       ...createConsultationSlotRoutesFor(databases.main),
       ...createAttachmentRoutesFor(databases.main, process.env, process.cwd()),
       // B-12 step 4b2 (SRV-18): a student's submission, over the same signer and
@@ -251,6 +267,8 @@ async function main(): Promise<void> {
       createMeRouteFor(databases.main),
       // The teacher's courses and access for the teacher shell (SRV-13, Ductus#2028).
       ...createTeacherReadRoutesFor(databases.main),
+      createTeacherSubmissionDetailRouteFor(databases.main),
+      createCourseAggregateRouteFor(databases.main),
       ...createTeacherRosterRoutesFor(databases.main),
       // SRV-1108: the deadline extensions of an assignment for its teacher.
       ...createDeadlineExtensionRoutesFor(databases.main),
@@ -269,13 +287,16 @@ async function main(): Promise<void> {
       ...createAuthRoutes(process.env),
       ...routesOf(AREAS),
     ],
-  }).catch((error: unknown) => {
-    // A system error has a code (EADDRINUSE, EACCES); anything else is a
-    // programming error of the route table, whose message names no value.
-    logStartupFailed(error);
-    process.exitCode = 1;
-    return undefined;
-  });
+  };
+  const running = await startServer({ ...options, routes: limitAccount(options.routes) }).catch(
+    (error: unknown) => {
+      // A system error has a code (EADDRINUSE, EACCES); anything else is a
+      // programming error of the route table, whose message names no value.
+      logStartupFailed(error);
+      process.exitCode = 1;
+      return undefined;
+    },
+  );
   if (running === undefined) return;
 
   // Metrics (S-1K.4-b, DAN-834-5a): every METRICS_INTERVAL_MS one round of

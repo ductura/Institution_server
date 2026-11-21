@@ -34,6 +34,7 @@ const VectorSchema = closed({
         Type.Literal("application/json"),
         Type.Literal("text/html"),
         Type.Literal("image/jpeg"),
+        Type.Literal("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
       ]),
     ),
     headers: Type.Optional(
@@ -62,8 +63,12 @@ export type Vector = {
   };
   readonly response: {
     readonly status: number;
-    /** image/jpeg: `body` is the bytes in Base64. */
-    readonly contentType?: "application/json" | "text/html" | "image/jpeg";
+    /** image/jpeg and DOCX: `body` is the bytes in Base64. */
+    readonly contentType?:
+      | "application/json"
+      | "text/html"
+      | "image/jpeg"
+      | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     readonly headers?: Readonly<Record<string, string | readonly string[]>>;
     readonly body?: unknown;
   };
@@ -171,8 +176,12 @@ function checkVector(
 /** Base64 of bytes that start with the JPEG marker FF D8 FF. */
 const JPEG_BASE64 = /^\/9j\/[A-Za-z0-9+/]*={0,2}$/u;
 
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+/** Base64 of bytes that start with the ZIP marker "PK" 03 04 (a DOCX is a ZIP). */
+const ZIP_BASE64 = /^UEsDB[A-Za-z0-9+/]*={0,2}$/u;
+
 function checkBody(
-  expected: TSchema | "none" | "html" | "image/jpeg",
+  expected: TSchema | "none" | "html" | "image/jpeg" | typeof DOCX_TYPE,
   response: Vector["response"],
   check: SchemaCheck,
 ): string[] {
@@ -182,6 +191,13 @@ function checkBody(
       JPEG_BASE64.test(response.body)
       ? []
       : ["the contract answers with JPEG bytes"];
+  }
+  if (expected === DOCX_TYPE) {
+    return response.contentType === DOCX_TYPE &&
+      typeof response.body === "string" &&
+      ZIP_BASE64.test(response.body)
+      ? []
+      : ["the contract answers with DOCX bytes"];
   }
   if (expected === "none") {
     return response.body === undefined && response.contentType === undefined

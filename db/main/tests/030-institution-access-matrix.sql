@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2456);
+SELECT plan(2477);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -15,7 +15,8 @@ SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_ev
         AND p.roles = ARRAY['ductus_evidence'::name] AND p.cmd = 'ALL') = ARRAY[t.policy],
   t.relation || ': forced RLS and only the evidence owner has access')
   FROM (VALUES ('declaration.statement', 'statement_owner'),
-               ('declaration.external_attachment', 'attachment_owner')) t(relation, policy)
+               ('declaration.external_attachment', 'attachment_owner'),
+               ('declaration.conversation_attachment', 'conversation_attachment_owner')) t(relation, policy)
   LEFT JOIN pg_class c ON c.oid = to_regclass(t.relation);
 SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
     AND has_function_privilege('ductus_app', p.oid, 'EXECUTE')
@@ -25,6 +26,75 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   FROM (VALUES ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
                ('declaration.upload_attachment(uuid,text,bytea)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
+    AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
+  f.signature || ': private to the evidence owner')
+  FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
+               ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)')) f(signature)
+  LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+-- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
+-- function, grant or trigger added later changes one of these lists.
+SELECT bag_eq(
+  $$ SELECT c.relname::text FROM pg_class c
+     WHERE c.relnamespace = 'declaration'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm', 'f') $$,
+  ARRAY['statement', 'external_attachment', 'conversation_attachment'],
+  'the declaration schema holds exactly its three tables'
+);
+SELECT bag_eq(
+  $$ SELECT p.oid::regprocedure::text FROM pg_proc p WHERE p.pronamespace = 'declaration'::regnamespace $$,
+  ARRAY['declaration.lock_scope(uuid,uuid,uuid)', 'declaration.pin_request()',
+        'declaration.student_document(uuid,uuid,uuid)',
+        'declaration.attachment_ref(declaration.external_attachment)',
+        'declaration.view_statement(uuid,uuid,uuid,bigint,integer)', 'declaration.read_statement(uuid)',
+        'declaration.canonical_payload(jsonb)', 'declaration.valid_text(text,integer,boolean)',
+        'declaration.save_statement(uuid,jsonb,text)', 'declaration.upload_attachment(uuid,text,bytea)',
+        'declaration.payload_conversations(text)', 'declaration.check_conversation_attachment()',
+        'declaration.check_statement_attachments()',
+        'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
+        'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'],
+  'the declaration schema holds exactly these functions'
+);
+SELECT bag_eq(
+  $$ SELECT r.rolname || ' ' || p.oid::regprocedure::text
+     FROM pg_proc p
+     CROSS JOIN (SELECT rolname::text FROM pg_roles WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin
+                 UNION ALL SELECT 'public') r
+     WHERE p.pronamespace = 'declaration'::regnamespace AND p.proowner <> to_regrole(r.rolname)
+       AND has_function_privilege(r.rolname, p.oid, 'EXECUTE') $$,
+  ARRAY['ductus_app declaration.read_statement(uuid)', 'ductus_app declaration.save_statement(uuid,jsonb,text)',
+        'ductus_app declaration.upload_attachment(uuid,text,bytea)'],
+  'only the web role executes a declaration function, and only the three student RPCs'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname, p.privilege, c.relname
+     FROM (SELECT rolname::text FROM pg_roles WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin
+             AND rolname <> 'ductus_evidence'
+           UNION ALL SELECT 'public') r
+     CROSS JOIN pg_class c
+     CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) p(privilege)
+     WHERE c.relnamespace = 'declaration'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm')
+       AND (has_table_privilege(r.rolname, c.oid, p.privilege)
+            OR (p.privilege IN ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
+                AND has_any_column_privilege(r.rolname, c.oid, p.privilege))) $$,
+  'no role but the evidence owner holds any privilege on a declaration table'
+);
+SELECT bag_eq(
+  $$ SELECT t.tgrelid::regclass::text || ' ' || t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+     WHERE c.relnamespace = 'declaration'::regnamespace AND NOT t.tgisinternal $$,
+  ARRAY['declaration.statement statement_no_update', 'declaration.statement statement_immutable',
+        'declaration.statement statement_no_truncate', 'declaration.statement statement_attachments_complete',
+        'declaration.external_attachment attachment_immutable', 'declaration.external_attachment attachment_no_truncate',
+        'declaration.conversation_attachment conversation_attachment_immutable',
+        'declaration.conversation_attachment conversation_attachment_no_truncate',
+        'declaration.conversation_attachment conversation_attachment_in_payload'],
+  'the declaration tables carry exactly their immutability and payload triggers'
+);
+SELECT ok(NOT has_schema_privilege('ductus_worker', 'declaration', 'USAGE')
+    AND NOT has_column_privilege('ductus_worker', 'evidence.submission_request', 'declaration_version_id', 'UPDATE')
+    AND NOT has_column_privilege('ductus_worker', 'evidence.submission_request', 'declaration_sha256', 'UPDATE'),
+  'the worker cannot reach the declaration schema nor change the pinned id and hash');
 
 -- 1. The catalogue. A table, policy, grant or function that is added later
 -- changes one of these lists, so it cannot arrive without a row here.
@@ -599,6 +669,36 @@ SELECT is_empty(
 SELECT is(
   substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_versions('doc-nema') $$), 1, 9),
   c.outcome, format('SRV-9A: %s reads the versions of a missing work: %s', c.actor, c.outcome)
+)
+FROM (VALUES
+  ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),
+  ('iva', 'not_found'), ('boris', 'not_found'), ('nina', 'not_found'), ('tomo', 'not_found'),
+  ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
+) AS c (actor, outcome);
+
+-- 1f2. SRV-1310: the source of the DOCX export of a work only through
+-- app.read_work_export; its reader of the evidence rows is never the web
+-- role's. The owner, the teacher, the version and the access log are in
+-- 153-work-export.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_work_export(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.work_export_rows(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1310: only ductus_app and the owner execute the read; only the identity role and the owner the helper'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_export('doc-nema') $$), 1, 9),
+  c.outcome, format('SRV-1310: %s reads the export source of a missing work: %s', c.actor, c.outcome)
 )
 FROM (VALUES
   ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),

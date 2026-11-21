@@ -33,6 +33,9 @@ import {
   createWorkMessagesRoutesFor,
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
+  createWorkExportRouteFor,
+  createWorkPdfRouteFor,
+  createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
@@ -53,6 +56,8 @@ import {
   createSourceLookupRouteFor,
   createPublicVerificationRouteFor,
   createTeacherReadRoutesFor,
+  createTeacherSubmissionDetailRouteFor,
+  createCourseAggregateRouteFor,
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createMerlinRosterRoutesFor,
@@ -283,6 +288,25 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1310: the export of a work it may not read is 404, as a missing work.
+  "work.export.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/export?format=docx`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.export-pdf.get": {
+    method: "GET",
+    path: `/api/v1/assignments/${randomUUID()}/works/${randomUUID()}/export/pdf`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.version.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/versions/1`,
+    body: () => undefined,
+    live: 404,
+  },
   "work.consultation-slots.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/consultation-slots`,
@@ -379,6 +403,12 @@ const SESSION_ROUTES = {
     live: 404,
   },
   // SRV-1107: a live session that teaches no such work gets 404 on each criteria route.
+  "course.aggregate.get": {
+    method: "GET",
+    path: `/api/v1/courses/${COURSE}/aggregate`,
+    body: () => undefined,
+    live: 404,
+  },
   "teacher.working-criteria.get": {
     method: "GET",
     path: "/api/v1/teacher/works/izmisljeni-rad-0001/working-criteria",
@@ -562,6 +592,12 @@ const SESSION_ROUTES = {
     path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions`,
     body: () => undefined,
     live: 200,
+  },
+  "teacher.submission-detail.get": {
+    method: "GET",
+    path: `/api/v1/teacher/assignments/${ASSIGNMENT}/submissions/${randomUUID()}`,
+    body: () => undefined,
+    live: 404,
   },
   "teacher.course-students.get": {
     method: "GET",
@@ -856,6 +892,9 @@ const FACTORIES = [
   "createEvidenceCommitRouteFor",
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
+  "createWorkExportRouteFor",
+  "createWorkPdfRouteFor",
+  "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
@@ -866,6 +905,8 @@ const FACTORIES = [
   "createStudentNoticeRouteFor",
   "createMeRouteFor",
   "createTeacherReadRoutesFor",
+  "createTeacherSubmissionDetailRouteFor",
+  "createCourseAggregateRouteFor",
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createMerlinRosterRoutesFor",
@@ -917,6 +958,9 @@ const MOUNTED = [
   createEvidenceCommitRouteFor(databases.main, evidenceDeps),
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createWorkVersionsRouteFor(databases.main),
+  createWorkExportRouteFor(databases.main),
+  createWorkPdfRouteFor(databases.main, undefined),
+  createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),
@@ -927,6 +971,8 @@ const MOUNTED = [
   createStudentNoticeRouteFor(databases.main),
   createMeRouteFor(databases.main),
   ...createTeacherReadRoutesFor(databases.main),
+  createTeacherSubmissionDetailRouteFor(databases.main),
+  createCourseAggregateRouteFor(databases.main),
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
@@ -1163,6 +1209,7 @@ describe("the old session cookie after logout, over real PostgreSQL", () => {
         id.startsWith("profile.") ||
         id === "support.problem-report.post" ||
         id === "sources.lookup.post" ||
+        id === "course.aggregate.get" ||
         id.startsWith("institution.") ||
         id.startsWith("teacher.") ||
         id.startsWith("live.") ||

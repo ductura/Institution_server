@@ -86,7 +86,9 @@ export const EVIDENCE_HANDLERS: Handlers = {
         lastChangeAt: now.toISOString(),
         submittedAt: null,
         submissionReceipt: null,
+        submittedDocument: null,
         document: EMPTY_DOCUMENT,
+        versionSnapshots: new Map(),
         segments: [],
         lastSequenceTo: 0,
         transactions: new Map(),
@@ -176,6 +178,7 @@ export const EVIDENCE_HANDLERS: Handlers = {
     work.segments.push(bytes.toString("utf8"));
     work.revision = revision;
     work.document = body.document;
+    work.versionSnapshots.set(revision, body.document);
     work.lastSequenceTo = segment.sequenceTo;
     work.lastChangeAt = now.toISOString();
     work.transactions.set(body.clientTransactionId, { receipt: signedReceipt, documentHash });
@@ -249,9 +252,10 @@ export const EVIDENCE_HANDLERS: Handlers = {
     const requestedAt = now.toISOString();
     work.state = "submitted";
     work.submittedAt = requestedAt;
+    work.submittedDocument = Buffer.from(work.document, "base64").toString("utf8");
     // After the submission the live view serves the submitted revision's bytes.
     work.live = {
-      json: Buffer.from(work.document, "base64").toString("utf8"),
+      json: work.submittedDocument,
       token: randomUUID(),
     };
     const payload = {
