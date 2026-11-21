@@ -17,6 +17,7 @@ import { SETTINGS_HANDLERS } from "./settings-routes.ts";
 import { STUDENT_HANDLERS } from "./student-routes.ts";
 import { TEACHER_HANDLERS } from "./teacher-routes.ts";
 import { MESSAGES_HANDLERS } from "./messages-routes.ts";
+import { DIRECT_EDIT_HANDLERS } from "./direct-edit-routes.ts";
 import { CONSULTATION_HANDLERS } from "./consultation-routes.ts";
 import { MILESTONE_HANDLERS } from "./milestone-routes.ts";
 import { VERSIONS_HANDLERS } from "./versions-routes.ts";
@@ -69,6 +70,7 @@ export const DEV_HANDLERS: Handlers = {
   ...ASSISTANT_HANDLERS,
   ...VERSIONS_HANDLERS,
   ...MESSAGES_HANDLERS,
+  ...DIRECT_EDIT_HANDLERS,
   ...CONSULTATION_HANDLERS,
   ...MILESTONE_HANDLERS,
   "sources.lookup.post": ({ account, body }) => {

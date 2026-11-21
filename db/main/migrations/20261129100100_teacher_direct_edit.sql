@@ -120,7 +120,8 @@ CREATE TRIGGER teacher_edit_append_only BEFORE UPDATE ON collaboration.teacher_e
 -- 'suggestions' revokes them. The value is absolute, so a repeated request
 -- never gives a second change (unchanged); a revocation never waits for a
 -- counter and acts at once: a teacher edit in flight holds the setting row
--- FOR SHARE, and every edit after this commit reads 'suggestions'.
+-- FOR SHARE, and every edit after this commit reads 'suggestions'. The time
+-- answered is in the 5-minute window of P-03, as read_direct_edit gives it.
 CREATE FUNCTION collaboration.set_direct_edit(p_document_id text, p_mode text)
 RETURNS TABLE (outcome text, mode text, changed_at timestamptz)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
@@ -152,7 +153,7 @@ BEGIN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = 'ZD403';
   END IF;
   IF v_current = p_mode THEN
-    RETURN QUERY SELECT 'unchanged'::text, s.mode, s.changed_at FROM collaboration.direct_edit_setting s
+    RETURN QUERY SELECT 'unchanged'::text, s.mode, date_bin('5 minutes', s.changed_at, timestamptz '2000-01-01 00:00:00+00') FROM collaboration.direct_edit_setting s
       WHERE s.document_id = p_document_id AND s.institution_id = scope.institution_id;
     RETURN;
   END IF;
@@ -160,7 +161,7 @@ BEGIN
    WHERE s.document_id = p_document_id AND s.institution_id = scope.institution_id;
   INSERT INTO collaboration.direct_edit_setting_change (document_id, institution_id, mode, actor_id, changed_at)
   VALUES (p_document_id, scope.institution_id, p_mode, actor.user_id, v_at);
-  RETURN QUERY SELECT 'applied'::text, p_mode, v_at;
+  RETURN QUERY SELECT 'applied'::text, p_mode, date_bin('5 minutes', v_at, timestamptz '2000-01-01 00:00:00+00');
 END
 $$;
 

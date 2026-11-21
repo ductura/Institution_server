@@ -14,6 +14,7 @@ import type {
   LivePublishOutcome,
   LiveReadOutcome,
   LiveStates,
+  TeacherEditOutcome,
 } from "../database/index.ts";
 
 import { createDatabases } from "./databases.ts";
@@ -82,6 +83,13 @@ async function start() {
       actors,
       recordActivity: async (token) => activity.push(token),
       timeoutMs: 300,
+      // SRV-1702: a teacher's direct edit (If-Match with an ETag) goes to its own port.
+      teacherEdits: {
+        publishTeacherEdit: async (...args) => {
+          calls.push(["publish", ...args]);
+          return publishAnswer as TeacherEditOutcome;
+        },
+      },
     }),
   });
 }
@@ -240,6 +248,11 @@ describe("PUT: every vector", () => {
     }),
     conflict: (v) => ({ status: "conflict", token: (v.response.body as { token: string }).token }),
     "conflict-nothing-published": () => ({ status: "conflict", token: null }),
+    "teacher-direct-edit": (v) => ({
+      status: "accepted",
+      token: (v.response.body as { token: string }).token,
+    }),
+    "teacher-conflict": () => ({ status: "conflict", token: null }),
     "not-found": () => ({ status: "not_found" }),
     unavailable: () => ({ status: "unavailable", reason: "database_error" }),
   };

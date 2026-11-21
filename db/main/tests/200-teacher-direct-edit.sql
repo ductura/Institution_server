@@ -143,6 +143,9 @@ SELECT is((SELECT count(*) FROM collaboration.direct_edit_setting_change), 0::bi
 -- Ana turns direct edits on: visible to both sides at once.
 SELECT is(pg_temp.set_mode('ana', 'direct'), 'applied', 'Ana turns direct edits on');
 SELECT is(pg_temp.set_mode('ana', 'direct'), 'unchanged', 'the same request again changes nothing');
+SELECT is(pg_temp.ask('ana', $$ SELECT changed_at FROM collaboration.set_direct_edit('doc-a', 'direct') $$),
+          pg_temp.ask('vesna', $$ SELECT changed_at FROM collaboration.read_direct_edit('doc-a') $$),
+  'the setting answers the same rounded time as the reading');
 SELECT is(pg_temp.mode_of(a.name), 'direct', a.name || ' sees direct edits on')
 FROM (VALUES ('ana'), ('vesna'), ('marko')) AS a (name);
 SELECT is(pg_temp.ask('ana', $$ SELECT changed_at FROM collaboration.read_direct_edit('doc-a') $$),
