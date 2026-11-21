@@ -21,12 +21,18 @@ function setup(answer: object[] | Error) {
   return { read: createTeacherDeclarationReader(withActor), calls };
 }
 
+/** A database row, with the column names the RPC returns. */
+const row = (state: string, payload: string | null, hash: string | null) =>
+  Object.fromEntries([
+    ["state", state],
+    ["payload_jcs", payload],
+    ["declaration_sha256", hash],
+  ]);
+
 const coded = (code: string) => Object.assign(new Error("refused"), { code });
 
 it("returns the bound payload parsed from its canonical text", async () => {
-  const { read, calls } = setup([
-    { state: "bound", payload_jcs: PAYLOAD, declaration_sha256: HASH },
-  ]);
+  const { read, calls } = setup([row("bound", PAYLOAD, HASH)]);
   expect(await read("session", ASSIGNMENT.toUpperCase(), STUDENT)).toEqual({
     status: "ok",
     body: { state: "bound", payload: JSON.parse(PAYLOAD), declarationSha256: HASH },
@@ -35,7 +41,7 @@ it("returns the bound payload parsed from its canonical text", async () => {
 });
 
 it("answers none without a live submission", async () => {
-  const { read } = setup([{ state: "none", payload_jcs: null, declaration_sha256: null }]);
+  const { read } = setup([row("none", null, null)]);
   expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({
     status: "ok",
     body: { state: "none", payload: null, declarationSha256: null },
@@ -59,9 +65,9 @@ it.each([
 
 it.each([
   ["no row", []],
-  ["an unknown state", [{ state: "draft", payload_jcs: PAYLOAD, declaration_sha256: HASH }]],
-  ["a short hash", [{ state: "bound", payload_jcs: PAYLOAD, declaration_sha256: "c" }]],
-  ["text that is not JSON", [{ state: "bound", payload_jcs: "{", declaration_sha256: HASH }]],
+  ["an unknown state", [row("draft", PAYLOAD, HASH)]],
+  ["a short hash", [row("bound", PAYLOAD, "c")]],
+  ["text that is not JSON", [row("bound", "{", HASH)]],
 ])("is unavailable for %s", async (_name, rows) => {
   const { read } = setup(rows);
   expect(await read("session", ASSIGNMENT, STUDENT)).toEqual({ status: "unavailable" });
