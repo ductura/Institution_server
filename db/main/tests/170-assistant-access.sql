@@ -59,6 +59,11 @@ BEGIN
 END
 $$;
 
+-- The trail check of the configuration (SRV-1203, M6) is 171's: here the
+-- versions are written without their trail rows, so it is off until the
+-- controls at the end, and no deferred event holds a TRUNCATE or ALTER back.
+ALTER TABLE assistant.cost_config_version DISABLE TRIGGER cost_config_version_has_event;
+
 -- Rows of the owner, as the RPCs will write them. Ana's request r1 runs to
 -- completed, r2 is refused before any conversation, r4 is reserved; Tomo's r3
 -- in the other institution is sent.
@@ -159,23 +164,54 @@ SELECT bag_eq(
   $$ VALUES ('refuse_change ductus_identity false search_path=""'),
             ('guard_request_transition ductus_identity false search_path=""'),
             ('guard_ledger_change ductus_identity false search_path=""'),
-            ('guard_config_version ductus_identity false search_path=""') $$,
-  'the schema has four trigger functions and no RPC yet');
-SELECT is_empty(
+            ('guard_config_version ductus_identity false search_path=""'),
+            -- SRV-1203: the RPCs and their helpers; 171 tests them.
+            ('check_config_event ductus_identity false search_path=""'),
+            ('check_config_version_event ductus_identity true search_path=""'),
+            ('stale_reserved_after ductus_identity false search_path=""'),
+            ('stale_sent_after ductus_identity false search_path=""'),
+            ('max_paragraph_code_points ductus_identity false search_path=""'),
+            ('budget_day ductus_identity false search_path=""'),
+            ('period_start ductus_identity false search_path=""'),
+            ('is_paragraph ductus_identity false search_path=""'),
+            ('request_sha256 ductus_identity false search_path=""'),
+            ('policy_allows ductus_identity false search_path=""'),
+            ('move_counters ductus_identity false search_path=""'),
+            ('close_ledger ductus_identity false search_path=""'),
+            ('own_request ductus_identity false search_path=""'),
+            ('begin_request ductus_identity true search_path=""'),
+            ('mark_sent ductus_identity true search_path=""'),
+            ('complete_request ductus_identity true search_path=""'),
+            ('fail_request ductus_identity true search_path=""'),
+            ('mark_outcome_unknown ductus_identity true search_path=""'),
+            ('sweep_and_settle ductus_identity true search_path=""'),
+            ('read_conversation ductus_identity true search_path=""'),
+            ('write_config_version ductus_identity false search_path=""'),
+            ('latest_config ductus_identity false search_path=""'),
+            ('publish_cost_config ductus_identity true search_path=""'),
+            ('publish_cost_cap ductus_identity false search_path=""') $$,
+  'the schema has four trigger functions and, since SRV-1203, the RPCs and their helpers');
+SELECT bag_eq(
   $$ SELECT r || ' ' || p.oid::regprocedure FROM pg_proc p
       CROSS JOIN unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
                               'ductus_test_stranger', 'public']) AS r
       WHERE p.pronamespace = 'assistant'::regnamespace AND has_function_privilege(r, p.oid, 'EXECUTE') $$,
-  'no runtime role executes a function of the schema');
+  $$ VALUES ('ductus_app assistant.begin_request(uuid,uuid,uuid,integer,text,text,text,text,text)'),
+            ('ductus_app assistant.mark_sent(uuid)'), ('ductus_app assistant.complete_request(uuid,text,bigint)'),
+            ('ductus_app assistant.fail_request(uuid,text,bigint)'), ('ductus_app assistant.mark_outcome_unknown(uuid)'),
+            ('ductus_app assistant.read_conversation(uuid)'),
+            ('ductus_app assistant.publish_cost_config(integer,bigint,bigint,bigint)'),
+            ('ductus_worker assistant.sweep_and_settle(uuid)') $$,
+  'a runtime role executes only the RPCs of SRV-1203 meant for it: the web role seven, the worker one');
 SELECT ok(NOT has_schema_privilege('ductus_identity', 'assistant', 'CREATE'),
   'after the migration the identity role keeps no CREATE on the schema');
 SELECT bag_eq(
   $$ SELECT r || ' ' || has_schema_privilege(r, 'assistant', 'USAGE')
       FROM unnest(ARRAY['ductus_app', 'ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence',
                         'ductus_test_stranger']) AS r $$,
-  $$ VALUES ('ductus_app true'), ('ductus_worker false'), ('ductus_retention false'), ('ductus_auth false'),
+  $$ VALUES ('ductus_app true'), ('ductus_worker true'), ('ductus_retention false'), ('ductus_auth false'),
             ('ductus_evidence false'), ('ductus_test_stranger false') $$,
-  'only the web role uses the schema; the worker comes with its RPC (SRV-1203)');
+  'only the web role and, for its RPC (SRV-1203), the worker use the schema');
 SELECT bag_eq(
   $$ SELECT c.relname || '.' || a.attname || ' ' || format_type(a.atttypid, a.atttypmod) || CASE WHEN a.attnotnull THEN ' not null' ELSE '' END
       FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid
@@ -206,7 +242,7 @@ SELECT bag_eq(
     ('cost_config_version.version_no integer not null'), ('cost_config_version.cap_micro bigint'),
     ('cost_config_version.cap_period text not null'), ('cost_config_version.student_day_micro bigint'),
     ('cost_config_version.student_assignment_day_micro bigint'), ('cost_config_version.reserve_micro bigint'),
-    ('cost_config_version.published_by uuid not null'), ('cost_config_version.published_at timestamp with time zone not null') $$,
+    ('cost_config_version.published_by uuid'), ('cost_config_version.published_at timestamp with time zone not null') $$,
   'the columns and types of the contract, with institution_id on every table; every amount is bigint micro-euros');
 SELECT is_empty(
   $$ SELECT c.relname || '.' || a.attname FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid
@@ -230,7 +266,8 @@ SELECT bag_eq(
     ('assistant.cost_ledger PRIMARY KEY (request_id)'),
     ('assistant.budget_counter PRIMARY KEY (scope, scope_key, period_start)'),
     ('assistant.cost_config_version PRIMARY KEY (id)'),
-    ('assistant.cost_config_version UNIQUE NULLS NOT DISTINCT (institution_id, version_no)') $$,
+    ('assistant.cost_config_version UNIQUE NULLS NOT DISTINCT (institution_id, version_no)'),
+    ('assistant.cost_config_version UNIQUE (id, institution_id)') $$,
   'the keys: one seq per conversation, one idempotency key per student, one ledger row per request');
 
 -- 2. Checks. Each refused row writes nothing.
@@ -441,8 +478,10 @@ SELECT is(pg_temp.ask('vesna', $$ SELECT count(*)::text FROM assistant.message m
 
 -- The worker ("stanje i ID-ovi", "svodi kroz RPC"), the operator and every
 -- other runtime role: not even the schema. The worker reads the state and ids
--- of a request only through sweep_and_settle (SRV-1203).
-SELECT is(pg_temp.reads(r, 'anon', t), 'no schema privilege', format('%s reads nothing of %s', r, t))
+-- of a request only through sweep_and_settle (SRV-1203), so it uses the
+-- schema but reads no table.
+SELECT is(pg_temp.reads(r, 'anon', t), CASE r WHEN 'ductus_worker' THEN 'no privilege' ELSE 'no schema privilege' END,
+  format('%s reads nothing of %s', r, t))
 FROM unnest(ARRAY['ductus_worker', 'ductus_retention', 'ductus_auth', 'ductus_evidence', 'ductus_test_stranger']) AS r
 CROSS JOIN unnest(ARRAY['conversation', 'message', 'request', 'cost_ledger', 'budget_counter', 'cost_config_version']) AS t;
 
@@ -486,7 +525,7 @@ FROM (VALUES
   ('TRUNCATE assistant.cost_ledger', 'the ledger is never truncated'),
   (format($$ UPDATE assistant.cost_config_version SET cap_micro = 1 WHERE version_no = 1 $$), 'a configuration version is never changed'),
   ('DELETE FROM assistant.cost_config_version', 'a configuration version is never deleted'),
-  ('TRUNCATE assistant.cost_config_version', 'the configuration is never truncated')
+  ('TRUNCATE assistant.cost_config_version CASCADE', 'the configuration is never truncated')
 ) AS s (sql, why);
 SELECT is((SELECT count(*) FROM assistant.message), 3::bigint, 'every message is still there');
 SELECT is((SELECT count(*) FROM assistant.conversation), 2::bigint, 'every conversation is still there');
@@ -591,6 +630,7 @@ FROM (VALUES
     (institution_id, version_no, cap_micro, cap_period, published_by) VALUES (NULL, 9, 1, 'day', %L) $$, pg_temp.id('operator')),
    'a version could skip the line')
 ) AS c (tbl, trg, sql, why);
+ALTER TABLE assistant.cost_config_version ENABLE TRIGGER cost_config_version_has_event;
 SELECT is_empty(
   $$ SELECT tgrelid::regclass || ' ' || tgname FROM pg_trigger
       WHERE tgrelid IN (SELECT oid FROM pg_class WHERE relnamespace = 'assistant'::regnamespace) AND NOT tgisinternal
