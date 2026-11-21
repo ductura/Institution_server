@@ -324,6 +324,7 @@ export {
 } from "./merlin-packages/index.ts";
 export {
   createWorkVersionsReader,
+  pageOf as workVersionsPageOf,
   WORK_VERSIONS_PAGE_SIZE,
   type WorkVersionsItem,
   type WorkVersionsPage,

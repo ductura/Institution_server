@@ -34,11 +34,13 @@ import {
   createDirectEditRoutesFor,
   createWorkVersionsRouteFor,
   createWorkExportRouteFor,
+  createWorkVersionRouteFor,
   createStudentAssignmentWorkRouteFor,
   createStudentNotesRoutesFor,
   createStudentSubmissionRoutesFor,
   createStudentNoticeRouteFor,
   createHealthRoute,
+  createReadyRoute,
   createInstitutionAssignmentRoutesFor,
   createInstitutionCourseRoutesFor,
   createInstitutionGroupRoutesFor,
@@ -287,6 +289,12 @@ const SESSION_ROUTES = {
   "work.export.get": {
     method: "GET",
     path: `/api/v1/works/${randomUUID()}/export?format=docx`,
+    body: () => undefined,
+    live: 404,
+  },
+  "work.version.get": {
+    method: "GET",
+    path: `/api/v1/works/${randomUUID()}/versions/1`,
     body: () => undefined,
     live: 404,
   },
@@ -864,6 +872,7 @@ const FACTORIES = [
   "createEvidenceReplayRouteFor",
   "createWorkVersionsRouteFor",
   "createWorkExportRouteFor",
+  "createWorkVersionRouteFor",
   "createConsultationSlotRoutesFor",
   "createAttachmentRoutesFor",
   "createSubmissionRouteFor",
@@ -888,6 +897,11 @@ const FACTORIES = [
 const evidenceDeps = evidenceIngestDependencies(ENV, ROOT);
 const MOUNTED = [
   createHealthRoute({ health: databases.health, serverVersion: "0.1.0" }),
+  // Public readiness; no session, so no 401 in its contract.
+  createReadyRoute({
+    check: async () => ({ ready: true, capabilities: {}, codes: {} }),
+    draining: () => false,
+  }),
   createClientContextRoute(),
   createEvidenceOpenRoute(databases.main),
   createStudentAssignmentWorkRouteFor(databases.main),
@@ -921,6 +935,7 @@ const MOUNTED = [
   createEvidenceReplayRouteFor(databases.main, evidenceDeps),
   createWorkVersionsRouteFor(databases.main),
   createWorkExportRouteFor(databases.main),
+  createWorkVersionRouteFor(databases.main, evidenceDeps),
   ...createConsultationSlotRoutesFor(databases.main),
   ...createAttachmentRoutesFor(databases.main, ENV, ROOT),
   createSubmissionRouteFor(databases.main, evidenceDeps),

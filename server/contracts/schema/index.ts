@@ -16,6 +16,7 @@ export const ACCESS = [
   "student_owner",
   "student_enrolled",
   "owner_or_course_teacher",
+  "owner_or_mentor",
   "teacher",
   "course_teacher",
   "mentor_teacher",
