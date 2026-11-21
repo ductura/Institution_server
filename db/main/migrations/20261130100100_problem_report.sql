@@ -28,7 +28,7 @@ ALTER TABLE identity.problem_report ADD CONSTRAINT problem_report_description_ch
 );
 
 CREATE POLICY problem_report_own_read ON identity.problem_report FOR SELECT TO ductus_app
-  USING ((user_id, institution_id) = (SELECT a.user_id, a.institution_id FROM app.current_actor() a));
+  USING (user_id = (SELECT app.current_user_id()) AND institution_id = (SELECT app.current_institution_id()));
 CREATE POLICY problem_report_operator_read ON identity.problem_report FOR SELECT
   TO ductus_problem_report_reader USING (true);
 GRANT SELECT ON identity.problem_report TO ductus_app, ductus_problem_report_reader;
