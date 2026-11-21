@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2843);
+SELECT plan(2854);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity
     AND has_table_privilege('ductus_app', c.oid, 'SELECT')
@@ -689,6 +689,29 @@ FROM (VALUES
   ('vesna', '1'), ('ana', '1'), ('iva', '1'), ('tomo', '1'),
   ('closed', 'ZD401: not authenticated'), ('anon', 'ZD401: not authenticated')
 ) AS c (actor, result);
+-- SRV-1304 (plan M10.2, M10.7): the dry run of the data classes. Only the web
+-- role executes it; only the administrator of the session's institution gets
+-- the five counted classes, everyone else ZD403 or, without a session, ZD401.
+-- The counts and the read-only proof are in 182-retention-dry-run.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin
+             AND rolname NOT IN ('ductus_app', 'ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.retention_candidates(uuid)', 'app.retention_evidence_candidates(uuid)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1304: only ductus_app and the owners execute the dry run'
+);
+SELECT is(pg_temp.ask(c.actor, format('SELECT count(*)::text FROM app.retention_candidates({%s})', c.fak)), c.result,
+  format('SRV-1304: %s runs the dry run of %s: %s', c.actor, c.fak, c.result))
+FROM (VALUES
+  ('iva', 'fak_a', '5'), ('lea', 'fak_b', '5'), ('iva', 'fak_b', 'ZD403: forbidden'),
+  ('lea', 'fak_a', 'ZD403: forbidden'), ('vesna', 'fak_a', 'ZD403: forbidden'),
+  ('ana', 'fak_a', 'ZD403: forbidden'), ('nina', 'fak_a', 'ZD403: forbidden'),
+  ('tomo', 'fak_b', 'ZD403: forbidden'), ('closed', 'fak_a', 'ZD401: not authenticated'),
+  ('anon', 'fak_a', 'ZD401: not authenticated')
+) AS c (actor, fak, result);
 -- SRV-1301 (M10.0-S1): the erasure contract. The tombstones have forced RLS
 -- and only their owner reaches them; only the retention role executes the
 -- two erasure RPCs, and the private steps belong to the two table owners.
