@@ -299,6 +299,11 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064713035",
   },
+  // SRV-1706 (plan M10.4): the student's access log in days; no Ductus route.
+  "app/api/works/[documentId]/access/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069036189",
+  },
   "app/api/courses/[id]/aggregate/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7063562264",

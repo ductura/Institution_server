@@ -24,6 +24,7 @@ export { createTeacherWorkingCriteriaRoutesFor } from "./teacher-working-criteri
 export { createCourseAggregateRouteFor } from "./course-aggregate/index.ts";
 export { createPilotMetricsRouteFor } from "./pilot-metrics/index.ts";
 export { createRetentionRouteFor } from "./retention/index.ts";
+export { createWorkAccessRoute, createWorkAccessRouteFor } from "./access-log/index.ts";
 export {
   createDeadlineExtensionRoutes,
   createDeadlineExtensionRoutesFor,

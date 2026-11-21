@@ -690,3 +690,10 @@ export {
   createRetentionDryRunReader,
   type RetentionDryRunResult,
 } from "./retention-dry-run/index.ts";
+export {
+  createWorkAccessReader,
+  NOT_A_PERSON_READ,
+  WORK_READ_PATHS,
+  type WorkAccessPage,
+  type WorkAccessReader,
+} from "./access-log/index.ts";

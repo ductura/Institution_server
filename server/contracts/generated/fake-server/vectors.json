@@ -42054,6 +42054,278 @@
     }
   },
   {
+    "route": "work.access.get",
+    "name": "first-page",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      },
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "days": [
+          {
+            "date": "2026-11-10",
+            "entries": [
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c01",
+                "at": "2026-11-10T13:10:00.000Z",
+                "role": "mentor",
+                "surface": "live_view",
+                "reader": {
+                  "givenName": "Izmišljena",
+                  "familyName": "Anić"
+                }
+              },
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c02",
+                "at": "2026-11-10T08:05:00.000Z",
+                "role": "teacher",
+                "surface": "process_summary",
+                "reader": null
+              },
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c05",
+                "at": "2026-11-09T23:30:00.000Z",
+                "role": "teacher",
+                "surface": "declaration",
+                "reader": {
+                  "givenName": "Izmišljena",
+                  "familyName": "Anić"
+                }
+              }
+            ]
+          },
+          {
+            "date": "2026-11-09",
+            "entries": [
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c03",
+                "at": "2026-11-09T19:55:00.000Z",
+                "role": "unknown",
+                "surface": "unknown",
+                "reader": null
+              }
+            ]
+          }
+        ],
+        "next": {
+          "beforeAt": "2026-11-09T19:55:00.000Z",
+          "beforeId": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c03"
+        },
+        "continued": false
+      }
+    }
+  },
+  {
+    "route": "work.access.get",
+    "name": "continued",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      },
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "query": {
+        "beforeAt": "2026-11-09T19:55:00.000Z",
+        "beforeId": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c03"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "days": [
+          {
+            "date": "2026-11-08",
+            "entries": [
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c04",
+                "at": "2026-11-08T07:00:00.000Z",
+                "role": "seminar_teacher",
+                "surface": "replay",
+                "reader": {
+                  "givenName": "Izmišljena",
+                  "familyName": "Anić"
+                }
+              }
+            ]
+          }
+        ],
+        "next": null,
+        "continued": true
+      }
+    }
+  },
+  {
+    "route": "work.access.get",
+    "name": "cursor-ignored",
+    "request": {
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      },
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "query": {
+        "beforeAt": "x"
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "days": [
+          {
+            "date": "2026-11-10",
+            "entries": [
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c01",
+                "at": "2026-11-10T13:10:00.000Z",
+                "role": "mentor",
+                "surface": "live_view",
+                "reader": {
+                  "givenName": "Izmišljena",
+                  "familyName": "Anić"
+                }
+              },
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c02",
+                "at": "2026-11-10T08:05:00.000Z",
+                "role": "teacher",
+                "surface": "process_summary",
+                "reader": null
+              },
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c05",
+                "at": "2026-11-09T23:30:00.000Z",
+                "role": "teacher",
+                "surface": "declaration",
+                "reader": {
+                  "givenName": "Izmišljena",
+                  "familyName": "Anić"
+                }
+              }
+            ]
+          },
+          {
+            "date": "2026-11-09",
+            "entries": [
+              {
+                "id": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c03",
+                "at": "2026-11-09T19:55:00.000Z",
+                "role": "unknown",
+                "surface": "unknown",
+                "reader": null
+              }
+            ]
+          }
+        ],
+        "next": {
+          "beforeAt": "2026-11-09T19:55:00.000Z",
+          "beforeId": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c03"
+        },
+        "continued": false
+      }
+    }
+  },
+  {
+    "route": "work.access.get",
+    "name": "unauthorized",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      }
+    },
+    "response": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "error": "unauthorized",
+        "code": "unauthorized",
+        "messageKey": "errors.unauthorized",
+        "status": 401,
+        "requestId": "00000000-0000-4000-8000-000000001706"
+      }
+    }
+  },
+  {
+    "route": "work.access.get",
+    "name": "forbidden",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001",
+        "sec-fetch-site": "cross-site"
+      }
+    },
+    "response": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": "forbidden",
+        "code": "forbidden",
+        "messageKey": "errors.forbidden",
+        "status": 403,
+        "requestId": "00000000-0000-4000-8000-000000001707"
+      }
+    }
+  },
+  {
+    "route": "work.access.get",
+    "name": "not-found-or-not-the-owner",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 404,
+      "contentType": "application/json",
+      "body": {
+        "error": "not_found",
+        "code": "not_found",
+        "messageKey": "errors.notFound",
+        "status": 404,
+        "requestId": "00000000-0000-4000-8000-000000001708"
+      }
+    }
+  },
+  {
+    "route": "work.access.get",
+    "name": "unavailable",
+    "request": {
+      "params": {
+        "documentId": "izmisljeni-rad-0001"
+      },
+      "headers": {
+        "cookie": "__Host-ductus_session=izmisljeni-token-studenta-00000000000000001"
+      }
+    },
+    "response": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": "unavailable",
+        "code": "unavailable",
+        "messageKey": "errors.unavailable",
+        "status": 503,
+        "requestId": "00000000-0000-4000-8000-000000001709"
+      }
+    }
+  },
+  {
     "route": "work.attachments.get",
     "name": "read-png",
     "request": {

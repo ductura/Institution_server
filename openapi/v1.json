@@ -64155,6 +64155,374 @@
         ]
       }
     },
+    "/api/v1/works/{documentId}/access": {
+      "get": {
+        "operationId": "work.access.get",
+        "summary": "Who opened the caller's own work and when (PRODUCT §5 rule 17, plan M10.4): one row per stored opening of five minutes, grouped into Europe/Zagreb days, the newest day and the newest row first. Rows are never merged; there is no total of visits, no duration and no count per day (D-274 MQ10). Only the owner of the work reads it; another's work, an unknown and a malformed id read the same 404 (C-23). The query names the oldest row shown, beforeAt and beforeId from next; a page from it holds only windows strictly older, so a day can continue on the next page. Only both together, on the five-minute grid, a lowercase UUID and not in the future are a cursor; anything else, and any other parameter, reads the first page with continued false, never an error. A row the read cannot vouch for makes the whole answer 503.",
+        "x-access": "student_owner",
+        "x-inventory": "app/api/works/[documentId]/access/route.ts",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "beforeAt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "beforeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "a page of openings in days, possibly none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "days",
+                    "next",
+                    "continued"
+                  ],
+                  "properties": {
+                    "days": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "date",
+                          "entries"
+                        ],
+                        "properties": {
+                          "date": {
+                            "pattern": "^(?:(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?!0000)(?:\\d\\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)(?![\\s\\S])",
+                            "type": "string"
+                          },
+                          "entries": {
+                            "minItems": 1,
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "at",
+                                "role",
+                                "surface",
+                                "reader"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "at": {
+                                  "pattern": "^(?:(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?!0000)(?:\\d\\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)T(?:[01]\\d|2[0-3]):[0-5][05]:00\\.000Z(?![\\s\\S])",
+                                  "type": "string"
+                                },
+                                "role": {
+                                  "anyOf": [
+                                    {
+                                      "const": "teacher",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "mentor",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "seminar_teacher",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "unknown",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "surface": {
+                                  "anyOf": [
+                                    {
+                                      "const": "live_view",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "process_summary",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "fast_path",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "replay",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "submitted_text",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "declaration",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "unknown",
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "reader": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "givenName",
+                                        "familyName"
+                                      ],
+                                      "properties": {
+                                        "givenName": {
+                                          "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                          "type": "string"
+                                        },
+                                        "familyName": {
+                                          "pattern": "^(?:[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[^\\uD800-\\uDFFF]){1,255}(?![\\s\\S])",
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "beforeAt",
+                            "beforeId"
+                          ],
+                          "properties": {
+                            "beforeAt": {
+                              "pattern": "^(?:(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?!0000)(?:\\d\\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)T(?:[01]\\d|2[0-3]):[0-5][05]:00\\.000Z(?![\\s\\S])",
+                              "type": "string"
+                            },
+                            "beforeId": {
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "continued": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unauthorized",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unauthorized",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 401,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "forbidden",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.forbidden",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 403,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "not_found",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.notFound",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 404,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "code": {
+                      "const": "unavailable",
+                      "type": "string"
+                    },
+                    "messageKey": {
+                      "const": "errors.unavailable",
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": 503,
+                      "type": "number"
+                    },
+                    "requestId": {
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-errors": [
+          {
+            "status": 401,
+            "code": "unauthorized",
+            "key": "errors.unauthorized"
+          },
+          {
+            "status": 403,
+            "code": "forbidden",
+            "key": "errors.forbidden"
+          },
+          {
+            "status": 404,
+            "code": "not_found",
+            "key": "errors.not_found"
+          },
+          {
+            "status": 503,
+            "code": "unavailable",
+            "key": "errors.unavailable"
+          }
+        ]
+      }
+    },
     "/api/v1/work-attachments/{attachmentId}": {
       "get": {
         "operationId": "work.attachments.get",
