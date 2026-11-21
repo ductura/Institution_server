@@ -17,6 +17,7 @@ import {
   type State,
 } from "./index.ts";
 import { fakeImportIds } from "./import-routes.ts";
+import { bulkTokenFor } from "./submissions-bulk-routes.ts";
 import { contractProblems, evidenceSegment, send, signIn, type Sent } from "./testing.ts";
 
 // Every route of the contract answers on the dev fake server, and the answer
@@ -991,6 +992,21 @@ const SCENARIOS: Record<RouteId, Scenario> = {
     },
   },
   "teacher.courses.get": { request: { path: "/api/v1/teacher/courses", as: "nastavnik-2" } },
+  "institution.config.get": {
+    request: { path: "/api/v1/institution/config", as: "administrator" },
+  },
+  "institution.config-versions.post": {
+    request: {
+      path: "/api/v1/institution/config/versions",
+      as: "administrator",
+      body: {
+        expectedVersion: 0,
+        citationStyle: "fpzg",
+        workLanguages: ["hr", "en"],
+        defaultWorkLanguage: "hr",
+      },
+    },
+  },
   "ops.pilot-metrics.get": { request: { path: "/api/v1/ops/pilot-metrics", as: "administrator" } },
   "institution.retention.get": {
     request: { path: "/api/v1/institution/retention", as: "administrator" },
@@ -1148,6 +1164,22 @@ const SCENARIOS: Record<RouteId, Scenario> = {
       path: `/api/v1/teacher/assignments/${IDS.assignment}/merlin/csv`,
       as: "nastavnik",
       method: "GET",
+    },
+  },
+  // SRV-1902: the teacher of the assignment asks for the link, then follows a far-future one.
+  "teacher.submissions-bulk-link.post": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions-bulk-link`,
+      as: "nastavnik",
+      method: "POST",
+      headers: ORIGIN,
+      body: { format: "pdf" },
+    },
+  },
+  "teacher.submissions-bulk.get": {
+    request: {
+      path: `/api/v1/teacher/assignments/${IDS.assignment}/submissions-bulk/docx?token=${bulkTokenFor(IDS.assignment, "docx", PACKAGE_EXPIRES)}`,
+      as: "nastavnik",
     },
   },
   "teacher.merlin-packages.post": {

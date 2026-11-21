@@ -312,6 +312,27 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "institution.config-versions.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['expectedVersion'] === 'number' && Number.isInteger(value['expectedVersion'])) &&
+      value['expectedVersion'] <= 2147483646 &&
+      value['expectedVersion'] >= 0 &&
+      (value['citationStyle'] === 'fpzg') &&
+      Array.isArray(value['workLanguages']) &&
+      value['workLanguages'].length <= 2 &&
+      value['workLanguages'].length >= 1 &&
+      ((array: unknown[]) => { for(const value of array) if(!(((((value === 'hr')) || ((value === 'en')))))) { return false }; return true; })(value['workLanguages']) &&
+      (((value['defaultWorkLanguage'] === 'hr')) || ((value['defaultWorkLanguage'] === 'en'))) &&
+      Object.getOwnPropertyNames(value).length === 4
+    )
+  }),
+  "institution.config.get:query": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      Object.getOwnPropertyNames(value).length <= 0
+    )
+  }),
   "institution.course-assignments.post:params": (() => {
   const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   return function check(value: Record<string, unknown>): boolean {
@@ -1604,6 +1625,47 @@ export const VALIDATORS: Readonly<Record<string, (value: Record<string, unknown>
       Object.getOwnPropertyNames(value).length === 1
     )
   }),
+  "teacher.submissions-bulk-link.post:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
+  "teacher.submissions-bulk-link.post:body": (function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (((value['format'] === 'pdf')) || ((value['format'] === 'docx'))) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }),
+  "teacher.submissions-bulk.get:params": (() => {
+  const local0 = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['assignmentId'] === 'string') &&
+      local0.test(value['assignmentId']) &&
+      (((value['format'] === 'pdf')) || ((value['format'] === 'docx'))) &&
+      Object.getOwnPropertyNames(value).length === 2
+    )
+  }
+  })(),
+  "teacher.submissions-bulk.get:query": (() => {
+  const local0 = /^\d{1,15}\.[A-Za-z0-9_-]{43}$/;
+  return function check(value: Record<string, unknown>): boolean {
+    return (
+      (typeof value === 'object' && value !== null && !Array.isArray(value)) &&
+      (typeof value['token'] === 'string') &&
+      local0.test(value['token']) &&
+      Object.getOwnPropertyNames(value).length === 1
+    )
+  }
+  })(),
   "teacher.submissions.get:params": (function check(value: Record<string, unknown>): boolean {
     return (
       (typeof value === 'object' && value !== null && !Array.isArray(value)) &&

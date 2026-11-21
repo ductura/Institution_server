@@ -137,6 +137,11 @@ export const LOCALE_IMPORT_ALLOWED: Readonly<
     specifier: "../../../locales/index.ts",
     name: "receiptPdfHr",
   }),
+  // SRV-1902: the receipt PDF of every submission in the ZIP of an assignment.
+  "server/http/teacher-submissions-bulk/index.ts": Object.freeze({
+    specifier: "../../../locales/index.ts",
+    name: "receiptPdfHr",
+  }),
 });
 
 type ImportShape = {

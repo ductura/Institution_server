@@ -299,6 +299,15 @@ export const SERVER_SOURCES: Readonly<
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7064713035",
   },
+  // SRV-1406: the versioned rules of the institution; no Ductus route.
+  "app/api/institution/config/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066464126",
+  },
+  "app/api/institution/config/versions/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7066464126",
+  },
   // SRV-1706 (plan M10.4): the student's access log in days; no Ductus route.
   "app/api/works/[documentId]/access/route.ts": {
     methods: ["GET"],
@@ -375,6 +384,15 @@ export const SERVER_SOURCES: Readonly<
   "app/api/student/submissions/[submissionId]/package/[kind]/route.ts": {
     methods: ["GET"],
     source: "danielrisavi77-create/Ductus#2052:issuecomment-7069763588",
+  },
+  // SRV-1902 (plan P-D2, Ductus#2052 c.7069957833): the link to the ZIP of all submissions of an assignment and its download; Ductus has no such route.
+  "app/api/teacher/assignments/[assignmentId]/submissions-bulk-link/route.ts": {
+    methods: ["POST"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069957833",
+  },
+  "app/api/teacher/assignments/[assignmentId]/submissions-bulk/[format]/route.ts": {
+    methods: ["GET"],
+    source: "danielrisavi77-create/Ductus#2052:issuecomment-7069957833",
   },
   "app/api/works/[documentId]/versions/[revision]/route.ts": {
     methods: ["GET"],
