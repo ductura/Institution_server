@@ -96,8 +96,12 @@ function expected(v: FakeVector) {
 function parsed(answer: ReturnType<typeof answerFake>) {
   const type = answer.headers["content-type"];
   const { body } = answer;
-  // A JPEG answer is compared in Base64, as the vector writes it.
-  if (type === "image/jpeg") return { ...answer, body: Buffer.from(body).toString("base64") };
+  // A JPEG or DOCX answer is compared in Base64, as the vector writes it.
+  if (
+    type === "image/jpeg" ||
+    String(type).startsWith("application/vnd.openxmlformats-officedocument.")
+  )
+    return { ...answer, body: Buffer.from(body).toString("base64") };
   const text = typeof body === "string" ? body : new TextDecoder().decode(body);
   return { ...answer, body: type === "application/json" ? (JSON.parse(text) as unknown) : text };
 }
