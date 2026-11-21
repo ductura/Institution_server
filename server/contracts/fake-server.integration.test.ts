@@ -43,9 +43,14 @@ function send(
         resolve({
           status: res.statusCode ?? 0,
           headers: res.headers,
-          // A JPEG answer (SRV-1102) is compared in Base64, as the vector writes it.
+          // A JPEG or DOCX answer (SRV-1102, SRV-1310) is compared in Base64, as the vector writes it.
           body: Buffer.concat(chunks).toString(
-            res.headers["content-type"] === "image/jpeg" ? "base64" : "utf8",
+            res.headers["content-type"] === "image/jpeg" ||
+              String(res.headers["content-type"]).startsWith(
+                "application/vnd.openxmlformats-officedocument.",
+              )
+              ? "base64"
+              : "utf8",
           ),
         }),
       );
@@ -127,8 +132,9 @@ describe("fake server over HTTP", () => {
     // Declaration save and upload have five framing vectors each.
     // SRV-1703: work.comment-drafts.post, work.comment-draft.delete, work.comments.publish.post,
     // teacher.comment-bank.post, teacher.comment-bank.delete and work.review.post five each.
+    // SRV-1701: five framing vectors for marking a notification read.
     // SRV-1601 adds five framing vectors for each of the three mutations.
-    expect(VECTORS.length - overHttp.length).toBe(304);
+    expect(VECTORS.length - overHttp.length).toBe(309);
   });
 
   it.each(overHttp.map((v) => [`${v.route} ${v.name}`, v] as const))(

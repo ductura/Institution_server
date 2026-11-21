@@ -6,7 +6,7 @@ BEGIN;
 -- Denials are told apart by their message below, so the language is fixed.
 SET LOCAL lc_messages TO 'C';
 
-SELECT plan(2527);
+SELECT plan(2542);
 
 SELECT ok(c.relrowsecurity AND c.relforcerowsecurity AND c.relowner = 'ductus_evidence'::regrole
     AND NOT has_table_privilege('ductus_app', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
@@ -26,6 +26,14 @@ SELECT ok(p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
   FROM (VALUES ('declaration.read_statement(uuid)'), ('declaration.save_statement(uuid,jsonb,text)'),
                ('declaration.upload_attachment(uuid,text,bytea)')) f(signature)
   LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
+SELECT ok(NOT p.prosecdef AND 'search_path=""' = ANY(p.proconfig)
+    AND NOT has_function_privilege('ductus_app', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+    AND NOT has_function_privilege('ductus_worker', p.oid, 'EXECUTE'),
+  f.signature || ': private to the evidence owner')
+  FROM (VALUES ('declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)'),
+               ('declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)')) f(signature)
+  LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.signature);
 -- SRV-1211, declaration-v1 section 8: the catalogue of the schema. A table,
 -- function, grant or trigger added later changes one of these lists.
 SELECT bag_eq(
@@ -43,7 +51,9 @@ SELECT bag_eq(
         'declaration.canonical_payload(jsonb)', 'declaration.valid_text(text,integer,boolean)',
         'declaration.save_statement(uuid,jsonb,text)', 'declaration.upload_attachment(uuid,text,bytea)',
         'declaration.payload_conversations(text)', 'declaration.check_conversation_attachment()',
-        'declaration.check_statement_attachments()'],
+        'declaration.check_statement_attachments()',
+        'declaration.conversation_snapshot(uuid,uuid,uuid,text,bigint)',
+        'declaration.check_conversation_refs(uuid,uuid,uuid,text,bigint,jsonb)'],
   'the declaration schema holds exactly these functions'
 );
 SELECT bag_eq(
@@ -300,6 +310,7 @@ SELECT bag_eq(
     'assignment_version_institution_fill()',
     'course_enrollment_code_institution_fill()',
     'notify_assignment_version() definer',
+      'notify_published_comment() definer',
     'require_course_teacher(p_course_id uuid, OUT user_id uuid, OUT institution_id uuid)',
     'is_confirmed_teacher(p_user_id uuid, p_course_id uuid)',
     'set_course_holder(p_course_id uuid, p_holder_id uuid) definer app',
@@ -377,6 +388,8 @@ SELECT bag_eq(
     'effective_due_at(p_assignment_id uuid, p_student_id uuid)',
     'extend_assignment_deadline(p_assignment_id uuid, p_student_id uuid, p_due_at timestamp with time zone, p_reason_id text) definer app',
     'deadline_extensions(p_assignment_id uuid) definer app',
+      'list_notifications(p_before uuid, p_reminder_seconds integer) definer app',
+      'read_notification(p_id uuid) definer app',
     'guard_merlin_package()',
     'refuse_merlin_package_download_change()',
     'merlin_package_visible(p_assignment_id uuid, p_student_ids uuid[])',
@@ -421,6 +434,15 @@ SELECT is_empty(
      CROSS JOIN unnest(ARRAY['app.submission_state_of(uuid,uuid)']) f
      WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
   'SRV-20: only its owner and the identity role execute app.submission_state_of, never ductus_app'
+);
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.notify_submission_owner(uuid,uuid,uuid)', 'app.notify_bound_receipt()']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1701: application and worker cannot directly produce a receipt notification'
 );
 SELECT is_empty(
   $$ SELECT r.rolname || ' may execute ' || f
@@ -661,6 +683,36 @@ SELECT is_empty(
 SELECT is(
   substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_versions('doc-nema') $$), 1, 9),
   c.outcome, format('SRV-9A: %s reads the versions of a missing work: %s', c.actor, c.outcome)
+)
+FROM (VALUES
+  ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),
+  ('iva', 'not_found'), ('boris', 'not_found'), ('nina', 'not_found'), ('tomo', 'not_found'),
+  ('lea', 'not_found'), ('petra', 'not_found'), ('anon', 'ZD401: no')
+) AS c (actor, outcome);
+
+-- 1f2. SRV-1310: the source of the DOCX export of a work only through
+-- app.read_work_export; its reader of the evidence rows is never the web
+-- role's. The owner, the teacher, the version and the access log are in
+-- 153-work-export.sql.
+SELECT is_empty(
+  $$ SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_app', 'ductus_identity')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.read_work_export(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE')
+     UNION ALL
+     SELECT r.rolname || ' may execute ' || f
+     FROM (SELECT rolname::text FROM pg_roles
+           WHERE rolname LIKE 'ductus\_%' AND NOT rolcanlogin AND rolname NOT IN ('ductus_identity', 'ductus_evidence')
+           UNION ALL SELECT 'public') AS r
+     CROSS JOIN unnest(ARRAY['app.work_export_rows(text,bigint)']) f
+     WHERE has_function_privilege(r.rolname, f, 'EXECUTE') $$,
+  'SRV-1310: only ductus_app and the owner execute the read; only the identity role and the owner the helper'
+);
+SELECT is(
+  substr(pg_temp.ask(c.actor, $$ SELECT string_agg(outcome, ',') FROM app.read_work_export('doc-nema') $$), 1, 9),
+  c.outcome, format('SRV-1310: %s reads the export source of a missing work: %s', c.actor, c.outcome)
 )
 FROM (VALUES
   ('ana', 'not_found'), ('dora', 'not_found'), ('vesna', 'not_found'), ('marko', 'not_found'),

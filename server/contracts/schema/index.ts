@@ -49,9 +49,10 @@ export type SuccessSpec = {
   readonly body?: TSchema;
   /**
    * A binary body of this media type instead of JSON (SRV-1102: the JPEG of a
-   * source proof). Such an answer has no `body` schema.
+   * source proof; SRV-1310: the DOCX of a work). Such an answer has no `body` schema.
    */
-  readonly contentType?: "image/jpeg";
+  readonly contentType?:
+    "image/jpeg" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   /** Response headers the caller relies on. */
   readonly headers?: readonly string[];
 };
