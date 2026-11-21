@@ -328,6 +328,12 @@ export {
   type DeadlineExtensions,
 } from "./deadline-extensions/index.ts";
 export {
+  createAssignmentCopy,
+  type AssignmentCopy,
+  type AssignmentCopyInput,
+  type AssignmentCopyResult,
+} from "./assignment-copy/index.ts";
+export {
   createSubmittedWorksReader,
   type SubmittedWorkSource,
   type SubmittedWorksOutcome,

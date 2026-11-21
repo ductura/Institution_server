@@ -71,6 +71,7 @@ import {
   createTeacherRosterRoutesFor,
   createDeadlineExtensionRoutesFor,
   createStudentDeadlineHistoryRouteFor,
+  createAssignmentCopyRouteFor,
   createMerlinRosterRoutesFor,
   createMerlinPackageRoutesFor,
   createAssistantRoutesFor,
@@ -756,6 +757,12 @@ const SESSION_ROUTES = {
     body: () => undefined,
     live: 404,
   },
+  // SRV-1904: a live session that teaches no such assignment gets 404.
+  "teacher.assignment-copy.post": {
+    path: `/api/v1/teacher/assignments/${randomUUID()}/copy`,
+    body: () => ({ requestKey: randomUUID(), courseId: randomUUID() }),
+    live: 404,
+  },
   // SRV-1109: a live session that teaches no such assignment gets 404.
   "teacher.merlin-roster.get": {
     method: "GET",
@@ -1060,6 +1067,7 @@ const FACTORIES = [
   "createTeacherRosterRoutesFor",
   "createDeadlineExtensionRoutesFor",
   "createStudentDeadlineHistoryRouteFor",
+  "createAssignmentCopyRouteFor",
   "createMerlinRosterRoutesFor",
   "createMerlinPackageRoutesFor",
   "createAssistantRoutesFor",
@@ -1142,6 +1150,7 @@ const MOUNTED = [
   ...createTeacherRosterRoutesFor(databases.main),
   ...createDeadlineExtensionRoutesFor(databases.main),
   createStudentDeadlineHistoryRouteFor(databases.main),
+  createAssignmentCopyRouteFor(databases.main),
   ...createMerlinRosterRoutesFor(databases.main),
   ...createMerlinPackageRoutesFor(databases.main),
   ...createAssistantRoutesFor(databases.main),
